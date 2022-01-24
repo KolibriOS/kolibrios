@@ -56,7 +56,7 @@ BEGIN
 END GetInf;
 
 
-PROCEDURE GetImg* (ptr, size: INTEGER): INTEGER;
+PROCEDURE GetImg (ptr, size: INTEGER): INTEGER;
 VAR
 	image_data, dst, x, type: INTEGER;
 BEGIN
@@ -133,7 +133,7 @@ BEGIN
 	(*ELSE
 		copy(source, icons);
 		copy(source, grayIcons)*)
-	END;
+	END
 END get;
 
 

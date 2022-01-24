@@ -76,12 +76,17 @@ BEGIN
 END setEnc;
 
 
+PROCEDURE height* (): INTEGER;
+	RETURN font.height + 3
+END height;
+
+
 PROCEDURE setWidth* (width: INTEGER);
 BEGIN
 	ASSERT(width > 0);
-	IF (SB.canvas = NIL) OR (SB.canvas.width # width) THEN
+	IF (SB.canvas = NIL) OR (SB.canvas.width # width) OR (SB.canvas.height # height()) THEN
 		G.destroy(SB.canvas);
-		SB.canvas := G.CreateCanvas(width, 19);
+		SB.canvas := G.CreateCanvas(width, height());
 		G.SetFont(SB.canvas, font)
 	END
 END setWidth;
@@ -100,13 +105,22 @@ BEGIN
 	G.SetTextColor(SB.canvas, K.colors.work_text);
 	G.clear(SB.canvas);
 	TextOut(1, SB.pos);
-	TextOut(16*K.fontWidth, SB.sel);
-	TextOut(SB.canvas.width - LENGTH(SB.enc)*K.fontWidth - 1, SB.enc);
+	TextOut(16*font.width, SB.sel);
+	TextOut(SB.canvas.width - LENGTH(SB.enc)*font.width - 1, SB.enc);
 	G.DrawCanvas(SB.canvas, left, top)
 END draw;
 
 
+PROCEDURE SetFont* (_font: G.tFont);
+BEGIN
+	font := _font;
+	IF SB.canvas # NIL THEN
+		setWidth(SB.canvas.width)
+	END
+END SetFont;
+
+
 BEGIN
 	SB.canvas := NIL;
-	font := G.CreateFont(1, "", {})
+	font := G.font1
 END StatusBar.

@@ -82,7 +82,7 @@ BEGIN
 	res.mouse := FALSE;
 	COPY(text, res.text);
 	res.canvas := G.CreateCanvas(fontHeight + padding + LENGTH(res.text)*fontWidth, fontHeight + 1);
-	G.SetFont(res.canvas, G.CreateFont(1, "", {}));
+	G.SetFont(res.canvas, G.font1);
 	chkbox := res
 END create;
 

@@ -45,6 +45,12 @@ TYPE
     PTypedPtr = PROCEDURE (p: List.tItem);
     PUntypedPtr = PROCEDURE (p: INTEGER);
 
+    tVector* = POINTER TO RECORD
+    	size, data: INTEGER
+    END;
+
+    tVectorItem = tLine;
+
 
 VAR
 
@@ -56,6 +62,57 @@ VAR
 
     pMaxLength, tab*: INTEGER;
     tabs*: BOOLEAN;
+
+
+PROCEDURE createVector* (size: INTEGER): tVector;
+VAR
+	res: tVector;
+BEGIN
+	IF size > 0 THEN
+		NEW(res);
+		res.size := size;
+		IF size < 4096 THEN
+			size := 4096
+		END;
+		res.data := API._NEW(size*SYSTEM.SIZE(tVectorItem));
+		IF res.data = 0 THEN
+			DISPOSE(res)
+		END
+	ELSE
+		res := NIL
+	END
+	RETURN res
+END createVector;
+
+
+PROCEDURE destroyVector* (VAR vector: tVector);
+BEGIN
+	IF vector # NIL THEN
+		IF vector.data # 0 THEN
+			vector.data := API._DISPOSE(vector.data)
+		END;
+		DISPOSE(vector)
+	END
+END destroyVector;
+
+
+PROCEDURE setVectorItem* (vector: tVector; idx: INTEGER; item: tVectorItem);
+BEGIN
+	ASSERT(vector # NIL);
+	ASSERT((0 <= idx) & (idx < vector.size));
+	SYSTEM.PUT(vector.data + idx*SYSTEM.SIZE(tVectorItem), item)
+END setVectorItem;
+
+
+PROCEDURE getVectorItem* (vector: tVector; idx: INTEGER): tVectorItem;
+VAR
+	res: tVectorItem;
+BEGIN
+	ASSERT(vector # NIL);
+	ASSERT((0 <= idx) & (idx < vector.size));
+	SYSTEM.GET(vector.data + idx*SYSTEM.SIZE(tVectorItem), res)
+	RETURN res
+END getVectorItem;
 
 
 PROCEDURE movInt (VAR v: INTEGER; x: INTEGER);
@@ -173,8 +230,8 @@ BEGIN
 	ASSERT(line.temp);
 	IF size > 0 THEN
 		line.ptr := API._DISPOSE(line.ptr);
-	    size := size*WCHAR_SIZE + 4;
-    	INC(size, (-size) MOD 32);
+		size := size*WCHAR_SIZE + 4;
+		INC(size, (-size) MOD 32);
 		line.ptr := API._NEW(size)
 	ELSE
 		destroy(line)

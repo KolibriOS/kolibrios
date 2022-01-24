@@ -65,7 +65,8 @@ TYPE
         cursor, select, select2: pPoint;
         scroll: tPoint;
         CurX: INTEGER;
-        modified*: BOOLEAN;
+        smallChange: INTEGER;
+        modified*, smallMove: BOOLEAN;
         edition*: tGuard;
         comments, numbers*, guard,
         search, cs, whole: BOOLEAN;
@@ -76,6 +77,7 @@ TYPE
         foundList: List.tList;
         foundSel: INTEGER;
         searchText: tString;
+        LinesVector: Lines.tVector;
         chLog*: ChangeLog.tLog;
         maxLength*: INTEGER;
         fileName*: RW.tFileName
@@ -155,12 +157,6 @@ BEGIN
 END toggleNumbers;
 
 
-PROCEDURE toggleCursor*;
-BEGIN
-    drawCursor := ~drawCursor
-END toggleCursor;
-
-
 PROCEDURE showCursor*;
 BEGIN
 	drawCursor := TRUE
@@ -223,25 +219,63 @@ BEGIN
 END ProcessComments;
 
 
+PROCEDURE getLine2 (text: tText; n: INTEGER): tLine;
+VAR
+	item: tLine;
+BEGIN
+	IF (0 <= n) & (n < text.count) THEN
+		item := Lines.getVectorItem(text.LinesVector, n)
+	ELSE
+		item := NIL
+	END
+	RETURN item
+END getLine2;
+
+
 PROCEDURE Comments (text: tText);
 VAR
-    line: tLine;
-    i: INTEGER;
+	line: tLine;
+	i, k, cout: INTEGER;
 BEGIN
-    line := text.first(tLine);
-    line.cin := 0;
-    line.cout := 0;
-    i := 0;
-    ProcessComments(line, line.cout, i, -1, line.length - 1, text.lang);
-    NextLine(line);
-    WHILE line # NIL DO
-        line.cin := line.prev(tLine).cout;
-        line.cout := line.cin;
-        i := 0;
-        ProcessComments(line, line.cout, i, -1, line.length - 1, text.lang);
-        NextLine(line)
-    END;
-    text.comments := FALSE
+	IF text.smallChange = 1 THEN
+		line := getLine2(text, text.cursor.Y);
+		IF line.prev # NIL THEN
+			line.cin := line.prev(tLine).cout
+		ELSE
+			line.cin := 0
+		END;
+		cout := line.cout;
+		line.cout := line.cin;
+		i := 0;
+		ProcessComments(line, line.cout, i, -1, line.length - 1, text.lang);
+		IF line.cout # cout THEN
+			text.smallChange := 0;
+			Comments(text)
+		END
+	ELSE
+		Lines.destroyVector(text.LinesVector);
+		text.LinesVector := Lines.createVector(text.count);
+		k := 0;
+		line := text.first(tLine);
+		Lines.setVectorItem(text.LinesVector, k, line);
+		INC(k);
+		line.cin := 0;
+		line.cout := 0;
+		i := 0;
+		ProcessComments(line, line.cout, i, -1, line.length - 1, text.lang);
+		NextLine(line);
+		WHILE line # NIL DO
+			Lines.setVectorItem(text.LinesVector, k, line);
+			INC(k);
+			line.cin := line.prev(tLine).cout;
+			line.cout := line.cin;
+			i := 0;
+			ProcessComments(line, line.cout, i, -1, line.length - 1, text.lang);
+			NextLine(line)
+		END
+	END;
+	text.smallChange := 0;
+	text.comments := FALSE
 END Comments;
 
 
@@ -931,10 +965,10 @@ END resetSelect;
 
 PROCEDURE getLine (text: tText; n: INTEGER): tLine;
 VAR
-    item: List.tItem;
+	item: List.tItem;
 BEGIN
-    item := List.getItem(text, n);
-    RETURN item(tLine)
+	item := List.getItem(text, n)
+	RETURN item(tLine)
 END getLine;
 
 
@@ -1110,6 +1144,7 @@ BEGIN
         resetSelect(text);
         curLine := text.curLine;
         IF text.cursor.X > 0 THEN
+        	INC(text.smallChange);
             i := text.cursor.X;
             n := leadingSpaces(curLine);
             modify(text);
@@ -1236,7 +1271,7 @@ VAR
 BEGIN
 	getSelect(text, selBeg, selEnd);
 	i := selEnd.Y - selBeg.Y + 1;
-	line := getLine(text, selBeg.Y);
+	line := getLine2(text, selBeg.Y);
 	modified := incr;
 	WHILE i > 0 DO
 		IF incr THEN
@@ -1247,11 +1282,12 @@ BEGIN
 		NextLine(line);
 		DEC(i)
 	END;
-	line := getLine(text, selEnd.Y);
+	line := getLine2(text, selEnd.Y);
 	text.select^ := selBeg;
 	text.select.X := 0;
 	SetPos(text, line.length, selEnd.Y);
 	IF modified THEN
+		INC(text.smallChange);
    		modify(text)
 	END
 END Indent;
@@ -1293,6 +1329,9 @@ VAR
 
 BEGIN
     IF (code >= ORD(SPACE)) & (code # 127) THEN
+    	IF ~selected(text) THEN
+    		INC(text.smallChange)
+    	END;
         delSelect(text);
         curLine := text.curLine;
         Lines.insert(curLine, text.cursor.X, WCHR(code));
@@ -1309,6 +1348,7 @@ BEGIN
     	IF selected(text) THEN
     		Indent(text, TRUE)
     	ELSE
+    		INC(text.smallChange);
 	        tab(text)
         END
     ELSIF code = 13 THEN
@@ -1461,8 +1501,8 @@ VAR
 BEGIN
 	IF selected(text) THEN
 		getSelect(text, selBeg, selEnd);
-		first := getLine(text, selBeg.Y);
-		last  := getLine(text, selEnd.Y);
+		first := getLine2(text, selBeg.Y);
+		last  := getLine2(text, selEnd.Y);
 		lines := selEnd.Y - selBeg.Y + 1;
 
 		IF lines > 1 THEN
@@ -1505,7 +1545,7 @@ VAR
 BEGIN
     getSelect(text, selBeg, selEnd);
 
-    first := getLine(text, selBeg.Y);
+    first := getLine2(text, selBeg.Y);
     line := first;
 
     n := selEnd.Y - selBeg.Y;
@@ -1697,6 +1737,7 @@ BEGIN
     END;
 
     IF Lines.chCase(line, i + 1, text.cursor.X - 1, upper) THEN
+    	INC(text.smallChange);
         modify(text)
     END
 END changeCase;
@@ -1712,7 +1753,7 @@ BEGIN
     modified := FALSE;
     IF selected(text) THEN
         getSelect(text, selBeg, selEnd);
-        first := getLine(text, selBeg.Y);
+        first := getLine2(text, selBeg.Y);
         line := first;
         cnt := selEnd.Y - selBeg.Y;
         IF cnt = 0 THEN
@@ -1737,6 +1778,7 @@ BEGIN
         END
     END;
     IF modified THEN
+    	INC(text.smallChange);
         modify(text)
     END
 END chCase;
@@ -1757,6 +1799,7 @@ END UpDown;
 
 PROCEDURE delLine* (text: tText);
 BEGIN
+	text.smallChange := 2;
     resetSelect(text);
     IF text.curLine.length > 0 THEN
         Lines.delCharN(text.curLine, 0, text.curLine.length)
@@ -1905,6 +1948,9 @@ BEGIN
             str := ""
         END
     END;
+    IF text.searchText # str THEN
+    	text.smallMove := FALSE
+    END;
     IF search(text, str, Lang.isCS(text.lang), TRUE) THEN END
 END wordSel;
 
@@ -1934,12 +1980,16 @@ END getWordPos;
 PROCEDURE key* (text: tText; code: INTEGER; shift, ctrl: BOOLEAN);
 VAR
 	n, wPos: INTEGER;
+	scrX, scrY: INTEGER;
+	resSel: BOOLEAN;
 BEGIN
+	resSel := FALSE;
     IF shift THEN
         setSelect(text)
     ELSE
         IF (33 <= code) & (code <= 40) THEN
         	IF ~(((code = 38) OR (code = 40)) & ctrl) THEN
+        		resSel := selected(text);
 	            resetSelect(text)
             END
         END
@@ -1980,6 +2030,8 @@ BEGIN
         IF (text.cursor.X = 0) & (text.curLine.prev # NIL) THEN
             SetPos(text, text.curLine.prev(tLine).length, text.cursor.Y - 1)
         ELSE
+        	scrX := text.scroll.X;
+        	scrY := text.scroll.Y;
         	IF ctrl THEN
         		wPos := 0;
         		REPEAT
@@ -1989,7 +2041,8 @@ BEGIN
 				move(text, n - text.cursor.X)
         	ELSE
             	move(text, -1)
-            END
+            END;
+            text.smallMove := (scrX = text.scroll.X) & (scrY = text.scroll.Y) & ~resSel
         END
     |38:
         IF ctrl THEN
@@ -2001,11 +2054,14 @@ BEGIN
         IF (text.cursor.X = text.curLine.length) & (text.curLine.next # NIL) THEN
             SetPos(text, 0, text.cursor.Y + 1)
         ELSE
+        	scrX := text.scroll.X;
+        	scrY := text.scroll.Y;
         	IF ctrl THEN
 				move(text, getWordPos(text.curLine, text.cursor.X) - text.cursor.X)
         	ELSE
             	move(text, 1)
-        	END
+        	END;
+        	text.smallMove := (scrX = text.scroll.X) & (scrY = text.scroll.Y) & ~resSel
         END
     |40:
         IF ctrl THEN
@@ -2017,6 +2073,9 @@ BEGIN
         IF ctrl THEN
             delLine(text)
         ELSE
+        	IF ~selected(text) & (text.cursor.X < text.curLine.length) THEN
+        		INC(text.smallChange)
+        	END;
             delete(text);
             ShowCursor
         END
@@ -2103,21 +2162,23 @@ BEGIN
 END selectWord;
 
 
-PROCEDURE cursor (text: tText);
+PROCEDURE cursor* (text: tText);
 VAR
     x, y1, y2, scrollX, scrollY: INTEGER;
     cursor: pPoint;
 BEGIN
-    cursor := text.cursor;
-    scrollX := text.scroll.X;
-    scrollY := text.scroll.Y;
-    IF ~((scrollY > cursor.Y) OR (scrollY + textsize.Y <= cursor.Y) OR
-       (scrollX > cursor.X) OR (scrollX + textsize.X <= cursor.X)) THEN
-        x := (cursor.X - scrollX)*charWidth + padding.left;
-        y1 := (cursor.Y - scrollY)*charHeight + padding.top + (inter DIV 2 + 1);
-        y2 := y1 + charHeight - (inter + 2);
-        G.notVLine(canvas, x, y1, y2);
-        G.notVLine(canvas, x - 1, y1, y2)
+	IF drawCursor THEN
+	    cursor := text.cursor;
+	    scrollX := text.scroll.X;
+	    scrollY := text.scroll.Y;
+	    IF ~((scrollY > cursor.Y) OR (scrollY + textsize.Y <= cursor.Y) OR
+	       (scrollX > cursor.X) OR (scrollX + textsize.X <= cursor.X)) THEN
+	        x := (cursor.X - scrollX)*charWidth + padding.left;
+	        y1 := (cursor.Y - scrollY)*charHeight + padding.top + (inter DIV 2 + 1);
+	        y2 := y1 + charHeight - (inter + 2);
+	        G.notVLine(canvas, x, y1, y2);
+	        G.notVLine(canvas, x - 1, y1, y2)
+	    END
     END
 END cursor;
 
@@ -2168,7 +2229,7 @@ END setPadding;
 
 PROCEDURE draw* (text: tText);
 VAR
-    y, n, Len, cnt, i, x: INTEGER;
+    y, n, cnt, i, x: INTEGER;
     line, firstLine, lastLine: tLine;
     selBeg, selEnd: tPoint;
     s: ARRAY 12 OF WCHAR;
@@ -2176,10 +2237,10 @@ VAR
     p: Search.tPos;
     guard: tGuard;
 BEGIN
-    IF text.search & search(text, text.searchText, text.cs, text.whole) THEN END;
-    IF (text.lang # Lang.langText) & text.comments THEN
+    IF text.comments THEN
         Comments(text)
     END;
+    IF text.search & search(text, text.searchText, text.cs, text.whole) THEN END;
     IF text.guard THEN
         NEW(guard);
         List.append(ChangeLog.CL.Log, guard);
@@ -2197,7 +2258,9 @@ BEGIN
     guard.selected := text.select = text.select2;
 
     G.SetColor(canvas, colors.back);
-    G.clear(canvas);
+    IF ~text.smallMove THEN
+    	G.clear(canvas)
+    END;
     wNum := charWidth;
     IF text.numbers THEN
         numWidth := U.lg10(text.count) + 2;
@@ -2209,9 +2272,19 @@ BEGIN
     getSelect(text, selBeg, selEnd);
     y := padding.top + inter DIV 2;
     n := text.scroll.Y;
-    line := getLine(text, n);
-    firstLine := line;
-    cnt := 0;
+    firstLine := getLine2(text, n);
+    IF text.smallMove THEN
+    	line := text.curLine;
+    	cnt := textsize.Y - 1;
+    	y := y + charHeight*(text.cursor.Y - text.scroll.Y);
+    	G.SetColor(canvas, colors.back);
+    	G.FillRect(canvas, padding.left - 2, y - inter DIV 2, size.X - 1, y - inter DIV 2 + charHeight);
+    	n := text.cursor.Y
+    ELSE
+	    line := firstLine;
+    	cnt := 0
+    END;
+
     WHILE (line # NIL) & (cnt < textsize.Y) DO
         backColor := colors.back;
         IF (line = text.curLine) & ~selected(text) THEN
@@ -2220,26 +2293,28 @@ BEGIN
             backColor := colors.curline
         END;
         SetColor(colors.text, backColor);
-        Len := MAX(line.length - text.scroll.X, 0);
-        G.TextOut(canvas, padding.left, y, Lines.getPChar(line, text.scroll.X), MIN(Len, textsize.X + 1), colors.delim);
-        IF text.lang # Lang.langText THEN
-            parse(text, line, y, backColor, text.lang)
-        END;
-        mark(line, y - inter DIV 2);
-        IF (selBeg.Y < n) & (n < selEnd.Y) THEN
-            drawSelect(text, line, 0, line.length, y)
-        ELSIF (selBeg.Y = n) & (selEnd.Y = n) & (selBeg.X # selEnd.X) THEN
+		IF (selBeg.Y < n) & (n < selEnd.Y) THEN
+			drawSelect(text, line, 0, line.length, y)
+		ELSE
+			G.TextOut(canvas, padding.left, y, Lines.getPChar(line, text.scroll.X), MIN(MAX(line.length - text.scroll.X, 0), textsize.X + 1), colors.delim);
+			IF text.lang # Lang.langText THEN
+				parse(text, line, y, backColor, text.lang)
+			END
+		END;
+		IF (selBeg.Y = n) & (selEnd.Y = n) & (selBeg.X # selEnd.X) THEN
             drawSelect(text, line, selBeg.X, selEnd.X, y)
         ELSIF (selBeg.Y = n) & (selEnd.Y # n) THEN
             drawSelect(text, line, selBeg.X, line.length, y)
         ELSIF (selBeg.Y # n) & (selEnd.Y = n) THEN
             drawSelect(text, line, 0, selEnd.X, y)
         END;
+        mark(line, y - inter DIV 2);
         NextLine(line);
         INC(y, charHeight);
         INC(n);
         INC(cnt)
     END;
+
     G.SetColor(canvas, colors.numback);
     G.FillRect(canvas, 0, 0, padding.left - pad_left (*+ 1*), size.Y - 1);
     line := firstLine;
@@ -2267,17 +2342,18 @@ BEGIN
     END;
 
     IF text.searchText # "" THEN
-        cnt := 0;
-        line := firstLine;
-        lastLine := line;
-        WHILE (line # NIL) & (cnt < textsize.Y) DO
-            lastLine := line;
-            NextLine(line);
-            INC(cnt)
+    	IF text.smallMove THEN
+    		firstLine := text.curLine;
+    		lastLine := firstLine
+    	ELSE
+    	    lastLine := getLine2(text, text.scroll.Y + textsize.Y - 1)
         END;
         p := text.foundList.first(Search.tPos);
         WHILE p # NIL DO
-            y := padding.top + inter DIV 2;
+        	y := padding.top + inter DIV 2;
+        	IF text.smallMove THEN
+        		y := y + charHeight*(text.cursor.Y - text.scroll.Y)
+            END;
             IF (firstLine.pos <= p.pos) & (p.pos <= lastLine.pos + lastLine.length) THEN
                 line := firstLine;
                 WHILE (line.pos <= p.pos) & (line # lastLine) DO
@@ -2296,11 +2372,13 @@ BEGIN
                     END;
                     INC(x);
                     DEC(n)
-                END;
+                END
             END;
             p := p.next(Search.tPos)
         END
     END;
+
+    text.smallMove := FALSE;
 
     IF text.foundSel > 0 THEN
         x := (text.cursor.X - text.scroll.X)*charWidth + padding.left;
@@ -2314,10 +2392,7 @@ BEGIN
             DEC(n)
         END
     END;
-
-    IF drawCursor THEN
-        cursor(text)
-    END
+	cursor(text)
 END draw;
 
 
@@ -2346,6 +2421,7 @@ BEGIN
     setPadding(padding.left, padding.top);
     text.curLine := NIL;
     text.modified := FALSE;
+    text.smallMove := FALSE;
     text.comments := TRUE;
     text.search := TRUE;
     text.cs := FALSE;
@@ -2357,7 +2433,9 @@ BEGIN
     text.searchText := "";
     text.foundSel := 0;
     text.CurX := -1;
+    text.smallChange := 0;
     text.lang := Lang.langText;
+    text.LinesVector := NIL;
     Lang.setCurLang(Lang.langText);
     setName(text, fileName);
     ASSERT(text = List.create(text))
@@ -2408,6 +2486,7 @@ PROCEDURE destroy* (VAR text: tText);
 BEGIN
     IF search(text, "", FALSE, FALSE) THEN END;
     ChangeLog.destroy(text.chLog);
+    Lines.destroyVector(text.LinesVector);
     DISPOSE(text.foundList);
     DISPOSE(text.cursor);
     DISPOSE(text.select2);
@@ -2450,12 +2529,10 @@ BEGIN
         RW.destroy(file);
         text.curLine := text.first(tLine);
         SetPos(text, 0, 0);
-        resetSelect(text)
+        resetSelect(text);
+        Comments(text)
     ELSE
         errno := 1
-    END;
-    IF (text # NIL) & (text.lang # Lang.langText) THEN
-        Comments(text)
     END
     RETURN text
 END open;

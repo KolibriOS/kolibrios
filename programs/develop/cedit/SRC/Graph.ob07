@@ -19,7 +19,7 @@
 
 MODULE Graph;
 
-IMPORT SYSTEM, KOSAPI, Lines, Languages;
+IMPORT SYSTEM, KOSAPI, Lines, Languages, E := Encodings;
 
 CONST
 
@@ -39,6 +39,7 @@ TYPE
         height*: INTEGER;
         width*:  INTEGER;
         size:    INTEGER;
+        flags:   INTEGER;
         name*:   ARRAY 256 OF WCHAR
     END;
 
@@ -49,6 +50,10 @@ TYPE
         font*: tFont;
         mode: INTEGER
     END;
+
+VAR
+
+	font0*, font1*, font2*: tFont;
 
 
 PROCEDURE getRGB* (color: INTEGER; VAR r, g, b: BYTE);
@@ -83,15 +88,26 @@ BEGIN
 END SetBkColor;
 
 
-PROCEDURE CreateFont* (height: INTEGER; name: ARRAY OF WCHAR; attr: SET): tFont;
+PROCEDURE CreateFont (size: INTEGER; name: ARRAY OF WCHAR; attr: SET): tFont;
 VAR
     font: tFont;
 BEGIN
+	ASSERT(size IN {0, 1, 2});
     NEW(font);
-    font.size := MAX(MIN(height, 8), 1);
-    font.width := font.size*8;
-    font.height := font.size*16;
-    DEC(font.size);
+    font.size := size;
+    IF size = 0 THEN
+	    font.width := 6;
+	    font.height := 9;
+	    font.flags := 08000000H
+    ELSE
+	    font.width := size*8;
+	    font.height := size*16;
+	    IF size = 1 THEN
+	    	font.flags := 28000000H
+	    ELSIF size = 2 THEN
+	    	font.flags := 29000000H
+	    END
+    END;
     font.name := name
     RETURN font
 END CreateFont;
@@ -256,24 +272,25 @@ PROCEDURE TextOut* (canvas: tCanvas; x, y: INTEGER; text: INTEGER; n: INTEGER; d
 CONST
     WCHAR_SIZE = 2;
 VAR
-    color, i, font: INTEGER;
+    color, i, ch: INTEGER;
+    font: tFont;
     c: WCHAR;
 BEGIN
-    IF (0 <= y) & (y <= canvas.height - canvas.font.height - 1) THEN
+	font := canvas.font;
+    IF (0 <= y) & (y <= canvas.height - font.height - 1) THEN
         IF x < 0 THEN
-            i := -(x DIV canvas.font.width);
-            INC(x, i*canvas.font.width);
+            i := -(x DIV font.width);
+            INC(x, i*font.width);
             DEC(n, i)
         ELSE
             i := 0
         END;
         IF n > 0 THEN
-            n := MAX(MIN(n, (canvas.width - x) DIV canvas.font.width), 0);
+            n := MAX(MIN(n, (canvas.width - x) DIV font.width), 0);
             color := canvas.color;
             canvas.color := canvas.backColor;
-            FillRect(canvas, x, y, x + n*canvas.font.width, y + canvas.font.height);
+            FillRect(canvas, x, y, x + n*font.width, y + font.height);
             canvas.color := color;
-            font := LSL(28H + canvas.font.size, 24);
             WHILE n > 0 DO
                 SYSTEM.GET(text + i*WCHAR_SIZE, c);
                 IF ~Lines.isSpace(c) THEN
@@ -285,9 +302,17 @@ BEGIN
 					IF c = Lines.NUL THEN
                 		c := 0X
 					END;
-                    KOSAPI.sysfunc6(4, x*65536 + y, font + color, SYSTEM.ADR(c), 1, canvas.bitmap - 8)
+					IF font = font0 THEN
+						ch := E.UNI[ORD(c), E.CP866];
+						IF ch = E.UNDEF THEN
+							c := "?"
+						ELSE
+							c := WCHR(ch)
+						END
+					END;
+                    KOSAPI.sysfunc6(4, x*65536 + y, font.flags + color, SYSTEM.ADR(c), 1, canvas.bitmap - 8)
                 END;
-                INC(x, canvas.font.width);
+                INC(x, font.width);
                 INC(i);
                 DEC(n)
             END
@@ -322,10 +347,14 @@ END CreateCanvas;
 PROCEDURE destroy* (VAR canvas: tCanvas);
 BEGIN
     IF canvas # NIL THEN
-        canvas.bitmap := KOSAPI.free(canvas.bitmap);
+        canvas.bitmap := KOSAPI.free(canvas.bitmap - 8);
         DISPOSE(canvas)
     END
 END destroy;
 
 
+BEGIN
+    font0 := CreateFont(0, "", {});
+    font1 := CreateFont(1, "", {});
+    font2 := CreateFont(2, "", {});
 END Graph.

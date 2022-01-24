@@ -46,7 +46,7 @@ TYPE
 
     tLog* = POINTER TO RECORD
         Log*, Pointers*: List.tList;
-        guard: tGuard;
+        guard, first: tGuard;
         isLast: BOOLEAN
     END;
 
@@ -73,16 +73,25 @@ BEGIN
 END isLastGuard;
 
 
-PROCEDURE isFirstGuard* (guard: tGuard): BOOLEAN;
+PROCEDURE getFirstGuard (): tGuard;
 VAR
-    item: List.tItem;
+	item: List.tItem;
 BEGIN
-    ASSERT(guard # NIL);
-    item := CL.Log.first;
-    WHILE ~(item IS tGuard) DO
-        item := item.next
-    END
-    RETURN guard = item
+	item := CL.Log.first;
+	WHILE ~(item IS tGuard) DO
+		item := item.next
+	END
+	RETURN item(tGuard)
+END getFirstGuard;
+
+
+PROCEDURE isFirstGuard* (guard: tGuard): BOOLEAN;
+BEGIN
+	ASSERT(guard # NIL);
+	IF CL.first = NIL THEN
+		CL.first := getFirstGuard()
+	END
+	RETURN guard = CL.first
 END isFirstGuard;
 
 
@@ -285,6 +294,7 @@ VAR
 BEGIN
     NEW(newLog);
     newLog.guard := NIL;
+    newLog.first := NIL;
     newLog.isLast := TRUE;
     newLog.Log := List.create(NIL);
     newLog.Pointers := List.create(NIL);

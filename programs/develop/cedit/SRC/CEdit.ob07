@@ -28,14 +28,13 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (20-jan-2022)";
+    HEADER = "CEdit (25-jan-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
 
     fontWidth = K.fontWidth;
     fontHeight = K.fontHeight;
-    scrollWidth = 22;
 
     btnClose = 1;
 
@@ -67,8 +66,6 @@ CONST
     toolbarTop = Menu.MainMenuHeight + 3;
 
     TOP = toolbarTop + Toolbar.BtnSize + 10 + Tabs.tabHeight;
-    RIGHT = scrollWidth - 2;
-    BOTTOM = scrollWidth + 18;
 
     minWinWidth = 635; minWinHeight = 550;
 
@@ -111,7 +108,9 @@ CONST
     menuExit = 17;
 
     menuNumbers = 20;
-    menuFontSize = 21;
+    menuFontSmall = 21;
+    menuFontMedium = 22;
+    menuFontBig = 23;
     menuColors = 1000;
     menuMaxColors = menuColors + Ini.MAX_SECTIONS - 1;
 
@@ -176,7 +175,7 @@ CONST
 VAR
 	header: RW.tFileName;
     canvas: G.tCanvas;
-    font, font1, font2: G.tFont;
+    font: G.tFont;
 
     tabs: Tabs.tTabs;
     text: T.tText;
@@ -184,14 +183,14 @@ VAR
     textsCount, curText: INTEGER;
 
     winWidth, winHeight: INTEGER;
-    SkinHeight: INTEGER;
+    SkinHeight, scrollWidth: INTEGER;
     AppPath, runScript, buildScript, debugScript, CurFolder: RW.tFileName;
     OD: OpenDlg.Dialog;
     confirm, notFound, menuFindClicked, search, searchOpened: BOOLEAN;
 
     switch, closing: BOOLEAN;
     leftButton: BOOLEAN;
-    LEFT: INTEGER;
+    LEFT, RIGHT, BOTTOM: INTEGER;
 
     FindEdit, ReplaceEdit, GotoEdit: EB.tEditBox;
     hScroll, vScroll: Scroll.tScroll;
@@ -370,6 +369,14 @@ BEGIN
 END DrawScroll;
 
 
+PROCEDURE drawText;
+BEGIN
+	G.SetColor(canvas, K.colors.line);
+	G.VLine(canvas, 0, 0, canvas.height - 1);
+	G.DrawCanvas(canvas, LEFT, TOP)
+END drawText;
+
+
 PROCEDURE repaint;
 VAR
     width, height, scrollX, scrollY: INTEGER;
@@ -403,10 +410,7 @@ BEGIN
 	        CheckBox.draw(CS);
 	        CheckBox.draw(WH);
         END;
-
-		G.SetColor(canvas, K.colors.line);
-		G.VLine(canvas, 0, 0, canvas.height - 1);
-        G.DrawCanvas(canvas, LEFT, TOP);
+        drawText;
         NotFound;
         Replaced;
         Toolbar.enable(toolbar, btnSave,  text.modified);
@@ -435,6 +439,12 @@ BEGIN
     K.SetWinSize(winWidth, winHeight);
     K.WinSize(winWidth, winHeight);
     K.ClientSize(cliWidth, cliHeight);
+    IF font # G.font2 THEN
+    	SB.SetFont(font)
+    ELSE
+    	SB.SetFont(G.font1)
+    END;
+    BOTTOM := SB.height() + scrollWidth - 1;
     G.destroy(canvas);
     canvas := G.CreateCanvas(cliWidth - (LEFT + RIGHT + 2 + RIGHT_PADDING), cliHeight - (TOP + BOTTOM + 1));
     Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, cliWidth - (LEFT + RIGHT + 2 + RIGHT_PADDING), Tabs.tabHeight);
@@ -1040,8 +1050,10 @@ BEGIN
         Menu.option(menu, menuWin1251, T.getEnc(text) = E.W1251);
         INC(x, menuEncodingX)
     ELSIF menu = menuView THEN
-        Menu.check(menu, menuNumbers,  text.numbers);
-        Menu.check(menu, menuFontSize, font = font2);
+        Menu.check(menu, menuNumbers,    text.numbers);
+        Menu.option(menu, menuFontSmall,  font = G.font0);
+        Menu.option(menu, menuFontMedium, font = G.font1);
+        Menu.option(menu, menuFontBig,    font = G.font2);
         FOR i := 0 TO Ini.sections.count - 1 DO
             Menu.option(menu, menuColors + i, Ini.curSectionNum = i)
         END;
@@ -1165,13 +1177,15 @@ BEGIN
     	T.gotoLabel(text, FALSE)
     |menuNumbers:
         T.toggleNumbers(text)
-    |menuFontSize:
-        IF font = font1 THEN
-            font := font2
-        ELSE
-            font := font1
-        END;
-        resize
+    |menuFontSmall:
+    	font := G.font0;
+    	resize
+    |menuFontMedium:
+    	font := G.font1;
+    	resize
+    |menuFontBig:
+    	font := G.font2;
+    	resize
     |menuText:
         T.setLang(text, Languages.langText)
     |menuC:
@@ -1359,7 +1373,10 @@ VAR
 BEGIN
     menu := List.create(NIL);
     Menu.AddMenuItem(menu, menuNumbers,  "line numbers");
-    Menu.AddMenuItem(menu, menuFontSize, "x2");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuFontSmall,  "small");
+    Menu.AddMenuItem(menu, menuFontMedium, "medium");
+    Menu.AddMenuItem(menu, menuFontBig,    "big");
     Menu.delimiter(menu);
 
     colors := Ini.sections.first(Ini.tSection);
@@ -1763,10 +1780,12 @@ BEGIN
         goto
     END;
 
-	IF exit THEN
-		Close
-	ELSE
-		repaint
+    IF ~middle THEN
+		IF exit THEN
+			Close
+		ELSE
+			repaint
+		END
 	END
 END BtnClick;
 
@@ -1921,6 +1940,7 @@ VAR
     firstClickX, firstClickY, time, blink, i: INTEGER;
     key, scr: INTEGER;
 BEGIN
+	font := G.font1;
 	header := "";
     K.GetSystemColors;
     switch := FALSE;
@@ -1932,20 +1952,21 @@ BEGIN
     leftButton := FALSE;
     resized := FALSE;
     K.ScreenSize(winWidth, winHeight);
+    scrollWidth := winHeight DIV 35;
     winWidth := (winWidth*80) DIV 100 - (128 + 30);
     winHeight := winHeight - (128 + 30);
     winWidth := MAX(winWidth, minWinWidth);
     winHeight := MAX(winHeight, minWinHeight);
     cliWidth := winWidth;
     cliHeight := winHeight;
+
     LEFT := LEFT_PADDING;
+    RIGHT := scrollWidth - 2;
+    BOTTOM := SB.height() + scrollWidth - 1;
     SkinHeight := K.SkinHeight();
     canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 11 + RIGHT_PADDING), winHeight - (TOP + BOTTOM + 5) - SkinHeight);
     tabs := Tabs.create();
     Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, canvas.width, Tabs.tabHeight);
-    font1 := G.CreateFont(1, "", {});
-    font2 := G.CreateFont(2, "", {});
-    font := font1;
     G.SetFont(canvas, font);
     T.init(resetTimer);
     T.setCanvas(canvas);
@@ -2050,8 +2071,8 @@ BEGIN
     	CurrentTime := K.GetTickCount();
     	IF (CurrentTime - CursorTime > blink) & (blink > 0) & timerEnabled & ~K.RolledUp() THEN
     		CursorTime := CurrentTime;
-    		T.toggleCursor;
-    		repaint
+    		T.cursor(text);
+    		drawText
     	END;
 
         CASE K.EventTimeout(10) OF

@@ -641,7 +641,7 @@ BEGIN
     END;
     m.width  := maxLength*fontWidth + LEFT + RIGHT;
     m.height := items.count*fontHeight - 2;
-    m.font := G.CreateFont(1, "", {});
+    m.font := G.font1;
     m.canvas := G.CreateCanvas(m.width + 1, m.height + 1);
     G.SetFont(m.canvas, m.font);
     RETURN m

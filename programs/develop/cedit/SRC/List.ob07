@@ -22,7 +22,7 @@ MODULE List;
 TYPE
 
     tItem* = POINTER TO RECORD
-        prev*, next*: tItem
+        next*, prev*: tItem
     END;
 
     tList* = POINTER TO RECORD
@@ -54,18 +54,27 @@ END create;
 
 PROCEDURE getItem* (list: tList; idx: INTEGER): tItem;
 VAR
-    item: tItem;
+	item: tItem;
 BEGIN
-    IF idx < 0 THEN
-        item := NIL
-    ELSE
-        item := list.first;
-        WHILE (idx > 0) & (item # NIL) DO
-            item := item.next;
-            DEC(idx)
-        END
-    END
-    RETURN item
+	IF (idx < 0) OR (idx >= list.count) THEN
+		item := NIL
+	ELSE
+		IF list.count DIV 2 < idx THEN
+			item := list.last;
+			idx := list.count - idx - 1;
+			WHILE idx > 0 DO
+				item := item.prev;
+				DEC(idx)
+			END
+		ELSE
+			item := list.first;
+			WHILE idx > 0 DO
+				item := item.next;
+				DEC(idx)
+			END
+		END
+	END
+	RETURN item
 END getItem;
 
 
