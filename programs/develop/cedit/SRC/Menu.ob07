@@ -23,7 +23,7 @@ IMPORT
     SYSTEM, G := Graph, List, K := KolibriOS;
 
 CONST
-    fontHeight = 22;
+    itemHeight = 22;
     fontWidth = 8;
 
     MainMenuHeight* = K.fontHeight + 7;
@@ -61,7 +61,7 @@ TYPE
         active*, keyboard: BOOLEAN;
         parent*, child: tMenu;
         mainID: INTEGER;
-        winX, winY, width*, height*: INTEGER;
+        x*, winX, winY, width*, height*: INTEGER;
         selItem, cliItem: INTEGER;
 
         font: G.tFont;
@@ -118,7 +118,8 @@ BEGIN
 		item.x := prev.x + LENGTH(prev.text)*fontWidth + 9
 	ELSE
 		item.x := MainMenuX
-	END
+	END;
+	menu.x := item.x
 END AddMainItem;
 
 
@@ -265,9 +266,9 @@ BEGIN
                 TextColor := disSelForeColor
             END
         END;
-        Y := y + (fontHeight - 16) DIV 2;
+        Y := y + (itemHeight - 16) DIV 2;
         G.SetColor(canvas, BkColor);
-        G.FillRect(canvas, 1, y, m.width - 1, y + fontHeight - 4);
+        G.FillRect(canvas, 1, y, m.width - 1, y + itemHeight - 4);
         G.SetTextColor(canvas, TextColor);
         G.SetBkColor(canvas, BkColor);
         G.TextOut2(canvas, LEFT, Y - 2, item.text, LENGTH(item.text));
@@ -279,7 +280,7 @@ BEGIN
             G.DLine(canvas, 7, 12, Y + 8,  1);
             G.DLine(canvas, 7, 12, Y + 9,  1)
         ELSIF item.check = 2 THEN
-            Y1 := y + fontHeight DIV 2 - 2;
+            Y1 := y + itemHeight DIV 2 - 2;
             G.FillRect(canvas, 7, Y1 - 2,  9, Y1 + 2);
             G.FillRect(canvas, 6, Y1 - 1, 10, Y1 + 1)
         END;
@@ -289,7 +290,7 @@ BEGIN
         	G.Triangle(canvas, X, Y + 2, X, Y + 10, G.triRight)
         END;
 
-        INC(y, fontHeight);
+        INC(y, itemHeight);
         IF item.delim THEN
             G.SetColor(canvas, foreColor);
             G.HLine(canvas, y - 2, 1, m.width - 1)
@@ -392,7 +393,7 @@ BEGIN
     	IF ~opened(item(tItem).child) THEN
     		closeChild(m);
     		item(tItem).child.keyboard := keyboard;
-    		_open(item(tItem).child, m.winX + m.width - 2, m.winY + m.selItem*fontHeight);
+    		_open(item(tItem).child, m.winX + m.width - 2, m.winY + m.selItem*itemHeight);
     		m.child := item(tItem).child;
     	END
     ELSE
@@ -486,9 +487,9 @@ BEGIN
         	K.mouse(msState, x, y);
             IF (0 <= x) & (x < m.width) & (0 <= y) & (y < m.height) THEN
             	m.active := TRUE;
-                m.selItem := (y - TOP) DIV fontHeight;
+                m.selItem := (y - TOP) DIV itemHeight;
                 IF 8 IN msState THEN
-                    m.cliItem := (y - TOP) DIV fontHeight
+                    m.cliItem := (y - TOP) DIV itemHeight
                 END;
                 IF 16 IN msState THEN
                     IF m.cliItem = m.selItem THEN
@@ -640,10 +641,10 @@ BEGIN
         item := item.next(tItem)
     END;
     m.width  := maxLength*fontWidth + LEFT + RIGHT;
-    m.height := items.count*fontHeight - 2;
-    m.font := G.font1;
+    m.height := items.count*itemHeight - 2;
+    m.font := G.fonts[1];
     m.canvas := G.CreateCanvas(m.width + 1, m.height + 1);
-    G.SetFont(m.canvas, m.font);
+    G.SetFont(m.canvas, m.font)
     RETURN m
 END create;
 

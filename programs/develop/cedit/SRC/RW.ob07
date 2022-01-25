@@ -291,10 +291,10 @@ BEGIN
 	cnt := text.cnt;
 	WHILE (text.cnt > 0) & (res = -1) DO
 		c := text.getChar(text);
-		IF CHR(c) = LF THEN
+		IF c = ORD(LF) THEN
 			res := E.EOL_LF
-		ELSIF CHR(c) = CR THEN
-			IF CHR(text.getChar(text)) = LF THEN
+		ELSIF c = ORD(CR) THEN
+			IF text.getChar(text) = ORD(LF) THEN
 				res := E.EOL_CRLF
 			ELSE
 				res := E.EOL_CR

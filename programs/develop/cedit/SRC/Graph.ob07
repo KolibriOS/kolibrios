@@ -53,7 +53,7 @@ TYPE
 
 VAR
 
-	font0*, font1*, font2*: tFont;
+	fonts*: ARRAY 3 OF tFont;
 
 
 PROCEDURE getRGB* (color: INTEGER; VAR r, g, b: BYTE);
@@ -302,7 +302,7 @@ BEGIN
 					IF c = Lines.NUL THEN
                 		c := 0X
 					END;
-					IF font = font0 THEN
+					IF font = fonts[0] THEN
 						ch := E.UNI[ORD(c), E.CP866];
 						IF ch = E.UNDEF THEN
 							c := "?"
@@ -354,7 +354,7 @@ END destroy;
 
 
 BEGIN
-    font0 := CreateFont(0, "", {});
-    font1 := CreateFont(1, "", {});
-    font2 := CreateFont(2, "", {});
+    fonts[0] := CreateFont(0, "", {});
+    fonts[1] := CreateFont(1, "", {});
+    fonts[2] := CreateFont(2, "", {});
 END Graph.

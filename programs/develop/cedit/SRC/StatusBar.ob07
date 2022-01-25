@@ -122,5 +122,5 @@ END SetFont;
 
 BEGIN
 	SB.canvas := NIL;
-	font := G.font1
+	font := G.fonts[1]
 END StatusBar.

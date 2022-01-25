@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (25-jan-2022)";
+    HEADER = "CEdit (26-jan-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -76,15 +76,6 @@ CONST
     EditBox_Width = 180;
     EDITBOX_MAXCHARS = 500;
 
-    menuFileX = Menu.MainMenuX;
-    menuEditX = menuFileX + 4*fontWidth + 9;
-    menuSearchX = menuEditX + 4*fontWidth + 9;
-    menuEncodingX = menuSearchX + 6*fontWidth + 9;
-    menuViewX = menuEncodingX + 8*fontWidth + 9;
-    menuLanguageX = menuViewX + 4*fontWidth + 9;
-    menuProgramX = menuLanguageX + 8*fontWidth + 9;
-    menuToolsX = menuProgramX + 7*fontWidth + 9;
-
     menuCut = 1;
     menuCopy = 2;
     menuPaste = 3;
@@ -107,10 +98,9 @@ CONST
     menuClose = 16;
     menuExit = 17;
 
-    menuNumbers = 20;
-    menuFontSmall = 21;
-    menuFontMedium = 22;
-    menuFontBig = 23;
+    menuFontSmall = 20;
+    menuFontMedium = menuFontSmall + 1;
+    menuFontLarge = menuFontMedium + 1;
     menuColors = 1000;
     menuMaxColors = menuColors + Ini.MAX_SECTIONS - 1;
 
@@ -146,6 +136,11 @@ CONST
     menuFindPrev = 82;
     menuGoto = 83;
     menuBookmark = 130;
+
+    menuLineNumbers  = 90;
+    menuAutoIndents  = 91;
+    menuAutoBrackets = 92;
+    menuTrimSpace    = 93;
 
     menuMoveUp = 101;
     menuMoveDown = 102;
@@ -202,7 +197,7 @@ VAR
     replaced: INTEGER;
 
     context, menuFile, menuEdit, menuSearch, menuEncoding,
-    menuView, menuLanguage, menuProgram, menuTools,
+    menuView, menuLanguage, menuProgram, menuTools, menuOptions,
     subCurLine, subIndent, subCase, subBookmark, subEOL: Menu.tMenu;
 
     mainMenu: Menu.tMain;
@@ -439,10 +434,10 @@ BEGIN
     K.SetWinSize(winWidth, winHeight);
     K.WinSize(winWidth, winHeight);
     K.ClientSize(cliWidth, cliHeight);
-    IF font # G.font2 THEN
+    IF font # G.fonts[2] THEN
     	SB.SetFont(font)
     ELSE
-    	SB.SetFont(G.font1)
+    	SB.SetFont(G.fonts[1])
     END;
     BOTTOM := SB.height() + scrollWidth - 1;
     G.destroy(canvas);
@@ -929,6 +924,7 @@ BEGIN
     Menu.close(menuLanguage);
     Menu.close(menuProgram);
     Menu.close(menuTools);
+    Menu.close(menuOptions);
     Menu.close(context)
 END CloseMenu;
 
@@ -1023,8 +1019,7 @@ BEGIN
         WHILE (i < textsCount) & ~texts[i].modified DO
             INC(i)
         END;
-        Menu.setEnabled(menu, menuSaveAll, i < textsCount);
-        INC(x, menuFileX)
+        Menu.setEnabled(menu, menuSaveAll, i < textsCount)
     ELSIF (menu = menuEdit) OR (menu = context) THEN
         Menu.setEnabled(menu, menuUndo, ~ChangeLog.isFirstGuard(text.edition));
         Menu.setEnabled(menu, menuRedo, ~ChangeLog.isLastGuard(text.edition));
@@ -1032,32 +1027,29 @@ BEGIN
         Menu.setEnabled(menu, menuCopy, selected);
         Menu.setEnabled(menu, menuDelete, selected);
         Menu.setEnabled(menu, menuPaste, CB.available());
-        IF menu = menuEdit THEN
-            INC(x, menuEditX)
-        ELSE
+        IF menu = context THEN
             IF y + menu.height >= canvas.height THEN
                 DEC(y, menu.height)
             END;
             IF x + menu.width >= canvas.width THEN
                 DEC(x, menu.width)
             END;
-            CanvasToScreen(x, y)
+            CanvasToScreen(x, y);
+            menu.x := x;
+            x := 0
         END
     ELSIF menu = menuEncoding THEN
         Menu.option(menu, menuUTF8BOM, T.getEnc(text) = E.UTF8BOM);
         Menu.option(menu, menuUTF8,    T.getEnc(text) = E.UTF8);
         Menu.option(menu, menuCP866,   T.getEnc(text) = E.CP866);
-        Menu.option(menu, menuWin1251, T.getEnc(text) = E.W1251);
-        INC(x, menuEncodingX)
+        Menu.option(menu, menuWin1251, T.getEnc(text) = E.W1251)
     ELSIF menu = menuView THEN
-        Menu.check(menu, menuNumbers,    text.numbers);
-        Menu.option(menu, menuFontSmall,  font = G.font0);
-        Menu.option(menu, menuFontMedium, font = G.font1);
-        Menu.option(menu, menuFontBig,    font = G.font2);
+        Menu.option(menu, menuFontSmall,  font = G.fonts[0]);
+        Menu.option(menu, menuFontMedium, font = G.fonts[1]);
+        Menu.option(menu, menuFontLarge,  font = G.fonts[2]);
         FOR i := 0 TO Ini.sections.count - 1 DO
             Menu.option(menu, menuColors + i, Ini.curSectionNum = i)
-        END;
-        INC(x, menuViewX)
+        END
     ELSIF menu = menuLanguage THEN
         Menu.option(menu, menuText,   text.lang = Languages.langText);
         Menu.option(menu, menuC,      text.lang = Languages.langC);
@@ -1067,16 +1059,15 @@ BEGIN
         Menu.option(menu, menuLua,    text.lang = Languages.langLua);
         Menu.option(menu, menuOberon, text.lang = Languages.langOberon);
         Menu.option(menu, menuPascal, text.lang = Languages.langPascal);
-        INC(x, menuLanguageX)
     ELSIF menu = menuProgram THEN
         Menu.setEnabled(menu, menuBuild, buildScript # "");
         Menu.setEnabled(menu, menuDebug, debugScript # "");
-        Menu.setEnabled(menu, menuRun, runScript # "");
-        INC(x, menuProgramX)
-    ELSIF menu = menuTools THEN
-        INC(x, menuToolsX)
-    ELSIF menu = menuSearch THEN
-        INC(x, menuSearchX)
+        Menu.setEnabled(menu, menuRun,   runScript # "")
+    ELSIF menu = menuOptions THEN
+    	Menu.check(menu, menuLineNumbers,  T.lineNumbers);
+    	Menu.check(menu, menuAutoIndents,  T.autoIndents);
+    	Menu.check(menu, menuAutoBrackets, T.autoBrackets);
+    	Menu.check(menu, menuTrimSpace,    T.trimSpace)
     END;
 
     enabled := search & (searchText # "");
@@ -1098,7 +1089,7 @@ BEGIN
         IF Menu.opened(menu) THEN
             Menu.close(menu)
         END;
-        Menu.open(menu, x, y);
+        Menu.open(menu, menu.x + x, y);
         menuActive := TRUE
     END
 END ShowMenu;
@@ -1175,16 +1166,9 @@ BEGIN
     	T.gotoLabel(text, TRUE)
     |menuPrevBookmark:
     	T.gotoLabel(text, FALSE)
-    |menuNumbers:
-        T.toggleNumbers(text)
-    |menuFontSmall:
-    	font := G.font0;
-    	resize
-    |menuFontMedium:
-    	font := G.font1;
-    	resize
-    |menuFontBig:
-    	font := G.font2;
+    |menuFontSmall..menuFontLarge:
+    	font := G.fonts[Menu.MenuItem - menuFontSmall];
+    	Ini.setInt("settings", "font", Menu.MenuItem - menuFontSmall);
     	resize
     |menuText:
         T.setLang(text, Languages.langText)
@@ -1236,8 +1220,21 @@ BEGIN
         K.Run("/sys/develop/board", "")
     |menuSysFunc:
         K.Run("/sys/docpack", "f")
+    |menuLineNumbers:
+        T.toggleNumbers;
+        Ini.setInt("settings", "line_numbers", ORD(T.lineNumbers))
+    |menuAutoIndents:
+        T.toggleIndents;
+        Ini.setInt("settings", "auto_indents", ORD(T.autoIndents))
+    |menuAutoBrackets:
+        T.toggleBrackets;
+        Ini.setInt("settings", "auto_brackets", ORD(T.autoBrackets))
+    |menuTrimSpace:
+        T.toggleTrimSpace;
+        Ini.setInt("settings", "trim_space", ORD(T.trimSpace))
     |menuColors..menuMaxColors:
-        Ini.selectSection(Menu.MenuItem - menuColors)
+        Ini.selectSection(Menu.MenuItem - menuColors);
+        Ini.setInt("settings", "theme", Menu.MenuItem - menuColors)
     |menuMoveUp:
     	T.MoveLines(text, FALSE)
     |menuMoveDown:
@@ -1372,11 +1369,9 @@ VAR
     idx: INTEGER;
 BEGIN
     menu := List.create(NIL);
-    Menu.AddMenuItem(menu, menuNumbers,  "line numbers");
-    Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuFontSmall,  "small");
     Menu.AddMenuItem(menu, menuFontMedium, "medium");
-    Menu.AddMenuItem(menu, menuFontBig,    "big");
+    Menu.AddMenuItem(menu, menuFontLarge,  "large");
     Menu.delimiter(menu);
 
     colors := Ini.sections.first(Ini.tSection);
@@ -1437,6 +1432,19 @@ BEGIN
     Menu.AddMenuItem(menu, menuSysFunc, "system functions");
     RETURN Menu.create(menu)
 END CreateMenuTools;
+
+
+PROCEDURE CreateMenuOptions (): Menu.tMenu;
+VAR
+    menu: List.tList;
+BEGIN
+    menu := List.create(NIL);
+    Menu.AddMenuItem(menu, menuLineNumbers,  "line numbers");
+    Menu.AddMenuItem(menu, menuAutoIndents,  "automatic indents");
+    Menu.AddMenuItem(menu, menuAutoBrackets, "automatic brackets");
+    Menu.AddMenuItem(menu, menuTrimSpace,    "trim trailing space");
+    RETURN Menu.create(menu)
+END CreateMenuOptions;
 
 
 PROCEDURE CreateMenuCurLine(): Menu.tMenu;
@@ -1940,7 +1948,6 @@ VAR
     firstClickX, firstClickY, time, blink, i: INTEGER;
     key, scr: INTEGER;
 BEGIN
-	font := G.font1;
 	header := "";
     K.GetSystemColors;
     switch := FALSE;
@@ -1949,6 +1956,10 @@ BEGIN
     curText := 0;
     Args.GetArg(0, AppPath);
     Ini.load(AppPath);
+    Ini.getSettings;
+    runScript := Ini.runScript;
+    buildScript := Ini.buildScript;
+    debugScript := Ini.debugScript;
     leftButton := FALSE;
     resized := FALSE;
     K.ScreenSize(winWidth, winHeight);
@@ -1967,8 +1978,10 @@ BEGIN
     canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 11 + RIGHT_PADDING), winHeight - (TOP + BOTTOM + 5) - SkinHeight);
     tabs := Tabs.create();
     Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, canvas.width, Tabs.tabHeight);
+    font := G.fonts[Ini.font];
     G.SetFont(canvas, font);
-    T.init(resetTimer);
+    T.init(resetTimer, Ini.lineNumbers, Ini.autoIndents, Ini.autoBrackets, Ini.trimSpace);
+    Ini.selectSection(Ini.theme);
     T.setCanvas(canvas);
 
     Menu.init(resetTimer);
@@ -1991,6 +2004,7 @@ BEGIN
     menuLanguage := CreateMenuLanguage();
     menuProgram := CreateMenuProgram();
     menuTools := CreateMenuTools();
+    menuOptions := CreateMenuOptions();
 
     mainMenu := Menu.CreateMain(mainMenuBtn);
     Menu.AddMainItem(mainMenu, "file", menuFile);
@@ -2001,6 +2015,7 @@ BEGIN
     Menu.AddMainItem(mainMenu, "language", menuLanguage);
     Menu.AddMainItem(mainMenu, "program", menuProgram);
     Menu.AddMainItem(mainMenu, "tools", menuTools);
+    Menu.AddMainItem(mainMenu, "options", menuOptions);
     Shortcuts;
 
     Toolbar.create(toolbar, LEFT_PADDING + 5, toolbarTop);
@@ -2018,8 +2033,6 @@ BEGIN
     Toolbar.delimiter(toolbar);
     Toolbar.add(toolbar, btnBuild,  54, "");
     Toolbar.add(toolbar, btnRun,    53, "");
-
-    Ini.getSettings(buildScript, runScript, debugScript);
 
     filePath := "/sys";
     IF Args.argc = 1 THEN

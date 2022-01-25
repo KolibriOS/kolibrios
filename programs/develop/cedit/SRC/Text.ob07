@@ -66,10 +66,10 @@ TYPE
         scroll: tPoint;
         CurX: INTEGER;
         smallChange: INTEGER;
-        modified*, smallMove: BOOLEAN;
-        edition*: tGuard;
-        comments, numbers*, guard,
+        modified*, smallMove,
+        comments, guard,
         search, cs, whole: BOOLEAN;
+        edition*: tGuard;
         curLine: tLine;
         lang*: INTEGER;
         enc, eol: INTEGER;
@@ -91,7 +91,7 @@ VAR
     pdelete: PROCEDURE (text: tText);
     ShowCursor: PROCEDURE;
 
-    colors*: RECORD
+    colors: RECORD
                 text, back, seltext, selback, modified, saved, curline, numtext, numback: INTEGER;
                 comment, string, escape, num, delim, key1, key2, key3: INTEGER
              END;
@@ -100,6 +100,7 @@ VAR
     padding: RECORD left, top: INTEGER END;
     size, textsize: tPoint;
     charWidth, charHeight: INTEGER;
+    autoIndents*, lineNumbers*, autoBrackets*, trimSpace*: BOOLEAN;
 
 
 PROCEDURE setLang* (text: tText; lang: INTEGER);
@@ -151,10 +152,28 @@ BEGIN
 END getTextRect;
 
 
-PROCEDURE toggleNumbers* (text: tText);
+PROCEDURE toggleNumbers*;
 BEGIN
-    text.numbers := ~text.numbers
+    lineNumbers := ~lineNumbers
 END toggleNumbers;
+
+
+PROCEDURE toggleIndents*;
+BEGIN
+    autoIndents := ~autoIndents
+END toggleIndents;
+
+
+PROCEDURE toggleBrackets*;
+BEGIN
+    autoBrackets := ~autoBrackets
+END toggleBrackets;
+
+
+PROCEDURE toggleTrimSpace*;
+BEGIN
+    trimSpace := ~trimSpace
+END toggleTrimSpace;
 
 
 PROCEDURE showCursor*;
@@ -1146,7 +1165,11 @@ BEGIN
         IF text.cursor.X > 0 THEN
         	INC(text.smallChange);
             i := text.cursor.X;
-            n := leadingSpaces(curLine);
+            IF autoIndents THEN
+	            n := leadingSpaces(curLine)
+            ELSE
+    	        n := 0
+            END;
             modify(text);
             IF n < i THEN
                 move(text, -1);
@@ -1205,7 +1228,7 @@ BEGIN
     SetPos(text, 0, text.cursor.Y + 1);
     line := text.curLine.prev(tLine);
     n := -1;
-    WHILE (line # NIL) & (n = -1) DO
+    WHILE (line # NIL) & (n = -1) & autoIndents DO
         IF (*line.length*)Lines.trimLength(line) # 0 THEN
             n := leadingSpaces(line);
             line2 := line
@@ -1335,6 +1358,20 @@ BEGIN
         delSelect(text);
         curLine := text.curLine;
         Lines.insert(curLine, text.cursor.X, WCHR(code));
+        IF autoBrackets THEN
+        	IF code = ORD("(") THEN
+        		code := ORD(")")
+        	ELSIF code = ORD("[") THEN
+        		code := ORD("]")
+        	ELSIF code = ORD("{") THEN
+        		code := ORD("}")
+        	ELSE
+        		code := -1
+        	END;
+        	IF code # -1 THEN
+        		Lines.insert(curLine, text.cursor.X + 1, WCHR(code))
+        	END
+        END;
         Lines.modify(curLine);
         modify(text);
         SetPos(text, text.cursor.X + 1, text.cursor.Y)
@@ -1373,6 +1410,7 @@ VAR
     line: tLine;
     file: RW.tOutput;
     res: BOOLEAN;
+    Len: INTEGER;
 BEGIN
     ChangeLog.setGuard(text.edition);
     file := RW.create(tempFile, text.enc, text.eol);
@@ -1380,7 +1418,12 @@ BEGIN
         ChangeLog.delSaved;
         line := text.first(tLine);
         WHILE line # NIL DO
-            RW.putString(file, line, Lines.trimLength(line));
+        	IF trimSpace THEN
+        		Len := Lines.trimLength(line)
+        	ELSE
+        		Len := line.length
+        	END;
+            RW.putString(file, line, Len);
             NextLine(line);
             IF line # NIL THEN
                 RW.newLine(file)
@@ -2262,7 +2305,7 @@ BEGIN
     	G.clear(canvas)
     END;
     wNum := charWidth;
-    IF text.numbers THEN
+    IF lineNumbers THEN
         numWidth := U.lg10(text.count) + 2;
         xNum := numWidth*wNum - wNum DIV 2;
         setPadding(numWidth*wNum + pad_left, padding.top);
@@ -2322,7 +2365,7 @@ BEGIN
     y := padding.top + inter DIV 2;
     n := MIN(text.scroll.Y + textsize.Y, text.count);
     FOR i := text.scroll.Y + 1 TO n DO
-        IF text.numbers THEN
+        IF lineNumbers THEN
             IF (i MOD 10 = 0) OR (i - 1 = text.cursor.Y) OR line.label THEN
                 U.int2str(i, s);
                 G.TextOut2(canvas, (numWidth - U.lg10(i) - 1)*wNum - wNum DIV 2, y, s, LENGTH(s))
@@ -2346,7 +2389,7 @@ BEGIN
     		firstLine := text.curLine;
     		lastLine := firstLine
     	ELSE
-    	    lastLine := getLine2(text, text.scroll.Y + textsize.Y - 1)
+    	    lastLine := getLine2(text, MIN(text.scroll.Y + textsize.Y, text.count) - 1)
         END;
         p := text.foundList.first(Search.tPos);
         WHILE p # NIL DO
@@ -2426,7 +2469,6 @@ BEGIN
     text.search := TRUE;
     text.cs := FALSE;
     text.whole := FALSE;
-    text.numbers := TRUE;
     text.guard := TRUE;
     text.edition := NIL;
     text.foundList := List.create(NIL);
@@ -2674,11 +2716,15 @@ BEGIN
 END New;
 
 
-PROCEDURE init* (pShowCursor: tProcedure);
+PROCEDURE init* (pShowCursor: tProcedure; _lineNumbers, _autoIndents, _autoBrackets, _trimSpace: BOOLEAN);
 BEGIN
     ShowCursor := pShowCursor;
     pdelete := delete;
     drawCursor := TRUE;
+    lineNumbers := _lineNumbers;
+    autoIndents := _autoIndents;
+    autoBrackets := _autoBrackets;
+    trimSpace := _trimSpace;
     padding.left := pad_left;
     padding.top := pad_top;
 END init;

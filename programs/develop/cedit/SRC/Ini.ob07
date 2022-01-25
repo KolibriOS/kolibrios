@@ -51,13 +51,17 @@ VAR
 
     curSection*: tASCIISectionName;
     curSectionNum*: INTEGER;
-    blink*: INTEGER;
+
+    blink*, font*, theme*: INTEGER;
+    buildScript*, runScript*, debugScript*: RW.tFileName;
+    lineNumbers*, autoIndents*, autoBrackets*, trimSpace*: BOOLEAN;
 
 
-PROCEDURE [stdcall, "libini.obj", "ini_get_color"]     get_color (f_name: RW.tFileName; sec_name: tASCIISectionName; key_name: tString; def_val: INTEGER): INTEGER; END;
-PROCEDURE [stdcall, "libini.obj", "ini_get_int"]       get_int (f_name: RW.tFileName; sec_name: tASCIISectionName; key_name: tString; def_val: INTEGER): INTEGER; END;
-PROCEDURE [stdcall, "libini.obj", "ini_get_str"]       get_str (f_name, sec_name, key_name, buffer, buf_len, def_val: INTEGER): INTEGER; END;
-PROCEDURE [stdcall, "libini.obj", "ini_enum_sections"] enum_sections (f_name: RW.tFileName; callback: INTEGER); END;
+PROCEDURE [stdcall,  "libini.obj", "ini_get_color"]     get_color (f_name: RW.tFileName; sec_name: tASCIISectionName; key_name: tString; def_val: INTEGER): INTEGER; END;
+PROCEDURE [stdcall,  "libini.obj", "ini_get_int"]       get_int (f_name: RW.tFileName; sec_name: tASCIISectionName; key_name: tString; def_val: INTEGER): INTEGER; END;
+PROCEDURE [stdcall,  "libini.obj", "ini_get_str"]       get_str (f_name, sec_name, key_name, buffer, buf_len, def_val: INTEGER): INTEGER; END;
+PROCEDURE [stdcall,  "libini.obj", "ini_enum_sections"] enum_sections (f_name: RW.tFileName; callback: INTEGER); END;
+PROCEDURE [stdcall-, "libini.obj", "ini_set_int"]       set_int (f_name, sec_name, key_name, val: INTEGER): INTEGER; END;
 
 PROCEDURE getColor (key: tString; def: INTEGER): INTEGER;
     RETURN get_color(IniFileName, curSection, key, def)
@@ -70,6 +74,12 @@ BEGIN
         s[0] := 0X
     END
 END getStr;
+
+
+PROCEDURE setInt* (secName, keyName: ARRAY OF CHAR; val: INTEGER);
+BEGIN
+    set_int(SYSTEM.ADR(IniFileName[0]), SYSTEM.ADR(secName[0]), SYSTEM.ADR(keyName[0]), val)
+END setInt;
 
 
 PROCEDURE [stdcall] section_callback (fileName, sectionName: RW.tFileName): INTEGER;
@@ -148,13 +158,25 @@ BEGIN
 END selectSection;
 
 
-PROCEDURE getSettings* (VAR build, run, debug: RW.tFileName);
+PROCEDURE getSettings*;
 BEGIN
 	Lines.setTabs(get_int(IniFileName, "settings", "tab", 4));
 	blink := get_int(IniFileName, "settings", "blink", 70);
-    getStr("settings", "build", build);
-    getStr("settings", "run",   run);
-    getStr("settings", "debug", debug)
+	lineNumbers  := get_int(IniFileName, "settings", "line_numbers",  1) # 0;
+	autoIndents  := get_int(IniFileName, "settings", "auto_indents",  1) # 0;
+	autoBrackets := get_int(IniFileName, "settings", "auto_brackets", 0) # 0;
+	trimSpace    := get_int(IniFileName, "settings", "trim_space",    1) # 0;
+	font := get_int(IniFileName, "settings", "font", 1);
+	IF ~((0 <= font) & (font <= 2)) THEN
+		font := 1
+	END;
+	theme := get_int(IniFileName, "settings", "theme", 0);
+	IF ~((0 <= theme) & (theme <= sections.count - 1)) THEN
+		theme := 0
+	END;
+    getStr("settings", "build", buildScript);
+    getStr("settings", "run",   runScript);
+    getStr("settings", "debug", debugScript);
 END getSettings;
 
 
@@ -167,12 +189,12 @@ BEGIN
     Utils.append8(IniFileName, fileName);
 
     IF ~File.Exists(IniFileName) THEN
-    	IniFileName := "/sys/settings/cedit.ini"
+    	IniFileName := "/sys/settings/" + fileName
     END;
 
     enum_sections(IniFileName, SYSTEM.ADR(section_callback));
     Languages.init(getStr);
-    selectSection(0);
+    selectSection(theme);
 END load;
 
 
