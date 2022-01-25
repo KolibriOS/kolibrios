@@ -2,26 +2,28 @@
 ---
 History
 
-0.1 	+ First realised, kernel load dll.obj at runtime as starting point berfore app startup
-      	  dll.obj process app import table, but not depended librarys, after that app gots control in his starting point
+0.1     + First realised, kernel load dll.obj at runtime as starting point berfore app startup
+          dll.obj process app import table, but not depended librarys, after that app gots control in his starting point
 
-0.2 	+ Introduced new KX header as extension for current format (see decription below)
-      	+ Add KX header processing
-	+ Improved import table test logic, no reason to kill app for import absence - skip import processing (tnx ProMiNick)		
+0.2     + Introduced new KX header as extension for current format (see decription below)
+        + Add KX header processing
+        + Improved import table test logic, no reason to kill app for import absence - skip import processing (tnx ProMiNick)
+        + Added ReadMe.txt (this doc)
 
----
+0.2.1   + Branch from dll.inc, now this file is not external. Improved error handling. Now dll.Load return 0 in success only
+          Added corrsponding error codes if one of library or entry not found
+        + Added error handling with detailed inform user which error occurred through @notyfy.
+          Now application is not crashed if bad format, can't load library or no found entry		
+
+
 Purpose
  
 Automatically libraries loads and linking imports.	  
 
 ---
-Limitations
+TODO
 
-
-1) No error messages are issued if the library or symbol in the library is not found or somthing went wrong
-
-
-2) There is no autoloading of dependent libraries (the library format needs to be improved, see intorduction of KX header extension bellow)
+1) The library format needs to be improved, see intorduction of KX header extension bellow
 
 ---
 How to use

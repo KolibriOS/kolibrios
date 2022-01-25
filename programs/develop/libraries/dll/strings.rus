@@ -1,0 +1,5 @@
+
+szBanner                db "Ошибка!\n",0
+szWrongFormat           db "$ - $Неправильный формат приложения!",0
+szLibraryNotLoaded      db "$ - $Невозможно загрузить библиотеку $", 0
+szEntryNotFound         db "$ - $Вход $\nв библиотеке $\nне найден!",0
