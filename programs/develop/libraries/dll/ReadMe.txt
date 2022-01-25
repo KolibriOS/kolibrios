@@ -12,7 +12,7 @@ History
 
 0.2.1   + Branch from dll.inc, now this file is not external. Improved error handling. Now dll.Load return 0 in success only
           Added corrsponding error codes if one of library or entry not found
-        + Added error handling with detailed inform user which error occurred through @notyfy.
+        + Added error handling with detailed inform user which error occurred through @notify.
           Now application is not crashed if bad format, can't load library or no found entry		
 
 
