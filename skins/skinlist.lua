@@ -5,6 +5,7 @@ skinlist = {
 "ConLenov/Aigul/Aigul.skn",
 "ConLenov/Guzel/Guzel.skn",
 "ConLenov/Guzel_magic/Guzel_magic.skn",
+"ConLenov/GX/GX_Red/GX_Red.skn",
 "ConLenov/FlowerMoon/FlowerMoon.skn",
 "ConLenov/mntech/mntech.skn",
 "ConLenov/LucidChocolate/LucidChocolate.skn",
