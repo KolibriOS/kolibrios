@@ -62,17 +62,17 @@ start:
 	cmp eax,-1
 	jz button.exit
 
-	mcall SF_SET_EVENTS_MASK,0x27
+	mcall SF_SET_EVENTS_MASK, 0x27
 	stdcall [buf2d_create], buf_0 ;создаем буфер
 	stdcall [buf2d_create], buf_z
 	stdcall [buf2d_vox_brush_create], buf_vox, vox_6_7_z ;создаем воксельную кисть
 
 	stdcall mem.Alloc,max_open_file_size
-	mov dword[open_file_vox],eax
+	mov [open_file_vox],eax
 
 	copy_path f_name,[32],file_name,0
 
-	mov eax,70 ;70-я функция работа с файлами
+	mov eax,SF_FILE
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
@@ -113,14 +113,14 @@ still:
 align 4
 draw_window:
 	pushad
-	mcall SF_REDRAW,SSF_BEGIN_DRAW
+	mcall SF_REDRAW, SSF_BEGIN_DRAW
 
 	mov edx,0x33000000
-	mcall SF_CREATE_WINDOW,(50 shl 16)+410,(30 shl 16)+480,,,caption
+	mcall SF_CREATE_WINDOW, (50 shl 16)+410,(30 shl 16)+480,,,caption
 
 	stdcall [buf2d_draw], buf_0
 
-	mcall SF_REDRAW,SSF_END_DRAW
+	mcall SF_REDRAW, SSF_END_DRAW
 	popad
 	ret
 
@@ -230,13 +230,11 @@ name_buf2d db 'buf2d.obj',0
 
 align 16
 i_end: ;конец кода
-file_name:
-		rb 4096
-cur_dir_path:
-	rb 4096
-library_path:
-	rb 4096
+file_name rb 4096
+cur_dir_path rb 4096
+library_path rb 4096
 	rb 1024
 stacktop:
 mem:
+
 

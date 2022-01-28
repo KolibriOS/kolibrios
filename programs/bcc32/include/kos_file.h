@@ -81,7 +81,19 @@ namespace Kolibri   // All kolibri functions, types and data are nested in the (
 		if(!_FileAccess(file_data)) return file_data->Function;
 		else return 0;
 	}
-	
+
+	unsigned long int FileCreate(FileInfoBlock* file_data, void *mem, int size)
+	{
+		file_data->Function = 2; //SSF_CREATE_FILE
+		file_data->Position = 0;
+		file_data->Flags = 0;
+		file_data->Count = size;
+		file_data->Buffer = (char*)mem;
+
+		if(!_FileAccess(file_data)) return file_data->Function;
+		else return 0;
+	}
+
 // Inline functions.
 
 	inline unsigned long int FileGetLength(FileInfoBlock* file_data)
