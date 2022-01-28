@@ -24,11 +24,11 @@ IMPORT
     U := Utils, Lines, Menu, List,
     G := Graph, T := Text, E := Encodings,
     CB := Clipboard, Languages,
-    ChangeLog, Scroll, CheckBox,
+    ChangeLog, Scroll, CheckBox, KOSAPI, SYSTEM,
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (26-jan-2022)";
+    HEADER = "CEdit (28-jan-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -119,12 +119,15 @@ CONST
     menuRunScript = 53;
     menuDebug = 54;
     menuDebugScript = 55;
+    menuFASM = 56;
 
     menuUTF8BOM = 60;
     menuUTF8 = 61;
     menuCP866 = 62;
     menuWin1251 = 63;
     menuEOL = 140;
+    menuConv1251_866 = 64;
+    menuConv866_1251 = 65;
 
     menuPipet = 70;
     menuMagnify = 71;
@@ -413,8 +416,8 @@ BEGIN
         Toolbar.enable(toolbar, btnRedo,  ~ChangeLog.isLastGuard(text.edition));
         Toolbar.enable(toolbar, btnUpper, T.selected(text));
         Toolbar.enable(toolbar, btnLower, T.selected(text));
-        Toolbar.enable(toolbar, btnBuild, buildScript # "");
-        Toolbar.enable(toolbar, btnRun,   runScript # "");
+        Toolbar.enable(toolbar, btnBuild, (buildScript # "") OR text.fasm);
+        Toolbar.enable(toolbar, btnRun,   (runScript # "") OR text.fasm);
         Toolbar.drawIcons(toolbar)
     END
 END repaint;
@@ -795,7 +798,7 @@ BEGIN
         IF fileName # "" THEN
             n := getFileNum(fileName);
             IF n = -1 THEN
-                nov := T.open(fileName, err);
+                nov := T.open(fileName, 0, 0, err);
                 IF nov = NIL THEN
                     error("error opening file");
                     SwitchTab(curText);
@@ -1060,9 +1063,13 @@ BEGIN
         Menu.option(menu, menuOberon, text.lang = Languages.langOberon);
         Menu.option(menu, menuPascal, text.lang = Languages.langPascal);
     ELSIF menu = menuProgram THEN
-        Menu.setEnabled(menu, menuBuild, buildScript # "");
-        Menu.setEnabled(menu, menuDebug, debugScript # "");
-        Menu.setEnabled(menu, menuRun,   runScript # "")
+        Menu.setEnabled(menu, menuBuild, (buildScript # "") OR text.fasm);
+        Menu.setEnabled(menu, menuDebug, (debugScript # "") OR text.fasm);
+        Menu.setEnabled(menu, menuRun,   (runScript # "") OR text.fasm);
+        Menu.setEnabled(menu, menuBuildScript, ~text.fasm);
+        Menu.setEnabled(menu, menuDebugScript, ~text.fasm);
+        Menu.setEnabled(menu, menuRunScript,   ~text.fasm);
+        Menu.check(menu, menuFASM, text.fasm)
     ELSIF menu = menuOptions THEN
     	Menu.check(menu, menuLineNumbers,  T.lineNumbers);
     	Menu.check(menu, menuAutoIndents,  T.autoIndents);
@@ -1104,6 +1111,64 @@ BEGIN
 		script := temp
 	END
 END setScript;
+
+
+PROCEDURE FasmCompile (run, debug: BOOLEAN);
+VAR
+	curFileName, ext, outfile, path, param: RW.tFileName;
+BEGIN
+	curFileName := texts[curText].fileName;
+	U.getFileName(curFileName, param, U.SLASH);
+	U.getFileName(curFileName, ext, ".");
+	U.getPath(curFileName, path);
+	outfile := param;
+	IF (ext # "") & ((LENGTH(ext) + 1) < LENGTH(outfile)) THEN
+		outfile[LENGTH(outfile) - LENGTH(ext) - 1] := 0X
+	ELSE
+		U.append8(outfile, ".kex")
+	END;
+	U.append8(param, ",");
+	U.append8(param, outfile);
+	U.append8(param, ",");
+	U.append8(param, path);
+	U.append8(param, U.SLASH);
+	IF run THEN
+		U.append8(param, ",run")
+	ELSIF debug THEN
+		U.append8(param, ",dbg")
+	END;
+	K.Run("/sys/develop/fasm", param)
+END FasmCompile;
+
+
+PROCEDURE ProgramBuild;
+BEGIN
+	IF ~text.fasm THEN
+    	Script(buildScript)
+    ELSE
+    	FasmCompile(FALSE, FALSE)
+    END
+END ProgramBuild;
+
+
+PROCEDURE ProgramRun;
+BEGIN
+	IF ~text.fasm THEN
+    	Script(runScript)
+    ELSE
+    	FasmCompile(TRUE, FALSE)
+    END
+END ProgramRun;
+
+
+PROCEDURE ProgramDebug;
+BEGIN
+	IF ~text.fasm THEN
+    	Script(debugScript)
+    ELSE
+    	FasmCompile(FALSE, TRUE)
+    END
+END ProgramDebug;
 
 
 PROCEDURE ClickMenu;
@@ -1187,17 +1252,19 @@ BEGIN
     |menuPascal:
         T.setLang(text, Languages.langPascal)
     |menuBuild:
-        Script(buildScript)
+    	ProgramBuild
     |menuBuildScript:
     	setScript(buildScript)
     |menuRun:
-        Script(runScript)
+    	ProgramRun
     |menuRunScript:
     	setScript(runScript)
     |menuDebug:
-        Script(debugScript)
+    	ProgramDebug
     |menuDebugScript:
     	setScript(debugScript)
+    |menuFASM:
+    	text.fasm := ~text.fasm
     |menuUTF8BOM:
     	T.setEnc(text, E.UTF8BOM)
     |menuUTF8:
@@ -1212,6 +1279,10 @@ BEGIN
     	T.setEol(text, E.EOL_CRLF)
     |menuCR:
     	T.setEol(text, E.EOL_CR)
+    |menuConv1251_866:
+    	T.convert(text, E.cp866, E.W1251)
+    |menuConv866_1251:
+    	T.convert(text, E.cp1251, E.CP866)
     |menuPipet:
         K.Run("/sys/develop/pipet", "")
     |menuMagnify:
@@ -1346,6 +1417,9 @@ BEGIN
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuEOL,     "EOL");
     Menu.child(menu, subEOL);
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuConv1251_866, "convert 1251 >> 866");
+    Menu.AddMenuItem(menu, menuConv866_1251, "convert 866 >> 1251");
     RETURN Menu.create(menu)
 END CreateMenuEncoding;
 
@@ -1415,8 +1489,10 @@ BEGIN
     Menu.AddMenuItem(menu, menuRun,         "run           F9");
     Menu.AddMenuItem(menu, menuRunScript,   "script");
     Menu.delimiter(menu);
-    Menu.AddMenuItem(menu, menuDebug,       "debug");
+    Menu.AddMenuItem(menu, menuDebug,       "debug    ctrl-F8");
     Menu.AddMenuItem(menu, menuDebugScript, "script");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuFASM, "Fasm");
     RETURN Menu.create(menu)
 END CreateMenuProgram;
 
@@ -1511,6 +1587,7 @@ BEGIN
     Menu.AddShortcut(31 + CTRL,  menuSave);
     Menu.AddShortcut(49 + CTRL,  menuNew);
     Menu.AddShortcut(67 + CTRL,  menuBuild);
+    Menu.AddShortcut(66 + CTRL,  menuDebug);
     Menu.AddShortcut(83 + CTRL,  menuRemove);
     Menu.AddShortcut(22 + CTRL,  menuUpper);
     Menu.AddShortcut(38 + CTRL,  menuLower);
@@ -1570,12 +1647,17 @@ BEGIN
             ELSE
                 T.gotoLabel(text, ~shift)
             END
+        ELSIF keyCode = 66 THEN (* F8 *)
+            key := -1;
+            IF ctrl THEN
+                ProgramDebug
+            END
         ELSIF keyCode = 67 THEN (* F9 *)
             key := -1;
             IF ctrl THEN
-                Script(buildScript)
+                ProgramBuild
             ELSE
-                Script(runScript)
+                ProgramRun
             END
         ELSIF keyCode = 68 THEN (* F10 *)
         	IF shift THEN
@@ -1767,9 +1849,9 @@ BEGIN
     |btnLower:
         T.chCase(text, FALSE)
     |btnBuild:
-        Script(buildScript)
+    	ProgramBuild
     |btnRun:
-        Script(runScript)
+    	ProgramRun
     |btnFindNext:
         IF searchText # "" THEN
             notFound := ~T.findNext(text, BKW.value);
@@ -1940,6 +2022,47 @@ BEGIN
 END ScrollChange;
 
 
+PROCEDURE docpack (VAR param: RW.tFileName);
+VAR
+	i, size, errno: INTEGER;
+	ptr, ptr2: INTEGER;
+	s: ARRAY 32 OF WCHAR;
+BEGIN
+	U.reverse8(param);
+	param[LENGTH(param) - 1] := 0X;
+	U.reverse8(param);
+	i := 0;
+	WHILE param[i] # 0X DO
+		s[i] := WCHR(ORD(param[i]));
+		INC(i)
+	END;
+	IF U.str2int(s, size) THEN
+		INC(size, 20);
+		ptr := KOSAPI.malloc(size);
+		IF ptr # 0 THEN
+			SYSTEM.PUT32(ptr, 0);
+			SYSTEM.PUT32(ptr + 4, 8);
+			KOSAPI.sysfunc4(60, 1, ptr, size);
+			K.SetEventsMask({6});
+			IF K.EventTimeout(200) = 7 THEN
+				SYSTEM.PUT32(ptr, 1);
+				SYSTEM.GET(ptr + 12, size);
+				ptr2 := KOSAPI.malloc(size);
+				IF ptr2 # 0 THEN
+					SYSTEM.MOVE(ptr + 16, ptr2, size);
+					text := T.open("", ptr2, size, errno);
+					IF text # NIL THEN
+				        insert(0, text);
+				        T.SetPos(text, 0, 0)
+			        END
+		        END
+			END;
+			ptr := KOSAPI.free(ptr)
+		END
+	END
+END docpack;
+
+
 PROCEDURE main;
 VAR
     fileName, filePath: RW.tFileName;
@@ -2042,8 +2165,12 @@ BEGIN
     END;
 	FOR i := 1 TO Args.argc - 1 DO
 		Args.GetArg(i, fileName);
-		IF open(fileName) THEN
-			U.getPath(fileName, filePath)
+		IF fileName[0] # "*" THEN
+			IF open(fileName) THEN
+				U.getPath(fileName, filePath)
+			END
+		ELSE
+			docpack(fileName)
 		END
 	END;
 	IF textsCount = 0 THEN

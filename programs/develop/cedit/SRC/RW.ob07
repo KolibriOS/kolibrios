@@ -144,7 +144,7 @@ END getCharUTF8;
 
 
 PROCEDURE getCharW1251 (file: tInput): INTEGER;
-    RETURN E.cpW1251[getByte(file)]
+    RETURN E.cp1251[getByte(file)]
 END getCharW1251;
 
 
@@ -344,23 +344,17 @@ BEGIN
 END createStrBuf;
 
 
-PROCEDURE load* (name: tFileName; VAR enc, eol: INTEGER): tInput;
+PROCEDURE _loadFromMem (ptr, size: INTEGER; cp866: BOOLEAN; VAR enc, eol: INTEGER): tInput;
 VAR
     res: tInput;
-    fsize: INTEGER;
 BEGIN
     NEW(res);
     res.pos := 0;
     res.CR := FALSE;
     res.getChar := NIL;
     res.clipbrd := FALSE;
-    fsize := File.FileSize(name);
-    IF fsize = 0 THEN
-        res.buffer := KOSAPI.malloc(4096);
-        res.cnt := 0
-    ELSE
-        res.buffer := File.Load(name, res.cnt)
-    END;
+    res.buffer := ptr;
+    res.cnt := size;
     IF res.buffer = 0 THEN
         DISPOSE(res)
     ELSE
@@ -370,13 +364,37 @@ BEGIN
         ELSIF enc = E.CP866 THEN
             res.getChar := getCharCP866
         ELSIF enc = E.W1251 THEN
-            res.getChar := getCharW1251
+        	IF cp866 THEN
+        		enc := E.CP866;
+        		res.getChar := getCharCP866
+        	ELSE
+            	res.getChar := getCharW1251
+            END
         END;
         eol := detectEOL(res);
         createStrBuf(res)
     END
     RETURN res
-END load;
+END _loadFromMem;
+
+
+PROCEDURE loadFromMem* (ptr, size: INTEGER; VAR enc, eol: INTEGER): tInput;
+    RETURN _loadFromMem(ptr, size, TRUE, enc, eol)
+END loadFromMem;
+
+
+PROCEDURE loadFromFile* (name: tFileName; VAR enc, eol: INTEGER): tInput;
+VAR
+    ptr, size: INTEGER;
+BEGIN
+	size := File.FileSize(name);
+    IF size = 0 THEN
+    	ptr := KOSAPI.malloc(4096)
+    ELSE
+    	ptr := File.Load(name, size)
+    END
+	RETURN _loadFromMem(ptr, size, FALSE, enc, eol)
+END loadFromFile;
 
 
 PROCEDURE clipboard* (): tInput;

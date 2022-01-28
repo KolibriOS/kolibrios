@@ -51,6 +51,8 @@ TYPE
 
     tVectorItem = tLine;
 
+    fConvert* = PROCEDURE (VAR c: WCHAR): BOOLEAN;
+
 
 VAR
 
@@ -497,19 +499,14 @@ BEGIN
 END copy;
 
 
-PROCEDURE chCase* (line: tLine; pos1, pos2: INTEGER; upper: BOOLEAN): BOOLEAN;
+PROCEDURE convert* (line: tLine; pos1, pos2: INTEGER; func: fConvert): BOOLEAN;
 VAR
     i: INTEGER;
     modified: BOOLEAN;
     c: WCHAR;
-    func: PROCEDURE (VAR c: WCHAR): BOOLEAN;
 BEGIN
+	ASSERT(func # NIL);
     modified := FALSE;
-    IF upper THEN
-        func := Utils.cap
-    ELSE
-        func := Utils.low
-    END;
     i := pos2;
     WHILE i >= pos1 DO
         c := getChar(line, i);
@@ -532,7 +529,7 @@ BEGIN
         modify(line)
     END
     RETURN modified
-END chCase;
+END convert;
 
 
 PROCEDURE init* (movInt: PmovInt; movPtr: PmovPtr; movBool, movBool2: PmovBool; typedPtr: PTypedPtr; untypedPtr: PUntypedPtr);

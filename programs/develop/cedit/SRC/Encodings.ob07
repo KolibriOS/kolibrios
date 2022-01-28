@@ -28,12 +28,12 @@ CONST
     CR = 0DX; LF = 0AX;
 
 TYPE
-    CP = ARRAY 256 OF INTEGER;
+    CP* = ARRAY 256 OF INTEGER;
 
     tEOL* = ARRAY 3 OF WCHAR;
 
 VAR
-    cpW1251*, cp866*: CP;
+    cp1251*, cp866*: CP;
     names*: ARRAY 4, 16 OF WCHAR;
     UNI*: ARRAY 65536, 2 OF INTEGER;
 
@@ -117,8 +117,8 @@ BEGIN
         UNI[i, W1251] := UNDEF
     END;
     FOR i := 0 TO 255 DO
-        IF cpW1251[i] # UNDEF THEN
-            UNI[cpW1251[i], W1251] := i
+        IF cp1251[i] # UNDEF THEN
+            UNI[cp1251[i], W1251] := i
         END;
         IF cp866[i] # UNDEF THEN
             UNI[cp866[i], CP866] := i
@@ -138,7 +138,7 @@ BEGIN
     names[W1251]   := "Windows-1251";
     names[UTF8]    := "UTF-8";
     names[UTF8BOM] := "UTF-8-BOM";
-    InitW1251(cpW1251);
+    InitW1251(cp1251);
     InitCP866(cp866);
     setUNI
 END Encodings.

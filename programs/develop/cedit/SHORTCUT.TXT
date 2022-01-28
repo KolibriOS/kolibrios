@@ -40,6 +40,7 @@
 
   ctrl+F9     компилировать
   F9          выполнить
+  ctrl+F8     отладка
 
   перемещение по тексту:
   (ctrl+)Home, (ctrl+)End, (ctrl+)PageUp, (ctrl+)PageDown

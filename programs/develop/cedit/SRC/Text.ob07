@@ -67,13 +67,12 @@ TYPE
         CurX: INTEGER;
         smallChange: INTEGER;
         modified*, smallMove,
-        comments, guard,
+        comments, guard, fasm*,
         search, cs, whole: BOOLEAN;
         edition*: tGuard;
         curLine: tLine;
         lang*: INTEGER;
         enc, eol: INTEGER;
-        table: Search.IdxTable;
         foundList: List.tList;
         foundSel: INTEGER;
         searchText: tString;
@@ -101,11 +100,15 @@ VAR
     size, textsize: tPoint;
     charWidth, charHeight: INTEGER;
     autoIndents*, lineNumbers*, autoBrackets*, trimSpace*: BOOLEAN;
+    idxTable: Search.IdxTable;
 
 
 PROCEDURE setLang* (text: tText; lang: INTEGER);
 BEGIN
-    text.lang := lang;
+	IF text.lang # lang THEN
+		text.fasm := lang = Lang.langFasm;
+		text.lang := lang
+	END;
     text.comments := TRUE;
     Lang.setCurLang(text.lang)
 END setLang;
@@ -296,6 +299,18 @@ BEGIN
 	text.smallChange := 0;
 	text.comments := FALSE
 END Comments;
+
+
+PROCEDURE leadingSpaces (line: tLine): INTEGER;
+VAR
+    i: INTEGER;
+BEGIN
+    i := 0;
+    WHILE Lines.isSpace(Lines.getChar(line, i)) DO
+        INC(i)
+    END
+    RETURN i
+END leadingSpaces;
 
 
 PROCEDURE parse (text: tText; line: tLine; y: INTEGER; backColor: INTEGER; lang: INTEGER);
@@ -813,7 +828,7 @@ BEGIN
         ELSIF lang = Lang.langIni THEN
 
 	        IF depth = 0 THEN
-	            IF (c = ";") OR (c = "#") THEN
+	            IF ((c = ";") OR (c = "#")) & (leadingSpaces(line) = i) THEN
 	                PrintLex(text, line, i, n, y, colors.comment, backColor);
 	                i := n
 	            ELSIF c = '"' THEN
@@ -842,18 +857,6 @@ BEGIN
         INC(i)
     END
 END parse;
-
-
-PROCEDURE leadingSpaces (line: tLine): INTEGER;
-VAR
-    i: INTEGER;
-BEGIN
-    i := 0;
-    WHILE Lines.isSpace(Lines.getChar(line, i)) DO
-        INC(i)
-    END
-    RETURN i
-END leadingSpaces;
 
 
 PROCEDURE plain (text: tText): CB.tBuffer;
@@ -908,8 +911,8 @@ BEGIN
 	END;
 	IF text.searchText # "" THEN
 		plainText := plain(text);
-		idxData := Search.index(plainText, text.table, cs);
-		Search.find(plainText, text.table, text.searchText, whole, text.foundList);
+		idxData := Search.index(plainText, idxTable, cs);
+		Search.find(plainText, idxTable, text.searchText, whole, text.foundList);
 		res := text.foundList.count > 0
 	END;
 	CB.destroy(plainText);
@@ -1771,6 +1774,7 @@ PROCEDURE changeCase (text: tText; upper: BOOLEAN);
 VAR
     i: INTEGER;
     line: tLine;
+    func: Lines.fConvert;
 BEGIN
     line := text.curLine;
     i := text.cursor.X - 1;
@@ -1779,7 +1783,13 @@ BEGIN
         DEC(i)
     END;
 
-    IF Lines.chCase(line, i + 1, text.cursor.X - 1, upper) THEN
+    IF upper THEN
+    	func := U.cap
+    ELSE
+    	func := U.low
+    END;
+
+    IF Lines.convert(line, i + 1, text.cursor.X - 1, func) THEN
     	INC(text.smallChange);
         modify(text)
     END
@@ -1791,6 +1801,7 @@ VAR
     selBeg, selEnd: tPoint;
     first, line: Lines.tLine;
     cnt: INTEGER;
+    func: Lines.fConvert;
     modified: BOOLEAN;
 BEGIN
     modified := FALSE;
@@ -1799,23 +1810,30 @@ BEGIN
         first := getLine2(text, selBeg.Y);
         line := first;
         cnt := selEnd.Y - selBeg.Y;
+
+	    IF upper THEN
+	    	func := U.cap
+	    ELSE
+	    	func := U.low
+	    END;
+
         IF cnt = 0 THEN
-            IF Lines.chCase(line, selBeg.X, selEnd.X - 1, upper) THEN
+            IF Lines.convert(line, selBeg.X, selEnd.X - 1, func) THEN
                 modified := TRUE
             END
         ELSE
-            IF Lines.chCase(line, selBeg.X, line.length - 1, upper) THEN
+            IF Lines.convert(line, selBeg.X, line.length - 1, func) THEN
                 modified := TRUE
             END;
             WHILE cnt > 1 DO
                 NextLine(line);
-                IF Lines.chCase(line, 0, line.length - 1, upper) THEN
+                IF Lines.convert(line, 0, line.length - 1, func) THEN
                     modified := TRUE
                 END;
                 DEC(cnt)
             END;
             NextLine(line);
-            IF Lines.chCase(line, 0, selEnd.X - 1, upper) THEN
+            IF Lines.convert(line, 0, selEnd.X - 1, func) THEN
                 modified := TRUE
             END
         END
@@ -2536,7 +2554,7 @@ BEGIN
 END destroy;
 
 
-PROCEDURE open* (name: RW.tFileName; VAR errno: INTEGER): tText;
+PROCEDURE open* (name: RW.tFileName; ptr, size: INTEGER; VAR errno: INTEGER): tText;
 VAR
     text: tText;
     file: RW.tInput;
@@ -2547,7 +2565,11 @@ BEGIN
     errno := 0;
     text := create(name);
     IF text # NIL THEN
-    	file := RW.load(name, enc, eol);
+    	IF ptr = 0 THEN
+    		file := RW.loadFromFile(name, enc, eol)
+    	ELSE
+    		file := RW.loadFromMem(ptr, size, enc, eol)
+    	END;
     	IF file = NIL THEN
     		destroy(text)
     	END
@@ -2697,6 +2719,65 @@ BEGIN
     END
     RETURN text.foundList.count
 END replaceAll;
+
+
+PROCEDURE conv (VAR c: WCHAR; cp: E.CP; enc: INTEGER): BOOLEAN;
+VAR
+	code: INTEGER;
+	res: BOOLEAN;
+BEGIN
+	res := FALSE;
+	IF (c # 0X) & (c # Lines.NUL) & (c # Lines.TAB1) THEN
+		code := E.UNI[ORD(c), enc];
+		IF (0 <= code) & (code <= 255) THEN
+			code := cp[code]
+		ELSE
+			code := ORD(c)
+		END;
+		res := WCHR(code) # c;
+		c := WCHR(code)
+	END
+	RETURN res
+END conv;
+
+
+PROCEDURE conv1251to866 (VAR c: WCHAR): BOOLEAN;
+	RETURN conv(c, E.cp866, E.W1251)
+END conv1251to866;
+
+
+PROCEDURE conv866to1251 (VAR c: WCHAR): BOOLEAN;
+	RETURN conv(c, E.cp1251, E.CP866)
+END conv866to1251;
+
+
+PROCEDURE convert* (text: tText; cp: E.CP; enc: INTEGER);
+VAR
+	line: tLine;
+	func: Lines.fConvert;
+	modified: BOOLEAN;
+BEGIN
+	modified := FALSE;
+	line := text.first(tLine);
+	IF enc = E.CP866 THEN
+		func := conv866to1251
+	ELSIF enc = E.W1251 THEN
+		func := conv1251to866
+	ELSE
+		line := NIL
+	END;
+
+	WHILE line # NIL DO
+		IF Lines.convert(line, 0, line.length - 1, func) THEN
+			modified := TRUE
+		END;
+		NextLine(line)
+	END;
+
+	IF modified THEN
+		modify(text)
+	END
+END convert;
 
 
 PROCEDURE New* (): tText;
