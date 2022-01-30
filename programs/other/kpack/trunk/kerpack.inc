@@ -21,22 +21,22 @@ purge mov ; for the correct patch of loader
 kerpack:
 	call	clear_mess_and_displogo
 
-	mov	ecx,200*1024*3+6A8000h
+	mov	ecx,300*1024*3+6A8000h
 	mcall	68,12
 	mov	[infile],eax
 	mov	[infile3],eax
-	add	eax,200*1024
+	add	eax,300*1024
 	mov	[inbuftmp],eax
-	add	eax,200*1024
+	add	eax,300*1024
 	mov	[outfile],eax
-	add	eax,200*1024
+	add	eax,300*1024
 	mov	[workmem],eax
 	
 	
 	mov	esi,inname
 	call	get_full_name
 	
-	mov	[insize3],200*1024 ; max size of input file
+	mov	[insize3],300*1024 ; max size of input file
 	
 	mcall	70,fn70_read
 	cmp	eax,6
