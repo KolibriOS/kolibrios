@@ -1,4 +1,4 @@
-20??-??-?? (v3.00.0007)
+2022-01-23 (v3.00.0007)
   new: linux add column "B" and "Z" in linux version
   new: experimental version for KolibriOS (russian x32 OS)
   fix: VP version (not W32) show free memory size >2GB
@@ -90,4 +90,6 @@
   fix: corrected free memory detection in Linux32
   fix: build compressor now works in Linux32 and optionally support readonly files
   fix: show allocated file size on disk & sort by this size also in Linux version
+  new: column "R" in disk shows how much space is used by the file in the current folder as a percentage
   new: OS/2 version released
+  new: test version for HaikuOS
