@@ -398,9 +398,13 @@ vesa12_drawbar:
         push    ebx
         push    ecx
         push    edx
-        mov     ecx, [TASK_BASE]
-        add     eax, [ecx-twdw+WDATA.box.left]
-        add     ebx, [ecx-twdw+WDATA.box.top]
+        ;mov     ecx, [TASK_BASE]
+        ;add     eax, [ecx-twdw+WDATA.box.left]
+        ;add     ebx, [ecx-twdw+WDATA.box.top]
+        mov     ecx, [current_slot_idx]
+        shl     ecx, 5
+        add     eax, [ecx + window_data + WDATA.box.left]
+        add     ebx, [ecx + window_data + WDATA.box.top]
         push    eax
         mov     eax, ebx ; y
         mov     ebx, [BytesPerScanLine]
@@ -765,9 +769,13 @@ vesa12_putimage:
         push    edx
         movzx   eax, word [esp+2]
         movzx   ebx, word [esp+0]
-        mov     ecx, [TASK_BASE]
-        add     eax, [ecx-twdw+WDATA.box.left]
-        add     ebx, [ecx-twdw+WDATA.box.top]
+        ;mov     ecx, [TASK_BASE]
+        ;add     eax, [ecx-twdw+WDATA.box.left]
+        ;add     ebx, [ecx-twdw+WDATA.box.top]
+        mov     ecx, [current_slot_idx]
+        shl     ecx, 5
+        add     eax, [ecx + window_data + WDATA.box.left]
+        add     ebx, [ecx + window_data + WDATA.box.top]
         push    eax
         mov     eax, ebx  ; y
         mul     dword [BytesPerScanLine]

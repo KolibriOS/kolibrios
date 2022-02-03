@@ -423,8 +423,10 @@ align 4
         push    edi
 
         mov     eax, [current_slot_idx]
-        shl     eax, 5
-        mov     eax, [TASK_TABLE+eax+4]
+        ;shl     eax, 5
+        ;mov     eax, [TASK_TABLE+eax+TASKDATA.pid]
+        shl     eax, 8
+        mov     eax, [eax + SLOT_BASE + APPDATA.tid]
         mov     ebx, [src]
         mov     ecx, [flags]
         call    create_cursor    ;eax, ebx, ecx
@@ -460,8 +462,10 @@ proc delete_cursor stdcall, hcursor:dword
         jne     .fail
 
         mov     ebx, [current_slot_idx]
-        shl     ebx, 5
-        mov     ebx, [TASK_TABLE+ebx+4]
+        ;shl     ebx, 5
+        ;mov     ebx, [TASK_TABLE+ebx+4]
+        shl     ebx, 8
+        mov     ebx, [ebx + SLOT_BASE + APPDATA.tid]
         cmp     ebx, [esi+CURSOR.pid]
         jne     .fail
 

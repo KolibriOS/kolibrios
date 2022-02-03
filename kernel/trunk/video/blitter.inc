@@ -212,10 +212,11 @@ end virtual
         sub     esp, .local_vars_size
         
         mov     [esp+.flags], ebx
-        
-        mov     eax, [TASK_BASE]
-        mov     ebx, [eax-twdw + WDATA.box.width]
-        mov     edx, [eax-twdw + WDATA.box.height]
+
+        mov     eax, [current_slot_idx]
+        shl     eax, 5 ; sizeof.WDATA
+        mov     ebx, [eax + window_data + WDATA.box.width]
+        mov     edx, [eax + window_data + WDATA.box.height]
         inc     ebx
         inc     edx
 
@@ -259,12 +260,13 @@ end virtual
         call    blit_clip
         jc      .L57
 
-        mov     eax, [TASK_BASE]
+        mov     eax, [current_slot_idx]
+        shl     eax, 5 ; sizeof.WDATA
 
         mov     ebx, [esp+BLITTER.dst_x]
         mov     ebp, [esp+BLITTER.dst_y]
-        add     ebx, [eax-twdw + WDATA.box.left]
-        add     ebp, [eax-twdw + WDATA.box.top]
+        add     ebx, [eax + window_data + WDATA.box.left]
+        add     ebp, [eax + window_data + WDATA.box.top]
         
         test    [esp+.flags], BLIT_CLIENT_RELATIVE
         jz      .no_client_relative        

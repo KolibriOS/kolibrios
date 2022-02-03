@@ -189,15 +189,17 @@ end virtual
         mov     [putimg.image_cx], eax
         mov     [putimg.image_cy], edx
 ; calculate absolute (i.e. screen) coordinates
-        mov     eax, [TASK_BASE]
-        mov     ebx, [eax-twdw + WDATA.box.left]
+        ;mov     eax, [TASK_BASE]
+        mov     eax, [current_slot_idx]
+        shl     eax, 5 ; sizeof.WDATA
+        mov     ebx, [eax + window_data + WDATA.box.left]
         add     ebx, [putimg.image_cx]
         mov     [putimg.abs_cx], ebx
-        mov     ebx, [eax-twdw + WDATA.box.top]
+        mov     ebx, [eax +window_data + WDATA.box.top]
         add     ebx, [putimg.image_cy]
         mov     [putimg.abs_cy], ebx
 ; real_sx = MIN(wnd_sx-image_cx, image_sx);
-        mov     ebx, [eax-twdw + WDATA.box.width]       ; ebx = wnd_sx
+        mov     ebx, [eax + window_data + WDATA.box.width]       ; ebx = wnd_sx
         inc     ebx                                     ; WDATA.box.width is one pixel less than real window x-size
         sub     ebx, [putimg.image_cx]
         ja      @f
@@ -212,7 +214,7 @@ end virtual
   .end_x:
         mov     [putimg.real_sx], ebx
 ; init real_sy
-        mov     ebx, [eax-twdw + WDATA.box.height]      ; ebx = wnd_sy
+        mov     ebx, [eax + window_data + WDATA.box.height]      ; ebx = wnd_sy
         inc     ebx
         sub     ebx, [putimg.image_cy]
         ja      @f
@@ -1401,13 +1403,15 @@ end virtual
         mov     [drbar.bar_sx], ecx
         mov     [drbar.bar_cx], eax
         mov     [drbar.bar_cy], ebx
-        mov     edi, [TASK_BASE]
-        add     eax, [edi-twdw + WDATA.box.left]        ; win_cx
-        add     ebx, [edi-twdw + WDATA.box.top]         ; win_cy
+        ;mov     edi, [TASK_BASE]
+        mov     edi, [current_slot_idx]
+        shl     edi, 5 ; sizeof.WDATA
+        add     eax, [edi + window_data + WDATA.box.left]        ; win_cx
+        add     ebx, [edi + window_data + WDATA.box.top]         ; win_cy
         mov     [drbar.abs_cx], eax
         mov     [drbar.abs_cy], ebx
 ; real_sx = MIN(wnd_sx-bar_cx, bar_sx);
-        mov     ebx, [edi-twdw + WDATA.box.width]       ; ebx = wnd_sx
+        mov     ebx, [edi + window_data + WDATA.box.width]       ; ebx = wnd_sx
         inc     ebx                                     ; WDATA.box.width is one pixel less than real window x-size
         sub     ebx, [drbar.bar_cx]
         ja      @f
@@ -1424,7 +1428,7 @@ end virtual
   .end_x:
         mov     [drbar.real_sx], ebx
 ; real_sy = MIN(wnd_sy-bar_cy, bar_sy);
-        mov     ebx, [edi-twdw + WDATA.box.height]      ; ebx = wnd_sy
+        mov     ebx, [edi + window_data + WDATA.box.height]      ; ebx = wnd_sy
         inc     ebx
         sub     ebx, [drbar.bar_cy]
         ja      @f
