@@ -222,6 +222,9 @@ int MakePE();
 int MakeObj();
 void CheckUndefClassProc();
 
+// Added by Coldy
+void ParseObjCommand(int cmd);
+
 #ifdef _KOS_
 extern "C"{
     void con_set_title(char* title);
@@ -322,6 +325,14 @@ unsigned char pari=FALSE;
 			}
 		}
 	}
+  //{	Added by Coldy
+	//	If -coff (for fully mscoff)
+	if (ocoff && !sobj) {
+		am32 = TRUE;
+		ParseObjCommand(c_sobj);
+
+	}
+	//}
 	if(rawfilename==NULL){
 		PrintInfo((char **)usage);
 		exit( e_noinputspecified );
@@ -622,6 +633,19 @@ unsigned int oinptr,oendinptr;
 	return retnum;
 }
 
+void ParseObjCommand(int cmd){
+	switch (cmd) {
+	case c_sobj:
+		sobj = TRUE;
+		FixUp = TRUE;
+		jumptomain = CALL_NONE;
+	case c_obj:
+		fobj = TRUE;
+		//					if(comfile==file_d32)FixUp=TRUE;
+		FastCallApi = FALSE;
+	}
+}
+
 int SelectComand(char *pptr,int *count)
 {
 int i;
@@ -703,13 +727,15 @@ errlate:
 					header=0;
 					break;
 				case c_sobj:
-					sobj=TRUE;
+/*					sobj=TRUE;
 					FixUp=TRUE;
 					jumptomain=CALL_NONE;
-				case c_obj:
-					fobj=TRUE;
+*/			case c_obj:
+/*					fobj=TRUE;
 //					if(comfile==file_d32)FixUp=TRUE;
 					FastCallApi=FALSE;
+*/
+          ParseObjCommand(i);
 					break;
 				case c_me:
 					puts(meinfo);
@@ -1283,7 +1309,9 @@ int writeoutput()
 {
 EXE_DOS_HEADER exeheader;  // header for EXE format
 	if(fobj){
-		if(comfile==file_w32&&ocoff)return MakeCoff();
+		if(comfile==file_w32&&ocoff
+       // Edited by Coldy
+			||ocoff&&sobj)return MakeCoff();
 		return MakeObj();
 	}
 	if(comfile==file_w32)return MakePE();

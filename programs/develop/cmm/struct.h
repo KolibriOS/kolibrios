@@ -278,7 +278,7 @@ typedef struct _PE_HEADER_
 
 typedef struct _OBJECT_ENTRY_
 {
-	char name[16];
+	char name[8];
 	long vsize;
 	long sectionRVA;
 	long psize;
