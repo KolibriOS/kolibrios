@@ -21,7 +21,6 @@ goto :eof
    fasm -m 65536 kernel.asm kernel.mnt
    fasm -m 65536 kernel.asm kernel.bin -dUEFI=1
    if not %errorlevel%==0 goto :Error_FasmFailed
-   erase lang.inc
 goto :eof
 
 

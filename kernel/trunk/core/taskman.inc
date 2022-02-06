@@ -476,8 +476,6 @@ align 4
 get_pid:
         mov     eax, [current_slot]
         mov     eax, [eax+APPDATA.tid]
-        mov     eax, [TASK_BASE]             ; delete
-        mov     eax, [eax+TASKDATA.pid]      ;
         ret
 
 pid_to_slot:
@@ -502,12 +500,10 @@ pid_to_slot:
 ;ebx = maximum permitted offset
         cmp     [TASK_TABLE+ecx+TASKDATA.state], TSTATE_FREE
         jz      .endloop ;skip empty slots
-        cmp     [TASK_TABLE+ecx+TASKDATA.pid], eax;check PID
-        jz      .pid_found
         ;cmp     [ecx+SLOT_BASE+APPDATA.state], TSTATE_FREE
         ;jz      .endloop ;skip empty slots
-        ;cmp     [ecx+SLOT_BASE+APPDATA.pid], eax;check PID
-        ;jz      .pid_found
+        cmp     [ecx*8 + SLOT_BASE + APPDATA.tid], eax;check PID
+        jz      .pid_found
 .endloop:
         add     ecx, sizeof.TASKDATA
         ;add     ecx, sizeof.APPDATA
@@ -997,10 +993,6 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 ; set window state to 'normal' (non-minimized/maximized/rolled-up) state
         mov     [ebx+window_data+WDATA.fl_wstate], WSTATE_NORMAL
         mov     [ebx+window_data+WDATA.fl_redraw], 1
-        add     ebx, TASK_TABLE     ;ebx - pointer to information about process
-
-        mov     eax, [process_number]                     ; delete
-        mov     [ebx+TASKDATA.pid], eax    ;set PID       ;
 
 ;set draw data to full screen
         xor     eax, eax

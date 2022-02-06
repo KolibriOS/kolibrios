@@ -1397,8 +1397,8 @@ align 4
         ja      .fail
 
         mov     ebx, [current_slot_idx]
-        shl     ebx, BSF sizeof.TASKDATA
-        mov     ebx, [TASK_TABLE + ebx + TASKDATA.pid]
+        shl     ebx, BSF sizeof.APPDATA
+        mov     ebx, [SLOT_BASE + ebx + APPDATA.tid]
         mov     eax, sizeof.SMAP
 
         call    create_kernel_object

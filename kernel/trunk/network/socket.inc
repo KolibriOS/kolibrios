@@ -679,8 +679,8 @@ socket_accept:
         jz      .invalid
 
 ; Change sockets thread owner ID to that of the current thread
-        mov     ebx, [TASK_BASE]
-        mov     ebx, [ebx + TASKDATA.pid]
+        mov     ebx, [current_slot]
+        mov     ebx, [ebx + APPDATA.tid]
         mov     [eax + SOCKET.TID], ebx
 
 ; Return socket number to caller
@@ -925,8 +925,8 @@ socket_receive_local:
         jne     @f
 
         ; Change PID to that of current process
-        mov     ebx, [TASK_BASE]
-        mov     ebx, [ebx + TASKDATA.pid]
+        mov     ebx, [current_slot]
+        mov     ebx, [ebx + APPDATA.tid]
         mov     [eax + SOCKET.PID], ebx
         mov     [eax + SOCKET.TID], ebx                         ; currently TID = PID in kolibrios :(
       @@:
@@ -1114,8 +1114,8 @@ socket_send_local:
         jne     @f
 
         ; Change PID to that of current process
-        mov     ebx, [TASK_BASE]
-        mov     ebx, [ebx + TASKDATA.pid]
+        mov     ebx, [current_slot]
+        mov     ebx, [ebx + APPDATA.tid]
         mov     [eax + SOCKET.PID], ebx
         mov     [eax + SOCKET.TID], ebx         ; currently TID = PID in kolibrios :(
       @@:
@@ -1862,9 +1862,10 @@ socket_block:
         push    edx
         mov     edx, [TASK_BASE]
         mov     [edx + TASKDATA.state], TSTATE_RUN_SUSPENDED
+        mov     edx, [current_slot]
 
         ; Remember the thread ID so we can wake it up again
-        mov     edx, [edx + TASKDATA.pid]
+        mov     edx, [edx + APPDATA.tid]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_block: suspending thread: %u\n", edx
         mov     [eax + SOCKET.TID], edx
         pop     edx
@@ -1902,12 +1903,15 @@ socket_notify:
         jz      .error2
         xor     ecx, ecx
         inc     ecx
-        mov     esi, TASK_DATA
+        ;mov     esi, TASK_DATA
+        mov     esi, SLOT_BASE + sizeof.APPDATA
   .next:
-        cmp     [esi + TASKDATA.pid], ebx
+        ;cmp     [esi + TASKDATA.pid], ebx
+        cmp     [esi + APPDATA.tid], ebx
         je      .found
         inc     ecx
-        add     esi, sizeof.TASKDATA
+        ;add     esi, sizeof.TASKDATA
+        add     esi, sizeof.APPDATA
         cmp     ecx, [thread_count]
         jbe     .next
 
@@ -1927,7 +1931,7 @@ socket_notify:
 
 ; Socket and thread exists and socket is of non blocking type.
 ; We'll try to flag an event to the thread.
-        shl     ecx, 8
+        shl     ecx, BSF sizeof.APPDATA
         or      [SLOT_BASE + ecx + APPDATA.occurred_events], EVENT_NETWORK
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: poking thread %u!\n", ebx
@@ -1939,7 +1943,8 @@ socket_notify:
 ; Socket and thread exists and socket is of blocking type
 ; We'll try to unblock it.
         and     [eax + SOCKET.state], not SS_BLOCKED    ; Clear the 'socket is blocked' flag
-        mov     [esi + TASKDATA.state], TSTATE_RUNNING  ; Run the thread
+        shl     ecx, BSF sizeof.TASKDATA
+        mov     [ecx + TASK_TABLE + TASKDATA.state], TSTATE_RUNNING  ; Run the thread
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Unblocked socket!\n"
         pop     esi ecx ebx
@@ -2009,8 +2014,8 @@ socket_alloc:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_alloc: number=%u\n", edi
 
 ; Fill in PID
-        mov     ebx, [TASK_BASE]
-        mov     ebx, [ebx + TASKDATA.pid]
+        mov     ebx, [current_slot]
+        mov     ebx, [ebx + APPDATA.tid]
         mov     [eax + SOCKET.PID], ebx
         mov     [eax + SOCKET.TID], ebx         ; currently TID = PID in kolibrios :(
 
@@ -2323,8 +2328,8 @@ socket_check_owner:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_check_owner: %x\n", eax
 
         push    ebx
-        mov     ebx, [TASK_BASE]
-        mov     ebx, [ebx + TASKDATA.pid]
+        mov     ebx, [current_slot]
+        mov     ebx, [ebx + APPDATA.tid]
         cmp     [eax + SOCKET.PID], ebx
         pop     ebx
 

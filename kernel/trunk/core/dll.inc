@@ -1155,8 +1155,8 @@ proc load_library stdcall, file_name:dword, encoding:dword
         test    eax, eax
         jz      .fail_and_free_user
         mov     ebx, [current_slot_idx]
-        shl     ebx, 5
-        mov     edx, [TASK_TABLE+ebx+TASKDATA.pid]
+        shl     ebx, BSF sizeof.APPDATA
+        mov     edx, [SLOT_BASE + ebx + APPDATA.tid]
         mov     [eax+HDLL.pid], edx
         push    eax
         call    init_dlls_in_thread

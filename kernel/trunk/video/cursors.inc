@@ -423,8 +423,6 @@ align 4
         push    edi
 
         mov     eax, [current_slot_idx]
-        ;shl     eax, 5
-        ;mov     eax, [TASK_TABLE+eax+TASKDATA.pid]
         shl     eax, 8
         mov     eax, [eax + SLOT_BASE + APPDATA.tid]
         mov     ebx, [src]

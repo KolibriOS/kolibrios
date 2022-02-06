@@ -1182,11 +1182,7 @@ proc setup_os_slot
         list_add_tail ebx, ecx
 
         mov     [edx+APPDATA.wnd_number], dh
-        mov     byte [edx+APPDATA.tid], dh    ;?
-        mov     eax, edx
-        shr     eax, 3
-        add     eax, TASK_TABLE - (SLOT_BASE shr 3)
-        mov     byte [eax+TASKDATA.pid], dh
+        mov     byte [edx+APPDATA.tid], dh
 
         ret
 endp
@@ -1923,8 +1919,6 @@ sys_end:
         pusha
         mov     edx, [current_slot]
         mov     edx, [edx+APPDATA.tid]
-        mov     edx, [TASK_BASE]           ; delete
-        mov     edx, [edx+TASKDATA.pid]    ;
         call    socket_process_end
         popa
 ;--------------------------------------
@@ -2050,7 +2044,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         ja      noprocessterminate
         mov     eax, [thread_count]
         shl     ecx, BSF sizeof.TASKDATA
-        mov     edx, [ecx+TASK_TABLE+TASKDATA.pid]
+        mov     edx, [ecx*8 + SLOT_BASE + APPDATA.tid]
         add     ecx, TASK_TABLE+TASKDATA.state
         cmp     byte [ecx], TSTATE_FREE
         jz      noprocessterminate
@@ -2659,7 +2653,6 @@ sys_cpuusage:
 
 ; +30: PID/TID
         mov     eax, [ecx*8 + SLOT_BASE + APPDATA.tid]
-        mov     eax, [ecx+TASK_TABLE+TASKDATA.pid]
         stosd
 
     ; window position and size
@@ -3616,10 +3609,8 @@ no_unmask_io:
         mov     [RESERVED_PORTS], eax
         shl     eax, 4
         add     eax, RESERVED_PORTS
-        ;mov     ebx, [current_slot]
-        ;mov     ebx, [ebx+APPDATA.tid]
-        mov     ebx, [TASK_BASE]
-        mov     ebx, [ebx+TASKDATA.pid]
+        mov     ebx, [current_slot]
+        mov     ebx, [ebx+APPDATA.tid]
         mov     [eax], ebx
         mov     [eax+4], ecx
         mov     [eax+8], edx
@@ -3633,10 +3624,8 @@ free_port_area:
         mov     eax, [RESERVED_PORTS]; no reserved areas ?
         test    eax, eax
         jz      frpal2
-        ;mov     ebx, [current_slot]
-        ;mov     ebx, [ebx+APPDATA.tid]
-        mov     ebx, [TASK_BASE]
-        mov     ebx, [ebx+TASKDATA.pid]
+        mov     ebx, [current_slot]
+        mov     ebx, [ebx+APPDATA.tid]
    frpal3:
         mov     edi, eax
         shl     edi, 4
@@ -4420,10 +4409,8 @@ align 4
         jnz     @f
 ; get current PID
         mov     eax, [current_slot_idx]
-        shl     eax, 5
-        mov     eax, [eax+TASK_TABLE+TASKDATA.pid]
-        ;shl     eax, 8
-        ;mov     eax, [eax+SLOT_BASE+APPDATA.tid]
+        shl     eax, BSF sizeof.APPDATA
+        mov     eax, [eax+SLOT_BASE+APPDATA.tid]
 ; set current PID for lock input
         mov     [PID_lock_input], eax
 @@:
@@ -4437,10 +4424,8 @@ align 4
         jz      @f
 ; get current PID
         mov     ebx, [current_slot_idx]
-        shl     ebx, 5
-        mov     ebx, [ebx+TASK_TABLE+TASKDATA.pid]
-        ;shl     ebx, 8
-        ;mov     ebx, [ebx+SLOT_BASE+APPDATA.tid]
+        shl     ebx, BSF sizeof.APPDATA
+        mov     ebx, [ebx+SLOT_BASE+APPDATA.tid]
 ; compare current lock input with current PID
         cmp     ebx, eax
         jne     @f

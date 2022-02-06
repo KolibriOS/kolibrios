@@ -180,8 +180,8 @@ exc_c:                            ; exceptions (all but 7th - #NM)
         mov     cl, 3           ; debug_message code=debug_exception
 .notify:
         push    ebx             ; debug_message data
-        mov     ebx, [TASK_BASE]
-        push    [ebx+TASKDATA.pid] ; PID
+        mov     ebx, [current_slot]
+        push    [ebx + APPDATA.tid] ; PID
         push    ecx             ; debug_message code ((here: ecx==1/3))
         mov     cl, 12          ; debug_message size
         call    debugger_notify ;; only ONE using, inline ??? SEE: core/debug.inc
@@ -214,11 +214,11 @@ show_error_parameters:
         call    fs_execute_from_sysdir_param
         pop     ebx
 .no_ud:
-        mov     edx, [TASK_BASE];not scratched below
+        mov     edx, [current_slot];not scratched below
         if lang eq sp
-        DEBUGF  1, "K : Proceso - terminado forzado PID: %x [%s]\n", [edx+TASKDATA.pid], [current_slot]
+        DEBUGF  1, "K : Proceso - terminado forzado PID: %x [%s]\n", [edx + APPDATA.tid], [current_slot]
         else
-        DEBUGF  1, "K : Process - forced terminate PID: %x [%s]\n", [edx+TASKDATA.pid], [current_slot]
+        DEBUGF  1, "K : Process - forced terminate PID: %x [%s]\n", [edx + APPDATA.tid], [current_slot]
         end if
         cmp     bl, 0x08
         jb      .l0
@@ -343,9 +343,8 @@ lock_application_table:
         call    mutex_lock
 
         mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.TASKDATA
-        add     eax, TASK_TABLE+TASKDATA.pid
-        mov     eax, [eax]
+        shl     eax, BSF sizeof.APPDATA
+        mov     eax, [eax + SLOT_BASE + APPDATA.tid]
 
         mov     [application_table_owner], eax
 
@@ -506,8 +505,8 @@ destroy_thread:
         jb      .loop
 ; get process PID
         mov     eax, esi
-        shl     eax, BSF sizeof.TASKDATA
-        mov     eax, [eax+TASK_TABLE+TASKDATA.pid]
+        shl     eax, BSF sizeof.APPDATA
+        mov     eax, [eax + SLOT_BASE + APPDATA.tid]
 ; compare current lock input with process PID
         cmp     eax, [PID_lock_input]
         jne     @f
@@ -578,12 +577,12 @@ destroy_thread:
 ; debuggee test
         pushad
         mov     edi, esi
-        shl     edi, BSF sizeof.TASKDATA
-        mov     eax, [SLOT_BASE+edi*8+APPDATA.debugger_slot]
+        shl     edi, BSF sizeof.APPDATA
+        mov     eax, [SLOT_BASE + edi + APPDATA.debugger_slot]
         test    eax, eax
         jz      .nodebug
         movi    ecx, 8
-        push    dword [TASK_TABLE+edi+TASKDATA.pid]; PID
+        push    dword [SLOT_BASE + edi + APPDATA.tid]; PID
         push    2
         call    debugger_notify
         pop     ecx
@@ -653,8 +652,8 @@ destroy_thread:
  .dont_activate:
 
         push    esi     ; remove hd1 & cd & flp reservation
-        shl     esi, BSF sizeof.TASKDATA
-        mov     esi, [esi+TASK_TABLE+TASKDATA.pid]
+        shl     esi, BSF sizeof.APPDATA
+        mov     esi, [esi + SLOT_BASE + APPDATA.tid]
         cmp     [cd_status], esi
         jnz     @f
         call    free_cd_channel
@@ -669,9 +668,8 @@ destroy_thread:
 
         pusha                 ; remove all port reservations
         mov     edx, esi
-        shl     edx, BSF sizeof.TASKDATA
-        add     edx, TASK_TABLE
-        mov     edx, [edx+TASKDATA.pid]
+        shl     edx, BSF sizeof.APPDATA
+        mov     edx, [edx + SLOT_BASE + APPDATA.tid]
 
   rmpr0:
 
@@ -717,7 +715,7 @@ destroy_thread:
         mov     [edi+TASK_TABLE + TASKDATA.state], TSTATE_FREE
 ; debugger test - terminate all debuggees
         mov     eax, 2
-        mov     ecx, SLOT_BASE+2*0x100+APPDATA.debugger_slot
+        mov     ecx, SLOT_BASE+2*sizeof.APPDATA + APPDATA.debugger_slot
 .xd0:
         cmp     eax, [thread_count]
         ja      .xd1
@@ -731,7 +729,7 @@ destroy_thread:
         popad
 @@:
         inc     eax
-        add     ecx, 0x100
+        add     ecx, sizeof.APPDATA
         jmp     .xd0
 .xd1:
 ;release slot

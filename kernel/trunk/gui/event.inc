@@ -68,10 +68,8 @@ create_event:                                      ;; EXPORT use
 ;scratched: ebx,ecx,esi,edi
         mov     ebx, [current_slot]
         add     ebx, APP_OBJ_OFFSET
-        ;mov     edx, [cyrrent_slot]
-        ;mov     edx, [edx+APPDATA.tid]
-        mov     edx, [TASK_BASE]
-        mov     edx, [edx+TASKDATA.pid]
+        mov     edx, [current_slot]
+        mov     edx, [edx+APPDATA.tid]
         pushfd
         cli
 ;--------------------------------------

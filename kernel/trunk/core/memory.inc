@@ -1007,8 +1007,8 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         ja      .buffer_overflow       ;esi<0 - not enough memory in buffer
 
         mov     dword [edi+4], ebx
-        mov     eax, [TASK_BASE]
-        mov     eax, [eax+TASKDATA.pid]        ;eax - our PID
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.tid]        ;eax - our PID
         add     edi, edx
         mov     [edi], eax
         mov     ecx, [msg_size]
