@@ -120,6 +120,7 @@ void GetSizeMoreFiles(dword way)
 			{
 				GetFileInfo(#cur_file, #file_info_dirsize);
 				more_files_count.bytes += file_info_dirsize.sizelo;
+				more_files_count.bytes += file_info_dirsize.sizehi;
 				more_files_count.files++;
 			}
 		}
@@ -219,10 +220,9 @@ void properties_dialog()
 void DrawPropertiesWindow()
 {
 	proc_info pform;
-	char element_size_label[32];
+	char size_lbl[32];
 	char folder_info[200];
 	dword ext1;
-	dword element_size;
 	incn y;
 	char temp_path[PATHLEN];
 	bool show_date = false;
@@ -244,8 +244,8 @@ void DrawPropertiesWindow()
 		PropertiesDrawIcon(NULL, "<lot>");
 		sprintf(#folder_info,T_FILES_FOLDERS,more_files_count.files,more_files_count.folders);
 		WriteText(file_name_ed.left+4, 30, 0x90, sc.work_text, #folder_info);
-		sprintf(#element_size_label,T_PROP_SIZE,ConvertSize64(more_files_count.bytes, NULL),more_files_count.bytes);
-		WriteText(10, 97, 0x90, sc.work_text, #element_size_label);
+		sprintf(#size_lbl,T_PROP_SIZE,ConvertSize64(more_files_count.bytes, more_files_count.bytes>>32),more_files_count.bytes);
+		WriteText(10, 97, 0x90, sc.work_text, #size_lbl);
 	}
 	else
 	{
@@ -261,15 +261,14 @@ void DrawPropertiesWindow()
 		DrawEditBox(#file_name_ed);
 		
 		if (!itdir) {
-			element_size = file_info_general.sizelo;
+			sprintf(#size_lbl,T_PROP_SIZE,ConvertSize64(file_info_general.sizelo, file_info_general.sizehi),file_info_general.sizelo);
 		} else {
 			sprintf(#folder_info,T_FILES_FOLDERS,dir_size.files,dir_size.folders);
 			WriteText(10,  117, 0x90, sc.work_text, PR_T_CONTAINS);                              
 			WriteText(120, 117, 0x90, sc.work_text, #folder_info);
-			element_size = dir_size.bytes;
+			sprintf(#size_lbl,T_PROP_SIZE,ConvertSize64(dir_size.bytes, dir_size.bytes_high),dir_size.bytes);
 		}
-		sprintf(#element_size_label,T_PROP_SIZE,ConvertSize64(element_size, NULL),element_size);
-		WriteText(10, 99, 0x90, sc.work_text, #element_size_label);
+		WriteText(10, 99, 0x90, sc.work_text, #size_lbl);
 	}
 
 	if (show_date) {
