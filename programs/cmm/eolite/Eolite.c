@@ -1,4 +1,4 @@
-//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2021
+//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2022
 //GNU GPL license.
 
 /*
@@ -11,9 +11,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.21"
-#define TITLE_EOLITE "Eolite File Manager 5.21"
-#define TITLE_KFM "Kolibri File Manager 2.21";
+#define ABOUT_TITLE "EOLITE 5.22"
+#define TITLE_EOLITE "Eolite File Manager 5.22"
+#define TITLE_KFM "Kolibri File Manager 2.22";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -197,7 +197,7 @@ void main()
 	OpenDir(ONLY_OPEN);
 	llist_copy(#files_inactive, #files);
 	SetEventMask(EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE+EVM_MOUSE_FILTER);
-	loop() switch(@WaitEventTimeout(100))
+	loop() switch(@WaitEventTimeout(150))
 	{
 		case evMouse:
 			if (Form.status_window&ROLLED_UP) break;
@@ -511,7 +511,10 @@ void main()
 			if (CheckActiveProcess(Form.ID)) && (GetMenuClick()) break;
 			break;
 		default:
-			if (!Form.status_window&ROLLED_UP) EventRefreshDisksAndFolders();
+			if (!Form.status_window&ROLLED_UP) 
+			&& (ESBYTE[path+1]!='f') && (ESBYTE[path+1]!='c') {
+				EventRefreshDisksAndFolders();
+			}
 	}
 
 	if(cmd_free)
@@ -1277,12 +1280,14 @@ void EventRefreshDisksAndFolders()
 			return;
 		}
 	} else {
-		if (GetRealFileCountInFolder("/")+dir_exists("/kolibrios") != SystemDiscs.dev_num) {
+		if (GetRealFileCountInFolder("/")+KolibriosMounted() != SystemDiscs.dev_num) {
 			SystemDiscs.Get();
 			SystemDiscs.Draw();
 		}
 	}
-	if(GetRealFileCountInFolder(path) != files.count) OpenDir(WITH_REDRAW);
+	if(GetRealFileCountInFolder(path) != files.count) {
+		OpenDir(WITH_REDRAW);
+	}
 }
 
 void EventManualFolderRefresh()

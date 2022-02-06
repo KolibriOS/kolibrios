@@ -256,19 +256,16 @@ inline fastcall void GetCurDir( ECX, EDX)
 	else return bdvk.sizelo;
 }
 
-/*
-// This implementation of dir_exists() is faster than
-// previous but here virtual folders like
-// '/' and '/tmp' are not recognised as FOLDERS
-// by GetFileInfo() => BDVK.isfolder attribute :(
-
-:bool dir_exists(dword fpath)
+/* This implementation of dir_exists() is faster than
+   previous but here virtual folders like
+   '/' and '/tmp' are not recognised as FOLDERS
+   by GetFileInfo() => BDVK.isfolder attribute :( */
+bool real_dir_exists(dword fpath)
 {
 	BDVK fpath_atr;
 	if (GetFileInfo(fpath, #fpath_atr) != 0) return false; 
 	return fpath_atr.isfolder;
 }
-*/
 
 :bool file_exists(dword fpath)
 {

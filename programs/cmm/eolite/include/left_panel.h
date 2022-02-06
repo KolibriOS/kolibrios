@@ -1,3 +1,10 @@
+bool KolibriosMounted()
+{
+	static bool kolibrios_mounted;
+	if (kolibrios_mounted) return true;
+	kolibrios_mounted = real_dir_exists("/kolibrios");
+	return kolibrios_mounted;
+}
 
 struct _SystemDiscs
 {
@@ -23,7 +30,7 @@ void _SystemDiscs::Get()
 	list.add("/sys");
 	dev_num++;
 
-	if (dir_exists("/kolibrios")) {
+	if (KolibriosMounted()) {
 		//need to check that /sys != /kolibrios
 		list.add("/kolibrios");
 		dev_num++;
