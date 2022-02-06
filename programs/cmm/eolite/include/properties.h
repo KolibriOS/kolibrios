@@ -119,8 +119,8 @@ void GetSizeMoreFiles(dword way)
 			else
 			{
 				GetFileInfo(#cur_file, #file_info_dirsize);
-				more_files_count.bytes += file_info_dirsize.sizelo;
-				more_files_count.bytes += file_info_dirsize.sizehi;
+				more_files_count.sizelo += file_info_dirsize.sizelo;
+				more_files_count.sizehi += file_info_dirsize.sizehi;
 				more_files_count.files++;
 			}
 		}
@@ -171,7 +171,7 @@ void properties_dialog()
 					cmd_free=3;
 					ExitProcess();
 				}
-				if (id==B_APPLY) EventApplyProperties();
+				if (id==B_APPLY) goto _APPLY_PROPERTIES;
 				break;
 				
 		case evMouse:
@@ -199,7 +199,12 @@ void properties_dialog()
 						break;
 
 					case SCAN_CODE_ENTER:
-						EventApplyProperties();
+						_APPLY_PROPERTIES:
+						if (getSelectedCount()) || (itdir) {
+							ShowConfirmQuestionPopin();
+						} else {
+							SetProperties(SET_PROPERTIES_SINGLE_FILE);
+						}
 						break;
 
 					case SCAN_CODE_KEY_A:
@@ -220,62 +225,60 @@ void properties_dialog()
 void DrawPropertiesWindow()
 {
 	proc_info pform;
-	char size_lbl[32];
-	char folder_info[200];
 	dword ext1;
 	incn y;
 	char temp_path[PATHLEN];
 	bool show_date = false;
 
+	dword p_t_formated_size;
+	dword p_q_size_bytes;
+	dword t_contains_files_and_folders[200];
+
 	if (chrnum(path, '/')>1) || (streq(path, "/kolibrios")) || (streq(path, "/sys")) show_date = true;
 	if (getSelectedCount()) show_date = false;
 
-	DefineAndDrawWindow(Form.left + 150,150,315,show_date*60+300+skin_h,0x34,sc.work,WINDOW_TITLE_PROPERTIES,0);
+	DefineAndDrawWindow(Form.left + 150,150,315,show_date*60+342+skin_h,0x34,sc.work,WINDOW_TITLE_PROPERTIES,0);
 	GetProcessInfo(#pform, SelfInfo);
 
 	DrawStandartCaptButton(pform.cwidth - 96, pform.cheight-34, B_CLOSE, T_CLOSE);
 	DrawStandartCaptButton(pform.cwidth -208, pform.cheight-34, B_APPLY, T_APPLY);
 	
-	WriteText(10, 78, 0x90, sc.work_text, PR_T_DEST);
-	edit_box_draw stdcall (#path_to_file_ed);
-	
 	if (getSelectedCount())
 	{
 		PropertiesDrawIcon(NULL, "<lot>");
-		sprintf(#folder_info,T_FILES_FOLDERS,more_files_count.files,more_files_count.folders);
-		WriteText(file_name_ed.left+4, 30, 0x90, sc.work_text, #folder_info);
-		sprintf(#size_lbl,T_PROP_SIZE,ConvertSize64(more_files_count.bytes, more_files_count.bytes>>32),more_files_count.bytes);
-		WriteText(10, 97, 0x90, sc.work_text, #size_lbl);
-	}
-	else
-	{
-		if ( file_info_general.isfolder )
-				PropertiesDrawIcon(NULL, "<DIR>");
-		else {
-			sprintf(#temp_path,"%s/%s",path,#file_name2);
-			ext1 = strrchr(#file_name2,'.');
-			if (ext1) ext1 += #file_name2;
-			PropertiesDrawIcon(#temp_path, ext1);
-		}
-		WriteText(file_name_ed.left, file_name_ed.top-15, 0x80, sc.work_text, PR_T_NAME);
+		WriteText(file_name_ed.left+4, 30, 0x90, sc.work_text, T_BULK_SELECTION);
+		p_t_formated_size = ConvertSize64(more_files_count.sizelo, more_files_count.sizehi);
+		p_q_size_bytes = #more_files_count.sizelo;
+		sprintf(#t_contains_files_and_folders,T_FILES_FOLDERS,more_files_count.files,more_files_count.folders);
+	} else {
+		WriteText(file_name_ed.left, file_name_ed.top-15, 0x80, sc.work_text, T_NAME);
 		DrawEditBox(#file_name_ed);
-		
-		if (!itdir) {
-			sprintf(#size_lbl,T_PROP_SIZE,ConvertSize64(file_info_general.sizelo, file_info_general.sizehi),file_info_general.sizelo);
+		if (itdir) {
+			PropertiesDrawIcon(NULL, "<DIR>");
+			p_t_formated_size = ConvertSize64(dir_size.sizelo, dir_size.sizehi);
+			p_q_size_bytes = #dir_size.sizelo;
+			sprintf(#t_contains_files_and_folders,T_FILES_FOLDERS,dir_size.files,dir_size.folders);
 		} else {
-			sprintf(#folder_info,T_FILES_FOLDERS,dir_size.files,dir_size.folders);
-			WriteText(10,  117, 0x90, sc.work_text, PR_T_CONTAINS);                              
-			WriteText(120, 117, 0x90, sc.work_text, #folder_info);
-			sprintf(#size_lbl,T_PROP_SIZE,ConvertSize64(dir_size.bytes, dir_size.bytes_high),dir_size.bytes);
-		}
-		WriteText(10, 99, 0x90, sc.work_text, #size_lbl);
+			sprintf(#temp_path,"%s/%s",path,#file_name2);
+			if (ext1 = strrchr(#file_name2,'.')) ext1 += #file_name2;
+			PropertiesDrawIcon(#temp_path, ext1);
+			p_t_formated_size = ConvertSize64(file_info_general.sizelo, file_info_general.sizehi);
+			p_q_size_bytes = #file_info_general.sizelo;
+			sprintf(#t_contains_files_and_folders,T_DATA);
+		}	
 	}
+	WriteTextLines(10, y.set(78), 0x90, sc.work_text, T_PATH_SIZE, 20);
+	edit_box_draw stdcall (#path_to_file_ed);
+
+	WriteText(120, y.inc(20), 0x90, sc.work_text, p_t_formated_size);
+	WriteNumber(120, y.inc(20), 0x90, sc.work_text, 0xc0140001, p_q_size_bytes);
+	WriteText(120, y.inc(20), 0x90, sc.work_text, #t_contains_files_and_folders);
 
 	if (show_date) {
-		WriteTextLines(10,  136, 0x90, sc.work_text, CREATED_OPENED_MODIFIED, 20);
-		DrawDateTime(120, 136, sc.work_text, #file_info_general.datecreate, #file_info_general.timecreate);
-		DrawDateTime(120, 156, sc.work_text, #file_info_general.datelastaccess, #file_info_general.timelastaccess);
-		DrawDateTime(120, 176, sc.work_text, #file_info_general.datelastedit, #file_info_general.timelastedit);			
+		WriteTextLines(10, y.inc(32), 0x90, sc.work_text, CREATED_OPENED_MODIFIED, 20);
+		DrawDateTime(120, y.n, sc.work_text, #file_info_general.datecreate, #file_info_general.timecreate);
+		DrawDateTime(120, y.inc(20), sc.work_text, #file_info_general.datelastaccess, #file_info_general.timelastaccess);
+		DrawDateTime(120, y.inc(20), sc.work_text, #file_info_general.datelastedit, #file_info_general.timelastedit);			
 	}
 
 	DrawFrame(10, y.set(pform.cheight - 143), -10*2 + pform.cwidth - 2, 92, FLAGS);
@@ -289,13 +292,4 @@ void PropertiesDrawIcon(dword file_path, extension)
 {
 	int icon_n = ini_icons.get(file_path, extension, 32);
 	draw_icon_32(12, 22, sc.work, icon_n);
-}
-
-void EventApplyProperties()
-{
-	if (getSelectedCount()) || (itdir) {
-		ShowConfirmQuestionPopin();
-	} else {
-		SetProperties(SET_PROPERTIES_SINGLE_FILE);
-	}
 }

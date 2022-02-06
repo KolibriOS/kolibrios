@@ -465,10 +465,10 @@ inline fastcall dword SetWindowLayerBehaviour(EDX, ESI)
 	WriteText(x,y, fontType, color, str_offset);
 }
 
-:void WriteNumber(dword x,y,byte fontType, dword color, count, number_or_offset)
+:void WriteNumber(dword x,y,byte fontType, dword color, flags, number_or_offset)
 {
 	EAX = 47;
-	EBX = count<<16;
+	EBX = flags;
 	ECX = number_or_offset;
 	EDX = x<<16+y;
 	ESI = fontType<<24+color;

@@ -165,7 +165,7 @@ void Draw_Panel()
 void Draw_Count()
 {
 	EDI = sc.work; //writing a number with bg
-	WriteNumber(WIN_W-32, PANEL_Y + 12, 0xD0, sc.work_text, 3, count);
+	WriteNumber(WIN_W-32, PANEL_Y + 12, 0xD0, sc.work_text, 3<<16, count);
 }
 
 

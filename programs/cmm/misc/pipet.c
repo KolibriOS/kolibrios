@@ -103,9 +103,9 @@ void EventUpdateWindowContent()
 	
 	WriteTextWithBg(12,12, 0xD0, 0x000111, #picked_color_string, 0xFFFfff);
 	
-	WriteNumber(12,33, 0xD0, 0xff0000, 3, rgb.r);
-	WriteNumber(44,33, 0xD0, 0x008000, 3, rgb.g);
-	WriteNumber(75,33, 0xD0, 0x0000ff, 3, rgb.b);
+	WriteNumber(12,33, 0xD0, 0xff0000, 3<<16, rgb.r);
+	WriteNumber(44,33, 0xD0, 0x008000, 3<<16, rgb.g);
+	WriteNumber(75,33, 0xD0, 0x0000ff, 3<<16, rgb.b);
 
 	DrawBar(PICKED_X, PICKED_PADDING, PICKED_SIZE, PICKED_SIZE, picked_color);
 }

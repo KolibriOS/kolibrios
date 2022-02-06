@@ -491,15 +491,15 @@ int block_size=1024*1024*4; //copy by 4 MiB
 	BDVK dir_info;
 	dword folders;
 	dword files;
-	dword bytes;
-	dword bytes_high;
+	dword sizelo;
+	dword sizehi;
 	dword get();	
 	dword calculate_loop();	
 };
 
 :dword DIR_SIZE::get(dword way1)
 {
-	folders = files = bytes = bytes_high = 0;
+	folders = files = sizelo = sizehi = 0;
 	if (!way1) return 0;
 	calculate_loop(way1);
 }
@@ -528,8 +528,8 @@ int block_size=1024*1024*4; //copy by 4 MiB
 			else
 			{
 				GetFileInfo(cur_file, #dir_info);
-				bytes += dir_info.sizelo;
-				bytes_high += dir_info.sizehi;
+				sizelo += dir_info.sizelo;
+				sizehi += dir_info.sizehi;
 				files++;
 			}
 		}
