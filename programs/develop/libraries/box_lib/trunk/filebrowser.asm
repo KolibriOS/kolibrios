@@ -519,32 +519,114 @@ align 4
 ;-----------------------------------------
 align 4
 .copy_size:
-;/0x40000000 - Gb
-;/0x100000 - Mb
-;/0x400 Kb
+;/0x1000000000000000 - EB
+;/0x4000000000000 - PB
+;/0x10000000000 - TB
+;/0x40000000 - GB
+;/0x100000 - MB
+;/0x400 - KB
 	mov	[eax+6],dword '    '
 	mov	[eax+6+4],word '  '
 	push	ebx edx
 	mov	eax,[edx-40+32]
-	mov	ebx,eax
-	shr	eax,30 ; /(1024*1024*1024)
+	mov	ebx,[edx-40+32+4]
+; /1024
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+; /1024
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+; /1024
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+; /1024
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+; /(1024*1024)
+	shr	eax,20
 	test	eax,eax
 	jz	@f
-	mov	dl,byte 'G'
+	mov	dl,byte 'E' ; Exa Byte
 	jmp	.call_decimal_string
 @@:
-	mov	eax,ebx
+	mov	eax,[edx-40+32]
+	mov	ebx,[edx-40+32+4]
+; /1024
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+; /1024
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+; /1024
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+; /(1024*1024)
+	shr	eax,20
+	test	eax,eax
+	jz	@f
+	mov	dl,byte 'P' ; Peta Byte
+	jmp	.call_decimal_string
+@@:
+	mov	eax,[edx-40+32]
+	mov	ebx,[edx-40+32+4]
+; /1024
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+; /1024
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+; /(1024*1024)
+	shr	eax,20
+	test	eax,eax
+	jz	@f
+	mov	dl,byte 'T' ; Tera Byte
+	jmp	.call_decimal_string
+@@:
+	mov	eax,[edx-40+32]
+	mov	ebx,[edx-40+32+4]
+; /1024
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+    shrd eax,ebx,5 ; /32
+	shr ebx,5 ; /32
+; /(1024*1024)
+	shr	eax,20
+	test	eax,eax
+	jz	@f
+	mov	dl,byte 'G' ; Giga Byte
+	jmp	.call_decimal_string
+@@:
+	mov	eax,[edx-40+32]
+	mov	ebx,eax
 	shr	eax,20 ; /(1024*1024)
 	test	eax,eax
 	jz	@f
-	mov	dl,byte 'M'
+	mov	dl,byte 'M' ; Mega Byte
 	jmp	.call_decimal_string
 @@:
 	mov	eax,ebx
 	shr	eax,10 ; /1024
 	test	eax,eax
 	jz	@f
-	mov	dl,byte 'K'
+	mov	dl,byte 'K' ; Kilo Byte
 	jmp	.call_decimal_string
 @@:
 	mov	eax,ebx
