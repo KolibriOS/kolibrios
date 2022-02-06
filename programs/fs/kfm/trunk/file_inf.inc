@@ -60,7 +60,7 @@ draw_files_information_window:
 @@:
 ; show file or directory size
 	add	edx,INF_LINEH
-	mcall	47,0x80140001,files_size
+	mcall	47,0xc0140001,files_size
 ;--------------------------------------
 	mov	ebp,date.create
 	call	show_date_and_time_of_files_information

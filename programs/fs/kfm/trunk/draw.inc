@@ -399,57 +399,103 @@ draw_type_size_date:
 	mov	[size_table+4],word '- '
 	jmp	.date
 ;--------------------------------------
+.qword_div:
+	mov	eax,[edx-40+32]
+	mov	ebx,[edx-40+32+4]
+@@:	; /1024
+	shrd	eax,ebx,5 ; /32
+	shr	ebx,5 ; /32
+	shrd	eax,ebx,5 ; /32
+	shr	ebx,5 ; /32
+	dec	ecx
+	jnz	@b
+; /(1024*1024)
+	shr	eax,20
+	test	eax,eax
+	ret
+;--------------------------------------
 .copy_size:
-;/0x40000000 - Gb
-;/0x100000 - Mb
-;/0x400 Kb
+;/0x1000000000000000 - EB
+;/0x4000000000000 - PB
+;/0x10000000000 - TB
+;/0x40000000 - GB
+;/0x100000 - MB
+;/0x400 - KB
 	mov	[size_table],dword '    '
 	mov	[size_table+4],word '  '
-	push	ebx
-	push	edx
-	mov	eax,[edx-40+32]
-	mov	ebx,0x40000000
-	xor	edx,edx
-	div	ebx
-	cmp	eax,0
-	je	@f
+	push	ebx edx
+	push	ecx
+	mov	ecx,4
+	call	.qword_div
+	pop	ecx
+	jz	@f
 
 	mov	ebx,size_table
 	call	decimal_string_4
-	mov	[ebx],byte 'G'
+	mov	[ebx],byte 'E' ; Exa Byte
 	jmp	.size_convert_end
 ;--------------------------------------
 @@:
-	mov	edx,[esp]
-	mov	eax,[edx-40+32]
-	mov	ebx,0x100000
-	xor	edx,edx
-	div	ebx
-	cmp	eax,0
-	je	@f
+	push	ecx
+	mov	ecx,3
+	call	.qword_div
+	pop	ecx
+	jz	@f
 
 	mov	ebx,size_table
 	call	decimal_string_4
-	mov	[ebx],byte 'M'
+	mov	[ebx],byte 'P' ; Peta Byte
 	jmp	.size_convert_end
 ;--------------------------------------
 @@:
-	mov	edx,[esp]
-	mov	eax,[edx-40+32]
-	mov	ebx,0x400
-	xor	edx,edx
-	div	ebx
-	cmp	eax,0
-	je	@f
+	push	ecx
+	mov	ecx,2
+	call	.qword_div
+	pop	ecx
+	jz	@f
 
 	mov	ebx,size_table
 	call	decimal_string_4
-	mov	[ebx],byte 'K'
+	mov	[ebx],byte 'T' ; Tera Byte
 	jmp	.size_convert_end
 ;--------------------------------------
 @@:
-	mov	edx,[esp]
+	push	ecx
+	mov	ecx,1
+	call	.qword_div
+	pop	ecx
+	jz	@f
+
+	mov	ebx,size_table
+	call	decimal_string_4
+	mov	[ebx],byte 'G' ; Giga Byte
+	jmp	.size_convert_end
+;--------------------------------------
+@@:
 	mov	eax,[edx-40+32]
+	mov	ebx,eax
+	shr	eax,20 ; /(1024*1024)
+	test	eax,eax
+	jz	@f
+
+	mov	ebx,size_table
+	call	decimal_string_4
+	mov	[ebx],byte 'M' ; Mega Byte
+	jmp	.size_convert_end
+;--------------------------------------
+@@:
+	mov	eax,ebx
+	shr	eax,10 ; /1024
+	test	eax,eax
+	jz	@f
+
+	mov	ebx,size_table
+	call	decimal_string_4
+	mov	[ebx],byte 'K' ; Kilo Byte
+	jmp	.size_convert_end
+;--------------------------------------
+@@:
+	mov	eax,ebx
 ;.size_convert:
 	mov	ebx,size_table
 	call	decimal_string_4
@@ -473,8 +519,7 @@ draw_type_size_date:
 	jmp	@r
 ;--------------------------------------
 @@:
-	pop	edx
-	pop	ebx
+	pop	edx ebx
 ;--------------------------------------
 .date:
 	xor	eax,eax
