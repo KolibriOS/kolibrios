@@ -191,6 +191,7 @@ extra_files = {
  {"kolibrios/develop/tcc/samples/", PROGS ..  "/develop/ktcc/trunk/libc.obj/samples/*.sh"},
  {"kolibrios/develop/tcc/samples/clayer/", PROGS ..  "/develop/ktcc/trunk/libc.obj/samples/clayer/*"},
  {"kolibrios/develop/utils/SPEDump", PROGS .. "/develop/SPEDump/SPEDump.kex"},
+ {"kolibrios/develop/utils/objconv", PROGS .. "/develop/objconv/objconv"},
  {"kolibrios/emul/", "common/emul/*"},
  {"kolibrios/emul/dosbox/", "common/emul/DosBox/*"},
  {"kolibrios/emul/e80/readme.txt", PROGS .. "/emulator/e80/trunk/readme.txt"},
