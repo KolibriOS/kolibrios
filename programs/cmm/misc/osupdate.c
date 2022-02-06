@@ -145,12 +145,12 @@ signed CheckFreeSpace(dword _latest, _combined)
 	DIR_SIZE dir_size;
 
 	dir_size.get("/sys");
-	cur_size = dir_size.bytes;
+	cur_size = dir_size.sizelo;
 
 	copyf("/sys", _combined);
 	copyf(_latest, _combined);
 	dir_size.get(_combined);
-	new_size = dir_size.bytes;
+	new_size = dir_size.sizelo;
 
 	empty = GetFreeSpaceOfRamdisk();
 

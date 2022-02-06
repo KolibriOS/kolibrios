@@ -310,9 +310,9 @@ dword GetTmpDiskFreeSpace(int _id)
 	DIR_SIZE dir_size;
 	sprintf(#param, "/tmp%i/1", _id);
 	dir_size.get(#param);
-	dir_size.bytes += dir_size.files/2 + 32 * 512; //file attr size + FAT table size
-	dir_size.bytes /= 1024*1024; //convert to MiB
-	return dir_size.bytes;	
+	dir_size.sizelo += dir_size.files/2 + 32 * 512; //file attr size + FAT table size
+	dir_size.sizelo /= 1024*1024; //convert to MiB
+	return dir_size.sizelo;	
 }
 
 void MonitorTmp()
