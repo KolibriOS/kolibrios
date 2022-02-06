@@ -517,6 +517,21 @@ align 4
 	mov	[ebx],dl
 	jmp	.size_convert_end
 ;-----------------------------------------
+.qword_div:
+	mov	eax,[edx-40+32]
+	mov	ebx,[edx-40+32+4]
+@@:	; /1024
+	shrd	eax,ebx,5 ; /32
+	shr	ebx,5 ; /32
+	shrd	eax,ebx,5 ; /32
+	shr	ebx,5 ; /32
+	dec	ecx
+	jnz	@b
+; /(1024*1024)
+	shr	eax,20
+	test	eax,eax
+	ret
+;-----------------------------------------
 align 4
 .copy_size:
 ;/0x1000000000000000 - EB
@@ -528,88 +543,34 @@ align 4
 	mov	[eax+6],dword '    '
 	mov	[eax+6+4],word '  '
 	push	ebx edx
-	mov	eax,[edx-40+32]
-	mov	ebx,[edx-40+32+4]
-; /1024
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-; /1024
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-; /1024
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-; /1024
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-; /(1024*1024)
-	shr	eax,20
-	test	eax,eax
+	push	ecx
+	mov	ecx,4
+	call	.qword_div
+	pop	ecx
 	jz	@f
 	mov	dl,byte 'E' ; Exa Byte
 	jmp	.call_decimal_string
 @@:
-	mov	eax,[edx-40+32]
-	mov	ebx,[edx-40+32+4]
-; /1024
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-; /1024
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-; /1024
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-; /(1024*1024)
-	shr	eax,20
-	test	eax,eax
+	push	ecx
+	mov	ecx,3
+	call	.qword_div
+	pop	ecx
 	jz	@f
 	mov	dl,byte 'P' ; Peta Byte
 	jmp	.call_decimal_string
 @@:
-	mov	eax,[edx-40+32]
-	mov	ebx,[edx-40+32+4]
-; /1024
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-; /1024
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-; /(1024*1024)
-	shr	eax,20
-	test	eax,eax
+	push	ecx
+	mov	ecx,2
+	call	.qword_div
+	pop	ecx
 	jz	@f
 	mov	dl,byte 'T' ; Tera Byte
 	jmp	.call_decimal_string
 @@:
-	mov	eax,[edx-40+32]
-	mov	ebx,[edx-40+32+4]
-; /1024
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-    shrd eax,ebx,5 ; /32
-	shr ebx,5 ; /32
-; /(1024*1024)
-	shr	eax,20
-	test	eax,eax
+	push	ecx
+	mov	ecx,1
+	call	.qword_div
+	pop	ecx
 	jz	@f
 	mov	dl,byte 'G' ; Giga Byte
 	jmp	.call_decimal_string
@@ -832,7 +793,7 @@ fb_get_icon_number:
 	je	.end
 	dec	ebp
 	test	ebp,ebp
-	je		.end
+	je	.end
 @@:
 	mov	edx,fb_ini_file_end
 	sub	edx,ebp
@@ -870,27 +831,27 @@ fb_get_icon_number:
 	cmp	eax,fb_ini_file_start
 	je	@f
 	dec	eax
-	cmp [eax],byte 15
+	cmp	[eax],byte 15
 	ja	.end
 @@:
 	xor	ebx,ebx
 	xor	eax,eax
 	mov	ecx,9
 	call	.calculate
-	cmp al,0x30
+	cmp	al,0x30
 	jb	.end
 	cmp	al,0x39
 	ja	.end
 	sub	eax,0x30
 @@:
 	call	.calculate_1
-	cmp al,0x30
+	cmp	al,0x30
 	jb	@f
 	cmp	al,0x39
 	ja	@f
 	sub	eax,0x30
 	
-	lea ebx,[ebx+ebx*4]
+	lea	ebx,[ebx+ebx*4]
 	shl	ebx,1
 	
 	dec	ecx
