@@ -768,7 +768,7 @@ tup.append_table(extra_files, {
  {"kolibrios/drivers/sensors/k10temp.sys", "../drivers/sensors/k10temp/k10temp.sys"},
  {"kolibrios/drivers/acpi/acpi.sys", "../drivers/devman/acpi.sys"},
  {"kolibrios/drivers/acpi/acpi", "../drivers/devman/acpi"},
- {"kolibrios/drivers/geode/geode.sys", "../drivers/audio/a5536/geode.sys"},
+ {"kolibrios/drivers/geode/geode.sys", "common/drivers/geode/geode.sys"}, -- there is also an autobuid version that is not working
  {"kolibrios/drivers/geode/geode", "../drivers/audio/a5536/geode"},
 })
 -- For russian build, add russian-only programs.
