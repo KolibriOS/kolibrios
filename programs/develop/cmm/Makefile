@@ -2,8 +2,8 @@
 
 Compiler                = gcc
 
-Compiler_Options       = -m32 -c -fno-exceptions -D_UNIX_
-#Compiler_Options       = -c -fno-exceptions -O2 -D_WIN32_
+Compiler_Options       = -m32 -c -fpack-struct=2 -fno-exceptions -D_UNIX_
+#Compiler_Options       = -c -fpack-struct=2 -fno-exceptions -O2 -D_WIN32_
 
 #-D: _WIN32_ or _UNIX_
 #-D: for _WIN32_ add -D__CONSOLE__

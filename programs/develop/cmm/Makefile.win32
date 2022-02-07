@@ -1,4 +1,4 @@
-CPPFLAGS=-m32 -fno-exceptions -std=c++03 -Wno-write-strings -D_WIN32_
+CPPFLAGS=-m32 -fpack-struct=2 -fno-exceptions -std=c++03 -Wno-write-strings -D_WIN32_
 LDFLAGS=-m32
 
 OBJS=$(patsubst %.cpp, %.o, $(wildcard *.cpp))

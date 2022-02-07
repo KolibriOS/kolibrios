@@ -7,7 +7,7 @@ Includes = -Id:\TEMP\mprog\kos\includes -I$(SDK_DIR)/sources/newlib/libc/include
 
 Compatib_Posix = -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp
 
-Compiler_Options = -c -fno-exceptions -D_KOS_ -U_Win32 -U_WIN32 -U__MINGW32__ \
+Compiler_Options = -c -fpack-struct=2 -fno-exceptions -D_KOS_ -U_Win32 -U_WIN32 -U__MINGW32__ \
 	-mno-ms-bitfields -Wno-write-strings $(Includes) $(Compatib_Posix)
 
 Exe_file                = cmm.kex
