@@ -25,102 +25,93 @@ maxPathLength = 1000h
 image_of_eax EQU esp+32
 image_of_ebx EQU esp+20
 
-; ; System function 70 security check
-; align 4
-; proc file_system_is_operation_safe stdcall, inf_struct_ptr: dword
-; ; in:
-; ;      inf_struct_ptr = pointer to information structure was given to sysfn70
-; ; out: ZF = 1 if operation is safe
-; ;      ZF = 0 if operation can cause kernel crash
-;         push    ebx ecx edx
-;         xor     ecx, ecx ; ecx - length of target buffer
+; System function 70 security check
+align 4
+proc file_system_is_operation_safe stdcall, inf_struct_ptr: dword
+; in:
+;      inf_struct_ptr = pointer to information structure was given to sysfn70
+; out: ZF = 1 if operation is safe
+;      ZF = 0 if operation can cause kernel crash
+        push    ebx ecx edx
+        xor     ecx, ecx ; ecx - length of target buffer
 
-;         mov     ebx, [inf_struct_ptr]
-;         mov     edx, [ebx + 16] ; base of target buffer
+        mov     ebx, [inf_struct_ptr]
+        mov     edx, [ebx + 16] ; base of target buffer
 
-;         cmp     dword [ebx], 0 ; if 70.0
-;         jnz     .case1
-;         mov     ecx, dword [ebx + 12]
-;         jmp     .end_switch
+        cmp     dword [ebx], 0 ; if 70.0
+        jnz     .case1
+        mov     ecx, dword [ebx + 12]
+        jmp     .end_switch
 
-; .case1:
-;         cmp     dword [ebx], 1 ; if 70.1
-;         jnz     .case2_3
-;         ;mov     ecx, 32
-;         cmp     dword [ebx + 8], 1 ; check encoding
-;         jbe     .case1_304 ; if encdoing <= 1 i.e cpp866 
-;         mov     ecx, 560 ; if unicode then bdvk block len is 560 bytes
-;         jmp     .case1_end
-; .case1_304:
-;         mov     ecx, 304 ; if cp866 then bdvk block len is 304 bytes
-; .case1_end:
-;         imul    ecx, dword [ebx + 12] ; multiply bdvk length by their count
-;         add     ecx, 32 ; add result header len
-;         jmp     .end_switch
+.case1:
+        cmp     dword [ebx], 1 ; if 70.1
+        jnz     .case2_3
+        ;mov     ecx, 32
+        cmp     dword [ebx + 8], 1 ; check encoding
+        jbe     .case1_304 ; if encdoing <= 1 i.e cpp866 
+        mov     ecx, 560 ; if unicode then bdvk block len is 560 bytes
+        jmp     .case1_end
+.case1_304:
+        mov     ecx, 304 ; if cp866 then bdvk block len is 304 bytes
+.case1_end:
+        imul    ecx, dword [ebx + 12] ; multiply bdvk length by their count
+        add     ecx, 32 ; add result header len
+        jmp     .end_switch
 
-; .case2_3:
-;         cmp     dword [ebx], 3
-;         ja      .case5 ; if subfn > 3
-;         mov     ecx, dword [ebx + 12]
-;         jmp     .end_switch
+.case2_3:
+        cmp     dword [ebx], 3
+        ja      .case5 ; if subfn > 3
+        mov     ecx, dword [ebx + 12]
+        jmp     .end_switch
 
-; .case5:
-;         cmp     dword [ebx], 5
-;         jnz     .case6
-;         mov     ecx, 40
-;         jmp     .end_switch
+.case5:
+        cmp     dword [ebx], 5
+        jnz     .case6
+        mov     ecx, 40
+        jmp     .end_switch
 
-; .case6:
-;         cmp     dword [ebx], 6
-;         jnz     .switch_none
-;         mov     ecx, 32
-;         jmp     .end_switch
+.case6:
+        cmp     dword [ebx], 6
+        jnz     .switch_none
+        mov     ecx, 32
+        jmp     .end_switch
 
-; .switch_none:
-;         mov     ecx, 1
-;         test    ecx, ecx
-;         jmp     .ret
-        
-; .end_switch:
-;         ;;
-;         stdcall is_region_userspace, edx, ecx
-; .ret:
-;         pop     edx ecx ebx
-;         ret
-; endp
+.switch_none:
+        cmp     ecx, ecx
+        jmp     .ret
+      
+.end_switch:
+        stdcall is_region_userspace, edx, ecx
+.ret:
+        pop     edx ecx ebx
+        ret
+endp
 
-; syscall_fileSystemUnicode: ; with user pointer correctness checking
-; ; in: ebx -> f.80 parameter structure
-;         stdcall file_system_is_operation_safe, ebx
-;         jz      @f
+sys_fileSystemUnicode: ; with user pointer correctness checking
+; in: ebx -> f.80 parameter structure
+        stdcall file_system_is_operation_safe, ebx
+        jz      @f
 
-;         DEBUGF  1, "sysfn80 addr error\n"
-;         mov     dword [image_of_eax], ERROR_MEMORY_POINTER
-;         ret
-; @@:
-;         jmp     fileSystemUnicode
+        DEBUGF  1, "sysfn80 addr error\n"
+        mov     dword [image_of_eax], ERROR_MEMORY_POINTER
+        ret
+@@:
+        jmp     fileSystemUnicode
 
-; temporarily commented out cause acpi driver (drivers/devman) uses sysfn70 via 0x40
-; so because drivers it kernel space, pointer checking fails
-; TODO solution: add filesystem functions without pointer checking to kernel exports
-; and make the driver use them, not int 0x40
-; syscall_fileSystemUnicode commented out for the same reason
-; syscall_file_system_lfn: ; with user pointer correctness checking
-; ; in: ebx -> f.70 parameter structure
-;         stdcall file_system_is_operation_safe, ebx
-;         jz      @f
+;System function 70
+sys_file_system_lfn: ; with user pointer correctness checking
+; in: ebx -> f.70 parameter structure
+        stdcall file_system_is_operation_safe, ebx
+        jz      @f
 
-;         DEBUGF  1, "sysfn70 addr error\n"
-;         mov     dword [image_of_eax], ERROR_MEMORY_POINTER
-;         ret
-; @@:
-;         jmp     file_system_lfn
+        DEBUGF  1, "sysfn70 addr error\n"
+        mov     dword [image_of_eax], ERROR_MEMORY_POINTER
+        ret
+@@:
+        jmp     file_system_lfn
 
-
-; System function 70
-
-; file_system_lfn_protected returns values not in registers, but in their images
-; on stack. Make a short wrapper to actually return values in registers.
+;file_system_lfn_protected returns values not in registers, but in their images
+;on stack. Make a short wrapper to actually return values in registers.
 file_system_lfn_protected_registers:
         pushad
         call    file_system_lfn_protected
