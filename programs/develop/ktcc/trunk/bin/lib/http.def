@@ -7,3 +7,7 @@ http_post
 http_receive
 http_send
 http_free
+http_disconnect
+http_find_header_field
+http_escape
+http_unescape

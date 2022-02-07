@@ -18,3 +18,4 @@ img_rotate_layer
 img_scale
 img_to_rgb
 img_to_rgb2
+img_from_file
