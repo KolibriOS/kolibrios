@@ -5,6 +5,17 @@
 #include "../lib/kolibri.h"
 #endif
 
+#ifdef __COFF__
+extern dword ini_enum_sections;
+extern dword ini_enum_keys;
+extern dword ini_get_str;
+extern dword ini_get_int;
+extern dword ini_get_color;
+extern dword ini_set_str;
+extern dword ini_set_int;
+//extern dword ini_set_color;
+//extern dword ini_get_shortcut;
+#else
 #ifndef INCLUDE_DLL_H
 #include "../lib/dll.h"
 #endif
@@ -34,6 +45,7 @@ char aini_set_int[] = "ini_set_int";
 //char aini_get_shortcut[] = "ini_get_shortcut";
 char aini_get_color[] = "ini_get_color";
 //char aini_set_color[] = "ini_set_color";
+#endif
 
 //===================================================//
 //                                                   //

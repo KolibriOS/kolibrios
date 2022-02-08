@@ -5,6 +5,10 @@
 #include "../lib/kolibri.h"
 #endif
 
+#ifdef __COFF__
+extern dword OpenDialog_init;
+extern dword OpenDialog_start;
+#else
 #ifndef INCLUDE_DLL_H
 #include "../lib/dll.h"
 #endif
@@ -18,6 +22,7 @@ $DD 2 dup 0
 
 char aOpenDialog_init[]          = "OpenDialog_init";
 char aOpenDialog_start[]         = "OpenDialog_start";
+#endif
 
 struct opendialog
 {

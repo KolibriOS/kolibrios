@@ -5,6 +5,18 @@
 #include "../lib/kolibri.h"
 #endif
 
+#ifdef __COFF__
+extern dword http_get;
+extern dword http_head;
+extern dword http_post;
+extern dword http_find_header_field;
+extern dword http_send;
+extern dword http_receive;
+extern dword http_disconnect;
+extern dword http_free;
+extern dword http_escape;
+extern dword http_unescape;
+#else
 #ifndef INCLUDE_DLL_H
 #include "../lib/dll.h"
 #endif
@@ -36,6 +48,7 @@ char aHTTPdisconnect[]       = "disconnect";
 char aHTTPfree[]             = "free";
 char aURIescape[]            = "escape";
 char aURIunescape[]          = "unescape";
+#endif
 
 // status flags
 #define FLAG_HTTP11             1 << 0

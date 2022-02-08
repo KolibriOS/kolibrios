@@ -187,9 +187,11 @@ void main()
 	dword id;
 	int old_cur_y;
 
+#ifndef __COFF__
 	load_dll(boxlib, #box_lib_init,0);
 	load_dll(libini, #lib_init,1);
 	load_dll(libimg, #libimg_init,1);
+#endif
 
 	handle_param();
 

@@ -8,6 +8,8 @@
 #pragma option cri-
 #pragma option -CPA
 #initallvar 0
+
+#ifndef __COFF__
 #jumptomain FALSE
 
 #startaddress 0
@@ -28,6 +30,16 @@ dword  I_Param      = #param;
 dword  I_Path       = #program_path;
 char param[4096];
 char program_path[4096];
+#else
+extern dword            __argv;
+extern dword            __path;
+
+dword  I_Param      =   #__argv;
+dword  I_Path       =   #__path;
+
+#define param           __argv
+#define program_path    __path
+#endif
 
 #define bool      int
 
@@ -653,13 +665,19 @@ inline fastcall dword GetStartTime()
 dword __generator;  // random number generator init
 
 //The initialization of the initial data before running
+#ifdef __COFF__
+void start()
+#else
 :void ______INIT______()
+#endif
 {
 	skin_h   = @GetSkinHeight();
 	screen.w  = @GetScreenWidth()+1;
 	screen.h = @GetScreenHeight()+1;
-	__generator = @GetStartTime();	
+	__generator = @GetStartTime();
+#ifndef __COFF__	
 	mem_init();
+#endif
 	main();
 }
 ______STOP______:

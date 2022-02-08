@@ -6,6 +6,25 @@
 #include "../lib/kolibri.h"
 #endif
 
+#ifdef __COFF__
+extern dword edit_box_draw;
+extern dword edit_box_key;
+extern dword edit_box_mouse;
+extern dword edit_box_set_text;
+
+extern dword scrollbar_v_draw;
+extern dword scrollbar_v_mouse;
+extern dword scrollbar_h_draw;
+extern dword scrollbar_h_mouse;
+
+extern dword PathShow_prepare;
+extern dword PathShow_draw;
+
+extern dword progressbar_draw;
+extern dword progressbar_progress;
+
+extern dword frame_draw;
+#else
 #ifndef INCLUDE_DLL_H
 #include "../lib/dll.h"
 #endif
@@ -55,7 +74,7 @@ char aProgressbar_draw    [] = "progressbar_draw";
 char aProgressbar_progress[] = "progressbar_progress";
 
 char aFrame_draw[] = "frame_draw";
-
+#endif
 
 struct PathShow_data
 {

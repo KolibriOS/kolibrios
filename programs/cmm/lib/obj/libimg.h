@@ -10,6 +10,22 @@
 #include "../lib/mem.h"
 #endif
 
+#ifdef __COFF__
+extern dword img_decode;
+extern dword img_destroy;
+extern dword img_draw;
+extern dword img_create;
+extern dword img_encode;
+extern dword img_convert;
+extern dword img_from_file;
+extern dword img_blend;
+//extern dword img_is_img;
+//extern dword img_to_rgb2;
+//extern dword img_scale;
+extern dword img_flip;
+extern dword img_rotate;
+extern dword img_to_rgb;
+#else
 #ifndef INCLUDE_DLL_H
 #include "../lib/dll.h"
 #endif
@@ -52,6 +68,7 @@ char aimg_scale[]     = "img_scale";
 //char aimg_is_img[]    = "img_is_img";
 //char aimg_to_rgb[]    = "img_to_rgb";
 //char aimg_to_rgb2[]   = "img_to_rgb2";
+#endif
 
 #define LIBIMG_FORMAT_BMP       1
 #define LIBIMG_FORMAT_ICO       2
