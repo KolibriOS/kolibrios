@@ -39,6 +39,7 @@ dword  I_Path       =   #__path;
 
 #define param           __argv
 #define program_path    __path
+#define ______INIT______  start
 #endif
 
 #define bool      int
@@ -665,11 +666,7 @@ inline fastcall dword GetStartTime()
 dword __generator;  // random number generator init
 
 //The initialization of the initial data before running
-//#ifdef __COFF__
-//void start()
-//#else
 :void ______INIT______()
-//#endif
 {
 	skin_h   = @GetSkinHeight();
 	screen.w  = @GetScreenWidth()+1;
@@ -680,7 +677,13 @@ dword __generator;  // random number generator init
 #endif
 	main();
 }
+
+#ifdef __COFF__
+@ void start();
+#undef ______INIT______
+#else
 ______STOP______:
+#endif
 #endif
 
 #ifndef INCLUDE_MEM_H
