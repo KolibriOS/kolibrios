@@ -665,11 +665,11 @@ inline fastcall dword GetStartTime()
 dword __generator;  // random number generator init
 
 //The initialization of the initial data before running
-#ifdef __COFF__
-void start()
-#else
+//#ifdef __COFF__
+//void start()
+//#else
 :void ______INIT______()
-#endif
+//#endif
 {
 	skin_h   = @GetSkinHeight();
 	screen.w  = @GetScreenWidth()+1;
