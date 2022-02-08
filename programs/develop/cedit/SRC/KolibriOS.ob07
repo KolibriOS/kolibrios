@@ -20,7 +20,7 @@
 MODULE KolibriOS;
 
 IMPORT
-    KOSAPI, SYSTEM;
+    KOSAPI, SYSTEM, U := Utils;
 
 CONST
     fontWidth* = 8;
@@ -391,6 +391,44 @@ PROCEDURE PutPixel* (x, y, color: INTEGER);
 BEGIN
 	KOSAPI.sysfunc5(1, x, y, color, 0)
 END PutPixel;
+
+
+PROCEDURE docpack* (VAR param: ARRAY OF CHAR; VAR text_ptr, text_size: INTEGER);
+VAR
+	i, size, ptr, ptr2: INTEGER;
+	s: ARRAY 32 OF WCHAR;
+BEGIN
+	ptr2 := 0;
+	U.reverse8(param);
+	param[LENGTH(param) - 1] := 0X;
+	U.reverse8(param);
+	i := 0;
+	WHILE param[i] # 0X DO
+		s[i] := WCHR(ORD(param[i]));
+		INC(i)
+	END;
+	IF U.str2int(s, size) THEN
+		INC(size, 20);
+		ptr := KOSAPI.malloc(size);
+		IF ptr # 0 THEN
+			SYSTEM.PUT32(ptr, 0);
+			SYSTEM.PUT32(ptr + 4, 8);
+			KOSAPI.sysfunc4(60, 1, ptr, size);
+			SetEventsMask({6});
+			IF EventTimeout(200) = 7 THEN
+				SYSTEM.PUT32(ptr, 1);
+				SYSTEM.GET(ptr + 12, size);
+				ptr2 := KOSAPI.malloc(size);
+				IF ptr2 # 0 THEN
+					SYSTEM.MOVE(ptr + 16, ptr2, size)
+		        END
+			END;
+			ptr := KOSAPI.free(ptr)
+		END
+	END;
+	text_ptr := ptr2;
+	text_size := size
+END docpack;
 
 
 BEGIN

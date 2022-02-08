@@ -2734,15 +2734,17 @@ BEGIN
 		ELSE
 			code := ORD(c)
 		END;
-		res := WCHR(code) # c;
-		c := WCHR(code)
+		IF code # ORD(c) THEN
+			c := WCHR(code);
+			res := TRUE
+		END
 	END
 	RETURN res
 END conv;
 
 
 PROCEDURE conv1251to866 (VAR c: WCHAR): BOOLEAN;
-	RETURN conv(c, E.cp866, E.W1251)
+	RETURN conv(c, E.cp866, E.CP1251)
 END conv1251to866;
 
 
@@ -2751,7 +2753,7 @@ PROCEDURE conv866to1251 (VAR c: WCHAR): BOOLEAN;
 END conv866to1251;
 
 
-PROCEDURE convert* (text: tText; cp: E.CP; enc: INTEGER);
+PROCEDURE convert* (text: tText; (*cp: E.CP;*) enc: INTEGER);
 VAR
 	line: tLine;
 	func: Lines.fConvert;
@@ -2761,7 +2763,7 @@ BEGIN
 	line := text.first(tLine);
 	IF enc = E.CP866 THEN
 		func := conv866to1251
-	ELSIF enc = E.W1251 THEN
+	ELSIF enc = E.CP1251 THEN
 		func := conv1251to866
 	ELSE
 		line := NIL

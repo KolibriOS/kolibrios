@@ -143,9 +143,9 @@ BEGIN
 END getCharUTF8;
 
 
-PROCEDURE getCharW1251 (file: tInput): INTEGER;
+PROCEDURE getCharCP1251 (file: tInput): INTEGER;
     RETURN E.cp1251[getByte(file)]
-END getCharW1251;
+END getCharCP1251;
 
 
 PROCEDURE getCharCP866 (file: tInput): INTEGER;
@@ -224,7 +224,7 @@ VAR
     pos, cnt, res: INTEGER;
     continue, bom: BOOLEAN;
     b: BYTE;
-    cp866, w1251: INTEGER;
+    cp866, cp1251: INTEGER;
 BEGIN
     pos := text.pos;
     cnt := text.cnt;
@@ -257,20 +257,20 @@ BEGIN
         ELSE
             text.cnt := cnt;
             text.pos := pos;
-            cp866 := 0;
-            w1251 := 0;
+            cp866  := 0;
+            cp1251 := 0;
             WHILE text.cnt > 0 DO
                 b := getByte(text);
                 IF b > 127 THEN
                     IF b >= 192 THEN
-                        INC(w1251)
+                        INC(cp1251)
                     ELSE
                         INC(cp866)
                     END
                 END
             END;
-            IF w1251 > cp866 THEN
-                res := E.W1251
+            IF cp1251 > cp866 THEN
+                res := E.CP1251
             ELSE
                 res := E.CP866
             END
@@ -363,12 +363,12 @@ BEGIN
             res.getChar := getCharUTF8
         ELSIF enc = E.CP866 THEN
             res.getChar := getCharCP866
-        ELSIF enc = E.W1251 THEN
+        ELSIF enc = E.CP1251 THEN
         	IF cp866 THEN
         		enc := E.CP866;
         		res.getChar := getCharCP866
         	ELSE
-            	res.getChar := getCharW1251
+            	res.getChar := getCharCP1251
             END
         END;
         eol := detectEOL(res);
@@ -488,10 +488,10 @@ BEGIN
 END putCharCP;
 
 
-PROCEDURE putCharW1251 (file: tOutput; code: INTEGER);
+PROCEDURE putCharCP1251 (file: tOutput; code: INTEGER);
 BEGIN
-	putCharCP(file, code, E.W1251)
-END putCharW1251;
+	putCharCP(file, code, E.CP1251)
+END putCharCP1251;
 
 
 PROCEDURE putCharCP866 (file: tOutput; code: INTEGER);
@@ -544,8 +544,8 @@ BEGIN
         res.putChar := putCharUTF8
     (*ELSIF enc = E.UTF16LE THEN
         res.putChar := putCharUTF16LE*)
-    ELSIF enc = E.W1251 THEN
-        res.putChar := putCharW1251
+    ELSIF enc = E.CP1251 THEN
+        res.putChar := putCharCP1251
     ELSIF enc = E.CP866 THEN
         res.putChar := putCharCP866
     END;

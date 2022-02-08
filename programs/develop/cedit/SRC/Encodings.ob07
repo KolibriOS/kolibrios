@@ -20,7 +20,7 @@
 MODULE Encodings;
 
 CONST
-    CP866* = 0; W1251* = 1; UTF8* = 2; UTF8BOM* = 3; (*UTF16LE* = 4;*)
+    CP866* = 0; CP1251* = 1; UTF8* = 2; UTF8BOM* = 3; (*UTF16LE* = 4;*)
 
     UNDEF* = -1;
 
@@ -64,7 +64,7 @@ BEGIN
 END Init8;
 
 
-PROCEDURE InitW1251 (VAR cp: CP);
+PROCEDURE InitCP1251 (VAR cp: CP);
 VAR
     n, i: INTEGER;
 BEGIN
@@ -81,7 +81,7 @@ BEGIN
     Init8(cp, n, 0401H, 00A9H, 0404H, 00ABH, 00ACH, 00ADH, 00AEH, 0407H);
     Init8(cp, n, 00B0H, 00B1H, 0406H, 0456H, 0491H, 00B5H, 00B6H, 00B7H);
     Init8(cp, n, 0451H, 2116H, 0454H, 00BBH, 0458H, 0405H, 0455H, 0457H);
-END InitW1251;
+END InitCP1251;
 
 
 PROCEDURE InitCP866 (VAR cp: CP);
@@ -113,12 +113,12 @@ VAR
     i: INTEGER;
 BEGIN
     FOR i := 0 TO 65535 DO
-        UNI[i, CP866] := UNDEF;
-        UNI[i, W1251] := UNDEF
+        UNI[i, CP866]  := UNDEF;
+        UNI[i, CP1251] := UNDEF
     END;
     FOR i := 0 TO 255 DO
         IF cp1251[i] # UNDEF THEN
-            UNI[cp1251[i], W1251] := i
+            UNI[cp1251[i], CP1251] := i
         END;
         IF cp866[i] # UNDEF THEN
             UNI[cp866[i], CP866] := i
@@ -135,10 +135,10 @@ BEGIN
     eolNames[EOL_LF]   := "LF";
     eolNames[EOL_CR]   := "CR";
     names[CP866]   := "CP866";
-    names[W1251]   := "Windows-1251";
+    names[CP1251]  := "CP1251";
     names[UTF8]    := "UTF-8";
     names[UTF8BOM] := "UTF-8-BOM";
-    InitW1251(cp1251);
+    InitCP1251(cp1251);
     InitCP866(cp866);
     setUNI
 END Encodings.

@@ -24,11 +24,11 @@ IMPORT
     U := Utils, Lines, Menu, List,
     G := Graph, T := Text, E := Encodings,
     CB := Clipboard, Languages,
-    ChangeLog, Scroll, CheckBox, KOSAPI, SYSTEM,
+    ChangeLog, Scroll, CheckBox,
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (28-jan-2022)";
+    HEADER = "CEdit (09-feb-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -124,7 +124,7 @@ CONST
     menuUTF8BOM = 60;
     menuUTF8 = 61;
     menuCP866 = 62;
-    menuWin1251 = 63;
+    menuCP1251 = 63;
     menuEOL = 140;
     menuConv1251_866 = 64;
     menuConv866_1251 = 65;
@@ -1045,7 +1045,7 @@ BEGIN
         Menu.option(menu, menuUTF8BOM, T.getEnc(text) = E.UTF8BOM);
         Menu.option(menu, menuUTF8,    T.getEnc(text) = E.UTF8);
         Menu.option(menu, menuCP866,   T.getEnc(text) = E.CP866);
-        Menu.option(menu, menuWin1251, T.getEnc(text) = E.W1251)
+        Menu.option(menu, menuCP1251,  T.getEnc(text) = E.CP1251)
     ELSIF menu = menuView THEN
         Menu.option(menu, menuFontSmall,  font = G.fonts[0]);
         Menu.option(menu, menuFontMedium, font = G.fonts[1]);
@@ -1271,8 +1271,8 @@ BEGIN
     	T.setEnc(text, E.UTF8)
     |menuCP866:
     	T.setEnc(text, E.CP866)
-    |menuWin1251:
-    	T.setEnc(text, E.W1251)
+    |menuCP1251:
+    	T.setEnc(text, E.CP1251)
     |menuLF:
     	T.setEol(text, E.EOL_LF)
     |menuCRLF:
@@ -1280,9 +1280,9 @@ BEGIN
     |menuCR:
     	T.setEol(text, E.EOL_CR)
     |menuConv1251_866:
-    	T.convert(text, E.cp866, E.W1251)
+    	T.convert(text, (*E.cp866,*) E.CP1251)
     |menuConv866_1251:
-    	T.convert(text, E.cp1251, E.CP866)
+    	T.convert(text, (*E.cp1251,*) E.CP866)
     |menuPipet:
         K.Run("/sys/develop/pipet", "")
     |menuMagnify:
@@ -1413,7 +1413,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuUTF8BOM, E.names[E.UTF8BOM]);
     Menu.AddMenuItem(menu, menuUTF8,    E.names[E.UTF8]);
     Menu.AddMenuItem(menu, menuCP866,   E.names[E.CP866]);
-    Menu.AddMenuItem(menu, menuWin1251, E.names[E.W1251]);
+    Menu.AddMenuItem(menu, menuCP1251,  E.names[E.CP1251]);
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuEOL,     "EOL");
     Menu.child(menu, subEOL);
@@ -2022,47 +2022,6 @@ BEGIN
 END ScrollChange;
 
 
-PROCEDURE docpack (VAR param: RW.tFileName);
-VAR
-	i, size, errno: INTEGER;
-	ptr, ptr2: INTEGER;
-	s: ARRAY 32 OF WCHAR;
-BEGIN
-	U.reverse8(param);
-	param[LENGTH(param) - 1] := 0X;
-	U.reverse8(param);
-	i := 0;
-	WHILE param[i] # 0X DO
-		s[i] := WCHR(ORD(param[i]));
-		INC(i)
-	END;
-	IF U.str2int(s, size) THEN
-		INC(size, 20);
-		ptr := KOSAPI.malloc(size);
-		IF ptr # 0 THEN
-			SYSTEM.PUT32(ptr, 0);
-			SYSTEM.PUT32(ptr + 4, 8);
-			KOSAPI.sysfunc4(60, 1, ptr, size);
-			K.SetEventsMask({6});
-			IF K.EventTimeout(200) = 7 THEN
-				SYSTEM.PUT32(ptr, 1);
-				SYSTEM.GET(ptr + 12, size);
-				ptr2 := KOSAPI.malloc(size);
-				IF ptr2 # 0 THEN
-					SYSTEM.MOVE(ptr + 16, ptr2, size);
-					text := T.open("", ptr2, size, errno);
-					IF text # NIL THEN
-				        insert(0, text);
-				        T.SetPos(text, 0, 0)
-			        END
-		        END
-			END;
-			ptr := KOSAPI.free(ptr)
-		END
-	END
-END docpack;
-
-
 PROCEDURE main;
 VAR
     fileName, filePath: RW.tFileName;
@@ -2070,6 +2029,7 @@ VAR
     resized: BOOLEAN;
     firstClickX, firstClickY, time, blink, i: INTEGER;
     key, scr: INTEGER;
+    text_ptr, text_size, errno: INTEGER;
 BEGIN
 	header := "";
     K.GetSystemColors;
@@ -2170,7 +2130,14 @@ BEGIN
 				U.getPath(fileName, filePath)
 			END
 		ELSE
-			docpack(fileName)
+			K.docpack(fileName, text_ptr, text_size);
+			IF text_ptr # 0 THEN
+				text := T.open("", text_ptr, text_size, errno);
+				IF text # NIL THEN
+					insert(0, text);
+					T.SetPos(text, 0, 0)
+				END
+			END
 		END
 	END;
 	IF textsCount = 0 THEN
