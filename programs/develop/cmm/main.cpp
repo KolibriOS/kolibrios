@@ -1721,7 +1721,7 @@ FILE *CreateOutPut(char *ext,char *mode)
 {
 char buf[256];
 FILE *diskout;
-    if(!ext && strlen(ext)) {
+    if(ext && strlen(ext)) {
         sprintf(buf,"%s.%s",rawfilename,ext);
     } else {
         strcpy(buf, rawfilename);
