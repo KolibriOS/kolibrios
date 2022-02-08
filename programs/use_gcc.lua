@@ -5,6 +5,8 @@ CFLAGS_OPTIMIZE_SPEED = "-O2 -mpush-args -mno-accumulate-outgoing-args " .. CFLA
 -- and in all cases gives a notable overhead in size.
 CFLAGS_OPTIMIZE_SPEED_INSANE = "-O2 " .. CFLAGS_GENERIC
 -- Default is optimizing by size. Override on per-project or per-file basis.
+
+DEFINES =" -D_KOLIBRI_ -D_KOLIBRI -DKOLIBRI -D_KOS_ -D_KOS -DKOS -U_Win32 -UWIN32 -U_WIN32 -U__MINGW32__ -U__WIN32__ "
 CFLAGS = CFLAGS_OPTIMIZE_SIZE
 
 CFLAGS_c = "" -- extra flags for *.c
@@ -18,7 +20,7 @@ OBJS = {}
 function compile_gcc(input, output)
   if not output then output = '%B.o' end
   tup.append_table(OBJS,
-    tup.foreach_rule(input, "kos32-gcc -c " .. CFLAGS .. "$(CFLAGS_%e) " .. INCLUDES .. " -o %o %f", output)
+    tup.foreach_rule(input, "kos32-gcc -c " .. CFLAGS .. DEFINES .. "$(CFLAGS_%e) " .. INCLUDES .. " -o %o %f", output)
   )
 end
 
