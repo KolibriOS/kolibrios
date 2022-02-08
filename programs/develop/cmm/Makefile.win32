@@ -1,10 +1,17 @@
-CPPFLAGS=-m32 -fpack-struct=2 -fno-exceptions -std=c++03 -Wno-write-strings -D_WIN32_
-LDFLAGS=-m32
+CC = i686-w64-mingw32-gcc
+
+CPPFLAGS = -m32 -fpack-struct=2 -fno-exceptions -std=c++03 -Wno-write-strings -D_WIN32_ -DO_BINARY=0
+LDFLAGS  = -m32
 
 OBJS=$(patsubst %.cpp, %.o, $(wildcard *.cpp))
 
-c--.exe: $(OBJS)
-	g++ $^ -o $@
+TARGET = c--.exe
+
+$(TARGET): $(OBJS)
+	$(CC) $(LDFLAGS) $^ -o $@
 
 %.o: %.cpp
-	g++ $(CPPFLAGS) -c $<
+	$(CC) $(CPPFLAGS) -c $<
+
+clean:
+	rm -f $(OBJS) $(TARGET)

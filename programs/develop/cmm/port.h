@@ -92,15 +92,13 @@ int MultiByteToWideChar(unsigned int,unsigned int,char*,int,wchar_t *,int);
 
 #else
 
-int stricmp(const char*, const char*); //Leency
-int strnicmp(const char*, const char*, int); //Leency
+//int stricmp(const char*, const char*); //Leency
+//int strnicmp(const char*, const char*, int); //Leency
 
 #endif
 
 char* strupr(char* s);
 char* strlwr(char* s);
-//int stricmp(const char*, const char*); //Leency
-//int strnicmp(const char*, const char*, int); //Leency
 
 #ifdef _PORT_CPP_
 

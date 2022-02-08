@@ -1,10 +1,15 @@
-CPPFLAGS=-m32 -fpack-struct=2 -fno-exceptions -std=c++03 -Wno-write-strings -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp -DO_BINARY=0 -D_UNIX_
-LDFLAGS=-m32
+CPPFLAGS= -m32 -fpack-struct=2 -fno-exceptions -std=c++03 -Wno-write-strings -Dstricmp=strcasecmp -Dstrnicmp=strncasecmp -DO_BINARY=0 -D_UNIX_
+LDFLAGS=  -m32
 
 OBJS=$(patsubst %.cpp, %.o, $(wildcard *.cpp))
 
-c--: $(OBJS)
-	g++ $(LDFLAGS) $^ -o $@
+TARGET = c--
+
+$(TARGET): $(OBJS)
+	$(CC) $(LDFLAGS) $^ -o $@
 
 %.o: %.cpp
-	g++ $(CPPFLAGS) -c $<
+	$(CC) $(CPPFLAGS) -c $<
+
+clean:
+	rm -f $(OBJS) $(TARGET)

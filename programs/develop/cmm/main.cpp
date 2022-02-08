@@ -36,7 +36,7 @@ char *winstub=NULL;
 FILE *hout=NULL;
 const char *namestartupfile="startup.h--";
 
-char outext[4]="kex";
+char outext[4] = "com";
 short extflag=TRUE;//расширение можно присвоить
 //int scrsize;
 unsigned char gwarning=FALSE;
@@ -226,7 +226,7 @@ void CheckUndefClassProc();
 void ParseObjCommand(int cmd);
 
 #ifdef _KOS_
-extern "C"{
+extern "C" {
     void con_set_title(char* title);
 }
 #endif
@@ -301,8 +301,8 @@ unsigned char pari=FALSE;
 		LoadIni((char *)"c--.ini");	 
 		
 		for(count=1;count<argc;count++){ //обработка командной строки
-			//if(argv[count][0]=='/'||argv[count][0]=='-'){
-			if(argv[count][0]=='-'){
+			if(argv[count][0]=='/'||argv[count][0]=='-'){
+			//if(argv[count][0]=='-'){
 				if(SelectComand(argv[count]+1,&count)==c_end) BadCommandLine(argv[count]);
 			}
 			else{
@@ -1721,7 +1721,12 @@ FILE *CreateOutPut(char *ext,char *mode)
 {
 char buf[256];
 FILE *diskout;
-	sprintf(buf,"%s.%s",rawfilename,ext);
+    if(!ext && strlen(ext)) {
+        sprintf(buf,"%s.%s",rawfilename,ext);
+    } else {
+        strcpy(buf, rawfilename);
+    }
+    
 	if((diskout=fopen(buf,mode))==NULL){
 		ErrOpenFile(buf);
 		exit(e_notcreateoutput);
