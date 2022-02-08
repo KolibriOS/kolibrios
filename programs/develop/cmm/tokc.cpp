@@ -174,10 +174,14 @@ SAVEREG *psavereg=&savereg;
 
 int loadfile(char *filename,int firstflag)
 {
-int hold;
-
+	int hold;
 	for(int i=0;i<=numfindpath;i++){
-		sprintf((char *)string2,"%s%s",findpath[(firstflag==0?i:numfindpath-i)],filename);
+		char *path = findpath[(firstflag==0?i:numfindpath-i)]; // FIXME! (нужно выяснить, почему path может быть равен "\0")
+		if(path && strlen(path)) {
+			sprintf((char *)string2,"%s%s", path, filename);
+		} else {
+			strcpy((char *)string2, filename);
+		}
 #ifndef _WIN32_
 		for(char* p=(char *)string2; *p; ++p) if(*p=='\\') *p='/';
 #endif
