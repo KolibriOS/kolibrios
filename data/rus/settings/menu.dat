@@ -55,7 +55,7 @@
 13 Доска отладки        |develop/board
 16 HEX-редактор         |develop/heed
 20 Diff tool            |develop/diff
-52 Shared resources     |@reshare
+52 Shared resources     |/sys/@reshare
 34 Hex2Dec2Bin          |develop/h2d2b
 59 Таблица символов     |develop/ASCIIVju
 59 ASCII-коды           |develop/keyascii
