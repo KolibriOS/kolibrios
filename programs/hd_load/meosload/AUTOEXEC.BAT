@@ -20,7 +20,7 @@ mode con codepage prepare=((866) C:\WINDOWS\COMMAND\ega3.cpi)
 mode con codepage select=866
 keyb ru,,C:\WINDOWS\COMMAND\keybrd3.sys
 goto continue
-:meos
+:kos
 c:\kolibri\meosload.com
 :l:\meosload.com
 :continue
