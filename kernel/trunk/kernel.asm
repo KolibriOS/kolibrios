@@ -1607,9 +1607,7 @@ sys_setup:
         dec     ebx
         jnz     @f
 
-        mov     edi, [current_slot]
-        mov     eax, [edi+APPDATA.mem_start]
-        add     eax, edx
+        mov     eax, edx
 ; 1 = normal layout
         dec     ecx
         jnz     .shift
@@ -1704,16 +1702,13 @@ sys_getsetup:
         dec     ebx
         jnz     @f
 
-        mov     edi, [current_slot]
-        mov     ebx, [edi+APPDATA.mem_start]
-        add     ebx, edx
-; 1 = normal layout
-        dec     ecx
-        jnz     .shift
-
+        mov     ebx, edx
         ; if given memory address belongs to kernel then error
         stdcall is_region_userspace, ebx, 128
         jnz     .addr_error
+; 1 = normal layout
+        dec     ecx
+        jnz     .shift
 
         mov     eax, keymap
         mov     ecx, 128
@@ -1725,9 +1720,6 @@ sys_getsetup:
         dec     ecx
         jnz     .alt
 
-        stdcall is_region_userspace, ebx, 128
-        jnz     .addr_error
-
         mov     eax, keymap_shift
         mov     ecx, 128
         call    memmove
@@ -1737,9 +1729,6 @@ sys_getsetup:
 ; 3 = layout with pressed Alt
         dec     ecx
         jne     .country
-
-        stdcall is_region_userspace, ebx, 128
-        jnz     .addr_error
 
         mov     eax, keymap_alt
         mov     ecx, 128

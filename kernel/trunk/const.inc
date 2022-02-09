@@ -520,7 +520,7 @@ struct  APPDATA
                         dw ?            ;+126
         wnd_shape       dd ?            ;+128
         wnd_shape_scale dd ?            ;+132
-        mem_start       dd ?            ;+136
+                        dd ?            ;+136
         counter_sum     dd ?            ;+140  ; R
         saved_box       BOX             ;+144
         ipc_start       dd ?            ;+160

@@ -972,7 +972,6 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     [ebx+SLOT_BASE+APPDATA.cur_dir], eax
         rep movsd
 
-        mov     dword [ebx+SLOT_BASE+APPDATA.mem_start], 0
         mov     [ebx+SLOT_BASE+APPDATA.event_mask], dword 1+2+4;set default event flags (see 40 function)
         inc     dword [process_number]
         mov     eax, [process_number]
