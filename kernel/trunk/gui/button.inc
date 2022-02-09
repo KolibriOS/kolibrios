@@ -136,9 +136,10 @@ syscall_button: ;////////////// system function 8 //////////////
         dec     ebp
         shr     ebx, 16
         shr     ecx, 16
-        mov     eax, [TASK_BASE]
-        add     ebx, [eax - twdw + WDATA.box.left]
-        add     ecx, [eax - twdw + WDATA.box.top]
+        mov     eax, [current_slot_idx]
+        shl     eax, BSF sizeof.WDATA
+        add     ebx, [eax + window_data + WDATA.box.left]
+        add     ecx, [eax + window_data + WDATA.box.top]
         mov     eax, ebx
         inc     eax
         mov     edx, ebx

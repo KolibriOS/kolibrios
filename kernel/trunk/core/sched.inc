@@ -280,7 +280,6 @@ proc find_next_task
         test    bl, bl
         jz      .start
         mov     ebx, [current_slot]
-        mov     edi, [TASK_BASE]
         mov     eax, [ebx+APPDATA.priority]
         test    eax, eax
         jz      .unlock_found
@@ -293,11 +292,7 @@ proc find_next_task
         jz      .priority_next
 .task_loop:
         mov     ebx, [ebx+APPDATA.in_schedule.next]
-        ;mov     al, [ebx+APPDATA.state]
-        mov     edi, ebx                            ;
-        shr     edi, 3                              ;
-        add     edi, TASK_TABLE - (SLOT_BASE shr 3) ; on delete
-        mov     al, [edi+TASKDATA.state]            ;
+        mov     al, [ebx+APPDATA.state]
         test    al, al
         jz      .task_found     ; state == 0
         cmp     al, 5
@@ -317,7 +312,6 @@ proc find_next_task
         xor     eax, eax
 @@:
         mov     [ebx+APPDATA.wait_param], eax  ; retval for wait
-        mov     [edi+TASKDATA.state], TSTATE_RUNNING  ; on delete
         mov     [ebx+APPDATA.state], TSTATE_RUNNING
 .task_found:
         mov     [scheduler_current+ecx*4], ebx
@@ -338,7 +332,7 @@ proc find_next_task
         ; the line below assumes APPDATA is 256 bytes long and SLOT_BASE is
         ; aligned on 0x10000
         mov     byte [current_slot_idx], bh
-        mov     [TASK_BASE], edi
+
         rdtsc   ;call  _rdtsc
         mov     [ebx-sizeof.APPDATA+APPDATA.counter_add], eax; for next using update_counters
         ;mov     [edi+TASKDATA.counter_add], eax; for next using update_counters
@@ -352,7 +346,6 @@ proc find_next_task
         cmp     ecx, [esp]
         jb      .priority_loop
         mov     ebx, [current_slot]
-        mov     edi, [TASK_BASE]
         jmp     .unlock_found
 endp
 

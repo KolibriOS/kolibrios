@@ -38,7 +38,7 @@ mutex_lock:
 
         list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
 
-        mov     edx, [TASK_BASE]
+        mov     edx, [current_slot]
         mov     [esp+MUTEX_WAITER.task], edx
 
 .forever:
@@ -48,7 +48,7 @@ mutex_lock:
         dec     eax
         jz      @F
 
-        mov     [edx+TASKDATA.state], TSTATE_RUN_SUSPENDED
+        mov     [edx + APPDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
         jmp     .forever
 @@:
@@ -80,7 +80,7 @@ mutex_unlock:
         je      @F
 
         mov     eax, [eax+MUTEX_WAITER.task]
-        mov     [eax+TASKDATA.state], TSTATE_RUNNING
+        mov     [eax + APPDATA.state], TSTATE_RUNNING
 @@:
         popfd
         ret
@@ -111,10 +111,10 @@ down_read:
 @@:
         sub     esp, sizeof.MUTEX_WAITER
 
-        mov     eax, [TASK_BASE]
+        mov     eax, [current_slot]
         mov     [esp+MUTEX_WAITER.task], eax
         mov     [esp+MUTEX_WAITER.type], RWSEM_WAITING_FOR_READ
-        mov     [eax+TASKDATA.state], TSTATE_RUN_SUSPENDED
+        mov     [eax + APPDATA.state], TSTATE_RUN_SUSPENDED
 
         list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
 
@@ -138,10 +138,10 @@ down_write:
         cli
         sub     esp, sizeof.MUTEX_WAITER
 
-        mov     edx, [TASK_BASE]
+        mov     edx, [current_slot]
         mov     [esp+MUTEX_WAITER.task], edx
         mov     [esp+MUTEX_WAITER.type], RWSEM_WAITING_FOR_WRITE
-        mov     [edx+TASKDATA.state], TSTATE_RUN_SUSPENDED
+        mov     [edx + APPDATA.state], TSTATE_RUN_SUSPENDED
 
         list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
 
@@ -152,7 +152,7 @@ down_write:
         test    eax, [ecx+RWSEM.count]
         jz      @F
 
-        mov     [edx+TASKDATA.state], TSTATE_RUN_SUSPENDED
+        mov     [edx + APPDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
         jmp     .forever
 @@:
@@ -178,7 +178,7 @@ up_read:
         je      @F
 
         mov     eax, [eax+MUTEX_WAITER.task]
-        mov     [eax+TASKDATA.state], TSTATE_RUNNING
+        mov     [eax + APPDATA.state], TSTATE_RUNNING
 @@:
         popfd
         ret
@@ -202,7 +202,7 @@ up_write:
         jnz     .wake
 
         mov     eax, [eax+MUTEX_WAITER.task]
-        mov     [eax+TASKDATA.state], TSTATE_RUNNING
+        mov     [eax + APPDATA.state], TSTATE_RUNNING
 .done:
         popfd
         ret
@@ -220,7 +220,7 @@ up_write:
         mov     ebx, [eax+MUTEX_WAITER.list.next]
         list_del eax
         mov     edx, [eax+MUTEX_WAITER.task]
-        mov     [edx+TASKDATA.state], TSTATE_RUNNING
+        mov     [edx + APPDATA.state], TSTATE_RUNNING
         inc     esi
         cmp     edi, ebx
         je      .wake_done

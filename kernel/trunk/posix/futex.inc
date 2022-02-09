@@ -126,14 +126,14 @@ align 4
         cli
 
         sub     esp, sizeof.MUTEX_WAITER
-        mov     ebx, [TASK_BASE]
+        mov     ebx, [current_slot]
         mov     [esp+MUTEX_WAITER.task], ebx
         lea     esi, [ebp+FUTEX.wait_list]
 
         list_add_tail esp, esi      ;esp= new waiter, esi= list head
         mov     eax, edx
 .again:
-        mov     [ebx+TASKDATA.state], TSTATE_RUN_SUSPENDED
+        mov     [ebx + APPDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
 
         lock cmpxchg [ecx], edx
@@ -179,10 +179,9 @@ align 4
         mov     [ebx+APPDATA.wait_param], ebp
         mov     eax, [timer_ticks]
         mov     [ebx+APPDATA.wait_begin], eax
-        mov     eax, [TASK_BASE]
-        mov     [eax+TASKDATA.state], TSTATE_WAITING
+        mov     [ebx + APPDATA.state], TSTATE_WAITING
 
-        mov     [esp+MUTEX_WAITER.task], eax
+        mov     [esp+MUTEX_WAITER.task], ebx
         lea     esi, [ebp+FUTEX.wait_list]
 
         list_add_tail esp, esi      ;esp= new waiter, esi= list head
@@ -232,7 +231,7 @@ align 4
         je      .done
 
         mov     eax, [esi+MUTEX_WAITER.task]
-        mov     [eax+TASKDATA.state], TSTATE_RUNNING
+        mov     [eax + APPDATA.state], TSTATE_RUNNING
 
         mov     esi, [esi+MUTEX_WAITER.list.next]
         inc     ecx

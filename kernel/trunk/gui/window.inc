@@ -78,9 +78,10 @@ syscall_setpixel:
         mov     eax, ebx
         mov     ebx, ecx
         mov     ecx, edx
-        mov     edx, [TASK_BASE]
-        add     eax, [edx-twdw+WDATA.box.left]
-        add     ebx, [edx-twdw+WDATA.box.top]
+        mov     edx, [current_slot_idx]
+        shl     edx, BSF sizeof.WDATA
+        add     eax, [edx + window_data + WDATA.box.left]
+        add     ebx, [edx + window_data + WDATA.box.top]
         mov     edi, [current_slot]
         add     eax, [edi+APPDATA.wnd_clientbox.left]
         add     ebx, [edi+APPDATA.wnd_clientbox.top]
@@ -103,13 +104,14 @@ syscall_writetext:
         pop     esi
         jnz     .err
 
-        mov     eax, [TASK_BASE]
-        mov     ebp, [eax-twdw+WDATA.box.left]
+        mov     eax, [current_slot_idx]
+        shl     eax, BSF sizeof.WDATA
+        mov     ebp, [eax + window_data + WDATA.box.left]
         push    esi
         mov     esi, [current_slot]
         add     ebp, [esi+APPDATA.wnd_clientbox.left]
         shl     ebp, 16
-        add     ebp, [eax-twdw+WDATA.box.top]
+        add     ebp, [eax + window_data + WDATA.box.top]
         add     bp, word[esi+APPDATA.wnd_clientbox.top]
         pop     esi
         test    ecx, 0x08000000  ; redirect the output to the user area
@@ -163,15 +165,16 @@ syscall_drawrect:
 align 4
 ; system function 38
 syscall_drawline:
-        mov     edi, [TASK_BASE]
-        movzx   eax, word[edi-twdw+WDATA.box.left]
+        mov     edi, [current_slot_idx]
+        shl     edi, BSF sizeof.WDATA
+        movzx   eax, word[edi + window_data + WDATA.box.left]
         mov     ebp, eax
         mov     esi, [current_slot]
         add     ebp, [esi+APPDATA.wnd_clientbox.left]
         add     ax, word[esi+APPDATA.wnd_clientbox.left]
         add     ebp, ebx
         shl     eax, 16
-        movzx   ebx, word[edi-twdw+WDATA.box.top]
+        movzx   ebx, word[edi + window_data + WDATA.box.top]
         add     eax, ebp
         mov     ebp, ebx
         add     ebp, [esi+APPDATA.wnd_clientbox.top]
@@ -429,7 +432,7 @@ align 4
 ;     system function 67 
 syscall_move_window: 
         mov     edi, [current_slot_idx]
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, window_data
 
         test    [edi + WDATA.fl_wdrawn], 1
@@ -485,7 +488,7 @@ align 4
 ; system function 71
 syscall_window_settings: 
         mov     edi, [current_slot_idx]
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         or      [edi + window_data + WDATA.fl_wstyle], WSTYLE_HASCAPTION
         cmp     ebx, 2
         jz      @f
@@ -556,9 +559,9 @@ align 4
 align 4
 .next_window:
         movzx   edi, word[WIN_POS + esi * 2]
-        shl     edi, 5                  ;size of TASKDATA and WDATA = 32 bytes
+        shl     edi, BSF sizeof.WDATA        ;size of TASKDATA and WDATA = 32 bytes
 
-        cmp     byte [TASK_TABLE + edi + TASKDATA.state], TSTATE_FREE
+        cmp     byte [SLOT_BASE + edi*8 + APPDATA.state], TSTATE_FREE
         je      .skip_window
 
         add     edi, window_data
@@ -625,7 +628,7 @@ align 4
 ;---------------------------------------------
         mov     esi, [thread_count]
         movzx   edi, word[WIN_POS + esi * 2]
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, window_data
 
         pop     eax ebx ecx edx
@@ -1033,7 +1036,7 @@ waredraw:
         pushad
         mov     edi, [thread_count]
         movzx   esi, word[WIN_POS + edi * 2]
-        shl     esi, 5
+        shl     esi, BSF sizeof.WDATA
         add     esi, window_data
 
         mov     eax, [esi + WDATA.box.left]
@@ -1085,9 +1088,9 @@ minimize_all_window:
 align 4
 .loop:
         movzx   edi, word[WIN_POS + eax * 2]
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
 ; it is a unused slot?
-        cmp     byte [edi+TASK_TABLE+TASKDATA.state], TSTATE_FREE
+        cmp     byte [edi*8 + SLOT_BASE + APPDATA.state], TSTATE_FREE
         je      @f
 ; it is a hidden thread?
         lea     esi, [edi*8+SLOT_BASE+APPDATA.app_name]
@@ -1133,7 +1136,7 @@ minimize_window:
 
         ; is it already minimized?
         movzx   edi, word[WIN_POS + eax * 2]
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, window_data
         test    [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
         jnz     .exit
@@ -1194,7 +1197,7 @@ restore_minimized_window:
         ; is it already restored?
         movzx   esi, word[WIN_POS + eax * 2]
         mov     edi, esi
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, window_data
         test    [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
         jz      .exit
@@ -1262,7 +1265,7 @@ align 4
 ;> esi = process slot
 sys_window_maximize_handler:
         mov     edi, esi
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, window_data
 
         ; can window change its height?
@@ -1293,7 +1296,7 @@ sys_window_maximize_handler:
 align 4
 .restore_size:
         mov     eax, esi
-        shl     eax, 8
+        shl     eax, BSF sizeof.APPDATA
         add     eax, SLOT_BASE + APPDATA.saved_box
         push    [eax + BOX.height] \
                 [eax + BOX.width] \
@@ -1327,7 +1330,7 @@ align 4
 ;> esi = process slot
 sys_window_rollup_handler:
         mov     edx, esi
-        shl     edx, 8
+        shl     edx, BSF sizeof.APPDATA
         add     edx, SLOT_BASE
 
         ; toggle normal/rolled up window state
@@ -1394,7 +1397,7 @@ sys_window_end_moving_handler:
 ;        call    window._.end_moving__box
 
         mov     edi, esi
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, window_data
 
         test    [fl_moving], 1
@@ -1630,7 +1633,7 @@ align 4
 ;< edx = pointer to WDATA struct
 window._.sys_set_window:
         mov     eax, [current_slot_idx]
-        shl     eax, 5
+        shl     eax, BSF sizeof.WDATA
         add     eax, window_data
 ; save window colors
         mov     [eax + WDATA.cl_workarea], edx
@@ -1866,7 +1869,7 @@ end virtual
         cmp     esi, 1
         jz      .check_for_shaped_window
         mov     edi, esi
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         cmp     [window_data + edi + WDATA.box.width], 0
         jnz     .check_for_shaped_window
         cmp     [window_data + edi + WDATA.box.height], 0
@@ -1875,7 +1878,7 @@ end virtual
 align 4
 .check_for_shaped_window:
         mov     edi, esi
-        shl     edi, 8
+        shl     edi, BSF sizeof.APPDATA
         add     edi, SLOT_BASE
         cmp     [edi + APPDATA.wnd_shape], 0
         jne     .shaped_window
@@ -1950,7 +1953,7 @@ align 4
         push    edx ecx ; for loop - x,y size
 
         mov     ecx, esi
-        shl     ecx, 5
+        shl     ecx, BSF sizeof.WDATA
         mov     edx, [window_data + ecx + WDATA.box.top]
         push    [window_data + ecx + WDATA.box.width]           ; for loop - width
         mov     ecx, [window_data + ecx + WDATA.box.left]
@@ -2036,7 +2039,7 @@ window._.window_activate:
 ;       DEBUGF  1, "K : thread_count (0x%x)\n", ebx
 
         movzx   ebx, word[WIN_POS + ebx * 2]
-        shl     ebx, 5
+        shl     ebx, BSF sizeof.WDATA
         add     eax, window_data
         mov     al, [window_data + ebx + WDATA.fl_wstyle]
         and     al, 0x0f
@@ -2191,8 +2194,8 @@ align 4
         ja      .exit.no_redraw
 
         movzx   edx, word[esi]
-        shl     edx, 5 ; size of TASKDATA and WDATA is 32 bytes
-        cmp     byte [TASK_TABLE + edx + TASKDATA.state], TSTATE_FREE
+        shl     edx, BSF sizeof.WDATA ; size of TASKDATA and WDATA is 32 bytes
+        cmp     byte [SLOT_BASE + edx*8 - sizeof.APPDATA + APPDATA.state], TSTATE_FREE
         je      .next_window
 
         mov     eax, [edi + WDATA.box.top]
@@ -2283,7 +2286,7 @@ align 4
 align 4
 .2:
         mov     edi, [current_slot_idx]
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         test    [edi + window_data + WDATA.fl_wstyle], WSTYLE_HASCAPTION
         jz      .exit
         mov     edx, [edi * 8 + SLOT_BASE + APPDATA.wnd_caption]
@@ -2387,18 +2390,19 @@ align 4
 ; void __fastcall get_window_rect(struct RECT* rc);
 ; ecx = pointer to RECT
 window._.get_rect:
-        mov     eax, [TASK_BASE]
+        mov     eax, [current_slot_idx]
+        shl     eax, BSF sizeof.WDATA
 
-        mov     edx, [eax-twdw + WDATA.box.left]
+        mov     edx, [eax + window_data + WDATA.box.left]
         mov     [ecx+RECT.left], edx
 
-        add     edx, [eax-twdw + WDATA.box.width]
+        add     edx, [eax + window_data + WDATA.box.width]
         mov     [ecx+RECT.right], edx
 
-        mov     edx, [eax-twdw + WDATA.box.top]
+        mov     edx, [eax +window_data + WDATA.box.top]
         mov     [ecx+RECT.top], edx
 
-        add     edx, [eax-twdw + WDATA.box.height]
+        add     edx, [eax + window_data + WDATA.box.height]
         mov     [ecx+RECT.bottom], edx
         ret
 ;------------------------------------------------------------------------------
@@ -2438,7 +2442,7 @@ window._.set_top_wnd:
         cmp     ebp, 1
         jbe     .exit
 
-        shl     esi, 5
+        shl     esi, BSF sizeof.WDATA
         cmp     [esi + window_data + WDATA.z_modif], ZPOS_ALWAYS_TOP
         je      .exit
 
@@ -2457,9 +2461,9 @@ align 4
 align 4
 .next_window:
         movzx   edi, word[WIN_POS + esi * 2]
-        shl     edi, 5                  ;size of TASKDATA and WDATA = 32 bytes
+        shl     edi, BSF sizeof.WDATA         ;size of TASKDATA and WDATA = 32 bytes
 
-        cmp     byte [TASK_TABLE + edi + TASKDATA.state], TSTATE_FREE
+        cmp     byte [SLOT_BASE + edi*8 + APPDATA.state], TSTATE_FREE
         je      .skip_window
 
         add     edi, window_data

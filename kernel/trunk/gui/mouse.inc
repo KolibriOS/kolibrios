@@ -726,10 +726,11 @@ dd  .loadCursorUni
         mov     eax, [MOUSE_X]
         shl     eax, 16
         mov     ax, [MOUSE_Y]
-        mov     esi, [TASK_BASE]
-        mov     bx, word [esi-twdw+WDATA.box.left]
+        mov     esi, [current_slot_idx]
+        shl     esi, BSF sizeof.WDATA
+        mov     bx, word [esi + window_data + WDATA.box.left]
         shl     ebx, 16
-        mov     bx, word [esi-twdw+WDATA.box.top]
+        mov     bx, word [esi + window_data + WDATA.box.top]
         sub     eax, ebx
         mov     edi, [current_slot_idx]
         shl     edi, 8

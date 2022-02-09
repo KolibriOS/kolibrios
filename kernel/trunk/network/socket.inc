@@ -1860,9 +1860,8 @@ socket_block:
 
         ; Suspend the thread
         push    edx
-        mov     edx, [TASK_BASE]
-        mov     [edx + TASKDATA.state], TSTATE_RUN_SUSPENDED
         mov     edx, [current_slot]
+        mov     [edx + APPDATA.state], TSTATE_RUN_SUSPENDED
 
         ; Remember the thread ID so we can wake it up again
         mov     edx, [edx + APPDATA.tid]
@@ -1903,14 +1902,11 @@ socket_notify:
         jz      .error2
         xor     ecx, ecx
         inc     ecx
-        ;mov     esi, TASK_DATA
         mov     esi, SLOT_BASE + sizeof.APPDATA
   .next:
-        ;cmp     [esi + TASKDATA.pid], ebx
         cmp     [esi + APPDATA.tid], ebx
         je      .found
         inc     ecx
-        ;add     esi, sizeof.TASKDATA
         add     esi, sizeof.APPDATA
         cmp     ecx, [thread_count]
         jbe     .next
@@ -1943,8 +1939,8 @@ socket_notify:
 ; Socket and thread exists and socket is of blocking type
 ; We'll try to unblock it.
         and     [eax + SOCKET.state], not SS_BLOCKED    ; Clear the 'socket is blocked' flag
-        shl     ecx, BSF sizeof.TASKDATA
-        mov     [ecx + TASK_TABLE + TASKDATA.state], TSTATE_RUNNING  ; Run the thread
+        shl     ecx, BSF sizeof.APPDATA
+        mov     [SLOT_BASE + ecx + APPDATA.state], TSTATE_RUNNING  ; Run the thread
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_notify: Unblocked socket!\n"
         pop     esi ecx ebx

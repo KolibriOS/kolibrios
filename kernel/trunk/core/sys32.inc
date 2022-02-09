@@ -150,9 +150,9 @@ exc_c:                            ; exceptions (all but 7th - #NM)
         test    eax, eax
         jnz     .debug
 ; not debuggee => say error and terminate
-        call    show_error_parameters
+        call    show_error_parameters  ; this function output in edx = current_slot
         sti
-        mov     [edx + TASKDATA.state], TSTATE_TERMINATING
+        mov     [edx + APPDATA.state], TSTATE_TERMINATING
         call    wakeup_osloop
         call    change_task
 ; If we're here, then the main OS thread has crashed before initializing IDLE thread.
@@ -186,8 +186,8 @@ exc_c:                            ; exceptions (all but 7th - #NM)
         mov     cl, 12          ; debug_message size
         call    debugger_notify ;; only ONE using, inline ??? SEE: core/debug.inc
         add     esp, 12
-        mov     edx, [TASK_BASE]
-        mov     [edx+TASKDATA.state], TSTATE_RUN_SUSPENDED
+        mov     edx, [current_slot]
+        mov     [edx + APPDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task     ; SEE: core/shed.inc
         restore_ring3_context
         iretd
@@ -288,6 +288,27 @@ show_error_parameters:
         test    eax, eax
         jnz     .error_ESP
         DEBUGF  1, " [ESP+32]: %x\n",[ebx]
+;for input instruction
+        mov     ebx, [reg_eip+4]
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, "K : [EIP]: %x",[ebx]
+        add     ebx, 4
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, " [EIP+4]: %x",[ebx]
+        add     ebx, 4
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, " [EIP+8]: %x\n",[ebx]
+        add     ebx, 4
+        call    .check_ESP
+        test    eax, eax
+        jnz     .error_ESP
+        DEBUGF  1, "K : [EIP+12]: %x\n",[ebx]
         pop     edx ecx ebx eax
         ret
 .error_ESP:
@@ -412,13 +433,12 @@ destroy_thread:
 
         push    esi        ;save .slot
 
-        shl     esi, 8
+        shl     esi, BSF sizeof.APPDATA
         mov     edx, [SLOT_BASE+esi+APPDATA.process]
         test    edx, edx
         jnz     @F
+        mov     [SLOT_BASE + esi + APPDATA.state], TSTATE_FREE
         pop     esi
-        shl     esi, BSF sizeof.TASKDATA
-        mov     [TASK_TABLE+esi+TASKDATA.state], TSTATE_FREE
         ret
 @@:
         push    edx                     ;save .process
@@ -428,7 +448,7 @@ destroy_thread:
 
 ; if the process is in V86 mode...
         mov     eax, [.slot]
-        shl     eax, 8
+        shl     eax, BSF sizeof.APPDATA
         mov     esi, [eax+SLOT_BASE+APPDATA.pl0_stack]
         add     esi, RING0_STACK_SIZE
         cmp     [eax+SLOT_BASE+APPDATA.saved_esp0], esi
@@ -445,7 +465,7 @@ destroy_thread:
 .nov86:
 ; destroy per-thread kernel objects
         mov     esi, [.slot]
-        shl     esi, 8
+        shl     esi, BSF sizeof.APPDATA
         add     esi, SLOT_BASE+APP_OBJ_OFFSET
 @@:
         mov     eax, [esi+APPOBJ.fd]
@@ -591,7 +611,7 @@ destroy_thread:
         popad
 
         mov     ebx, [.slot]
-        shl     ebx, 8
+        shl     ebx, BSF sizeof.APPDATA
         push    ebx
         mov     ebx, [SLOT_BASE+ebx+APPDATA.pl0_stack]
 
@@ -602,7 +622,7 @@ destroy_thread:
         stdcall kernel_free, ebx
 
         mov     edi, [.slot]
-        shl     edi, 8
+        shl     edi, BSF sizeof.APPDATA
         add     edi, SLOT_BASE
 
         mov     eax, [edi+APPDATA.io_map]
@@ -637,9 +657,10 @@ destroy_thread:
         jbe     .nothing_to_activate
         lea     esi, [WIN_POS+eax*2]
         movzx   edi, word [esi]              ; edi = process
-        shl     edi, BSF sizeof.TASKDATA
-        cmp     [TASK_TABLE + edi + TASKDATA.state], TSTATE_FREE ; skip free slots
+        shl     edi, BSF sizeof.APPDATA
+        cmp     [SLOT_BASE + edi + APPDATA.state], TSTATE_FREE ; skip free slots
         je      .check_next_window
+        shr     edi, 3
         add     edi, window_data
 ; \begin{diamond}[19.09.2006]
 ; skip minimized windows
@@ -711,8 +732,8 @@ destroy_thread:
 
         popa
         mov     edi, esi ; do not run this process slot
-        shl     edi, BSF sizeof.TASKDATA
-        mov     [edi+TASK_TABLE + TASKDATA.state], TSTATE_FREE
+        shl     edi, BSF sizeof.APPDATA
+        mov     [edi + SLOT_BASE + APPDATA.state], TSTATE_FREE
 ; debugger test - terminate all debuggees
         mov     eax, 2
         mov     ecx, SLOT_BASE+2*sizeof.APPDATA + APPDATA.debugger_slot

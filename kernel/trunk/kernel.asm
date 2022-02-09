@@ -630,7 +630,6 @@ high_code:
         mov     dword [current_slot_idx], 2
         mov     [thread_count], 2
         mov     dword [current_slot], SLOT_BASE + sizeof.APPDATA*2
-        mov     dword [TASK_BASE], TASK_TABLE + sizeof.TASKDATA*2
 
 ; Move other CPUs to deep sleep, if it is useful
 uglobal
@@ -1932,8 +1931,6 @@ sys_end:
 
         mov     eax, [current_slot]
         mov     [eax+APPDATA.state], TSTATE_ZOMBIE
-        mov     eax, [TASK_BASE]                       ;
-        mov     [eax+TASKDATA.state], TSTATE_ZOMBIE    ; delete
         call    wakeup_osloop
 
 .waitterm:            ; wait here for termination
@@ -1953,7 +1950,7 @@ restore_default_cursor_before_killing:
 
         add     eax, [_display.win_map]
         movzx   edx, byte [ebx+eax]
-        shl     edx, 8
+        shl     edx, BSF sizeof.APPDATA
         mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
 
         cmp     esi, [current_cursor]
@@ -2043,18 +2040,18 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         cmp     ecx, edx
         ja      noprocessterminate
         mov     eax, [thread_count]
-        shl     ecx, BSF sizeof.TASKDATA
-        mov     edx, [ecx*8 + SLOT_BASE + APPDATA.tid]
-        add     ecx, TASK_TABLE+TASKDATA.state
-        cmp     byte [ecx], TSTATE_FREE
+        shl     ecx, BSF sizeof.APPDATA
+        add     ecx, SLOT_BASE
+        mov     edx, [ecx + APPDATA.tid]
+        cmp     byte [ecx + APPDATA.state], TSTATE_FREE
         jz      noprocessterminate
         push    eax
-        lea     eax, [(ecx-(TASK_TABLE and 1FFFFFFFh)-TASKDATA.state)*8+SLOT_BASE]
+        mov     eax, ecx
         call    is_kernel_thread
         pop     eax
         jz      noprocessterminate
         push    ecx edx
-        lea     edx, [(ecx-(TASK_TABLE and 1FFFFFFFh)-TASKDATA.state)*8+SLOT_BASE]
+        mov     edx, ecx
         call    request_terminate
         pop     edx ecx
         test    eax, eax
@@ -2062,7 +2059,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 ;--------------------------------------
 ; terminate all network sockets it used
         pusha
-        mov     eax, edx
+        mov     eax, edx     ;TODO: check function
         call    socket_process_end
         popa
 ;--------------------------------------
@@ -2082,7 +2079,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 .restore_end:
 ;--------------------------------------
      ;call MEM_Heap_Lock      ;guarantee that process isn't working with heap
-        mov     [ecx], byte 3; clear possible i40's
+        mov     [ecx + APPDATA.state], TSTATE_ZOMBIE; clear possible i40's
         call    wakeup_osloop
      ;call MEM_Heap_UnLock
 
@@ -2189,13 +2186,10 @@ sysfn_zmodif:
 
         mov     eax, edx
         shl     edx, 5
-        ;shl     edx, 8
 
-        ;cmp     [edx + SLOT_BASE + APPDATA.state], TSTATE_FREE
-        cmp     [edx + TASK_TABLE + TASKDATA.state], TSTATE_FREE
+        cmp     [edx*8 + SLOT_BASE + APPDATA.state], TSTATE_FREE
         je      .fail
 
-        ;shr     edx, 3
         cmp     ecx, 1
         jnz     .set_zmod
 
@@ -2665,7 +2659,6 @@ sys_cpuusage:
 
     ; Process state (+50)
         movzx   eax, byte [ecx*8 + SLOT_BASE + APPDATA.state]
-        movzx   eax, byte [ecx+TASK_TABLE+TASKDATA.state]
         stosd
 
     ; Window client area box
@@ -2745,8 +2738,9 @@ sys_redrawstat:
         cmp     ebx, 2
         jnz     srl1
 
-        mov     edx, [TASK_BASE]      ; return whole screen draw area for this app
-        add     edx, draw_data - TASK_TABLE
+        mov     edx, [current_slot_idx]      ; return whole screen draw area for this app
+        shl     edx, 5
+        add     edx, draw_data
         mov     [edx + RECT.left], 0
         mov     [edx + RECT.top], 0
         mov     eax, [_display.width]
@@ -2909,7 +2903,7 @@ nocpustart:
         mov     [mouse_active], 0
 
         xor     edi, edi
-        mov     ebx, TASK_TABLE
+        mov     ebx, window_data
 
         mov     ecx, [thread_count]
         movzx   eax, word [WIN_POS + ecx*2]     ; active window
@@ -2922,7 +2916,7 @@ nocpustart:
 align 4
 .set_mouse_event:
         add     edi, sizeof.APPDATA
-        add     ebx, sizeof.TASKDATA
+        add     ebx, sizeof.WDATA
         test    [edi + SLOT_BASE + APPDATA.event_mask], 0x80000000
         jz      .pos_filter
 
@@ -2934,17 +2928,17 @@ align 4
         test    [edi + SLOT_BASE + APPDATA.event_mask], 0x40000000
         jz      .set
 
-        mov     esi, [ebx-twdw+WDATA.box.left]
+        mov     esi, [ebx + WDATA.box.left]
         cmp     eax, esi
         jb      .skip
-        add     esi, [ebx-twdw+WDATA.box.width]
+        add     esi, [ebx + WDATA.box.width]
         cmp     eax, esi
         ja      .skip
 
-        mov     esi, [ebx-twdw+WDATA.box.top]
+        mov     esi, [ebx + WDATA.box.top]
         cmp     edx, esi
         jb      .skip
-        add     esi, [ebx-twdw+WDATA.box.height]
+        add     esi, [ebx + WDATA.box.height]
         cmp     edx, esi
         ja      .skip
 ;--------------------------------------
@@ -3043,15 +3037,14 @@ nobackgr:
         jne     noshutdown
 
         lea     ecx, [edx-1]
-        mov     edx, OS_BASE+0x3040
+        mov     edx, SLOT_BASE + sizeof.APPDATA ;OS_BASE+0x3040
         jecxz   no_mark_system_shutdown
 ;--------------------------------------
 align 4
 markz:
         push    ecx edx
-        cmp     [edx+TASKDATA.state], TSTATE_FREE
+        cmp     [edx + APPDATA.state], TSTATE_FREE
         jz      .nokill
-        lea     edx, [(edx-(TASK_TABLE and 1FFFFFFFh))*8+SLOT_BASE]
         cmp     [edx+APPDATA.process], sys_proc
         jz      .nokill
         call    request_terminate
@@ -3063,10 +3056,9 @@ markz:
         pop     edx ecx
         test    eax, eax
         jz      @f
-        mov     [edx+TASKDATA.state], TSTATE_ZOMBIE
-        ;mov     [edx+APPDATA.state], TSTATE_ZOMBIE
+        mov     [edx + APPDATA.state], TSTATE_ZOMBIE
 @@:
-        add     edx, 0x20
+        add     edx, sizeof.APPDATA
         loop    markz
         call    wakeup_osloop
 ;--------------------------------------
@@ -3079,7 +3071,7 @@ no_mark_system_shutdown:
 align 4
 noshutdown:
         mov     eax, [thread_count]           ; termination
-        mov     ebx, TASK_DATA+TASKDATA.state
+        mov     ebx, SLOT_BASE + sizeof.APPDATA + APPDATA.state
         mov     esi, 1
 ;--------------------------------------
 align 4
@@ -3107,7 +3099,7 @@ newct:
         je      system_shutdown
 
 .noterminate:
-        add     ebx, 0x20
+        add     ebx, sizeof.APPDATA
         inc     esi
         dec     eax
         jnz     newct

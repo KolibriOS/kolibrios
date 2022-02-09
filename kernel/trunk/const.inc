@@ -224,11 +224,11 @@ OS_BASE             = 0x80000000
 
 window_data         = OS_BASE + 0x0001000
 
-TASK_TABLE          = OS_BASE + 0x0003000
+;TASK_TABLE          = OS_BASE + 0x0003000
 ;CURRENT_TASK        = OS_BASE + 0x0003000
 ;TASK_COUNT          = OS_BASE + 0x0003004
-TASK_BASE           = OS_BASE + 0x0003010
-TASK_DATA           = OS_BASE + 0x0003020
+;TASK_BASE           = OS_BASE + 0x0003010
+;TASK_DATA           = OS_BASE + 0x0003020
 ;TASK_EVENT          = OS_BASE + 0x0003020
 
 CDDataBuf           = OS_BASE + 0x0005000
@@ -281,7 +281,7 @@ LFB_BASE            = 0xFE000000
 
 new_app_base        = 0;
 
-twdw                = TASK_TABLE - window_data
+;twdw                = TASK_TABLE - window_data
 
 std_application_base_address   = new_app_base
 RING0_STACK_SIZE    = 0x2000
@@ -511,16 +511,16 @@ struct  APPDATA
         wait_test       dd ?            ;+96   +++
         wait_param      dd ?            ;+100  +++
         tls_base        dd ?            ;+104
-        event_mask      dd ?            ;+108  ; R stores event types allowed for task
-        tid             dd ?            ;+112  ; R thread id
+        event_mask      dd ?            ;+108   stores event types allowed for task
+        tid             dd ?            ;+112   thread id
         draw_bgr_x      dd ?            ;+116
         draw_bgr_y      dd ?            ;+120
-        state           db ?            ;+124  ; R thread state
-        wnd_number      db ?            ;+125  ; R
+        state           db ?            ;+124   thread state
+        wnd_number      db ?            ;+125
                         dw ?            ;+126
         wnd_shape       dd ?            ;+128
         wnd_shape_scale dd ?            ;+132
-        mem_start       dd ?            ;+136  ; R
+        mem_start       dd ?            ;+136
         counter_sum     dd ?            ;+140  ; R
         saved_box       BOX             ;+144
         ipc_start       dd ?            ;+160
@@ -549,20 +549,20 @@ APP_OBJ_OFFSET  = 48
 APP_EV_OFFSET   = 40
 
 ; Note: in future TASKDATA will be merged into APPDATA
-struct  TASKDATA
-        event_mask      dd ? ;+0 mask which stores event types allowed for task
-        pid             dd ? ;+4
-                        dw ? ;+8
-        state           db ? ;+10
-                        db ? ;+11
-                        dw ? ;+12
-        wnd_number      db ? ;+14
-                        db ? ;+15
-        mem_start       dd ? ;+16
-        counter_sum     dd ? ;+20
-        counter_add     dd ? ;+24
-        cpu_usage       dd ? ;+28
-ends
+;struct  TASKDATA
+;        event_mask      dd ? ;+0 mask which stores event types allowed for task
+;        pid             dd ? ;+4
+;                        dw ? ;+8
+;        state           db ? ;+10
+;                        db ? ;+11
+;                        dw ? ;+12
+;        wnd_number      db ? ;+14
+;                        db ? ;+15
+;        mem_start       dd ? ;+16
+;        counter_sum     dd ? ;+20
+;        counter_add     dd ? ;+24
+;        cpu_usage       dd ? ;+28
+;ends
 
 ; Thread states:
 TSTATE_RUNNING        = 0

@@ -280,9 +280,7 @@ Wait_events_ex:
         mov     [esi+APPDATA.wait_timeout], ebx
         mov     eax, [timer_ticks]
         mov     [esi+APPDATA.wait_begin], eax
-        mov     [esi+APPDATA.state], TSTATE_WAITING
-        mov     eax, [TASK_BASE]
-        mov     [eax+TASKDATA.state], TSTATE_WAITING
+        mov     [esi + APPDATA.state], TSTATE_WAITING
         call    change_task
         mov     eax, [esi+APPDATA.wait_param]
 ;--------------------------------------
@@ -513,7 +511,7 @@ get_event_for_app:                                 ;; used from f10,f11,f23
         movzx   edi, bh               ; bh  is assumed as [current_slot_idx]
         mov     ecx, [ebx+APPDATA.event_mask]
         shl     edi, 5
-        add     edi, TASK_TABLE     ; edi is assumed as [TASK_BASE]
+        add     edi, window_data
         and     ecx, 0x7FFFFFFF
 ;--------------------------------------
 align 4
@@ -541,7 +539,7 @@ align 4
 ;--------------------------------------
 align 4
 .WndRedraw:                    ; eax=0, retval WndRedraw=1
-        cmp     [edi-twdw+WDATA.fl_redraw], al;al==0
+        cmp     [edi + WDATA.fl_redraw], al;al==0
         jne     .result
         jmp     .loop
 ;--------------------------------------

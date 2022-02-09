@@ -487,26 +487,22 @@ pid_to_slot:
         push    ebx
         push    ecx
         mov     ebx, [thread_count]
-        shl     ebx, BSF sizeof.TASKDATA ; multiply by size
-        ;shl     ebx, BSF sizeof.APPDATA ; multiply by size
+        shl     ebx, BSF sizeof.APPDATA ; multiply by size
         ; add 2*32 cause:
         ; [TASK_TABLE; TASK_TABLE + 32) isnt a task actually
         ; skip first process in the task table
-        mov     ecx, 2*32    ;sizeof.TASKDATA
-        ;mov     ecx, sizeof.APPDATA
+        ;mov     ecx, 2*32    ;sizeof.TASKDATA
+        mov     ecx, sizeof.APPDATA
 
 .loop:
 ;ecx = offset of current process info entry
 ;ebx = maximum permitted offset
-        cmp     [TASK_TABLE+ecx+TASKDATA.state], TSTATE_FREE
+        cmp     [SLOT_BASE + ecx + APPDATA.state], TSTATE_FREE
         jz      .endloop ;skip empty slots
-        ;cmp     [ecx+SLOT_BASE+APPDATA.state], TSTATE_FREE
-        ;jz      .endloop ;skip empty slots
-        cmp     [ecx*8 + SLOT_BASE + APPDATA.tid], eax;check PID
+        cmp     [ecx + SLOT_BASE + APPDATA.tid], eax;check PID
         jz      .pid_found
 .endloop:
-        add     ecx, sizeof.TASKDATA
-        ;add     ecx, sizeof.APPDATA
+        add     ecx, sizeof.APPDATA
         cmp     ecx, ebx
         jle     .loop
 
@@ -516,8 +512,7 @@ pid_to_slot:
         ret
 
 .pid_found:
-        shr     ecx, BSF sizeof.TASKDATA ; divide by size
-        ;shr     ecx, BSF sizeof.APPDATA
+        shr     ecx, BSF sizeof.APPDATA ; divide by size
         mov     eax, ecx ;convert offset to index of slot
         pop     ecx
         pop     ebx
@@ -903,8 +898,7 @@ common_app_entry:
         cmp     [ebx+APPDATA.debugger_slot], 0
         je      .exit
         mov     [ebx+APPDATA.state], TSTATE_RUN_SUSPENDED
-        mov     eax, [TASK_BASE]
-        mov     [eax+TASKDATA.state], TSTATE_RUN_SUSPENDED
+        mov     [ebx + APPDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
 .exit:
         popad
@@ -932,7 +926,7 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     eax, [slot]
         mov     ebx, eax
 
-        shl     eax, 8
+        shl     eax, BSF sizeof.APPDATA
         mov     [eax+SLOT_BASE+APPDATA.fpu_state], edi
         mov     [eax+SLOT_BASE+APPDATA.exc_handler], 0
         mov     [eax+SLOT_BASE+APPDATA.except_mask], 0
@@ -952,7 +946,7 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 
         cmp     [thread_count], ebx
         adc     [thread_count], 0   ; update number of processes
-        shl     ebx, 8
+        shl     ebx, BSF sizeof.APPDATA
         lea     edx, [ebx+SLOT_BASE+APP_EV_OFFSET]
         mov     [SLOT_BASE+APPDATA.fd_ev+ebx], edx
         mov     [SLOT_BASE+APPDATA.bk_ev+ebx], edx
@@ -987,7 +981,7 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     eax, [slot]
         mov     [ebx+SLOT_BASE+APPDATA.wnd_number], al
         mov     ebx, eax
-        shl     ebx, 5
+        shl     ebx, BSF sizeof.WDATA
         lea     ecx, [draw_data+ebx];ecx - pointer to draw data
 
 ; set window state to 'normal' (non-minimized/maximized/rolled-up) state
@@ -1037,20 +1031,18 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 
         lea     edx, [ebx+REG_RET]
         mov     ebx, [slot]
-        shl     ebx, 5
-        mov     [ebx*8+SLOT_BASE+APPDATA.saved_esp], edx
+        shl     ebx, BSF sizeof.APPDATA
+        mov     [ebx+SLOT_BASE+APPDATA.saved_esp], edx
 
         xor     edx, edx; process state - running
 ; set if debuggee
         test    byte [flags], 1
         jz      .no_debug
         mov     eax, [current_slot_idx]
-        mov     [SLOT_BASE+ebx*8+APPDATA.debugger_slot], eax
+        mov     [SLOT_BASE+ebx+APPDATA.debugger_slot], eax
 .no_debug:
-        mov     [TASK_TABLE+ebx+TASKDATA.state], dl
-        ;shl     ebx, 3
-        ;mov     [ebx+SLOT_BASE+APPDATA.state], dl
-        lea     edx, [SLOT_BASE+ebx*8]
+        mov     [SLOT_BASE + ebx + APPDATA.state], dl
+        lea     edx, [SLOT_BASE+ebx]
         call    scheduler_add_thread
         ret
 endp

@@ -46,10 +46,10 @@ get_debuggee_slot:
         call    pid_to_slot
         test    eax, eax
         jz      .ret_bad
-        shl     eax, 5
+        shl     eax, BSF sizeof.APPDATA
         push    ebx
         mov     ebx, [current_slot_idx]
-        cmp     [SLOT_BASE+eax*8+APPDATA.debugger_slot], ebx
+        cmp     [SLOT_BASE+eax+APPDATA.debugger_slot], ebx
         pop     ebx
         jnz     .ret_bad
 ;       clc     ; automatically
@@ -63,7 +63,7 @@ debug_detach:
 ; destroys eax,ebx
         call    get_debuggee_slot
         jc      .ret
-        and     dword [eax*8+SLOT_BASE+APPDATA.debugger_slot], 0
+        and     dword [eax+SLOT_BASE+APPDATA.debugger_slot], 0
         call    do_resume
 .ret:
         sti
@@ -74,7 +74,7 @@ debug_terminate:
         call    get_debuggee_slot
         jc      debug_detach.ret
         mov     ecx, eax
-        shr     ecx, 5
+        shr     ecx, BSF sizeof.APPDATA
 ;        push    2
 ;        pop     ebx
         mov     edx, esi
@@ -92,14 +92,14 @@ debug_suspend:
         call    get_debuggee_slot
         jc      .ret
 ; } End patch
-        mov     cl, [TASK_TABLE+eax+TASKDATA.state] ; process state
+        mov     cl, [SLOT_BASE + eax + APPDATA.state] ; process state
         test    cl, cl
         jz      .1
         cmp     cl, 5
         jnz     .ret
         mov     cl, 2
 .2:
-        mov     [TASK_TABLE+eax+TASKDATA.state], cl
+        mov     [SLOT_BASE + eax + APPDATA.state], cl
 .ret:
         sti
         ret
@@ -108,14 +108,14 @@ debug_suspend:
         jmp     .2
 
 do_resume:
-        mov     cl, [TASK_TABLE+eax+TASKDATA.state]
+        mov     cl, [SLOT_BASE + eax + APPDATA.state]
         cmp     cl, 1
         jz      .1
         cmp     cl, 2
         jnz     .ret
         mov     cl, 5
 .2:
-        mov     [TASK_TABLE+eax+TASKDATA.state], cl
+        mov     [SLOT_BASE + eax + APPDATA.state], cl
 .ret:
         ret
 .1:
@@ -128,7 +128,7 @@ debug_resume:
         cli
         mov     eax, ecx
         call    pid_to_slot
-        shl     eax, 5
+        shl     eax, BSF sizeof.APPDATA
         jz      .ret
         call    do_resume
 .ret:
@@ -155,12 +155,12 @@ debug_getcontext:
         call    get_debuggee_slot
         jc      .ret
 
-        shr     eax, 5
+        shr     eax, 8
         cmp     eax, [fpu_owner]
         jne     @f
         inc     bh                ; set swap context flag
 @@:
-        shl     eax, 8
+        shl     eax, BSF sizeof.APPDATA
         mov     edi, esi
         mov     eax, [eax+SLOT_BASE+APPDATA.pl0_stack]
         lea     esi, [eax+RING0_STACK_SIZE]
@@ -231,7 +231,7 @@ debug_setcontext:
         call    get_debuggee_slot
         jc      .stiret
 ;        mov     esi, edx
-        mov     eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
+        mov     eax, [eax+SLOT_BASE+APPDATA.pl0_stack]
         lea     edi, [eax+RING0_STACK_SIZE]
 
 .ring0:
@@ -267,7 +267,7 @@ debug_set_drx:
         call    get_debuggee_slot
         jc      .errret
         mov     ebp, eax
-        lea     eax, [eax*8+SLOT_BASE+APPDATA.dbg_regs]
+        lea     eax, [eax+SLOT_BASE+APPDATA.dbg_regs]
 ; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
 ; [eax+10]=dr7
         cmp     esi, OS_BASE
@@ -294,7 +294,7 @@ debug_set_drx:
         jnz     .okret
 ;        imul    eax, ebp, tss_step/32
 ;        and     byte [eax + tss_data + TSS._trap], not 1
-        and     [ebp*8 + SLOT_BASE+APPDATA.dbg_state], not 1
+        and     [ebp + SLOT_BASE+APPDATA.dbg_state], not 1
 .okret:
         and     dword [esp+32], 0
         sti
@@ -341,7 +341,7 @@ debug_set_drx:
         or      [eax+10h+2], dx         ; set R/W and LEN fields
 ;        imul    eax, ebp, tss_step/32
 ;        or      byte [eax + tss_data + TSS._trap], 1
-        or      [ebp*8 + SLOT_BASE+APPDATA.dbg_state], 1
+        or      [ebp + SLOT_BASE+APPDATA.dbg_state], 1
         jmp     .okret
 
 debug_read_process_memory:
@@ -354,7 +354,7 @@ debug_read_process_memory:
 ; destroys all
         call    get_debuggee_slot
         jc      .err
-        shr     eax, 5
+        shr     eax, 8
         mov     ecx, edi
         call    read_process_memory
         sti
@@ -374,7 +374,7 @@ debug_write_process_memory:
 ; destroys all
         call    get_debuggee_slot
         jc      debug_read_process_memory.err
-        shr     eax, 5
+        shr     eax, 8
         mov     ecx, edi
         call    write_process_memory
         sti

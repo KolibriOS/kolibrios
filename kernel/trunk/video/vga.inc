@@ -495,9 +495,6 @@ VGA_draw_bar:
 align 4
 VGA_draw_bar_1:
         mov     [temp.cx], eax
-        ;mov     eax, [TASK_BASE]
-        ;add     ebx, [eax-twdw + 4]
-        ;mov     eax, [eax-twdw + 0]
         mov     eax, [current_slot_idx]
         shl     eax, 5
         add     ebx, [eax+window_data+WDATA.box.top]
