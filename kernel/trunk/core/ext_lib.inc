@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -75,12 +75,12 @@ proc load_k_library stdcall, file_name:dword
         jz      .fail
 
         mov     [coff], eax
-        movzx   ecx, [eax+CFH.nSections]
+        movzx   ecx, [eax + CFH.nSections]
         xor     ebx, ebx
 
         lea     edx, [eax+20]
 @@:
-        add     ebx, [edx+CFS.SizeOfRawData]
+        add     ebx, [edx + CFS.SizeOfRawData]
         add     ebx, 15
         and     ebx, not 15
         add     edx, COFF_SECTION_SIZE
@@ -95,19 +95,19 @@ proc load_k_library stdcall, file_name:dword
         mov     [img_base], eax
 
         mov     edx, [coff]
-        movzx   ebx, [edx+CFH.nSections]
+        movzx   ebx, [edx + CFH.nSections]
         mov     edi, [img_base]
         lea     eax, [edx+20]
 @@:
-        mov     [eax+CFS.VirtualAddress], edi
-        mov     esi, [eax+CFS.PtrRawData]
+        mov     [eax + CFS.VirtualAddress], edi
+        mov     esi, [eax + CFS.PtrRawData]
         test    esi, esi
         jnz     .copy
-        add     edi, [eax+CFS.SizeOfRawData]
+        add     edi, [eax + CFS.SizeOfRawData]
         jmp     .next
 .copy:
         add     esi, edx
-        mov     ecx, [eax+CFS.SizeOfRawData]
+        mov     ecx, [eax + CFS.SizeOfRawData]
         cld
         rep movsb
 .next:
@@ -117,29 +117,29 @@ proc load_k_library stdcall, file_name:dword
         dec     ebx
         jnz     @B
 
-        mov     ebx, [edx+CFH.pSymTable]
+        mov     ebx, [edx + CFH.pSymTable]
         add     ebx, edx
         mov     [sym], ebx
-        mov     ecx, [edx+CFH.nSymbols]
+        mov     ecx, [edx + CFH.nSymbols]
         add     ecx, ecx
-        lea     ecx, [ecx+ecx*8];ecx*=18 = nSymbols*CSYM_SIZE
+        lea     ecx, [ecx + ecx*8];ecx*=18 = nSymbols*CSYM_SIZE
         add     ecx, [sym]
         mov     [strings], ecx
 
         lea     eax, [edx+20]
 
-        stdcall fix_coff_symbols, eax, [sym], [edx+CFH.nSymbols], \
+        stdcall fix_coff_symbols, eax, [sym], [edx + CFH.nSymbols], \
                 [strings], dword 0
         test    eax, eax
         jnz     @F
 
 @@:
         mov     edx, [coff]
-        movzx   ebx, [edx+CFH.nSections]
+        movzx   ebx, [edx + CFH.nSections]
         mov     edi, 0
         lea     eax, [edx+20]
 @@:
-        add     [eax+CFS.VirtualAddress], edi ;patch user space offset
+        add     [eax + CFS.VirtualAddress], edi ;patch user space offset
         add     eax, COFF_SECTION_SIZE
         dec     ebx
         jnz     @B

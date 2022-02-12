@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -104,9 +104,9 @@ hotkey_do_test:
 align 4
 set_keyboard_data:
         movzx   eax, word[thread_count]; top window process
-        movzx   eax, word[WIN_POS+eax*2]
+        movzx   eax, word[WIN_POS + eax*2]
         shl     eax, 8
-        mov     al, [SLOT_BASE+eax+APPDATA.keyboard_mode]
+        mov     al, [SLOT_BASE + eax + APPDATA.keyboard_mode]
         mov     [keyboard_mode], al
         
         mov     eax, ecx
@@ -144,25 +144,25 @@ register_keyboard:
         test    eax, eax
         jz      .nothing
         mov     ecx, [esp+4+4]
-        mov     [eax+KEYBOARD.functions], ecx
+        mov     [eax + KEYBOARD.functions], ecx
         mov     ecx, [esp+8+4]
-        mov     [eax+KEYBOARD.userdata], ecx
+        mov     [eax + KEYBOARD.userdata], ecx
         xchg    eax, ebx
         mov     ecx, keyboard_list_mutex
         call    mutex_lock
         mov     ecx, keyboards
-        mov     edx, [ecx+KEYBOARD.prev]
-        mov     [ebx+KEYBOARD.next], ecx
-        mov     [ebx+KEYBOARD.prev], edx
-        mov     [edx+KEYBOARD.next], ebx
-        mov     [ecx+KEYBOARD.prev], ebx
-        mov     ecx, [ebx+KEYBOARD.functions]
-        cmp     [ecx+KBDFUNC.strucsize], KBDFUNC.setlights
+        mov     edx, [ecx + KEYBOARD.prev]
+        mov     [ebx + KEYBOARD.next], ecx
+        mov     [ebx + KEYBOARD.prev], edx
+        mov     [edx + KEYBOARD.next], ebx
+        mov     [ecx + KEYBOARD.prev], ebx
+        mov     ecx, [ebx + KEYBOARD.functions]
+        cmp     [ecx + KBDFUNC.strucsize], KBDFUNC.setlights
         jbe     .unlock
-        mov     ecx, [ecx+KBDFUNC.setlights]
+        mov     ecx, [ecx + KBDFUNC.setlights]
         test    ecx, ecx
         jz      .unlock
-        stdcall ecx, [ebx+KEYBOARD.userdata], dword [kb_lights]
+        stdcall ecx, [ebx + KEYBOARD.userdata], dword [kb_lights]
 .unlock:
         mov     ecx, keyboard_list_mutex
         call    mutex_unlock
@@ -176,18 +176,18 @@ delete_keyboard:
         mov     ebx, [esp+4+4]
         mov     ecx, keyboard_list_mutex
         call    mutex_lock
-        mov     eax, [ebx+KEYBOARD.next]
-        mov     edx, [ebx+KEYBOARD.prev]
-        mov     [eax+KEYBOARD.prev], edx
-        mov     [edx+KEYBOARD.next], eax
+        mov     eax, [ebx + KEYBOARD.next]
+        mov     edx, [ebx + KEYBOARD.prev]
+        mov     [eax + KEYBOARD.prev], edx
+        mov     [edx + KEYBOARD.next], eax
         call    mutex_unlock
-        mov     ecx, [ebx+KEYBOARD.functions]
-        cmp     [ecx+KBDFUNC.strucsize], KBDFUNC.close
+        mov     ecx, [ebx + KEYBOARD.functions]
+        cmp     [ecx + KBDFUNC.strucsize], KBDFUNC.close
         jbe     .nothing
-        mov     ecx, [ecx+KBDFUNC.close]
+        mov     ecx, [ecx + KBDFUNC.close]
         test    ecx, ecx
         jz      .nothing
-        stdcall ecx, [ebx+KEYBOARD.userdata]
+        stdcall ecx, [ebx + KEYBOARD.userdata]
 .nothing:
         pop     ebx
         ret     4
@@ -195,9 +195,9 @@ delete_keyboard:
 align 4
 irq1:
         movzx   eax, word[thread_count]; top window process
-        movzx   eax, word[WIN_POS+eax*2]
+        movzx   eax, word[WIN_POS + eax*2]
         shl     eax, BSF sizeof.APPDATA
-        mov     al, [SLOT_BASE+eax+APPDATA.keyboard_mode]
+        mov     al, [SLOT_BASE + eax + APPDATA.keyboard_mode]
         mov     [keyboard_mode], al
         
         in      al, 0x60
@@ -326,7 +326,7 @@ send_scancode:
         js      .writekey
         
         movzx   eax, ch          ; plain key
-        mov     bl, [keymap+eax]
+        mov     bl, [keymap + eax]
         mov     edx, [kb_state]
         test    dl, VKEY_CONTROL ; ctrl alt del
         jz      .noctrlaltdel
@@ -357,12 +357,12 @@ send_scancode:
         test    dl, VKEY_SHIFT   ; shift on ?
         jz      @f
 .keymap_shif:   
-        mov     bl, [keymap_shift+eax]
+        mov     bl, [keymap_shift + eax]
 @@:
         test    dl, VKEY_ALT     ; alt on ?
         jz      @f
         
-        mov     bl, [keymap_alt+eax]
+        mov     bl, [keymap_alt + eax]
 @@:
         jmp     .writekey
 ;--------------------------------------
@@ -510,7 +510,7 @@ send_scancode:
         inc     eax
         mov     [KEY_COUNT], al
 ; store ascii or scancode
-        mov     [KEY_BUFF+eax-1], bl
+        mov     [KEY_BUFF + eax -1], bl
 ; store original scancode
         add     eax, 120+2
         push    ecx
@@ -519,7 +519,7 @@ send_scancode:
 
         xor     ch, ch
 @@:
-        mov     [KEY_BUFF+eax-1], ch
+        mov     [KEY_BUFF + eax -1], ch
         pop     ecx
         sub     eax, 120+2
 .exit.irq1:
@@ -531,16 +531,16 @@ set_lights:
         call    mutex_lock
         mov     esi, keyboards
 .loop:
-        mov     esi, [esi+KEYBOARD.next]
+        mov     esi, [esi + KEYBOARD.next]
         cmp     esi, keyboards
         jz      .done
-        mov     eax, [esi+KEYBOARD.functions]
+        mov     eax, [esi + KEYBOARD.functions]
         cmp     dword [eax], KBDFUNC.setlights
         jbe     .loop
-        mov     eax, [eax+KBDFUNC.setlights]
+        mov     eax, [eax + KBDFUNC.setlights]
         test    eax, eax
         jz      .loop
-        stdcall eax, [esi+KEYBOARD.userdata], dword [kb_lights]
+        stdcall eax, [esi + KEYBOARD.userdata], dword [kb_lights]
         jmp     .loop
 .done:
         mov     ecx, keyboard_list_mutex

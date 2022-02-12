@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -12,7 +12,7 @@ $Revision$
 sys_debug_services:
         cmp     ebx, 9
         ja      @f
-        jmp     dword [sys_debug_services_table+ebx*4]
+        jmp     dword [sys_debug_services_table + ebx*4]
 @@:
         ret
 iglobal
@@ -33,7 +33,7 @@ debug_set_event_data:
 ; in: ecx = pointer
 ; destroys eax
         mov     eax, [current_slot]
-        mov     [eax+APPDATA.dbg_event_mem], ecx
+        mov     [eax + APPDATA.dbg_event_mem], ecx
         ret
 
 get_debuggee_slot:
@@ -49,7 +49,7 @@ get_debuggee_slot:
         shl     eax, BSF sizeof.APPDATA
         push    ebx
         mov     ebx, [current_slot_idx]
-        cmp     [SLOT_BASE+eax+APPDATA.debugger_slot], ebx
+        cmp     [SLOT_BASE + eax + APPDATA.debugger_slot], ebx
         pop     ebx
         jnz     .ret_bad
 ;       clc     ; automatically
@@ -63,7 +63,7 @@ debug_detach:
 ; destroys eax,ebx
         call    get_debuggee_slot
         jc      .ret
-        and     dword [eax+SLOT_BASE+APPDATA.debugger_slot], 0
+        and     dword [eax + SLOT_BASE + APPDATA.debugger_slot], 0
         call    do_resume
 .ret:
         sti
@@ -155,15 +155,15 @@ debug_getcontext:
         call    get_debuggee_slot
         jc      .ret
 
-        shr     eax, 8
+        shr     eax, BSF sizeof.APPDATA
         cmp     eax, [fpu_owner]
         jne     @f
         inc     bh                ; set swap context flag
 @@:
         shl     eax, BSF sizeof.APPDATA
         mov     edi, esi
-        mov     eax, [eax+SLOT_BASE+APPDATA.pl0_stack]
-        lea     esi, [eax+RING0_STACK_SIZE]
+        mov     eax, [SLOT_BASE + eax + APPDATA.pl0_stack]
+        lea     esi, [eax + RING0_STACK_SIZE]
 
 .ring0:
 ; note that following code assumes that all interrupt/exception handlers
@@ -231,8 +231,8 @@ debug_setcontext:
         call    get_debuggee_slot
         jc      .stiret
 ;        mov     esi, edx
-        mov     eax, [eax+SLOT_BASE+APPDATA.pl0_stack]
-        lea     edi, [eax+RING0_STACK_SIZE]
+        mov     eax, [eax + SLOT_BASE+APPDATA.pl0_stack]
+        lea     edi, [eax + RING0_STACK_SIZE]
 
 .ring0:
         sub     edi, 8+12+20h
@@ -267,7 +267,7 @@ debug_set_drx:
         call    get_debuggee_slot
         jc      .errret
         mov     ebp, eax
-        lea     eax, [eax+SLOT_BASE+APPDATA.dbg_regs]
+        lea     eax, [eax + SLOT_BASE + APPDATA.dbg_regs]
 ; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
 ; [eax+10]=dr7
         cmp     esi, OS_BASE
@@ -288,13 +288,13 @@ debug_set_drx:
 ; clear breakpoint
         movzx   edx, dl
         add     edx, edx
-        and     dword [eax+edx*2], 0    ; clear DR<i>
-        btr     dword [eax+10h], edx    ; clear L<i> bit
-        test    byte [eax+10h], 55h
+        and     dword [eax + edx*2], 0    ; clear DR<i>
+        btr     dword [eax + 10h], edx    ; clear L<i> bit
+        test    byte [eax + 10h], 55h
         jnz     .okret
 ;        imul    eax, ebp, tss_step/32
 ;        and     byte [eax + tss_data + TSS._trap], not 1
-        and     [ebp + SLOT_BASE+APPDATA.dbg_state], not 1
+        and     [SLOT_BASE + ebp + APPDATA.dbg_state], not 1
 .okret:
         and     dword [esp+32], 0
         sti
@@ -325,23 +325,23 @@ debug_set_drx:
         test    bl, dl
 
         jnz     .errret
-        or      byte [eax+10h+1], 3     ; set GE and LE flags
+        or      byte [eax + 10h+1], 3     ; set GE and LE flags
 
         movzx   edx, dh
         movzx   ecx, dl
         add     ecx, ecx
-        bts     dword [eax+10h], ecx    ; set L<i> flag
+        bts     dword [eax + 10h], ecx    ; set L<i> flag
         add     ecx, ecx
-        mov     [eax+ecx], ebx;esi      ; set DR<i>
+        mov     [eax + ecx], ebx;esi      ; set DR<i>
         shl     edx, cl
         mov     ebx, 0xF
         shl     ebx, cl
         not     ebx
-        and     [eax+10h+2], bx
-        or      [eax+10h+2], dx         ; set R/W and LEN fields
+        and     [eax + 10h+2], bx
+        or      [eax + 10h+2], dx         ; set R/W and LEN fields
 ;        imul    eax, ebp, tss_step/32
 ;        or      byte [eax + tss_data + TSS._trap], 1
-        or      [ebp + SLOT_BASE+APPDATA.dbg_state], 1
+        or      [SLOT_BASE + ebp + APPDATA.dbg_state], 1
         jmp     .okret
 
 debug_read_process_memory:
@@ -354,7 +354,7 @@ debug_read_process_memory:
 ; destroys all
         call    get_debuggee_slot
         jc      .err
-        shr     eax, 8
+        shr     eax, BSF sizeof.APPDATA
         mov     ecx, edi
         call    read_process_memory
         sti
@@ -374,7 +374,7 @@ debug_write_process_memory:
 ; destroys all
         call    get_debuggee_slot
         jc      debug_read_process_memory.err
-        shr     eax, 8
+        shr     eax, BSF sizeof.APPDATA
         mov     ecx, edi
         call    write_process_memory
         sti
@@ -393,8 +393,8 @@ debugger_notify:
         add     edi, 500        ; 5 sec timeout
 .1:
         mov     eax, ebp
-        shl     eax, 8
-        mov     esi, [SLOT_BASE+eax+APPDATA.dbg_event_mem]
+        shl     eax, BSF sizeof.APPDATA
+        mov     esi, [SLOT_BASE + eax + APPDATA.dbg_event_mem]
         test    esi, esi
         jz      .ret
 ; read buffer header
@@ -450,6 +450,6 @@ debugger_notify:
 ; new debug event
         mov     eax, ebp
         shl     eax, BSF sizeof.APPDATA
-        or      [SLOT_BASE+eax+APPDATA.occurred_events], EVENT_DEBUG
+        or      [SLOT_BASE + eax + APPDATA.occurred_events], EVENT_DEBUG
 .ret:
         ret

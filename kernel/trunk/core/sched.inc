@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -73,8 +73,8 @@ update_counters:
         rdtsc
         ;sub     eax, [edi+TASKDATA.counter_add] ; time stamp counter add
         ;add     [edi+TASKDATA.counter_sum], eax ; counter sum
-        sub     eax, [esi-sizeof.APPDATA+APPDATA.counter_add] ; time stamp counter add
-        add     [esi-sizeof.APPDATA+APPDATA.counter_sum], eax ; counter sum
+        sub     eax, [esi - sizeof.APPDATA + APPDATA.counter_add] ; time stamp counter add
+        add     [esi - sizeof.APPDATA + APPDATA.counter_sum], eax ; counter sum
         ret
 align 4
 updatecputimes:
@@ -85,9 +85,9 @@ updatecputimes:
         xor     eax, eax
         ;xchg    eax, [edi+TASKDATA.counter_sum]
         ;mov     [edi+TASKDATA.cpu_usage], eax
-        xchg    eax, [esi+APPDATA.counter_sum]
+        xchg    eax, [esi + APPDATA.counter_sum]
         ;add     edi, 0x20
-        mov     [esi+APPDATA.cpu_usage], eax
+        mov     [esi + APPDATA.cpu_usage], eax
         add     esi, sizeof.APPDATA
         loop    .newupdate
         ret
@@ -100,38 +100,38 @@ do_change_task:
 ;param:
 ;   ebx = address of the APPDATA for incoming task (new)
 ;warning:
-;   [current_slot_idx] and [TASK_BASE] must be changed before (e.g. in find_next_task)
+;   [current_slot_idx] must be changed before (e.g. in find_next_task)
 ;   [current_slot] is the outcoming (old), and set here to a new value (ebx)
 ;scratched: eax,ecx,esi
         mov     esi, ebx
         xchg    esi, [current_slot]
 ; set new stack after saving old
-        mov     [esi+APPDATA.saved_esp], esp
-        mov     esp, [ebx+APPDATA.saved_esp]
+        mov     [esi + APPDATA.saved_esp], esp
+        mov     esp, [ebx + APPDATA.saved_esp]
 ; set new thread io-map
-        mov     eax, [ebx+APPDATA.io_map]
-        mov     dword [page_tabs+((tss._io_map_0 and -4096) shr 10)], eax
-        mov     eax, [ebx+APPDATA.io_map+4]
-        mov     dword [page_tabs+((tss._io_map_1 and -4096) shr 10)], eax
+        mov     eax, [ebx + APPDATA.io_map]
+        mov     dword [page_tabs + ((tss._io_map_0 and -4096) shr 10)], eax
+        mov     eax, [ebx + APPDATA.io_map+4]
+        mov     dword [page_tabs + ((tss._io_map_1 and -4096) shr 10)], eax
 ; set new thread memory-map
-        mov     eax, [ebx+APPDATA.process]
+        mov     eax, [ebx + APPDATA.process]
         cmp     eax, [current_process]
         je      @f
         mov     [current_process], eax
-        mov     eax, [eax+PROC.pdt_0_phys]
+        mov     eax, [eax + PROC.pdt_0_phys]
         mov     cr3, eax
 @@:
 ; set tss.esp0
 
-        mov     eax, [ebx+APPDATA.saved_esp0]
+        mov     eax, [ebx + APPDATA.saved_esp0]
         mov     [tss._esp0], eax
 
-        mov     edx, [ebx+APPDATA.tls_base]
+        mov     edx, [ebx + APPDATA.tls_base]
 
-        mov     [tls_data_l+2], dx
+        mov     [tls_data_l + 2], dx
         shr     edx, 16
-        mov     [tls_data_l+4], dl
-        mov     [tls_data_l+7], dh
+        mov     [tls_data_l + 4], dl
+        mov     [tls_data_l + 7], dh
 
         mov     dx, app_tls
         mov     fs, dx
@@ -141,16 +141,16 @@ do_change_task:
         Mov     gs, ax
         ; TS flag is not triggered by AVX* instructions, therefore
         ; we have to xsave/xrstor SIMD registers each task change
-        bt      [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
+        bt      [cpu_caps + (CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
         jnc     .no_xsave
-        mov     ecx, [esi+APPDATA.fpu_state]
+        mov     ecx, [esi + APPDATA.fpu_state]
         mov     eax, [xsave_eax]
         mov     edx, [xsave_edx]
         xsave   [ecx]
         mov     ecx, [current_slot_idx]
         mov     [fpu_owner], ecx
         mov     ecx, [current_slot]
-        mov     ecx, [ecx+APPDATA.fpu_state]
+        mov     ecx, [ecx + APPDATA.fpu_state]
         xrstor  [ecx]
   .no_xsave:
       ; set CR0.TS
@@ -163,11 +163,11 @@ do_change_task:
   @@: ; set context_counter (only for user pleasure ???)
         inc     [context_counter]   ;noname & halyavin
       ; set debug-registers, if it's necessary
-        test    byte[ebx+APPDATA.dbg_state], 1
+        test    byte[ebx + APPDATA.dbg_state], 1
         jz      @f
         xor     eax, eax
         mov     dr6, eax
-        lea     esi, [ebx+APPDATA.dbg_regs]
+        lea     esi, [ebx + APPDATA.dbg_regs]
         cld
   macro lodsReg [reg] {
         lodsd
@@ -199,26 +199,26 @@ proc scheduler_add_thread
 ; 1. Acquire the lock.
         spin_lock_irqsave SchedulerLock
 ; 2. Store the priority in APPDATA structure.
-        mov     [edx+APPDATA.priority], ecx
+        mov     [edx + APPDATA.priority], ecx
 ; 3. There are two different cases: the given list is empty or not empty.
 ; In first case, go to 6. Otherwise, advance to 4.
         mov     eax, [scheduler_current+ecx*4]
         test    eax, eax
         jz      .new_list
 ; 4. Insert the new item immediately before the current item.
-        mov     ecx, [eax+APPDATA.in_schedule.prev]
-        mov     [edx+APPDATA.in_schedule.next], eax
-        mov     [edx+APPDATA.in_schedule.prev], ecx
-        mov     [eax+APPDATA.in_schedule.prev], edx
-        mov     [ecx+APPDATA.in_schedule.next], edx
+        mov     ecx, [eax + APPDATA.in_schedule.prev]
+        mov     [edx + APPDATA.in_schedule.next], eax
+        mov     [edx + APPDATA.in_schedule.prev], ecx
+        mov     [eax + APPDATA.in_schedule.prev], edx
+        mov     [ecx + APPDATA.in_schedule.next], edx
 ; 5. Release the lock and return.
         spin_unlock_irqrestore SchedulerLock
         ret
 .new_list:
 ; 6. Initialize the list with one item and make it the current item.
-        mov     [edx+APPDATA.in_schedule.next], edx
-        mov     [edx+APPDATA.in_schedule.prev], edx
-        mov     [scheduler_current+ecx*4], edx
+        mov     [edx + APPDATA.in_schedule.next], edx
+        mov     [edx + APPDATA.in_schedule.prev], edx
+        mov     [scheduler_current + ecx*4], edx
 ; 7. Release the lock and return.
         spin_unlock_irqrestore SchedulerLock
         ret
@@ -230,23 +230,23 @@ proc scheduler_remove_thread
 ; 1. Acquire the lock.
         spin_lock_irqsave SchedulerLock
 ; 2. Remove the item from the corresponding list.
-        mov     eax, [edx+APPDATA.in_schedule.next]
-        mov     ecx, [edx+APPDATA.in_schedule.prev]
-        mov     [eax+APPDATA.in_schedule.prev], ecx
-        mov     [ecx+APPDATA.in_schedule.next], eax
+        mov     eax, [edx + APPDATA.in_schedule.next]
+        mov     ecx, [edx + APPDATA.in_schedule.prev]
+        mov     [eax + APPDATA.in_schedule.prev], ecx
+        mov     [ecx + APPDATA.in_schedule.next], eax
 ; 3. If the given thread is the current item in the list,
 ; advance the current item.
 ; 3a. Check whether the given thread is the current item;
 ; if no, skip the rest of this step.
-        mov     ecx, [edx+APPDATA.priority]
-        cmp     [scheduler_current+ecx*4], edx
+        mov     ecx, [edx + APPDATA.priority]
+        cmp     [scheduler_current + ecx*4], edx
         jnz     .return
 ; 3b. Set the current item to eax; step 2 has set eax = next item.
-        mov     [scheduler_current+ecx*4], eax
+        mov     [scheduler_current + ecx*4], eax
 ; 3c. If there were only one item in the list, zero the current item.
         cmp     eax, edx
         jnz     .return
-        mov     [scheduler_current+ecx*4], 0
+        mov     [scheduler_current + ecx*4], 0
 .return:
 ; 4. Release the lock and return.
         spin_unlock_irqrestore SchedulerLock
@@ -280,7 +280,7 @@ proc find_next_task
         test    bl, bl
         jz      .start
         mov     ebx, [current_slot]
-        mov     eax, [ebx+APPDATA.priority]
+        mov     eax, [ebx + APPDATA.priority]
         test    eax, eax
         jz      .unlock_found
         mov     [esp], eax
@@ -291,28 +291,28 @@ proc find_next_task
         test    ebx, ebx
         jz      .priority_next
 .task_loop:
-        mov     ebx, [ebx+APPDATA.in_schedule.next]
-        mov     al, [ebx+APPDATA.state]
+        mov     ebx, [ebx + APPDATA.in_schedule.next]
+        mov     al, [ebx + APPDATA.state]
         test    al, al
         jz      .task_found     ; state == 0
         cmp     al, 5
         jne     .task_next      ; state == 1,2,3,4,9
       ; state == 5
         pushad  ; more freedom for [APPDATA.wait_test]
-        call    [ebx+APPDATA.wait_test]
-        mov     [esp+28], eax
+        call    [ebx + APPDATA.wait_test]
+        mov     [esp + 28], eax
         popad
         or      eax, eax
         jnz     @f
       ; testing for timeout
         mov     eax, [timer_ticks]
-        sub     eax, [ebx+APPDATA.wait_begin]
-        cmp     eax, [ebx+APPDATA.wait_timeout]
+        sub     eax, [ebx + APPDATA.wait_begin]
+        cmp     eax, [ebx + APPDATA.wait_timeout]
         jb      .task_next
         xor     eax, eax
 @@:
-        mov     [ebx+APPDATA.wait_param], eax  ; retval for wait
-        mov     [ebx+APPDATA.state], TSTATE_RUNNING
+        mov     [ebx + APPDATA.wait_param], eax  ; retval for wait
+        mov     [ebx + APPDATA.state], TSTATE_RUNNING
 .task_found:
         mov     [scheduler_current+ecx*4], ebx
 ; If we have selected a thread with higher priority
@@ -323,8 +323,8 @@ proc find_next_task
         cmp     ecx, NR_SCHED_QUEUES
         jz      .unlock_found
         mov     eax, [current_slot]
-        mov     eax, [eax+APPDATA.in_schedule.prev]
-        mov     [scheduler_current+ecx*4], eax
+        mov     eax, [eax + APPDATA.in_schedule.prev]
+        mov     [scheduler_current + ecx*4], eax
 .unlock_found:
         pop     ecx
         spin_unlock_irqrestore SchedulerLock
@@ -334,7 +334,7 @@ proc find_next_task
         mov     byte [current_slot_idx], bh
 
         rdtsc   ;call  _rdtsc
-        mov     [ebx-sizeof.APPDATA+APPDATA.counter_add], eax; for next using update_counters
+        mov     [ebx - sizeof.APPDATA + APPDATA.counter_add], eax; for next using update_counters
         ;mov     [edi+TASKDATA.counter_add], eax; for next using update_counters
         cmp     ebx, [current_slot]
         ret

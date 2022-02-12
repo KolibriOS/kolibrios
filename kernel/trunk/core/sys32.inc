@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -139,14 +139,14 @@ exc_c:                            ; exceptions (all but 7th - #NM)
         call    page_fault_handler ; SEE: core/memory.inc
   @@:
         mov     esi, [current_slot]
-        btr     [esi+APPDATA.except_mask], ebx
+        btr     [esi + APPDATA.except_mask], ebx
         jnc     @f
-        mov     eax, [esi+APPDATA.exc_handler]
+        mov     eax, [esi + APPDATA.exc_handler]
         test    eax, eax
         jnz     IRetToUserHook
   @@:
         cli
-        mov     eax, [esi+APPDATA.debugger_slot]
+        mov     eax, [esi + APPDATA.debugger_slot]
         test    eax, eax
         jnz     .debug
 ; not debuggee => say error and terminate
@@ -288,27 +288,6 @@ show_error_parameters:
         test    eax, eax
         jnz     .error_ESP
         DEBUGF  1, " [ESP+32]: %x\n",[ebx]
-;for input instruction
-        mov     ebx, [reg_eip+4]
-        call    .check_ESP
-        test    eax, eax
-        jnz     .error_ESP
-        DEBUGF  1, "K : [EIP]: %x",[ebx]
-        add     ebx, 4
-        call    .check_ESP
-        test    eax, eax
-        jnz     .error_ESP
-        DEBUGF  1, " [EIP+4]: %x",[ebx]
-        add     ebx, 4
-        call    .check_ESP
-        test    eax, eax
-        jnz     .error_ESP
-        DEBUGF  1, " [EIP+8]: %x\n",[ebx]
-        add     ebx, 4
-        call    .check_ESP
-        test    eax, eax
-        jnz     .error_ESP
-        DEBUGF  1, "K : [EIP+12]: %x\n",[ebx]
         pop     edx ecx ebx eax
         ret
 .error_ESP:
@@ -322,12 +301,12 @@ show_error_parameters:
         shr     ebx, 12
         mov     ecx, ebx
         shr     ecx, 10
-        mov     edx, [master_tab+ecx*4]
+        mov     edx, [master_tab + ecx*4]
         test    edx, PG_READ
         jz      .fail             ; page table is not created
                                   ; incorrect address in the program
 
-        mov     eax, [page_tabs+ebx*4]
+        mov     eax, [page_tabs + ebx*4]
         test    eax, 2
         jz      .fail             ; address not reserved for use. error
 
@@ -434,7 +413,7 @@ destroy_thread:
         push    esi        ;save .slot
 
         shl     esi, BSF sizeof.APPDATA
-        mov     edx, [SLOT_BASE+esi+APPDATA.process]
+        mov     edx, [SLOT_BASE + esi + APPDATA.process]
         test    edx, edx
         jnz     @F
         mov     [SLOT_BASE + esi + APPDATA.state], TSTATE_FREE
@@ -442,33 +421,33 @@ destroy_thread:
         ret
 @@:
         push    edx                     ;save .process
-        lea     edx, [SLOT_BASE+esi]
+        lea     edx, [SLOT_BASE + esi]
         call    scheduler_remove_thread
         call    lock_application_table
 
 ; if the process is in V86 mode...
         mov     eax, [.slot]
         shl     eax, BSF sizeof.APPDATA
-        mov     esi, [eax+SLOT_BASE+APPDATA.pl0_stack]
+        mov     esi, [SLOT_BASE + eax + APPDATA.pl0_stack]
         add     esi, RING0_STACK_SIZE
-        cmp     [eax+SLOT_BASE+APPDATA.saved_esp0], esi
+        cmp     [SLOT_BASE + eax + APPDATA.saved_esp0], esi
         jz      .nov86
 ; ...it has page directory for V86 mode
-        mov     esi, [eax+SLOT_BASE+APPDATA.saved_esp0]
+        mov     esi, [SLOT_BASE + eax + APPDATA.saved_esp0]
         mov     ecx, [esi+4]
-        mov     [eax+SLOT_BASE+APPDATA.process], ecx
+        mov     [SLOT_BASE + eax + APPDATA.process], ecx
 ; ...and I/O permission map for V86 mode
         mov     ecx, [esi+12]
-        mov     [eax+SLOT_BASE+APPDATA.io_map], ecx
+        mov     [SLOT_BASE + eax + APPDATA.io_map], ecx
         mov     ecx, [esi+8]
-        mov     [eax+SLOT_BASE+APPDATA.io_map+4], ecx
+        mov     [SLOT_BASE + eax + APPDATA.io_map+4], ecx
 .nov86:
 ; destroy per-thread kernel objects
         mov     esi, [.slot]
         shl     esi, BSF sizeof.APPDATA
-        add     esi, SLOT_BASE+APP_OBJ_OFFSET
+        add     esi, SLOT_BASE + APP_OBJ_OFFSET
 @@:
-        mov     eax, [esi+APPOBJ.fd]
+        mov     eax, [esi + APPOBJ.fd]
         test    eax, eax
         jz      @F
 
@@ -476,7 +455,7 @@ destroy_thread:
         je      @F
 
         push    esi
-        call    [eax+APPOBJ.destroy]
+        call    [eax + APPOBJ.destroy]
            DEBUGF 1,"%s",msg_obj_destroy
         pop     esi
         jmp     @B
@@ -486,7 +465,7 @@ destroy_thread:
         jne     @F
 
         mov     [fpu_owner], 2
-        mov     eax, [sizeof.APPDATA*2+SLOT_BASE+APPDATA.fpu_state]
+        mov     eax, [SLOT_BASE + sizeof.APPDATA*2 + APPDATA.fpu_state]
         clts
         bt      [cpu_caps], CAPS_SSE
         jnc     .no_SSE
@@ -575,13 +554,13 @@ destroy_thread:
         cld
         shl     esi, BSF sizeof.WDATA
         add     esi, window_data
-        mov     eax, [esi+WDATA.box.left]
+        mov     eax, [esi + WDATA.box.left]
         mov     [draw_limits.left], eax
-        add     eax, [esi+WDATA.box.width]
+        add     eax, [esi + WDATA.box.width]
         mov     [draw_limits.right], eax
-        mov     eax, [esi+WDATA.box.top]
+        mov     eax, [esi + WDATA.box.top]
         mov     [draw_limits.top], eax
-        add     eax, [esi+WDATA.box.height]
+        add     eax, [esi + WDATA.box.height]
         mov     [draw_limits.bottom], eax
 
         xor     eax, eax
@@ -589,7 +568,7 @@ destroy_thread:
         mov     ecx, sizeof.WDATA/4
         rep stosd
 
-        lea     edi, [esi-window_data+draw_data]
+        lea     edi, [esi - window_data + draw_data]
         mov     ecx, sizeof.WDATA/4
         rep stosd
         popa
@@ -613,20 +592,20 @@ destroy_thread:
         mov     ebx, [.slot]
         shl     ebx, BSF sizeof.APPDATA
         push    ebx
-        mov     ebx, [SLOT_BASE+ebx+APPDATA.pl0_stack]
+        mov     ebx, [SLOT_BASE + ebx + APPDATA.pl0_stack]
 
         stdcall kernel_free, ebx
 
         pop     ebx
-        mov     ebx, [SLOT_BASE+ebx+APPDATA.cur_dir]
+        mov     ebx, [SLOT_BASE + ebx + APPDATA.cur_dir]
         stdcall kernel_free, ebx
 
         mov     edi, [.slot]
         shl     edi, BSF sizeof.APPDATA
         add     edi, SLOT_BASE
 
-        mov     eax, [edi+APPDATA.io_map]
-        cmp     eax, [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map]
+        mov     eax, [edi + APPDATA.io_map]
+        cmp     eax, [SLOT_BASE + sizeof.APPDATA+APPDATA.io_map]
         je      @F
         call    free_page
 @@:
@@ -635,7 +614,7 @@ destroy_thread:
         je      @F
         call    free_page
 @@:
-        lea     ebx, [edi+APPDATA.list]
+        lea     ebx, [edi + APPDATA.list]
         list_del ebx                    ;destroys edx, ecx
 
         mov     eax, 0x20202020
@@ -655,7 +634,7 @@ destroy_thread:
         dec     eax
         cmp     eax, 1
         jbe     .nothing_to_activate
-        lea     esi, [WIN_POS+eax*2]
+        lea     esi, [WIN_POS + eax*2]
         movzx   edi, word [esi]              ; edi = process
         shl     edi, BSF sizeof.APPDATA
         cmp     [SLOT_BASE + edi + APPDATA.state], TSTATE_FREE ; skip free slots
@@ -674,7 +653,7 @@ destroy_thread:
 
         push    esi     ; remove hd1 & cd & flp reservation
         shl     esi, BSF sizeof.APPDATA
-        mov     esi, [esi + SLOT_BASE + APPDATA.tid]
+        mov     esi, [SLOT_BASE + esi + APPDATA.tid]
         cmp     [cd_status], esi
         jnz     @f
         call    free_cd_channel
@@ -690,7 +669,7 @@ destroy_thread:
         pusha                 ; remove all port reservations
         mov     edx, esi
         shl     edx, BSF sizeof.APPDATA
-        mov     edx, [edx + SLOT_BASE + APPDATA.tid]
+        mov     edx, [SLOT_BASE + edx + APPDATA.tid]
 
   rmpr0:
 
@@ -733,10 +712,10 @@ destroy_thread:
         popa
         mov     edi, esi ; do not run this process slot
         shl     edi, BSF sizeof.APPDATA
-        mov     [edi + SLOT_BASE + APPDATA.state], TSTATE_FREE
+        mov     [SLOT_BASE + edi + APPDATA.state], TSTATE_FREE
 ; debugger test - terminate all debuggees
         mov     eax, 2
-        mov     ecx, SLOT_BASE+2*sizeof.APPDATA + APPDATA.debugger_slot
+        mov     ecx, SLOT_BASE + 2*sizeof.APPDATA + APPDATA.debugger_slot
 .xd0:
         cmp     eax, [thread_count]
         ja      .xd1
@@ -758,8 +737,8 @@ destroy_thread:
         bts     [thr_slot_map], esi
 
         mov     ecx, [.process]
-        lea     eax, [ecx+PROC.thr_list]
-        cmp     eax, [eax+LHEAD.next]
+        lea     eax, [ecx + PROC.thr_list]
+        cmp     eax, [eax + LHEAD.next]
         jne     @F
 
         call    destroy_process.internal
@@ -812,7 +791,7 @@ proc protect_from_terminate
         mov     edx, [current_slot]
 ; Atomically increment depth of critical areas and get the old value.
         mov     eax, 1
-        lock xadd [edx+APPDATA.terminate_protection], eax
+        lock xadd [edx + APPDATA.terminate_protection], eax
 ; If the old value was zero, somebody has started to terminate us,
 ; so we are destructing and cannot do anything protected.
 ; Otherwise, return to the caller.
@@ -829,7 +808,7 @@ endp
 proc unprotect_from_terminate
         mov     edx, [current_slot]
 ; Atomically decrement depth of critical areas.
-        lock dec [edx+APPDATA.terminate_protection]
+        lock dec [edx + APPDATA.terminate_protection]
 ; If the result of decrement is zero, somebody has requested termination,
 ; but at that moment we were inside a critical area; terminate now.
         jz      sys_end
@@ -843,10 +822,10 @@ proc request_terminate
         xor     eax, eax        ; set return value
 ; Atomically clear the upper bit. If it was already zero, then
 ; somebody has requested termination before us, so just exit.
-        lock btr [edx+APPDATA.terminate_protection], 31
+        lock btr [edx + APPDATA.terminate_protection], 31
         jnc     .unsafe
 ; Atomically decrement depth of critical areas.
-        lock dec [edx+APPDATA.terminate_protection]
+        lock dec [edx + APPDATA.terminate_protection]
 ; If the result of decrement is nonzero, the target thread is inside a
 ; critical area; leave termination to leaving that area.
         jnz     .unsafe

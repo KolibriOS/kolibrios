@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2007-2021. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2007-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -33,7 +33,7 @@ v86_create:
         test    eax, eax
         jz      .fail
 ; initialize mutex
-        and     dword [eax+V86_machine.mutex], 0
+        and     dword [eax + V86_machine.mutex], 0
 ; allocate tables
         mov     ebx, eax
 
@@ -41,15 +41,15 @@ v86_create:
         test    eax, eax
         jz      .fail2
 
-        mov     [eax+PROC.mem_used], 4096
-        mov     [ebx+V86_machine.process], eax
+        mov     [eax + PROC.mem_used], 4096
+        mov     [ebx + V86_machine.process], eax
 
         push    2000h
         call    kernel_alloc
         test    eax, eax
         jz      .fail2
 
-        mov     [ebx+V86_machine.iopm], eax
+        mov     [ebx + V86_machine.iopm], eax
 
 ; initialize tables
         push    edi
@@ -58,8 +58,8 @@ v86_create:
         mov     ecx, 2000h/4
         rep stosd
 
-        mov     eax, [ebx+V86_machine.process]
-        mov     eax, [eax+PROC.pdt_0_phys]
+        mov     eax, [ebx + V86_machine.process]
+        mov     eax, [eax + PROC.pdt_0_phys]
 
         pushfd
         cli
@@ -107,7 +107,7 @@ v86_create:
         add     eax, edx
         loop    @b
 
-        mov     eax, [sys_proc+PROC.pdt_0_phys]
+        mov     eax, [sys_proc + PROC.pdt_0_phys]
         mov     cr3, eax
         popfd
 
@@ -142,7 +142,7 @@ v86_get_lin_addr:
         push    ecx edx
         mov     ecx, eax
         shr     ecx, 12
-        mov     edx, [page_tabs+ecx*4]
+        mov     edx, [page_tabs + ecx*4]
         and     eax, 0xFFF
         and     edx, 0xFFFFF000
         or      eax, edx
@@ -210,7 +210,7 @@ init_sys_v86:
         mov     esi, eax
 if ~DEBUG_SHOW_IO
 ; allow access to all ports
-        mov     ecx, [esi+V86_machine.iopm]
+        mov     ecx, [esi + V86_machine.iopm]
         xor     eax, eax
         mov     edi, ecx
         mov     ecx, 10000h/8/4
@@ -258,30 +258,30 @@ v86_start:
 
         mov     ecx, [current_slot]
 
-        push    dword [ecx+APPDATA.io_map]
-        push    dword [ecx+APPDATA.io_map+4]
-        push    [ecx+APPDATA.process]
-        push    [ecx+APPDATA.saved_esp0]
-        mov     [ecx+APPDATA.saved_esp0], esp
+        push    dword [ecx + APPDATA.io_map]
+        push    dword [ecx + APPDATA.io_map+4]
+        push    [ecx + APPDATA.process]
+        push    [ecx + APPDATA.saved_esp0]
+        mov     [ecx + APPDATA.saved_esp0], esp
         mov     [tss._esp0], esp
 
-        mov     eax, [esi+V86_machine.iopm]
+        mov     eax, [esi + V86_machine.iopm]
         call    get_pg_addr
         inc     eax
-        mov     dword [ecx+APPDATA.io_map], eax
+        mov     dword [ecx + APPDATA.io_map], eax
         mov     dword [page_tabs + (tss._io_map_0 shr 10)], eax
 
-        mov     eax, [esi+V86_machine.iopm]
+        mov     eax, [esi + V86_machine.iopm]
         add     eax, 0x1000
         call    get_pg_addr
         inc     eax
-        mov     dword [ecx+APPDATA.io_map+4], eax
+        mov     dword [ecx + APPDATA.io_map + 4], eax
         mov     dword [page_tabs + (tss._io_map_1 shr 10)], eax
 
-        mov     eax, [esi+V86_machine.process]
-        mov     [ecx+APPDATA.process], eax
+        mov     eax, [esi + V86_machine.process]
+        mov     [ecx + APPDATA.process], eax
         mov     [current_process], eax
-        mov     eax, [eax+PROC.pdt_0_phys]
+        mov     eax, [eax + PROC.pdt_0_phys]
         mov     cr3, eax
 
 ; We do not enable interrupts, because V86 IRQ redirector assumes that
@@ -301,18 +301,18 @@ v86_start:
 uglobal
 v86_irqhooks    rd      IRQ_RESERVED * 2
 endg
-        cmp     [v86_irqhooks+edx*8], 0
+        cmp     [v86_irqhooks + edx*8], 0
         jz      @f
-        cmp     [v86_irqhooks+edx*8], eax
+        cmp     [v86_irqhooks + edx*8], eax
         jz      @f
         mov     esi, v86_irqerr
         call    sys_msg_board_str
-        inc     [v86_irqhooks+edx*8+4]
+        inc     [v86_irqhooks + edx*8 + 4]
         mov     eax, 3
         jmp     v86_exc_c.exit
 @@:
-        mov     [v86_irqhooks+edx*8], eax
-        inc     [v86_irqhooks+edx*8+4]
+        mov     [v86_irqhooks + edx*8], eax
+        inc     [v86_irqhooks + edx*8 + 4]
 .noirqhook:
 
         popad
@@ -343,26 +343,26 @@ v86_exc_c:
         xor     eax, eax
         mov     dr6, eax
   @@:
-        mov     eax, [esp+sizeof.v86_regs+10h+18h]
-        cmp     word [esp+v86_regs.eip], ax
+        mov     eax, [esp + sizeof.v86_regs + 10h+18h]
+        cmp     word [esp + v86_regs.eip], ax
         jnz     @f
         shr     eax, 16
-        cmp     word [esp+v86_regs.cs], ax
+        cmp     word [esp + v86_regs.cs], ax
         jz      .done
 @@:
 ; Various system events, which must be handled, result in #GP
         cmp     bl, 13
         jnz     .nogp
 ; If faulted EIP exceeds 0xFFFF, we have #GP and it is an error
-        cmp     word [esp+v86_regs.eip+2], 0
+        cmp     word [esp + v86_regs.eip+2], 0
         jnz     .nogp
 ; Otherwise we can safely access byte at CS:IP
 ; (because it is #GP, not #PF handler)
 ; If we could get an exception just because of reading code bytes,
 ; we would have got it already and it wouldn't be #GP
-        movzx   esi, word [esp+v86_regs.cs]
+        movzx   esi, word [esp + v86_regs.cs]
         shl     esi, 4
-        add     esi, [esp+v86_regs.eip]
+        add     esi, [esp + v86_regs.eip]
         lodsb
         cmp     al, 0xCD        ; int xx command = CD xx
         jz      .handle_int
@@ -394,7 +394,7 @@ v86_exc_c:
         jz      .handle_66
         jmp     .nogp
 .handle_int:
-        cmp     word [esp+v86_regs.eip], 0xFFFF
+        cmp     word [esp + v86_regs.eip], 0xFFFF
         jae     .nogp
         xor     eax, eax
         lodsb
@@ -403,19 +403,19 @@ v86_exc_c:
 ; N.B. It is possible that some checks need to be corrected,
 ;      but at least in case of normal execution the code works.
 .simulate_int:
-        cmp     word [esp+v86_regs.esp], 6
+        cmp     word [esp + v86_regs.esp], 6
         jae     @f
         mov     bl, 12          ; #SS exception
         jmp     .nogp
 @@:
-        movzx   edx, word [esp+v86_regs.ss]
+        movzx   edx, word [esp + v86_regs.ss]
         shl     edx, 4
         push    eax
-        movzx   eax, word [esp+4+v86_regs.esp]
+        movzx   eax, word [esp + 4 + v86_regs.esp]
         sub     eax, 6
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+4+sizeof.v86_regs+10h+4]
+        mov     esi, [esp + 4 + sizeof.v86_regs + 10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -437,33 +437,33 @@ v86_exc_c:
         inc     eax
 @@:
         mov     word [edx], ax
-        mov     eax, [esp+4+v86_regs.cs]
+        mov     eax, [esp + 4 + v86_regs.cs]
         mov     word [edx+2], ax
-        mov     eax, [esp+4+v86_regs.eflags]
+        mov     eax, [esp + 4 + v86_regs.eflags]
         mov     word [edx+4], ax
         pop     eax
         mov     ah, 0
         mov     cx, [eax*4]
-        mov     word [esp+v86_regs.eip], cx
+        mov     word [esp + v86_regs.eip], cx
         mov     cx, [eax*4+2]
-        mov     word [esp+v86_regs.cs], cx
+        mov     word [esp + v86_regs.cs], cx
 ; note that interrupts will be disabled globally at IRET
-        and     byte [esp+v86_regs.eflags+1], not 3 ; clear IF and TF flags
+        and     byte [esp + v86_regs.eflags+1], not 3 ; clear IF and TF flags
 ; continue V86 execution
         popad
         iretd
 .handle_iret:
-        cmp     word [esp+v86_regs.esp], 0x10000 - 6
+        cmp     word [esp + v86_regs.esp], 0x10000 - 6
         jbe     @f
         mov     bl, 12
         jmp     .nogp
 @@:
-        movzx   edx, word [esp+v86_regs.ss]
+        movzx   edx, word [esp + v86_regs.ss]
         shl     edx, 4
-        movzx   eax, word [esp+v86_regs.esp]
+        movzx   eax, word [esp + v86_regs.esp]
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+sizeof.v86_regs+10h+4]
+        mov     esi, [esp + sizeof.v86_regs + 10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -478,28 +478,28 @@ v86_exc_c:
         jmp     .nogp
 @@:
         mov     ax, [edx]
-        mov     word [esp+v86_regs.eip], ax
+        mov     word [esp + v86_regs.eip], ax
         mov     ax, [edx+2]
-        mov     word [esp+v86_regs.cs], ax
+        mov     word [esp + v86_regs.cs], ax
         mov     ax, [edx+4]
-        mov     word [esp+v86_regs.eflags], ax
-        add     word [esp+v86_regs.esp], 6
+        mov     word [esp + v86_regs.eflags], ax
+        add     word [esp + v86_regs.esp], 6
         popad
         iretd
 .handle_pushf:
-        cmp     word [esp+v86_regs.esp], 1
+        cmp     word [esp + v86_regs.esp], 1
         jnz     @f
         mov     bl, 12
         jmp     .nogp
 @@:
-        movzx   edx, word [esp+v86_regs.ss]
+        movzx   edx, word [esp + v86_regs.ss]
         shl     edx, 4
-        mov     eax, [esp+v86_regs.esp]
+        mov     eax, [esp + v86_regs.esp]
         sub     eax, 2
         movzx   eax, ax
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+sizeof.v86_regs+10h+4]
+        mov     esi, [esp + sizeof.v86_regs + 10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -513,25 +513,25 @@ v86_exc_c:
         mov     bl, 14
         jmp     .nogp
 @@:
-        sub     word [esp+v86_regs.esp], 2
-        mov     eax, [esp+v86_regs.eflags]
+        sub     word [esp + v86_regs.esp], 2
+        mov     eax, [esp + v86_regs.eflags]
         mov     [edx], ax
-        inc     word [esp+v86_regs.eip]
+        inc     word [esp + v86_regs.eip]
         popad
         iretd
 .handle_pushfd:
-        cmp     word [esp+v86_regs.esp], 4
+        cmp     word [esp + v86_regs.esp], 4
         jae     @f
         mov     bl, 12          ; #SS exception
         jmp     .nogp
 @@:
-        movzx   edx, word [esp+v86_regs.ss]
+        movzx   edx, word [esp + v86_regs.ss]
         shl     edx, 4
-        movzx   eax, word [esp+v86_regs.esp]
+        movzx   eax, word [esp + v86_regs.esp]
         sub     eax, 4
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+sizeof.v86_regs+10h+4]
+        mov     esi, [esp + sizeof.v86_regs + 10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -545,24 +545,24 @@ v86_exc_c:
         mov     bl, 14          ; #PF exception
         jmp     .nogp
 @@:
-        sub     word [esp+v86_regs.esp], 4
-        movzx   eax, word [esp+v86_regs.eflags]
+        sub     word [esp + v86_regs.esp], 4
+        movzx   eax, word [esp + v86_regs.eflags]
         mov     [edx], eax
-        add     word [esp+v86_regs.eip], 2
+        add     word [esp + v86_regs.eip], 2
         popad
         iretd
 .handle_popf:
-        cmp     word [esp+v86_regs.esp], 0xFFFF
+        cmp     word [esp + v86_regs.esp], 0xFFFF
         jnz     @f
         mov     bl, 12
         jmp     .nogp
 @@:
-        movzx   edx, word [esp+v86_regs.ss]
+        movzx   edx, word [esp + v86_regs.ss]
         shl     edx, 4
-        movzx   eax, word [esp+v86_regs.esp]
+        movzx   eax, word [esp + v86_regs.esp]
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+sizeof.v86_regs+10h+4]
+        mov     esi, [esp + sizeof.v86_regs+10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -577,23 +577,23 @@ v86_exc_c:
         jmp     .nogp
 @@:
         mov     ax, [edx]
-        mov     word [esp+v86_regs.eflags], ax
-        add     word [esp+v86_regs.esp], 2
-        inc     word [esp+v86_regs.eip]
+        mov     word [esp + v86_regs.eflags], ax
+        add     word [esp + v86_regs.esp], 2
+        inc     word [esp + v86_regs.eip]
         popad
         iretd
 .handle_popfd:
-        cmp     word [esp+v86_regs.esp], 0x10000 - 4
+        cmp     word [esp + v86_regs.esp], 0x10000 - 4
         jbe     @f
         mov     bl, 12
         jmp     .nogp
 @@:
-        movzx   edx, word [esp+v86_regs.ss]
+        movzx   edx, word [esp + v86_regs.ss]
         shl     edx, 4
-        movzx   eax, word [esp+v86_regs.esp]
+        movzx   eax, word [esp + v86_regs.esp]
         add     edx, eax
         mov     eax, edx
-        mov     esi, [esp+sizeof.v86_regs+10h+4]
+        mov     esi, [esp + sizeof.v86_regs + 10h+4]
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jae     @f
@@ -608,23 +608,23 @@ v86_exc_c:
         jmp     .nogp
 @@:
         mov     eax, [edx]
-        mov     word [esp+v86_regs.eflags], ax
-        add     word [esp+v86_regs.esp], 4
-        add     word [esp+v86_regs.eip], 2
+        mov     word [esp + v86_regs.eflags], ax
+        add     word [esp + v86_regs.esp], 4
+        add     word [esp + v86_regs.eip], 2
         popad
         iretd
 .handle_cli:
-        and     byte [esp+v86_regs.eflags+1], not 2
-        inc     word [esp+v86_regs.eip]
+        and     byte [esp + v86_regs.eflags+1], not 2
+        inc     word [esp + v86_regs.eip]
         popad
         iretd
 .handle_sti:
-        or      byte [esp+v86_regs.eflags+1], 2
-        inc     word [esp+v86_regs.eip]
+        or      byte [esp + v86_regs.eflags+1], 2
+        inc     word [esp + v86_regs.eip]
         popad
         iretd
 .handle_rep:
-        cmp     word [esp+v86_regs.eip], 0xFFFF
+        cmp     word [esp + v86_regs.eip], 0xFFFF
         jae     .nogp
         lodsb
         cmp     al, 6Eh
@@ -634,19 +634,19 @@ v86_exc_c:
 .handle_in:
 .handle_out:
 .invalid_io_byte:
-        movzx   ebx, word [esp+v86_regs.edx]
+        movzx   ebx, word [esp + v86_regs.edx]
         mov     ecx, 1
         jmp     .invalid_io
 .handle_in_imm:
 .handle_out_imm:
-        cmp     word [esp+v86_regs.eip], 0xFFFF
+        cmp     word [esp + v86_regs.eip], 0xFFFF
         jae     .nogp
         lodsb
         movzx   ebx, al
         mov     ecx, 1
         jmp     .invalid_io
 .handle_66:
-        cmp     word [esp+v86_regs.eip], 0xFFFF
+        cmp     word [esp + v86_regs.eip], 0xFFFF
         jae     .nogp
         lodsb
         cmp     al, 0x9C
@@ -660,13 +660,13 @@ v86_exc_c:
         jmp     .nogp
 .handle_in_word:
 .handle_out_word:
-        movzx   ebx, word [esp+v86_regs.edx]
+        movzx   ebx, word [esp + v86_regs.edx]
         mov     ecx, 2
         jmp     .invalid_io
 .handle_in_dword:
 .handle_out_dword:
 .invalid_io_dword:
-        movzx   ebx, word [esp+v86_regs.edx]
+        movzx   ebx, word [esp + v86_regs.edx]
         mov     ecx, 4
 .invalid_io:
         mov     esi, v86_io_str1
@@ -686,8 +686,8 @@ if DEBUG_SHOW_IO
         mov     edx, ebx
         mov     ebx, 200
         call    delay_hs
-        mov     esi, [esp+v86_regs.size+10h+4]
-        mov     eax, [esi+V86_machine.iopm]
+        mov     esi, [esp + v86_regs.size + 10h+4]
+        mov     eax, [esi + V86_machine.iopm]
 @@:
         btr     [eax], edx
         inc     edx
@@ -719,12 +719,12 @@ end if
         shl     edx, 4
         add     edx, [esp+32]
 @@:
-        mov     esi, [esp+sizeof.v86_regs+10h+4]
+        mov     esi, [esp+sizeof.v86_regs + 10h+4]
         mov     eax, edx
         call    v86_get_lin_addr
         cmp     eax, 0x1000
         jb      .nopage
-        mov     esi, v86_exc_str3-2
+        mov     esi, v86_exc_str3 - 2
         call    sys_msg_board_str
         mov     al, [edx]
         call    sys_msg_board_byte
@@ -744,19 +744,19 @@ end if
         xor     eax, eax
 
 .exit:
-        mov     [esp+sizeof.v86_regs+10h+1Ch], eax
-        mov     [esp+sizeof.v86_regs+10h+18h], ebx
+        mov     [esp + sizeof.v86_regs + 10h+1Ch], eax
+        mov     [esp + sizeof.v86_regs + 10h+18h], ebx
 
-        mov     edx, [esp+sizeof.v86_regs+10h+14h]
+        mov     edx, [esp + sizeof.v86_regs + 10h+14h]
         cmp     edx, -1
         jz      @f
-        dec     [v86_irqhooks+edx*8+4]
+        dec     [v86_irqhooks + edx*8 + 4]
         jnz     @f
-        and     [v86_irqhooks+edx*8], 0
+        and     [v86_irqhooks + edx*8], 0
 @@:
 
         mov     esi, esp
-        mov     edi, [esi+sizeof.v86_regs+10h+10h]
+        mov     edi, [esi + sizeof.v86_regs + 10h+10h]
         add     edi, sizeof.v86_regs
         mov     ecx, sizeof.v86_regs/4
         rep movsd
@@ -766,16 +766,16 @@ end if
         mov     ecx, [current_slot]
         pop     eax
 
-        mov     [ecx+APPDATA.saved_esp0], eax
+        mov     [ecx + APPDATA.saved_esp0], eax
         mov     [tss._esp0], eax
         pop     eax
-        mov     [ecx+APPDATA.process], eax
+        mov     [ecx + APPDATA.process], eax
         mov     [current_process], eax
         pop     ebx
-        mov     dword [ecx+APPDATA.io_map+4], ebx
+        mov     dword [ecx + APPDATA.io_map+4], ebx
         mov     dword [page_tabs + (tss._io_map_1 shr 10)], ebx
         pop     ebx
-        mov     dword [ecx+APPDATA.io_map], ebx
+        mov     dword [ecx + APPDATA.io_map], ebx
         mov     dword [page_tabs + (tss._io_map_0 shr 10)], ebx
         mov     eax, [eax+PROC.pdt_0_phys]
         mov     cr3, eax
@@ -816,7 +816,7 @@ align 4
 v86_irq:
 ; push irq/pushad/jmp v86_irq
 ; ebp = irq
-        lea     esi, [esp+1Ch]
+        lea     esi, [esp + 1Ch]
         lea     edi, [esi+4]
         mov     ecx, 8
         std
@@ -825,11 +825,11 @@ v86_irq:
         mov     edi, ebp
         pop     eax
 v86_irq2:
-        mov     esi, [v86_irqhooks+edi*8]       ; get VM handle
-        mov     eax, [esi+V86_machine.process]
+        mov     esi, [v86_irqhooks + edi*8]       ; get VM handle
+        mov     eax, [esi + V86_machine.process]
         mov     ecx, [current_slot_idx]
-        shl     ecx, 8
-        cmp     [SLOT_BASE+ecx+APPDATA.process], eax
+        shl     ecx, BSF sizeof.APPDATA
+        cmp     [SLOT_BASE + ecx + APPDATA.process], eax
         jnz     .notcurrent
         lea     eax, [edi+8]
         cmp     al, 10h
@@ -839,19 +839,19 @@ v86_irq2:
 @@:
         jmp     v86_exc_c.simulate_int
 .notcurrent:
-        mov     ebx, SLOT_BASE + 0x100
+        mov     ebx, SLOT_BASE + sizeof.APPDATA
         mov     ecx, [thread_count]
 .scan:
-        cmp     [ebx+APPDATA.process], eax
+        cmp     [ebx + APPDATA.process], eax
         jnz     .cont
         push    ecx
-        mov     ecx, [ebx+APPDATA.saved_esp0]
-        cmp     word [ecx-sizeof.v86_regs+v86_regs.esp], 6
+        mov     ecx, [ebx + APPDATA.saved_esp0]
+        cmp     word [ecx - sizeof.v86_regs + v86_regs.esp], 6
         jb      .cont2
-        movzx   edx, word [ecx-sizeof.v86_regs+v86_regs.ss]
+        movzx   edx, word [ecx - sizeof.v86_regs + v86_regs.ss]
         shl     edx, 4
         push    eax
-        movzx   eax, word [ecx-sizeof.v86_regs+v86_regs.esp]
+        movzx   eax, word [ecx - sizeof.v86_regs + v86_regs.esp]
         sub     eax, 6
         add     edx, eax
         mov     eax, edx
@@ -877,15 +877,15 @@ v86_irq2:
         popad
         iretd
 .found:
-        mov     eax, [eax+PROC.pdt_0_phys]
+        mov     eax, [eax + PROC.pdt_0_phys]
         mov     cr3, eax
-        mov     esi, [ebx+APPDATA.saved_esp0]
-        sub     word [esi-sizeof.v86_regs+v86_regs.esp], 6
-        mov     ecx, [esi-sizeof.v86_regs+v86_regs.eip]
+        mov     esi, [ebx + APPDATA.saved_esp0]
+        sub     word [esi - sizeof.v86_regs + v86_regs.esp], 6
+        mov     ecx, [esi - sizeof.v86_regs + v86_regs.eip]
         mov     word [edx], cx
-        mov     ecx, [esi-sizeof.v86_regs+v86_regs.cs]
+        mov     ecx, [esi - sizeof.v86_regs + v86_regs.cs]
         mov     word [edx+2], cx
-        mov     ecx, [esi-sizeof.v86_regs+v86_regs.eflags]
+        mov     ecx, [esi - sizeof.v86_regs + v86_regs.eflags]
         mov     word [edx+4], cx
         lea     eax, [edi+8]
         cmp     al, 10h
@@ -893,10 +893,10 @@ v86_irq2:
         add     al, 60h
 @@:
         mov     cx, [eax*4]
-        mov     word [esi-sizeof.v86_regs+v86_regs.eip], cx
+        mov     word [esi - sizeof.v86_regs + v86_regs.eip], cx
         mov     cx, [eax*4+2]
-        mov     word [esi-sizeof.v86_regs+v86_regs.cs], cx
-        and     byte [esi-sizeof.v86_regs+v86_regs.eflags+1], not 3
+        mov     word [esi - sizeof.v86_regs + v86_regs.cs], cx
+        and     byte [esi - sizeof.v86_regs + v86_regs.eflags + 1], not 3
         call    update_counters
         call    find_next_task.found
         call    do_change_task

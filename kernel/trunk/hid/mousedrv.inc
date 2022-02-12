@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,15 +115,15 @@ save_draw_mouse:
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [_display.win_map]
-        movzx   edx, byte [ebx+eax]
-        shl     edx, 8
-        mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
+        movzx   edx, byte [ebx + eax]
+        shl     edx, BSF sizeof.APPDATA
+        mov     esi, [SLOT_BASE + edx + APPDATA.cursor]
 
         cmp     esi, [current_cursor]
         je      .draw
 
         mov     eax, [thread_count]
-        movzx   eax, word [WIN_POS+eax*2]
+        movzx   eax, word [WIN_POS + eax*2]
         shl     eax, 8
 
         cmp     eax, edx
@@ -461,13 +461,13 @@ redrawmouse:
         mov     esi, [current_cursor]
 
         mov     ax, [Y_UNDER]
-        sub     eax, [esi+CURSOR.hot_y]
+        sub     eax, [esi + CURSOR.hot_y]
         mov     [Y_UNDER_subtraction_CUR_hot_y], ax
         add     eax, [cur.h]
         mov     [Y_UNDER_sub_CUR_hot_y_add_curh], ax
 
         mov     ax, [X_UNDER]
-        sub     eax, [esi+CURSOR.hot_x]
+        sub     eax, [esi + CURSOR.hot_x]
         mov     [X_UNDER_subtraction_CUR_hot_x], ax
         add     eax, [cur.w]
         mov     [X_UNDER_sub_CUR_hot_x_add_curh], ax

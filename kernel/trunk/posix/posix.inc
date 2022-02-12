@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -58,13 +58,13 @@ endg
 
 align 4
 sys_posix:
-        cmp     ebx, (sys_posix_call.end-sys_posix_call)/4
+        cmp     ebx, (sys_posix_call.end - sys_posix_call)/4
         jae     .fail
 
-        jmp     dword [sys_posix_call+ebx*4]
+        jmp     dword [sys_posix_call + ebx*4]
 
 .fail:
-        mov     [esp+SYSCALL_STACK._eax], -EBADF
+        mov     [esp + SYSCALL_STACK._eax], -EBADF
         ret
 
 
@@ -81,21 +81,21 @@ sys_read:
         jae     .fail
 
         mov     edi, [current_process]
-        mov     ebp, [edi+PROC.htab+ecx*4]
+        mov     ebp, [edi + PROC.htab + ecx*4]
 
-        cmp     [ebp+FILED.magic], 'PIPE'
+        cmp     [ebp + FILED.magic], 'PIPE'
         jne     .fail
-        cmp     [ebp+FILED.handle], ecx
+        cmp     [ebp + FILED.handle], ecx
         jne     .fail
 
-        test    [ebp+FILED.mode], F_READ
+        test    [ebp + FILED.mode], F_READ
         jz      .fail
 
-        mov     ebp, [ebp+FILED.file]
+        mov     ebp, [ebp + FILED.file]
         mov     eax, [ebp]
-        jmp     dword [eax+FILEOP_READ*4]
+        jmp     dword [eax + FILEOP_READ*4]
 .fail:
-        mov     [esp+SYSCALL_STACK._eax], -EBADF
+        mov     [esp + SYSCALL_STACK._eax], -EBADF
         ret
 
 ;ssize_t write(int fd, const void *buf, size_t count);
@@ -111,19 +111,19 @@ sys_write:
         jae     .fail
 
         mov     edi, [current_process]
-        mov     ebp, [edi+PROC.htab+ecx*4]
+        mov     ebp, [edi + PROC.htab+ecx*4]
 
-        cmp     [ebp+FILED.magic], 'PIPE'
+        cmp     [ebp + FILED.magic], 'PIPE'
         jne     .fail
-        cmp     [ebp+FILED.handle], ecx
+        cmp     [ebp + FILED.handle], ecx
         jne     .fail
-        test    [ebp+FILED.mode], F_WRITE
+        test    [ebp + FILED.mode], F_WRITE
         jz      .fail
 
-        mov     ebp, [ebp+FILED.file]
+        mov     ebp, [ebp + FILED.file]
         mov     eax, [ebp]
-        jmp     dword [eax+FILEOP_WRITE*4]
+        jmp     dword [eax + FILEOP_WRITE*4]
 .fail:
-        mov     [esp+SYSCALL_STACK._eax], -EBADF
+        mov     [esp + SYSCALL_STACK._eax], -EBADF
         ret
 

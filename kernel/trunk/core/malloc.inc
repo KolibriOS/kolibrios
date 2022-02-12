@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -582,8 +582,8 @@ unlink_large_chunk:
         je      .done
 
         mov     ecx, [edx+28]
-        cmp     edx, [mst.treebins+ecx*4]
-        lea     ecx, [mst.treebins+ecx*4]
+        cmp     edx, [mst.treebins + ecx*4]
+        lea     ecx, [mst.treebins + ecx*4]
         jne     .l3
 
         test    eax, eax
@@ -640,7 +640,7 @@ malloc_small:
         push    edi
 
         bsf     eax, [mst.treemap]
-        mov     ecx, [mst.treebins+eax*4]
+        mov     ecx, [mst.treebins + eax*4]
 
 ; rsize = (t->head & ~INUSE_BITS) - nb;
 
@@ -690,7 +690,7 @@ malloc_small:
 ; unlink_large_chunk(v);
 
         mov     edx, ebx
-        lea     esi, [ebx+ebp]
+        lea     esi, [ebx + ebp]
         call    unlink_large_chunk
 
 ; if (rsize < 16)
@@ -700,19 +700,19 @@ malloc_small:
 
 ; v->head = (rsize + nb)|PINUSE_BIT|CINUSE_BIT;
 
-        lea     ecx, [edi+ebp]
+        lea     ecx, [edi + ebp]
 
 ; (v+rsize + nb)->head |= PINUSE_BIT;
 
         add     edi, ebx
-        lea     eax, [edi+ebp+4]
+        lea     eax, [edi + ebp + 4]
         pop     edi
         or      ecx, 3
-        mov     [ebx+4], ecx
+        mov     [ebx + 4], ecx
         or      dword [eax], 1
         pop     ebp
 
-        lea     eax, [ebx+8]
+        lea     eax, [ebx + 8]
         ret
 
 .split:
@@ -786,12 +786,12 @@ malloc_large:
         lea     ecx, [eax+7]
         shr     esi, cl
         and     esi, 1
-        lea     ecx, [esi+eax*2]
+        lea     ecx, [esi + eax*2]
         mov     [.idx], ecx
 
 ; if ((t = ms.treebins[idx]) != 0)
 
-        mov     eax, [mst.treebins+ecx*4]
+        mov     eax, [mst.treebins + ecx*4]
         test    eax, eax
         jz      .l3
 
@@ -849,7 +849,7 @@ malloc_large:
 ; if (rt != 0 && rt != t)
 
         test    ecx, ecx
-        mov     eax, [eax+esi*4+16]
+        mov     eax, [eax + esi*4+16]
         jz      @F
         cmp     ecx, eax
         jz      @F
@@ -893,7 +893,7 @@ malloc_large:
 
         bsf     eax, edx
 ; t = ms.treebins[i];
-        mov     eax, [mst.treebins+eax*4]
+        mov     eax, [mst.treebins + eax*4]
 
 @@:
 
@@ -952,7 +952,7 @@ malloc_large:
 ; unlink_large_chunk(v);
 
         mov     edx, ebp
-        lea     esi, [ebx+ebp]
+        lea     esi, [ebx + ebp]
         call    unlink_large_chunk
 
 ; if (rsize < 16)
@@ -962,12 +962,12 @@ malloc_large:
 
 ; v->head = (rsize + nb)|PINUSE_BIT|CINUSE_BIT;
 
-        lea     ecx, [edi+ebx]
+        lea     ecx, [edi + ebx]
 
 ; (v+rsize + nb)->head |= PINUSE_BIT;
 
         add     edi, ebp
-        lea     eax, [edi+ebx+4]
+        lea     eax, [edi + ebx + 4]
         or      ecx, 3
         mov     [ebp+4], ecx
         or      dword [eax], 1
@@ -1025,7 +1025,7 @@ init_malloc:
         mov     [eax+8], eax
         mov     [eax+12], eax
         add     eax, 16
-        cmp     eax, mst.smallbins+512
+        cmp     eax, mst.smallbins + 512
         jb      @B
 
         mov     ecx, mst.mutex

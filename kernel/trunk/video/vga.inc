@@ -250,7 +250,7 @@ align 4
 @@:
         push    ebx edx esi edi
         shl     edx, 9
-        lea     edx, [edx+edx*4]
+        lea     edx, [edx + edx*4]
         add     esi, edx
         shr     edx, 5
         add     edi, edx
@@ -378,7 +378,7 @@ VGA_putpixel:
  ; eax = x
  ; ebx = y
         mov     ecx, eax
-        mov     eax, [esp+32-8+4] ; color
+        mov     eax, [esp + 32-8+4] ; color
 ;--------------------------------------
 ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
@@ -403,8 +403,8 @@ align 4
 align 4
 .no_mouseunder:
         shl     ebx, 9
-        lea     ebx, [ebx+ebx*4]  ; multiply by 5
-        lea     edx, [ebx+ecx*4]  ; + x*BytesPerPixel (Vesa2.0 32)
+        lea     ebx, [ebx + ebx*4]  ; multiply by 5
+        lea     edx, [ebx + ecx*4]  ; + x*BytesPerPixel (Vesa2.0 32)
         mov     edi, edx
         add     edi, [LFBAddress] ; + LFB address
         mov     [edi], eax        ; write to LFB for Vesa2.0
@@ -496,14 +496,14 @@ align 4
 VGA_draw_bar_1:
         mov     [temp.cx], eax
         mov     eax, [current_slot_idx]
-        shl     eax, 5
-        add     ebx, [eax+window_data+WDATA.box.top]
-        mov     eax, [eax+window_data+WDATA.box.left]
+        shl     eax, BSF sizeof.WDATA
+        add     ebx, [window_data + eax + WDATA.box.top]
+        mov     eax, [window_data + eax + WDATA.box.left]
         add     eax, [temp.cx]
         and     eax, 0xfff8
         shl     ebx, 9
-        lea     ebx, [ebx+ebx*4]  ; multiply by 5
-        lea     ebx, [ebx+eax*4]  ; + x*BytesPerPixel (Vesa2.0 32)
+        lea     ebx, [ebx + ebx*4]  ; multiply by 5
+        lea     ebx, [ebx + eax*4]  ; + x*BytesPerPixel (Vesa2.0 32)
         mov     esi, ebx
         add     esi, [LFBAddress] ; + LFB address
         shr     ebx, 5            ; change BytesPerPixel to 1/8
@@ -525,7 +525,7 @@ align 4
 VGA_draw_long_line_1:
         push    ebx edx esi edi
         shl     edx, 9
-        lea     edx, [edx+edx*4]
+        lea     edx, [edx + edx*4]
         add     esi, edx
         shr     edx, 5
         add     edi, edx

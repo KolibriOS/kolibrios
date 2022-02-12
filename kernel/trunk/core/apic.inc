@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -76,8 +76,8 @@ end if
 ; IOAPIC init
         xor     ebx, ebx
 @@:
-        stdcall map_io_mem, [acpi_ioapic_base+ebx*4], 0x20, PG_GLOBAL+PG_NOCACHE+PG_SWR
-        mov     [IOAPIC_base+ebx*4], eax
+        stdcall map_io_mem, [acpi_ioapic_base + ebx*4], 0x20, PG_GLOBAL + PG_NOCACHE + PG_SWR
+        mov     [IOAPIC_base + ebx*4], eax
         inc     ebx
         cmp     ebx, [ioapic_cnt]
         jnz     @b
@@ -91,7 +91,7 @@ end if
         shr     eax, 16
         inc     al
         movzx   eax, al
-        mov     ecx, [ioapic_gsi_base+edx*4]
+        mov     ecx, [ioapic_gsi_base + edx*4]
         cmp     ecx, IRQ_RESERVED
         jae     .lapic_init
         add     ecx, eax
@@ -99,7 +99,7 @@ end if
         jbe     @f
         sub     eax, ecx
 @@:
-        mov     [IRQ_COUNT+edx*4], eax
+        mov     [IRQ_COUNT + edx*4], eax
 
         ; Reroute IOAPIC & mask all interrupts
         xor     ecx, ecx
@@ -110,7 +110,7 @@ end if
         mov     ah, 0x08; Delivery Mode: Fixed, Destination Mode: Logical
         mov     al, cl
         add     al, 0x20; vector
-        add     eax, [ioapic_gsi_base+edx*4]
+        add     eax, [ioapic_gsi_base + edx*4]
         or      eax, 0x1a000; Mask Interrupt, level-triggered active-low
         cmp     [ioapic_cur], 0
         jnz     @f
@@ -128,7 +128,7 @@ end if
         call    IOAPIC_write
         inc     eax
         inc     ecx
-        cmp     ecx, [IRQ_COUNT+edx*4]
+        cmp     ecx, [IRQ_COUNT + edx*4]
         jb      .next_irq
 
         inc     [ioapic_cur]
@@ -158,7 +158,7 @@ LAPIC_init:
         mov     eax, [LAPIC_BASE]
         test    eax, eax
         jnz     @f
-        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_GLOBAL+PG_NOCACHE+PG_SWR
+        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_GLOBAL + PG_NOCACHE + PG_SWR
         mov     [LAPIC_BASE], eax
 @@:
         mov     esi, eax
@@ -243,7 +243,7 @@ IOAPIC_read:
 ; out: EAX - readed value
         push    esi
         mov     esi, [ioapic_cur]
-        mov     esi, [IOAPIC_base+esi*4]
+        mov     esi, [IOAPIC_base + esi*4]
         mov     [esi], eax
         mov     eax, [esi + 0x10]
         pop     esi
@@ -256,7 +256,7 @@ IOAPIC_write:
 ; out:  none
         push    esi
         mov     esi, [ioapic_cur]
-        mov     esi, [IOAPIC_base+esi*4]
+        mov     esi, [IOAPIC_base + esi*4]
         mov     [esi], eax
         mov     [esi + 0x10], ebx
         pop     esi
@@ -348,7 +348,7 @@ IRQ_mask_all:
         mov     [ioapic_cur], 0
 .next_ioapic:
         mov     edx, [ioapic_cur]
-        mov     ecx, [IRQ_COUNT+edx*4]
+        mov     ecx, [IRQ_COUNT + edx*4]
         mov     eax, 0x10
 @@:
         mov     ebx, eax
@@ -454,8 +454,8 @@ proc disable_irq stdcall, irq_line:dword
         push    [ioapic_cur]
         xor     eax, eax
 .next_ioapic:
-        mov     ecx, [ioapic_gsi_base+eax*4]
-        add     ecx, [IRQ_COUNT+eax*4]
+        mov     ecx, [ioapic_gsi_base + eax*4]
+        add     ecx, [IRQ_COUNT + eax*4]
         cmp     ebx, ecx
         jae     .found
         inc     eax
@@ -485,7 +485,7 @@ pci_irq_fixup:
         mov     esi, [acpi_dev_data]
         mov     ebx, [acpi_dev_size]
 
-        lea     edi, [esi+ebx]
+        lea     edi, [esi + ebx]
 
 .iterate:
 

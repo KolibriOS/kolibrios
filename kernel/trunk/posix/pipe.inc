@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -72,50 +72,50 @@ sys_pipe2:
         test    eax, eax
         jz      .err_3
 
-        mov     [ebp+PIPE.pipe_ops], pipe_file_ops
-        mov     [ebp+PIPE.buffer], eax
+        mov     [ebp + PIPE.pipe_ops], pipe_file_ops
+        mov     [ebp + PIPE.buffer], eax
 
         xor     eax, eax
-        mov     [ebp+PIPE.count], eax
-        mov     [ebp+PIPE.read_end], eax
-        mov     [ebp+PIPE.write_end], eax
+        mov     [ebp + PIPE.count], eax
+        mov     [ebp + PIPE.read_end], eax
+        mov     [ebp + PIPE.write_end], eax
 
         inc     eax
-        mov     [ebp+PIPE.readers], eax
-        mov     [ebp+PIPE.writers], eax
+        mov     [ebp + PIPE.readers], eax
+        mov     [ebp + PIPE.writers], eax
 
-        lea     ecx, [ebp+PIPE.pipe_lock]
+        lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_init
 
-        lea     ecx, [ebp+PIPE.rlist]
+        lea     ecx, [ebp + PIPE.rlist]
         list_init ecx
 
-        lea     ecx, [ebp+PIPE.wlist]
+        lea     ecx, [ebp + PIPE.wlist]
         list_init ecx
 
         mov     eax, [.fdread]
         mov     edx, [.fdwrite]
         mov     ecx, [.pipefd]
 
-        mov     [eax+FILED.magic], 'PIPE'
-        mov     [eax+FILED.destroy], 0
-        mov     [eax+FILED.mode], F_READ
-        mov     [eax+FILED.file], ebp
+        mov     [eax + FILED.magic], 'PIPE'
+        mov     [eax + FILED.destroy], 0
+        mov     [eax + FILED.mode], F_READ
+        mov     [eax + FILED.file], ebp
 
-        mov     [edx+FILED.magic], 'PIPE'
-        mov     [edx+FILED.destroy], 0
-        mov     [edx+FILED.mode], F_WRITE
-        mov     [edx+FILED.file], ebp
+        mov     [edx + FILED.magic], 'PIPE'
+        mov     [edx + FILED.destroy], 0
+        mov     [edx + FILED.mode], F_WRITE
+        mov     [edx + FILED.file], ebp
 
-        mov     eax, [eax+FILED.handle]
-        mov     edx, [edx+FILED.handle]
+        mov     eax, [eax + FILED.handle]
+        mov     edx, [edx + FILED.handle]
 
         mov     [ecx], eax
         mov     [ecx+4], edx
         add     esp, 5*4
         pop     ebp
         xor     eax, eax
-        mov     [esp+SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
         ret
 .err_3:
         mov     eax, ebp
@@ -132,7 +132,7 @@ sys_pipe2:
 .fail:
         mov     eax, ebp
         pop     ebp
-        mov     [esp+SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
         ret
 
 purge .pipeflags
@@ -151,14 +151,14 @@ pipe_read:
 
         mov     edi, edx
 
-        lea     ecx, [ebp+PIPE.pipe_lock]
+        lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_lock
 .again:
         xor     eax, eax
-        cmp     eax, [ebp+PIPE.writers]
+        cmp     eax, [ebp + PIPE.writers]
         je      .eof
 
-        mov     ecx, [ebp+PIPE.count]
+        mov     ecx, [ebp + PIPE.count]
         test    ecx, ecx
         jz      .wait
 
@@ -167,33 +167,33 @@ pipe_read:
         jb      .read
         mov     ecx, esi
 .read:
-        mov     esi, [ebp+PIPE.buffer]
-        add     esi, [ebp+PIPE.read_end]
-        mov     [esp+SYSCALL_STACK._eax], ecx
-        sub     [ebp+PIPE.count], ecx
+        mov     esi, [ebp + PIPE.buffer]
+        add     esi, [ebp + PIPE.read_end]
+        mov     [esp + SYSCALL_STACK._eax], ecx
+        sub     [ebp + PIPE.count], ecx
         cld
         rep movsb
         and     esi, 0xFFF
-        mov     [ebp+PIPE.read_end], esi
+        mov     [ebp + PIPE.read_end], esi
 
-        lea     ecx, [ebp+PIPE.wlist]
-        cmp     ecx, [ebp+PIPE.wlist.next]
+        lea     ecx, [ebp + PIPE.wlist]
+        cmp     ecx, [ebp + PIPE.wlist.next]
         je      @F
 
-        mov     ecx, [ecx+MUTEX_WAITER.task]
+        mov     ecx, [ecx + MUTEX_WAITER.task]
         mov     [ecx + APPDATA.state], TSTATE_RUNNING         ;activate writer task
 @@:
-        cmp     [ebp+PIPE.count], 0
+        cmp     [ebp + PIPE.count], 0
         je      @F
 
-        lea     eax, [ebp+PIPE.rlist]
-        cmp     eax, [ebp+PIPE.rlist.next]
+        lea     eax, [ebp + PIPE.rlist]
+        cmp     eax, [ebp + PIPE.rlist.next]
         je      @F
 
-        mov     eax, [eax+MUTEX_WAITER.task]
+        mov     eax, [eax + MUTEX_WAITER.task]
         mov     [eax + APPDATA.state], TSTATE_RUNNING         ;activate reader task
 @@:
-        lea     ecx, [ebp+PIPE.pipe_lock]
+        lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_unlock
         ret
 
@@ -203,18 +203,18 @@ pipe_read:
 
         sub     esp, sizeof.MUTEX_WAITER
         mov     ebx, [current_slot]
-        mov     [esp+MUTEX_WAITER.task], ebx
-        lea     edx, [ebp+PIPE.rlist]
+        mov     [esp + MUTEX_WAITER.task], ebx
+        lea     edx, [ebp + PIPE.rlist]
 
         list_add_tail esp, edx                  ;esp= new waiter, edx= list head
 
-        lea     ecx, [ebp+PIPE.pipe_lock]
+        lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_unlock
 
         mov     [ebx + APPDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
 
-        lea     ecx, [ebp+PIPE.pipe_lock]
+        lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_lock
 
         list_del esp
@@ -223,8 +223,8 @@ pipe_read:
         jmp     .again
 
 .eof:
-        mov     [esp+SYSCALL_STACK._eax], eax
-        lea     ecx, [ebp+PIPE.pipe_lock]
+        mov     [esp + SYSCALL_STACK._eax], eax
+        lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_unlock
         ret
 
@@ -241,15 +241,15 @@ pipe_write:
         mov     ebx, esi                        ;ebx = write count
         mov     esi, edx                        ;esi = src
 
-        lea     ecx, [ebp+PIPE.pipe_lock]
+        lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_lock
 .again:
         xor     eax, eax
-        cmp     eax, [ebp+PIPE.readers]
+        cmp     eax, [ebp + PIPE.readers]
         je      .epipe
 
         mov     ecx, 4096
-        sub     ecx, [ebp+PIPE.count]
+        sub     ecx, [ebp + PIPE.count]
         jz      .wait                           ;wait if buffer full
 
 .check_count:
@@ -257,47 +257,47 @@ pipe_write:
         jb      .write
         mov     ecx, ebx
 .write:
-        mov     edi, [ebp+PIPE.buffer]
-        add     edi, [ebp+PIPE.write_end]
+        mov     edi, [ebp + PIPE.buffer]
+        add     edi, [ebp + PIPE.write_end]
         add     [.written], ecx
         sub     ebx, ecx
-        add     [ebp+PIPE.count], ecx
+        add     [ebp + PIPE.count], ecx
 
         cld
         rep movsb
         and     edi, 0xFFF
-        mov     [ebp+PIPE.write_end], edi
+        mov     [ebp + PIPE.write_end], edi
 
         pushfd
         cli
 
-        lea     eax, [ebp+PIPE.rlist]
-        cmp     eax, [ebp+PIPE.rlist.next]
+        lea     eax, [ebp + PIPE.rlist]
+        cmp     eax, [ebp + PIPE.rlist.next]
         je      @F
 
-        mov     eax, [eax+MUTEX_WAITER.task]
+        mov     eax, [eax + MUTEX_WAITER.task]
         mov     [eax + APPDATA.state], TSTATE_RUNNING         ;activate reader task
 @@:
-        cmp     [ebp+PIPE.count], 4096
+        cmp     [ebp + PIPE.count], 4096
         je      @F
 
-        lea     ecx, [ebp+PIPE.wlist]
-        cmp     ecx, [ebp+PIPE.wlist.next]
+        lea     ecx, [ebp + PIPE.wlist]
+        cmp     ecx, [ebp + PIPE.wlist.next]
         je      @F
 
-        mov     ecx, [eax+MUTEX_WAITER.task]
+        mov     ecx, [eax + MUTEX_WAITER.task]
         mov     [ecx + APPDATA.state], TSTATE_RUNNING         ;activate writer task
 @@:
         popfd
 
-        lea     ecx, [ebp+PIPE.pipe_lock]
+        lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_unlock
 
         test    ebx, ebx
         jnz     .again
 
         pop     eax                             ; written
-        mov     [esp+SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
         ret
 
 .wait:
@@ -306,18 +306,18 @@ pipe_write:
 
         sub     esp, sizeof.MUTEX_WAITER
         mov     ecx, [current_slot]
-        mov     [esp+MUTEX_WAITER.task], ecx
+        mov     [esp + MUTEX_WAITER.task], ecx
         lea     edx, [ebp+PIPE.wlist]
 
         list_add_tail esp, edx                  ;esp= new waiter, edx= list head
 
-        lea     ecx, [ebp+PIPE.pipe_lock]
+        lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_unlock
 
         mov     [ecx + APPDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
 
-        lea     ecx, [ebp+PIPE.pipe_lock]
+        lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_lock
 
         list_del esp
@@ -326,14 +326,14 @@ pipe_write:
         jmp     .again
 
 .epipe:
-        lea     ecx, [ebp+PIPE.pipe_lock]
+        lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_unlock
 
         add     esp, 4
-        mov     [esp+SYSCALL_STACK._eax], -EPIPE
+        mov     [esp + SYSCALL_STACK._eax], -EPIPE
         ret
 
 align 4
 pipe_close:
-        mov     [esp+SYSCALL_STACK._eax], -EBADF
+        mov     [esp + SYSCALL_STACK._eax], -EBADF
         ret

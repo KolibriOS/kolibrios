@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -52,23 +52,7 @@
 ;         0018 dword  color of frames
 ;         001C dword  window flags, +30 = window drawn, +31 redraw flag
 ;
-;   3000  ->   4FFF   task list      - 256 entries
-;
-;         00   dword  process count
-;         04   dword  no of processes
-;         10   dword  base of running process at 0x3000+
-;
-;         20   dword  application event mask
-;         24   dword  PID - process identification number
-;         2a   byte   slot state: 0=running, 1,2=suspended
-;                        3=zombie, 4=terminate,
-;                        5=waiting for event, 9 = not used
-;         2e   byte   window number on screen
-;         30   dword  exact position in memory
-;         34   dword  counter sum
-;         38   dword  time stamp counter add
-;         3c   dword  cpu usage in cpu timer tics
-;
+;   3000  ->   4FFF   free
 ;
 ;   5000  ->   68FF   free (6k6)
 ;   6900  ->   6EFF   saved picture under mouse pointer (1k5)

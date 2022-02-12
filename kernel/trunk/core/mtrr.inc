@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,7 +122,7 @@ proc mtrr_reconfigure
 ; 1. Prepare local variables.
 ; 1a. Create list of MAX_RANGES free (aka not yet allocated) ranges.
         xor     eax, eax
-        lea     ecx, [eax+MAX_RANGES]
+        lea     ecx, [eax + MAX_RANGES]
 .init_ranges:
         sub     esp, sizeof.mtrr_range - 4
         push    eax
@@ -262,14 +262,14 @@ end virtual
         jz      .found_place_wb
         mov     eax, ebx
         mov     edx, ebp
-        sub     eax, dword [edi+mtrr_range.start]
-        sbb     edx, dword [edi+mtrr_range.start+4]
+        sub     eax, dword [edi + mtrr_range.start]
+        sbb     edx, dword [edi + mtrr_range.start+4]
         jb      .found_place_wb
 ; Otherwise, if end of the next range is greater than or equal to ebp:ebx,
 ; exit the loop to 5e.
         mov     esi, edi
-        sub     eax, dword [edi+mtrr_range.length]
-        sbb     edx, dword [edi+mtrr_range.length+4]
+        sub     eax, dword [edi + mtrr_range.length]
+        sbb     edx, dword [edi + mtrr_range.length+4]
         jb      .expand_wb
         or      eax, edx
         jnz     .find_range_wb
@@ -282,10 +282,10 @@ end virtual
         test    eax, eax
         jz      .abort
         mov     [esi], eax
-        mov     edx, [eax+mtrr_range.next]
+        mov     edx, [eax + mtrr_range.next]
         mov     [.first_free_range], edx
-        mov     dword [eax+mtrr_range.start], ebx
-        mov     dword [eax+mtrr_range.start+4], ebp
+        mov     dword [eax + mtrr_range.start], ebx
+        mov     dword [eax + mtrr_range.start+4], ebp
 ; Don't fill [eax+mtrr_range.next] and [eax+mtrr_range.length] yet,
 ; they will be calculated including merges at step 5e.
         mov     esi, edi
@@ -306,21 +306,21 @@ end virtual
         jz      .expand_wb_done
         mov     eax, ebx
         mov     edx, ebp
-        sub     eax, dword [esi+mtrr_range.start]
-        sbb     edx, dword [esi+mtrr_range.start+4]
+        sub     eax, dword [esi + mtrr_range.start]
+        sbb     edx, dword [esi + mtrr_range.start+4]
         jb      .expand_wb_done
 ; Otherwise, if end of the next range is greater than or equal to ebp:ebx,
 ; exit the loop to 5f.
-        sub     eax, dword [esi+mtrr_range.length]
-        sbb     edx, dword [esi+mtrr_range.length+4]
+        sub     eax, dword [esi + mtrr_range.length]
+        sbb     edx, dword [esi + mtrr_range.length+4]
         jb      .expand_wb_last
 ; Otherwise, the current range is completely within the new range.
 ; Free it and continue the loop.
-        mov     edx, [esi+mtrr_range.next]
+        mov     edx, [esi + mtrr_range.next]
         cmp     esi, edi
         jz      @f
         mov     eax, [.first_free_range]
-        mov     [esi+mtrr_range.next], eax
+        mov     [esi + mtrr_range.next], eax
         mov     [.first_free_range], esi
 @@:
         mov     esi, edx
@@ -334,13 +334,13 @@ end virtual
         jz      .next_wb_range
 ; Otherwise, set end of interval at esi to end of interval at edi
 ; and free range described by edi.
-        mov     ebx, dword [esi+mtrr_range.start]
-        mov     ebp, dword [esi+mtrr_range.start+4]
-        add     ebx, dword [esi+mtrr_range.length]
-        adc     ebp, dword [esi+mtrr_range.length+4]
-        mov     edx, [esi+mtrr_range.next]
+        mov     ebx, dword [esi + mtrr_range.start]
+        mov     ebp, dword [esi + mtrr_range.start+4]
+        add     ebx, dword [esi + mtrr_range.length]
+        adc     ebp, dword [esi + mtrr_range.length+4]
+        mov     edx, [esi + mtrr_range.next]
         mov     eax, [.first_free_range]
-        mov     [esi+mtrr_range.next], eax
+        mov     [esi + mtrr_range.next], eax
         mov     [.first_free_range], esi
         mov     esi, edx
 .expand_wb_done:
@@ -348,11 +348,11 @@ end virtual
 ; the new end of range (maybe ebp:ebx from the new range
 ; or end of another existing interval calculated at step 5f).
 ; Write them to range at edi.
-        mov     [edi+mtrr_range.next], esi
-        sub     ebx, dword [edi+mtrr_range.start]
-        sbb     ebp, dword [edi+mtrr_range.start+4]
-        mov     dword [edi+mtrr_range.length], ebx
-        mov     dword [edi+mtrr_range.length+4], ebp
+        mov     [edi + mtrr_range.next], esi
+        sub     ebx, dword [edi + mtrr_range.start]
+        sbb     ebp, dword [edi + mtrr_range.start+4]
+        mov     dword [edi + mtrr_range.length], ebx
+        mov     dword [edi + mtrr_range.length+4], ebp
 .next_wb_range:
 ; 5h. Continue the loop 5b-5g over all configured MTRRs.
         add     ecx, 16
@@ -379,16 +379,16 @@ end virtual
         jz      .next_uc_range
 ; If start of the next range is greater than or equal to ebp:ebx,
 ; exit the loop to 6e.
-        mov     eax, dword [edi+mtrr_range.start]
-        mov     edx, dword [edi+mtrr_range.start+4]
+        mov     eax, dword [edi + mtrr_range.start]
+        mov     edx, dword [edi + mtrr_range.start+4]
         sub     eax, ebx
         sbb     edx, ebp
         jnb     .truncate_uc
 ; Otherwise, continue the loop if end of the next range is less than ebp:ebx,
 ; exit the loop to 6d otherwise.
         mov     esi, edi
-        add     eax, dword [edi+mtrr_range.length]
-        adc     edx, dword [edi+mtrr_range.length+4]
+        add     eax, dword [edi + mtrr_range.length]
+        adc     edx, dword [edi + mtrr_range.length+4]
         jnb     .find_range_uc
 ; 6d. ebp:ebx is inside (or at end of) an existing range.
 ; Split the range. (The second range, maybe containing completely within UC-range,
@@ -396,21 +396,21 @@ end virtual
         mov     edi, [.first_free_range]
         test    edi, edi
         jz      .abort
-        mov     dword [edi+mtrr_range.start], ebx
-        mov     dword [edi+mtrr_range.start+4], ebp
-        mov     dword [edi+mtrr_range.length], eax
-        mov     dword [edi+mtrr_range.length+4], edx
-        mov     eax, [edi+mtrr_range.next]
+        mov     dword [edi + mtrr_range.start], ebx
+        mov     dword [edi + mtrr_range.start+4], ebp
+        mov     dword [edi + mtrr_range.length], eax
+        mov     dword [edi + mtrr_range.length+4], edx
+        mov     eax, [edi + mtrr_range.next]
         mov     [.first_free_range], eax
-        mov     eax, [esi+mtrr_range.next]
-        mov     [edi+mtrr_range.next], eax
+        mov     eax, [esi + mtrr_range.next]
+        mov     [edi + mtrr_range.next], eax
 ; don't change [esi+mtrr_range.next] yet, it will be filled at step 6e
         mov     eax, ebx
         mov     edx, ebp
-        sub     eax, dword [esi+mtrr_range.start]
-        sbb     edx, dword [esi+mtrr_range.start+4]
-        mov     dword [esi+mtrr_range.length], eax
-        mov     dword [esi+mtrr_range.length+4], edx
+        sub     eax, dword [esi + mtrr_range.start]
+        sbb     edx, dword [esi + mtrr_range.start+4]
+        mov     dword [esi + mtrr_range.length], eax
+        mov     dword [esi + mtrr_range.length+4], edx
 .truncate_uc:
 ; 6e. edi is the first range after ebp:ebx, check it and next ranges
 ; for intersection with the new range, truncate heads.
@@ -422,21 +422,21 @@ end virtual
 ; exit the loop to 6g.
         mov     eax, ebx
         mov     edx, ebp
-        sub     eax, dword [edi+mtrr_range.start]
-        sbb     edx, dword [edi+mtrr_range.start+4]
+        sub     eax, dword [edi + mtrr_range.start]
+        sbb     edx, dword [edi + mtrr_range.start+4]
         jb      .truncate_uc_done
 ; Otherwise, if end of the next range is greater than ebp:ebx,
 ; exit the loop to 6f.
-        sub     eax, dword [edi+mtrr_range.length]
-        sbb     edx, dword [edi+mtrr_range.length+4]
+        sub     eax, dword [edi + mtrr_range.length]
+        sbb     edx, dword [edi + mtrr_range.length+4]
         jb      .truncate_uc_last
 ; Otherwise, the current range is completely within the new range.
 ; Free it and continue the loop if there is a next range.
 ; If that was a last range, exit the loop to 6g.
-        mov     edx, [edi+mtrr_range.next]
+        mov     edx, [edi + mtrr_range.next]
         mov     eax, [.first_free_range]
         mov     [.first_free_range], edi
-        mov     [edi+mtrr_range.next], eax
+        mov     [edi + mtrr_range.next], eax
         mov     edi, edx
         test    edi, edi
         jnz     .truncate_uc_loop
@@ -444,17 +444,17 @@ end virtual
 .truncate_uc_last:
 ; 6f. The range at edi partially intersects with the UC-range described by MTRR.
 ; Truncate it from the head.
-        mov     dword [edi+mtrr_range.start], ebx
-        mov     dword [edi+mtrr_range.start+4], ebp
+        mov     dword [edi + mtrr_range.start], ebx
+        mov     dword [edi + mtrr_range.start+4], ebp
         neg     eax
         adc     edx, 0
         neg     edx
-        mov     dword [edi+mtrr_range.length], eax
-        mov     dword [edi+mtrr_range.length+4], edx
+        mov     dword [edi + mtrr_range.length], eax
+        mov     dword [edi + mtrr_range.length+4], edx
 .truncate_uc_done:
 ; 6g. We have found the next range (maybe 0) after intersection.
 ; Write it to [esi+mtrr_range.next].
-        mov     [esi+mtrr_range.next], edi
+        mov     [esi + mtrr_range.next], edi
 .next_uc_range:
 ; 6h. Continue the loop 6b-6g over all configured MTRRs.
         add     ecx, 16
@@ -468,16 +468,16 @@ end virtual
 ; 7. BIOS has not configured variable-range MTRRs.
 ; Create one range from 0 to [MEM_AMOUNT].
         mov     eax, [.first_free_range]
-        mov     edx, [eax+mtrr_range.next]
+        mov     edx, [eax + mtrr_range.next]
         mov     [.first_free_range], edx
         mov     [.first_range], eax
         xor     edx, edx
-        mov     [eax+mtrr_range.next], edx
-        mov     dword [eax+mtrr_range.start], edx
-        mov     dword [eax+mtrr_range.start+4], edx
+        mov     [eax + mtrr_range.next], edx
+        mov     dword [eax + mtrr_range.start], edx
+        mov     dword [eax + mtrr_range.start+4], edx
         mov     ecx, [MEM_AMOUNT]
-        mov     dword [eax+mtrr_range.length], ecx
-        mov     dword [eax+mtrr_range.length+4], edx
+        mov     dword [eax + mtrr_range.length], ecx
+        mov     dword [eax + mtrr_range.length+4], edx
 .ranges_ok:
 ; 8. We have calculated list of WB-ranges.
 ; Now we should calculate a list of MTRRs so that
@@ -497,20 +497,20 @@ end virtual
 ; append them to end of range.
         xor     eax, eax
         mov     edi, [.first_range]
-        cmp     dword [edi+mtrr_range.start], eax
+        cmp     dword [edi + mtrr_range.start], eax
         jnz     .abort
-        cmp     dword [edi+mtrr_range.start+4], eax
+        cmp     dword [edi + mtrr_range.start+4], eax
         jnz     .abort
-        cmp     dword [edi+mtrr_range.length+4], eax
+        cmp     dword [edi + mtrr_range.length+4], eax
         jnz     .abort
-        mov     edx, [edi+mtrr_range.next]
+        mov     edx, [edi + mtrr_range.next]
         test    edx, edx
         jz      @f
-        cmp     dword [edx+mtrr_range.start], eax
+        cmp     dword [edx + mtrr_range.start], eax
         jnz     .abort
-        cmp     dword [edx+mtrr_range.start+4], 1
+        cmp     dword [edx + mtrr_range.start+4], 1
         jnz     .abort
-        cmp     [edx+mtrr_range.next], eax
+        cmp     [edx + mtrr_range.next], eax
         jnz     .abort
 @@:
 ; 8b. Initialize: no MTRRs filled.
@@ -522,10 +522,10 @@ end virtual
 ; reset start to 2*start and return to this step.
 ; Example: [4G,24G) -> [4G,8G) {returning} + [8G,16G) {returning}
 ; + [16G,24G) {advancing to ?}.
-        mov     eax, dword [edi+mtrr_range.length+4]
+        mov     eax, dword [edi + mtrr_range.length+4]
         test    eax, eax
         jz      .less4G
-        mov     edx, dword [edi+mtrr_range.start+4]
+        mov     edx, dword [edi + mtrr_range.start+4]
         cmp     eax, edx
         jb      .start_aligned
         inc     [.num_used_mtrrs]
@@ -536,10 +536,10 @@ end virtual
         mov     dword [esi+8], 0
         mov     dword [esi+12], edx
         add     esi, 16
-        add     dword [edi+mtrr_range.start+4], edx
-        sub     dword [edi+mtrr_range.length+4], edx
+        add     dword [edi + mtrr_range.start+4], edx
+        sub     dword [edi + mtrr_range.length+4], edx
         jnz     .range2mtrr_loop
-        cmp     dword [edi+mtrr_range.length], 0
+        cmp     dword [edi + mtrr_range.length], 0
         jz      .range2mtrr_next
 .less4G:
 ; 8d. If we are dealing with low-memory range (before 4G)
@@ -549,25 +549,25 @@ end virtual
 ; variants [0,0x80000000)+(another range to be splitted) and
 ; [0,0x100000000)-(another range to be splitted); we forbid the last variant,
 ; so the first variant must be used.
-        bsr     ecx, dword [edi+mtrr_range.length]
+        bsr     ecx, dword [edi + mtrr_range.length]
         xor     edx, edx
         inc     edx
         shl     edx, cl
         lea     eax, [edx*2]
-        add     eax, dword [edi+mtrr_range.start]
+        add     eax, dword [edi + mtrr_range.start]
         jnz     .start_aligned
         inc     [.num_used_mtrrs]
         cmp     [.num_used_mtrrs], MAX_USEFUL_MTRRS
         ja      .abort
-        mov     eax, dword [edi+mtrr_range.start]
+        mov     eax, dword [edi + mtrr_range.start]
         mov     dword [esi], eax
         or      dword [esi], MEM_WB
         mov     dword [esi+4], 0
         mov     dword [esi+8], edx
         mov     dword [esi+12], 0
         add     esi, 16
-        add     dword [edi+mtrr_range.start], edx
-        sub     dword [edi+mtrr_range.length], edx
+        add     dword [edi + mtrr_range.start], edx
+        sub     dword [edi + mtrr_range.length], edx
         jnz     .less4G
         jmp     .range2mtrr_next
 .start_aligned:
@@ -594,9 +594,9 @@ end virtual
         xor     eax, eax
         xor     ebx, ebx
         xor     ecx, ecx
-        bsf     edx, dword [edi+mtrr_range.length]
+        bsf     edx, dword [edi + mtrr_range.length]
         jnz     @f
-        bsf     edx, dword [edi+mtrr_range.length+4]
+        bsf     edx, dword [edi + mtrr_range.length+4]
         add     edx, 32
 @@:
         push    edx     ; save position of lowest 1-bit for step 8f
@@ -607,7 +607,7 @@ end virtual
         inc     eax     ; increment difference in hope for 1-bit
 ; Note: bt conveniently works with both .length and .length+4,
 ; depending on whether edx>=32.
-        bt      dword [edi+mtrr_range.length], edx
+        bt      dword [edi + mtrr_range.length], edx
         jc      .calc_stat
         dec     eax     ; hope was wrong, decrement difference to correct 'inc'
         dec     eax     ; and again, now getting the real difference
@@ -625,20 +625,20 @@ end virtual
         inc     edx
         cmp     edx, ecx
         ja      .fill_hi_init
-        btc     dword [edi+mtrr_range.length], edx
+        btc     dword [edi + mtrr_range.length], edx
         jmp     @b
 .fill_hi_init:
 ; 8g. Create MTRR ranges corresponding to upper 32 bits.
         sub     ecx, 32
 .fill_hi_loop:
-        bsr     edx, dword [edi+mtrr_range.length+4]
+        bsr     edx, dword [edi + mtrr_range.length+4]
         jz      .fill_hi_done
         inc     [.num_used_mtrrs]
         cmp     [.num_used_mtrrs], MAX_USEFUL_MTRRS
         ja      .abort
-        mov     eax, dword [edi+mtrr_range.start]
+        mov     eax, dword [edi + mtrr_range.start]
         mov     [esi], eax
-        mov     eax, dword [edi+mtrr_range.start+4]
+        mov     eax, dword [edi + mtrr_range.start+4]
         mov     [esi+4], eax
         xor     eax, eax
         mov     [esi+8], eax
@@ -647,14 +647,14 @@ end virtual
         cmp     edx, ecx
         jl      .fill_hi_uc
         or      dword [esi], MEM_WB
-        add     dword [edi+mtrr_range.start+4], eax
+        add     dword [edi + mtrr_range.start+4], eax
         jmp     @f
 .fill_hi_uc:
         sub     dword [esi+4], eax
-        sub     dword [edi+mtrr_range.start+4], eax
+        sub     dword [edi + mtrr_range.start+4], eax
 @@:
         add     esi, 16
-        sub     dword [edi+mtrr_range.length], eax
+        sub     dword [edi + mtrr_range.length], eax
         jmp     .fill_hi_loop
 .fill_hi_done:
 ; 8h. Create MTRR ranges corresponding to lower 32 bits.
@@ -665,9 +665,9 @@ end virtual
         inc     [.num_used_mtrrs]
         cmp     [.num_used_mtrrs], MAX_USEFUL_MTRRS
         ja      .abort
-        mov     eax, dword [edi+mtrr_range.start]
+        mov     eax, dword [edi + mtrr_range.start]
         mov     [esi], eax
-        mov     eax, dword [edi+mtrr_range.start+4]
+        mov     eax, dword [edi + mtrr_range.start+4]
         mov     [esi+4], eax
         xor     eax, eax
         mov     [esi+12], eax
@@ -676,18 +676,18 @@ end virtual
         cmp     edx, ecx
         jl      .fill_lo_uc
         or      dword [esi], MEM_WB
-        add     dword [edi+mtrr_range.start], eax
+        add     dword [edi + mtrr_range.start], eax
         jmp     @f
 .fill_lo_uc:
         sub     dword [esi], eax
-        sub     dword [edi+mtrr_range.start], eax
+        sub     dword [edi + mtrr_range.start], eax
 @@:
         add     esi, 16
-        sub     dword [edi+mtrr_range.length], eax
+        sub     dword [edi + mtrr_range.length], eax
         jmp     .fill_lo_loop
 .range2mtrr_next:
 ; 8i. Repeat the loop at 8c-8h for all ranges.
-        mov     edi, [edi+mtrr_range.next]
+        mov     edi, [edi + mtrr_range.next]
         test    edi, edi
         jnz     .range2mtrr_loop
 ; 9. We have calculated needed MTRRs, now setup them in the CPU.
@@ -897,7 +897,7 @@ proc mtrr_validate
         dec     eax
 ; LFB is mapped to virtual address LFB_BASE,
 ; it uses global pages if supported by CPU.
-        mov     ebx, [sys_proc+PROC.pdt_0+(LFB_BASE shr 20)]
+        mov     ebx, [sys_proc + PROC.pdt_0 + (LFB_BASE shr 20)]
         test    ebx, PDE_LARGE
         jnz     @f
         mov     ebx, [page_tabs+(LFB_BASE shr 10)]
@@ -917,9 +917,9 @@ proc mtrr_validate
         mov     eax, [pcidev_list.fd]
         cmp     eax, pcidev_list        ; sanity check: fail if no PCI devices
         jz      .fail
-        cmp     [eax+PCIDEV.vendor_device_id], 0x12378086
+        cmp     [eax + PCIDEV.vendor_device_id], 0x12378086
         jz      .exit
-        cmp     [eax+PCIDEV.vendor_device_id], 0x01228086
+        cmp     [eax + PCIDEV.vendor_device_id], 0x01228086
         jnz     .fail
 .exit:
         ret

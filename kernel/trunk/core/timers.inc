@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2012-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2012-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,11 +91,11 @@ proc timer_hs stdcall uses ebx, deltaStart:dword, interval:dword, \
         xchg    ebx, eax
 ; 2a. Copy values from the arguments.
         mov     ecx, [interval]
-        mov     [ebx+TIMER.Interval], ecx
+        mov     [ebx + TIMER.Interval], ecx
         mov     ecx, [timerFunc]
-        mov     [ebx+TIMER.TimerFunc], ecx
+        mov     [ebx + TIMER.TimerFunc], ecx
         mov     ecx, [userData]
-        mov     [ebx+TIMER.UserData], ecx
+        mov     [ebx + TIMER.UserData], ecx
 ; 2b. Get time of the next activation.
         mov     ecx, [deltaStart]
         test    ecx, ecx
@@ -103,17 +103,17 @@ proc timer_hs stdcall uses ebx, deltaStart:dword, interval:dword, \
         mov     ecx, [interval]
 @@:
         add     ecx, [timer_ticks]
-        mov     [ebx+TIMER.Time], ecx
+        mov     [ebx + TIMER.Time], ecx
 ; 3. Insert the TIMER structure to the global list.
 ; 3a. Acquire the lock.
         call    lock_timer_list
 ; 3b. Insert an item at ebx to the tail of the timer_list.
         mov     eax, timer_list
-        mov     ecx, [eax+TIMER.Prev]
-        mov     [ebx+TIMER.Next], eax
-        mov     [ebx+TIMER.Prev], ecx
-        mov     [eax+TIMER.Prev], ebx
-        mov     [ecx+TIMER.Next], ebx
+        mov     ecx, [eax + TIMER.Prev]
+        mov     [ebx + TIMER.Next], eax
+        mov     [ebx + TIMER.Prev], ecx
+        mov     [eax + TIMER.Prev], ebx
+        mov     [ecx + TIMER.Next], ebx
 ; 3c. Release the lock.
         call    unlock_timer_list
 ; 4. Return with eax = pointer to TIMER structure.
@@ -132,10 +132,10 @@ cancel_timer_hs:
         call    lock_timer_list
         mov     ebx, [esp+4+4]
 ; 1b. Delete an item at ebx from the double-linked list.
-        mov     eax, [ebx+TIMER.Next]
-        mov     ecx, [ebx+TIMER.Prev]
-        mov     [eax+TIMER.Prev], ecx
-        mov     [ecx+TIMER.Next], eax
+        mov     eax, [ebx + TIMER.Next]
+        mov     ecx, [ebx + TIMER.Prev]
+        mov     [eax + TIMER.Prev], ecx
+        mov     [ecx + TIMER.Next], eax
 ; 1c. If we are removing the next timer in currently processing chain,
 ; the next timer for this timer becomes new next timer.
         cmp     ebx, [timer_next]
@@ -158,14 +158,14 @@ check_timers:
         call    lock_timer_list
 ; 2. Loop over all registered timers, checking time.
 ; 2a. Get the first item.
-        mov     eax, [timer_list+TIMER.Next]
+        mov     eax, [timer_list + TIMER.Next]
         mov     [timer_next], eax
 .loop:
 ; 2b. Check for end of list.
         cmp     eax, timer_list
         jz      .done
 ; 2c. Get and store the next timer.
-        mov     edx, [eax+TIMER.Next]
+        mov     edx, [eax + TIMER.Next]
         mov     [timer_next], edx
 ; 2d. Check time for timer activation.
 ; We can't just compare [timer_ticks] and [TIMER.Time], since overflows are
@@ -176,16 +176,16 @@ check_timers:
 ; not over or we have not processed this timer for 2^31 ticks, what is very
 ; unlikely.
         mov     edx, [timer_ticks]
-        sub     edx, [eax+TIMER.Time]
+        sub     edx, [eax + TIMER.Time]
         js      .next
 ; The timer should be activated now.
 ; 2e. Store the timer data in the stack. This is required since 2f can delete
 ; the timer, invalidating the content.
-        push    [eax+TIMER.UserData]    ; parameter for TimerFunc
-        push    [eax+TIMER.TimerFunc]   ; to be restored in 2g
+        push    [eax + TIMER.UserData]    ; parameter for TimerFunc
+        push    [eax + TIMER.TimerFunc]   ; to be restored in 2g
 ; 2f. Calculate time of next activation or delete the timer if it is one-shot.
-        mov     ecx, [eax+TIMER.Interval]
-        add     [eax+TIMER.Time], ecx
+        mov     ecx, [eax + TIMER.Interval]
+        add     [eax + TIMER.Time], ecx
         test    ecx, ecx
         jnz     .nodelete
         stdcall cancel_timer_hs, eax
@@ -208,14 +208,14 @@ check_timers:
 proc check_timers_has_work?
         pushf
         cli
-        mov     eax, [timer_list+TIMER.Next]
+        mov     eax, [timer_list + TIMER.Next]
 .loop:
         cmp     eax, timer_list
         jz      .done_nowork
         mov     edx, [timer_ticks]
-        sub     edx, [eax+TIMER.Time]
+        sub     edx, [eax + TIMER.Time]
         jns     .done_haswork
-        mov     eax, [eax+TIMER.Next]
+        mov     eax, [eax + TIMER.Next]
         jmp     .loop
 .done_nowork:
         popf

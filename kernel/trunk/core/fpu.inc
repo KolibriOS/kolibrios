@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -177,14 +177,14 @@ fpu_save:
 .save:
         mov     [fpu_owner], esi
 
-        shl     ecx, 8
-        mov     eax, [ecx+SLOT_BASE+APPDATA.fpu_state]
+        shl     ecx, BSF sizeof.APPDATA
+        mov     eax, [SLOT_BASE + ecx + APPDATA.fpu_state]
 
         call    save_context
 
 ; first 512 bytes of XSAVE area have the same format as FXSAVE
-        shl     esi, 8
-        mov     esi, [esi+SLOT_BASE+APPDATA.fpu_state]
+        shl     esi, BSF sizeof.APPDATA
+        mov     esi, [SLOT_BASE + esi + APPDATA.fpu_state]
         mov     ecx, 512/4
         cld
         rep movsd
@@ -225,13 +225,13 @@ avx_save:
 .save:
         mov     [fpu_owner], esi
 
-        shl     ecx, 8
-        mov     eax, [ecx+SLOT_BASE+APPDATA.fpu_state]
+        shl     ecx, BSF sizeof.APPDATA
+        mov     eax, [SLOT_BASE + ecx + APPDATA.fpu_state]
 
         call    save_context
 
-        shl     esi, 8
-        mov     esi, [esi+SLOT_BASE+APPDATA.fpu_state]
+        shl     esi, BSF sizeof.APPDATA
+        mov     esi, [SLOT_BASE + esi + APPDATA.fpu_state]
         mov     ecx, [xsave_area_size]
         add     ecx, 3
         shr     ecx, 2
@@ -246,7 +246,7 @@ avx_save:
 
 align 4
 save_context:
-        bt      [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
+        bt      [cpu_caps + (CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
         jnc     save_fpu_context
         push    eax edx
         mov     ecx, eax
@@ -297,8 +297,8 @@ fpu_restore:
         pop     ecx
         ret
 .copy:
-        shl     eax, 8
-        mov     edi, [eax+SLOT_BASE+APPDATA.fpu_state]
+        shl     eax, BSF sizeof.APPDATA
+        mov     edi, [SLOT_BASE + eax + APPDATA.fpu_state]
         mov     ecx, 512/4
         cld
         rep movsd
@@ -323,7 +323,7 @@ avx_restore:
         jne     .copy
 
         clts
-        bt      [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
+        bt      [cpu_caps + (CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
         jnc     .no_xsave
         push    edx
         mov     eax, [xsave_eax]
@@ -351,8 +351,8 @@ avx_restore:
         pop     ecx
         ret
 .copy:
-        shl     eax, 8
-        mov     edi, [eax+SLOT_BASE+APPDATA.fpu_state]
+        shl     eax, BSF sizeof.APPDATA
+        mov     edi, [SLOT_BASE + eax + APPDATA.fpu_state]
         mov     ecx, [xsave_area_size]
         add     ecx, 3
         shr     ecx, 2
@@ -375,9 +375,9 @@ except_7:                  ;#NM exception handler
         cmp     ebx, [current_slot_idx]
         je      .exit
 
-        shl     ebx, 8
-        mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
-        bt      [cpu_caps+(CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
+        shl     ebx, BSF sizeof.APPDATA
+        mov     eax, [SLOT_BASE + ebx + APPDATA.fpu_state]
+        bt      [cpu_caps + (CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
         jnc     .no_xsave
         mov     ecx, eax
         mov     eax, [xsave_eax]
@@ -385,8 +385,8 @@ except_7:                  ;#NM exception handler
         xsave   [ecx]
         mov     ebx, [current_slot_idx]
         mov     [fpu_owner], ebx
-        shl     ebx, 8
-        mov     ecx, [ebx+SLOT_BASE+APPDATA.fpu_state]
+        shl     ebx, BSF sizeof.APPDATA
+        mov     ecx, [SLOT_BASE + ebx + APPDATA.fpu_state]
         xrstor  [ecx]
 .exit:
         restore_ring3_context
@@ -398,8 +398,8 @@ except_7:                  ;#NM exception handler
         fxsave  [eax]
         mov     ebx, [current_slot_idx]
         mov     [fpu_owner], ebx
-        shl     ebx, 8
-        mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
+        shl     ebx, BSF sizeof.APPDATA
+        mov     eax, [SLOT_BASE + ebx + APPDATA.fpu_state]
         fxrstor [eax]
         restore_ring3_context
         iret
@@ -408,8 +408,8 @@ except_7:                  ;#NM exception handler
         fnsave  [eax]
         mov     ebx, [current_slot_idx]
         mov     [fpu_owner], ebx
-        shl     ebx, 8
-        mov     eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
+        shl     ebx, BSF sizeof.APPDATA
+        mov     eax, [SLOT_BASE + ebx + APPDATA.fpu_state]
         frstor  [eax]
         restore_ring3_context
         iret

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -171,11 +171,11 @@ proc init_kernel_heap
 
         mov     [next_memblock], HEAP_BASE + sizeof.MEM_BLOCK *3
  @@:
-        mov     [eax-sizeof.MEM_BLOCK], eax
+        mov     [eax - sizeof.MEM_BLOCK], eax
         add     eax, sizeof.MEM_BLOCK
         loop    @B
 
-        mov     dword[eax-sizeof.MEM_BLOCK], 0
+        mov     dword[eax - sizeof.MEM_BLOCK], 0
 
         mov     ecx, heap_mutex
         call    mutex_init
@@ -863,7 +863,7 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
 
         shr     ebx, 12                 ; chek block attributes
         lea     ebx, [page_tabs + ebx*4]
-        mov     eax, [ebx-4]            ; block attributes
+        mov     eax, [ebx - 4]          ; block attributes
         test    al, MEM_BLOCK_USED
         jz      .error
         test    al, MEM_BLOCK_DONT_FREE

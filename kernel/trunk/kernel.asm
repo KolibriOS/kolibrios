@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -195,12 +195,12 @@ B32:
 
         xor     eax, eax
         mov     edi, CLEAN_ZONE
-        mov     ecx, (HEAP_BASE-OS_BASE-CLEAN_ZONE) / 4
+        mov     ecx, (HEAP_BASE - OS_BASE - CLEAN_ZONE) / 4
         cld
         rep stosd
 
 ; CLEAR KERNEL UNDEFINED GLOBALS
-        mov     edi, endofcode-OS_BASE
+        mov     edi, endofcode - OS_BASE
         mov     ecx, 0x90000
         sub     ecx, edi
         shr     ecx, 2
@@ -216,7 +216,7 @@ B32:
         rep stosd
 
         call    test_cpu
-        bts     [cpu_caps-OS_BASE], CAPS_TSC    ;force use rdtsc
+        bts     [cpu_caps - OS_BASE], CAPS_TSC    ;force use rdtsc
 
         call    acpi_locate
         call    init_BIOS32
@@ -227,11 +227,11 @@ B32:
 
 ; ENABLE PAGING
 
-        mov     eax, sys_proc-OS_BASE+PROC.pdt_0
+        mov     eax, sys_proc - OS_BASE + PROC.pdt_0
         mov     cr3, eax
 
         mov     eax, cr0
-        or      eax, CR0_PG+CR0_WP
+        or      eax, CR0_PG + CR0_WP
         mov     cr0, eax
 
         lgdt    [gdts]
@@ -243,12 +243,12 @@ tmp_page_tabs   dd ?
 use16
 ap_init16:
         cli
-        lgdt    [cs:gdts_ap-ap_init16]
-        mov     eax, [cs:cr3_ap-ap_init16]
+        lgdt    [cs:gdts_ap - ap_init16]
+        mov     eax, [cs:cr3_ap - ap_init16]
         mov     cr3, eax
-        mov     eax, [cs:cr4_ap-ap_init16]
+        mov     eax, [cs:cr4_ap - ap_init16]
         mov     cr4, eax
-        mov     eax, CR0_PE+CR0_PG+CR0_WP
+        mov     eax, CR0_PE + CR0_PG + CR0_WP
         mov     cr0, eax
         jmp     pword os_code:ap_init_high
 align 16
@@ -283,7 +283,7 @@ high_code:
         mov     gs, bx
 
         xor     eax, eax
-        mov     ebx, 0xFFFFF000+PG_SHARED+PG_NOCACHE+PG_UWR
+        mov     ebx, 0xFFFFF000 + PG_SHARED + PG_NOCACHE + PG_UWR
         bt      [cpu_caps], CAPS_PAT
         setc    al
         shl     eax, 7
@@ -293,7 +293,7 @@ high_code:
         bt      [cpu_caps], CAPS_PGE
         jnc     @F
 
-        or      [sys_proc+PROC.pdt_0+(OS_BASE shr 20)], eax
+        or      [sys_proc + PROC.pdt_0 + (OS_BASE shr 20)], eax
         or      ebx, eax
 
         mov     eax, cr4
@@ -303,8 +303,8 @@ high_code:
         mov     [pte_valid_mask], ebx
 
         xor     eax, eax
-        mov     dword [sys_proc+PROC.pdt_0], eax
-        mov     dword [sys_proc+PROC.pdt_0+4], eax
+        mov     dword [sys_proc + PROC.pdt_0], eax
+        mov     dword [sys_proc + PROC.pdt_0+4], eax
 
         mov     eax, cr3
         mov     cr3, eax          ; flush TLB
@@ -456,7 +456,7 @@ high_code:
         stdcall kernel_alloc, eax
         mov     [os_stack_seg], eax
 
-        lea     esp, [eax+RING0_STACK_SIZE]
+        lea     esp, [eax + RING0_STACK_SIZE]
 
         mov     [tss._ss0], os_stack
         mov     [tss._esp0], esp
@@ -515,13 +515,13 @@ high_code:
         add     eax, ebx
         mov     [ipc_ptab], eax
 
-        stdcall kernel_alloc, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
-                (unpack.lc+unpack.lp)))*4
+        stdcall kernel_alloc, (unpack.LZMA_BASE_SIZE + (unpack.LZMA_LIT_SIZE shl \
+                (unpack.lc + unpack.lp)))*4
 
         mov     [unpack.p], eax
 
         call    init_events
-        mov     eax, srv.fd-SRV.fd
+        mov     eax, srv.fd - SRV.fd
         mov     [srv.fd], eax
         mov     [srv.bk], eax
 
@@ -564,7 +564,7 @@ high_code:
         mov     eax, [hpet_base]
         test    eax, eax
         jz      @F
-        stdcall map_io_mem, [hpet_base], 1024, PG_GLOBAL+PAT_UC+PG_SWR
+        stdcall map_io_mem, [hpet_base], 1024, PG_GLOBAL + PAT_UC + PG_SWR
         mov     [hpet_base], eax
         mov     eax, [eax+HPET_ID]
         DEBUGF  1, "K : HPET caps %x\n", eax
@@ -575,8 +575,8 @@ high_code:
         mov     esi, boot_setostask
         call    boot_log
 
-        mov     edi, sys_proc+PROC.heap_lock
-        mov     ecx, (PROC.ht_free-PROC.heap_lock)/4
+        mov     edi, sys_proc + PROC.heap_lock
+        mov     ecx, (PROC.ht_free - PROC.heap_lock)/4
 
         xor     eax, eax
         cld
@@ -593,7 +593,7 @@ high_code:
         cmp     eax, ecx
         jbe     @B
 
-        mov     [sys_proc+PROC.pdt_0_phys], sys_proc-OS_BASE+PROC.pdt_0
+        mov     [sys_proc + PROC.pdt_0_phys], sys_proc - OS_BASE + PROC.pdt_0
 
         mov     eax, -1
         mov     edi, thr_slot_map+4
@@ -608,19 +608,19 @@ high_code:
 
         mov     [current_process], sys_proc
 
-        mov     edx, SLOT_BASE+sizeof.APPDATA*1
+        mov     edx, SLOT_BASE + sizeof.APPDATA*1
         mov     ebx, [os_stack_seg]
         add     ebx, RING0_STACK_SIZE
         add     ebx, [xsave_area_size]
         call    setup_os_slot
         mov     dword [edx], 'IDLE'
-        sub     [edx+APPDATA.saved_esp], 4
-        mov     eax, [edx+APPDATA.saved_esp]
+        sub     [edx + APPDATA.saved_esp], 4
+        mov     eax, [edx + APPDATA.saved_esp]
         mov     dword [eax], idle_thread
         mov     ecx, IDLE_PRIORITY
         call    scheduler_add_thread
 
-        mov     edx, SLOT_BASE+sizeof.APPDATA*2
+        mov     edx, SLOT_BASE + sizeof.APPDATA*2
         mov     ebx, [os_stack_seg]
         call    setup_os_slot
         mov     dword [edx], 'OS'
@@ -645,9 +645,9 @@ endg
         cmp     ebx, 1
         jbe     .no_wake_cpus
         call    create_trampoline_pgmap
-        mov     [cr3_ap+OS_BASE], eax
+        mov     [cr3_ap + OS_BASE], eax
         mov     eax, cr4
-        mov     [cr4_ap+OS_BASE], eax
+        mov     [cr4_ap + OS_BASE], eax
         mov     esi, OS_BASE + ap_init16
         mov     edi, OS_BASE + 8000h
         mov     ecx, (ap_init16_size + 3) / 4
@@ -655,10 +655,10 @@ endg
         mov     eax, [LAPIC_BASE]
         test    eax, eax
         jnz     @f
-        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_GLOBAL+PG_NOCACHE+PG_SWR
+        stdcall map_io_mem, [acpi_lapic_base], 0x1000, PG_GLOBAL + PG_NOCACHE + PG_SWR
         mov     [LAPIC_BASE], eax
 @@:
-        lea     edi, [eax+APIC_ICRL]
+        lea     edi, [eax + APIC_ICRL]
         mov     esi, smpt+4
         dec     ebx
 .wake_cpus_loop:
@@ -694,7 +694,7 @@ endg
 @@:
         cmp     [ap_initialized], eax
         jnz     @b
-        mov     eax, [cr3_ap+OS_BASE]
+        mov     eax, [cr3_ap + OS_BASE]
         call    free_page
 .no_wake_cpus:
 
@@ -899,8 +899,8 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 
         call    init_display
         mov     eax, [def_cursor]
-        mov     [SLOT_BASE+APPDATA.cursor+sizeof.APPDATA], eax
-        mov     [SLOT_BASE+APPDATA.cursor+sizeof.APPDATA*2], eax
+        mov     [SLOT_BASE + APPDATA.cursor + sizeof.APPDATA], eax
+        mov     [SLOT_BASE + APPDATA.cursor + sizeof.APPDATA*2], eax
 
 ; PRINT CPU FREQUENCY
 
@@ -911,12 +911,12 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         mov     ebx, [hpet_base]
         test    ebx, ebx
         jz      @F
-        mov     ebx, [ebx+HPET_COUNTER]
+        mov     ebx, [ebx + HPET_COUNTER]
 
         rdtsc
         mov     ecx, 1000
         sub     eax, [hpet_tsc_start]
-        sbb     edx, [hpet_tsc_start+4]
+        sbb     edx, [hpet_tsc_start + 4]
         shld    edx, eax, 10
         shl     eax, 10
         mov     esi, eax
@@ -944,7 +944,7 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         shl     eax, 2
 .next:
         mov     dword [cpu_freq], eax
-        mov     dword [cpu_freq+4], edx
+        mov     dword [cpu_freq + 4], edx
         mov     ebx, 1000000
         div     ebx
         mov     ebx, eax
@@ -996,14 +996,14 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 ; Protect I/O permission map
 
         mov     esi, [default_io_map]
-        stdcall map_page, esi, [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map], PG_READ
+        stdcall map_page, esi, [SLOT_BASE + sizeof.APPDATA + APPDATA.io_map], PG_READ
         add     esi, 0x1000
-        stdcall map_page, esi, [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map+4], PG_READ
+        stdcall map_page, esi, [SLOT_BASE + sizeof.APPDATA + APPDATA.io_map + 4], PG_READ
 
         stdcall map_page, tss._io_map_0, \
-                [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map], PG_READ
+                [SLOT_BASE + sizeof.APPDATA + APPDATA.io_map], PG_READ
         stdcall map_page, tss._io_map_1, \
-                [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map+4], PG_READ
+                [SLOT_BASE + sizeof.APPDATA + APPDATA.io_map + 4], PG_READ
 
 ; SET KEYBOARD PARAMETERS
         mov     al, 0xf6       ; reset keyboard, scan enabled
@@ -1098,7 +1098,7 @@ ap_init_high:
         mov     fs, cx
         mov     gs, bx
         xor     esp, esp
-        mov     eax, sys_proc-OS_BASE+PROC.pdt_0
+        mov     eax, sys_proc - OS_BASE + PROC.pdt_0
         mov     cr3, eax
         lock inc [ap_initialized]
         jmp     idle_loop
@@ -1145,18 +1145,18 @@ proc setup_os_slot
         mov     eax, tss+0x80
         call    get_pg_addr
         inc     eax
-        mov     [edx+APPDATA.io_map], eax
+        mov     [edx + APPDATA.io_map], eax
         mov     eax, tss+0x1080
         call    get_pg_addr
         inc     eax
-        mov     [edx+APPDATA.io_map+4], eax
+        mov     [edx + APPDATA.io_map + 4], eax
 
-        mov     dword [edx+APPDATA.pl0_stack], ebx
-        lea     edi, [ebx+RING0_STACK_SIZE]
-        mov     dword [edx+APPDATA.fpu_state], edi
-        mov     dword [edx+APPDATA.saved_esp0], edi
-        mov     dword [edx+APPDATA.saved_esp], edi
-        mov     dword [edx+APPDATA.terminate_protection], 1 ; make unkillable
+        mov     dword [edx + APPDATA.pl0_stack], ebx
+        lea     edi, [ebx + RING0_STACK_SIZE]
+        mov     dword [edx + APPDATA.fpu_state], edi
+        mov     dword [edx + APPDATA.saved_esp0], edi
+        mov     dword [edx + APPDATA.saved_esp], edi
+        mov     dword [edx + APPDATA.terminate_protection], 1 ; make unkillable
 
         mov     esi, fpu_data
         mov     ecx, [xsave_area_size]
@@ -1164,24 +1164,24 @@ proc setup_os_slot
         shr     ecx, 2
         rep movsd
 
-        lea     eax, [edx+APP_EV_OFFSET]
-        mov     dword [edx+APPDATA.fd_ev], eax
-        mov     dword [edx+APPDATA.bk_ev], eax
+        lea     eax, [edx + APP_EV_OFFSET]
+        mov     dword [edx + APPDATA.fd_ev], eax
+        mov     dword [edx + APPDATA.bk_ev], eax
 
-        lea     eax, [edx+APP_OBJ_OFFSET]
-        mov     dword [edx+APPDATA.fd_obj], eax
-        mov     dword [edx+APPDATA.bk_obj], eax
+        lea     eax, [edx + APP_OBJ_OFFSET]
+        mov     dword [edx + APPDATA.fd_obj], eax
+        mov     dword [edx + APPDATA.bk_obj], eax
 
-        mov     dword [edx+APPDATA.cur_dir], sysdir_path-2
+        mov     dword [edx + APPDATA.cur_dir], sysdir_path-2
 
         mov     [edx + APPDATA.process], sys_proc
 
-        lea     ebx, [edx+APPDATA.list]
-        lea     ecx, [sys_proc+PROC.thr_list]
+        lea     ebx, [edx + APPDATA.list]
+        lea     ecx, [sys_proc + PROC.thr_list]
         list_add_tail ebx, ecx
 
-        mov     [edx+APPDATA.wnd_number], dh
-        mov     byte [edx+APPDATA.tid], dh
+        mov     [edx + APPDATA.wnd_number], dh
+        mov     byte [edx + APPDATA.tid], dh
 
         ret
 endp
@@ -1413,8 +1413,8 @@ display_number_force:
         jne     displnl1
         mov     ebp, ebx
         add     ebp, 4
-        mov     ebp, [ebp+std_application_base_address]
-        mov     ebx, [ebx+std_application_base_address]
+        mov     ebp, [ebp + std_application_base_address]
+        mov     ebx, [ebx + std_application_base_address]
  displnl1:
         sub     esp, 64
 
@@ -1546,14 +1546,14 @@ draw_num_text:
 
         mov     edi, [current_slot_idx]
         mov     ecx, edi
-        shl     edi, 8
-        shl     ecx, 5
+        shl     edi, BSF sizeof.APPDATA
+        shl     ecx, BSF sizeof.WDATA
 
-        mov     eax, [ecx+window_data+WDATA.box.left]
-        add     eax, [edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        mov     eax, [window_data + ecx + WDATA.box.left]
+        add     eax, [SLOT_BASE + edi + APPDATA.wnd_clientbox.left]
         shl     eax, 16
-        add     eax, [ecx+window_data+WDATA.box.top]
-        add     eax, [edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        add     eax, [window_data + ecx + WDATA.box.top]
+        add     eax, [SLOT_BASE + edi + APPDATA.wnd_clientbox.top]
         add     ebx, eax
         mov     ecx, [esp+64+32-12+4]
         mov     eax, [esp+64+8]         ; background color (if given)
@@ -1906,12 +1906,12 @@ sys_end:
 ; kill all sockets this process owns
         pusha
         mov     edx, [current_slot]
-        mov     edx, [edx+APPDATA.tid]
+        mov     edx, [edx + APPDATA.tid]
         call    socket_process_end
         popa
 ;--------------------------------------
         mov     ecx, [current_slot]
-        mov     eax, [ecx+APPDATA.tls_base]
+        mov     eax, [ecx + APPDATA.tls_base]
         test    eax, eax
         jz      @F
 
@@ -1919,7 +1919,7 @@ sys_end:
 @@:
 
         mov     eax, [current_slot]
-        mov     [eax+APPDATA.state], TSTATE_ZOMBIE
+        mov     [eax + APPDATA.state], TSTATE_ZOMBIE
         call    wakeup_osloop
 
 .waitterm:            ; wait here for termination
@@ -1931,16 +1931,16 @@ restore_default_cursor_before_killing:
         pushfd
         cli
         mov     eax, [def_cursor]
-        mov     [ecx+APPDATA.cursor], eax
+        mov     [ecx + APPDATA.cursor], eax
 
         movzx   eax, word [MOUSE_Y]
         movzx   ebx, word [MOUSE_X]
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [_display.win_map]
-        movzx   edx, byte [ebx+eax]
+        movzx   edx, byte [ebx + eax]
         shl     edx, BSF sizeof.APPDATA
-        mov     esi, [edx+SLOT_BASE+APPDATA.cursor]
+        mov     esi, [SLOT_BASE + edx + APPDATA.cursor]
 
         cmp     esi, [current_cursor]
         je      @f
@@ -2017,8 +2017,8 @@ sysfn_shutdown:          ; 18.9 = system shutdown
 ; in: eax -- APPDATA ptr
 ; out: Z/z -- is/not kernel thread
 is_kernel_thread:
-        mov     eax, [eax+APPDATA.process]
-        cmp     eax, [SLOT_BASE+2*sizeof.APPDATA+APPDATA.process]       ; OS
+        mov     eax, [eax + APPDATA.process]
+        cmp     eax, [SLOT_BASE + 2*sizeof.APPDATA + APPDATA.process]       ; OS
         ret
 ;------------------------------------------------------------------------------
 sysfn_terminate:        ; 18.2 = TERMINATE
@@ -2060,7 +2060,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         shl     ecx, 8
         add     ecx, SLOT_BASE
         mov     eax, [def_cursor]
-        cmp     [ecx+APPDATA.cursor], eax
+        cmp     [ecx + APPDATA.cursor], eax
         je      @f
         call    restore_default_cursor_before_killing
 @@:
@@ -2146,7 +2146,7 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
         je      .nowindowactivate; already active
 
         mov     edi, ecx
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, window_data
         movzx   esi, word [WIN_STACK + ecx * 2]
         lea     esi, [WIN_POS + esi * 2]
@@ -2174,7 +2174,7 @@ sysfn_zmodif:
         je      .fail
 
         mov     eax, edx
-        shl     edx, 5
+        shl     edx, BSF sizeof.WDATA
 
         cmp     [edx*8 + SLOT_BASE + APPDATA.state], TSTATE_FREE
         je      .fail
@@ -2182,7 +2182,7 @@ sysfn_zmodif:
         cmp     ecx, 1
         jnz     .set_zmod
 
-        mov     al, [edx + window_data + WDATA.z_modif]
+        mov     al, [window_data + edx + WDATA.z_modif]
         jmp     .exit
 
 .set_zmod:
@@ -2195,19 +2195,19 @@ sysfn_zmodif:
         cmp     bl, ZPOS_ALWAYS_TOP
         jg      .fail
 
-        mov     [edx + window_data + WDATA.z_modif], bl
+        mov     [window_data + edx + WDATA.z_modif], bl
 
-        mov     eax, [edx + window_data + WDATA.box.left]
-        mov     ebx, [edx + window_data + WDATA.box.top]
-        mov     ecx, [edx + window_data + WDATA.box.width]
-        mov     edx, [edx + window_data + WDATA.box.height]
+        mov     eax, [window_data + edx + WDATA.box.left]
+        mov     ebx, [window_data + edx + WDATA.box.top]
+        mov     ecx, [window_data + edx + WDATA.box.width]
+        mov     edx, [window_data + edx + WDATA.box.height]
         add     ecx, eax
         add     edx, ebx
         call    window._.set_screen
         call    window._.set_top_wnd
         call    window._.redraw_top_wnd
 
-        shl     esi, 5
+        shl     esi, BSF sizeof.WDATA
         mov     [esi + window_data + WDATA.fl_redraw], 1
 
 
@@ -2222,7 +2222,7 @@ sysfn_zmodif:
 ;------------------------------------------------------------------------------
 sysfn_getidletime:              ; 18.4 = GET IDLETIME
         ;mov     eax, [TASK_TABLE+32+TASKDATA.cpu_usage]
-        mov     eax, [SLOT_BASE+APPDATA.cpu_usage]
+        mov     eax, [SLOT_BASE + APPDATA.cpu_usage]
         mov     [esp+32], eax
         ret
 ;------------------------------------------------------------------------------
@@ -2323,7 +2323,7 @@ sysfn_centermouse:      ; 18.15 = mouse centered
 sysfn_mouse_acceleration:       ; 18.19 = set/get mouse features
         cmp     ecx, 8
         jnc     @f
-        jmp     dword [.table+ecx*4]
+        jmp     dword [.table + ecx*4]
 .get_mouse_acceleration:
         xor     eax, eax
         mov     ax, [mouse_speed_factor]
@@ -2603,15 +2603,15 @@ sys_cpuusage:
         mov     ax, [WIN_POS + ecx * 2]
         mov     [ebx+6], ax
 
-        shl     ecx, 8   ;5=32 8=256
+        shl     ecx, BSF sizeof.APPDATA
 
 ; +0: dword: memory usage
         ;mov     eax, [ecx+TASK_TABLE+TASKDATA.cpu_usage]
-        mov     eax, [ecx-sizeof.APPDATA+SLOT_BASE+APPDATA.cpu_usage]
+        mov     eax, [SLOT_BASE + ecx - sizeof.APPDATA + APPDATA.cpu_usage]
         mov     [ebx], eax
 ; +10: 11 bytes: name of the process
         push    ecx
-        lea     eax, [ecx+SLOT_BASE+APPDATA.app_name]
+        lea     eax, [SLOT_BASE + ecx + APPDATA.app_name]
         add     ebx, 10
         mov     ecx, 11
         call    memmove
@@ -2626,8 +2626,8 @@ sys_cpuusage:
         mov     edx, 0x100000*16
         cmp     ecx, 1 shl 5
         je      .os_mem
-        mov     edx, [SLOT_BASE+ecx*8+APPDATA.process]
-        mov     edx, [edx+PROC.mem_used]
+        mov     edx, [SLOT_BASE + ecx*8 + APPDATA.process]
+        mov     edx, [edx + PROC.mem_used]
         mov     eax, std_application_base_address
 .os_mem:
         stosd
@@ -2635,38 +2635,38 @@ sys_cpuusage:
         stosd
 
 ; +30: PID/TID
-        mov     eax, [ecx*8 + SLOT_BASE + APPDATA.tid]
+        mov     eax, [SLOT_BASE + ecx*8 + APPDATA.tid]
         stosd
 
     ; window position and size
         push    esi
-        lea     esi, [ecx + window_data + WDATA.box]
+        lea     esi, [window_data + ecx + WDATA.box]
         movsd
         movsd
         movsd
         movsd
 
     ; Process state (+50)
-        movzx   eax, byte [ecx*8 + SLOT_BASE + APPDATA.state]
+        movzx   eax, byte [SLOT_BASE + ecx*8 + APPDATA.state]
         stosd
 
     ; Window client area box
-        lea     esi, [ecx*8 + SLOT_BASE + APPDATA.wnd_clientbox]
+        lea     esi, [SLOT_BASE + ecx*8 + APPDATA.wnd_clientbox]
         movsd
         movsd
         movsd
         movsd
 
     ; Window state
-        mov     al, [ecx+window_data+WDATA.fl_wstate]
+        mov     al, [window_data + ecx + WDATA.fl_wstate]
         stosb
 
     ; Event mask (+71)
-        mov     EAX, dword [ecx*8 + SLOT_BASE + APPDATA.event_mask]
+        mov     EAX, dword [SLOT_BASE + ecx*8 + APPDATA.event_mask]
         stosd
 
     ; Keyboard mode (+75)
-        mov     al, byte [ecx*8 + SLOT_BASE + APPDATA.keyboard_mode]
+        mov     al, byte [SLOT_BASE + ecx*8 + APPDATA.keyboard_mode]
         stosb
 
         pop     esi
@@ -2728,7 +2728,7 @@ sys_redrawstat:
         jnz     srl1
 
         mov     edx, [current_slot_idx]      ; return whole screen draw area for this app
-        shl     edx, 5
+        shl     edx, 5     ;?
         add     edx, draw_data
         mov     [edx + RECT.left], 0
         mov     [edx + RECT.top], 0
@@ -2770,7 +2770,7 @@ sheduler:
 endg
 sys_sheduler:
 ;rewritten by <Lrz>  29.12.2009
-        jmp     dword [sheduler+ebx*4]
+        jmp     dword [sheduler + ebx*4]
 ;.shed_counter:
 .00:
         mov     eax, [context_counter]
@@ -2906,7 +2906,7 @@ align 4
 .set_mouse_event:
         add     edi, sizeof.APPDATA
         add     ebx, sizeof.WDATA
-        test    [edi + SLOT_BASE + APPDATA.event_mask], 0x80000000
+        test    [SLOT_BASE + edi + APPDATA.event_mask], 0x80000000
         jz      .pos_filter
 
         cmp     edi, [esp]                      ; skip if filtration active
@@ -2914,7 +2914,7 @@ align 4
 ;--------------------------------------
 align 4
 .pos_filter:
-        test    [edi + SLOT_BASE + APPDATA.event_mask], 0x40000000
+        test    [SLOT_BASE + edi + APPDATA.event_mask], 0x40000000
         jz      .set
 
         mov     esi, [ebx + WDATA.box.left]
@@ -2933,7 +2933,7 @@ align 4
 ;--------------------------------------
 align 4
 .set:
-        or      [edi+SLOT_BASE+APPDATA.occurred_events], EVENT_MOUSE
+        or      [SLOT_BASE + edi + APPDATA.occurred_events], EVENT_MOUSE
 ;--------------------------------------
 align 4
 .skip:
@@ -2951,14 +2951,14 @@ mouse_not_active:
 ;--------------------------------------
 align 4
 backgr:
-        mov     eax, [draw_data+32 + RECT.left]
+        mov     eax, [draw_data + 32 + RECT.left]
         shl     eax, 16
-        add     eax, [draw_data+32 + RECT.right]
+        add     eax, [draw_data + 32 + RECT.right]
         mov     [BG_Rect_X_left_right], eax ; [left]*65536 + [right]
 
-        mov     eax, [draw_data+32 + RECT.top]
+        mov     eax, [draw_data + 32 + RECT.top]
         shl     eax, 16
-        add     eax, [draw_data+32 + RECT.bottom]
+        add     eax, [draw_data + 32 + RECT.bottom]
         mov     [BG_Rect_Y_top_bottom], eax ; [top]*65536 + [bottom]
 
         call    drawbackground
@@ -2975,33 +2975,33 @@ set_bgr_event:
         add     edi, sizeof.APPDATA
         mov     eax, [BG_Rect_X_left_right]
         mov     edx, [BG_Rect_Y_top_bottom]
-        cmp     [edi+SLOT_BASE+APPDATA.draw_bgr_x], 0
+        cmp     [SLOT_BASE + edi + APPDATA.draw_bgr_x], 0
         jz      .set
 .join:
-        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_x], ax
+        cmp     word [SLOT_BASE + edi + APPDATA.draw_bgr_x], ax
         jae     @f
-        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_x], ax
+        mov     word [SLOT_BASE + edi + APPDATA.draw_bgr_x], ax
 @@:
         shr     eax, 16
-        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
+        cmp     word [SLOT_BASE + edi + APPDATA.draw_bgr_x + 2], ax
         jbe     @f
-        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_x+2], ax
+        mov     word [SLOT_BASE + edi + APPDATA.draw_bgr_x + 2], ax
 @@:
-        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_y], dx
+        cmp     word [SLOT_BASE + edi + APPDATA.draw_bgr_y], dx
         jae     @f
-        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_y], dx
+        mov     word [SLOT_BASE + edi + APPDATA.draw_bgr_y], dx
 @@:
         shr     edx, 16
-        cmp     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
+        cmp     word [SLOT_BASE + edi + APPDATA.draw_bgr_y+2], dx
         jbe     @f
-        mov     word [edi+SLOT_BASE+APPDATA.draw_bgr_y+2], dx
+        mov     word [SLOT_BASE + edi + APPDATA.draw_bgr_y+2], dx
 @@:
         jmp     .common
 .set:
-        mov     [edi+SLOT_BASE+APPDATA.draw_bgr_x], eax
-        mov     [edi+SLOT_BASE+APPDATA.draw_bgr_y], edx
+        mov     [SLOT_BASE + edi + APPDATA.draw_bgr_x], eax
+        mov     [SLOT_BASE + edi + APPDATA.draw_bgr_y], edx
 .common:
-        or      [edi+SLOT_BASE+APPDATA.occurred_events], EVENT_BACKGROUND
+        or      [SLOT_BASE + edi + APPDATA.occurred_events], EVENT_BACKGROUND
         loop    set_bgr_event
         pop     edi ecx
 ;--------- set event 5 stop -----------
@@ -3009,10 +3009,10 @@ set_bgr_event:
         jnz     backgr
 
         xor     eax, eax
-        mov     [draw_data+32 + RECT.left], eax
-        mov     [draw_data+32 + RECT.top], eax
-        mov     [draw_data+32 + RECT.right], eax
-        mov     [draw_data+32 + RECT.bottom], eax
+        mov     [draw_data + 32 + RECT.left], eax
+        mov     [draw_data + 32 + RECT.top], eax
+        mov     [draw_data + 32 + RECT.right], eax
+        mov     [draw_data + 32 + RECT.bottom], eax
 ;--------------------------------------
 align 4
 nobackgr:
@@ -3034,7 +3034,7 @@ markz:
         push    ecx edx
         cmp     [edx + APPDATA.state], TSTATE_FREE
         jz      .nokill
-        cmp     [edx+APPDATA.process], sys_proc
+        cmp     [edx + APPDATA.process], sys_proc
         jz      .nokill
         call    request_terminate
         jmp     .common
@@ -3066,15 +3066,15 @@ noshutdown:
 align 4
 newct:
         mov     cl, [ebx]
-        cmp     cl, byte 3
+        cmp     cl, TSTATE_ZOMBIE
         jz      .terminate
 
-        cmp     cl, byte 4
+        cmp     cl, TSTATE_TERMINATING
         jnz     .noterminate
 .terminate:
         pushad
         mov     ecx, eax
-        shl     ecx, 8
+        shl     ecx, BSF sizeof.APPDATA
         add     ecx, SLOT_BASE
         call    restore_default_cursor_before_killing
         popad
@@ -3113,7 +3113,7 @@ newdw2:
         push    ecx
 
         mov     eax, ecx
-        shl     eax, 5
+        shl     eax, BSF sizeof.WDATA
         add     eax, window_data
 
         cmp     eax, [esp+4]
@@ -3167,9 +3167,9 @@ bgli:
         jz      .az
 
         mov     dl, 0
-        lea     eax, [edi+draw_data-window_data]
+        lea     eax, [edi + draw_data - window_data]
         mov     ebx, [draw_limits.left]
-        cmp     ebx, [eax+RECT.left]
+        cmp     ebx, [eax + RECT.left]
         jae     @f
 
         mov     [eax+RECT.left], ebx
@@ -3178,16 +3178,16 @@ bgli:
 align 4
 @@:
         mov     ebx, [draw_limits.top]
-        cmp     ebx, [eax+RECT.top]
+        cmp     ebx, [eax + RECT.top]
         jae     @f
 
-        mov     [eax+RECT.top], ebx
+        mov     [eax + RECT.top], ebx
         mov     dl, 1
 ;--------------------------------------
 align 4
 @@:
         mov     ebx, [draw_limits.right]
-        cmp     ebx, [eax+RECT.right]
+        cmp     ebx, [eax + RECT.right]
         jbe     @f
 
         mov     [eax+RECT.right], ebx
@@ -3196,10 +3196,10 @@ align 4
 align 4
 @@:
         mov     ebx, [draw_limits.bottom]
-        cmp     ebx, [eax+RECT.bottom]
+        cmp     ebx, [eax + RECT.bottom]
         jbe     @f
 
-        mov     [eax+RECT.bottom], ebx
+        mov     [eax + RECT.bottom], ebx
         mov     dl, 1
 ;--------------------------------------
 align 4
@@ -3312,7 +3312,7 @@ calculatebackground:   ; background
         mov     ecx, [_display.win_map_size]
         shr     ecx, 2
         rep stosd
-        mov     byte[window_data+32+WDATA.z_modif], ZPOS_DESKTOP
+        mov     byte[window_data + 32 + WDATA.z_modif], ZPOS_DESKTOP
         mov     [REDRAW_BACKGROUND], 0
         ret
 ;-----------------------------------------------------------------------------
@@ -3591,7 +3591,7 @@ no_unmask_io:
         shl     eax, 4
         add     eax, RESERVED_PORTS
         mov     ebx, [current_slot]
-        mov     ebx, [ebx+APPDATA.tid]
+        mov     ebx, [ebx + APPDATA.tid]
         mov     [eax], ebx
         mov     [eax+4], ecx
         mov     [eax+8], edx
@@ -3606,7 +3606,7 @@ free_port_area:
         test    eax, eax
         jz      frpal2
         mov     ebx, [current_slot]
-        mov     ebx, [ebx+APPDATA.tid]
+        mov     ebx, [ebx + APPDATA.tid]
    frpal3:
         mov     edi, eax
         shl     edi, 4
@@ -3704,9 +3704,9 @@ align 4
 align 4
 @@:
         mov     edi, [current_slot]
-        add     dx, word[edi+APPDATA.wnd_clientbox.top]
+        add     dx, word[edi + APPDATA.wnd_clientbox.top]
         rol     edx, 16
-        add     dx, word[edi+APPDATA.wnd_clientbox.left]
+        add     dx, word[edi + APPDATA.wnd_clientbox.left]
         rol     edx, 16
 ;--------------------------------------
 align 4
@@ -3741,9 +3741,9 @@ sys_putimage_palette:
 
         mov     eax, [current_slot_idx]
         shl     eax, 8
-        add     dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        add     dx, word [SLOT_BASE + eax + APPDATA.wnd_clientbox.top]
         rol     edx, 16
-        add     dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        add     dx, word [SLOT_BASE + eax + APPDATA.wnd_clientbox.left]
         rol     edx, 16
 ;--------------------------------------
 align 4
@@ -3881,7 +3881,7 @@ putimage_get8bpp:
         movzx   eax, byte [esi]
         push    edx
         mov     edx, [esp+8]
-        mov     eax, [edx+eax*4]
+        mov     eax, [edx + eax*4]
         pop     edx
         inc     esi
         ret     4
@@ -3953,7 +3953,7 @@ putimage_get2bpp:
         mov     [edx], ah
         mov     edx, [edx+4]
         movzx   eax, al
-        mov     eax, [edx+eax*4]
+        mov     eax, [edx + eax*4]
         pop     edx
         ret     4
 ;-----------------------------------------------------------------------------
@@ -3978,7 +3978,7 @@ putimage_get4bpp:
         movzx   eax, byte [edx+1]
         mov     edx, [edx+4]
         and     eax, 0x0F
-        mov     eax, [edx+eax*4]
+        mov     eax, [edx + eax*4]
         pop     edx
         ret     4
 @@:
@@ -3987,7 +3987,7 @@ putimage_get4bpp:
         mov     [edx+1], al
         shr     eax, 4
         mov     edx, [edx+4]
-        mov     eax, [edx+eax*4]
+        mov     eax, [edx + eax*4]
         pop     edx
         ret     4
 ;-----------------------------------------------------------------------------
@@ -4293,7 +4293,7 @@ sys_process_def:
         jae     .not_support    ;if >=8 then or eax,-1
 
         mov     edi, [current_slot_idx]
-        jmp     dword [f66call+ebx*4]
+        jmp     dword [f66call + ebx*4]
 
 .not_support:
         or      eax, -1
@@ -4301,15 +4301,15 @@ sys_process_def:
 ;-----------------------------------------------------------------------------
 align 4
 .1:
-        shl     edi, 8
-        mov     [edi+SLOT_BASE + APPDATA.keyboard_mode], cl
+        shl     edi, BSF sizeof.APPDATA
+        mov     [SLOT_BASE + edi + APPDATA.keyboard_mode], cl
 
         ret
 ;-----------------------------------------------------------------------------
 align 4
 .2:                             ; 2 = get keyboard mode
-        shl     edi, 8
-        movzx   eax, byte [SLOT_BASE+edi + APPDATA.keyboard_mode]
+        shl     edi, BSF sizeof.APPDATA
+        movzx   eax, byte [SLOT_BASE + edi + APPDATA.keyboard_mode]
         mov     [esp+32], eax
         ret
 ;-----------------------------------------------------------------------------
@@ -4391,7 +4391,7 @@ align 4
 ; get current PID
         mov     eax, [current_slot_idx]
         shl     eax, BSF sizeof.APPDATA
-        mov     eax, [eax+SLOT_BASE+APPDATA.tid]
+        mov     eax, [eax + SLOT_BASE+APPDATA.tid]
 ; set current PID for lock input
         mov     [PID_lock_input], eax
 @@:
@@ -4406,7 +4406,7 @@ align 4
 ; get current PID
         mov     ebx, [current_slot_idx]
         shl     ebx, BSF sizeof.APPDATA
-        mov     ebx, [ebx+SLOT_BASE+APPDATA.tid]
+        mov     ebx, [ebx + SLOT_BASE+APPDATA.tid]
 ; compare current lock input with current PID
         cmp     ebx, eax
         jne     @f
@@ -4439,7 +4439,7 @@ sys_gs:                         ; direct screen access
         dec     ebx
         cmp     ebx, 2
         ja      .not_support
-        jmp     dword [f61call+ebx*4]
+        jmp     dword [f61call + ebx*4]
 .not_support:
         or      [esp+32], dword -1
         ret
@@ -4482,7 +4482,7 @@ syscall_cdaudio:
         mov     eax, ecx
         shr     eax, 2
         lea     eax, [eax*5]
-        mov     al, [eax+DRIVE_DATA+1]
+        mov     al, [eax + DRIVE_DATA + 1]
 
         push    ecx ebx
         mov     ebx, ecx

@@ -176,7 +176,7 @@ DestroyEvent:
 WaitEvent:
         Wait infinitely until flag EVENT_SIGNALED is set in the event owned by
         the caller thread. This flag is set by signaling thread via RaiseEvent.
-        Waiting thread is frozen by setting TASKDATA.state <= TSTATE_WAITING=5.
+        Waiting thread is frozen by setting APPDATA.state <= TSTATE_WAITING=5.
         Flag EVENT_WATCHED is set in the event before freeze.
         If flag MANUAL_RESET is NOT set in the event then:
                 EVENT_SIGNALED and EVENT_WATCHED are reset when the event is
@@ -193,7 +193,7 @@ WaitEvent:
 WaitEventTimeout:
         Wait with a timeout until flag EVENT_SIGNALED is set in the event owned
         by caller thread. This flag is set by signaling thread via RaiseEvent.
-        Waiting thread is frozen by setting TASKDATA.state <= TSTATE_WAITING=5.
+        Waiting thread is frozen by setting APPDATA.state <= TSTATE_WAITING=5.
         Flag EVENT_WATCHED is set in the event before freeze.
         If flag MANUAL_RESET is NOT set in the event then:
                 EVENT_SIGNALED and EVENT_WATCHED are reset when the event is
@@ -212,7 +212,7 @@ WaitEventTimeout:
 --------------------------------------------------------------------------------
 GetEvent:
         Waits infinitely for any event in the queue of current thread. Thread is
-        frozen by setting TASKDATA.state <= TSTATE_WAITING = 5. Event data
+        frozen by setting APPDATA.state <= TSTATE_WAITING = 5. Event data
         (EVENT.code + 5*dword) are copied to specified buffer when received.
         Reset priority byte (see above) in the buffer.
         If flag MANUAL_RESET is NOT set in the event then:
@@ -232,7 +232,7 @@ GetEvent:
 --------------------------------------------------------------------------------
 SysFn 68.14 for application:    ; wrapped GetEvent
         Waits infinitely for any event in the queue of current thread. Thread is
-        frozen by setting TASKDATA.state <= TSTATE_WAITING = 5. Event data
+        frozen by setting APPDATA.state <= TSTATE_WAITING = 5. Event data
         (EVENT.code + 5*dword) are copied to specified buffer when received.
         Reset priority byte (see above) in the buffer.
         Gets:

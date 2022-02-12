@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2018. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -43,11 +43,11 @@ proc init_cursor stdcall, dst:dword, src:dword
         add     esi, [esi+18]
         mov     eax, esi
 
-        cmp     [esi+BITMAPINFOHEADER.BitCount], 24
+        cmp     [esi + BITMAPINFOHEADER.BitCount], 24
         je      .img_24
-        cmp     [esi+BITMAPINFOHEADER.BitCount], 8
+        cmp     [esi + BITMAPINFOHEADER.BitCount], 8
         je      .img_8
-        cmp     [esi+BITMAPINFOHEADER.BitCount], 4
+        cmp     [esi + BITMAPINFOHEADER.BitCount], 4
         je      .img_4
 ;--------------------------------------
 align 4
@@ -90,7 +90,7 @@ align 4
         xor     ecx, ecx
         shl     ebx, 1
         setc    cl
-        mov     ecx, [esi+ecx*4]
+        mov     ecx, [esi + ecx*4]
         and     ecx, edx
         and     edx, 0xFF000000
         or      edx, ecx
@@ -147,7 +147,7 @@ align 4
         movzx   ecx, byte [ebx]
         and     cl, 0xF0
         shr     ecx, 2
-        mov     ecx, [esi+ecx]
+        mov     ecx, [esi + ecx]
         and     ecx, edx
         and     edx, 0xFF000000
         or      edx, ecx
@@ -160,7 +160,7 @@ align 4
 
         movzx   ecx, byte [ebx]
         and     cl, 0x0F
-        mov     ecx, [esi+ecx*4]
+        mov     ecx, [esi + ecx*4]
         and     ecx, edx
         and     edx, 0xFF000000
         or      edx, ecx
@@ -215,7 +215,7 @@ align 4
         dec     edx
 
         movzx   ecx, byte [ebx]
-        mov     ecx, [esi+ecx*4]
+        mov     ecx, [esi + ecx*4]
         and     ecx, edx
         and     edx, 0xFF000000
         or      edx, ecx
@@ -240,9 +240,9 @@ align 4
         mov     [pQuad], eax
         add     eax, 0xC00
         mov     [pAnd], eax
-        mov     eax, [esi+BITMAPINFOHEADER.Width]
+        mov     eax, [esi + BITMAPINFOHEADER.Width]
         mov     [width], eax
-        mov     ebx, [esi+BITMAPINFOHEADER.Height]
+        mov     ebx, [esi + BITMAPINFOHEADER.Height]
         shr     ebx, 1
         mov     [height], ebx
 
@@ -289,19 +289,19 @@ endp
 align 4
 proc set_cursor stdcall, hcursor:dword
         mov     eax, [hcursor]
-        cmp     [eax+CURSOR.magic], 'CURS'
+        cmp     [eax + CURSOR.magic], 'CURS'
         jne     .fail
 ;           cmp [eax+CURSOR.size], CURSOR_SIZE
 ;           jne .fail
         mov     ebx, [current_slot]
-        xchg    eax, [ebx+APPDATA.cursor]
+        xchg    eax, [ebx + APPDATA.cursor]
         jmp     .end
 ;--------------------------------------
 align 4
 .fail:
         mov     eax, [def_cursor]
         mov     ebx, [current_slot]
-        xchg    eax, [ebx+APPDATA.cursor]
+        xchg    eax, [ebx + APPDATA.cursor]
 align 4
 .end:
         mov     [redrawmouse_unconditional], 1
@@ -333,17 +333,17 @@ create_cursor:
         mov     [.hcursor], eax
 
         xor     ebx, ebx
-        mov     [eax+CURSOR.magic], 'CURS'
-        mov     [eax+CURSOR.destroy], destroy_cursor
-        mov     [eax+CURSOR.hot_x], ebx
-        mov     [eax+CURSOR.hot_y], ebx
+        mov     [eax + CURSOR.magic], 'CURS'
+        mov     [eax + CURSOR.destroy], destroy_cursor
+        mov     [eax + CURSOR.hot_x], ebx
+        mov     [eax + CURSOR.hot_y], ebx
 
         stdcall kernel_alloc, 0x1000
         test    eax, eax
         jz      .fail
 
         mov     edi, [.hcursor]
-        mov     [edi+CURSOR.base], eax
+        mov     [edi + CURSOR.base], eax
 
         mov     esi, [.src]
         mov     ebx, [.flags]
@@ -352,15 +352,15 @@ create_cursor:
 
         movzx   ecx, word [esi+10]
         movzx   edx, word [esi+12]
-        mov     [edi+CURSOR.hot_x], ecx
-        mov     [edi+CURSOR.hot_y], edx
+        mov     [edi + CURSOR.hot_x], ecx
+        mov     [edi + CURSOR.hot_y], edx
 
         stdcall init_cursor, eax, esi
 
 align 4
 .add_cursor:
         mov     ecx, [.hcursor]
-        lea     ecx, [ecx+CURSOR.list_next]
+        lea     ecx, [ecx + CURSOR.list_next]
         lea     edx, [_display.cr_list.next]
 
         pushfd
@@ -388,8 +388,8 @@ align 4
         shr     ebx, 16
         movzx   ecx, bh
         movzx   edx, bl
-        mov     [edi+CURSOR.hot_x], ecx
-        mov     [edi+CURSOR.hot_y], edx
+        mov     [edi + CURSOR.hot_x], ecx
+        mov     [edi + CURSOR.hot_y], edx
 
         xchg    edi, eax
         mov     ecx, 1024
@@ -423,8 +423,8 @@ align 4
         push    edi
 
         mov     eax, [current_slot_idx]
-        shl     eax, 8
-        mov     eax, [eax + SLOT_BASE + APPDATA.tid]
+        shl     eax, BSF sizeof.APPDATA
+        mov     eax, [SLOT_BASE + eax + APPDATA.tid]
         mov     ebx, [src]
         mov     ecx, [flags]
         call    create_cursor    ;eax, ebx, ecx
@@ -456,27 +456,25 @@ proc delete_cursor stdcall, hcursor:dword
 
         mov     esi, [hcursor]
 
-        cmp     [esi+CURSOR.magic], 'CURS'
+        cmp     [esi + CURSOR.magic], 'CURS'
         jne     .fail
 
         mov     ebx, [current_slot_idx]
-        ;shl     ebx, 5
-        ;mov     ebx, [TASK_TABLE+ebx+4]
-        shl     ebx, 8
+        shl     ebx, BSF sizeof.APPDATA
         mov     ebx, [ebx + SLOT_BASE + APPDATA.tid]
         cmp     ebx, [esi+CURSOR.pid]
         jne     .fail
 
         mov     ebx, [current_slot]
-        cmp     esi, [ebx+APPDATA.cursor]
+        cmp     esi, [ebx + APPDATA.cursor]
         jne     @F
         mov     eax, [def_cursor]
-        mov     [ebx+APPDATA.cursor], eax
+        mov     [ebx + APPDATA.cursor], eax
 ;--------------------------------------
 align 4
 @@:
         mov     eax, [hcursor]
-        call    [eax+APPOBJ.destroy]
+        call    [eax + APPOBJ.destroy]
 ;--------------------------------------
 align 4
 .fail:
@@ -489,10 +487,10 @@ align 4
 destroy_cursor:
 
         push    eax
-        stdcall kernel_free, [eax+CURSOR.base]
+        stdcall kernel_free, [eax + CURSOR.base]
 
         mov     eax, [esp]
-        lea     eax, [eax+CURSOR.list_next]
+        lea     eax, [eax + CURSOR.list_next]
 
         pushfd
         cli
@@ -631,8 +629,8 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
 ;        mov     ebx, [BytesPerScanLine]
 
         xor     edx, edx
-        sub     ecx, [esi+CURSOR.hot_x]
-        lea     ebx, [ecx+32-1]
+        sub     ecx, [esi + CURSOR.hot_x]
+        lea     ebx, [ecx + 32-1]
         mov     [x], ecx
         sets    dl
         dec     edx
@@ -643,7 +641,7 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         mov     [_dx], edi
 
         xor     edx, edx
-        sub     eax, [esi+CURSOR.hot_y]
+        sub     eax, [esi + CURSOR.hot_y]
         lea     edi, [eax+32-1]
         mov     [y], eax
         sets    dl
@@ -655,8 +653,8 @@ proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
         mov     [_dy], edx
 
 ;        mul     dword [BytesPerScanLine]
-        mov     eax, [BPSLine_calc_area+eax*4]
-        lea     edx, [LFB_BASE+ecx*3]
+        mov     eax, [BPSLine_calc_area + eax*4]
+        lea     edx, [LFB_BASE + ecx*3]
         add     edx, eax
         mov     [cur_saved_base], edx
 
@@ -690,7 +688,7 @@ align 4
         mov     esi, edx
         add     edx, [_display.lfb_pitch]
         mov     ecx, [cur.w]
-        lea     ecx, [ecx+ecx*2]
+        lea     ecx, [ecx + ecx*2]
         rep movsb
         dec     eax
         jnz     @B
@@ -702,8 +700,8 @@ align 4
         add     eax, [_dx]
 
         mov     esi, [hcursor]
-        mov     esi, [esi+CURSOR.base]
-        lea     edx, [esi+eax*4]
+        mov     esi, [esi + CURSOR.base]
+        lea     edx, [esi + eax*4]
 ;--------------------------------------
 align 4
 .row:
@@ -746,7 +744,7 @@ proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
         mov     eax, [y]
 
         xor     edx, edx
-        sub     ecx, [esi+CURSOR.hot_x]
+        sub     ecx, [esi + CURSOR.hot_x]
         lea     ebx, [ecx+32-1]
         mov     [x], ecx
         sets    dl
@@ -758,7 +756,7 @@ proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
         mov     [_dx], edi
 
         xor     edx, edx
-        sub     eax, [esi+CURSOR.hot_y]
+        sub     eax, [esi + CURSOR.hot_y]
         lea     edi, [eax+32-1]
         mov     [y], eax
         sets    dl
@@ -771,7 +769,7 @@ proc move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
 
 ;        mul     dword [BytesPerScanLine]
         mov     eax, [BPSLine_calc_area+eax*4]
-        lea     edx, [LFB_BASE+eax+ecx*4]
+        lea     edx, [LFB_BASE + eax + ecx*4]
         mov     [cur_saved_base], edx
 
         cmp     ebx, [_display.width]
@@ -814,7 +812,7 @@ align 4
         add     eax, [_dx]
 
         mov     esi, [hcursor]
-        mov     esi, [esi+CURSOR.base]
+        mov     esi, [esi + CURSOR.base]
         lea     edx, [esi+eax*4]
 ;--------------------------------------
 align 4
@@ -856,8 +854,8 @@ proc move_cursor_16 stdcall, hcursor:dword, x:dword, y:dword
         mov     eax, [y]
 
         xor     edx, edx
-        sub     ecx, [esi+CURSOR.hot_x]
-        lea     ebx, [ecx+32-1]
+        sub     ecx, [esi + CURSOR.hot_x]
+        lea     ebx, [ecx + 32-1]
         mov     [x], ecx
         sets    dl
         dec     edx
@@ -868,8 +866,8 @@ proc move_cursor_16 stdcall, hcursor:dword, x:dword, y:dword
         mov     [_dx], edi
 
         xor     edx, edx
-        sub     eax, [esi+CURSOR.hot_y]
-        lea     edi, [eax+32-1]
+        sub     eax, [esi + CURSOR.hot_y]
+        lea     edi, [eax + 32-1]
         mov     [y], eax
         sets    dl
         dec     edx
@@ -880,8 +878,8 @@ proc move_cursor_16 stdcall, hcursor:dword, x:dword, y:dword
         mov     [_dy], edx
 
 ;        mul     dword [BytesPerScanLine]
-        mov     eax, [BPSLine_calc_area+eax*4]
-        lea     edx, [LFB_BASE+eax+ecx*2]
+        mov     eax, [BPSLine_calc_area + eax*4]
+        lea     edx, [LFB_BASE + eax + ecx*2]
         mov     [cur_saved_base], edx
 
         cmp     ebx, [_display.width]
@@ -925,8 +923,8 @@ align 4
         add     eax, [_dx]
 
         mov     esi, [hcursor]
-        mov     esi, [esi+CURSOR.base]
-        lea     edx, [esi+eax*4]
+        mov     esi, [esi + CURSOR.base]
+        lea     edx, [esi + eax*4]
 ;--------------------------------------
 align 4
 .row:
@@ -1123,8 +1121,8 @@ align 4
         add     ecx, ebx
 
         mov     eax, [current_cursor]
-        mov     eax, [eax+CURSOR.base]
-        lea     eax, [eax+ecx*4]
+        mov     eax, [eax + CURSOR.base]
+        lea     eax, [eax + ecx*4]
         mov     eax, [eax]
 
         pop     ebx
@@ -1157,15 +1155,15 @@ init_display:
         xor     eax, eax
         mov     edi, _display
 
-        mov     [edi+display_t.init_cursor], eax
-        mov     [edi+display_t.select_cursor], eax
-        mov     [edi+display_t.show_cursor], eax
-        mov     [edi+display_t.move_cursor], eax
-        mov     [edi+display_t.restore_cursor], eax
+        mov     [edi + display_t.init_cursor], eax
+        mov     [edi + display_t.select_cursor], eax
+        mov     [edi + display_t.show_cursor], eax
+        mov     [edi + display_t.move_cursor], eax
+        mov     [edi + display_t.restore_cursor], eax
 
-        lea     ecx, [edi+display_t.cr_list.next]
-        mov     [edi+display_t.cr_list.next], ecx
-        mov     [edi+display_t.cr_list.prev], ecx
+        lea     ecx, [edi + display_t.cr_list.next]
+        mov     [edi + display_t.cr_list.next], ecx
+        mov     [edi + display_t.cr_list.prev], ecx
 
 if ~defined UEFI
         cmp     [SCR_MODE], word 0x13

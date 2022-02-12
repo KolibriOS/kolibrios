@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;; Synhronization for MenuetOS.                                 ;;
@@ -18,9 +18,9 @@ RWSEM_WAITING_FOR_READ  = 1
 
 align 4
 mutex_init:
-        mov     [ecx+MUTEX.wait_list.next], ecx
-        mov     [ecx+MUTEX.wait_list.prev], ecx
-        mov     [ecx+MUTEX.count], 1
+        mov     [ecx + MUTEX.wait_list.next], ecx
+        mov     [ecx + MUTEX.wait_list.prev], ecx
+        mov     [ecx + MUTEX.count], 1
         ret
 
 ;void  __fastcall mutex_lock(struct mutex *lock)
@@ -28,7 +28,7 @@ mutex_init:
 align 4
 mutex_lock:
 
-        dec     [ecx+MUTEX.count]
+        dec     [ecx + MUTEX.count]
         jns     .done
 
         pushfd
@@ -39,12 +39,12 @@ mutex_lock:
         list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
 
         mov     edx, [current_slot]
-        mov     [esp+MUTEX_WAITER.task], edx
+        mov     [esp + MUTEX_WAITER.task], edx
 
 .forever:
 
         mov     eax, -1
-        xchg    eax, [ecx+MUTEX.count]
+        xchg    eax, [ecx + MUTEX.count]
         dec     eax
         jz      @F
 
@@ -55,10 +55,10 @@ mutex_lock:
         mov     eax, ecx
         list_del esp
 
-        cmp     [eax+MUTEX.wait_list.next], eax
+        cmp     [eax + MUTEX.wait_list.next], eax
         jne     @F
 
-        mov     [eax+MUTEX.count], 0
+        mov     [eax + MUTEX.count], 0
 @@:
         add     esp, sizeof.MUTEX_WAITER
 
@@ -74,12 +74,12 @@ mutex_unlock:
         pushfd
         cli
 
-        mov     eax, [ecx+MUTEX.wait_list.next]
+        mov     eax, [ecx + MUTEX.wait_list.next]
         cmp     eax, ecx
-        mov     [ecx+MUTEX.count], 1
+        mov     [ecx + MUTEX.count], 1
         je      @F
 
-        mov     eax, [eax+MUTEX_WAITER.task]
+        mov     eax, [eax + MUTEX_WAITER.task]
         mov     [eax + APPDATA.state], TSTATE_RUNNING
 @@:
         popfd
@@ -90,9 +90,9 @@ mutex_unlock:
 
 align 4
 init_rwsem:
-        mov     [ecx+RWSEM.wait_list.next], ecx
-        mov     [ecx+RWSEM.wait_list.prev], ecx
-        mov     [ecx+RWSEM.count], 0
+        mov     [ecx + RWSEM.wait_list.next], ecx
+        mov     [ecx + RWSEM.wait_list.prev], ecx
+        mov     [ecx + RWSEM.count], 0
         ret
 
 ;void __fastcall down_read(struct rw_semaphore *sem)
@@ -102,18 +102,18 @@ down_read:
         pushfd
         cli
 
-        mov     eax, [ecx+RWSEM.count]
+        mov     eax, [ecx + RWSEM.count]
         test    eax, eax
         js      @F
 
-        cmp     ecx, [ecx+RWSEM.wait_list.next]
+        cmp     ecx, [ecx + RWSEM.wait_list.next]
         je      .ok
 @@:
         sub     esp, sizeof.MUTEX_WAITER
 
         mov     eax, [current_slot]
-        mov     [esp+MUTEX_WAITER.task], eax
-        mov     [esp+MUTEX_WAITER.type], RWSEM_WAITING_FOR_READ
+        mov     [esp + MUTEX_WAITER.task], eax
+        mov     [esp + MUTEX_WAITER.type], RWSEM_WAITING_FOR_READ
         mov     [eax + APPDATA.state], TSTATE_RUN_SUSPENDED
 
         list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
@@ -125,7 +125,7 @@ down_read:
         ret
 .ok:
         inc     eax
-        mov     [ecx+RWSEM.count], eax
+        mov     [ecx + RWSEM.count], eax
 
         popfd
         ret
@@ -139,8 +139,8 @@ down_write:
         sub     esp, sizeof.MUTEX_WAITER
 
         mov     edx, [current_slot]
-        mov     [esp+MUTEX_WAITER.task], edx
-        mov     [esp+MUTEX_WAITER.type], RWSEM_WAITING_FOR_WRITE
+        mov     [esp + MUTEX_WAITER.task], edx
+        mov     [esp + MUTEX_WAITER.type], RWSEM_WAITING_FOR_WRITE
         mov     [edx + APPDATA.state], TSTATE_RUN_SUSPENDED
 
         list_add_tail esp, ecx      ;esp= new waiter, ecx= list head
@@ -149,14 +149,14 @@ down_write:
         not     eax
 
 .forever:
-        test    eax, [ecx+RWSEM.count]
+        test    eax, [ecx + RWSEM.count]
         jz      @F
 
         mov     [edx + APPDATA.state], TSTATE_RUN_SUSPENDED
         call    change_task
         jmp     .forever
 @@:
-        mov     [ecx+RWSEM.count], eax
+        mov     [ecx + RWSEM.count], eax
         list_del esp
 
         add     esp, sizeof.MUTEX_WAITER
@@ -170,14 +170,14 @@ up_read:
         pushfd
         cli
 
-        dec     [ecx+RWSEM.count]
+        dec     [ecx + RWSEM.count]
         jnz     @F
 
-        mov     eax, [ecx+RWSEM.wait_list.next]
+        mov     eax, [ecx + RWSEM.wait_list.next]
         cmp     eax, ecx
         je      @F
 
-        mov     eax, [eax+MUTEX_WAITER.task]
+        mov     eax, [eax + MUTEX_WAITER.task]
         mov     [eax + APPDATA.state], TSTATE_RUNNING
 @@:
         popfd
@@ -191,17 +191,17 @@ up_write:
         pushfd
         cli
 
-        mov     eax, [ecx+RWSEM.wait_list.next]
-        mov     [ecx+RWSEM.count], 0
+        mov     eax, [ecx + RWSEM.wait_list.next]
+        mov     [ecx + RWSEM.count], 0
 
         cmp     ecx, eax
         je      .done
 
-        mov     edx, [eax+MUTEX_WAITER.type]
+        mov     edx, [eax + MUTEX_WAITER.type]
         test    edx, edx
         jnz     .wake
 
-        mov     eax, [eax+MUTEX_WAITER.task]
+        mov     eax, [eax + MUTEX_WAITER.task]
         mov     [eax + APPDATA.state], TSTATE_RUNNING
 .done:
         popfd
@@ -217,15 +217,15 @@ up_write:
 
 .wake_list:
 
-        mov     ebx, [eax+MUTEX_WAITER.list.next]
+        mov     ebx, [eax + MUTEX_WAITER.list.next]
         list_del eax
-        mov     edx, [eax+MUTEX_WAITER.task]
+        mov     edx, [eax + MUTEX_WAITER.task]
         mov     [edx + APPDATA.state], TSTATE_RUNNING
         inc     esi
         cmp     edi, ebx
         je      .wake_done
 
-        mov     ecx, [ebx+MUTEX_WAITER.type]
+        mov     ecx, [ebx + MUTEX_WAITER.type]
         test    ecx, ecx
         jz      .wake_done
 
@@ -233,7 +233,7 @@ up_write:
         jmp     .wake_list
 
 .wake_done:
-        add     [edi+RWSEM.count], esi
+        add     [edi + RWSEM.count], esi
 
         pop     edi
         pop     esi
@@ -270,8 +270,8 @@ start_wait=$
         jmp     start_wait
 ok=$
         push    eax
-        mov     eax, dword [TASK_BASE+second_base_address]
-        mov     eax, [eax+TASKDATA.pid]
+        mov     eax, dword [current_slot]
+        mov     eax, [eax + APPDATA.tid]
         mov     [name], eax
         pop     eax
         sti
@@ -304,8 +304,8 @@ macro WaitSimpleCriticalSection name
 {
   local start_wait,first_wait,inc_counter,end_wait
         push    eax
-        mov     eax, [TASK_BASE+second_base_address]
-        mov     eax, [eax+TASKDATA.pid]
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.tid]
 start_wait=$
         cli
         cmp     [name], dword 0
@@ -317,10 +317,10 @@ start_wait=$
         jmp     start_wait
 first_wait=$
         mov     [name], eax
-        mov     [name+4], dword 1
+        mov     [name + 4], dword 1
         jmp     end_wait
 inc_counter=$
-        inc     dword [name+4]
+        inc     dword [name + 4]
 end_wait=$
         sti
         pop     eax
@@ -328,7 +328,7 @@ end_wait=$
 macro ReleaseSimpleCriticalSection name
 {
   local release_end
-        dec     dword [name+4]
+        dec     dword [name + 4]
         jnz     release_end
         mov     [name], dword 0
 release_end=$
@@ -336,8 +336,8 @@ release_end=$
 macro TryWaitSimpleCriticalSection name ;result in eax and in flags
 {
   local ok,try_end
-        mov     eax, [CURRENT_TASK+second_base_address]
-        mov     eax, [eax+TASKDATA.pid]
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.tid]
         cmp     [name], eax
         jz      ok
         cmp     [name], 0

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -38,7 +38,7 @@ init_hpet:
         mov     [hpet_timers], eax
         mov     ecx, eax
 
-        mov     eax, [ebx+HPET_PERIOD]
+        mov     eax, [ebx + HPET_PERIOD]
         xor     edx, edx
         shld    edx, eax, 10
         shl     eax, 10
@@ -46,29 +46,29 @@ init_hpet:
         div     esi
         mov     [hpet_period], eax
 
-        mov     esi, [ebx+HPET_CFG]
+        mov     esi, [ebx + HPET_CFG]
         and     esi, not HPET_CFG_ENABLE
-        mov     [ebx+HPET_CFG], esi             ;stop main counter
+        mov     [ebx + HPET_CFG], esi             ;stop main counter
 
-        lea     edx, [ebx+HPET_T0_CFG]
+        lea     edx, [ebx + HPET_T0_CFG]
 @@:
         jcxz    @F
         mov     eax, [edx]
-        and     eax, not (HPET_TN_ENABLE+HPET_TN_LEVEL+HPET_TN_FSB)
+        and     eax, not (HPET_TN_ENABLE + HPET_TN_LEVEL + HPET_TN_FSB)
         mov     [edx], eax
         add     edx, 0x20
         dec     ecx
         jmp     @B
 @@:
-        mov     [ebx+HPET_COUNTER], ecx         ;reset main counter
-        mov     [ebx+HPET_COUNTER+4], ecx
+        mov     [ebx + HPET_COUNTER], ecx         ;reset main counter
+        mov     [ebx + HPET_COUNTER + 4], ecx
 
         or      esi, HPET_CFG_ENABLE
-        mov     [ebx+HPET_CFG], esi             ;and start again
+        mov     [ebx + HPET_CFG], esi             ;and start again
 
 .done:
         rdtsc
         mov     [hpet_tsc_start], eax
-        mov     [hpet_tsc_start+4], edx
+        mov     [hpet_tsc_start + 4], edx
 
         ret

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2020. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -20,7 +20,7 @@ irqh_tab            rd sizeof.LHEAD * IRQ_RESERVED / 4
 irqh_pool           rd sizeof.IRQH * IRQ_POOL_SIZE /4
 next_irqh           rd 1
 
-irq_active_set      rd (IRQ_RESERVED+31)/32
+irq_active_set      rd (IRQ_RESERVED + 31)/32
 irq_failed          rd IRQ_RESERVED
 
 endg
@@ -30,7 +30,7 @@ set_irq_active:
         mov     ecx, ebp
         shr     ecx, 5
         and     eax, 31
-        bts     [irq_active_set+ecx*4], eax
+        bts     [irq_active_set + ecx*4], eax
         ret
 
 reset_irq_active:
@@ -38,7 +38,7 @@ reset_irq_active:
         mov     ecx, ebp
         shr     ecx, 5
         and     eax, 31
-        btr     [irq_active_set+ecx*4], eax
+        btr     [irq_active_set + ecx*4], eax
         ret
 
 align 4
@@ -53,14 +53,14 @@ init_irqs:
         loop    @B
 
         mov     ecx, IRQ_POOL_SIZE-1
-        mov     eax, irqh_pool+sizeof.IRQH
+        mov     eax, irqh_pool + sizeof.IRQH
         mov     [next_irqh], irqh_pool
 @@:
-        mov     [eax-sizeof.IRQH], eax
+        mov     [eax - sizeof.IRQH], eax
         add     eax, sizeof.IRQH
         loop    @B
 
-        mov     [eax-sizeof.IRQH], dword 0
+        mov     [eax - sizeof.IRQH], dword 0
         ret
 
 
@@ -99,14 +99,14 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, user_data:dword
         mov     [next_irqh], eax
         mov     [.irqh], ecx
 
-        mov     [irq_failed+ebx*4], 0;clear counter
+        mov     [irq_failed + ebx*4], 0;clear counter
 
         mov     eax, [user_data]
-        mov     [ecx+IRQH.handler], edx
-        mov     [ecx+IRQH.data], eax
-        and     [ecx+IRQH.num_ints], 0
+        mov     [ecx + IRQH.handler], edx
+        mov     [ecx + IRQH.data], eax
+        and     [ecx + IRQH.num_ints], 0
 
-        lea     edx, [irqh_tab+ebx*8]
+        lea     edx, [irqh_tab + ebx*8]
         list_add_tail ecx, edx     ;clobber eax
         stdcall enable_irq, ebx
 
@@ -167,15 +167,15 @@ align 16
         mov     ds, bx
         mov     es, bx
 
-        cmp     [v86_irqhooks+ebp*8], 0
+        cmp     [v86_irqhooks + ebp*8], 0
         jnz     v86_irq
 
         call    set_irq_active
 
-        lea     esi, [irqh_tab+ebp*8]   ; esi= list head
+        lea     esi, [irqh_tab + ebp*8]   ; esi= list head
         mov     ebx, esi
 .next:
-        mov     ebx, [ebx+IRQH.list.next]; ebx= irqh pointer
+        mov     ebx, [ebx + IRQH.list.next]; ebx= irqh pointer
         cmp     ebx, esi
         je      .done
 
@@ -183,8 +183,8 @@ align 16
         push    edi
         push    esi
 
-        push    [ebx+IRQH.data]
-        call    [ebx+IRQH.handler]
+        push    [ebx + IRQH.data]
+        call    [ebx + IRQH.handler]
         pop     ecx
 
         pop     esi
@@ -194,7 +194,7 @@ align 16
         test    eax, eax
         jz      .next
 
-        inc     [ebx+IRQH.num_ints]
+        inc     [ebx + IRQH.num_ints]
         call    reset_irq_active
         jmp     .next
 
@@ -231,17 +231,17 @@ align 16
         jz      .try_next_irq
         cmp     ebp, 15
         jz      .try_next_irq
-        lea     esi, [irqh_tab+ebp*8]
+        lea     esi, [irqh_tab + ebp*8]
         mov     ebx, esi
 .try_next_handler:
-        mov     ebx, [ebx+IRQH.list.next]
+        mov     ebx, [ebx + IRQH.list.next]
         cmp     ebx, esi
         je      .try_next_irq
-        cmp     [ebx+IRQH.num_ints], 0
+        cmp     [ebx + IRQH.num_ints], 0
         jne     .try_next_handler
 ; keyboard handler acknowledges everything
-        push    [ebx+IRQH.data]
-        call    [ebx+IRQH.handler]
+        push    [ebx + IRQH.data]
+        call    [ebx + IRQH.handler]
         pop     ecx
         test    eax, eax
         jz      .try_next_handler
@@ -252,7 +252,7 @@ align 16
         pop     ebp
         spin_lock_irqsave IrqsList
         list_del ebx
-        lea     edx, [irqh_tab+ebp*8]
+        lea     edx, [irqh_tab + ebp*8]
         list_add_tail ebx, edx
         spin_unlock_irqrestore IrqsList
         jmp     .exit
@@ -264,7 +264,7 @@ align 16
         pop     ebp
 
 .fail:
-        inc     [irq_failed+ebp*4]
+        inc     [irq_failed + ebp*4]
 .exit:
 
         mov     ecx, ebp

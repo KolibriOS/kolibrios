@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2017. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -17,12 +17,12 @@ create_futex:
         test    eax, eax
         jz      .fail
 
-        mov     [eax+FUTEX.magic], 'FUTX'
-        mov     [eax+FUTEX.destroy], 0
-        mov     [eax+FUTEX.pointer], ecx
-        lea     ecx, [eax+FUTEX.wait_list]
+        mov     [eax + FUTEX.magic], 'FUTX'
+        mov     [eax + FUTEX.destroy], 0
+        mov     [eax + FUTEX.pointer], ecx
+        lea     ecx, [eax + FUTEX.wait_list]
         list_init ecx
-        mov     [eax+FUTEX.flags], 0
+        mov     [eax + FUTEX.flags], 0
 .fail:
         ret
 
@@ -31,19 +31,19 @@ align 4
 destroy_futex:
         push    esi
         mov     esi, [current_process]
-        mov     edx, [ecx+FUTEX.handle]
+        mov     edx, [ecx + FUTEX.handle]
 
         pushfd
         cli
 
-        lea     eax, [ecx+FUTEX.wait_list]
-        cmp     eax, [eax+LHEAD.next]
+        lea     eax, [ecx + FUTEX.wait_list]
+        cmp     eax, [eax + LHEAD.next]
         jne     .fail
 
-        mov     eax, [esi+PROC.ht_next]
-        mov     [esi+PROC.htab+edx*4], eax
-        mov     [esi+PROC.ht_next], edx
-        inc     [esi+PROC.ht_free]
+        mov     eax, [esi + PROC.ht_next]
+        mov     [esi + PROC.htab + edx*4], eax
+        mov     [esi + PROC.ht_next], edx
+        inc     [esi + PROC.ht_free]
 
         popfd
         pop     esi
@@ -67,21 +67,21 @@ sys_futex:
         jae     .fail
 
         mov     edi, [current_process]
-        mov     ebp, [edi+PROC.htab+ecx*4]
+        mov     ebp, [edi + PROC.htab + ecx*4]
 
-        cmp     [ebp+FUTEX.magic], 'FUTX'
+        cmp     [ebp + FUTEX.magic], 'FUTX'
         jne     .fail
-        cmp     [ebp+FUTEX.handle], ecx
+        cmp     [ebp + FUTEX.handle], ecx
         jne     .fail
 
-        jmp     dword [sys_futex_call+ebx*4-4]
+        jmp     dword [sys_futex_call + ebx*4-4]
 
 .fail:
 .requeue:
 .cmp_requeue:
 .wait_bitset:
 .wake_bitset:
-        mov     [esp+SYSCALL_STACK._eax], -1
+        mov     [esp + SYSCALL_STACK._eax], -1
         ret
 
 align 4
@@ -89,9 +89,9 @@ align 4
         call    create_futex
         test    eax, eax
         jz      @F
-        mov     eax, [eax+FUTEX.handle]
+        mov     eax, [eax + FUTEX.handle]
 @@:
-        mov     [esp+SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
         ret
 
 align 4
@@ -101,7 +101,7 @@ align 4
 .destroy:
         mov     ecx, ebp
         call    destroy_futex
-        mov     [esp+SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
         ret
 
 align 4
@@ -113,12 +113,12 @@ align 4
 .wait:
         test    esi, esi
         jnz     .wait_timeout
-        mov     ecx, [ebp+FUTEX.pointer]
+        mov     ecx, [ebp + FUTEX.pointer]
         mov     eax, edx
         lock cmpxchg [ecx], edx
         je      .wait_slow
 
-        mov     [esp+SYSCALL_STACK._eax], -2
+        mov     [esp + SYSCALL_STACK._eax], -2
         ret
 
 .wait_slow:
@@ -127,8 +127,8 @@ align 4
 
         sub     esp, sizeof.MUTEX_WAITER
         mov     ebx, [current_slot]
-        mov     [esp+MUTEX_WAITER.task], ebx
-        lea     esi, [ebp+FUTEX.wait_list]
+        mov     [esp + MUTEX_WAITER.task], ebx
+        lea     esi, [ebp + FUTEX.wait_list]
 
         list_add_tail esp, esi      ;esp= new waiter, esi= list head
         mov     eax, edx
@@ -143,7 +143,7 @@ align 4
         add     esp, sizeof.MUTEX_WAITER
 
         popfd
-        mov     [esp+SYSCALL_STACK._eax], 0
+        mov     [esp + SYSCALL_STACK._eax], 0
         ret
 
 align 4
@@ -154,12 +154,12 @@ align 4
 ;ebp futex object
 
 .wait_timeout:
-        mov     ecx, [ebp+FUTEX.pointer]
+        mov     ecx, [ebp + FUTEX.pointer]
         mov     eax, edx
         lock cmpxchg [ecx], edx         ;wait until old_value == new_value
         je      .wait_slow_timeout
 
-        mov     [esp+SYSCALL_STACK._eax], -2
+        mov     [esp + SYSCALL_STACK._eax], -2
         ret
 
 align 4
@@ -174,21 +174,21 @@ align 4
         sub     esp, sizeof.MUTEX_WAITER
 
         mov     ebx, [current_slot]
-        mov     [ebx+APPDATA.wait_test], sys_futex.wait_test
-        mov     [ebx+APPDATA.wait_timeout], esi
-        mov     [ebx+APPDATA.wait_param], ebp
+        mov     [ebx + APPDATA.wait_test], sys_futex.wait_test
+        mov     [ebx + APPDATA.wait_timeout], esi
+        mov     [ebx + APPDATA.wait_param], ebp
         mov     eax, [timer_ticks]
-        mov     [ebx+APPDATA.wait_begin], eax
+        mov     [ebx + APPDATA.wait_begin], eax
         mov     [ebx + APPDATA.state], TSTATE_WAITING
 
-        mov     [esp+MUTEX_WAITER.task], ebx
-        lea     esi, [ebp+FUTEX.wait_list]
+        mov     [esp + MUTEX_WAITER.task], ebx
+        lea     esi, [ebp + FUTEX.wait_list]
 
         list_add_tail esp, esi      ;esp= new waiter, esi= list head
 
 .again_timeout:
         call    change_task
-        mov     eax, [ebx+APPDATA.wait_param]
+        mov     eax, [ebx + APPDATA.wait_param]
         test    eax, eax
         jz      .timeout
 
@@ -200,7 +200,7 @@ align 4
         add     esp, sizeof.MUTEX_WAITER
 
         popfd
-        mov     [esp+SYSCALL_STACK._eax], 0
+        mov     [esp + SYSCALL_STACK._eax], 0
         ret
 
 .timeout:
@@ -208,7 +208,7 @@ align 4
         add     esp, sizeof.MUTEX_WAITER
 
         popfd
-        mov     [esp+SYSCALL_STACK._eax], -1
+        mov     [esp + SYSCALL_STACK._eax], -1
         ret
 
 
@@ -224,21 +224,21 @@ align 4
         pushfd
         cli
 
-        lea     ebx, [ebp+FUTEX.wait_list]
-        mov     esi, [ebx+LHEAD.next]
+        lea     ebx, [ebp + FUTEX.wait_list]
+        mov     esi, [ebx + LHEAD.next]
 .again_wake:
         cmp     esi, ebx
         je      .done
 
-        mov     eax, [esi+MUTEX_WAITER.task]
+        mov     eax, [esi + MUTEX_WAITER.task]
         mov     [eax + APPDATA.state], TSTATE_RUNNING
 
-        mov     esi, [esi+MUTEX_WAITER.list.next]
+        mov     esi, [esi + MUTEX_WAITER.list.next]
         inc     ecx
         cmp     ecx, edx
         jb      .again_wake
 .done:
         popfd
-        mov     [esp+SYSCALL_STACK._eax], ecx
+        mov     [esp + SYSCALL_STACK._eax], ecx
         ret
 
