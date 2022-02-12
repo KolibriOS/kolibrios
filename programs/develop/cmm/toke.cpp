@@ -4844,7 +4844,11 @@ int cmpresult,ocmpresult=0;
 
 	if(ptr!=NULL){	//найден объект удаления
 
-		if(ptr->newid)free(ptr->newid);	//удалить доп информ.
+		if(ptr->newid){
+			free(ptr->newid);	//удалить доп информ.
+			// Fixed by Coldy, thx turbocat (double free error)
+			ptr->newid = NULL;
+		}
 
 		leftptr=ptr->left;	//дите
 
