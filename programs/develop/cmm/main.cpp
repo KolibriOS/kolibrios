@@ -21,6 +21,10 @@
 #include <fcntl.h>
 #include "tok.h"
 
+#ifdef _KOS_
+#include <conio.h>
+#endif
+
 static char **_Argv; //!!! simplest way to make your own variable
 
 unsigned char compilerstr[]="SPHINX C-- 0.239";
@@ -224,12 +228,6 @@ void CheckUndefClassProc();
 
 // Added by Coldy
 void ParseObjCommand(int cmd);
-
-#ifdef _KOS_
-extern "C" {
-    void con_set_title(char* title);
-}
-#endif
 
 void ListId(int numfirstchar,unsigned char *list,unsigned short *ofs)
 {
