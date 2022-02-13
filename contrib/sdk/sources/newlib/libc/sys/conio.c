@@ -3,25 +3,14 @@
 #include <sys/unistd.h>
 #include "io.h"
 #include <string.h>
- 
 
-void load_libconsole();
-void     __stdcall con_init(unsigned w_w, unsigned w_h, unsigned s_w, unsigned s_h, const char* t);
-void     __stdcall con_exit(char bCloseWindow);
-unsigned __stdcall con_get_flags(void);
-unsigned __stdcall con_set_flags(unsigned new_flags);
-void     __stdcall con_cls(void);
-void     __stdcall con_write_string(const char* string, unsigned length);
-short    __stdcall con_getch2(void);
-char*    __stdcall con_gets(char*, unsigned);
-
-extern void __stdcall (*con_set_title_ptr)(char*);
+extern void load_libconsole();
+extern void  __stdcall con_init(unsigned w_w, unsigned w_h, unsigned s_w, unsigned s_h, const char* t);
+extern void  __stdcall con_exit(char bCloseWindow);
+extern void  __stdcall con_write_string(const char* string, unsigned length);
+extern char* __stdcall con_gets(char*, unsigned);
 
 int __gui_mode;
-
-void con_init_opt(unsigned w_w, unsigned w_h, unsigned s_w, unsigned s_h, const char* t){
-    con_init(w_w, w_h, s_w, s_h, t);
-}
 
 static int console_read(const char *path, void *buff,
            size_t offset, size_t count, size_t *done)
@@ -80,9 +69,4 @@ void __init_conio()
 void __fini_conio()
 {
     con_exit(0);
-}
-
-void con_set_title(char *title)
-{
-    con_set_title_ptr(title);
 }
