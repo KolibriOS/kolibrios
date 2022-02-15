@@ -1,29 +1,47 @@
+; 2022, Edited by Coldy
+; Added changes for auto load & linking
+
 format binary as "kex"
 
 use32
         org     0x0
         db      'MENUET01'      
-        dd      0x01            
+        dd      0x02          ; 2 - for enable autoload feature            
         dd      START           
         dd      IM_END          
         dd      MEM  
         dd      MEM
         dd      0
         dd      0
+        
+        ; { Begin of KX header (this need for recognition by dll.obj)
+        
+        db  'KX',0            ; Signature/Magic 
+        db  0                 ; Revision
+        db  1000000b          ; Flags0  (user app w/import)
+        db  0                 ; Flags1 
+        dw  0                 ; Reserved
+   
+        dd  @IMPORT           ; Pointer to import table
+        
+        ; } End of KX header
 
-include '../../../../../macros.inc'
-include '../../../../../proc32.inc'
-include '../../../../../KOSfuncs.inc'
-include '../../../../../dll.inc'
+include '../../../../../../macros.inc'
+include '../../../../../../proc32.inc'
+include '../../../../../../KOSfuncs.inc'
+
+; no needed for autolod 
+;include '../../../../../dll.inc'
 ;include '../../../../../debug-fdo.inc'
 
 ;__DEBUG__               = 1
 ;__DEBUG_LEVEL__         = 2
 
 START:
-        stdcall dll.Load, @IMPORT
-        test    eax, eax
-        jnz     exit
+        ; Disabled, dll.obj doing this
+        ;stdcall dll.Load, @IMPORT
+        ;test    eax, eax
+        ;jnz     exit
 
         cinvoke libc_strlen, test_str1
         ;DEBUGF 2, "%d", eax
@@ -49,7 +67,8 @@ print_fail:
         
 exit:
         mcall   SF_SYS_MISC, SSF_MEM_FREE, [test_str2]
-        mcall   SF_TERMINATE_PROCESS
+        //mcall   SF_TERMINATE_PROCESS - disabled, dll.obj also doing this
+        ret
         
 ; data
 
