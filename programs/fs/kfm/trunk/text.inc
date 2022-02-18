@@ -208,3 +208,11 @@ create_editboxes_end:
 ;edit2 edit_box 150,10,10,0xffffff,0,0,0,0,255,create_dir_name,ed_focus,0
 ;copy_editboxes_end:
 ;---------------------------------------------------------------------
+align 4
+sysopen:
+        dd  7,0,start_parameter,0,0
+        db  '/sys/@open',0
+;---------------------------------------------------------------------
+buttons_file_data file 'images/buttons.raw'
+icons_file_data	file 'images/icons.raw'
+;---------------------------------------------------------------------

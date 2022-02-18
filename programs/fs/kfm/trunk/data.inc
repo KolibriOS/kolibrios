@@ -267,10 +267,3 @@ align 4
 read_folder_3_name:
 	rb 64
 ;---------------------------------------------------------------------
-align 4
-sysopen:
-        dd  7,0,start_parameter,0,0
-        db  '/sys/@open',0
-;---------------------------------------------------------------------
-buttons_file_data file 'images/buttons.raw'
-icons_file_data	file 'images/icons.raw'
