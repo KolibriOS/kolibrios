@@ -8,7 +8,7 @@
 
 #ifdef __COFF__
 extern dword edit_box_draw;
-extern dword edit_box_key;
+extern dword edit_box_key_safe;
 extern dword edit_box_mouse;
 extern dword edit_box_set_text;
 
@@ -24,6 +24,16 @@ extern dword progressbar_draw;
 extern dword progressbar_progress;
 
 extern dword frame_draw;
+
+/* 
+    Legacy support
+    For new programs need to use edit_box_key_safe   
+    TODO: change in all cmm programs edit_box_key to edit_box_key_safe,
+          after that delete #define below         
+              
+*/
+#define edit_box_key  edit_box_key_safe
+
 #else
 #ifndef INCLUDE_DLL_H
 #include "../lib/dll.h"
