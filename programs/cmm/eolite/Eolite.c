@@ -380,8 +380,7 @@ void main()
 				} else {
 					if (key_scancode == SCAN_CODE_ENTER) EventPopinClickOkay();
 					if (popin_string[0] != -1) {
-						EAX = key_editbox;
-						edit_box_key stdcall (#popin_text);
+						edit_box_key stdcall (#popin_text, key_editbox);
 					}
 				}
 				break;
