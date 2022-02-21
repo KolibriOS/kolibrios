@@ -9811,6 +9811,11 @@ int next;
 	}
 	else{
 		itok.flag=f_extern;
+		// { Added by Coldy 
+		// extern is dynamical variable
+		// This also suppress warning if variable is unused
+		dynamic_flag = TRUE;
+		// }
 		switch(tok){
 			case tk_far:
 			case tk_cdecl:
