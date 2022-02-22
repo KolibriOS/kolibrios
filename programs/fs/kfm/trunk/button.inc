@@ -165,9 +165,9 @@ left_sort_date:
         je      still
         mov     [left_sort_flag],3
 .1:
+        call    draw_left_select_disk_button
         call    draw_left_sort_button
         call    left_sort_files
-;       mov     [left_panel_clear_all],1
         call    draw_left_panel
         jmp     still
 ;---------------------------------------------------------------------
@@ -195,6 +195,7 @@ right_sort_date:
         je      still
         mov     [right_sort_flag],3
 .1:
+        call    draw_right_select_disk_button
         call    draw_right_sort_button
         call    right_sort_files
         call    draw_right_panel
