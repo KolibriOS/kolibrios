@@ -1435,6 +1435,46 @@ int _ksys_file_rename(const char *name, const char *new_name)
     return _ksys_work_files(&k);
 }
 
+/*============= Function 77 - implements the POSIX subsystem. =============*/
+
+static inline
+int _ksys_posix_read(int pipefd, void* buff, int n)
+{
+    int count;
+    asm_inline(
+        "int $0x40"
+        :"=a"(count)
+        :"a"(77), "b"(10),"c"(pipefd), "d"(buff), "S"(n)
+        :"memory"
+    );
+    return count;
+}
+
+static inline
+int _ksys_posix_write(int pipefd, void* buff, int n)
+{
+    int count;
+    asm_inline(
+        "int $0x40"
+        :"=a"(count)
+        :"a"(77), "b"(11),"c"(pipefd), "d"(buff), "S"(n)
+        :"memory"
+    );
+    return count;
+}
+
+static inline
+int _ksys_posix_pipe2(int pipefd[2], int flags)
+{
+    int err;
+    asm_inline(
+        "int $0x40"
+        :"=a"(err)
+        :"a"(77), "b"(13),"c"(pipefd), "d"(flags)
+        :"memory"
+    );
+    return err;
+}
 
 /* ######### Old names of functions and structures. Do not use again! ##########*/
 

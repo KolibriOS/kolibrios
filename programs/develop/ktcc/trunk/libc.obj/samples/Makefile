@@ -2,7 +2,7 @@ KTCC = kos32-tcc
 FASM = 	fasm
 KPACK = kpack
 
-CFLAGS = -I../include -B../../kx -I../../../../../../contrib/sdk/sources/SDL-1.2.2_newlib/include
+CFLAGS = -I../include -B../../bin -I../../../../../../contrib/sdk/sources/SDL-1.2.2_newlib/include
 LIBS   = -lbox_lib -lshell -lSDL -lsound -lnetwork -lrasterworks -limg -ldialog -lmsgbox
 
 BIN =   stdio_test.kex \
@@ -24,6 +24,7 @@ BIN =   stdio_test.kex \
 	sdltest.kex \
 	shell_test.kex \
 	libc_test.kex \
+	pipe.kex \
 	defgen.kex
 	
 all: $(BIN)

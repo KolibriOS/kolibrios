@@ -19,7 +19,8 @@ cp     clayer/logo.png /tmp0/1/tcc_samples/logo.png
 ../tcc thread_work.c -o /tmp0/1/tcc_samples/thread_work
 ../tcc -I../include/SDL sdltest.c -o /tmp0/1/tcc_samples/sdltest -lSDL -lsound
 ../tcc shell_test.c -o /tmp0/1/tcc_samples/shell_test -lshell
-../tcc libc_test.c -o /tmp0/1/tcc_samples/libc_test 
-../tcc defgen.c -o /tmp0/1/tcc_samples/defgen 
+../tcc libc_test.c -o /tmp0/1/tcc_samples/libc_test
+../tcc defgen.c -o /tmp0/1/tcc_samples/defgen
+../tcc pipe.c -o /tmp0/1/tcc_samples/pipe
 "/sys/File managers/Eolite" /tmp0/1/tcc_samples
 exit
