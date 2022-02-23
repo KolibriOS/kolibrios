@@ -286,7 +286,7 @@ fb_draw_folder_data:
 	xor	edx,edx
 	div	ebx
 	pop	edx ebx
-	sub	eax,23+2+2
+	sub	eax,23+2+2+2
 	mov	esi,fb_file_name_length
 	mov	fb_temp_counter,0
 	mov	fb_display_name_max_length,eax
@@ -512,9 +512,9 @@ fb_draw_type_size_date:
 align 4
 .call_decimal_string:
 	mov	ebx,fb_type_table
-	add	ebx,6
-	call	fb_decimal_string_4
-	mov	[ebx],dl
+	add	ebx,9
+	call	fb_decimal_string
+	mov	[ebx+1],dl
 	jmp	.size_convert_end
 ;-----------------------------------------
 .qword_div:
@@ -592,32 +592,18 @@ align 4
 @@:
 	mov	eax,ebx
 	mov	ebx,fb_type_table
-	add	ebx,6
-	call	fb_decimal_string_4
+	add	ebx,10
+	call	fb_decimal_string
 .size_convert_end:
-	mov	eax,fb_type_table
-	add	eax,6
-	push	edi
-	cmp	[eax],byte '0'
-	jne	@f
-	mov	[eax],byte ' '
-@@:
-	add	eax,3
-@@:
-	cmp	[eax+1],byte ' '
-	jne	@f
-	mov	esi,eax
-	mov	edi,esi
-	inc	edi
-	mov	ecx,5
-	std
-	rep	movsb
-	jmp	@r
-@@:
-	pop	edi
 	pop	edx ebx
 ;-----------------------------------------
 .date:
+	cmp	[edx],word '..'
+	jne	@f
+	
+	cmp	[edx+2],byte 0
+	je	.not_show_date
+@@:
 	xor	eax,eax
 	mov	al,[edx-40+28]
 	push	ebx
@@ -630,16 +616,14 @@ align 4
 	call	fb_decimal_string_2 ; month
 	mov	ax,[edx-40+30]
 	mov	ebx,fb_type_table
-	add	ebx,12+15
-	call	fb_decimal_string_4 ; year
-	mov	ebx,fb_type_table
-	mov	ax,[ebx+12+15+2]
-	mov	[ebx+12+6],ax
+	add	ebx,12+9
+	mov	[ebx-3], dword '0000'
+	call	fb_decimal_string ; year
 	pop	ebx
 ;-----------------------------------------
 	ror	ebx,16
 	add	bx,fb_size_x
-	sub	ebx,122+12+15
+	sub	ebx,161 ; 122+12+15
 	rol	ebx,16
 	mov	ecx,fb_text_color
 	cmp	fb_marked_file,0
@@ -647,7 +631,7 @@ align 4
 	mov	ecx,fb_reduct_text_color
 @@:
 	mov	edx,fb_type_table
-	mov	esi,20
+	mov	esi,22
 	mov	ax,fb_line_size_y
 	sub	ax,fb_font_size_y
 	push	ebx
@@ -667,6 +651,7 @@ align 4
 @@:
 	mov	edi,eax
 	mcall	SF_DRAW_TEXT
+.not_show_date:
 	popa
 	ret
 ;---------------------------------------------------------------------
@@ -754,32 +739,20 @@ fb_decimal_string_2:
 	ret
 ;---------------------------------------------------------------------
 align 4
-fb_decimal_string_4:
-	push	eax ecx edx
-	xor	ecx,ecx
-	mov	[ebx],byte '0'
-	inc	ebx
+fb_decimal_string:
+	push	eax ebx ecx edx
+	mov	ecx,10
+;--------------------------------------
 .p3:
 	xor	edx,edx
-	push	ebx
-	mov	ebx,10
-	div	ebx
-	pop	ebx
+	div	ecx
 	add	edx,48
-	push	edx
-	inc	ecx
-	cmp	eax,0
-	jne	.p3
-	cmp	ecx,3
-	jbe	.p4
-	mov	ecx,4
-	dec	ebx
-.p4:
-	pop	edx
 	mov	[ebx],dl
-	inc	ebx
-	loop	.p4
-	pop	edx ecx eax
+	dec	ebx
+	test	eax,eax
+	jnz	.p3
+
+	pop	edx ecx ebx eax
 	ret
 ;---------------------------------------------------------------------
 align 4
@@ -826,8 +799,8 @@ fb_get_icon_number:
 	add	esi,ebp
 	lodsb
 	cmp	al,byte '='
-	jne	.end
 	mov	eax,ecx
+	jne	.search_association
 	cmp	eax,fb_ini_file_start
 	je	@f
 	dec	eax

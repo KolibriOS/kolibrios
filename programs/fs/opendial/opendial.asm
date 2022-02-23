@@ -1966,8 +1966,22 @@ convert_icons:
 calc_ini:
 	mov	eax,[image_file]
 	mov	[file_browser_data_1.ini_file_start],eax
-	add	eax,[img_size]
-	mov	[file_browser_data_1.ini_file_end],eax
+
+	mov     edi,eax
+	add	edi,[img_size]
+	dec     edi
+	mov     esi,eax
+	add     esi,9 ; after [icons16]
+	cld
+@@:
+	lodsb
+	cmp     esi,edi
+	je      @f
+	cmp     al,byte '['
+	jne	@r
+	
+@@:
+	mov	[file_browser_data_1.ini_file_end],esi
 	ret
 ;---------------------------------------------------------------------
 load_ini:
@@ -3174,10 +3188,7 @@ features_table:
 	db '1023b '
 ;---------------------------------------------------------------------
 .date_table:
-	db '00.00.00 00:00 '
-;---------------------------------------------------------------------
-.year_table:
-	db '    '
+	db '00.00.0000 00:00 '
 ;---------------------------------------------------------------------
 example_name_temp:	
 	db 'temp1.asm',0
