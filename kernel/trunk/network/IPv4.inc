@@ -490,8 +490,8 @@ ipv4_input:
 
         push    eax
         mov     ax, [edx + IPv4_header.FlagsAndFragmentOffset]
-        xchg    al, ah
         shl     ax, 3
+        xchg    al, ah
         add     cx, ax
         pop     eax
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Total Fragment size=%u\n", ecx
