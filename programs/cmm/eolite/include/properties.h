@@ -209,10 +209,9 @@ void properties_dialog()
 
 					case SCAN_CODE_KEY_A:
 					case SCAN_CODE_KEY_C:
-						if (key_modifier & KEY_LCTRL) || (key_modifier & KEY_RCTRL) {
-							EAX = key_editbox; 
-							edit_box_key stdcall(#file_name_ed);
-							edit_box_key stdcall(#path_to_file_ed);
+						if (key_modifier & KEY_LCTRL) || (key_modifier & KEY_RCTRL) { 
+							edit_box_key_c stdcall(#file_name_ed,key_editbox);
+							edit_box_key_c stdcall(#path_to_file_ed,key_editbox);
 						}
 				}
 				break;

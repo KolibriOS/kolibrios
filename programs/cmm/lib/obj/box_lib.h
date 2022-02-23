@@ -27,12 +27,14 @@ extern dword frame_draw;
 
 /* 
     Legacy support
-    For new programs need to use edit_box_key_safe   
-    TODO: change in all cmm programs edit_box_key to edit_box_key_safe,
-          after that delete #define below         
-              
+    For new programs need to use edit_box_key_safe (or edit_box_key_c
+    with a define below)   
+    TODO: change in all cmm programs edit_box_key to edit_box_key_safe (edit_box_key_c)
+          See examples in eolite and imgedit
+          
+    This define changed all edit_box_key_c to edit_box_key_safe identifier's              
 */
-#define edit_box_key  edit_box_key_safe
+#define edit_box_key_c  edit_box_key_safe
 
 #else
 #ifndef INCLUDE_DLL_H

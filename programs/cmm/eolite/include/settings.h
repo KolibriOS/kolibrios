@@ -67,8 +67,7 @@ void settings_dialog()
 			case evKey:
 				GetKeys();
 				if (key_scancode==SCAN_CODE_ESC) ExitSettings();
-				EAX= key_ascii << 8;
-				edit_box_key stdcall (#path_start_ed);	
+        edit_box_key_c stdcall (#path_start_ed,key_ascii << 8);	
 				break;
 				
 			case evReDraw:
