@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (09-feb-2022)";
+    HEADER = "CEdit (25-feb-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -211,6 +211,8 @@ VAR
 
     CursorTime, CurrentTime: INTEGER;
     timerEnabled: BOOLEAN;
+
+    IPC: ARRAY 64 OF INTEGER; mainTID: INTEGER;
 
 
 PROCEDURE EditBox_Focus (edit: EB.tEditBox): BOOLEAN;
@@ -463,7 +465,7 @@ BEGIN
     bottom := top + 395 + btnHeight + SEARCH_PADDING;
     Rect(left, top, right, bottom, K.colors.line);
 
-    K.CreateButton(btnCloseSearch, right - 20, top, 20, 20, 0EF999FH, "");
+    K.CreateButton(btnCloseSearch, right - 20, top, 20, 20, Tabs.btnCloseColor, "");
     K.DrawLine(right - 14, top + 5, right - 5, top + 14, 0FFFFFFH);
     K.DrawLine(right - 15, top + 5, right - 5, top + 15, 0FFFFFFH);
     K.DrawLine(right - 15, top + 6, right - 6, top + 15, 0FFFFFFH);
@@ -1341,7 +1343,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuDelete,    "delete");
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuSelectAll, "select all   ctrl-A");
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateContextMenu;
 
 
@@ -1360,7 +1362,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuClose,   "close       ctrl-W");
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuExit,    "exit");
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuFile;
 
 
@@ -1385,7 +1387,7 @@ BEGIN
     Menu.child(menu, subIndent);
     Menu.AddMenuItem(menu, menuCase,      "case");
     Menu.child(menu, subCase);
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuEdit;
 
 
@@ -1401,7 +1403,7 @@ BEGIN
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuBookmark, "bookmark");
     Menu.child(menu, subBookmark);
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuSearch;
 
 
@@ -1415,12 +1417,12 @@ BEGIN
     Menu.AddMenuItem(menu, menuCP866,   E.names[E.CP866]);
     Menu.AddMenuItem(menu, menuCP1251,  E.names[E.CP1251]);
     Menu.delimiter(menu);
-    Menu.AddMenuItem(menu, menuEOL,     "EOL");
-    Menu.child(menu, subEOL);
-    Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuConv1251_866, "convert 1251 >> 866");
     Menu.AddMenuItem(menu, menuConv866_1251, "convert 866 >> 1251");
-    RETURN Menu.create(menu)
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuEOL,     "EOL");
+    Menu.child(menu, subEOL);
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuEncoding;
 
 
@@ -1432,7 +1434,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuCRLF, E.eolNames[E.EOL_CRLF]);
     Menu.AddMenuItem(menu, menuLF,   E.eolNames[E.EOL_LF]);
     Menu.AddMenuItem(menu, menuCR,   E.eolNames[E.EOL_CR]);
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuEOL;
 
 
@@ -1456,7 +1458,7 @@ BEGIN
         colors := colors.next(Ini.tSection)
     END;
 
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuView;
 
 
@@ -1474,7 +1476,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuPascal, "Pascal");
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuText,   "Text");
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuLanguage;
 
 
@@ -1493,7 +1495,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuDebugScript, "script");
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuFASM, "Fasm");
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuProgram;
 
 
@@ -1506,7 +1508,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuMagnify, "magnify");
     Menu.AddMenuItem(menu, menuBoard,   "board");
     Menu.AddMenuItem(menu, menuSysFunc, "system functions");
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuTools;
 
 
@@ -1519,7 +1521,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuAutoIndents,  "automatic indents");
     Menu.AddMenuItem(menu, menuAutoBrackets, "automatic brackets");
     Menu.AddMenuItem(menu, menuTrimSpace,    "trim trailing space");
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuOptions;
 
 
@@ -1532,7 +1534,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuMoveDown,  "move down   ctrl-Down");
     Menu.AddMenuItem(menu, menuDuplicate, "duplicate   ctrl-D");
     Menu.AddMenuItem(menu, menuRemove,    "remove      ctrl-Del");
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuCurLine;
 
 
@@ -1543,7 +1545,7 @@ BEGIN
     menu := List.create(NIL);
     Menu.AddMenuItem(menu, menuIncInd, "increase    Tab");
     Menu.AddMenuItem(menu, menuDecInd, "decrease    shift-Bksp");
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuIndent;
 
 
@@ -1554,7 +1556,7 @@ BEGIN
     menu := List.create(NIL);
     Menu.AddMenuItem(menu, menuUpper, "UPPER    ctrl-U");
     Menu.AddMenuItem(menu, menuLower, "lower    ctrl-L");
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuCase;
 
 
@@ -1566,7 +1568,7 @@ BEGIN
     Menu.AddMenuItem(menu, menuToggleBookmark, "toggle      ctrl-F2");
     Menu.AddMenuItem(menu, menuNextBookmark,   "next        F2");
     Menu.AddMenuItem(menu, menuPrevBookmark,   "previous    shift-F2");
-    RETURN Menu.create(menu)
+    RETURN Menu.create(menu, mainTID)
 END CreateMenuBookmark;
 
 
@@ -1797,6 +1799,16 @@ BEGIN
             SwitchTab(btn)
         END;
         btn := 0
+    ELSIF U.between(Tabs.btnClose, btn, Tabs.btnClose + maxTexts - 1) THEN
+        DEC(btn, Tabs.btnClose);
+        IF ~middle THEN
+            IF texts[btn].modified THEN
+                SwitchTab(btn)
+            END;
+            closeFile(TRUE, btn);
+            middle := TRUE
+        END;
+        btn := 0
     ELSE
         IF middle THEN
             btn := 0
@@ -1959,6 +1971,10 @@ BEGIN
                 firstClickY := y;
                 time := click(firstClickX, firstClickY)
             END
+        END;
+        IF msState = {} THEN
+        	mouse(x, y);
+        	Menu.MouseMove(mainMenu, x + LEFT, y + TOP)
         END
     END;
     IF search & searchOpened THEN
@@ -2022,6 +2038,20 @@ BEGIN
 END ScrollChange;
 
 
+PROCEDURE receiveIPC;
+VAR
+	x, y, cliX, cliY, winX, winY: INTEGER;
+BEGIN
+	K.ClientPos(cliX, cliY);
+	K.WinPos(winX, winY);
+	x := IPC[2] DIV 65536 - cliX - winX;
+	y := IPC[2] MOD 65536 - cliY - winY;
+	Menu.MouseMove(mainMenu, x, y);
+	IPC[1] := 0;
+	IPC[0] := 0
+END receiveIPC;
+
+
 PROCEDURE main;
 VAR
     fileName, filePath: RW.tFileName;
@@ -2031,6 +2061,7 @@ VAR
     key, scr: INTEGER;
     text_ptr, text_size, errno: INTEGER;
 BEGIN
+	mainTID := K.ThreadID();
 	header := "";
     K.GetSystemColors;
     switch := FALSE;
@@ -2067,6 +2098,8 @@ BEGIN
     Ini.selectSection(Ini.theme);
     T.setCanvas(canvas);
 
+    mainMenu := Menu.CreateMain(mainMenuBtn);
+
     Menu.init(resetTimer);
     context := CreateContextMenu();
     menuFile := CreateMenuFile();
@@ -2089,7 +2122,7 @@ BEGIN
     menuTools := CreateMenuTools();
     menuOptions := CreateMenuOptions();
 
-    mainMenu := Menu.CreateMain(mainMenuBtn);
+
     Menu.AddMainItem(mainMenu, "file", menuFile);
     Menu.AddMainItem(mainMenu, "edit", menuEdit);
     Menu.AddMainItem(mainMenu, "search", menuSearch);
@@ -2163,7 +2196,10 @@ BEGIN
 
 	OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
 
-    K.SetEventsMask({0, 1, 2, 5, 31});
+	IPC[1] := 0;
+	IPC[0] := 0;
+	K.SetIPC(IPC);
+    K.SetEventsMask({0, 1, 2, 5, 6, 31});
     draw_window;
     blink := Ini.blink;
 	IF blink <= 0 THEN
@@ -2197,6 +2233,7 @@ BEGIN
         	ELSE
         		scr := K.Scroll()
         	END
+        |7: receiveIPC
         END
     END
 END main;

@@ -393,6 +393,18 @@ BEGIN
 END PutPixel;
 
 
+PROCEDURE SetIPC* (buffer: ARRAY OF INTEGER);
+BEGIN
+	KOSAPI.sysfunc4(60, 1, SYSTEM.ADR(buffer[0]), LEN(buffer)*SYSTEM.SIZE(INTEGER))
+END SetIPC;
+
+
+PROCEDURE SendIPC* (pid, ptr, size: INTEGER);
+BEGIN
+	KOSAPI.sysfunc5(60, 2, pid, ptr, size)
+END SendIPC;
+
+
 PROCEDURE docpack* (VAR param: ARRAY OF CHAR; VAR text_ptr, text_size: INTEGER);
 VAR
 	i, size, ptr, ptr2: INTEGER;

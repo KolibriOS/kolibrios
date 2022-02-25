@@ -20,7 +20,7 @@
 MODULE Menu;
 
 IMPORT
-    SYSTEM, G := Graph, List, K := KolibriOS;
+    SYSTEM, G := Graph, List, K := KolibriOS, U := Utils;
 
 CONST
     itemHeight = 22;
@@ -53,13 +53,15 @@ TYPE
 	tMainItem* = POINTER TO descMainItem;
 
     tMain* = POINTER TO RECORD (List.tList)
-    	id: INTEGER
+    	id: INTEGER;
+    	canvas: G.tCanvas
     END;
 
     tMenu* = POINTER TO RECORD
         tid*: INTEGER;
         active*, keyboard: BOOLEAN;
         parent*, child: tMenu;
+        mainTID: INTEGER;
         mainID: INTEGER;
         x*, winX, winY, width*, height*: INTEGER;
         selItem, cliItem: INTEGER;
@@ -81,7 +83,8 @@ TYPE
         id*, x: INTEGER;
         text: ARRAY 32 OF WCHAR;
         menu*: tMenu;
-        main: tMain
+        main: tMain;
+        selected: BOOLEAN
     END;
 
     tShortcut = POINTER TO RECORD (List.tItem)
@@ -111,6 +114,7 @@ BEGIN
 	COPY(text, item.text);
 	item.menu := menu;
 	item.main := main;
+	item.selected := FALSE;
 	menu.mainID := item.id;
 	List.append(main, item);
 	prev := item.prev(tMainItem);
@@ -119,7 +123,10 @@ BEGIN
 	ELSE
 		item.x := MainMenuX
 	END;
-	menu.x := item.x
+	menu.x := item.x;
+	G.destroy(main.canvas);
+	main.canvas := G.CreateCanvas(item.x + LENGTH(item.text)*fontWidth + 9, MainMenuHeight);
+	G.SetFont(main.canvas, G.fonts[1])
 END AddMainItem;
 
 
@@ -130,6 +137,7 @@ VAR
 BEGIN
 	NEW(res);
 	res.id := id;
+	res.canvas := NIL;
 	list := List.create(res)
 	RETURN res
 END CreateMain;
@@ -138,31 +146,60 @@ END CreateMain;
 PROCEDURE drawMainItem (item: tMainItem);
 VAR
     menuColor, textColor, n: INTEGER;
+    canvas: G.tCanvas;
 BEGIN
     IF item.menu.tid # 0 THEN
         menuColor := K.colors.work_text;
         textColor := K.colors.work
     ELSE
-        menuColor := K.colors.work;
-        textColor := K.colors.work_text
+    	IF item.selected THEN
+	        menuColor := K.colors.button;
+	        textColor := K.colors.button_text
+    	ELSE
+	        menuColor := K.colors.work;
+	        textColor := K.colors.work_text
+        END
     END;
     n := LENGTH(item.text);
-    K.DrawRect(item.x, 0, n*fontWidth + 2, MainMenuHeight, menuColor);
-    K.CreateButton(item.id + ORD({30}), item.x, 0, n*fontWidth + 2, MainMenuHeight, K.colors.button, "");
-    K.DrawText(item.x + 1, (MainMenuHeight - K.fontHeight) DIV 2 + 1, textColor, item.text)
+    canvas := item.main.canvas;
+    G.SetColor(canvas, menuColor);
+    G.FillRect(canvas, item.x, 0, item.x + n*fontWidth + 2, MainMenuHeight - 1);
+    G.SetTextColor(canvas, textColor);
+    G.SetBkColor(canvas, menuColor);
+    G.TextOut2(canvas, item.x + 1, (MainMenuHeight - K.fontHeight) DIV 2 + 1, item.text, n);
 END drawMainItem;
 
 
 PROCEDURE DrawMain* (main: tMain);
 VAR
-	item: List.tItem;
+	item: tMainItem;
 BEGIN
-	item := main.first;
+	G.SetColor(main.canvas, K.colors.work);
+	G.clear(main.canvas);
+	item := main.first(tMainItem);
 	WHILE item # NIL DO
-		drawMainItem(item(tMainItem));
-		item := item.next
-	END
+		drawMainItem(item);
+		K.CreateButton(item.id + ORD({30}), item.x, 0, LENGTH(item.text)*fontWidth + 2, MainMenuHeight, 0, "");
+		item := item.next(tMainItem)
+	END;
+	G.DrawCanvas(main.canvas, 0, 0)
 END DrawMain;
+
+
+PROCEDURE MouseMove* (main: tMain; x, y: INTEGER);
+VAR
+	item: tMainItem;
+BEGIN
+	item := main.first(tMainItem);
+	WHILE item # NIL DO
+		item.selected :=
+			U.between(item.x, x, item.x + LENGTH(item.text)*fontWidth - 1) &
+				U.between(0, y, MainMenuHeight - 1);
+		drawMainItem(item);
+		item := item.next(tMainItem)
+	END;
+	G.DrawCanvas(main.canvas, 0, 0)
+END MouseMove;
 
 
 PROCEDURE getMainID (m: tMenu): INTEGER;
@@ -485,6 +522,8 @@ BEGIN
             repaint(m)
         |6:
         	K.mouse(msState, x, y);
+        	temp := (x + m.winX)*65536 + (y + m.winY);
+        	K.SendIPC(m.mainTID, SYSTEM.ADR(temp), SYSTEM.SIZE(INTEGER));
             IF (0 <= x) & (x < m.width) & (0 <= y) & (y < m.height) THEN
             	m.active := TRUE;
                 m.selItem := (y - TOP) DIV itemHeight;
@@ -621,7 +660,7 @@ BEGIN
 END isEnabled;
 
 
-PROCEDURE create* (items: List.tList): tMenu;
+PROCEDURE create* (items: List.tList; mainTID: INTEGER): tMenu;
 VAR
     m: tMenu;
     maxLength: INTEGER;
@@ -633,6 +672,7 @@ BEGIN
     m.parent := NIL;
     m.child := NIL;
     m.mainID := 0;
+    m.mainTID := mainTID;
     m.items  := items;
     maxLength := 0;
     item := items.first(tItem);

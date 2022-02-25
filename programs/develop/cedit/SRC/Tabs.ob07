@@ -24,11 +24,13 @@ IMPORT List, K := KolibriOS, RW, U := Utils;
 CONST
 
     btnID* = 100;
+    btnClose* = btnID + 100;
     btnLeft* = btnID - 1;
 	btnRight* = btnID - 2;
     tabHeight* = 22;
     curTabHeight = 26;
     scrWidth = 15;
+    btnCloseColor* = 0EF999FH;
 
 TYPE
 
@@ -55,8 +57,11 @@ END DblClicked;
 
 
 PROCEDURE drawTab (t: tTabs; id, x, y, width, height: INTEGER; s: ARRAY OF CHAR; modified: BOOLEAN);
+CONST
+	btnCloseSize = 14;
 VAR
     x2, y2, color: INTEGER;
+    left, top: INTEGER;
 BEGIN
     IF id = t.current THEN
         INC(height, curTabHeight - tabHeight);
@@ -72,8 +77,12 @@ BEGIN
     K.DrawRect(x, y, width, height, color);
     K.DrawLine(x, y, x2, y, K.colors.line);
     K.DrawLine(x2, y, x2, y2, K.colors.line);
+
+    top := y + 3;
     IF id # t.current THEN
-        K.DrawLine(x2 - 1, y2, x, y2, K.colors.line);
+        K.DrawLine(x2 - 1, y2, x, y2, K.colors.line)
+    ELSE
+    	INC(top, (curTabHeight - tabHeight) DIV 2)
     END;
     K.DrawLine(x, y2, x, y, K.colors.line);
 
@@ -81,12 +90,20 @@ BEGIN
     IF modified THEN
     	K.DrawText866bk(x + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, K.colors.work_text, color, "*")
     END;
-    K.CreateButton(id + ORD({30}) + btnID, x + 1, y - 1, width - 1, height - 1, color, "");
+    K.CreateButton(id + ORD({30}) + btnID, x + 1, y - 1, width - 1, height - 1, 0, "");
+    left := x + width - btnCloseSize - 5;
+    K.CreateButton(id + btnClose, left, top, btnCloseSize, btnCloseSize,  btnCloseColor, "");
+    K.DrawLine(left + 5, top + 4, left + btnCloseSize - 4, top + btnCloseSize - 5, 0FFFFFFH);
+    K.DrawLine(left + 4, top + 4, left + btnCloseSize - 4, top + btnCloseSize - 4, 0FFFFFFH);
+    K.DrawLine(left + 4, top + 5, left + btnCloseSize - 5, top + btnCloseSize - 4, 0FFFFFFH);
+    K.DrawLine(left + 4, top + btnCloseSize - 4, left + btnCloseSize - 4, top + 4, 0FFFFFFH);
+    K.DrawLine(left + 4, top + btnCloseSize - 5, left + btnCloseSize - 5, top + 4, 0FFFFFFH);
+    K.DrawLine(left + 5, top + btnCloseSize - 4, left + btnCloseSize - 4, top + 5, 0FFFFFFH);
 END drawTab;
 
 
 PROCEDURE tabWidth (tab: tItem): INTEGER;
-    RETURN (LENGTH(tab.val) + 3)*K.fontWidth
+    RETURN (LENGTH(tab.val) + 5)*K.fontWidth
 END tabWidth;
 
 
