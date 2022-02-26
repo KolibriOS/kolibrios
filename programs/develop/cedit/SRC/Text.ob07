@@ -2799,6 +2799,11 @@ BEGIN
 END New;
 
 
+PROCEDURE empty* (text: tText): BOOLEAN;
+	RETURN (text.count = 1) & (text.curLine.length = 0)
+END empty;
+
+
 PROCEDURE init* (pShowCursor: tProcedure; _lineNumbers, _autoIndents, _autoBrackets, _trimSpace: BOOLEAN);
 BEGIN
     ShowCursor := pShowCursor;

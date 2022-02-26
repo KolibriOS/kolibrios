@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (25-feb-2022)";
+    HEADER = "CEdit (26-feb-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -732,20 +732,6 @@ BEGIN
 END closeFile;
 
 
-PROCEDURE NewFile;
-VAR
-    nov: T.tText;
-BEGIN
-    IF textsCount < maxTexts THEN
-        nov := T.New();
-        T.SetPos(nov, 0, 0);
-        insert(textsCount, nov)
-    ELSE
-        error("too many files")
-    END
-END NewFile;
-
-
 PROCEDURE getFileNum (fileName: RW.tFileName): INTEGER;
 VAR
     i: INTEGER;
@@ -783,12 +769,27 @@ BEGIN
 END SwitchTab;
 
 
+PROCEDURE NewFile;
+VAR
+    nov: T.tText;
+BEGIN
+    IF textsCount < maxTexts THEN
+        nov := T.New();
+        T.SetPos(nov, 0, 0);
+        insert(textsCount, nov);
+        SwitchTab(curText)
+    ELSE
+        error("too many files")
+    END
+END NewFile;
+
+
 PROCEDURE open (_fileName: RW.tFileName): BOOLEAN;
 VAR
 	fileName: RW.tFileName;
     nov: T.tText;
     err, n: INTEGER;
-    res: BOOLEAN;
+    res, empty: BOOLEAN;
 BEGIN
 	res := TRUE;
     IF textsCount < maxTexts THEN
@@ -806,8 +807,15 @@ BEGIN
                     SwitchTab(curText);
                     res := FALSE
                 ELSE
+                	T.switch(text);
+                	empty := (textsCount = 1) & (text.fileName = "") & T.empty(text) &
+                		ChangeLog.isFirstGuard(text.edition) & ChangeLog.isLastGuard(text.edition);
+                	T.switch(nov);
                 	T.SetPos(nov, 0, 0);
                     insert(textsCount, nov);
+                    IF empty THEN
+                    	closeFile(FALSE, 0)
+                    END;
                     Scroll.setValue(hScroll, 0);
                     Scroll.setValue(vScroll, 0)
                 END
@@ -1801,13 +1809,11 @@ BEGIN
         btn := 0
     ELSIF U.between(Tabs.btnClose, btn, Tabs.btnClose + maxTexts - 1) THEN
         DEC(btn, Tabs.btnClose);
-        IF ~middle THEN
-            IF texts[btn].modified THEN
-                SwitchTab(btn)
-            END;
-            closeFile(TRUE, btn);
-            middle := TRUE
+        IF texts[btn].modified THEN
+            SwitchTab(btn)
         END;
+        closeFile(TRUE, btn);
+        middle := TRUE;
         btn := 0
     ELSE
         IF middle THEN

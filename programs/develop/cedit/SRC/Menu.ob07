@@ -145,28 +145,23 @@ END CreateMain;
 
 PROCEDURE drawMainItem (item: tMainItem);
 VAR
-    menuColor, textColor, n: INTEGER;
-    canvas: G.tCanvas;
+	menuColor, textColor, n: INTEGER;
+	canvas: G.tCanvas;
 BEGIN
-    IF item.menu.tid # 0 THEN
-        menuColor := K.colors.work_text;
-        textColor := K.colors.work
-    ELSE
-    	IF item.selected THEN
-	        menuColor := K.colors.button;
-	        textColor := K.colors.button_text
-    	ELSE
-	        menuColor := K.colors.work;
-	        textColor := K.colors.work_text
-        END
-    END;
-    n := LENGTH(item.text);
-    canvas := item.main.canvas;
-    G.SetColor(canvas, menuColor);
-    G.FillRect(canvas, item.x, 0, item.x + n*fontWidth + 2, MainMenuHeight - 1);
-    G.SetTextColor(canvas, textColor);
-    G.SetBkColor(canvas, menuColor);
-    G.TextOut2(canvas, item.x + 1, (MainMenuHeight - K.fontHeight) DIV 2 + 1, item.text, n);
+	IF item.selected OR (item.menu.tid # 0) THEN
+		menuColor := K.colors.button;
+		textColor := K.colors.button_text
+	ELSE
+		menuColor := K.colors.work;
+		textColor := K.colors.work_text
+	END;
+	n := LENGTH(item.text);
+	canvas := item.main.canvas;
+	G.SetColor(canvas, menuColor);
+	G.FillRect(canvas, item.x, 0, item.x + n*fontWidth + 2, MainMenuHeight - 1);
+	G.SetTextColor(canvas, textColor);
+	G.SetBkColor(canvas, menuColor);
+	G.TextOut2(canvas, item.x + 1, (MainMenuHeight - K.fontHeight) DIV 2 + 1, item.text, n);
 END drawMainItem;
 
 
@@ -193,7 +188,7 @@ BEGIN
 	item := main.first(tMainItem);
 	WHILE item # NIL DO
 		item.selected :=
-			U.between(item.x, x, item.x + LENGTH(item.text)*fontWidth - 1) &
+			U.between(item.x, x, item.x + LENGTH(item.text)*fontWidth + 1) &
 				U.between(0, y, MainMenuHeight - 1);
 		drawMainItem(item);
 		item := item.next(tMainItem)
