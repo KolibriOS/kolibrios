@@ -432,7 +432,15 @@ prepare_data_8:
 	jne	.continue
 
 	add	esp,4+4
-	jmp	reload_dir
+	cmp	[select_panel_counter],0
+	jne	@f
+
+	call	proc_read_left_folder
+	jmp	red
+;--------------------------------------
+@@:
+	call	proc_read_right_folder
+	jmp	red
 ;--------------------------------------
 .continue:
 	ret
