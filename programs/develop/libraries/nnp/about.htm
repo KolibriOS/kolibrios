@@ -1,0 +1,168 @@
+<html>
+<head>
+<title>библиотека для работы с нейросетью (neural network perceptron)</title>
+<meta charset="WINDOWS-1251">
+<style>
+body
+{
+  font-size: 15px;
+  font-family: "Bookman Old Style";
+  color: black;
+  text-align: justify;
+}
+h1 { color: green; font-size: 23px; }
+h2 { color: green; font-size: 21px; }
+h3 { color: green; font-size: 19px; }
+h4 { color: #803f00; font-size: 17px; }
+i { color: #0099cc; }
+b { color: #0099cc; }
+p {
+  text-indent: 1em;
+  margin-top: 3px;
+  margin-bottom: 2px;
+  margin-left: 0px;
+  margin-right: 0px;
+}
+ol, ul, dl{
+  margin-top: 3px;
+  margin-bottom: 2px;
+}
+pre
+{
+  padding: 2px;
+  padding-left: 20px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  margin-left: 0px;
+  margin-right: 0px;
+  font-family: "Courier New";
+  font-size: 15px;
+  color: #004000;
+  background-color: #ffd0ff;
+}
+table { font-size: 15px; }
+</style>
+</head>
+
+<body>
+
+<h1>Оглавление</h1>
+<ul>
+<li>Вступление</li>
+<li><a href="#fun">Функции</a><br>
+<ul>
+<li><a href="#f_init">lib_init</a></li>
+<li><a href="#f_create">NNP_Create</a></li>
+<li><a href="#f_feedf">NNP_FeedForward</a></li>
+<li><a href="#f_backp">NNP_BackPropagation</a></li>
+<li><a href="#f_getmd">NNP_GetMemData</a></li>
+<li><a href="#f_setmd">NNP_SetMemData</a></li>
+<li><a href="#f_destroy">NNP_Destroy</a></li>
+</ul>
+</li>
+<li><a href="#const">Константы</a></li>
+<li><a href="#tabl_e">Таблица экспорта</a></li>
+<li><a href="#hist">История</a></li>
+</ul>
+
+<h1>Вступление</h1>
+<p>Документация к библиотеке <b>nnp.obj</b>, для <b>ОС Колибри</b>. Эта библиотека создана для работы с нейросетями (neural network perceptron). Видео по нейросетям: <a href="https://www.youtube.com/watch?v=GNcGPw_Kb_0">1</a>,
+<a href="https://www.youtube.com/watch?v=wzIOl4hWP3U">2</a>. Исходный код (язык java), на основе которого делалсь библиотека: <a href="https://github.com/ArtemOnigiri/SimpleNN">3</a>.</p>
+
+<p>Последнее обновление библиотеки 01.03.22.</p>
+
+<h1><a name="fun">Функции</a></h1>
+
+<p>Все функции (кроме lib_init) 1-м параметром принимают указатель на структуру NeuralNetwork.
+ Описание структуры NeuralNetwork:</p>
+<pre>struct NeuralNetwork
+	learningRate  dq ? ;+ 0 скорость обучения
+	layers        dd ? ;+ 8 [] слои
+	layers_length dd ? ;+12 число слоев
+	activation    dd ? ;+16 указатель на функцию активации
+	derivative    dd ? ;+20 указатель на функцию
+	errors        dd ? ;+24 массив для вычислений
+	errorsNext    dd ? ;+28
+	gradients     dd ? ;+32
+	deltas        dd ? ;+36
+ends</pre>
+
+<h4><a name="f_init">lib_init</a></h4>
+<p>Эта функция получает указатели на функции работы с памятью, вызыватся должна при загрузке библиотеки. Можете использовать макрос <b>@use_library</b>, для ее автоматической настройки.</p>
+
+<h4><a name="f_create">NNP_Create</a></h4>
+<p>Создает слои нейросети и заполняет веса случайными значениями от -1 до 1. Пример:</p>
+<pre>NNLOPT_LEN equ 7
+nnlopt dd 2,8,8,8,8,8,3
+...
+stdcall [NNP_Create], nnp_0, 0.01, 0, 0, nnlopt, NNLOPT_LEN</pre>
+<p>где nnp_0 - структура буфера.</p>
+<p>0.01 - скорость обучения.</p>
+<p>0 - адрес функции активации, если 0 то берется стандартная функция внутри библиотеки.</p>
+<p>0 - адрес функции свёртки, если 0 то берется стандартная функция внутри библиотеки.</p>
+<p>nnlopt - массив с числом нейронов на каждом слое.</p>
+<p>NNLOPT_LEN - длинна массива nnlopt.</p>
+
+<h4><a name="f_feedf">NNP_FeedForward</a></h4>
+<p>Функция расчета значений выходных нейронов. На вход подаються значения входных нейронов. На выходе возвращается указатель на слой выходных нейронов.</p>
+<pre>n_input dq ?,?,?
+...
+stdcall [NNP_FeedForward], nnp_0,n_input</pre>
+<p>где nnp_0 - структура буфера, n_input - указатель на данные входных нейронов.</p>
+
+<h4><a name="f_backp">NNP_BackPropagation</a></h4>
+<p>Функция для обучения сети. Пример:</p>
+<pre>n_targ dq ?,?,?
+...
+stdcall [NNP_BackPropagation], nnp_0, n_targ</pre>
+<p>где nnp_0 - структура буфера, n_targ - указатель на данные для обучения сети.</p>
+
+<h4><a name="f_getmd">NNP_GetMemData</a></h4>
+<p>Берет данные нейросети и записывает их в указанное место в памяти. Пример:</p>
+<pre>f_data dd ?
+...
+stdcall [NNP_GetMemData], nnp_0, NNP_FF_JSON, [f_data]</pre>
+<p>где nnp_0 - структура буфера, f_data - указатель на данные для записи параметров сети.</p>
+
+<h4><a name="f_setmd">NNP_SetMemData</a></h4>
+<p>Берет данные из указанного места памяти и записывает их в нейросеть. Пример:</p>
+<pre>f_data dd ?
+...
+stdcall [NNP_SetMemData], nnp_0, NNP_FF_JSON, [f_data]</pre>
+<p>где nnp_0 - структура буфера, f_data - указатель на данные с параметрами сети.</p>
+
+<h4><a name="f_delete">NNP_Destroy</a></h4>
+<p>Освобождает память занятую нейросетью.</p>
+
+<h1><a name="const">Константы</a></h1>
+<h4>NNP_FF_BIN equ 0x6e6962</h4>
+<p>Константа для функций NNP_GetMemData и NNP_SetMemData. Указывает бинарный формат ввода и вывода данных.</p>
+<h4>NNP_FF_JSON equ 0x6e6f736a</h4>
+<p>Константа для функций NNP_GetMemData и NNP_SetMemData. Указывает текстовый (JSON) формат ввода и вывода данных.</p>
+
+<h1><a name="tabl_e">Таблица экспорта</a></h1>
+<p>Пример таблицы экспорта, расчитанной на использование макроса <b>@use_library_mem</b>:</p>
+<pre>align 4
+import_nnp_lib:
+	dd sz_lib_init
+	NNP_Create dd sz_nnp_create
+	NNP_FeedForward dd sz_nnp_FeedForward
+	NNP_BackPropagation dd sz_nnp_BackPropagation
+	NNP_GetMemData dd sz_nnp_GetMemData
+	NNP_SetMemData dd sz_nnp_SetMemData
+	NNP_Destroy dd sz_nnp_Destroy
+	dd 0,0
+	sz_lib_init db 'lib_init',0
+	sz_nnp_create db 'NNP_Create',0
+	sz_nnp_FeedForward db 'NNP_FeedForward',0
+	sz_nnp_BackPropagation db 'NNP_BackPropagation',0
+	sz_nnp_GetMemData db 'NNP_GetMemData',0
+	sz_nnp_SetMemData db 'NNP_SetMemData',0
+	sz_nnp_Destroy db 'NNP_Destroy',0
+</pre>
+
+<h1><a name="hist">История</a></h1>
+<p>01.03.22 - самая первая версия библиотеки (примеры использования возможно будут позже).</p>
+
+</body>
+</html>
