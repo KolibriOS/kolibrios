@@ -57,7 +57,7 @@ fs_read64_sys:
 ; Read several sequential sectors using cache #2.
 ; in: edx:eax = start sector, relative to start of partition
 ; in: ecx = number of sectors to read
-; in: edi -> buffer
+; in: ebx -> buffer
 ; in: ebp -> PARTITION
 ; out: eax = error code, 0 = ok
 ; out: ecx = number of sectors that were read

@@ -1252,6 +1252,9 @@ end virtual
         call    fat_create_partition
         test    eax, eax
         jnz     .success
+        call    exFAT_create_partition
+        test    eax, eax
+        jnz     .success
         call    ntfs_create_partition
         test    eax, eax
         jnz     .success
@@ -1338,6 +1341,7 @@ endp
 ;      but instead pop return address and return directly to the caller
 ;      otherwise simply return
 dyndisk_handler:
+;       DEBUGF  1, "K : FS Input Path:%s\n",esi
         push    ebx edi         ; save registers used in file_system_lfn
 ; 1. Acquire the mutex.
         mov     ecx, disk_list_mutex
