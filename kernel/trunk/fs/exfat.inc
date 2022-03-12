@@ -364,14 +364,17 @@ exFAT_get_name:
         ret
 ;--------------------------------------
 .file_directory_entry:
+; DEBUGF  1, "K : exFAT_get_name 0x85\n"
         movzx   eax, byte [edi+1]  ; Number of Secondary directory entries
         dec     eax
         mov     [ebp+exFAT.secondary_dir_entry], eax
+; DEBUGF  1, "K : exFAT_get_name 0x85 SDE: %x\n", eax
         lea     esi, [ebp+exFAT.file_dir_entry]
 ; DEBUGF  1, "K : exFAT.file_dir_entry ESI: %x [ESI]: %x\n", esi, [esi]
         jmp     @f
 ;--------------------------------------
 .stream_extension_directory_entry:
+; DEBUGF  1, "K : exFAT_get_name 0xC0\n"
         lea     esi, [ebp+exFAT.str_ext_dir_entry]
 ; DEBUGF  1, "K : exFAT.str_ext_dir_entry ESI: %x [ESI]: %x\n", esi, [esi]
 @@:
@@ -393,6 +396,7 @@ exFAT_get_name:
         jmp     .no
 ;--------------------------------------
 .longname:
+; DEBUGF  1, "K : exFAT_get_name 0xC1\n"
 ;        push    ebp
 ;        mov     ebp,[esp+12+8+4+4+7*4+262*2+4+4]
 ; DEBUGF  1, "K : exFAT_get_name.longname 0 Input FS EBP:%x\n", ebp
@@ -435,15 +439,18 @@ exFAT_get_name:
         mov     [ebp+exFAT.secondary_dir_entry], eax
         jz      @f
         add     esi, 30
+; DEBUGF  1, "K : exFAT_get_name 0xC1 CONT\n"
         jmp     .no
 ;        test    ax, ax
 ;        jnz     .no ; if this is not first entry, more processing required
 @@:
 ;         mov     esi, [ebp+exFAT.LFN_reserve_place]
 ; DEBUGF  1, "K : exFAT_get_name.longname END \n"
+; DEBUGF  1, "K : exFAT_get_name 0xC1 END\n"
         ret
 ;------------------------------------------------------------------------------
 exFAT_entry_to_bdfe:
+; DEBUGF  1, "K : exFAT_ReadFolder exFAT_entry_to_bdfe \n"
 ; convert FAT entry at edi to BDFE (block of data of folder entry) at esi, advance esi
         mov     eax, [ebp-4]
         mov     [esi+4], eax    ; cp866/UNICODE name
@@ -587,6 +594,9 @@ exFAT_hd_find_lfn:
         push    0
         push    exFAT_notroot_first ; 0 ; fat1x_root_first
         push    exFAT_notroot_next ; 0 ; fat1x_root_next
+        xor     eax, eax
+        mov     [ebp+exFAT.General_Sec_Flags], eax
+        mov     dword [ebp+exFAT.valid_data_length], 0xffffffff ; for ROOT
         mov     eax, [ebp+exFAT.ROOT_CLUSTER]
 ;        mov     [ebp+exFAT.secondary_dir_entry], dword 1
 ;        cmp     [ebp+FAT.fs_type], 32
@@ -622,6 +632,17 @@ exFAT_hd_find_lfn:
 ;        mov     eax, [edi+20-2]
 ;        mov     ax, [edi+26]    ; cluster
         lea     eax, [ebp+exFAT.str_ext_dir_entry]
+
+        push    eax
+        movzx   eax, byte [eax+1]
+        mov     [ebp+exFAT.General_Sec_Flags], eax
+; DEBUGF  1, "K : exFAT General_Sec_Flags %x\n", eax
+        mov     eax, [esp]
+        mov     eax, [eax+8] ; LOW dword of Valid data length - WARNING!!! late rewrite
+        mov     [ebp+exFAT.valid_data_length], eax
+; DEBUGF  1, "K : exFAT.valid_data_length 1 %x\n", eax
+        pop     eax
+
         mov     eax, [eax+20]    ; cluster
 ;.fat32:
 @@:
@@ -667,13 +688,14 @@ exFAT_find_lfn:
 ; CF=1 -> file not found, eax = error code
         mov     [ebp+exFAT.secondary_dir_entry], dword 1
         lea     eax, [esp+12]
-        call    dword [eax-4]
+        call    dword [eax-4] ; exFAT_notroot_first
         jc      .reterr
         sub     esp, 262*2      ; reserve place for LFN
 ;        lea     eax, [esp]
         mov     eax, esp
         mov     [ebp+exFAT.LFN_reserve_place], eax
         mov     [ebp+exFAT.path_in_UTF8], esi
+; DEBUGF  1, "K : exFAT_find_lfn Path: %s\n", esi
 .l1:
 ;        push    esi
 ;        lea     esi, [esp+4]
@@ -728,7 +750,7 @@ exFAT_find_lfn:
         cmp     [ebp+exFAT.secondary_dir_entry], eax
         jz      @f
         lea     eax, [esp+12]
-        call    dword[eax-8]
+        call    dword[eax-8] ; exFAT_notroot_next
         jc      .reterr
 @@:
 ; DEBUGF  1, "K : exFAT_find_lfn.OK \n"
@@ -748,8 +770,14 @@ exFAT_find_lfn:
 .no:
 ; DEBUGF  1, "K : exFAT_find_lfn.no \n"
         lea     eax, [esp+262*2+12]
-        call    dword[eax-8]
+; DEBUGF  1, "K : exFAT General_Sec_Flags %x\n", [ebp+exFAT.General_Sec_Flags]
+; DEBUGF  1, "K : exFAT.valid_data_length 2 %x\n", [ebp+exFAT.valid_data_length]
+        cmp     [ebp+exFAT.valid_data_length], 0
+        jbe     @f
+
+        call    dword[eax-8] ; exFAT_notroot_next
         jnc     .l1
+@@:
         add     esp, 262*2
 .reterr:
 ; DEBUGF  1, "K : exFAT_find_lfn.reterr \n"
@@ -884,7 +912,7 @@ exFAT_ReadFile:
 ; Bits 2 – 7 : Reserved
 ;        test    byte [edi+1], 11b
 ;        pop     edi
-        test    byte [ebp+exFAT.General_Sec_Flags], 11b
+        test    byte [ebp+exFAT.General_Sec_Flags], 10b
         jz      .get_FAT_1
         inc     eax
         jmp     .continue_1
@@ -1075,7 +1103,7 @@ exFAT_ReadFile:
 ; Bits 2 – 7 : Reserved
 ;        test    byte [edi+1], 11b
 ;        pop     edi
-        test    byte [ebp+exFAT.General_Sec_Flags], 11b
+        test    byte [ebp+exFAT.General_Sec_Flags], 10b
         jz      .get_FAT
         inc     eax ; inc cluster
         jmp     .continue
@@ -1293,6 +1321,7 @@ exFAT_ReadFolder:
         call    exFAT_lock
         xor     eax, eax
         mov     [ebp+exFAT.General_Sec_Flags], eax
+; DEBUGF  1, "K : exFAT_ReadFolder General_Sec_Flags 1 %x\n", eax
         mov     eax, [ebp+exFAT.ROOT_CLUSTER]
 ; DEBUGF  1, "K : exFAT.ROOT_CLUSTER: %x\n", eax
         cmp     byte [esi], 0
@@ -1323,6 +1352,7 @@ exFAT_ReadFolder:
         push    eax
         movzx   eax, byte [eax+1]
         mov     [ebp+exFAT.General_Sec_Flags], eax
+; DEBUGF  1, "K : exFAT_ReadFolder General_Sec_Flags 2 %x\n", eax
         mov     eax, [esp]
         mov     eax, [eax+8] ; LOW dword of Valid data length - WARNING!!! late rewrite
         mov     [ebp+exFAT.valid_data_length], eax
@@ -1439,6 +1469,7 @@ exFAT_ReadFolder:
         jc      .l2
 ;        cmp     byte [edi], 0xC1 ; File Name Extension Directory Entry of ExFAT
 ;        jnz     .do_bdfe
+; DEBUGF  1, "K : exFAT_ReadFolder CMP SDE\n"
         xor     eax, eax
         cmp     [ebp+exFAT.secondary_dir_entry], eax
         jz      .do_bdfe
@@ -1447,6 +1478,7 @@ exFAT_ReadFolder:
 ; DEBUGF  1, "K : exFAT_ReadFolder.do_bdfe EDI:%x [EDI]:%x NAME:%s\n", edi, [edi], edi
         cmp     edi, ebx
         jb      .do_bdfe
+; DEBUGF  1, "K : exFAT_ReadFolder.do_bdfe EDI after\n", edi, ebx
         pop     eax
         inc     eax
         dec     dword [esp+4]
@@ -1462,7 +1494,7 @@ exFAT_ReadFolder:
 ;         1 – No; The Contiguous Cluster are allocated to this file/directory;
 ;         This improves the File read performance
 ; Bits 2 – 7 : Reserved
-        test    byte [ebp+exFAT.General_Sec_Flags], 11b
+        test    byte [ebp+exFAT.General_Sec_Flags], 10b
         jz      .get_FAT_1
         inc     eax
         jmp     .continue_1
@@ -1474,6 +1506,7 @@ exFAT_ReadFolder:
         cmp     eax, 2
         jb      .done
 .continue_1:
+; DEBUGF  1, "K : exFAT_ReadFolder.continue_1\n"
         cmp     eax, [ebp+exFAT.fatRESERVED]
         jae     .done
         push    eax
@@ -1505,6 +1538,7 @@ exFAT_ReadFolder:
 ; DEBUGF  1, "K : exFAT_ReadFolder.do_bdfe ECX: %x\n", ecx
         dec     ecx
         js      .l2
+; DEBUGF  1, "K : exFAT_ReadFolder.do_bdfe 2 \n"
         inc     dword [edx+4]   ; new file block copied
         push    esi edi
         mov     esi, [ebp+exFAT.points_to_BDFE]
@@ -1545,7 +1579,7 @@ exFAT_ReadFolder:
 ;         1 – No; The Contiguous Cluster are allocated to this file/directory;
 ;         This improves the File read performance
 ; Bits 2 – 7 : Reserved
-        test    byte [ebp+exFAT.General_Sec_Flags], 11b
+        test    byte [ebp+exFAT.General_Sec_Flags], 10b
         jz      .get_FAT
         inc     eax
         jmp     .continue
@@ -1557,8 +1591,10 @@ exFAT_ReadFolder:
         cmp     eax, 2
         jb      .done
 .continue:
+; DEBUGF  1, "K : exFAT_ReadFolder.continue \n"
         cmp     eax, [ebp+exFAT.fatRESERVED]
         jae     .done
+; DEBUGF  1, "K : exFAT_ReadFolder.continue after\n"
         push    eax
         mov     eax, [ebp+exFAT.SECTORS_PER_CLUSTER]
         mov     [esp+8], eax
@@ -1621,6 +1657,13 @@ exFAT_ReadFolder:
 ;------------------------------------------------------------------------------
 exFAT_GetFileInfo:
 ; DEBUGF  1, "K : exFAT_GetFileInfo \n"
+; DEBUGF  1, "K : exFAT F70 +00: %x\n", [ebx]
+; DEBUGF  1, "K : exFAT F70 +04: %x\n", [ebx+4]
+; DEBUGF  1, "K : exFAT F70 +08: %x\n", [ebx+8]
+; DEBUGF  1, "K : exFAT F70 +12: %x\n", [ebx+12]
+; DEBUGF  1, "K : exFAT F70 +16: %x\n", [ebx+16]
+; DEBUGF  1, "K : exFAT F70 +20: %x\n", [ebx+20]
+; DEBUGF  1, "K : exFAT Path: %s\n", esi
         cmp     byte [esi], 0
         jz      .volume
         call    exFAT_lock
@@ -1679,13 +1722,14 @@ exFAT_GetFileInfo:
         ret
 ;------------------------------------------------------------------------------
 exFAT_notroot_next:
-; DEBUGF  1, "K : exFAT_notroot_next \n"
+; DEBUGF  1, "K : exFAT_notroot_next\n"
         push    ecx
         lea     ecx, [ebp+exFAT.buffer+0x200-0x20]
         cmp     edi, ecx
         jae     exFAT_notroot_next_sector
         add     edi, 0x20
 @@:
+; DEBUGF  1, "K : exFAT_notroot_next.ret\n"
         pop     ecx
         ret
 
@@ -1698,6 +1742,7 @@ exFAT_notroot_next:
 ;        call    exFAT_notroot_end_write
 ;        pop     eax
 exFAT_notroot_next_sector:
+; DEBUGF  1, "K : exFAT_notroot_next_sector\n"
         push    [ebp+exFAT.longname_sec2]
         pop     [ebp+exFAT.longname_sec1]
         push    eax
@@ -1714,6 +1759,7 @@ exFAT_notroot_next_sector:
         jmp     @f
 
 exFAT_notroot_next_err:
+; DEBUGF  1, "K : exFAT_notroot_next_err\n"
 ;        dec     ecx
         pop     ecx
 ;        js      .1
@@ -1723,11 +1769,12 @@ exFAT_notroot_next_err:
         ret
 
 exFAT_notroot_next_cluster:
+; DEBUGF  1, "K : exFAT_notroot_next_cluster\n"
         push    eax
         mov     eax, [eax]
 
-        push    edi
-        lea     edi, [ebp+exFAT.str_ext_dir_entry]
+;        push    edi
+;        lea     edi, [ebp+exFAT.str_ext_dir_entry]
 ; Check - General Secondary Flags
 ; Bit 0 : Allocation possible
 ;         0 – No cluster allocated; 1 – cluster allocation is possible
@@ -1736,8 +1783,15 @@ exFAT_notroot_next_cluster:
 ;         1 – No; The Contiguous Cluster are allocated to this file/directory;
 ;         This improves the File read performance
 ; Bits 2 – 7 : Reserved
-        test    byte [edi+1], 11b
-        pop     edi
+;        push    eax
+;        movzx   eax, byte [edi+1]
+; DEBUGF  1, "K : exFAT_notroot_next_cluster GSF 1:%x\n", eax
+;        movzx   eax, byte [ebp+exFAT.General_Sec_Flags]
+; DEBUGF  1, "K : exFAT_notroot_next_cluster GSF 2:%x\n", eax
+;        pop     eax
+;        test    byte [edi+1], 10b ;11b
+;        pop     edi
+        test    byte [ebp+exFAT.General_Sec_Flags], 10b
         jz      .get_FAT
         inc     eax
         jmp     .continue
@@ -1756,23 +1810,26 @@ exFAT_notroot_next_cluster:
 @@:
         pop     ecx
 exFAT_notroot_first:
-; DEBUGF  1, "K : exFAT_notroot_first \n"
+; DEBUGF  1, "K : exFAT_notroot_first\n"
 ; DEBUGF  1, "K : exFAT_notroot_first.exFAT_get_sector In EAX:%x\n", eax
         call    exFAT_get_sector
 ; DEBUGF  1, "K : exFAT_notroot_first.exFAT_get_sector Out EAX:%x\n", eax
         push    ebx
         lea     edi, [ebp+exFAT.buffer]
         mov     ebx, edi
+        sub     [ebp+exFAT.valid_data_length], 512
         call    fs_read32_sys
         pop     ebx
         test    eax, eax
         jz      .ret ; CF=0
         push    ecx
 .deverr:
+; DEBUGF  1, "K : exFAT_notroot_first.deverr\n"
         pop     ecx
         mov     eax, ERROR_DEVICE
         stc
 .ret:
+; DEBUGF  1, "K : exFAT_notroot_first.ret\n"
         ret
 
 ;fat_notroot_begin_write:
@@ -1790,6 +1847,7 @@ exFAT_notroot_first:
 ;        ret
 ;--------------------------------------
 exFAT_get_sector:
+; DEBUGF  1, "K : exFAT_get_sector\n"
         push    ecx
         mov     ecx, [eax]
 ; DEBUGF  1, "K : exFAT_get_sector In [EAX]:%x [EAX+4]:%x\n", ecx, [eax+4]
