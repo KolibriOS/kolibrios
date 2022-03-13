@@ -305,6 +305,7 @@ udp_output:
 ; udp_connect                                                     ;
 ;                                                                 ;
 ;   IN: eax = socket pointer                                      ;
+;       edx = pointer to sockaddr struct                          ;
 ;                                                                 ;
 ;  OUT: eax = 0 on success                                        ;
 ;       eax = -1 on error                                         ;
@@ -325,10 +326,10 @@ udp_connect:
         pop     edx eax
 
 ; Fill in remote port and IP
-        pushw   [edx + 2]
-        pop     [eax + UDP_SOCKET.RemotePort]
+        pushw   [edx + sockaddr.port]
+        popw    [eax + UDP_SOCKET.RemotePort]
 
-        pushd   [edx + 4]
+        pushd   [edx + sockaddr.ip]
         pop     [eax + UDP_SOCKET.RemoteIP]
 
 ; Find route to host

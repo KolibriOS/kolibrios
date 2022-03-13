@@ -169,6 +169,15 @@ struct  STREAM_SOCKET           TCP_SOCKET
 
 ends
 
+struct sockaddr
+
+        family                  dw ?    ; Address family
+        port                    dw ?    ; 16 bit TCP/UDP port number
+        ip                      dd ?    ; 32 bit IP address
+        _zero                   rb 8    ; Not use, for align
+
+ends
+
 struct  socket_queue_entry
 
         data_ptr                dd ?
