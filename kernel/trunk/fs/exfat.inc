@@ -70,6 +70,9 @@ RAX_high            dd  ?
 RCX_high            dd  ?
 RDX_high            dd  ?
 RDI_high            dd  ?
+current_hash        dd  ?
+hash_flag           dd  ?
+need_hash           dd  ?
 volumeLabel         rb  12
 ; The next two areas (32+32) should be arranged sequentially.
 ; Do not change their location!!!
@@ -365,7 +368,9 @@ exFAT_get_name:
 ;--------------------------------------
 .file_directory_entry:
 ; DEBUGF  1, "K : exFAT_get_name 0x85\n"
-        movzx   eax, byte [edi+1]  ; Number of Secondary directory entries
+        xor     eax, eax
+        mov     [ebp+exFAT.hash_flag], eax ; dword 0
+        mov     al, byte [edi+1]  ; Number of Secondary directory entries
         dec     eax
         mov     [ebp+exFAT.secondary_dir_entry], eax
 ; DEBUGF  1, "K : exFAT_get_name 0x85 SDE: %x\n", eax
@@ -375,6 +380,20 @@ exFAT_get_name:
 ;--------------------------------------
 .stream_extension_directory_entry:
 ; DEBUGF  1, "K : exFAT_get_name 0xC0\n"
+; DEBUGF  1, "K : exFAT SEDE need_hash :%x\n", [ebp+exFAT.need_hash]
+        mov     eax, [ebp+exFAT.need_hash]
+        test    eax, eax
+        jz      .stream_extension_directory_entry_1 ; @f
+        movzx   eax, word [edi+4] ; hash of the file name
+; DEBUGF  1, "K : exFAT hash 1 :%x\n", eax
+; DEBUGF  1, "K : exFAT hash 2 :%x\n", [ebp+exFAT.current_hash]
+        cmp     eax, [ebp+exFAT.current_hash]
+        je      .stream_extension_directory_entry_1 ; @f
+        xor     eax, eax
+        inc     eax
+        mov     [ebp+exFAT.hash_flag], eax ; dword 1
+; DEBUGF  1, "K : exFAT hashes don't match! \n"
+.stream_extension_directory_entry_1:
         lea     esi, [ebp+exFAT.str_ext_dir_entry]
 ; DEBUGF  1, "K : exFAT.str_ext_dir_entry ESI: %x [ESI]: %x\n", esi, [esi]
 @@:
@@ -410,7 +429,11 @@ exFAT_get_name:
 ;        mov     ebp,[esp+12+8+4+4+7*4+262*2+4+4]
 ; DEBUGF  1, "K : exFAT_get_name.longname Input FS EBP:%x\n", ebp
 ;        pop     ebp
-        
+ 
+        mov     eax, [ebp+exFAT.hash_flag]
+        test    eax, eax
+        jnz     .no
+; DEBUGF  1, "K : exFAT_get_name.longname hash match! \n"
         push    edi esi
 
         xchg    esi, edi
@@ -686,7 +709,10 @@ exFAT_find_lfn:
 ; esi -> next name in the path
 ; edi -> direntry
 ; CF=1 -> file not found, eax = error code
-        mov     [ebp+exFAT.secondary_dir_entry], dword 1
+        xor     eax, eax
+        inc     eax
+        mov     [ebp+exFAT.secondary_dir_entry], eax ; dword 1
+        mov     [ebp+exFAT.need_hash], eax ; dword 1
         lea     eax, [esp+12]
         call    dword [eax-4] ; exFAT_notroot_first
         jc      .reterr
@@ -696,6 +722,70 @@ exFAT_find_lfn:
         mov     [ebp+exFAT.LFN_reserve_place], eax
         mov     [ebp+exFAT.path_in_UTF8], esi
 ; DEBUGF  1, "K : exFAT_find_lfn Path: %s\n", esi
+; DEBUGF  1, "K : exFAT Path: %s\n", esi
+; DEBUGF  1, "K : exFAT Path1: %x %x %x\n", [esi], [esi+4], [esi+8]
+        push    esi edi
+;        lea     edi, [esp+8]
+        mov     edi, eax
+align 4
+@@:
+; in: esi -> UTF-8 char (increasing)
+; out: ax = UTF-16 char
+        call    utf8to16
+        call    utf16toUpper
+        stosw
+        test    ax, ax
+        jz      @f
+        cmp     ax, word 0x002f ; "/"
+        jne     @b
+@@:
+;        mov     [edi-2], dword 0
+        mov     esi, [ebp+exFAT.LFN_reserve_place]
+; DEBUGF  1, "K : exFAT Path2: %x %x %x\n", [esi], [esi+4], [esi+8]
+        push    ebx ecx
+        mov     ecx, edi
+        sub     ecx, esi
+        sub     ecx, 2 ; correction for zero or "/"
+; exFAT_hash_calculate
+;   in:
+; esi -> NameUTF16
+; ecx -> NameUTF16 length
+; out: ax = hash
+        xor     eax, eax
+        xor     ebx, ebx
+;--------------------------------------
+align 4
+.start:
+; DEBUGF 1, "Hash start EAX:%x ECX:%x\n", eax, ecx
+        mov     bx, ax
+; (Hash&1) ? 0x8000 : 0)
+        and     ax, 0x1
+        jz      .else
+
+        mov     ax, 0x8000
+        jmp     @f
+;--------------------------------------
+.else:
+        xor     ax, ax
+;--------------------------------------
+@@:
+; DEBUGF 1, "(Hash&1) EAX:%x\n", eax
+; (Hash>>1)
+        shr     bx, 1
+; DEBUGF 1, "(Hash>>1) EBX:%x\n", ebx
+        add     ax, bx
+; DEBUGF 1, "+ (Hash>>1)) EAX:%x\n", eax
+        movzx   bx, byte [esi]
+        add     ax, bx
+; DEBUGF 1, "+ (UInt16)Buffer[Index] EAX:%x\n", eax        
+        inc     esi
+        dec     ecx
+        jnz     .start
+;--------------------------------------
+        pop     ecx ebx
+        mov     [ebp+exFAT.current_hash], eax
+; DEBUGF  1, "K : exFAT current hash :%x\n", eax        
+        pop     edi esi
 .l1:
 ;        push    esi
 ;        lea     esi, [esp+4]
@@ -706,7 +796,7 @@ exFAT_find_lfn:
 ;        mov     ebp,[esp+12+8+4+4+7*4+262*2+4]
 ; DEBUGF  1, "K : exFAT_get_name Input FS EBP:%x\n", ebp
 ;        pop     ebp
-
+; DEBUGF  1, "K : exFAT FL need_hash :%x\n", [ebp+exFAT.need_hash]
         call    exFAT_get_name
 ;        mov     [ebp+exFAT.LFN_reserve_place], esi
 ;        pop     esi
@@ -718,10 +808,10 @@ exFAT_find_lfn:
 
         jc      .no
 
-        push    eax
+;        push    eax
         xor     eax, eax
         cmp     [ebp+exFAT.secondary_dir_entry], eax
-        pop     eax
+;        pop     eax
         jnz     .no
 
         push    edi esi
@@ -808,6 +898,9 @@ exFAT_ReadFile:
 ;   out:
 ; eax, ebx = return values for sysfunc 70
         call    exFAT_lock
+        xor     eax, eax
+        mov     [ebp+exFAT.need_hash], eax ; dword 0
+        mov     [ebp+exFAT.hash_flag], eax ; dword 0
         call    exFAT_hd_find_lfn
         jc      .notFound
 ;        test    byte [edi+11], 0x10     ; do not allow read directories
@@ -1320,6 +1413,8 @@ exFAT_ReadFolder:
 ; eax, ebx = return values for sysfunc 70
         call    exFAT_lock
         xor     eax, eax
+        mov     [ebp+exFAT.need_hash], eax ; dword 0
+        mov     [ebp+exFAT.hash_flag], eax ; dword 0
         mov     [ebp+exFAT.General_Sec_Flags], eax
 ; DEBUGF  1, "K : exFAT_ReadFolder General_Sec_Flags 1 %x\n", eax
         mov     eax, [ebp+exFAT.ROOT_CLUSTER]
@@ -1343,6 +1438,9 @@ exFAT_ReadFolder:
 ;        jmp     .error
 ;        test    byte [edi+11], 0x10     ; do not allow read files
 ;        jz      .accessDenied
+        xor     eax, eax
+        mov     [ebp+exFAT.need_hash], eax ; dword 0
+        mov     [ebp+exFAT.hash_flag], eax ; dword 0
         lea     eax, [ebp+exFAT.file_dir_entry]
         test    byte [eax+4], 10000b  ; do not allow read files
         jz      .accessDenied
@@ -1464,6 +1562,7 @@ exFAT_ReadFolder:
 ; DEBUGF  1, "K : exFAT_ReadFolder.l1 \n"
 ;        push    esi
 ;        lea     esi, [esp+20]
+; DEBUGF  1, "K : exFAT RD need_hash :%x\n", [ebp+exFAT.need_hash]
         call    exFAT_get_name
 ;        pop     esi
         jc      .l2
@@ -1667,6 +1766,9 @@ exFAT_GetFileInfo:
         cmp     byte [esi], 0
         jz      .volume
         call    exFAT_lock
+        xor     eax, eax
+        mov     [ebp+exFAT.need_hash], eax ; dword 0
+        mov     [ebp+exFAT.hash_flag], eax ; dword 0
         call    exFAT_hd_find_lfn
         jc      @f
         lea     edi, [ebp+exFAT.file_dir_entry]
