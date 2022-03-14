@@ -344,7 +344,7 @@ end if
       pop   ebp
 
 ret
-align 16
+
 glass_line:
 ; in:
 ;    xmm0 - normal vector 1
@@ -362,7 +362,7 @@ glass_line:
 
    push  ebp
    mov   ebp,esp
-   sub   esp,256
+   sub   esp,190
    sub   ebp,16
    and   ebp,0xfffffff0
 
@@ -537,7 +537,7 @@ align 16
         jnz      .ddraw
 
   .end_rp_line:
-        add      esp,256
+        add      esp,190
         pop      ebp
 
 ret

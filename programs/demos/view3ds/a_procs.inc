@@ -62,20 +62,6 @@ ret
 if Ext > SSE2
  ;--------------------------------------------------------------------
 init_point_lights:
-  ;      mov       eax,1000
-  ;      cvtsi2ss  xmm1,eax
-  ;      shufps    xmm1,xmm1,11000000b
-  ;      mov       esi,lights_aligned
-  ;      mov       edi,point_light_coords
-  ;      mov       ecx,3
-  ;    @@:
-  ;      movaps    xmm0,[esi]
-  ;      addps     xmm0,[f05xz]
-  ;      mulps     xmm0,xmm1
-  ;      movaps    [edi],xmm0
-  ;      add       esi,64
-   ;     add       edi,16
-   ;     loop      @b
       mov       ecx,3
       mov       edi,point_light_coords
     @@:
@@ -90,16 +76,11 @@ init_point_lights:
       call      random
       cvtsi2ss  xmm0,eax
       movss     [edi+4],xmm0
-   ;   movzx     ebx,word[size_x_var]
-   ;   shl       ebx,2
-   ;   neg       ebx
       mov       ecx,-1900
-   ;   sub       ecx,100
       mov       edx,-600
       call      random
       cvtsi2ss  xmm0,eax
       movss     [edi+8],xmm0
-   ;   mov       dword[edi+8],-1700.0
       mov       [edi+12],dword 0
       add       edi,16
       pop       ecx
@@ -174,7 +155,7 @@ intersect_tri: ; Moeller-Trumbore method
 ;      or       eax,eax
 ;      jz       @f
       comiss   xmm0,[eps]
-      jl       @f
+      jb       @f
 
       rcpss    xmm0,.det
       movss    .invdet,xmm0
@@ -228,7 +209,7 @@ intersect_tri: ; Moeller-Trumbore method
    ;   test     eax,1
    ;   jz       @f
       comiss   xmm1,[eps]
-      jl       @f
+      jb       @f
 
       mov      eax,1
       cmp      .ift,0
@@ -264,6 +245,16 @@ do_edges_list:
     .edd_ptr  equ [ebp-8]
     .counter  equ [ebp-12]
 
+       mov     ebx, 12
+       mov     eax, 68
+       mov     ecx,[triangles_count_var]
+       lea     ecx,[ecx*3]
+       shl     ecx,4
+       add     ecx,1024
+       mov     edx,[edges_ptr]
+       int     0x40                   ;  -> allocate memory to edges
+       mov     [edges_ptr], eax   ;  -> eax = pointer to allocated mem
+
 
     mov     ebx,[edges_ptr]
     mov     eax,[triangles_ptr]
@@ -280,17 +271,18 @@ do_edges_list:
     loop    @b
 
 
+
     mov     ebx,[edges_ptr]
     mov     ecx,[triangles_count_var]
     lea     ecx,[ecx*3]
   .mxd:
     mov     eax,[ebx]
+    mov     edx,[ebx+4]
     cmp     eax,[ebx+4]
-    jl      @f
-    movq    xmm0,[ebx]
-    pshufd  xmm0,xmm0,11100001b
-    movq    [ebx],xmm0
-  @@:
+    cmovg   eax,edx
+    cmovg   edx,[ebx]
+    mov     [ebx],eax
+    mov     [ebx+4],edx
     add     ebx,8
     loop    .mxd
 
@@ -303,20 +295,20 @@ do_edges_list:
    mov    esi,ecx
    shl    esi,3
    add    esi,ebx
-
+   dec    ecx
  .ccc:
    mov    eax,[ebx+8]
    cmp    eax,[ebx]
-   jge    .g
+   jae    .g
    movq   xmm0,[ebx+8]
    push   ebx
  .c:
    cmp    ebx,esi
-   jge    .done
+   jae    .done
    cmp    ebx,[edges_ptr]
-   jl     .done
+   jb     .done
    cmp    eax,[ebx]
-   jge    .done
+   jae    .done
    movq   xmm7,[ebx]
    movq   [ebx+8],xmm7
    sub    ebx,8
@@ -328,10 +320,7 @@ do_edges_list:
    pop    ebx
  .g:
    add    ebx,8
-   dec    ecx
-   cmp    ecx,1
-   jnz    .ccc
-
+   loop    .ccc
 
   ; insert sort again
    mov    ebx,[edges_ptr]
@@ -350,7 +339,7 @@ do_edges_list:
    inc    ecx
    add    ebx,8
    cmp    ebx,esi
-   jge    .br         ; break
+   jae    .br         ; break
    cmp    eax,[ebx]
    je     .aa
    mov    .counter,ecx
@@ -368,12 +357,12 @@ do_edges_list:
    mov    eax,[ebx+12]
    mov    edx,[ebx+8]
    cmp    eax,[ebx+4]
-   jge    .gg2
+   jae    .gg2
    movq   xmm0,[ebx+8]
    push   ebx
  .c2:
    cmp    eax,[ebx+4]
-   jge    .done2
+   jae    .done2
    movq   xmm7,[ebx]
    movq   [ebx+8],xmm7
 
@@ -405,60 +394,68 @@ do_edges_list:
    add   esp,8
  .ff:
 
+
    ; count edges
-   mov    ecx,0
-   mov    edx,[triangles_count_var]
-   lea    edx,[edx*3]
-   mov    ebx,[edges_ptr]
-;   mov    esi,edx
-;   shl    esi,3
-;   add    esi,[edges_ptr]
+
+   mov    ecx,[triangles_count_var]
+   lea    ecx,[ecx*3+3]
+   mov    esi,[edges_ptr]
+   xor    edx,edx
+   cld
  .nx:
-   movq    xmm0,[ebx]
-   add     ebx,8
-;   cmp     ebx,esi
-;   jae     @f
-   movq    xmm1,[ebx]
-; @@:
-   pcmpeqd xmm0,xmm1
-   pmovmskb eax,xmm0
-   and     eax,0xff
-   cmp     eax,0xff
-   jz      @f
-   inc     ecx
-  @@:
-   dec     edx
-   jnz     .nx
+   lodsd
+   mov    ebx,eax
+   lodsd
+   cmp    ebx,[esi]
+   jnz    .ic
+   cmp    eax,[esi+4]
+   jnz    .ic
+   loop   .nx
+   jmp    .endc
+ .ic:
+
+   inc    edx
+   loop   .nx
+  .endc:
+    mov     .ed_cnt,edx
+    mov     ecx,edx
 
 
-    mov     .ed_cnt,ecx
-    lea     ecx,[ecx*3]
-    shl     ecx,2
+    shl     ecx,3
     add     ecx,65536
     mov     ebx,12
     mov     eax,68
     mov     edx,.edd_ptr
-    int     0x40                   ;  -> allocate memory to triangles
+    int     0x40            ;  -> allocate memory to new edges
     mov     .edd_ptr, eax   ;  -> eax = pointer to allocated mem
 
 
 
-   mov      ebx,[edges_ptr]
-   mov      ecx,[triangles_count_var]
-   lea      ecx,[ecx*3]
-  .seek:
-   movq     xmm0,[ebx]
-   movq     xmm1,[ebx+8]
-   pcmpeqd  xmm1,xmm0
-   pmovmskb edx,xmm1
-   and      edx,0xff
-   cmp      edx,0xff
-   je       @f
-   movq     [eax],xmm0
-   add      eax,8
- @@:
-   add      ebx,8
-   loop     .seek
+   mov    ecx,[triangles_count_var]
+   lea    ecx,[ecx*3]
+   add    ecx,ecx
+   mov    esi,[edges_ptr]
+   mov    edi,eax
+   xor    edx,edx
+   cld
+ .nx1:
+   lodsd
+   mov    ebx,eax
+   lodsd
+   cmp    ebx,[esi]
+   jnz    .ic1
+   cmp    eax,[esi+4]
+   jnz    .ic1
+   loop   .nx1
+   jmp    .endc1
+ .ic1:
+   xchg   eax,ebx
+   stosd
+   mov    eax,ebx
+   stosd
+   inc    edx
+   loop   .nx1
+  .endc1:
 
    mov       eax,68
    mov       ebx,13
@@ -595,8 +592,8 @@ draw_dots:
    mov     edi,[screen_ptr]
    lea     eax,[eax*3]
    add     edi,eax
-   xor     eax,eax
-   not     eax
+   or      eax,-1
+;   not     eax
    stosd
  @@:
    loop    .drw

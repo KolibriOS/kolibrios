@@ -452,7 +452,7 @@ end if
       pop   ebp
 
 ret
-align 16
+
 glass_tex_line:
 ; in:
 ;    xmm0 - normal vector 1
@@ -747,7 +747,6 @@ end if
      .skip:
         add      edi,4
         add      esi,4
-      ;  addps    xmm0,.dn
         movaps   xmm0,.n1     ; cur normal
         addps    xmm0,.dn
         addps    xmm2,.dtx

@@ -76,14 +76,19 @@ detect_chunks:
    mov     .chmr,eax     ; chunks mark if bit is set - tri was used
 
    mov     edi,eax
-   pxor    xmm0,xmm0
+;   pxor    xmm0,xmm0
    mov     ecx,[triangles_count_var]
-   shr     ecx,7
+   shr     ecx,5
    inc     ecx
- @@:
-   movdqa  [edi],xmm0
-   add     edi,16
-   loop    @b
+   xor     eax,eax
+   cld
+   rep     stosd
+;   shr     ecx,7
+;   inc     ecx
+; @@:
+;   movdqa  [edi],xmm0
+;   add     edi,16
+;   loop    @b
 
 
   mov      eax,[points_count_var]
@@ -293,6 +298,7 @@ detect_chunks:
 
         mov     .up,esi
         mov     .str,edi
+;        mov     edi,.tri_ch1
     .lb1:                     ; nx chunk
         cmp     edi,.ltch1
         jnb     .endl
@@ -399,7 +405,7 @@ detect_chunks:
 
 
 
-;   mov    ebx,.chunks
+   mov    ebx,.chunks
    mov    ecx,.ch_cnt
 
    mov  esi,.tri_ch

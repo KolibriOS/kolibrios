@@ -1,5 +1,5 @@
 
-; application : View3ds ver. 0.076 - tiny .3ds and .asc files viewer
+; application : View3ds ver. 0.077 - tiny .3ds and .asc files viewer
 ;               with a few graphics effects demonstration.
 ; compiler    : FASM
 ; system      : KolibriOS
@@ -64,53 +64,74 @@ START:    ; start of execution
         fstp   [rsscale]
         pop    ebx
 
-        call   alloc_buffer_mem
-        call   read_param
-        call   read_from_disk    ; read, if all is ok eax = 0
-        cmp    eax,0
-        jne    .gen
-        mov    esi,[fptr]
-        cmp    [esi],word 4D4Dh
-        jne    .asc
-        call   read_tp_variables ; init points and triangles count variables
-        cmp    eax,0
-
+        call    alloc_buffer_mem
+        call    read_param
+        call    read_from_disk    ; read, if all is ok eax = 0
+        btr     eax,31            ; mark 1
+        cmp     eax,0
+        jne     .gen
+        bts     eax,31            ; mark 2
+        mov     esi,[fptr]
+        cmp     [esi],word 4D4Dh
+        jne     .asc_gen
+        call    read_tp_variables ; init points and triangles count variables
+        cmp     eax,0
         jne    .malloc
+        xor    eax,eax            ; if failed read -> generate
     .gen:
-     ; if no house.3ds on board - generate
-        xor      bl,bl ; reallocate memory
+    .asc_gen:   ; read asc file or generate
+        push    eax
+     ; if no house.3ds on rd - generate
+        xor      bl,bl ; allocate memory
         mov      [triangles_count_var],20000
         mov      [points_count_var],20000
         call     alloc_mem_for_tp
+        pop      eax
+        bt       eax,31
+        jc       .asc
+        mov      bl,[generator_flag]
+        call     generate_object
+        mov      ax,1  ;mark
 
-        mov    bl,[generator_flag]
-        call   generate_object
-        jmp    .opt
+        jmp      .opt
     .asc:
-        mov    [triangles_count_var],10000  ; to do: read asc header
-        mov    [points_count_var],10000
-        call   alloc_mem_for_tp
+   ;     xor    bl,bl
+   ;     mov    [triangles_count_var],20000  ; to do: read asc header
+   ;     mov    [points_count_var],20000
+   ;     call   alloc_mem_for_tp
         call   read_asc
+        xor    ax,ax
         jmp    .opt
     .malloc:
         call   alloc_mem_for_tp
         call   read_from_file
     .opt:
+      if     Ext >= SSE2
+        push   ax
+      end if
         call   optimize_object1     ;  proc in file b_procs.asm
                                     ;  set point(0,0,0) in center and  calc all coords
                                     ;  to be in <-1.0,1.0>
         call   normalize_all_light_vectors
         call   copy_lights ; to aligned float
-        call   init_triangles_normals2
+ ;       call   init_triangles_normals2
+
 
      if Ext >= SSE2
+              ; if first byte of ax set -> old style normal vectors finding
         call   detect_chunks
         mov    [chunks_number],ecx
         mov    [chunks_ptr],ebx
+        push   esi
+        push   edi
+        call   init_triangles_normals2
+     ;  esi -   tri_ch
+     ;  edi -   t_ptr - every vertice index  - pointer to to all triangles
+     ;          that have this index
+        pop    edi
+        pop    esi
+        pop    ax
 
-     ;   esi -   tri_ch
-     ;   edi -   t_ptr - every vertice index  - pointer to to all triangles
-     ;           that have this index
      end if
 
         call   init_point_normals
@@ -122,7 +143,6 @@ START:    ; start of execution
         call   do_color_buffer   ; intit color_map
      if Ext >= SSE3
         call   init_point_lights
-        mov    [fire_flag],0     ; proteza
      end if
         mov    edi,bumpmap
         call   calc_bumpmap
@@ -206,10 +226,22 @@ START:    ; start of execution
         jmp     noclose
 
     red:   ; redraw
+     ;   xor     edx,edx
+     ; @@:
+     ;   push    edx
         mov     eax,9  ; get process info
         mov     ebx,procinfo
-        mov     ecx,-1
+        or      ecx,-1
         int     0x40
+     ;   pop     edx
+     ;   inc     edx
+     ;   cmp     dword[procinfo+26],50000000  ; ~ 10 Mbytes
+     ;   jb      @f
+     ;   cmp     edx,1
+     ;   je      @b
+
+
+    ; @@:
         mov     eax,[procinfo+42]    ; read params of window
         sub     eax,225
         mov     [size_x_var],ax
@@ -297,14 +329,14 @@ START:    ; start of execution
         call    update_flags          ; update flags and write labels of flags
 
                                       ; do other operations according to flag
-        cmp     ah,3                  ; ah = 3 -> shading model
-        jne     .next_m6
-        cmp     [dr_flag],2
-        jne     @f
+;        cmp     ah,3                 ; ah = 3 -> shading model
+;        jne     .next_m6
+;        cmp     [dr_flag],2
+;        jne     @f
    ;     call    init_envmap2    ;   <----! this don't works in env mode
                                  ;          and more than ~18 kb objects
  ;       call    init_envmap_cub2
-     @@:
+;     @@:
         cmp     [dr_flag],4
         jne     @f
         call    generate_texture2
@@ -402,7 +434,7 @@ START:    ; start of execution
         call   detect_chunks
         mov    [chunks_number],ecx
         mov    [chunks_ptr],ebx
-
+        mov    ax,1  ; - old style detecting normal vectors
      ;   esi -   tri_ch
      ;   edi -   t_ptr - every vertice index  - pointer to to all triangles
      ;           that have this index
@@ -412,6 +444,7 @@ START:    ; start of execution
         call    calc_bumpmap_coords   ; bump and texture mapping
         call    do_edges_list
         call    write_info
+
      .next_m2:
         cmp      ah,19
         je       @f
@@ -693,6 +726,7 @@ START:    ; start of execution
     lea     ecx,[eax*4]
 
 if (Ext = MMX)|(Ext = SSE)
+    emms
     mov      bh,bl
     push     bx
     shl      ebx,16
@@ -884,9 +918,10 @@ clear_vertices_index:
     movzx ecx,word[size_y_var]
     imul  ecx,eax
     xor   eax,eax
-    shr   ecx,1
+ ;   shr   ecx,1
     rep   stosd
 ret
+
 edit:     ; mmx required, edit mesh by vertex
         push   ebp
         mov    ebp,esp
@@ -895,9 +930,9 @@ edit:     ; mmx required, edit mesh by vertex
         .y_coord equ ebp-2
         .x_coord equ ebp-4
         .points_translated equ ebp-10
-        .points            equ ebp-22
-        .points_rotated    equ ebp-34
-        .mx                equ ebp-70
+        .points            equ ebp-26
+        .points_rotated    equ ebp-26-16
+        .mx                equ ebp-26-56
 
     macro check_bar
     {
@@ -906,17 +941,11 @@ edit:     ; mmx required, edit mesh by vertex
         movzx  edx,word[size_x_var]
         imul   edx,ecx
         add    ebx,edx
-        push   ebx
         mov    ecx,ebx
-        shl     ecx,2
-       ; lea    ecx,[ebx*2]
+        shl    ecx,2
         lea    ebx,[ebx*3]
-
-        cmp    [dr_flag],12
-        jl    @f
-        add    ebx,[esp]
-      @@:
-        add    esp,4
+        cmp    [dr_flag],10
+        cmovg  ebx,ecx
         add    ebx,[screen_ptr]
         mov    ebx,[ebx]
         and    ebx,0x00ffffff
@@ -935,10 +964,9 @@ edit:     ; mmx required, edit mesh by vertex
         pcmpgtw mm0,mm1
         pcmpgtw mm3,mm1
         pxor    mm3,mm0
-        movd    eax,mm3
-        mov     cx,ax
-        shr     eax,16
-        and     ax,cx
+        pmovmskb eax,mm3
+        and     eax,1111b
+
         or      ax,ax
         jz      .no_edit
 
@@ -949,14 +977,11 @@ edit:     ; mmx required, edit mesh by vertex
 
       ; store both x and y coordinates
         ror    eax,16
-       ; push   eax
-       ; sub    esp,256
         mov    [.x_coord],eax
         test   word[mouse_state],100000000b
         jz     .not_press  ; check if left mouse button press
 
         ;  left button  pressed
-
 
         check_bar
         jne    .no_edit
@@ -992,29 +1017,17 @@ edit:     ; mmx required, edit mesh by vertex
         check_bar
         jne    .end
 
-        mov    esi,[vertex_edit_no]
-    ;    dec    esi
-        lea    esi,[esi*3]
-        add    esi,esi
-        add    esi,[points_translated_ptr]
-        emms
+        movd        xmm0,[edit_end_x]
+        punpcklwd   xmm0,[the_zero]
+        movd        xmm1,[vect_x]
+        punpcklwd   xmm1,[the_zero]
+   ;     movd        xmm2,[offset_y]
+   ;     punpcklwd   xmm2,[the_zero]
+        psubd       xmm0,xmm1
+   ;     psubd       xmm0,xmm2
+        cvtdq2ps    xmm0,xmm0
+        movups      [.points],xmm0
 
-        movd    mm1,dword[esi]
-        paddw   mm1,mm0
-        psubw   mm1,qword[vect_x]
-        movd    dword[esi],mm1
-
-        lea    edi,[.points]
-     ; detranslate
-        fninit
-        fild word[esi+4]
-        fstp dword[edi+8]
-        fild word[esi+2]
-        fisub word[offset_x]
-        fstp dword[edi+4]
-        fild word[esi]
-        fisub word[offset_y]   ; proteza
-        fstp dword[edi]
 
         mov     esi,matrix
         lea     edi,[.mx]
@@ -1028,7 +1041,7 @@ edit:     ; mmx required, edit mesh by vertex
 
    ;    inject into vertex list
         mov     edi,[vertex_edit_no]
-    ;    dec     edi
+      ;  dec     edi
         lea     edi,[edi*3]
         shl     edi,2
         add     edi,[points_ptr]
@@ -1037,11 +1050,8 @@ edit:     ; mmx required, edit mesh by vertex
         movsd
         movsd
         movsd
-     ;   mov     ecx,3
-     ;   cld
-     ;   rep     movsd
 
-
+        mov    dword[edit_start_x],0
         mov    dword[edit_end_x],0
         mov    [vertex_edit_no],-1
 
@@ -1096,7 +1106,7 @@ alloc_buffer_mem:
 
     mov      esp,ebp
     pop      ebp
-
+ret
 
 
 
@@ -1511,6 +1521,7 @@ init_point_normals:
 ;in:
 ;    esi - tri_ch
 ;    edi - t_ptr
+;    ax =  1 -> old style finding normals
 .z equ dword [ebp-8]
 .y equ dword [ebp-12]
 .x equ [ebp-16]
@@ -1519,6 +1530,7 @@ init_point_normals:
 .t_ptr        equ dword [ebp-36]
 .tri_ch       equ dword [ebp-40]
 .max_val      equ dword [ebp-44]
+.mark         equ word  [ebp-45]
 
         push      ebp
         mov       ebp,esp
@@ -1527,9 +1539,9 @@ init_point_normals:
         mov       .t_ptr,edi
         mov       .tri_ch,esi
 
-
-
-
+;        mov       .mark,ax
+        bt        ax,0
+        jc        .old1
 
 
         mov       ecx,[triangles_count_var]
@@ -1581,6 +1593,9 @@ init_point_normals:
 
         jmp      .end
 
+      .old1:
+
+        xor     edx,edx
 
       .old:
 
@@ -1644,6 +1659,9 @@ init_point_normals:
         mov       edx,.point_number
         cmp       edx,[points_count_var]
         jne       .ipn_loop
+ ;       cmp       .mark,1
+ ;       je        .end1
+ ;        always free if Ext>=SSE2
      .end:
 
         mov     eax,68
@@ -1656,7 +1674,7 @@ init_point_normals:
         mov     ecx,.tri_ch
         int     0x40
 
-
+  ;   .end1:
 
 
         add       esp,64
@@ -1817,38 +1835,37 @@ clrscr:
         movzx   ecx,word[size_x_var]
         movzx   eax,word[size_y_var]
         imul    ecx,eax
-
-
+        cld
         xor     eax,eax
-      if Ext=NON
+  ;    if Ext=NON
         rep     stosd
-      else if Ext = MMX
-        pxor    mm0,mm0
-      @@:
-        movq    [edi+00],mm0
-        movq    [edi+08],mm0
-        movq    [edi+16],mm0
-        movq    [edi+24],mm0
-        add     edi,32
-        sub     ecx,8
-        jnc     @b
-      else
-        push    ecx
-        mov     ecx,edi
-        and     ecx,0x0000000f
-        rep     stosb
-        pop     ecx
-        and     ecx,0xfffffff0
-        xorps   xmm0,xmm0
-      @@:
-        movaps  [edi],xmm0
-        movaps  [edi+16],xmm0
-        movaps  [edi+32],xmm0
-        movaps  [edi+48],xmm0
-        add     edi,64
-        sub     ecx,16
-        jnz     @b
-      end if
+;      else if Ext = MMX
+;        pxor    mm0,mm0
+ ;     @@:
+ ;       movq    [edi+00],mm0
+;        movq    [edi+08],mm0
+;        movq    [edi+16],mm0
+ ;       movq    [edi+24],mm0
+ ;       add     edi,32
+ ;       sub     ecx,8
+ ;       jnc     @b
+ ;     else
+ ;       push    ecx
+ ;       mov     ecx,edi
+ ;       and     ecx,0x0000000f
+ ;       rep     stosb
+ ;       pop     ecx
+ ;       and     ecx,0xfffffff0
+ ;       xorps   xmm0,xmm0
+ ;     @@:
+ ;       movaps  [edi],xmm0
+ ;       movaps  [edi+16],xmm0
+ ;       movaps  [edi+32],xmm0
+ ;       movaps  [edi+48],xmm0
+ ;       add     edi,64
+ ;       sub     ecx,16
+ ;       jnz     @b
+ ;     end if
 
 ret
 
@@ -1879,7 +1896,7 @@ draw_triangles:
 
         push    ebp
         mov     ebp,esp
-        sub     esp,60
+        sub     esp,64
 
  ;       movzx   ax,[dr_flag]
         mov     .dr_flag,ax
@@ -2777,6 +2794,7 @@ if Ext >= SSE3
    ;     je      @f
    ;     int3
    ;   @@:
+
         mov     eax, .index1x12
         mov     ebx, .index2x12
         mov     ecx, .index3x12
@@ -2945,7 +2963,7 @@ end if
 
 
    .eend:
-        add      esp,60
+        add      esp,64
         pop      ebp
 
 ret
@@ -2956,7 +2974,7 @@ draw_handlers:
        ;  in eax - render model
         push  ebp
         mov   ebp,esp
-;        emms
+        emms
        .fac         equ  dword[ebp-16]
        .xplus_scr    equ ebp-8
        .xplus_index  equ ebp-12
@@ -3320,12 +3338,12 @@ alloc_mem_for_tp:
         int     0x40                   ;  -> allocate memory to triangles
         mov     [triangles_ptr], eax   ;  -> eax = pointer to allocated mem
 
-        mov     eax, 68
-        mov     ecx,[triangles_count_var]
-        imul    ecx,[i36]
-        mov     edx,[edges_ptr]
-        int     0x40                   ;  -> allocate memory to triangles
-        mov     [edges_ptr], eax   ;  -> eax = pointer to allocated mem
+;        mov     eax, 68
+;        mov     ecx,[triangles_count_var]
+;        imul    ecx,[i36]
+;        mov     edx,[edges_ptr]
+;        int     0x40                   ;  -> allocate memory to triangles
+;        mov     [edges_ptr], eax   ;  -> eax = pointer to allocated mem
 
 
                                             ; ststic  memory
@@ -3411,6 +3429,7 @@ read_from_disk:
   ;  eax = 0   -> ok file loaded
 ret
 read_param:
+    cld
     mov        esi,I_Param
     cmp        dword[esi],0
     je         .end
@@ -3543,9 +3562,6 @@ ret
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
     draw_window:
-        movzx   eax,[fire_flag]
-        push    eax
-    ;    int3
         mov     eax,12          ; function 12:tell os about windowdraw
         mov     ebx,1           ; 1, start of draw
         int     0x40
@@ -3732,8 +3748,8 @@ ret
         mov     eax,12          ; function 12:tell os about windowdraw
         mov     ebx,2           ; 2, end of draw
         int     0x40
-        pop     eax
-        mov     [fire_flag],al
+      ;  pop     eax
+      ;  mov     [fire_flag],al
         ret
 
 

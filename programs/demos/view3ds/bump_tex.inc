@@ -707,7 +707,7 @@ if  Ext >= SSE2
        movups  .cty2,xmm3
 end if
 
-if  (Ext = MMX)
+if  (Ext = MMX)| (Ext = SSE)
        movq     mm0,.cby2
        movq     mm1,.cby1
        movq     mm2,.cey2
@@ -843,7 +843,7 @@ if  Ext >= SSE2
 end if
 
 
-if (Ext = MMX)
+if  (Ext = MMX)| (Ext = SSE)
        movq     mm0,.cby2
        movq     mm1,.cby1
        movq     mm2,.cey2
@@ -1469,13 +1469,3 @@ end if
   .bl_end:
         mov     esp,ebp
 ret 76
-;Ext = MMX
-
-;     else
-;        movq    mm5, qword[.temp1]  ;-
-;        paddd   mm5, qword[.temp5]  ; .temp5 == low dword = TEX_X, high dword = -TEX_X
-;        pand    mm5, qword[.temp3]  ; .temp3 == low = high dword = TEX_SIZE
-;        paddd   mm5, qword[.temp4]  ; .temp4 == low = high dword = offset .bmap
-;        movd    ebx,mm5
-;        psrlq   mm5,32
-;     end if

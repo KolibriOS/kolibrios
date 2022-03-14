@@ -372,7 +372,7 @@ ray_shd_l:
 
    push  ebp
    mov   ebp,esp
-   sub   esp,320
+   sub   esp,270
    sub   ebp,16
    and   ebp,0xfffffff0
 
@@ -421,6 +421,7 @@ ray_shd_l:
         shufps  xmm3,xmm3,11100001b
     @@:
         movd    .cur_tri,mm7
+  ;      sub     .cur_tri,dword 1
         cmp     ax,.x_max
         jge     .end_rp_line
         cmp     bx,.x_min
@@ -689,7 +690,7 @@ end if
         dec      ecx
         jnz      .ddraw
   .end_rp_line:
-        add      esp,320
+        add      esp,270
         pop      ebp
 
 ret

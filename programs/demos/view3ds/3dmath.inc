@@ -600,8 +600,9 @@ else
 
     add      esi,12
     add      edi,12
-    dec      ecx
-    jne      .again
+;    dec      ecx
+;    jne      .again
+   loop     .again
     mov      [edi],dword -1
 end if
 ret
@@ -667,7 +668,7 @@ translate_points:  ; just convert into integer; z coord still needed
   end if
 
   .again:
-  if 0
+  if   0
     fld    dword[esi+8]
  ;   fmul   [rsscale]
     fist   word[edi+4]
@@ -695,7 +696,7 @@ translate_points:  ; just convert into integer; z coord still needed
     fiadd  [vect_y]
     fistp  word[edi+2]
    end if
-   if Ext>=SSE
+  if Ext>=SSE2
     movups   xmm0,[esi]
     cvtps2dq xmm0,xmm0
     packssdw xmm0,xmm0
@@ -722,8 +723,6 @@ translate_points:  ; just convert into integer; z coord still needed
 
     add    esi,12
     add    edi,6
-  ;  dec    ecx
-  ;  jnz    .again
     loop    .again
 
 ret

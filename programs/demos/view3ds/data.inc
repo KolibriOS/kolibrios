@@ -357,7 +357,7 @@ base_vector:
       if Ext=SSE3
         db   ' (SSE3)'
       end if
-        db   ' 0.076',0
+        db   ' 0.077',0
     labellen:
         STRdata db '-1        '
      lab_vert:
@@ -488,7 +488,7 @@ end if
     the_one:
            times 4 dd 1.0
 
-     eps:  times 4 dd 0.00000
+     eps:  times 4 dd 0.000001
 
         vect_x:        dw SIZE_X / 2
         vect_y        dw SIZE_Y / 2
@@ -500,9 +500,9 @@ end if
         xres_var                dw SIZE_X
 
 
-     epsone      dd 1.0001
+     epsone      dd 1.00001
      aprox       dd 0.0001
-     epsminus    dd -0.0001
+     epsminus    dd 0.00001
 
 
         file_info:
@@ -513,9 +513,9 @@ end if
          fptr   dd      0 ;workarea
         file_name:
                db      '/sys/3d/house.3ds',0
-             ;  db      '/tmp0/1/sc.3ds',0
+             ;  db      '/tmp0/1/bmwm3.3ds',0
 
-      rb 256
+      rb 1024
 
 
 I_END:
