@@ -23,35 +23,35 @@
 ; changed 15/01/2014: 
 ; typo fixes and new subclasses (changes by Sergey Kuzmin)
 
-macro VendorID a,b {	; by mike.dld
-	dw a
-	dd _vtmp#a
-	\iglobal
-		_vtmp#a db b
-		db	0
-	\};endg
+macro VendorID a,b {    ; by mike.dld
+        dw a
+        dd _vtmp#a
+        \iglobal
+                _vtmp#a db b
+                db      0
+        \};endg
 }
 
 macro ClassID a,b,c,d {
-	db a
-	db b
-	local tt
+        db a
+        db b
+        local tt
 
-	if c eq
-		db 0
-		db 1
-		tt = 'x'
-	else
-		db c
-		db 0
-		tt = c
-	end if
-	
-	dd _ctmp#a#b#tt
-	\iglobal
-		_ctmp#a#b#tt db d
-		db	0
-	\};endg
+        if c eq
+                db 0
+                db 1
+                tt = 'x'
+        else
+                db c
+                db 0
+                tt = c
+        end if
+        
+        dd _ctmp#a#b#tt
+        \iglobal
+                _ctmp#a#b#tt db d
+                db      0
+        \};endg
 }
 
 ;--------------------------------------
@@ -59,147 +59,147 @@ macro ClassID a,b,c,d {
 ; to the bottom of this section
 ;
 VendorsTab:
-VendorID	0x0033, 'PARADYNE Corp.'
-VendorID	0x003D, 'Lockheed Martin Corp'
-VendorID	0x0E11, 'COMPAQ COMPUTER Corp.'
-VendorID	0x1000, 'SYMBIOS LOGIC Inc./LSI Logic'
-VendorID	0x1002, 'ATI TECHNOLOGIES Inc.'
-VendorID	0x100B, 'NATIONAL SEMICONDUCTOR Corp.'
-VendorID	0x100C, 'Tseng Labs'
-VendorID	0x100E, 'Weitek'
-VendorID	0x1010, 'VIDEO LOGIC Ltd.'
-VendorID	0x1011, 'Digital Equipment Corp.'
-VendorID	0x1013, 'Cirrus Logic'
-VendorID	0x1014, 'IBM'
-VendorID	0x101A, 'NCR Corp.'
-VendorID	0x101E, 'AMERICAN MEGATRENDS'
-VendorID	0x1020, 'HITACHI COMPUTER PRODUCTS'
-VendorID	0x1021, 'OKI ELECTRIC INDUSTRY Co., Ltd.'
-VendorID	0x1022, 'Advanced Micro Devices'
-VendorID	0x1023, 'TRIDENT MICROSYSTEMS'
-VendorID	0x1025, 'Acer Inc.'
-VendorID	0x1028, 'DELL COMPUTER Corp.'
-VendorID	0x102A, 'LSI LOGIC Corp.'
-VendorID	0x102B, 'MATROX GRAPHICS'
-VendorID	0x102F, 'TOSHIBA AMERICA'
-VendorID	0x1033, 'NEC Corp.'
-VendorID	0x1039, 'SILICON INTEGRATED SYSTEMS'
-VendorID	0x103C, 'Hewlett-Packard Company'
-VendorID	0x103F, 'SYNOPSYS/LOGIC MODELING GROUP'
-VendorID	0x1042, 'Micron Electronics'
-VendorID	0x1043, 'ASUSTEK COMPUTER'
-VendorID	0x104A, 'STMicroelectronics'
-VendorID	0x104B, 'Mylex/Buslogic'
-VendorID	0x104C, 'TEXAS INSTRUMENTS'
-VendorID	0x104D, 'SONY Corp.'
-VendorID	0x104E, 'Oak Technology'
-VendorID	0x1054, 'HITACHI'
-VendorID	0x1055, 'Standard Microsystems Corp.'
-VendorID	0x1057, 'Motorola'
-VendorID	0x1067, 'MITSUBISHI ELECTRIC AMERICA'
-VendorID	0x106B, 'APPLE COMPUTER Inc.'
-VendorID	0x106C, 'Hyundai Electronics America'
-VendorID	0x106D, 'SEQUENT COMPUTER SYSTEMS'
-VendorID	0x1070, 'DAEWOO TELECOM Ltd.'
-VendorID	0x1071, 'MITAC'
-VendorID	0x1073, 'YAMAHA Corp.'
-VendorID	0x1074, 'Nexgen Microsystems'
-VendorID	0x1076, 'Chaintech Comp.'
-VendorID	0x1077, 'QLOGIC  Corp.'
-VendorID	0x1078, 'Cyrix Corp.'
-VendorID	0x1079, 'I-BUS'
-VendorID	0x107B, 'GATEWAY 2000'
-VendorID	0x107D, 'Leadtek Research'
-VendorID	0x107E, 'INTERPHASE Corp.'
-VendorID	0x107F, 'Data Technology Corp.'
-VendorID	0x1080, 'Cypress Semiconductor'
-VendorID	0x108E, 'Sun Microsystems'
-VendorID	0x1091, 'Intergraph Corp.'
-VendorID	0x1092, 'Diamond Computer Systems'
-VendorID	0x1093, 'National Instruments'
-VendorID	0x1095, 'SILICON IMAGE (WAS CMD TECHNOLOGY Inc.)'
-VendorID	0x10A9, 'SILICON GRAPHICS'
-VendorID	0x10AC, 'HONEYWELL IAC'
-VendorID	0x10AD, 'Winbond Systems Labs'
-VendorID	0x10AF, 'MICRO COMPUTER SYSTEMS Inc.'
-VendorID	0x10B5, 'PLX TECHNOLOGY.'
-VendorID	0x10B6, 'MADGE NETWORKS'
-VendorID	0x10B7, '3COM Corp, Networking Division'
-VendorID	0x10B8, 'Standard Microsystems Corp.'
-VendorID	0x10B9, 'Acer Labs Inc.'
-VendorID	0x10BA, 'MITSUBISHI ELECTRIC Corp.'
-VendorID	0x10BD, 'Surecom Technology'
-VendorID	0x10C2, 'AUSPEX SYSTEMS Inc.'
-VendorID	0x10C3, 'Samsung Semiconductors'
-VendorID	0x10C4, 'Award Software International Inc.'
-VendorID	0x10C8, 'NEOMAGIC Corp.'
-VendorID	0x10CA, 'FUJITSU MICROELECTRONIC'
-VendorID	0x10CB, 'OMRON Corp.'
-VendorID	0x10CD, 'ADVANCED SYSTEM PRODUCTS'
-VendorID	0x10CF, 'FUJITSU LIMITED'
-VendorID	0x10DE, 'NVIDIA Corp.'
-VendorID	0x10EC, 'REALTEK SEMICONDUCTOR Corp.'
-VendorID	0x11AD, 'LITE-ON COMMUNICATIONS Inc.'
-VendorID	0x10EE, 'XILINX'
-VendorID	0x1102, 'Creative Labs'
-VendorID	0x1105, 'SIGMA DESIGNS'
-VendorID	0x1106, 'VIA TECHNOLOGIES'
-VendorID	0x1114, 'Atmel Corp.'
-VendorID	0x1131, 'PHILIPS SEMICONDUCTORS'
-VendorID	0x1132, 'MITEL Corp.'
-VendorID	0x1133, 'Eicon Networks Corp.'
-VendorID	0x1134, 'MERCURY COMPUTER SYSTEMS'
-VendorID	0x1135, 'FUJI XEROX Co., Ltd.'
-VendorID	0x1137, 'CISCO SYSTEMS Inc.'
-VendorID	0x1179, 'TOSHIBA AMERICA INFO SYSTEMS'
-VendorID	0x1189, 'MATSUSHITA ELECTIC INDUSTRIAL Co., Ltd.'
-VendorID	0x11AA, 'ACTEL'
-VendorID	0x12D2, 'NVIDIA (WAS: STB,SGS THOMPSON)'
-VendorID	0x11AB, 'GALILEO TECHNOLOGY Ltd./Marvell Semiconductor, Inc.'
-VendorID	0x11B2, 'EASTMAN KODAK'
-VendorID	0x11C1, 'LSI Corp.'
-VendorID	0x11CA, 'LSI SYSTEMS'
-VendorID	0x11D0, 'LOCKHEED MARTIN-Electronics & Communications'
-VendorID	0x11D4, 'Analog Devices, Inc.'
-VendorID	0x11D9, 'TOSHIBA TEC Corp.'
-VendorID	0x11DA, 'NOVELL'
-VendorID	0x11DB, 'Sega Enterprises Ltd.'
-VendorID	0x119E, 'FUJITSU MICROELECTRONICS Ltd.'
-VendorID	0x11A1, 'HAMAMATSU PHOTONICS K.K.'
-VendorID	0x1217, 'O2Micro Inc.'
-VendorID	0x1234, 'Technical Corp.'
-VendorID	0x1250, 'Hitachi Microcomputer System Ltd.'
-VendorID	0x122D, 'Aztech System Ltd.'
-VendorID	0x1261, 'MATSUSHITA-KOTOBUKI ELECTRONICS'
-VendorID	0x1260, 'INTERSIL Corp.'
-VendorID	0x1274, 'Creative Labs (was Ensoniq, Malvern)'
-VendorID	0x12BF, 'Fujifilm Microdevices'
-VendorID	0x13B8, 'NOKIA TELECOMMUNICATIONS OY'
-VendorID	0x13BD, 'SHARP Corp.'
-VendorID	0x149A, 'ANDOR TECHNOLOGY Ltd.'
-VendorID	0x149B, 'SEIKO INSTRUMENTS Inc.'
-VendorID	0x14E4, 'Broadcom Corp.'
-VendorID	0x1521, 'BELL Corp.'
-VendorID	0x15AD, 'VMware Inc.'
-VendorID	0x15AE, 'AMERSHAM PHARMACIA BIOTECH'
-VendorID	0x1603, 'NOKIA WIRELESS BUSINESS COMMUNICATIONS'
-VendorID	0x167B, 'ZyDAS Technology Corp.'
-VendorID	0x168C, 'Atheros Communications Inc.'
-VendorID	0x17F3, 'RDC Semiconductor Co., Ltd.'
-VendorID	0x1814, 'Ralink Technology, Corp.'
-VendorID	0x1969, 'Atheros Communications Inc.'
-VendorID	0x197B, 'JMicron Technology Corp.'
-VendorID	0x1AF4, 'Red Hat, Inc.'
-VendorID	0x5333, 'S3 Graphics Co., Ltd.'
-VendorID	0x6409, 'LOGITEC Corp.'
-VendorID	0x8086, 'Intel Corp.'
-VendorID	0x80EE, 'Oracle Corp.'
-VendorID	0x8888, 'SILICON MAGIC Corp.'
-VendorID	0x9004, 'Adaptec Inc.'
-VendorID	0xA259, 'HEWLETT PACKARD'
-VendorID	0xCA50, 'VARIAN AUSTRIALIA PTY Ltd.'
-;include 'VENDORS.ADD'		; <-------- uncomment to insert the list of less known vendors
-VendorID	0, 	'Unknown'	; <- terminator
+VendorID        0x0033, 'PARADYNE Corp.'
+VendorID        0x003D, 'Lockheed Martin Corp'
+VendorID        0x0E11, 'COMPAQ COMPUTER Corp.'
+VendorID        0x1000, 'SYMBIOS LOGIC Inc./LSI Logic'
+VendorID        0x1002, 'ATI TECHNOLOGIES Inc.'
+VendorID        0x100B, 'NATIONAL SEMICONDUCTOR Corp.'
+VendorID        0x100C, 'Tseng Labs'
+VendorID        0x100E, 'Weitek'
+VendorID        0x1010, 'VIDEO LOGIC Ltd.'
+VendorID        0x1011, 'Digital Equipment Corp.'
+VendorID        0x1013, 'Cirrus Logic'
+VendorID        0x1014, 'IBM'
+VendorID        0x101A, 'NCR Corp.'
+VendorID        0x101E, 'AMERICAN MEGATRENDS'
+VendorID        0x1020, 'HITACHI COMPUTER PRODUCTS'
+VendorID        0x1021, 'OKI ELECTRIC INDUSTRY Co., Ltd.'
+VendorID        0x1022, 'Advanced Micro Devices'
+VendorID        0x1023, 'TRIDENT MICROSYSTEMS'
+VendorID        0x1025, 'Acer Inc.'
+VendorID        0x1028, 'DELL COMPUTER Corp.'
+VendorID        0x102A, 'LSI LOGIC Corp.'
+VendorID        0x102B, 'MATROX GRAPHICS'
+VendorID        0x102F, 'TOSHIBA AMERICA'
+VendorID        0x1033, 'NEC Corp.'
+VendorID        0x1039, 'SILICON INTEGRATED SYSTEMS'
+VendorID        0x103C, 'Hewlett-Packard Company'
+VendorID        0x103F, 'SYNOPSYS/LOGIC MODELING GROUP'
+VendorID        0x1042, 'Micron Electronics'
+VendorID        0x1043, 'ASUSTEK COMPUTER'
+VendorID        0x104A, 'STMicroelectronics'
+VendorID        0x104B, 'Mylex/Buslogic'
+VendorID        0x104C, 'TEXAS INSTRUMENTS'
+VendorID        0x104D, 'SONY Corp.'
+VendorID        0x104E, 'Oak Technology'
+VendorID        0x1054, 'HITACHI'
+VendorID        0x1055, 'Standard Microsystems Corp.'
+VendorID        0x1057, 'Motorola'
+VendorID        0x1067, 'MITSUBISHI ELECTRIC AMERICA'
+VendorID        0x106B, 'APPLE COMPUTER Inc.'
+VendorID        0x106C, 'Hyundai Electronics America'
+VendorID        0x106D, 'SEQUENT COMPUTER SYSTEMS'
+VendorID        0x1070, 'DAEWOO TELECOM Ltd.'
+VendorID        0x1071, 'MITAC'
+VendorID        0x1073, 'YAMAHA Corp.'
+VendorID        0x1074, 'Nexgen Microsystems'
+VendorID        0x1076, 'Chaintech Comp.'
+VendorID        0x1077, 'QLOGIC  Corp.'
+VendorID        0x1078, 'Cyrix Corp.'
+VendorID        0x1079, 'I-BUS'
+VendorID        0x107B, 'GATEWAY 2000'
+VendorID        0x107D, 'Leadtek Research'
+VendorID        0x107E, 'INTERPHASE Corp.'
+VendorID        0x107F, 'Data Technology Corp.'
+VendorID        0x1080, 'Cypress Semiconductor'
+VendorID        0x108E, 'Sun Microsystems'
+VendorID        0x1091, 'Intergraph Corp.'
+VendorID        0x1092, 'Diamond Computer Systems'
+VendorID        0x1093, 'National Instruments'
+VendorID        0x1095, 'SILICON IMAGE (WAS CMD TECHNOLOGY Inc.)'
+VendorID        0x10A9, 'SILICON GRAPHICS'
+VendorID        0x10AC, 'HONEYWELL IAC'
+VendorID        0x10AD, 'Winbond Systems Labs'
+VendorID        0x10AF, 'MICRO COMPUTER SYSTEMS Inc.'
+VendorID        0x10B5, 'PLX TECHNOLOGY.'
+VendorID        0x10B6, 'MADGE NETWORKS'
+VendorID        0x10B7, '3COM Corp, Networking Division'
+VendorID        0x10B8, 'Standard Microsystems Corp.'
+VendorID        0x10B9, 'Acer Labs Inc.'
+VendorID        0x10BA, 'MITSUBISHI ELECTRIC Corp.'
+VendorID        0x10BD, 'Surecom Technology'
+VendorID        0x10C2, 'AUSPEX SYSTEMS Inc.'
+VendorID        0x10C3, 'Samsung Semiconductors'
+VendorID        0x10C4, 'Award Software International Inc.'
+VendorID        0x10C8, 'NEOMAGIC Corp.'
+VendorID        0x10CA, 'FUJITSU MICROELECTRONIC'
+VendorID        0x10CB, 'OMRON Corp.'
+VendorID        0x10CD, 'ADVANCED SYSTEM PRODUCTS'
+VendorID        0x10CF, 'FUJITSU LIMITED'
+VendorID        0x10DE, 'NVIDIA Corp.'
+VendorID        0x10EC, 'REALTEK SEMICONDUCTOR Corp.'
+VendorID        0x11AD, 'LITE-ON COMMUNICATIONS Inc.'
+VendorID        0x10EE, 'XILINX'
+VendorID        0x1102, 'Creative Labs'
+VendorID        0x1105, 'SIGMA DESIGNS'
+VendorID        0x1106, 'VIA TECHNOLOGIES'
+VendorID        0x1114, 'Atmel Corp.'
+VendorID        0x1131, 'PHILIPS SEMICONDUCTORS'
+VendorID        0x1132, 'MITEL Corp.'
+VendorID        0x1133, 'Eicon Networks Corp.'
+VendorID        0x1134, 'MERCURY COMPUTER SYSTEMS'
+VendorID        0x1135, 'FUJI XEROX Co., Ltd.'
+VendorID        0x1137, 'CISCO SYSTEMS Inc.'
+VendorID        0x1179, 'TOSHIBA AMERICA INFO SYSTEMS'
+VendorID        0x1189, 'MATSUSHITA ELECTIC INDUSTRIAL Co., Ltd.'
+VendorID        0x11AA, 'ACTEL'
+VendorID        0x12D2, 'NVIDIA (WAS: STB,SGS THOMPSON)'
+VendorID        0x11AB, 'GALILEO TECHNOLOGY Ltd./Marvell Semiconductor, Inc.'
+VendorID        0x11B2, 'EASTMAN KODAK'
+VendorID        0x11C1, 'LSI Corp.'
+VendorID        0x11CA, 'LSI SYSTEMS'
+VendorID        0x11D0, 'LOCKHEED MARTIN-Electronics & Communications'
+VendorID        0x11D4, 'Analog Devices, Inc.'
+VendorID        0x11D9, 'TOSHIBA TEC Corp.'
+VendorID        0x11DA, 'NOVELL'
+VendorID        0x11DB, 'Sega Enterprises Ltd.'
+VendorID        0x119E, 'FUJITSU MICROELECTRONICS Ltd.'
+VendorID        0x11A1, 'HAMAMATSU PHOTONICS K.K.'
+VendorID        0x1217, 'O2Micro Inc.'
+VendorID        0x1234, 'Technical Corp.'
+VendorID        0x1250, 'Hitachi Microcomputer System Ltd.'
+VendorID        0x122D, 'Aztech System Ltd.'
+VendorID        0x1261, 'MATSUSHITA-KOTOBUKI ELECTRONICS'
+VendorID        0x1260, 'INTERSIL Corp.'
+VendorID        0x1274, 'Creative Labs (was Ensoniq, Malvern)'
+VendorID        0x12BF, 'Fujifilm Microdevices'
+VendorID        0x13B8, 'NOKIA TELECOMMUNICATIONS OY'
+VendorID        0x13BD, 'SHARP Corp.'
+VendorID        0x149A, 'ANDOR TECHNOLOGY Ltd.'
+VendorID        0x149B, 'SEIKO INSTRUMENTS Inc.'
+VendorID        0x14E4, 'Broadcom Corp.'
+VendorID        0x1521, 'BELL Corp.'
+VendorID        0x15AD, 'VMware Inc.'
+VendorID        0x15AE, 'AMERSHAM PHARMACIA BIOTECH'
+VendorID        0x1603, 'NOKIA WIRELESS BUSINESS COMMUNICATIONS'
+VendorID        0x167B, 'ZyDAS Technology Corp.'
+VendorID        0x168C, 'Atheros Communications Inc.'
+VendorID        0x17F3, 'RDC Semiconductor Co., Ltd.'
+VendorID        0x1814, 'Ralink Technology, Corp.'
+VendorID        0x1969, 'Atheros Communications Inc.'
+VendorID        0x197B, 'JMicron Technology Corp.'
+VendorID        0x1AF4, 'Red Hat, Inc.'
+VendorID        0x5333, 'S3 Graphics Co., Ltd.'
+VendorID        0x6409, 'LOGITEC Corp.'
+VendorID        0x8086, 'Intel Corp.'
+VendorID        0x80EE, 'Oracle Corp.'
+VendorID        0x8888, 'SILICON MAGIC Corp.'
+VendorID        0x9004, 'Adaptec Inc.'
+VendorID        0xA259, 'HEWLETT PACKARD'
+VendorID        0xCA50, 'VARIAN AUSTRIALIA PTY Ltd.'
+;include 'VENDORS.ADD'          ; <-------- uncomment to insert the list of less known vendors
+VendorID        0,      'Unknown'       ; <- terminator
 
 ;--------------------------------------
 Classes:
@@ -208,7 +208,7 @@ ClassID    0,    0,     , 'Prehistoric - misc'
 ClassID    0,    1,     , 'Prehistoric - VGA'
 
 ClassID    1,    0,     , 'Storage - SCSI'
-ClassID    1,    1,     , 'Storage - IDE'	; intrface may be 0x80, 0x85 & 0x8A
+ClassID    1,    1,     , 'Storage - IDE'       ; intrface may be 0x80, 0x85 & 0x8A
 ClassID    1,    1, 0x8A, 'Storage - IDE (prog. canals)'
 ClassID    1,    2,     , 'Storage - Floppy'
 ClassID    1,    3,     , 'Storage - IPI'
@@ -326,9 +326,9 @@ ClassID 0x0a, 0x80,     , 'Docking - misc'
 ClassID 0x0b,    0,     , 'Processor - 386'
 ClassID 0x0b,    1,     , 'Processor - 486'
 ClassID 0x0b,    2,     , 'Processor - Pentium'
-; ClassID 0x0b, 0x10,     , 'Processor - Alpha'		;
-; ClassID 0x0b, 0x20,     , 'Processor - PowerPC'		; it`s realy need for PCIDEV???
-; ClassID 0x0b, 0x30,     , 'Processor - MIPS'		;
+; ClassID 0x0b, 0x10,     , 'Processor - Alpha'         ;
+; ClassID 0x0b, 0x20,     , 'Processor - PowerPC'               ; it`s realy need for PCIDEV???
+; ClassID 0x0b, 0x30,     , 'Processor - MIPS'          ;
 ClassID 0x0b, 0x40,     , 'Processor - Co-processor'
 
 ClassID 0x0c,    0,     , 'Serial Bus - FireWire'
@@ -340,6 +340,7 @@ ClassID 0x0c,    3,     , 'Serial Bus - USB/USB2'
 ClassID 0x0c,    3,    0, 'Serial Bus - USB Universal HC'
 ClassID 0x0c,    3, 0x10, 'Serial Bus - USB Open HC'
 ClassID 0x0c,    3, 0x20, 'Serial Bus - USB2 Enhanced HC'
+ClassID 0x0c,    3, 0x30, 'Serial Bus - USB3 eXtensible HC'
 ClassID 0x0c,    3, 0x80, 'Serial Bus - USB w/o specific PI'
 ClassID 0x0c,    3, 0xfe, 'Serial Bus - USB device (not HC)'
 ClassID 0x0c,    4,     , 'Serial Bus - Fibre Channel'
@@ -370,7 +371,7 @@ ClassID 0x0f,    3,     , 'Satellite Communication - Voice'
 ClassID 0x0f,    4,     , 'Satellite Communication - Data'
 
 ClassID 0x10,    0,     , 'En/Decryption - Network&comput.'
-ClassID 0x10, 0x10,     , 'En/Decryption - Entertainment'	; 0x10, 0x01,, ???
+ClassID 0x10, 0x10,     , 'En/Decryption - Entertainment'       ; 0x10, 0x01,, ???
 ClassID 0x10, 0x80,     , 'En/Decryption - misc'
 
 ClassID 0x11,    0,     , 'DSP - DPIO modules'
@@ -379,4 +380,4 @@ ClassID 0x11, 0x10,     , 'DSP - Sync./Test/Measurement'
 ClassID 0x11, 0x20,     , 'DSP - Management card'
 ClassID 0x11, 0x80,     , 'DSP - misc'
 
-ClassID 0xff, 0xff,     , 'Unknown'	; <- terminator
+ClassID 0xff, 0xff,     , 'Unknown'     ; <- terminator
