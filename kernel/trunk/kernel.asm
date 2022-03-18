@@ -3480,6 +3480,11 @@ align 4
         ret
 ;-----------------------------------------------------------------------------
 
+; in: eax = port
+;     ebp = subfunction
+;          0 - set access
+;          1 - clear access
+; out: not return value
 align 4
 set_io_access_rights:
         push    edi eax
@@ -3490,8 +3495,7 @@ set_io_access_rights:
 ;     add   edi,eax
 ;     mov   ebx,1
 ;     shl   ebx,cl
-        test    ebp, ebp
-;     cmp   ebp,0                ; enable access - ebp = 0
+        test    ebp, ebp         ; enable access - ebp = 0
         jnz     .siar1
 ;     not   ebx
 ;     and   [edi],byte bl
@@ -3499,8 +3503,7 @@ set_io_access_rights:
         pop     eax edi
         ret
 .siar1:
-        bts     [edi], eax
-  ;  or    [edi],byte bl        ; disable access - ebp = 1
+        bts     [edi], eax      ; disable access - ebp = 1
         pop     eax edi
         ret
 
@@ -3526,12 +3529,6 @@ r_f_port_area:
 
         test    ebx, ebx
         jnz     free_port_area
-;     je    r_port_area
-;     jmp   free_port_area
-
-;   r_port_area:
-
-;     pushad
 
         cmp     ecx, edx      ; beginning > end ?
         ja      rpal1
@@ -3550,43 +3547,32 @@ r_f_port_area:
         ja      rpal4
         cmp     edx, [ebx+4]
         jae     rpal1
-;     jb    rpal4
-;     jmp   rpal1
  rpal4:
         dec     eax
         jnz     rpal3
         jmp     rpal2
    rpal1:
-;     popad
-;     mov   eax,1
         xor     eax, eax
         inc     eax
         ret
    rpal2:
-;     popad
      ; enable port access at port IO map
-        cli
         pushad                        ; start enable io map
-
-        cmp     edx, 65536;16384
-        jae     no_unmask_io; jge
         mov     eax, ecx
-;       push    ebp
         xor     ebp, ebp               ; enable - eax = port
+        cli
 new_port_access:
-;     pushad
         call    set_io_access_rights
-;     popad
+
         inc     eax
         cmp     eax, edx
         jbe     new_port_access
-;       pop     ebp
 no_unmask_io:
-        popad                         ; end enable io map
         sti
+        popad                         ; end enable io map
 
         mov     eax, [RESERVED_PORTS]
-        add     eax, 1
+        inc     eax
         mov     [RESERVED_PORTS], eax
         shl     eax, 4
         add     eax, RESERVED_PORTS
@@ -3601,7 +3587,6 @@ no_unmask_io:
 
 free_port_area:
 
-;     pushad
         mov     eax, [RESERVED_PORTS]; no reserved areas ?
         test    eax, eax
         jz      frpal2
@@ -3622,7 +3607,6 @@ free_port_area:
         dec     eax
         jnz     frpal3
    frpal2:
-;     popad
         inc     eax
         ret
    frpal1:
@@ -3636,27 +3620,21 @@ free_port_area:
         rep movsb
 
         dec     dword [RESERVED_PORTS]
-;popad
 ;disable port access at port IO map
-
-;     pushad                        ; start disable io map
+                        ; start disable io map
         pop     eax     ;start port
-        cmp     edx, 65536;16384
-        jge     no_mask_io
+        ;cmp     edx, 65536
+        ;jge     no_mask_io
 
-;     mov   eax,ecx
         xor     ebp, ebp
         inc     ebp
-new_port_access_disable:
-;     pushad
-;     mov   ebp,1                  ; disable - eax = port
+new_port_access_disable:           ; disable - eax = port
         call    set_io_access_rights
-;     popad
+
         inc     eax
         cmp     eax, edx
         jbe     new_port_access_disable
-no_mask_io:
-;     popad                         ; end disable io map
+no_mask_io:                         ; end disable io map
         xor     eax, eax
         ret
 ;-----------------------------------------------------------------------------

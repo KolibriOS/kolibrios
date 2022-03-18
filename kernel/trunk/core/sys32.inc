@@ -693,6 +693,13 @@ destroy_thread:
         jmp     rmpr9
 
   rmpr4:
+        push    eax edx ebp  ;TODO: check using register ebp in next code
+        mov     eax, [edi + 4]
+        mov     edx, [edi + 8]
+        xor     ebp, ebp
+        inc     ebp
+        call    new_port_access_disable
+        pop     ebp edx eax
 
         mov     ecx, 256
         sub     ecx, esi
