@@ -617,14 +617,6 @@ destroy_thread:
         lea     ebx, [edi + APPDATA.list]
         list_del ebx                    ;destroys edx, ecx
 
-        mov     eax, 0x20202020
-        stosd
-        stosd
-        stosd
-        mov     ecx, 244/4
-        xor     eax, eax
-        rep stosd
-
   ; activate window
         movzx   eax, word [WIN_STACK + esi*2]
         cmp     eax, [thread_count]
@@ -672,7 +664,6 @@ destroy_thread:
         mov     edx, [SLOT_BASE + edx + APPDATA.tid]
 
   rmpr0:
-
         mov     esi, [RESERVED_PORTS]
 
         test    esi, esi
@@ -693,13 +684,6 @@ destroy_thread:
         jmp     rmpr9
 
   rmpr4:
-        push    eax edx ebp  ;TODO: check using register ebp in next code
-        mov     eax, [edi + 4]
-        mov     edx, [edi + 8]
-        xor     ebp, ebp
-        inc     ebp
-        call    new_port_access_disable
-        pop     ebp edx eax
 
         mov     ecx, 256
         sub     ecx, esi
@@ -715,8 +699,22 @@ destroy_thread:
         jmp     rmpr0
 
   rmpr9:
-
         popa
+
+; clearing APPDATA structure this thread
+        pushad
+        mov     edi, esi
+        shl     edi, BSF sizeof.APPDATA
+        add     edi, SLOT_BASE
+        mov     eax, 0x20202020
+        stosd
+        stosd
+        stosd
+        mov     ecx, 244/4
+        xor     eax, eax
+        rep stosd
+        popad
+
         mov     edi, esi ; do not run this process slot
         shl     edi, BSF sizeof.APPDATA
         mov     [SLOT_BASE + edi + APPDATA.state], TSTATE_FREE

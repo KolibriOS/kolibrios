@@ -3489,16 +3489,10 @@ align 4
 set_io_access_rights:
         push    edi eax
         mov     edi, tss._io_map_0
-;     mov   ecx,eax
-;     and   ecx,7    ; offset in byte
-;     shr   eax,3    ; number of byte
-;     add   edi,eax
-;     mov   ebx,1
-;     shl   ebx,cl
+
         test    ebp, ebp         ; enable access - ebp = 0
         jnz     .siar1
-;     not   ebx
-;     and   [edi],byte bl
+
         btr     [edi], eax
         pop     eax edi
         ret
@@ -3508,7 +3502,13 @@ set_io_access_rights:
         ret
 
 align 4
-syscall_reserveportarea:                ; ReservePortArea and FreePortArea
+; @brief ReservePortArea and FreePortArea
+; @param edx number end arrea of ports (include last number of port)
+; @param ecx number start arrea of ports
+; @param ebx sub function 0 - reserve, 1 - free
+; @param eax 46 - number function
+; @returns  eax = 0 - succesful eax = 1 - error
+syscall_reserveportarea:        ; ReservePortArea and FreePortArea
 
         call    r_f_port_area
         mov     [esp+32], eax
@@ -3532,7 +3532,7 @@ r_f_port_area:
 
         cmp     ecx, edx      ; beginning > end ?
         ja      rpal1
-        cmp     edx, 65536
+        cmp     edx, 65536    ;test ebx, not 0xffff
         jae     rpal1
         mov     eax, [RESERVED_PORTS]
         test    eax, eax      ; no reserved areas ?
@@ -3541,7 +3541,7 @@ r_f_port_area:
         jae     rpal1
  rpal3:
         mov     ebx, eax
-        shl     ebx, 4
+        shl     ebx, 4   ;16 byte is sizeof item in RESERVED_PORTS table
         add     ebx, RESERVED_PORTS
         cmp     ecx, [ebx+8]
         ja      rpal4
@@ -3578,9 +3578,9 @@ no_unmask_io:
         add     eax, RESERVED_PORTS
         mov     ebx, [current_slot]
         mov     ebx, [ebx + APPDATA.tid]
-        mov     [eax], ebx
-        mov     [eax+4], ecx
-        mov     [eax+8], edx
+        mov     [eax], ebx   ; tid
+        mov     [eax+4], ecx ;start port
+        mov     [eax+8], edx ;finish port
 
         xor     eax, eax
         ret
