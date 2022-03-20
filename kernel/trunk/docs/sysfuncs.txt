@@ -4115,6 +4115,8 @@ Date format:
   * +1: byte: month
   * +2: word: year
   * for example, 25.11.1979 is written as (in hex) 19 0B BB 07
+    Some file systems start the date from 01.01.1980,
+    for example: FAT12/16/32 and exFAT
 Remarks:
   * If BDFE contains cp866 name, the length of BDFE is 304 bytes,
     otherwise - 560 bytes.
