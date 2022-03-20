@@ -25,7 +25,7 @@ exFAT_user_functions:
         dd      0 ;exFAT_Write
         dd      0 ;exFAT_SetFileEnd
         dd      exFAT_GetFileInfo
-        dd      0 ;exFAT_SetFileInfo
+        dd      exFAT_SetFileInfo
         dd      0
         dd      0 ;exFAT_Delete
         dd      0 ;exFAT_CreateFolder
@@ -73,11 +73,16 @@ RDI_high            dd  ?
 current_hash        dd  ?
 hash_flag           dd  ?
 need_hash           dd  ?
+buffer_curr_sector  dd  ?
+buff_file_dirsect   dd  ?
+buff_file_dir_pos   dd  ?
+fname_extdir_offset dd  ?
 volumeLabel         rb  12
-; The next two areas (32+32) should be arranged sequentially.
+; The next nine areas (32*17) should be arranged sequentially.
 ; Do not change their location!!!
 file_dir_entry      rb  32 ; Entry Type 0x85
 str_ext_dir_entry   rb  32 ; Entry Type 0xC0
+fname_ext_dir_entry rb  32*17 ; Entry Type 0xC1 * 17 Entries
 buffer              rb  512
 ends
 
@@ -368,6 +373,13 @@ exFAT_get_name:
 ;--------------------------------------
 .file_directory_entry:
 ; DEBUGF  1, "K : exFAT_get_name 0x85\n"
+        mov     eax, [ebp+exFAT.buffer_curr_sector]
+        mov     [ebp+exFAT.buff_file_dirsect], eax
+        mov     [ebp+exFAT.buff_file_dir_pos], edi
+
+        lea     eax, [ebp+exFAT.fname_ext_dir_entry]
+        mov     [ebp+exFAT.fname_extdir_offset], eax
+
         xor     eax, eax
         mov     [ebp+exFAT.hash_flag], eax ; dword 0
         mov     al, byte [edi+1]  ; Number of Secondary directory entries
@@ -434,8 +446,26 @@ exFAT_get_name:
         test    eax, eax
         jnz     .no
 ; DEBUGF  1, "K : exFAT_get_name.longname hash match! \n"
-        push    edi esi
+; copy File Name Extension Directory Entry [0xC1] for calculate SetChecksum Field
+        lea     eax, [ebp+exFAT.fname_ext_dir_entry+32*17]
+        cmp     eax, [ebp+exFAT.fname_extdir_offset]
+        je      .no
 
+        push    edi esi
+        xchg    esi, edi
+        mov     edi, [ebp+exFAT.fname_extdir_offset]
+        movsd
+        movsd
+        movsd
+        movsd
+        movsd
+        movsd
+        movsd
+        movsd
+        mov     [ebp+exFAT.fname_extdir_offset], edi
+        pop     esi edi
+; copy name        
+        push    edi esi
         xchg    esi, edi
         add     esi, 2
 
@@ -564,6 +594,65 @@ exFAT_entry_to_bdfe2:
         pop     esi edi
         add     esi, 520
 ; DEBUGF  1, "K : exFAT_entry_to_bdfe +520 ESI:%x\n", esi
+        ret
+;------------------------------------------------------------------------------
+exFAT_bdfe_to_fat_entry:
+; convert BDFE at edx to FAT entry at edi
+; destroys eax
+; attributes byte
+;        test    byte [edi+11], 8        ; volume label?
+;        jnz     @f
+        mov     al, [edx]
+;        movzx   eax, al
+; DEBUGF  1, "K : bdfe file attributes: %x\n", eax
+        and     al, 0x27
+;        and     byte [edi+11], 0x10
+;        or      byte [edi+11], al
+        and     byte [edi+4], 0x10
+        or      byte [edi+4], al
+;        movzx   eax, byte [edi+4]
+; DEBUGF  1, "K : exFAT file attributes: %x\n", eax
+;@@:
+        mov     eax, [edx+8]
+; DEBUGF  1, "K : bdfe creation time: %x\n", eax
+        call    bdfe_to_fat_time
+;        mov     [edi+14], ax            ; creation time
+        mov     [edi+8], ax            ; creation time
+; DEBUGF  1, "K : exFAT creation time: %x\n", ax
+
+        mov     eax, [edx+12]
+; DEBUGF  1, "K : bdfe creation date: %x\n", eax
+        call    bdfe_to_fat_date
+;        mov     [edi+16], ax            ; creation date
+        mov     [edi+8+2], ax            ; creation date
+; DEBUGF  1, "K : exFAT creation date: %x\n", ax
+
+        mov     eax, [edx+16]
+; DEBUGF  1, "K : bdfe access time: %x\n", eax
+        call    bdfe_to_fat_time
+        mov     [edi+16], ax            ; last access time
+; DEBUGF  1, "K : exFAT access time: %x\n", ax
+
+        mov     eax, [edx+20]
+; DEBUGF  1, "K : bdfe access date: %x\n", eax
+        call    bdfe_to_fat_date
+;        mov     [edi+18], ax            ; last access date
+        mov     [edi+16+2], ax            ; last access date
+; DEBUGF  1, "K : exFAT access date: %x\n", ax
+
+        mov     eax, [edx+24]
+; DEBUGF  1, "K : bdfe write time: %x\n", eax
+        call    bdfe_to_fat_time
+;        mov     [edi+22], ax            ; last write time
+        mov     [edi+12], ax            ; last write time
+; DEBUGF  1, "K : exFAT write time: %x\n", ax
+
+        mov     eax, [edx+28]
+; DEBUGF  1, "K : bdfe write date: %x\n", eax
+        call    bdfe_to_fat_date
+;        mov     [edi+24], ax            ; last write date
+        mov     [edi+12+2], ax            ; last write date
+; DEBUGF  1, "K : exFAT write date: %x\n", ax
         ret
 ;------------------------------------------------------------------------------
 exFAT_get_FAT:
@@ -1823,6 +1912,161 @@ exFAT_GetFileInfo:
         loop    @b
         ret
 ;------------------------------------------------------------------------------
+exFAT_SetFileInfo:
+; DEBUGF  1, "K : exFAT_SetFileInfo \n"
+; DEBUGF  1, "K : exFAT F70 +00: %x\n", [ebx]
+; DEBUGF  1, "K : exFAT F70 +04: %x\n", [ebx+4]
+; DEBUGF  1, "K : exFAT F70 +08: %x\n", [ebx+8]
+; DEBUGF  1, "K : exFAT F70 +12: %x\n", [ebx+12]
+; DEBUGF  1, "K : exFAT F70 +16: %x\n", [ebx+16]
+; DEBUGF  1, "K : exFAT F70 +20: %x\n", [ebx+20]
+; DEBUGF  1, "K : exFAT Path: %s\n", esi
+        call    exFAT_lock
+        xor     eax, eax
+        mov     [ebp+exFAT.need_hash], eax ; dword 0
+        mov     [ebp+exFAT.hash_flag], eax ; dword 0
+        call    exFAT_hd_find_lfn
+        jc      @f
+
+        mov     edi, [ebp+exFAT.buff_file_dir_pos]
+        cmp     eax, [ebp+exFAT.buff_file_dirsect]
+        je      .continue
+
+        mov     eax, [ebp+exFAT.buff_file_dirsect]
+        mov     [ebp+exFAT.buffer_curr_sector], eax
+
+        push    eax ebx
+        lea     ebx, [ebp+exFAT.buffer]
+        call    fs_read32_sys
+        test    eax, eax
+        jz      .continue_1 ; CF=0
+
+        pop     ebx
+        add     esp, 4
+        jmp     @f
+
+.continue_1:
+        pop     ebx eax
+
+.continue:
+        push    eax
+        mov     edx, [ebx+16] ; pointer to buffer with attributes (32 bytes)
+        call    exFAT_bdfe_to_fat_entry
+        pop     eax
+; copy new File/Folder Directory Entry [0x85] for calculate SetChecksum field
+        push    esi edi
+        xchg    esi, edi
+        lea     edi, [ebp+exFAT.file_dir_entry]
+        movsd
+        movsd
+        movsd
+        movsd
+        movsd
+        movsd
+        movsd
+        movsd
+        pop     edi esi
+
+        push    eax
+        call    calculate_SetChecksum_field
+        mov     [edi+2], ax
+        pop     eax
+        
+        lea     ebx, [ebp+exFAT.buffer]
+        call    fs_write32_sys
+        call    exFAT_update_disk
+        xor     eax, eax
+@@:
+        push    eax
+        call    exFAT_unlock
+        pop     eax
+        ret
+;------------------------------------------------------------------------------
+calculate_SetChecksum_field:
+        push    ebx ecx edx esi edi
+        lea     esi, [ebp+exFAT.file_dir_entry]
+        mov     ecx, [ebp+exFAT.fname_extdir_offset]
+        sub     ecx, esi
+        mov     edx, esi
+        mov     edi, esi
+        add     edx, 2 ; (Index == 2)
+        add     edi, 3 ; (Index == 3)
+; exFAT_calculate_SetChecksum_field
+;   in:
+; esi -> file_dir_entry
+; ecx -> NumberOfBytes
+; out: ax = Checksum
+        xor     eax, eax
+        xor     ebx, ebx
+;--------------------------------------
+align 4
+.start:
+; DEBUGF 1, "Checksum start EAX:%x ECX:%x\n", eax, ecx
+        cmp     esi, edx ; (Index == 2)
+        je      .continue
+        cmp     esi, edi ; (Index == 3)
+        je      .continue
+        mov     bx, ax
+; ((Checksum&1) ? 0x8000 : 0)
+        and     ax, 0x1
+        jz      .else
+
+        mov     ax, 0x8000
+        jmp     @f
+;--------------------------------------
+.else:
+        xor     ax, ax
+;--------------------------------------
+@@:
+; DEBUGF 1, "(Checksum&1) EAX:%x\n", eax
+; (Hash>>1)
+        shr     bx, 1
+; DEBUGF 1, "(Checksum>>1) EBX:%x\n", ebx
+        add     ax, bx
+; DEBUGF 1, "+ (Checksum>>1) EAX:%x\n", eax
+        movzx   bx, byte [esi]
+        add     ax, bx
+; DEBUGF 1, "+ (UInt16)Entries[Index] EAX:%x\n", eax
+.continue:       
+        inc     esi
+        dec     ecx
+        jnz     .start
+;--------------------------------------
+        lea     ebx, [ebp+exFAT.file_dir_entry+2]
+        mov     [ebx], ax
+        pop     edi esi edx ecx ebx
+        ret
+;------------------------------------------------------------------------------
+exFAT_update_disk:
+        cmp     [ebp+exFAT.fat_change], 0
+        jz      .noChange
+;        cmp     [ebp+FAT.fs_type], 12
+;        jz      .fat12
+        call    exFAT_write_fat_sector
+.noChange:
+        mov     esi, [ebp+PARTITION.Disk]
+        call    disk_sync
+        ret
+;------------------------------------------------------------------------------
+exFAT_write_fat_sector:
+        push    eax ebx ecx
+        mov     [ebp+exFAT.fat_change], 0
+        mov     eax, [ebp+exFAT.fat_in_cache]
+        cmp     eax, -1
+        jz      @f
+        mov     ebx, [ebp+exFAT.fat_cache_ptr]
+        mov     ecx, [ebp+exFAT.NUMBER_OF_FATS]
+.write_next_fat:
+        push    eax
+        call    fs_write32_sys
+        pop     eax
+        add     eax, [ebp+exFAT.SECTORS_PER_FAT]
+        dec     ecx
+        jnz     .write_next_fat
+@@:
+        pop     ecx ebx eax
+        ret
+;------------------------------------------------------------------------------
 exFAT_notroot_next:
 ; DEBUGF  1, "K : exFAT_notroot_next\n"
         push    ecx
@@ -1920,6 +2164,7 @@ exFAT_notroot_first:
         lea     edi, [ebp+exFAT.buffer]
         mov     ebx, edi
         sub     [ebp+exFAT.valid_data_length], 512
+        mov     [ebp+exFAT.buffer_curr_sector], eax
         call    fs_read32_sys
         pop     ebx
         test    eax, eax
