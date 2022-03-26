@@ -426,7 +426,10 @@ key_28:
     cmp  [esi+40],word 2Eh
     je   still
     cmp  [esi+40],word '..'
+    jne  @f
+    cmp  [esi+40+2],byte 0
     je   .up_patch
+@@:
     call calculate_key_28_1
     mov  [left_start_draw_cursor_line],0
     mov  [left_start_draw_line],0
@@ -445,7 +448,10 @@ key_28:
     cmp  [esi+40],word 2Eh
     je   still
     cmp  [esi+40],word '..'
+    jne  @f
+    cmp  [esi+40+2],byte 0
     je   .up_patch_1
+@@:
     call calculate_key_28_1
     mov  [right_start_draw_cursor_line],0
     mov  [right_start_draw_line],0

@@ -232,6 +232,9 @@ draw_icon:
 	cmp	[edx],word '..'
 	jne	 .draw
 
+	cmp	[edx+2],byte 0
+	jne	.draw
+
 	add	ebx,270   ;*17
 ;--------------------------------------
 .draw:
