@@ -510,7 +510,8 @@ struct  device          ETH_DEVICE
         pci_bus         dd ?
         revision        db ?
         irq_line        db ?
-        chip_id         dw ?
+        chip_vid        dw ?
+        chip_did        dw ?
 
         cur_rx          dw ?
         cur_tx          dw ?
@@ -706,17 +707,18 @@ probe:
         invoke  PciWrite32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.command, eax
 
 ; get device id
-        invoke  PciRead16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.device_id
-        mov     [ebx + device.chip_id], ax
+        invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.vendor_id
+        mov     dword[ebx + device.chip_vid], eax
 
         mov     esi, chiplist
   .loop:
-        cmp     word[esi+2], ax
+        cmp     dword[esi], eax
         je      .got_it
-        add     esi, 8
-        cmp     esi, chiplist + 6*8
-        jbe     .loop
-        DEBUGF  2, "Unknown chip: 0x%x, continuing anyway\n", ax
+        add     esi, 2*4
+        cmp     dword[esi], 0
+        jne     .loop
+        DEBUGF  2, "Unknown chip: 0x%x, continuing anyway\n", eax
+        mov     [ebx + device.name], my_service
         jmp     .done
   .got_it:
         mov     eax, dword[esi+4]
@@ -735,7 +737,7 @@ probe:
         cmp     al, 0x40
         jb      .below_x40
 
-        mov     ax, [ebx + device.chip_id]
+        mov     ax, [ebx + device.chip_did]
         DEBUGF  1, "Enabling Sticky Bit Workaround for Chip_id: 0x%x\n", ax
 
         ; clear sticky bit before reset & read ethernet address
@@ -892,7 +894,7 @@ end if
     @@:
 
 ; set MII 10 FULL ON, only apply in vt3043
-        cmp     [ebx + device.chip_id], 0x3043
+        cmp     [ebx + device.chip_did], 0x3043
         jne     @f
         stdcall WriteMII, 0x17, 1 shl 1, 1
     @@:
