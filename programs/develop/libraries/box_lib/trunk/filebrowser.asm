@@ -679,7 +679,7 @@ fb_draw_icon:
 	xor	ebx,ebx
 	cmp	[edx],word '..'
 	jne	.draw
-	cmp	[ebx+2],byte 0
+	cmp	[edx+2],byte 0
 	jne	.draw
 	mov	ebx,eax	;16*16*3
 .draw:
