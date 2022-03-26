@@ -11,7 +11,6 @@ ALX_DEV_ID_E2200                                = 0xe091
 ALX_DEV_ID_E2400                                = 0xe0a1
 ALX_DEV_ID_E2500                                = 0xe0b1
 ALX_DEV_ID_AR8162                               = 0x1090
-ALX_DEV_ID_AR8152                               = 0x2062
 ALX_DEV_ID_AR8171                               = 0x10A1
 ALX_DEV_ID_AR8172                               = 0x10A0
 

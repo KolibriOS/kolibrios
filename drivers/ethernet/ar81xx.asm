@@ -319,17 +319,18 @@ probe:
         invoke  PciWrite16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header.command, eax
 
 ; get device ID
-        invoke  PciRead16, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header.device_id
-        mov     [ebx + device.pci_did], ax
+        invoke  PciRead32, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header.vendor_id
+        mov     dword[ebx + device.pci_vid], eax
 
         mov     esi, chiplist
   .loop:
-        cmp     word[esi+2], ax
+        cmp     dword[esi], eax
         je      .got_it
         add     esi, 8
-        cmp     esi, chiplist + 6*8
-        jbe     .loop
-        DEBUGF  2, "Unknown chip: 0x%x, continuing anyway\n", ax
+        cmp     dword[esi], 0
+        jne     .loop
+        DEBUGF  2, "Unknown chip: 0x%x, continuing anyway\n", eax
+        mov     [ebx + device.name], my_service
         jmp     .done
   .got_it:
         mov     eax, dword[esi+4]
@@ -2027,7 +2028,6 @@ chiplist:
                 dd (ALX_DEV_ID_E2400 shl 16) or ALX_VEN_ID, e2400_sz
                 dd (ALX_DEV_ID_E2500 shl 16) or ALX_VEN_ID, e2500_sz
                 dd (ALX_DEV_ID_AR8162 shl 16) or ALX_VEN_ID, ar8162_sz
-                dd (ALX_DEV_ID_AR8152 shl 16) or ALX_VEN_ID, ar8152_sz
                 dd (ALX_DEV_ID_AR8171 shl 16) or ALX_VEN_ID, ar8171_sz
                 dd (ALX_DEV_ID_AR8172 shl 16) or ALX_VEN_ID, ar8172_sz
                 dd 0
@@ -2040,7 +2040,6 @@ ar8152_1_sz     db "AR8152 rev1", 0
 ar8152_2_sz     db "AR8152 rev2", 0
 ar8161_sz       db "AR8161", 0
 ar8162_sz       db "AR8162", 0
-ar8152_sz       db "AR8152", 0
 ar8171_sz       db "QCA8171", 0
 ar8172_sz       db "QCA8172", 0
 e2200_sz        db "Killer E2200", 0
