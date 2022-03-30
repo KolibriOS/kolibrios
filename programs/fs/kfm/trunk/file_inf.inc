@@ -463,7 +463,7 @@ get_inf_dir:
 	call	start_error_window_thread
 	popa
 	add	esp,8+8
-	ret
+	jmp	still
 ;--------------------------------------
 @@:
 	mov	eax,[delete_dir_data+8]
@@ -492,7 +492,7 @@ get_inf_dir:
 	call	start_error_window_thread
 	popa
 	add	esp,8+8
-	ret
+	jmp	still
 ;--------------------------------------
 @@:
 	cmp	[nesting_direction],0
@@ -541,6 +541,8 @@ get_inf_dir_1:
 	mov	ebp,[ebp+8]
 ;--------------------------------------
 .start:
+	test	ebp,ebp
+	jz	.continue_4
 	mov	ebx,ebp
 	dec	ebx
 	imul	ebx,304

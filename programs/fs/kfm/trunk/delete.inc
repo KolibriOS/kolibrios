@@ -188,11 +188,11 @@ delete_dir:
     call start_error_window_thread
     popa
     add  esp,8+4
-    ret
+    jmp  still
 @@:
     mov  eax,[delete_dir_data+8]
-    cmp  eax,2
-    ja	 @f
+    test eax,eax
+    jnz  @f
     inc  [current_progress_value]
     call progress_bar_delete
     call del_file
@@ -202,7 +202,7 @@ delete_dir:
     call start_error_window_thread
     popa
     add  esp,8+4
-    ret
+    jmp  still
 @@:
     imul  eax,304
     add   eax,32
@@ -226,7 +226,7 @@ delete_dir:
     call start_error_window_thread
     popa
     add  esp,8+4
-    ret
+    jmp  still
 @@:
     call delete_dir_1
     jc	.1
@@ -249,6 +249,8 @@ delete_dir_1:
     mov  ebp,[appl_memory_old]
     mov  ebp,[ebp+8]
 .start:
+    test ebp,ebp
+    jz   .continue_4
     mov  ebx,ebp
     dec  ebx
     imul ebx,304
@@ -298,7 +300,7 @@ delete_dir_1:
     popa
     add  esp,8+4
     ret
-.continue_2:        
+.continue_2:
     clc
     ret
 .continue_3:
