@@ -27,7 +27,7 @@ exFAT_user_functions:
         dd      exFAT_GetFileInfo
         dd      exFAT_SetFileInfo
         dd      0
-        dd      0 ;exFAT_Delete
+        dd      exFAT_Delete
         dd      0 ;exFAT_CreateFolder
         dd      0 ;exFAT_Rename
 exFAT_user_functions_end:
@@ -35,11 +35,11 @@ endg
 
 struct exFAT PARTITION
 fat_change          db  ?   ; 1=fat has changed
+ClstHeap_change     db  ?   ; 1=Cluster Heap has changed
 createOption        db  ?
                     rb  2
 Lock                MUTEX   ; currently operations with one partition
 ; can not be executed in parallel since the legacy code is not ready
-fat_in_cache        dd  ?
 FAT_START           dd  ?   ; start of fat table
 ROOT_START          dd  ?   ; start of rootdir
 SECTORS_PER_CLUSTER dd  ?
@@ -57,11 +57,12 @@ fatMASK             dd  ?
 fatStartScan        dd  ?
 cluster_tmp         dd  ?   ; used by analyze_directory and analyze_directory_to_write
 ROOT_CLUSTER        dd  ?   ; first rootdir cluster
-fat_cache_ptr       dd  ?
 points_to_BDFE      dd  ?
 secondary_dir_entry dd  ?
 longname_sec1       dd  ?   ; used by analyze_directory to save 2 previous
 longname_sec2       dd  ?   ; directory sectors for delete long filename
+longname_sector1    dd  ?   ; used by analyze_directory to save 2 previous
+longname_sector2    dd  ?   ; directory sectors for delete long filename
 LFN_reserve_place   dd  ?
 path_in_UTF8        dd  ?
 General_Sec_Flags   dd  ?
@@ -77,8 +78,12 @@ buffer_curr_sector  dd  ?
 buff_file_dirsect   dd  ?
 buff_file_dir_pos   dd  ?
 fname_extdir_offset dd  ?
+fat_in_cache        dd  ?
+fat_cache_ptr       dd  ?
+ClstHeap_in_cache   dd  ?
+ClstHeap_cache_ptr  dd  ?
 volumeLabel         rb  12
-; The next nine areas (32*17) should be arranged sequentially.
+; The next areas (32*19) should be arranged sequentially.
 ; Do not change their location!!!
 file_dir_entry      rb  32 ; Entry Type 0x85
 str_ext_dir_entry   rb  32 ; Entry Type 0xC0
@@ -299,11 +304,14 @@ exFAT_create_partition:
 ;        mov     [ebp+FAT.fs_type], al
 ;------------------------------------------------------------------------------
 ; For FAT16 and FAT32, allocate 512 bytes for FAT cache.
-        mov     eax, 512
+; For exFAT allocate 512 bytes for Cluster Heap cache.
+        mov     eax, 512*2
         call    malloc
         test    eax, eax
         jz      .free_return0
         mov     [ebp+exFAT.fat_cache_ptr], eax
+        add     eax, 512
+        mov     [ebp+exFAT.ClstHeap_cache_ptr], eax
 ; DEBUGF  1, "K : malloc exFAT.fat_cache_ptr EAX: %x\n", eax
 
         mov     eax, ebp
@@ -371,6 +379,16 @@ exFAT_get_name:
         stc
         ret
 ;--------------------------------------
+.save_curr_sector_number:
+        mov     eax, [ebp+exFAT.buffer_curr_sector]
+        cmp     eax, [ebp+exFAT.longname_sector2]
+        je      @f
+        push    [ebp+exFAT.longname_sector2]
+        pop     [ebp+exFAT.longname_sector1]
+        mov     [ebp+exFAT.longname_sector2], eax
+@@:
+        ret
+;--------------------------------------
 .file_directory_entry:
 ; DEBUGF  1, "K : exFAT_get_name 0x85\n"
         mov     eax, [ebp+exFAT.buffer_curr_sector]
@@ -381,6 +399,8 @@ exFAT_get_name:
         mov     [ebp+exFAT.fname_extdir_offset], eax
 
         xor     eax, eax
+        mov     [ebp+exFAT.longname_sector1], eax
+        mov     [ebp+exFAT.longname_sector2], eax
         mov     [ebp+exFAT.hash_flag], eax ; dword 0
         mov     al, byte [edi+1]  ; Number of Secondary directory entries
         dec     eax
@@ -393,6 +413,7 @@ exFAT_get_name:
 .stream_extension_directory_entry:
 ; DEBUGF  1, "K : exFAT_get_name 0xC0\n"
 ; DEBUGF  1, "K : exFAT SEDE need_hash :%x\n", [ebp+exFAT.need_hash]
+        call    .save_curr_sector_number
         mov     eax, [ebp+exFAT.need_hash]
         test    eax, eax
         jz      .stream_extension_directory_entry_1 ; @f
@@ -441,7 +462,7 @@ exFAT_get_name:
 ;        mov     ebp,[esp+12+8+4+4+7*4+262*2+4+4]
 ; DEBUGF  1, "K : exFAT_get_name.longname Input FS EBP:%x\n", ebp
 ;        pop     ebp
- 
+        call    .save_curr_sector_number 
         mov     eax, [ebp+exFAT.hash_flag]
         test    eax, eax
         jnz     .no
@@ -655,6 +676,51 @@ exFAT_bdfe_to_fat_entry:
 ; DEBUGF  1, "K : exFAT write date: %x\n", ax
         ret
 ;------------------------------------------------------------------------------
+exFAT_set_FAT:
+; in: eax = cluster, edx = value to save
+; out: edx = old value, CF=1 -> error
+        push    eax ebx esi
+        cmp     eax, 2
+        jc      .ret
+        cmp     [ebp+exFAT.LAST_CLUSTER], eax
+        jc      .ret
+        add     eax, eax
+@@:
+        add     eax, eax
+        mov     esi, 511
+        and     esi, eax
+        shr     eax, 9
+        add     eax, [ebp+exFAT.FAT_START]
+        mov     ebx, [ebp+exFAT.fat_cache_ptr]
+        cmp     eax, [ebp+exFAT.fat_in_cache]
+        je      .inCache
+        cmp     [ebp+exFAT.fat_change], 0
+        je      @f
+        call    exFAT_write_fat_sector
+@@:
+        mov     [ebp+exFAT.fat_in_cache], eax
+        call    fs_read32_sys
+        test    eax, eax
+        jne     .error
+.inCache:
+        mov     eax, [ebp+exFAT.fatMASK]
+        and     edx, eax
+        xor     eax, -1         ; mask for high bits
+        and     eax, [ebx+esi]  ; get high 4 bits
+        or      eax, edx
+        mov     edx, [ebx+esi]  ; get old value
+        mov     [ebx+esi], eax  ; save new value
+.write:
+        mov     [ebp+exFAT.fat_change], 1
+        and     edx, [ebp+exFAT.fatMASK]
+.ret:
+        pop     esi ebx eax
+        ret
+
+.error:
+        stc
+        jmp     .ret
+;------------------------------------------------------------------------------
 exFAT_get_FAT:
 ; DEBUGF  1, "K : exFAT_get_FAT \n"
 ; in: eax = cluster
@@ -677,7 +743,7 @@ exFAT_get_FAT:
         je      .inCache
         cmp     [ebp+exFAT.fat_change], 0
         je      @f
-;        call    write_fat_sector
+        call    exFAT_write_fat_sector
 @@:
         mov     [ebp+exFAT.fat_in_cache], eax
         call    fs_read32_sys
@@ -735,9 +801,11 @@ exFAT_hd_find_lfn:
         cmp     byte [esi], 0
         jz      .found
 ;        test    byte [edi+11], 10h
+        push    eax
         lea     eax, [ebp+exFAT.file_dir_entry]
 ; DEBUGF  1, "K : exFAT_hd_find_lfn exFAT.file_dir_entry [EAX]: %x\n", [eax]
         test    byte [eax+4], 10000b
+        pop     eax
         jz      .notfound
         and     dword [esp+12], 0
 ; this entry’s first cluster number
@@ -765,7 +833,7 @@ exFAT_hd_find_lfn:
         jmp     .loop
 
 .notfound:
-; DEBUGF  1, "K : exFAT_hd_find_lfn.notfound \n"
+; DEBUGF  1, "K : exFAT_hd_find_lfn.notfound EAX:%x\n", eax
         add     esp, 16
         pop     edi esi
         stc
@@ -952,16 +1020,20 @@ align 4
 ; DEBUGF  1, "K : exFAT General_Sec_Flags %x\n", [ebp+exFAT.General_Sec_Flags]
 ; DEBUGF  1, "K : exFAT.valid_data_length 2 %x\n", [ebp+exFAT.valid_data_length]
         cmp     [ebp+exFAT.valid_data_length], 0
-        jbe     @f
-
+        jbe     .error
+; DEBUGF  1, "K : exFAT_find_lfn call dword[eax-8] ; exFAT_notroot_next: \n"
         call    dword[eax-8] ; exFAT_notroot_next
         jnc     .l1
 @@:
+; DEBUGF  1, "K : exFAT_find_lfn.@@: \n"
         add     esp, 262*2
 .reterr:
 ; DEBUGF  1, "K : exFAT_find_lfn.reterr \n"
         stc
         ret
+.error:
+        movi    eax, ERROR_FILE_NOT_FOUND
+        jmp     @b
 ;------------------------------------------------------------------------------
 exFAT_ReadFile:
 ; DEBUGF  1, "K : exFAT_ReadFile \n"
@@ -1648,7 +1720,10 @@ exFAT_ReadFolder:
         add     ebx, 512
         push    eax
 .l1:
-; DEBUGF  1, "K : exFAT_ReadFolder.l1 \n"
+;        cmp     [edi], dword 0
+;        je      .l1_1
+; DEBUGF  1, "K : exFAT_ReadFolder.l1 [EDI]:%x\n", [edi]
+;.l1_1:
 ;        push    esi
 ;        lea     esi, [esp+20]
 ; DEBUGF  1, "K : exFAT RD need_hash :%x\n", [ebp+exFAT.need_hash]
@@ -1982,6 +2057,280 @@ exFAT_SetFileInfo:
         pop     eax
         ret
 ;------------------------------------------------------------------------------
+exFAT_Delete:
+; DEBUGF  1, "K : exFAT_Delete\n"
+; DEBUGF  1, "K : exFAT F70 +00: %x\n", [ebx]
+; DEBUGF  1, "K : exFAT F70 +04: %x\n", [ebx+4]
+; DEBUGF  1, "K : exFAT F70 +08: %x\n", [ebx+8]
+; DEBUGF  1, "K : exFAT F70 +12: %x\n", [ebx+12]
+; DEBUGF  1, "K : exFAT F70 +16: %x\n", [ebx+16]
+; DEBUGF  1, "K : exFAT F70 +20: %x\n", [ebx+20]
+; DEBUGF  1, "K : exFAT Path: %s\n", esi
+        call    exFAT_lock
+        xor     eax, eax
+        mov     [ebp+exFAT.need_hash], eax ; dword 0
+        mov     [ebp+exFAT.hash_flag], eax ; dword 0
+;        and     [ebp+exFAT.longname_sec1], 0
+;        and     [ebp+exFAT.longname_sec2], 0
+        mov     [ebp+exFAT.longname_sec1], eax
+        mov     [ebp+exFAT.longname_sec2], eax
+        call    exFAT_hd_find_lfn
+        jc      .notFound
+;        cmp     dword [edi], '.   '
+;        jz      .access_denied2
+;        cmp     dword [edi], '..  '
+;        jz      .access_denied2
+;        test    byte [edi+11], 10h
+        push    eax
+        lea     eax, [ebp+exFAT.file_dir_entry]
+; DEBUGF  1, "K : exFAT_Delete: File Attributes:%x\n", [eax+4]
+        test    byte [eax+4], 10000b
+        pop     eax
+        jz      .dodel
+; we can delete only empty folders!
+        pushad
+;        mov     esi, [edi+20-2]
+;        mov     si, [edi+26]     ; esi=cluster
+        lea     eax, [ebp+exFAT.str_ext_dir_entry]
+        mov     esi, [eax+20]    ; cluster
+; DEBUGF  1, "K : exFAT_Delete: Cluster1:%x [EDI+20]:%x\n", esi, [edi+20]
+        xor     ecx, ecx
+        lea     eax, [esi-2]
+        imul    eax, [ebp+exFAT.SECTORS_PER_CLUSTER]
+        add     eax, [ebp+exFAT.DATA_START]
+;        add     eax, [ebp+exFAT.CLUSTER_HEAP_START]
+        lea     ebx, [ebp+exFAT.buffer]
+        call    fs_read32_sys
+        test    eax, eax
+        jnz     .err1
+        lea     eax, [ebx+0x200]
+;        add     ebx, 2*0x20
+.checkempty:
+; DEBUGF  1, "K : exFAT_Delete.checkempty: [EBX]:%x\n", [ebx]
+        cmp     byte [ebx], 0 ; DIR_Name[0] == 0x00, then the directory entry is free
+        jz      .empty
+;        cmp     byte [ebx], 0xE5 ; DIR_Name[0] == 0xE5, then the directory entry is free
+;        jnz     .notempty
+        cmp     byte [ebx], 0x85 ; File/Folder Directory Entry of ExFAT
+        jz      .notempty
+        cmp     byte [ebx], 0xC0 ; Stream Extension Directory Entry of ExFAT
+        jz      .notempty
+        cmp     byte [ebx], 0xC1 ; File Name Extension Directory Entry of ExFAT
+        jz      .notempty
+        add     ebx, 0x20
+        cmp     ebx, eax
+        jb      .checkempty
+        inc     ecx
+        cmp     ecx, [ebp+exFAT.SECTORS_PER_CLUSTER]
+        jb      @f
+        mov     eax, esi
+; Check - General Secondary Flags
+; Bit 0 : Allocation possible
+;         0 – No cluster allocated; 1 – cluster allocation is possible
+; Bit 1 : No FAT chain
+;         0 – Yes ; The clusters of this file/directory are NOT contiguous
+;         1 – No; The Contiguous Cluster are allocated to this file/directory;
+;         This improves the File read performance
+; Bits 2 – 7 : Reserved
+        test    byte [ebp+exFAT.General_Sec_Flags], 10b
+        jz      .get_FAT
+        inc     eax ; inc cluster
+        jmp     .continue
+.get_FAT:
+; DEBUGF  1, "K : exFAT_Delete.get_FAT:\n"
+        call    exFAT_get_FAT
+        jc      .err1
+        cmp     eax, 2
+        jb      .error_fat
+.continue:
+; DEBUGF  1, "K : exFAT_Delete.continue:\n"
+        cmp     eax, [ebp+exFAT.fatRESERVED]
+        jae     .empty
+        mov     esi, eax
+        xor     ecx, ecx
+@@:
+; DEBUGF  1, "K : exFAT_Delete.@@:\n"
+        lea     eax, [esi-2]
+        imul    eax, [ebp+exFAT.SECTORS_PER_CLUSTER]
+        add     eax, [ebp+exFAT.DATA_START]
+;        add     eax, [ebp+exFAT.CLUSTER_HEAP_START]
+        add     eax, ecx
+        lea     ebx, [ebp+exFAT.buffer]
+        call    fs_read32_sys
+        test    eax, eax
+        lea     eax, [ebx+0x200]
+        jz      .checkempty
+.err1:
+; DEBUGF  1, "K : exFAT_Delete.err1:\n"
+        popad
+.err2:
+; DEBUGF  1, "K : exFAT_Delete.err2:\n"
+        push    ERROR_DEVICE
+.ret:
+; DEBUGF  1, "K : exFAT_Delete.ret:\n"
+        call    exFAT_unlock
+        pop     eax
+        ret
+
+.notFound:
+; DEBUGF  1, "K : exFAT_Delete.notFound:\n"
+        push    ERROR_FILE_NOT_FOUND
+        jmp     .ret
+
+.error_fat:
+; DEBUGF  1, "K : exFAT_Delete.error_fat:\n"
+        popad
+        push    ERROR_FS_FAIL
+        jmp     .ret
+
+.notempty:
+; DEBUGF  1, "K : exFAT_Delete.notempty:\n"
+        popad
+.access_denied2:
+; DEBUGF  1, "K : exFAT_Delete.access_denied2:\n"
+        push    ERROR_ACCESS_DENIED
+        jmp     .ret
+
+.empty:
+; DEBUGF  1, "K : exFAT_Delete.empty:\n"
+        popad
+        push    eax ebx
+        lea     ebx, [ebp+exFAT.buffer]
+        call    fs_read32_sys
+        test    eax, eax
+        pop     ebx eax
+        jnz     .err2
+.dodel:
+; DEBUGF  1, "K : exFAT_Delete.dodel:\n"
+        push    eax
+;        mov     eax, [edi+20-2]
+;        mov     ax, [edi+26]    ; eax=cluster
+        lea     eax, [ebp+exFAT.str_ext_dir_entry]
+        mov     eax, [eax+20]    ; cluster
+; DEBUGF  1, "K : exFAT_Delete: Cluster2:%x [EDI+20]:%x\n", eax, [edi+20]
+        xchg    eax, [esp]
+
+        mov     edi, [ebp+exFAT.buff_file_dir_pos]
+        cmp     eax, [ebp+exFAT.buff_file_dirsect]
+        je      .continue_2
+
+        mov     eax, [ebp+exFAT.buff_file_dirsect]
+        mov     [ebp+exFAT.buffer_curr_sector], eax
+
+        push    eax ebx
+        lea     ebx, [ebp+exFAT.buffer]
+        call    fs_read32_sys
+        test    eax, eax
+        jz      .continue_1 ; CF=0
+
+        pop     ebx
+        add     esp, 4
+        jmp     .err2
+
+.continue_1:
+; DEBUGF  1, "K : exFAT_Delete.continue_1:\n"
+        pop     ebx eax
+
+.continue_2:
+; DEBUGF  1, "K : exFAT_Delete.continue_2: EAX:%x\n", eax
+        push    ecx
+; delete folder entry
+;        mov     byte [edi], 0xE5 ; for FAT
+        and     byte [edi], 0x7F ; Entry Type is 0x85 is changed to 0x05
+        movzx   ecx, byte [edi+1]  ; Number of Secondary directory entries
+        inc     ecx
+; delete LFN (if present)
+.lfndel:
+; DEBUGF  1, "K : exFAT_Delete.lfndel: [EDI]:%x\n", [edi]
+        add     edi, 0x20
+;        lea     edx, [ebp+exFAT.buffer]
+        lea     edx, [ebp+exFAT.buffer+0x200]
+;        cmp     edi, edx
+        cmp     edx, edi
+        ja      @f
+
+;        cmp     [ebp+exFAT.longname_sec2], 0
+;        jz      .lfndone
+;        push    [ebp+exFAT.longname_sec2]
+;        push    [ebp+exFAT.longname_sec1]
+;        pop     [ebp+exFAT.longname_sec2]
+;        and     [ebp+exFAT.longname_sec1], 0
+; DEBUGF  1, "K : exFAT_Delete: lngnm_sec1:%x lngnm_sec2:%x\n", [ebp+exFAT.longname_sector1], [ebp+exFAT.longname_sector2]
+        cmp     [ebp+exFAT.longname_sector1], 0
+        je      .longname_sec2
+
+        push    eax
+        mov     eax, [ebp+exFAT.buff_file_dirsect]
+        cmp     eax, [ebp+exFAT.longname_sector1]
+        pop     eax
+;        je      .longname_sec2
+        jne     .longname_sec1
+        and     [ebp+exFAT.longname_sector1], 0
+        jmp     .longname_sec2
+.longname_sec1:
+        push    [ebp+exFAT.longname_sector1]
+        and     [ebp+exFAT.longname_sector1], 0
+        jmp     .longname_sec3
+.longname_sec2:
+; DEBUGF  1, "K : exFAT_Delete.longname_sec2:\n"
+        cmp     [ebp+exFAT.longname_sector2], 0
+        je      .lfndone
+
+        push    eax
+        mov     eax, [ebp+exFAT.buff_file_dirsect]
+        cmp     eax, [ebp+exFAT.longname_sector2]
+        pop     eax
+        je      .lfndone
+
+        push    [ebp+exFAT.longname_sector2]
+        and     [ebp+exFAT.longname_sector2], 0
+.longname_sec3:
+; DEBUGF  1, "K : exFAT_Delete.longname_sec3:\n"
+
+        push    ebx
+;        mov     ebx, edx
+        lea     ebx, [ebp+exFAT.buffer]
+        call    fs_write32_sys
+        mov     eax, [esp+4]
+; DEBUGF  1, "K : exFAT_Delete: EAX:%x\n", eax
+        call    fs_read32_sys
+        pop     ebx
+        pop     eax
+;        lea     edi, [ebp+exFAT.buffer+0x200]
+        lea     edi, [ebp+exFAT.buffer]
+@@:
+; DEBUGF  1, "K : exFAT_Delete.@@: [EDI]:%x\n", [edi]
+;        sub     edi, 0x20
+;;        add     edi, 0x20
+;        cmp     byte [edi], 0xE5
+;        jz      .lfndone
+        dec     ecx
+        jz      .lfndone
+        cmp     byte [edi], 0
+        jz      .lfndone
+        cmp     byte [edi], 0x85
+        jz      .lfndone
+;        cmp     byte [edi+11], 0xF
+;        jnz     .lfndone
+;        mov     byte [edi], 0xE5
+        and     byte [edi], 0x7F ; 0xC0 is changed to 0x40; 0xC1 is changed to 0x41
+        jmp     .lfndel
+.lfndone:
+; DEBUGF  1, "K : exFAT_Delete.lfndone:\n"
+        pop     ecx
+        push    ebx
+        lea     ebx, [ebp+exFAT.buffer]
+        call    fs_write32_sys
+        pop     ebx
+; delete FAT chain
+        pop     eax
+        call    exFAT_clear_Cluster_Heap
+        call    exFAT_clear_cluster_chain
+        call    exFAT_update_disk
+        call    exFAT_unlock
+        xor     eax, eax
+        ret
+;------------------------------------------------------------------------------
 calculate_SetChecksum_field:
         push    ebx ecx edx esi edi
         lea     esi, [ebp+exFAT.file_dir_entry]
@@ -2037,11 +2386,163 @@ align 4
         pop     edi esi edx ecx ebx
         ret
 ;------------------------------------------------------------------------------
+exFAT_clear_Cluster_Heap:
+; in: eax = first cluster
+
+;ClstHeap_change     db  ?   ; 1=Cluster Heap has changed
+;ClstHeap_in_cache   dd  ?
+;ClstHeap_cache_ptr  dd  ?
+
+        push    eax ebx ecx edx esi
+        mov     ebx, [ebp+exFAT.ClstHeap_cache_ptr]
+        push    eax
+        lea     eax, [ebp+exFAT.str_ext_dir_entry]
+        mov     edx, [eax+12]    ; high dword of  real file size
+; DEBUGF  1, "K : exFAT_clear_Cluster_Heap Hdword file size:%x\n", edx
+        mov     eax, [eax+8]    ; low dword of  real file size
+; DEBUGF  1, "K : exFAT_clear_Cluster_Heap Ldword file size:%x\n", eax
+        mov     ecx, [ebp+exFAT.SECTORS_PER_CLUSTER]
+; DEBUGF  1, "K : exFAT_clear_Cluster_Heap SECTORS_PER_CLUSTER:%x\n", ecx
+        shl     ecx, 9
+        div     ecx
+        test    edx, edx
+        jz      @f
+        inc     eax
+@@:
+        mov     edx, eax
+; DEBUGF  1, "K : exFAT_clear_Cluster_Heap number of clusters:%x\n", edx
+        pop     eax
+.start:
+; DEBUGF  1, "K : exFAT_clear_Cluster_Heap current cluster:%x\n", eax
+        cmp     eax, [ebp+exFAT.LAST_CLUSTER]
+        ja      .exit
+        cmp     eax, 2
+        jb      .exit
+        cmp     eax, [ebp+exFAT.ROOT_CLUSTER]
+        jz      .exit
+
+        push    eax
+        dec     eax
+        dec     eax
+
+        mov     ecx, 7
+        and     ecx, eax ; get offset of bits
+; DEBUGF  1, "K : exFAT_clear_Cluster_Heap offset of bits:%x\n", ecx
+        shr     eax, 3
+
+        mov     esi, 511
+        and     esi, eax ; get offset of bytes
+; DEBUGF  1, "K : exFAT_clear_Cluster_Heap offset of bytes:%x\n", esi
+        shr     eax, 9 ; get  get offset of sectors
+; DEBUGF  1, "K : exFAT_clear_Cluster_Heap offset of sectors:%x\n", eax
+        add     eax, [ebp+exFAT.CLUSTER_HEAP_START]
+; DEBUGF  1, "K : exFAT_clear_Cluster_Heap general offset:%x\n", eax
+        cmp     eax, [ebp+exFAT.ClstHeap_in_cache]
+        je      .inCache
+
+        cmp     [ebp+exFAT.ClstHeap_change], 0
+        je      @f
+
+        mov     [ebp+exFAT.ClstHeap_change], 0
+        push    eax
+        mov     eax, [ebp+exFAT.ClstHeap_in_cache]
+        call    fs_write32_sys
+        pop     eax
+@@:
+        mov     [ebp+exFAT.ClstHeap_in_cache], eax
+        call    fs_read32_sys
+        test    eax, eax
+        jne     .error
+.inCache:
+        xor     eax, eax
+        mov     al, [ebx+esi]  ; get Cluster_Heap old value
+; DEBUGF  1, "K : exFAT Cluster_Heap old value:%x\n", eax
+        ror     al, cl
+        and     al, 0xfe ; reset bit
+        rol     al, cl
+        mov     [ebx+esi], al  ; save Cluster_Heap new value
+
+; DEBUGF  1, "K : exFAT Cluster_Heap new value:%x\n", eax
+        mov     [ebp+exFAT.ClstHeap_change], 1
+        pop     eax
+; Check - General Secondary Flags
+; Bit 0 : Allocation possible
+;         0 – No cluster allocated; 1 – cluster allocation is possible
+; Bit 1 : No FAT chain
+;         0 – Yes ; The clusters of this file/directory are NOT contiguous
+;         1 – No; The Contiguous Cluster are allocated to this file/directory;
+;         This improves the File read performance
+; Bits 2 – 7 : Reserved
+; DEBUGF  1, "K : exFAT General_Sec_Flags %x\n", [ebp+exFAT.General_Sec_Flags]
+        test    byte [ebp+exFAT.General_Sec_Flags], 10b
+        jz      .get_FAT
+
+        dec     edx ; dec cluster counter
+        jz      .exit
+
+        inc     eax ; inc cluster
+        jmp     .start
+.get_FAT:
+        call    exFAT_get_FAT
+        jc      .ret
+        jmp     .start
+.error:
+        pop     eax
+        stc
+        jmp     .ret
+.exit:
+        clc
+.ret:
+        pop     esi edx ecx ebx eax
+        ret
+;------------------------------------------------------------------------------
+exFAT_clear_cluster_chain:
+; in: eax = first cluster
+; DEBUGF  1, "K : exFAT_clear_cluster_chain: GSF:%x\n", [ebp+exFAT.General_Sec_Flags]
+; Check - General Secondary Flags
+; Bit 0 : Allocation possible
+;         0 – No cluster allocated; 1 – cluster allocation is possible
+; Bit 1 : No FAT chain
+;         0 – Yes ; The clusters of this file/directory are NOT contiguous
+;         1 – No; The Contiguous Cluster are allocated to this file/directory;
+;         This improves the File read performance
+; Bits 2 – 7 : Reserved
+        test    byte [ebp+exFAT.General_Sec_Flags], 10b
+        jz      .set_FAT
+        ret
+.set_FAT:
+        push    eax edx
+@@:
+        cmp     eax, [ebp+exFAT.LAST_CLUSTER]
+        ja      @f
+        cmp     eax, 2
+        jb      @f
+        cmp     eax, [ebp+exFAT.ROOT_CLUSTER]
+        jz      @f
+        xor     edx, edx
+        call    exFAT_set_FAT
+        jc      .ret
+
+        mov     eax, edx
+        jmp     @b
+@@:
+        clc
+.ret:
+        pop     edx eax
+        ret
+;------------------------------------------------------------------------------
 exFAT_update_disk:
+        cmp     [ebp+exFAT.ClstHeap_change], 0
+        je      @f
+        mov     [ebp+exFAT.ClstHeap_change], 0
+        push    eax ebx
+        mov     eax, [ebp+exFAT.ClstHeap_in_cache]
+        mov     ebx, [ebp+exFAT.ClstHeap_cache_ptr]
+        call    fs_write32_sys
+        pop     ebx eax
+@@:
         cmp     [ebp+exFAT.fat_change], 0
         jz      .noChange
-;        cmp     [ebp+FAT.fs_type], 12
-;        jz      .fat12
         call    exFAT_write_fat_sector
 .noChange:
         mov     esi, [ebp+PARTITION.Disk]
