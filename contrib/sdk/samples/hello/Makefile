@@ -3,7 +3,8 @@
 CC = kos32-gcc
 LD = kos32-ld 
 
-SDK_DIR = $(abspath ../..)
+CONTRIB_DIR = $(abspath ../../..)
+SDK_DIR = $(CONTRIB_DIR)/sdk
 
 CFLAGS = -c -fno-ident -O2 -fomit-frame-pointer -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32
 LDFLAGS = -static -S -Tapp-dynamic.lds --image-base 0
