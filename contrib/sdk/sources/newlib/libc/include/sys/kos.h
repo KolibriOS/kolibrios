@@ -1,13 +1,9 @@
-////////////////////////////////////////////
-//           KolibriOS Syscalls           //
-//               sys/kos.h                //
-// Based on kos32sys and other wrappers   //
-//                                        //
-// Syscalls scheme: kos_XxxYyy            //
-//              (e.g. kos_DrawWindow)     //
-////////////////////////////////////////////
-
-// Some code was written by maxcodehack
+/*
+sys/kos.h
+An attempt to create new C/C++ wrapper for syscalls
+Based on kos32sys.h
+KolibriOS Team
+*/
 
 #include <stdint.h>
 #include <string.h>
@@ -15,60 +11,55 @@
 /*********************** Types *************************/
 typedef unsigned int color_t;
 
-// Struct for App running
+// struct for sysfn 70
 #pragma pack(push,1)
-typedef struct
-{
-unsigned	p00;
-unsigned 	p04;
-char	 	*p08;
-unsigned	p12;
-unsigned	p16;
-char		p20;
-char		*p21;
+typedef struct {
+	unsigned p00;
+	unsigned p04;
+	char *p08;
+	unsigned p12;
+	unsigned p16;
+	char p20;
+	char *p21;
 } kos_Struct70;
 #pragma pack(pop)
 
-// Blitter struct
-struct blit_call
-{
+// struct for blitter
+struct blit_call {
 	int dstx;
 	int dsty;
 	int w;
 	int h;
- 
 	int srcx;
 	int srcy;
 	int srcw;
 	int srch;
- 
 	void *bitmap;
-	int   stride;
+	int stride;
 };
 
-// Process info for sysfn 9
+// struct for sysfn 9
 #pragma pack(push, 1)
-struct proc_info
-{
-		unsigned long cpu_usage;
-		unsigned short pos_in_stack;
-		unsigned short slot;
-		unsigned short reserved;
-		char name[12];
-		unsigned long address;
-		unsigned long memory_usage;
-		unsigned long ID;
-		unsigned long left,top;
-		unsigned long width,height;
-		unsigned short thread_state;
-		unsigned short reserved2;
-		unsigned long cleft, ctop, cwidth, cheight;
-		unsigned char window_state;
-		unsigned char reserved3[1024-71];
+struct proc_info {
+	unsigned long cpu_usage;
+	unsigned short pos_in_stack;
+	unsigned short slot;
+	unsigned short reserved;
+	char name[12];
+	unsigned long address;
+	unsigned long memory_usage;
+	unsigned long ID;
+	unsigned long left,top;
+	unsigned long width,height;
+	unsigned short thread_state;
+	unsigned short reserved2;
+	unsigned long cleft, ctop, cwidth, cheight;
+	unsigned char window_state;
+	unsigned char reserved3[1024 - 71];
 };
 #pragma pack(pop)
 
-// Color struct for sysfn 48
+// struct for sysfn 48
 struct kolibri_system_colors {
   color_t frame_area;
   color_t grab_bar;
@@ -82,36 +73,27 @@ struct kolibri_system_colors {
   color_t work_graph;
 };
 
-typedef union __attribute__((packed))
-{
+typedef union __attribute__((packed)) {
 	uint32_t val;
-	struct
-	{
-		short  x;
-		short  y;
+	struct {
+		short x;
+		short y;
 	};
 } pos_t;
 
 
 /*********************** Window Syscalls *************************/
-// Start drawing
-static inline void kos_BeginDraw(void)
-{
+static inline void kos_BeginDraw(void) {
 	__asm__ __volatile__(
 	"int $0x40" ::"a"(12),"b"(1));
 };
 
-// End drawing
-static inline void kos_EndDraw(void)
-{
+static inline void kos_EndDraw(void) {
 	__asm__ __volatile__(
 	"int $0x40" ::"a"(12),"b"(2));
 };
 
-// Draw window
-static inline void kos_DrawWindow(int x, int y, int w, int h, const char *title,
-					   color_t bgcolor, uint32_t style)
-{
+static inline void kos_DrawWindow(int x, int y, int w, int h, const char *title, color_t bgcolor, uint32_t style) {
 	__asm__ __volatile__(
 	"int $0x40"
 	::"a"(0),
@@ -122,14 +104,11 @@ static inline void kos_DrawWindow(int x, int y, int w, int h, const char *title,
 	 "S"(0) : "memory");
 };
 
-// Set window layer behaviour
 #define ZPOS_DESKTOP     -2
 #define ZPOS_ALWAYS_BACK -1
 #define ZPOS_NORMAL      0
 #define ZPOS_ALWAYS_TOP  1
-
-static inline void kos_SetWindowLayerBehaviour(int zpos)
-{
+static inline void kos_SetWindowLayerBehaviour(int zpos) {
 	__asm__ __volatile__(
 	"int $0x40"
 	::"a"(18),
@@ -139,10 +118,8 @@ static inline void kos_SetWindowLayerBehaviour(int zpos)
 	 "S"(zpos) : "memory");
 };
 
-// Change window size
 #define OLD -1
-static inline void kos_ChangeWindow(int new_x, int new_y, int new_w, int new_h)
-{
+static inline void kos_ChangeWindow(int new_x, int new_y, int new_w, int new_h) {
 	__asm__ __volatile__(
 		"int $0x40"
 		::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w),"S"(new_h)
@@ -150,9 +127,7 @@ static inline void kos_ChangeWindow(int new_x, int new_y, int new_w, int new_h)
 }
 
 /*********************** Other GUI functions *************************/
-// Draw text
-static inline void kos_DrawText(int x, int y, const char *text, color_t color)
-{
+static inline void kos_DrawText(int x, int y, const char *text, color_t color) {
 	__asm__ __volatile__(
 	"int $0x40"
 	::"a"(4),"d"(text),
@@ -161,9 +136,7 @@ static inline void kos_DrawText(int x, int y, const char *text, color_t color)
 	 :"memory");
 }
 
-// Draw button
-static inline void kos_DrawButton(int x, int y, int w, int h, int id, color_t color)
-{
+static inline void kos_DrawButton(int x, int y, int w, int h, int id, color_t color) {
 	__asm__ __volatile__(
 	"int $0x40"
 	::"a"(8),
@@ -173,9 +146,7 @@ static inline void kos_DrawButton(int x, int y, int w, int h, int id, color_t co
 	  "S"(color));
 };
 
-// Draw button with text
-void kos_DrawButtonWithText(int x, int y, int w, int h, int id, color_t color, const char* text)
-{
+static inline void kos_DrawButtonWithText(int x, int y, int w, int h, int id, color_t color, const char* text) {
 	kos_DrawButton(x, y, w, h, id, color);
 
 	int tx = ((((-strlen(text))*8)+w)/2)+x;
@@ -184,9 +155,7 @@ void kos_DrawButtonWithText(int x, int y, int w, int h, int id, color_t color, c
 	kos_DrawText(tx, ty, text, 0x90000000);
 };
 
-// Draw line
-static inline void kos_DrawLine(int x_start, int y_start, int x_end, int y_end, color_t color)
-{
+static inline void kos_DrawLine(int x_start, int y_start, int x_end, int y_end, color_t color) {
 	__asm__ __volatile__(
 	"int $0x40"
 	::"a"(38), "d"(color),
@@ -194,9 +163,7 @@ static inline void kos_DrawLine(int x_start, int y_start, int x_end, int y_end, 
 	  "c"((y_start << 16) | y_end));
 }
 
-// Draw bar
-static inline void kos_DrawBar(int x, int y, int w, int h, color_t color)
-{
+static inline void kos_DrawBar(int x, int y, int w, int h, color_t color) {
 	__asm__ __volatile__(
 	"int $0x40"
 	::"a"(13), "d"(color),
@@ -204,8 +171,7 @@ static inline void kos_DrawBar(int x, int y, int w, int h, color_t color)
 	  "c"((y << 16) | h));
 }
 
-// Put one pixel
-void kos_PutPixel(int x, int y, color_t color) {
+static inline void kos_PutPixel(int x, int y, color_t color) {
 	__asm__ __volatile__("int $0x40"
 			 ::"a"(1),
 			  "b"(x),
@@ -213,9 +179,7 @@ void kos_PutPixel(int x, int y, color_t color) {
 			  "d"(color));
 }
 
-// Draw bitmap image
-static inline void kos_DrawBitmap(void *bitmap, int x, int y, int w, int h)
-{
+static inline void kos_DrawBitmap(void *bitmap, int x, int y, int w, int h) {
 	__asm__ __volatile__(
 	"int $0x40"
 	::"a"(7), "b"(bitmap),
@@ -223,7 +187,6 @@ static inline void kos_DrawBitmap(void *bitmap, int x, int y, int w, int h)
 	  "d"((x << 16) | y));
 }
 
-// Blitter 
 static inline void Blit(void *bitmap, int dst_x, int dst_y,
 						int src_x, int src_y, int w, int h,
 						int src_w, int src_h, int stride)
@@ -247,8 +210,7 @@ static inline void Blit(void *bitmap, int dst_x, int dst_y,
 };
 
 // Get screen part as image
-static inline void kos_ScreenShot(char* image, int x, int y, int w, int h)
-{
+static inline void kos_ScreenShot(char* image, int x, int y, int w, int h) {
 	__asm__ __volatile__(
 	"int $0x40"
 	::"a"(36),
@@ -258,9 +220,8 @@ static inline void kos_ScreenShot(char* image, int x, int y, int w, int h)
 };
 
 /*********************** Skin *************************/
-// Return skin height
-static inline uint32_t kos_SkinHeight(void)
-{
+// Get skin height
+static inline uint32_t kos_SkinHeight(void) {
 	uint32_t height;
  
 	__asm__ __volatile__(
@@ -271,15 +232,11 @@ static inline uint32_t kos_SkinHeight(void)
 };
 
 /*********************** Mouse *************************/
-// Get mouse position
 #define POS_SCREEN 0
 #define POS_WINDOW 1
 
-static inline
-pos_t kos_GetMousePos(int origin)
-{
+static inline pos_t kos_GetMousePos(int origin) {
 	pos_t val;
- 
 	__asm__ __volatile__(
 	"int $0x40 \n\t"
 	"rol $16, %%eax"
@@ -288,12 +245,9 @@ pos_t kos_GetMousePos(int origin)
 	return val;
 }
 
-// Get mouse buttons
-static inline
-uint32_t kos_GetMouseButtons(void)
-{
+static inline uint32_t kos_GetMouseButtons(void) {
 	uint32_t val;
- 
+	
 	__asm__ __volatile__(
 	"int $0x40"
 	:"=a"(val)
@@ -301,10 +255,7 @@ uint32_t kos_GetMouseButtons(void)
 	return val;
 };
 
-// Get mouse wheels
-static inline
-uint32_t kos_GetMouseWheels(void)
-{
+static inline uint32_t kos_GetMouseWheels(void) {
 	uint32_t val;
  
 	__asm__ __volatile__(
@@ -314,9 +265,7 @@ uint32_t kos_GetMouseWheels(void)
 	return val;
 };
 
-// Load cursor
-static inline uint32_t kos_LoadCursor(void *path, uint32_t flags)
-{
+static inline uint32_t kos_LoadCursor(void *path, uint32_t flags) {
 	uint32_t  val;
 	__asm__ __volatile__(
 	"int $0x40"
@@ -325,9 +274,7 @@ static inline uint32_t kos_LoadCursor(void *path, uint32_t flags)
 	return val;
 }
 
-// Set cursor
-static inline uint32_t kos_SetCursor(uint32_t cursor)
-{
+static inline uint32_t kos_SetCursor(uint32_t cursor) {
 	uint32_t  old;
 	__asm__ __volatile__(
 	"int $0x40"
@@ -336,9 +283,7 @@ static inline uint32_t kos_SetCursor(uint32_t cursor)
 	return old;
 };
 
-// Destroy cursor
-static inline int kos_DestroyCursor(uint32_t cursor)
-{
+static inline int kos_DestroyCursor(uint32_t cursor) {
 	int ret;
 	__asm__ __volatile__(
 	"int $0x40"
@@ -359,9 +304,7 @@ static inline int kos_DestroyCursor(uint32_t cursor)
 #define evNetwork 8
 #define evDebug   9
 
-static inline
-uint32_t kos_WaitForEventTimeout(uint32_t time)
-{
+static inline uint32_t kos_WaitForEventTimeout(uint32_t time) {
 	uint32_t val;
 	__asm__ __volatile__(
 	"int $0x40"
@@ -370,8 +313,7 @@ uint32_t kos_WaitForEventTimeout(uint32_t time)
 	return val;
 };
  
-static inline uint32_t kos_CheckForEvent(void)
-{
+static inline uint32_t kos_CheckForEvent(void) {
 	uint32_t val;
 	__asm__ __volatile__(
 	"int $0x40"
@@ -380,8 +322,7 @@ static inline uint32_t kos_CheckForEvent(void)
 	return val;
 };
  
-static inline uint32_t kos_WaitForEvent(void)
-{
+static inline uint32_t kos_WaitForEvent(void) {
 	uint32_t val;
 	__asm__ __volatile__(
 	"int $0x40"
@@ -404,8 +345,7 @@ static inline uint32_t kos_WaitForEvent(void)
 #define EVM_MOUSE_FILTER  0x80000000
 #define EVM_CURSOR_FILTER 0x40000000
  
-static inline uint32_t kos_SetMaskForEvents(uint32_t event_mask)
-{
+static inline uint32_t kos_SetMaskForEvents(uint32_t event_mask) {
 	uint32_t  old_event_mask;
 	__asm__ __volatile__(
 	"int $0x40"
@@ -416,18 +356,13 @@ static inline uint32_t kos_SetMaskForEvents(uint32_t event_mask)
 };
 
 /*********************** Other *************************/
-// Get key
-int kos_GetKey()
-{
+static inline int kos_GetKey() {
 	unsigned short key;
 	__asm__ __volatile__("int $0x40":"=a"(key):"0"(2));
 	if(!(key & 0xFF)) return (key>>8)&0xFF; else return 0;
 }
 
-// Get pressed button ID
-static inline
-uint32_t kos_GetButtonID(void)
-{
+static inline uint32_t kos_GetButtonID(void) {
 	uint32_t val;
 	__asm__ __volatile__(
 	"int $0x40"
@@ -436,19 +371,14 @@ uint32_t kos_GetButtonID(void)
 	return val>>8;
 };
 
-// Sleep..
-static inline void kos_Delay(uint32_t time)
-{
+static inline void kos_Delay(uint32_t time) {
 	__asm__ __volatile__(
 	"int $0x40"
 	::"a"(5), "b"(time)
 	:"memory");
 };
 
-// Get screen size
-static inline
-pos_t kos_ScreenSize()
-{
+static inline pos_t kos_ScreenSize() {
 	pos_t size;
 	__asm__ __volatile__(
 	"int $0x40"
@@ -458,18 +388,15 @@ pos_t kos_ScreenSize()
 	return size;
 };
 
-// Get system color table
-static inline void kos_GetSystemColors(struct kolibri_system_colors *color_table)
-{
+static inline void kos_GetSystemColors(struct kolibri_system_colors *color_table) {
 	__asm__ __volatile__ ("int $0x40"
 	:
 	:"a"(48),"b"(3),"c"(color_table),"d"(40)
 	);
 }
 
-// SysFn 9
-static inline void kos_ProcessInfo(char *info)
-{
+// sysfn 9
+static inline void kos_ProcessInfo(char *info) {
 	__asm__ __volatile__(
 	"int $0x40"
 	:
@@ -477,8 +404,7 @@ static inline void kos_ProcessInfo(char *info)
 	:"memory");
 };
 
-void kos_RunApp(char* app, char* param)
-{
+static inline void kos_RunApp(char* app, char* param) {
 	kos_Struct70 r;
 	r.p00 = 7;
 	r.p04 = 0;
