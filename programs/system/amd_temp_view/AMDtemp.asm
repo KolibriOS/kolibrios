@@ -19,8 +19,11 @@ START:
        mcall SF_SYS_MISC, SSF_LOAD_DRIVER_PE, path_drv, 0
        mov dword[drv_struct.handl],eax
        test eax,eax ;проверка загрузки
-       jnz  still
+       jnz  main
        jmp error_drv
+main:
+       mcall SF_SYS_MISC, SSF_CONTROL_DRIVER, drv_struct
+       call add_file
 still:           ;void main()
        call draw
 ;;ожидание события в течении 2000мс
@@ -56,6 +59,12 @@ draw:
        mcall
 
        mcall SF_SYS_MISC, SSF_CONTROL_DRIVER, drv_struct
+
+       dec       dword[update_flag]
+       jnz       @F
+       call      add_new_item
+       mov       dword[update_flag], 30
+@@:
 
        cmp byte[flag_micro_info],1
        mov eax,SF_CHANGE_WINDOW
@@ -335,6 +344,81 @@ error_drv:
        mcall SF_FILE,run_notify
 exit:
        mcall SF_TERMINATE_PROCESS
+
+add_file:
+        mcall SF_FILE, graph_temp
+        mov     dword[graph_temp], 3
+        mov     dword[graph_temp.size], 11
+        mov     dword[graph_temp.str], graph_start.new_data
+        mov     eax,[drv_data.Tmax]
+        mov     dword[graph_temp.index], 9
+        mov     ebx, graph_start.new_data
+        call    int_to_str
+        mcall SF_FILE, graph_temp
+
+        mov     dword[graph_temp.index], 20
+        ret
+index_item:
+        dd    1
+add_new_item:
+        mov     eax,[index_item]
+        imul    eax,1000
+        mov     ebx, graph_start.new_data
+        call    int_to_str
+        mcall SF_FILE, graph_temp
+        add     dword[graph_temp.index], 11
+        inc     dword[index_item]
+        mov     eax,[drv_data.Tctl]
+        mov     ebx, graph_start.new_data
+        call    int_to_str
+        mcall SF_FILE, graph_temp
+        add     dword[graph_temp.index], 11
+        ret
+
+;eax = int   value / 1000
+;ebx = *str
+; из за конкретики данного прилажения(а именно измерение температуры проца), сомниваюсь
+; что потребуется больше 3 цифр на значение(ххх.ххх) так что будет костыль
+int_to_str:
+        push    ecx edx esi
+        mov     ecx, '0000'
+        mov     [ebx], ecx
+        mov     [ebx+5], ecx
+
+        xor     edx, edx
+        mov     esi, 1000
+        div     esi
+        push    edx
+        mov     esi, 10
+        push    ebx
+        add     ebx, 3
+.loop:
+        and     eax, 0x3ff ; 1023
+        test    eax, eax
+        jz      @f
+        xor     edx, edx
+        div     esi
+        add     edx, '0'
+        mov     byte[ebx], dl
+        dec     ebx
+        jmp     .loop
+@@:
+        pop     ebx
+        add     ebx, 8;4
+        pop     edx
+        ;mov     byte[ebx],'.'
+        ;add     ebx, 4
+        test    edx, edx
+        jz      @f
+        mov     eax, edx
+        imul    eax, 10
+        xor     edx, edx
+        push    edx
+        push    ebx
+        jmp     .loop
+@@:
+        pop     esi edx ecx
+        ret
 ;Data_program;
 title       db 'AMDtemp',0
 path_drv    db '/kolibrios/drivers/sensors/k10temp.sys',0
@@ -394,7 +478,18 @@ run_notify:
                  dd Error_text
                  dd 0
                  dd 0
-                 db '/sys/@notify',0
+                 db '/sys/@notify',0 ,0,0,0 ;выравнивание
+
+update_flag:    dd 30 ;1 minut
+graph_start:    db '0 1000 0 '  ; 9 byte
+.new_data:      db '0000.0000  ' ;  10-20 byte
+graph_temp:
+                dd 2
+.index:         dd 0
+                dd 0
+.size:          dd 20 ;
+.str:           dd graph_start ; заменить
+                db '/tmp0/1/graph_temp.txt',0,0 ; выравнивание
 
 sc      system_colors
 I_END:
