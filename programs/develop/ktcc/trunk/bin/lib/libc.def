@@ -119,10 +119,10 @@ socketpair
 acosh
 asinh
 atanh
-acosh
 frexp
 hypot
 ldexp
+cosh
 sinh
 tanh
 acos
@@ -131,6 +131,9 @@ atan
 atan2
 ceil
 cos
+sin
+tan
+sqrt
 exp
 fabs
 floor
