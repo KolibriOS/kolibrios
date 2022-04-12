@@ -714,6 +714,7 @@ tup.append_table(img_files, {
 tup.append_table(extra_files, {
  {"kolibrios/utils/thashview", PROGS .. "/other/TinyHashView/thashview"},
  {"kolibrios/demos/kmatrix", PROGS .. "/demos/kmatrix/trunk/kmatrix"},
+ {"kolibrios/utils/graph", PROGS .. "/other/graph/branches/tcc_current/graph"},
  {"kolibrios/develop/TinyBasic/TinyBasic", PROGS .. "/develop/tinybasic-1.0.4/tinybasic"},
  {"kolibrios/develop/TinyBasic/bas/", PROGS .. "/develop/tinybasic-1.0.4/bas/*"},
  {"kolibrios/develop/TinyBasic/TinyBasic.man", PROGS .. "/develop/tinybasic-1.0.4/doc/tinybasic.man"},
