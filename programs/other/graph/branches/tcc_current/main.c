@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/ksys.h>
 #include <clayer/boxlib.h>
+#include <conio.h>
 
 #include "func.h"
 #include "parser.h"
@@ -15,11 +16,20 @@ enum BUTTONS {
 	BTN_EDIT = 5
 };
 
-const char header[] = "Graph";
+const char STR_PROGRAM_TITLENAME[] = "Graph";
 const char empty_text[] = "No function loaded. Type file name and press Enter. ";
 const char er_file_not_found[] = "Cannot open file. ";
 const char str_filename[] = "Filename:";
 const char str_editfile[] = "Edit";
+const char STR_ERR_CONSOLEINIT[] = "Unable to initialize console.";
+const char STR_MSG_HELP_USAGE[] = "Usage: %s [OPTION] [FILENAME]...\n";
+const char* STR_MSG_HELP[] = {
+	"Draws a graph by calculating mathematical function or using list of points.\n\n",
+
+	"\t--help\t\tdisplay this help and exit\n\n",
+
+	"You can provide path to file if you want it to be opened immediately.\n",
+};
 
 // начальные размеры
 #define WND_W 600
@@ -355,7 +365,7 @@ int load_points3() {
 	sprintf(debuf, "read3: %d\n", rr);
 	_ksys_debug_puts(debuf);
 
-	strcpy(full_head, header);
+	strcpy(full_head, STR_PROGRAM_TITLENAME);
 	strcpy(full_head+strlen(full_head), " - ");
 	strcpy(full_head+strlen(full_head), edit_path);		// bad code
 
@@ -491,9 +501,45 @@ void draw_window(void) {
 	_ksys_draw_text((char*)str_editfile, cWidth - 60, mybox.top + 4, 0, 0x90000000);
 }
 
-int main() {
+void consoleInit() {
+	if (con_init()) { // Init fail
+		_ksys_debug_puts("[");
+		_ksys_debug_puts(STR_PROGRAM_TITLENAME);
+		_ksys_debug_puts("] ");
+  		_ksys_debug_puts(STR_ERR_CONSOLEINIT);
+		_ksys_debug_puts("\n");
+  		exit(2);
+	}
+	(*con_set_title)(STR_PROGRAM_TITLENAME);
+}
+
+void consoleExit() {
+	(*con_exit)(0);
+}
+
+int main(int argc, char** argv) {
 	full_head = (char*)malloc(300);
-	strcpy(full_head, "Graph");
+	strcpy(full_head, STR_PROGRAM_TITLENAME);
+
+	if (argc == 2) {
+		if (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-h")) {
+			consoleInit();
+			printf(STR_MSG_HELP_USAGE, argv[0]);
+			for (int j = 0; j < sizeof(STR_MSG_HELP)/sizeof(STR_MSG_HELP[0]); ++j) puts(STR_MSG_HELP[j]);
+			consoleExit();
+			return 0;
+		} else {
+			strcpy(edit_path, argv[1]);
+			if (load_points3())
+				draw_window();
+		}
+	} else if (argc > 2) {
+		consoleInit();
+		printf(STR_MSG_HELP_USAGE, argv[0]);
+		consoleExit();
+		return 1;
+	}
+
 	_ksys_set_event_mask(0xC0000027);
 	int event;
 	while (1) {
