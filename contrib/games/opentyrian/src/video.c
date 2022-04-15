@@ -115,11 +115,6 @@ bool init_scaler( unsigned int new_scaler, bool fullscreen )
 	w = surface->w;
 	h = surface->h;
 
-#ifdef _KOLIBRI
-	uSDL_SetWinCenter(w,h);
-#endif
-	//bpp = surface->format->BitsPerPixel;
-
 	printf("initialized video: %dx%dx%d %s\n", w, h, bpp, fullscreen ? "fullscreen" : "windowed");
 
 	scaler = new_scaler;

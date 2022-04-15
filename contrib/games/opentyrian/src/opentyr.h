@@ -60,10 +60,10 @@ extern const char *opentyrian_str;
 extern const char *opentyrian_version;
 
 void opentyrian_menu( void );
-#ifdef _KOLIBRI
-extern void uSDL_SetWinCenter(uint w, uint h);
-extern void uSDL_Delay(uint ms);
-#endif
+//#ifdef _KOLIBRI
+//extern void uSDL_SetWinCenter(uint w, uint h);
+//extern void SDL_Delay(uint ms);
+//#endif
 
 #endif /* OPENTYR_H */
 

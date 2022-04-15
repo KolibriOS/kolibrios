@@ -631,7 +631,7 @@ static void JE_introScreen( void )
 	while (!newkey)
 	{
 		service_SDL_events(false);
-		uSDL_Delay(16);
+		SDL_Delay(16);
 	}
 
 	fade_black(15);
@@ -684,7 +684,7 @@ static enum de_mode_t JE_modeSelect( void )
 		newkey = false;
 		do {
 			service_SDL_events(false);
-			uSDL_Delay(16);
+			SDL_Delay(16);
 		} while(!newkey);
 
 		/* See what was pressed */
@@ -1297,7 +1297,7 @@ static void JE_helpScreen( void )
 	do  /* wait until user hits a key */
 	{
 		service_SDL_events(true);
-		uSDL_Delay(16);
+		SDL_Delay(16);
 	}
 	while (!newkey);
 
@@ -1320,7 +1320,7 @@ static void JE_pauseScreen( void )
 	do  /* wait until user hits a key */
 	{
 		service_SDL_events(true);
-		uSDL_Delay(16);
+		SDL_Delay(16);
 	}
 	while (!newkey);
 

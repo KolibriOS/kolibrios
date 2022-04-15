@@ -8,7 +8,7 @@ tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
 --use_dynamic_stack() -- default 64K are not sufficient
 tup.include(HELPERDIR .. "/use_sdl_newlib.lua")
-CFLAGS = CFLAGS .. [[ -UWIN32 -U_WIN32 -U__WIN32__ -D_KOLIBRI -DTYRIAN_DIR="\"."\" -DSDL_strlcpy=strncpy -D_GNU_SOURCE=1 -D_REENTRANT -DNDEBUG -Wno-missing-field-initializers ]]
+CFLAGS = CFLAGS  .. [[ -DTYRIAN_DIR="\"."\" -D_GNU_SOURCE=1 -D_REENTRANT -DNDEBUG -Wno-missing-field-initializers ]]
 
 LDFLAGS = LDFLAGS .. " --subsystem native"
 
@@ -69,7 +69,6 @@ compile_gcc{
 	"./SDL/joystick_stub.c",
 	"./SDL/SDL_wave.c",
 	"./SDL/SDL_audiocvt.c",
-	"./SDL/uSDL.c",
 }
 
 link_gcc("opentyrian")

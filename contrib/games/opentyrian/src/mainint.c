@@ -159,7 +159,7 @@ void JE_outCharGlow( JE_word x, JE_word y, const char *s )
 					if (levelWarningDisplay)
 						JE_updateWarning(VGAScreen);
 
-					uSDL_Delay(16);
+					SDL_Delay(16);
 				}
 				while (!(delaycount() == 0 || ESCPressed));
 
@@ -803,7 +803,7 @@ void JE_nextEpisode( void )
 		{
 			NETWORK_KEEP_ALIVE();
 
-			uSDL_Delay(16);
+			SDL_Delay(16);
 		} while (!JE_anyButton());
 	}
 
@@ -1066,7 +1066,7 @@ void JE_doInGameSetup( void )
 			network_update();
 			network_check();
 
-			uSDL_Delay(16);
+			SDL_Delay(16);
 		}
 	}
 #endif
@@ -1133,7 +1133,7 @@ void JE_doInGameSetup( void )
 				network_update();
 				network_check();
 
-				uSDL_Delay(16);
+				SDL_Delay(16);
 			}
 		} else {
 			/*
@@ -1150,7 +1150,7 @@ void JE_doInGameSetup( void )
 			service_SDL_events(false);
 
 			network_check();
-			uSDL_Delay(16);
+			SDL_Delay(16);
 		}
 
 		VGAScreen = temp_surface; /* side-effect of game_screen */
@@ -2853,7 +2853,7 @@ void JE_pauseGame( void )
 			network_update();
 			network_check();
 
-			uSDL_Delay(16);
+			SDL_Delay(16);
 		}
 	}
 #endif
@@ -2905,7 +2905,7 @@ void JE_pauseGame( void )
 			service_SDL_events(false);
 
 			network_check();
-			uSDL_Delay(16);
+			SDL_Delay(16);
 		}
 	}
 #endif

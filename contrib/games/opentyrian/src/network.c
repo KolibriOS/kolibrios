@@ -514,7 +514,7 @@ bool network_state_update( void )
 			}
 
 			if (network_check() == 0)
-				uSDL_Delay(1);
+				SDL_Delay(1);
 		}
 
 		if (network_delay > 1)
@@ -625,7 +625,7 @@ connect_reset:
 		network_update();
 		network_check();
 
-		uSDL_Delay(16);
+		SDL_Delay(16);
 	}
 
 connect_again:
@@ -671,7 +671,7 @@ connect_again:
 		if (SDL_GetTicks() - last_out_tick > NET_RETRY)
 			goto connect_reset;
 
-		uSDL_Delay(16);
+		SDL_Delay(16);
 	}
 
 	// send another packet since sometimes the network syncs without both connect packets exchanged
@@ -724,14 +724,14 @@ void network_tyrian_halt( unsigned int err, bool attempt_sync )
 			service_SDL_events(false);
 
 			network_check();
-			uSDL_Delay(16);
+			SDL_Delay(16);
 		}
 	}
 
 	if (err)
 	{
 		while (!JE_anyButton())
-			uSDL_Delay(16);
+			SDL_Delay(16);
 	}
 
 	fade_black(10);

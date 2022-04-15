@@ -84,7 +84,7 @@ void JE_textMenuWait( JE_word *waitTime, JE_boolean doGamma )
 		
 		NETWORK_KEEP_ALIVE();
 		
-		uSDL_Delay(16);
+		SDL_Delay(16);
 		
 		if (*waitTime > 0)
 		{

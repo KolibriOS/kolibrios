@@ -3260,7 +3260,7 @@ bool JE_titleScreen( JE_boolean animate )
 				network_update();
 				network_check();
 
-				uSDL_Delay(16);
+				SDL_Delay(16);
 			}
 
 			JE_initEpisode(SDLNet_Read16(&packet_in[0]->data[4]));
@@ -3282,7 +3282,7 @@ bool JE_titleScreen( JE_boolean animate )
 			JE_showVGA();
 
 			network_check();
-			uSDL_Delay(16);
+			SDL_Delay(16);
 		}
 	}
 	else

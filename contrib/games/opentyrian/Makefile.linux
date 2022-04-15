@@ -67,10 +67,9 @@ CFLAGS += -Wall \
           -Wextra \
           -Wno-missing-field-initializers
 CFLAGS += -O2
-CFLAGS += -DuSDL_Delay=SDL_Delay
 
-LDFLAGS := 
-LDLIBS := 
+LDFLAGS :=
+LDLIBS :=
 
 ifeq ($(WITH_NETWORK), true)
     SDL_CPPFLAGS := $(shell $(PKG_CONFIG) sdl SDL_net --cflags)

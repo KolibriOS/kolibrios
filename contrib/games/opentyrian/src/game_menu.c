@@ -1592,7 +1592,7 @@ void JE_itemScreen( void )
 			network_update();
 			network_check();
 
-			uSDL_Delay(16);
+			SDL_Delay(16);
 		}
 
 		network_state_reset();
@@ -1606,7 +1606,7 @@ void JE_itemScreen( void )
 			JE_showVGA();
 
 			network_check();
-			uSDL_Delay(16);
+			SDL_Delay(16);
 		}
 	}
 #endif
@@ -2507,7 +2507,7 @@ void JE_scaleInPicture( SDL_Surface *dst, const SDL_Surface *src )
 		JE_scaleBitmap(dst, src, 160 - i, 0, 160 + i - 1, 100 + roundf(i * 0.625f) - 1);
 		JE_showVGA();
 
-		uSDL_Delay(1);
+		SDL_Delay(1);
 	}
 }
 

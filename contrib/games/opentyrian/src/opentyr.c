@@ -55,6 +55,12 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef _KOLIBRI
+#include <sys/ksys.h>
+#include <libgen.h>
+#endif
+
+
 const char *opentyrian_str = "OpenTyrian";
 const char *opentyrian_version = OPENTYRIAN_VERSION;
 
@@ -89,7 +95,7 @@ void opentyrian_menu( void )
 		false,
 		false,
 	};
-	
+
 	assert(COUNTOF(menu_items) == MenuOptions_MAX);
 	assert(COUNTOF(menu_items_disabled) == MenuOptions_MAX);
 
@@ -151,7 +157,7 @@ void opentyrian_menu( void )
 						sel = MenuOptions_MAX - 1;
 				}
 				while (menu_items_disabled[sel]);
-				
+
 				JE_playSampleNum(S_CURSOR);
 				break;
 			case SDLK_DOWN:
@@ -161,10 +167,10 @@ void opentyrian_menu( void )
 						sel = 0;
 				}
 				while (menu_items_disabled[sel]);
-				
+
 				JE_playSampleNum(S_CURSOR);
 				break;
-				
+
 			case SDLK_LEFT:
 				if (sel == MENU_SCALER)
 				{
@@ -175,7 +181,7 @@ void opentyrian_menu( void )
 						temp_scaler--;
 					}
 					while (!can_init_scaler(temp_scaler, fullscreen_enabled));
-					
+
 					JE_playSampleNum(S_CURSOR);
 				}
 				break;
@@ -189,11 +195,11 @@ void opentyrian_menu( void )
 							temp_scaler = 0;
 					}
 					while (!can_init_scaler(temp_scaler, fullscreen_enabled));
-					
+
 					JE_playSampleNum(S_CURSOR);
 				}
 				break;
-				
+
 			case SDLK_RETURN:
 				switch (sel)
 				{
@@ -206,7 +212,7 @@ void opentyrian_menu( void )
 					JE_showVGA();
 					fade_in = true;
 					break;
-					
+
 				case MENU_FULLSCREEN:
 					JE_playSampleNum(S_SELECT);
 
@@ -218,7 +224,7 @@ void opentyrian_menu( void )
 					}
 					set_palette(colors, 0, 255); // for switching between 8 bpp scalers
 					break;
-					
+
 				case MENU_SCALER:
 					JE_playSampleNum(S_SELECT);
 
@@ -233,7 +239,7 @@ void opentyrian_menu( void )
 						set_palette(colors, 0, 255); // for switching between 8 bpp scalers
 					}
 					break;
-					
+
 				case MENU_JUKEBOX:
 					JE_playSampleNum(S_SELECT);
 
@@ -244,23 +250,23 @@ void opentyrian_menu( void )
 					JE_showVGA();
 					fade_in = true;
 					break;
-					
+
 				case MENU_RETURN:
 					quit = true;
 					JE_playSampleNum(S_SPRING);
 					break;
-					
+
 				case MenuOptions_MAX:
 					assert(false);
 					break;
 				}
 				break;
-				
+
 			case SDLK_ESCAPE:
 				quit = true;
 				JE_playSampleNum(S_SPRING);
 				break;
-				
+
 			default:
 				break;
 			}
@@ -279,6 +285,10 @@ int main( int argc, char *argv[] )
 	printf("This program comes with ABSOLUTELY NO WARRANTY.\n");
 	printf("This is free software, and you are welcome to redistribute it\n");
 	printf("under certain conditions.  See the file GPL.txt for details.\n\n");
+
+#ifdef _KOLIBRI
+	_ksys_setcwd(dirname(argv[0]));
+#endif
 
 	if (SDL_Init(0))
 	{
