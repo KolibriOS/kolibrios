@@ -5,7 +5,7 @@
 
 void exit(int status)
 {
-    if(__con_is_load){
+    if (__con_is_load) {
         con_exit(status);
     }
     _ksys_exit();

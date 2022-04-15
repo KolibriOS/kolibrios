@@ -1,30 +1,16 @@
-/* strpbrk( const char *, const char * )
-
-   This file is part of the Public Domain C Library (PDCLib).
-   Permission is granted to use, modify, and / or redistribute at will.
-*/
-
+/* Copyright (C) 1994 DJ Delorie, see COPYING.DJ for details */
+#include "unconst.h"
 #include <string.h>
 
-char * strpbrk( const char * s1, const char * s2 )
+char* strpbrk(const char* s1, const char* s2)
 {
-    const char * p1 = s1;
-    const char * p2;
+    const char* scanp;
+    int c, sc;
 
-    while ( *p1 )
-    {
-        p2 = s2;
-
-        while ( *p2 )
-        {
-            if ( *p1 == *p2++ )
-            {
-                return ( char * ) p1;
-            }
-        }
-
-        ++p1;
+    while ((c = *s1++) != 0) {
+        for (scanp = s2; (sc = *scanp++) != 0;)
+            if (sc == c)
+                return unconst(s1 - 1, char*);
     }
-
-    return NULL;
+    return 0;
 }

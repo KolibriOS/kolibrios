@@ -1,20 +1,21 @@
-/* strchr( const char *, int )
-
-   This file is part of the Public Domain C Library (PDCLib).
-   Permission is granted to use, modify, and / or redistribute at will.
-*/
-
+#include "unconst.h"
 #include <string.h>
 
-char * strchr( const char * s, int c )
+char* strchr(const char* s, int c)
 {
-    do
-    {
-        if ( *s == ( char ) c )
-        {
-            return ( char * ) s;
-        }
-    } while ( *s++ );
-
-    return NULL;
+    int d0;
+    register char* __res;
+    __asm__ __volatile__(
+        "movb %%al,%%ah\n"
+        "1:\tlodsb\n\t"
+        "cmpb %%ah,%%al\n\t"
+        "je 2f\n\t"
+        "testb %%al,%%al\n\t"
+        "jne 1b\n\t"
+        "movl $1,%1\n"
+        "2:\tmovl %1,%0\n\t"
+        "decl %0"
+        : "=a"(__res), "=&S"(d0)
+        : "1"((unsigned)s), "0"(c));
+    return __res;
 }

@@ -3,6 +3,6 @@
 
 double cosh(double x)
 {
-  const double ebig = exp(fabs(x));
-  return (ebig + 1.0/ebig) / 2.0;
+    const double ebig = exp(fabs(x));
+    return (ebig + 1.0 / ebig) / 2.0;
 }

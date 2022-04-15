@@ -1,20 +1,19 @@
-/* memcpy( void *, const void *, size_t )
-
-   This file is part of the Public Domain C Library (PDCLib).
-   Permission is granted to use, modify, and / or redistribute at will.
-*/
-
 #include <string.h>
 
-void * memcpy( void * s1, const void * s2, size_t n )
+void* memcpy(void* _dest, const void* _src, size_t _n)
 {
-    char * dest = ( char * ) s1;
-    const char * src = ( const char * ) s2;
-
-    while ( n-- )
-    {
-        *dest++ = *src++;
-    }
-
-    return s1;
+    int d0, d1, d2;
+    __asm__ __volatile__(
+        "rep ; movsl\n\t"
+        "testb $2,%b4\n\t"
+        "je 1f\n\t"
+        "movsw\n"
+        "1:\ttestb $1,%b4\n\t"
+        "je 2f\n\t"
+        "movsb\n"
+        "2:"
+        : "=&c"(d0), "=&D"(d1), "=&S"(d2)
+        : "0"(_n / 4), "q"(_n), "1"((long)_dest), "2"((long)_src)
+        : "memory");
+    return (_dest);
 }

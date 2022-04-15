@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CHECK_DIR_ERR() if(_ksys_work_files(&inf)){ \
+#define CHECK_DIR_ERR() if(_ksys70(&inf).status){ \
                             free((void*)inf.p16); \
                             errno = ENOTDIR; \
                             return NULL; \

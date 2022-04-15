@@ -1,17 +1,19 @@
- /* Copyright (C) 1994 DJ Delorie, see COPYING.DJ for details */
+/* Copyright (C) 1994 DJ Delorie, see COPYING.DJ for details */
 #include <math.h>
 
-#define unconst(__v, __t) __extension__ ({union { const __t __cp; __t __p; } __q; __q.__cp = __v; __q.__p;})
+#ifndef unconst
+#define unconst(__v, __t) __extension__({union { const __t __cp; __t __p; } __q; __q.__cp = __v; __q.__p; })
+#endif
 
-double strtod(const char *s, char **sret)
+double strtod(const char* s, char** sret)
 {
-    long double r;		/* result */
-    int e;			/* exponent */
-    long double d;		/* scale */
-    int sign;			/* +- 1.0 */
+    long double r; /* result */
+    int e; /* exponent */
+    long double d; /* scale */
+    int sign; /* +- 1.0 */
     int esign;
     int i;
-    int flags=0;
+    int flags = 0;
 
     r = 0.0;
     sign = 1.0;
@@ -20,30 +22,26 @@ double strtod(const char *s, char **sret)
 
     while ((*s == ' ') || (*s == '\t'))
         s++;
-        
+
     if (*s == '+')
         s++;
-    else if (*s == '-')
-    {
+    else if (*s == '-') {
         sign = -1;
         s++;
     }
 
-    while ((*s >= '0') && (*s <= '9'))
-    {
+    while ((*s >= '0') && (*s <= '9')) {
         flags |= 1;
         r *= 10.0;
         r += *s - '0';
         s++;
     }
 
-    if (*s == '.')
-    { 
+    if (*s == '.') {
         d = 0.1L;
         s++;
-    
-        while ((*s >= '0') && (*s <= '9'))
-        {
+
+        while ((*s >= '0') && (*s <= '9')) {
             flags |= 2;
             r += d * (*s - '0');
             s++;
@@ -51,33 +49,28 @@ double strtod(const char *s, char **sret)
         }
     }
 
-    if (flags == 0)
-    {
+    if (flags == 0) {
         if (sret)
-        *sret = unconst(s, char *);
+            *sret = unconst(s, char*);
         return 0;
     }
 
-    if ((*s == 'e') || (*s == 'E'))
-    {
+    if ((*s == 'e') || (*s == 'E')) {
         s++;
         if (*s == '+')
             s++;
-        else if (*s == '-')
-        {
+        else if (*s == '-') {
             s++;
             esign = -1;
         }
-        
-        if ((*s < '0') || (*s > '9'))
-        {
+
+        if ((*s < '0') || (*s > '9')) {
             if (sret)
-	            *sret = unconst(s, char *);
+                *sret = unconst(s, char*);
             return r;
         }
 
-        while ((*s >= '0') && (*s <= '9'))
-        {
+        while ((*s >= '0') && (*s <= '9')) {
             e *= 10;
             e += *s - '0';
             s++;
@@ -91,6 +84,6 @@ double strtod(const char *s, char **sret)
             r *= 10.0;
 
     if (sret)
-        *sret = unconst(s, char *);
+        *sret = unconst(s, char*);
     return r * sign;
 }

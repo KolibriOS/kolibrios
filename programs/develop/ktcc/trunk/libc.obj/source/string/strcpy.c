@@ -1,19 +1,16 @@
-/* strcpy( char *, const char * )
-
-   This file is part of the Public Domain C Library (PDCLib).
-   Permission is granted to use, modify, and / or redistribute at will.
-*/
-
+/* Copyright (C) 1994 DJ Delorie, see COPYING.DJ for details */
 #include <string.h>
 
-char * strcpy( char * s1, const char * s2 )
+char* strcpy(char* to, const char* from)
 {
-    char * rc = s1;
-
-    while ( ( *s1++ = *s2++ ) )
-    {
-        /* EMPTY */
-    }
-
-    return rc;
+    int d0, d1, d2;
+    __asm__ __volatile__(
+        "1:\tlodsb\n\t"
+        "stosb\n\t"
+        "testb %%al,%%al\n\t"
+        "jne 1b"
+        : "=&S"(d0), "=&D"(d1), "=&a"(d2)
+        : "0"(from), "1"(to)
+        : "memory");
+    return to;
 }

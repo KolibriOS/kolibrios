@@ -1,34 +1,21 @@
-/* strstr( const char *, const char * )
-
-   This file is part of the Public Domain C Library (PDCLib).
-   Permission is granted to use, modify, and / or redistribute at will.
-*/
-
+/* Copyright (C) 1994 DJ Delorie, see COPYING.DJ for details */
+#include "unconst.h"
 #include <string.h>
 
-char * strstr( const char * s1, const char * s2 )
+char* strstr(const char* s, const char* find)
 {
-    const char * p1 = s1;
-    const char * p2;
+    char c, sc;
+    size_t len;
 
-    while ( *s1 )
-    {
-        p2 = s2;
-
-        while ( *p2 && ( *p1 == *p2 ) )
-        {
-            ++p1;
-            ++p2;
-        }
-
-        if ( ! *p2 )
-        {
-            return ( char * ) s1;
-        }
-
-        ++s1;
-        p1 = s1;
+    if ((c = *find++) != 0) {
+        len = strlen(find);
+        do {
+            do {
+                if ((sc = *s++) == 0)
+                    return 0;
+            } while (sc != c);
+        } while (strncmp(s, find, len) != 0);
+        s--;
     }
-
-    return NULL;
+    return unconst(s, char*);
 }

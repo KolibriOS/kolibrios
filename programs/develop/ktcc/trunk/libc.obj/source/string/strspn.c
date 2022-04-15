@@ -1,37 +1,15 @@
-/* strspn( const char *, const char * )
-
-   This file is part of the Public Domain C Library (PDCLib).
-   Permission is granted to use, modify, and / or redistribute at will.
-*/
-
+/* Copyright (C) 1994 DJ Delorie, see COPYING.DJ for details */
 #include <string.h>
 
-size_t strspn( const char * s1, const char * s2 )
+size_t strspn(const char* s1, const char* s2)
 {
-    size_t len = 0;
-    const char * p;
+    const char *p = s1, *spanp;
+    char c, sc;
 
-    while ( s1[ len ] )
-    {
-        p = s2;
-
-        while ( *p )
-        {
-            if ( s1[len] == *p )
-            {
-                break;
-            }
-
-            ++p;
-        }
-
-        if ( ! *p )
-        {
-            return len;
-        }
-
-        ++len;
-    }
-
-    return len;
+cont:
+    c = *p++;
+    for (spanp = s2; (sc = *spanp++) != 0;)
+        if (sc == c)
+            goto cont;
+    return (p - 1 - s1);
 }

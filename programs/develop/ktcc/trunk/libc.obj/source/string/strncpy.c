@@ -1,29 +1,21 @@
-/* strncpy( char *, const char *, size_t )
-
-   This file is part of the Public Domain C Library (PDCLib).
-   Permission is granted to use, modify, and / or redistribute at will.
-*/
-
+/* Copyright (C) 1994 DJ Delorie, see COPYING.DJ for details */
 #include <string.h>
 
-char * strncpy( char * s1, const char * s2, size_t n )
+char* strncpy(char* dst, const char* src, size_t n)
 {
-    char * rc = s1;
-
-    while ( n && ( *s1++ = *s2++ ) )
-    {
-        /* Cannot do "n--" in the conditional as size_t is unsigned and we have
-           to check it again for >0 in the next loop below, so we must not risk
-           underflow.
-        */
-        --n;
-    }
-
-    /* Checking against 1 as we missed the last --n in the loop above. */
-    while ( n-- > 1 )
-    {
-        *s1++ = '\0';
-    }
-
-    return rc;
+    int d0, d1, d2, d3;
+    __asm__ __volatile__(
+        "1:\tdecl %2\n\t"
+        "js 2f\n\t"
+        "lodsb\n\t"
+        "stosb\n\t"
+        "testb %%al,%%al\n\t"
+        "jne 1b\n\t"
+        "rep\n\t"
+        "stosb\n"
+        "2:"
+        : "=&S"(d0), "=&D"(d1), "=&c"(d2), "=&a"(d3)
+        : "0"(src), "1"(dst), "2"(n)
+        : "memory");
+    return dst;
 }

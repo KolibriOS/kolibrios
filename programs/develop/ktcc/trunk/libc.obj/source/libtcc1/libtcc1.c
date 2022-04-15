@@ -1,5 +1,5 @@
-/* TCC runtime library. 
-   Parts of this code are (c) 2002 Fabrice Bellard 
+/* TCC runtime library.
+   Parts of this code are (c) 2002 Fabrice Bellard
 
    Copyright (C) 1987, 1988, 1992, 1994, 1995 Free Software Foundation, Inc.
 
@@ -25,13 +25,13 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
-Boston, MA 02111-1307, USA.  
+Boston, MA 02111-1307, USA.
 */
 
 //#include <stdint.h>
 #define TCC_TARGET_I386
 
-#define W_TYPE_SIZE   32
+#define W_TYPE_SIZE 32
 #define BITS_PER_UNIT 8
 
 typedef int Wtype;
@@ -44,40 +44,38 @@ struct DWstruct {
     Wtype low, high;
 };
 
-typedef union
-{
-  struct DWstruct s;
-  DWtype ll;
+typedef union {
+    struct DWstruct s;
+    DWtype ll;
 } DWunion;
 
 typedef long double XFtype;
-#define WORD_SIZE (sizeof (Wtype) * BITS_PER_UNIT)
-#define HIGH_WORD_COEFF (((UDWtype) 1) << WORD_SIZE)
+#define WORD_SIZE (sizeof(Wtype) * BITS_PER_UNIT)
+#define HIGH_WORD_COEFF (((UDWtype)1) << WORD_SIZE)
 
 /* the following deal with IEEE single-precision numbers */
-#define EXCESS		126
-#define SIGNBIT		0x80000000
-#define HIDDEN		(1 << 23)
-#define SIGN(fp)	((fp) & SIGNBIT)
-#define EXP(fp)		(((fp) >> 23) & 0xFF)
-#define MANT(fp)	(((fp) & 0x7FFFFF) | HIDDEN)
-#define PACK(s,e,m)	((s) | ((e) << 23) | (m))
+#define EXCESS 126
+#define SIGNBIT 0x80000000
+#define HIDDEN (1 << 23)
+#define SIGN(fp) ((fp)&SIGNBIT)
+#define EXP(fp) (((fp) >> 23) & 0xFF)
+#define MANT(fp) (((fp)&0x7FFFFF) | HIDDEN)
+#define PACK(s, e, m) ((s) | ((e) << 23) | (m))
 
 /* the following deal with IEEE double-precision numbers */
-#define EXCESSD		1022
-#define HIDDEND		(1 << 20)
-#define EXPD(fp)	(((fp.l.upper) >> 20) & 0x7FF)
-#define SIGND(fp)	((fp.l.upper) & SIGNBIT)
-#define MANTD(fp)	(((((fp.l.upper) & 0xFFFFF) | HIDDEND) << 10) | \
-				(fp.l.lower >> 22))
-#define HIDDEND_LL	((long long)1 << 52)
-#define MANTD_LL(fp)	((fp.ll & (HIDDEND_LL-1)) | HIDDEND_LL)
-#define PACKD_LL(s,e,m)	(((long long)((s)+((e)<<20))<<32)|(m))
+#define EXCESSD 1022
+#define HIDDEND (1 << 20)
+#define EXPD(fp) (((fp.l.upper) >> 20) & 0x7FF)
+#define SIGND(fp) ((fp.l.upper) & SIGNBIT)
+#define MANTD(fp) (((((fp.l.upper) & 0xFFFFF) | HIDDEND) << 10) | (fp.l.lower >> 22))
+#define HIDDEND_LL ((long long)1 << 52)
+#define MANTD_LL(fp) ((fp.ll & (HIDDEND_LL - 1)) | HIDDEND_LL)
+#define PACKD_LL(s, e, m) (((long long)((s) + ((e) << 20)) << 32) | (m))
 
 /* the following deal with x86 long double-precision numbers */
-#define EXCESSLD	16382
-#define EXPLD(fp)	(fp.l.upper & 0x7fff)
-#define SIGNLD(fp)	((fp.l.upper) & 0x8000)
+#define EXCESSLD 16382
+#define EXPLD(fp) (fp.l.upper & 0x7fff)
+#define SIGNLD(fp) ((fp.l.upper) & 0x8000)
 
 /* only for x86 */
 union ldouble_long {
@@ -115,252 +113,226 @@ union float_long {
 /* XXX: use gcc/tcc intrinsic ? */
 #if defined(TCC_TARGET_I386)
 #define sub_ddmmss(sh, sl, ah, al, bh, bl) \
-  __asm__ ("subl %5,%1\n\tsbbl %3,%0"					\
-	   : "=r" ((USItype) (sh)),					\
-	     "=&r" ((USItype) (sl))					\
-	   : "0" ((USItype) (ah)),					\
-	     "g" ((USItype) (bh)),					\
-	     "1" ((USItype) (al)),					\
-	     "g" ((USItype) (bl)))
-#define umul_ppmm(w1, w0, u, v) \
-  __asm__ ("mull %3"							\
-	   : "=a" ((USItype) (w0)),					\
-	     "=d" ((USItype) (w1))					\
-	   : "%0" ((USItype) (u)),					\
-	     "rm" ((USItype) (v)))
+    __asm__("subl %5,%1\n\tsbbl %3,%0"     \
+            : "=r"((USItype)(sh)),         \
+            "=&r"((USItype)(sl))           \
+            : "0"((USItype)(ah)),          \
+            "g"((USItype)(bh)),            \
+            "1"((USItype)(al)),            \
+            "g"((USItype)(bl)))
+#define umul_ppmm(w1, w0, u, v)    \
+    __asm__("mull %3"              \
+            : "=a"((USItype)(w0)), \
+            "=d"((USItype)(w1))    \
+            : "%0"((USItype)(u)),  \
+            "rm"((USItype)(v)))
 #define udiv_qrnnd(q, r, n1, n0, dv) \
-  __asm__ ("divl %4"							\
-	   : "=a" ((USItype) (q)),					\
-	     "=d" ((USItype) (r))					\
-	   : "0" ((USItype) (n0)),					\
-	     "1" ((USItype) (n1)),					\
-	     "rm" ((USItype) (dv)))
-#define count_leading_zeros(count, x) \
-  do {									\
-    USItype __cbtmp;							\
-    __asm__ ("bsrl %1,%0"						\
-	     : "=r" (__cbtmp) : "rm" ((USItype) (x)));			\
-    (count) = __cbtmp ^ 31;						\
-  } while (0)
+    __asm__("divl %4"                \
+            : "=a"((USItype)(q)),    \
+            "=d"((USItype)(r))       \
+            : "0"((USItype)(n0)),    \
+            "1"((USItype)(n1)),      \
+            "rm"((USItype)(dv)))
+#define count_leading_zeros(count, x)  \
+    do {                               \
+        USItype __cbtmp;               \
+        __asm__("bsrl %1,%0"           \
+                : "=r"(__cbtmp)        \
+                : "rm"((USItype)(x))); \
+        (count) = __cbtmp ^ 31;        \
+    } while (0)
 #else
 #error unsupported CPU type
 #endif
 
 /* most of this code is taken from libgcc2.c from gcc */
-UDWtype __udivmoddi4 (UDWtype n, UDWtype d, UDWtype *rp)
+UDWtype __udivmoddi4(UDWtype n, UDWtype d, UDWtype* rp)
 {
-  DWunion ww;
-  DWunion nn, dd;
-  DWunion rr;
-  UWtype d0, d1, n0, n1, n2;
-  UWtype q0, q1;
-  UWtype b, bm;
+    DWunion ww;
+    DWunion nn, dd;
+    DWunion rr;
+    UWtype d0, d1, n0, n1, n2;
+    UWtype q0, q1;
+    UWtype b, bm;
 
-  nn.ll = n;
-  dd.ll = d;
+    nn.ll = n;
+    dd.ll = d;
 
-  d0 = dd.s.low;
-  d1 = dd.s.high;
-  n0 = nn.s.low;
-  n1 = nn.s.high;
+    d0 = dd.s.low;
+    d1 = dd.s.high;
+    n0 = nn.s.low;
+    n1 = nn.s.high;
 
 #if !defined(UDIV_NEEDS_NORMALIZATION)
-  if (d1 == 0)
-    {
-      if (d0 > n1)
-	{
-	  /* 0q = nn / 0D */
+    if (d1 == 0) {
+        if (d0 > n1) {
+            /* 0q = nn / 0D */
 
-	  udiv_qrnnd (q0, n0, n1, n0, d0);
-	  q1 = 0;
+            udiv_qrnnd(q0, n0, n1, n0, d0);
+            q1 = 0;
 
-	  /* Remainder in n0.  */
-	}
-      else
-	{
-	  /* qq = NN / 0d */
+            /* Remainder in n0.  */
+        } else {
+            /* qq = NN / 0d */
 
-	  if (d0 == 0)
-	    d0 = 1 / d0;	/* Divide intentionally by zero.  */
+            if (d0 == 0)
+                d0 = 1 / d0; /* Divide intentionally by zero.  */
 
-	  udiv_qrnnd (q1, n1, 0, n1, d0);
-	  udiv_qrnnd (q0, n0, n1, n0, d0);
+            udiv_qrnnd(q1, n1, 0, n1, d0);
+            udiv_qrnnd(q0, n0, n1, n0, d0);
 
-	  /* Remainder in n0.  */
-	}
+            /* Remainder in n0.  */
+        }
 
-      if (rp != 0)
-	{
-	  rr.s.low = n0;
-	  rr.s.high = 0;
-	  *rp = rr.ll;
-	}
+        if (rp != 0) {
+            rr.s.low = n0;
+            rr.s.high = 0;
+            *rp = rr.ll;
+        }
     }
 
 #else /* UDIV_NEEDS_NORMALIZATION */
 
-  if (d1 == 0)
-    {
-      if (d0 > n1)
-	{
-	  /* 0q = nn / 0D */
+    if (d1 == 0) {
+        if (d0 > n1) {
+            /* 0q = nn / 0D */
 
-	  count_leading_zeros (bm, d0);
+            count_leading_zeros(bm, d0);
 
-	  if (bm != 0)
-	    {
-	      /* Normalize, i.e. make the most significant bit of the
-		 denominator set.  */
+            if (bm != 0) {
+                /* Normalize, i.e. make the most significant bit of the
+                   denominator set.  */
 
-	      d0 = d0 << bm;
-	      n1 = (n1 << bm) | (n0 >> (W_TYPE_SIZE - bm));
-	      n0 = n0 << bm;
-	    }
+                d0 = d0 << bm;
+                n1 = (n1 << bm) | (n0 >> (W_TYPE_SIZE - bm));
+                n0 = n0 << bm;
+            }
 
-	  udiv_qrnnd (q0, n0, n1, n0, d0);
-	  q1 = 0;
+            udiv_qrnnd(q0, n0, n1, n0, d0);
+            q1 = 0;
 
-	  /* Remainder in n0 >> bm.  */
-	}
-      else
-	{
-	  /* qq = NN / 0d */
+            /* Remainder in n0 >> bm.  */
+        } else {
+            /* qq = NN / 0d */
 
-	  if (d0 == 0)
-	    d0 = 1 / d0;	/* Divide intentionally by zero.  */
+            if (d0 == 0)
+                d0 = 1 / d0; /* Divide intentionally by zero.  */
 
-	  count_leading_zeros (bm, d0);
+            count_leading_zeros(bm, d0);
 
-	  if (bm == 0)
-	    {
-	      /* From (n1 >= d0) /\ (the most significant bit of d0 is set),
-		 conclude (the most significant bit of n1 is set) /\ (the
-		 leading quotient digit q1 = 1).
+            if (bm == 0) {
+                /* From (n1 >= d0) /\ (the most significant bit of d0 is set),
+                   conclude (the most significant bit of n1 is set) /\ (the
+                   leading quotient digit q1 = 1).
 
-		 This special case is necessary, not an optimization.
-		 (Shifts counts of W_TYPE_SIZE are undefined.)  */
+                   This special case is necessary, not an optimization.
+                   (Shifts counts of W_TYPE_SIZE are undefined.)  */
 
-	      n1 -= d0;
-	      q1 = 1;
-	    }
-	  else
-	    {
-	      /* Normalize.  */
+                n1 -= d0;
+                q1 = 1;
+            } else {
+                /* Normalize.  */
 
-	      b = W_TYPE_SIZE - bm;
+                b = W_TYPE_SIZE - bm;
 
-	      d0 = d0 << bm;
-	      n2 = n1 >> b;
-	      n1 = (n1 << bm) | (n0 >> b);
-	      n0 = n0 << bm;
+                d0 = d0 << bm;
+                n2 = n1 >> b;
+                n1 = (n1 << bm) | (n0 >> b);
+                n0 = n0 << bm;
 
-	      udiv_qrnnd (q1, n1, n2, n1, d0);
-	    }
+                udiv_qrnnd(q1, n1, n2, n1, d0);
+            }
 
-	  /* n1 != d0...  */
+            /* n1 != d0...  */
 
-	  udiv_qrnnd (q0, n0, n1, n0, d0);
+            udiv_qrnnd(q0, n0, n1, n0, d0);
 
-	  /* Remainder in n0 >> bm.  */
-	}
+            /* Remainder in n0 >> bm.  */
+        }
 
-      if (rp != 0)
-	{
-	  rr.s.low = n0 >> bm;
-	  rr.s.high = 0;
-	  *rp = rr.ll;
-	}
+        if (rp != 0) {
+            rr.s.low = n0 >> bm;
+            rr.s.high = 0;
+            *rp = rr.ll;
+        }
     }
 #endif /* UDIV_NEEDS_NORMALIZATION */
 
-  else
-    {
-      if (d1 > n1)
-	{
-	  /* 00 = nn / DD */
+    else {
+        if (d1 > n1) {
+            /* 00 = nn / DD */
 
-	  q0 = 0;
-	  q1 = 0;
+            q0 = 0;
+            q1 = 0;
 
-	  /* Remainder in n1n0.  */
-	  if (rp != 0)
-	    {
-	      rr.s.low = n0;
-	      rr.s.high = n1;
-	      *rp = rr.ll;
-	    }
-	}
-      else
-	{
-	  /* 0q = NN / dd */
+            /* Remainder in n1n0.  */
+            if (rp != 0) {
+                rr.s.low = n0;
+                rr.s.high = n1;
+                *rp = rr.ll;
+            }
+        } else {
+            /* 0q = NN / dd */
 
-	  count_leading_zeros (bm, d1);
-	  if (bm == 0)
-	    {
-	      /* From (n1 >= d1) /\ (the most significant bit of d1 is set),
-		 conclude (the most significant bit of n1 is set) /\ (the
-		 quotient digit q0 = 0 or 1).
+            count_leading_zeros(bm, d1);
+            if (bm == 0) {
+                /* From (n1 >= d1) /\ (the most significant bit of d1 is set),
+                   conclude (the most significant bit of n1 is set) /\ (the
+                   quotient digit q0 = 0 or 1).
 
-		 This special case is necessary, not an optimization.  */
+                   This special case is necessary, not an optimization.  */
 
-	      /* The condition on the next line takes advantage of that
-		 n1 >= d1 (true due to program flow).  */
-	      if (n1 > d1 || n0 >= d0)
-		{
-		  q0 = 1;
-		  sub_ddmmss (n1, n0, n1, n0, d1, d0);
-		}
-	      else
-		q0 = 0;
+                /* The condition on the next line takes advantage of that
+                   n1 >= d1 (true due to program flow).  */
+                if (n1 > d1 || n0 >= d0) {
+                    q0 = 1;
+                    sub_ddmmss(n1, n0, n1, n0, d1, d0);
+                } else
+                    q0 = 0;
 
-	      q1 = 0;
+                q1 = 0;
 
-	      if (rp != 0)
-		{
-		  rr.s.low = n0;
-		  rr.s.high = n1;
-		  *rp = rr.ll;
-		}
-	    }
-	  else
-	    {
-	      UWtype m1, m0;
-	      /* Normalize.  */
+                if (rp != 0) {
+                    rr.s.low = n0;
+                    rr.s.high = n1;
+                    *rp = rr.ll;
+                }
+            } else {
+                UWtype m1, m0;
+                /* Normalize.  */
 
-	      b = W_TYPE_SIZE - bm;
+                b = W_TYPE_SIZE - bm;
 
-	      d1 = (d1 << bm) | (d0 >> b);
-	      d0 = d0 << bm;
-	      n2 = n1 >> b;
-	      n1 = (n1 << bm) | (n0 >> b);
-	      n0 = n0 << bm;
+                d1 = (d1 << bm) | (d0 >> b);
+                d0 = d0 << bm;
+                n2 = n1 >> b;
+                n1 = (n1 << bm) | (n0 >> b);
+                n0 = n0 << bm;
 
-	      udiv_qrnnd (q0, n1, n2, n1, d1);
-	      umul_ppmm (m1, m0, q0, d0);
+                udiv_qrnnd(q0, n1, n2, n1, d1);
+                umul_ppmm(m1, m0, q0, d0);
 
-	      if (m1 > n1 || (m1 == n1 && m0 > n0))
-		{
-		  q0--;
-		  sub_ddmmss (m1, m0, m1, m0, d1, d0);
-		}
+                if (m1 > n1 || (m1 == n1 && m0 > n0)) {
+                    q0--;
+                    sub_ddmmss(m1, m0, m1, m0, d1, d0);
+                }
 
-	      q1 = 0;
+                q1 = 0;
 
-	      /* Remainder in (n1n0 - m1m0) >> bm.  */
-	      if (rp != 0)
-		{
-		  sub_ddmmss (n1, n0, n1, n0, m1, m0);
-		  rr.s.low = (n1 << b) | (n0 >> bm);
-		  rr.s.high = n1 >> bm;
-		  *rp = rr.ll;
-		}
-	    }
-	}
+                /* Remainder in (n1n0 - m1m0) >> bm.  */
+                if (rp != 0) {
+                    sub_ddmmss(n1, n0, n1, n0, m1, m0);
+                    rr.s.low = (n1 << b) | (n0 >> bm);
+                    rr.s.high = n1 >> bm;
+                    *rp = rr.ll;
+                }
+            }
+        }
     }
 
-  ww.s.low = q0;
-  ww.s.high = q1;
-  return ww.ll;
+    ww.s.low = q0;
+    ww.s.high = q1;
+    return ww.ll;
 }
 
 #define __negdi2(a) (-(a))
@@ -370,21 +342,21 @@ long long __divdi3(long long u, long long v)
     int c = 0;
     DWunion uu, vv;
     DWtype w;
-    
+
     uu.ll = u;
     vv.ll = v;
-    
+
     if (uu.s.high < 0) {
         c = ~c;
-        uu.ll = __negdi2 (uu.ll);
+        uu.ll = __negdi2(uu.ll);
     }
     if (vv.s.high < 0) {
         c = ~c;
-        vv.ll = __negdi2 (vv.ll);
+        vv.ll = __negdi2(vv.ll);
     }
-    w = __udivmoddi4 (uu.ll, vv.ll, (UDWtype *) 0);
+    w = __udivmoddi4(uu.ll, vv.ll, (UDWtype*)0);
     if (c)
-        w = __negdi2 (w);
+        w = __negdi2(w);
     return w;
 }
 
@@ -403,33 +375,33 @@ long long __moddi3(long long u, long long v)
     int c = 0;
     DWunion uu, vv;
     DWtype w;
-    
+
     uu.ll = u;
     vv.ll = v;
-    
+
     if (uu.s.high < 0) {
         c = ~c;
-        uu.ll = __negdi2 (uu.ll);
+        uu.ll = __negdi2(uu.ll);
     }
     if (vv.s.high < 0)
-        vv.ll = __negdi2 (vv.ll);
-    
-    __udivmoddi4 (uu.ll, vv.ll, (UDWtype *) &w);
+        vv.ll = __negdi2(vv.ll);
+
+    __udivmoddi4(uu.ll, vv.ll, (UDWtype*)&w);
     if (c)
-        w = __negdi2 (w);
+        w = __negdi2(w);
     return w;
 }
 
 unsigned long long __udivdi3(unsigned long long u, unsigned long long v)
 {
-    return __udivmoddi4 (u, v, (UDWtype *) 0);
+    return __udivmoddi4(u, v, (UDWtype*)0);
 }
 
 unsigned long long __umoddi3(unsigned long long u, unsigned long long v)
 {
     UDWtype w;
-    
-    __udivmoddi4 (u, v, &w);
+
+    __udivmoddi4(u, v, &w);
     return w;
 }
 
@@ -495,11 +467,17 @@ long long __tcc_cvt_ftol(long double x)
 {
     unsigned c0, c1;
     long long ret;
-    __asm__ __volatile__ ("fnstcw %0" : "=m" (c0));
+    __asm__ __volatile__("fnstcw %0"
+                         : "=m"(c0));
     c1 = c0 | 0x0C00;
-    __asm__ __volatile__ ("fldcw %0" : : "m" (c1));
-    __asm__ __volatile__ ("fistpll %0"  : "=m" (ret));
-    __asm__ __volatile__ ("fldcw %0" : : "m" (c0));
+    __asm__ __volatile__("fldcw %0"
+                         :
+                         : "m"(c1));
+    __asm__ __volatile__("fistpll %0"
+                         : "=m"(ret));
+    __asm__ __volatile__("fldcw %0"
+                         :
+                         : "m"(c0));
     return ret;
 }
 #endif
@@ -509,7 +487,7 @@ long long __tcc_cvt_ftol(long double x)
 /* XXX: fix tcc's code generator to do this instead */
 float __floatundisf(unsigned long long a)
 {
-    DWunion uu; 
+    DWunion uu;
     XFtype r;
 
     uu.ll = a;
@@ -524,7 +502,7 @@ float __floatundisf(unsigned long long a)
 
 double __floatundidf(unsigned long long a)
 {
-    DWunion uu; 
+    DWunion uu;
     XFtype r;
 
     uu.ll = a;
@@ -539,7 +517,7 @@ double __floatundidf(unsigned long long a)
 
 long double __floatundixf(unsigned long long a)
 {
-    DWunion uu; 
+    DWunion uu;
     XFtype r;
 
     uu.ll = a;
@@ -552,7 +530,7 @@ long double __floatundixf(unsigned long long a)
     }
 }
 
-unsigned long long __fixunssfdi (float a1)
+unsigned long long __fixunssfdi(float a1)
 {
     register union float_long fl1;
     register int exp;
@@ -561,13 +539,13 @@ unsigned long long __fixunssfdi (float a1)
     fl1.f = a1;
 
     if (fl1.l == 0)
-	return (0);
+        return (0);
 
-    exp = EXP (fl1.l) - EXCESS - 24;
+    exp = EXP(fl1.l) - EXCESS - 24;
 
     l = MANT(fl1.l);
     if (exp >= 41)
-	return (unsigned long long)-1;
+        return (unsigned long long)-1;
     else if (exp >= 0)
         return (unsigned long long)l << exp;
     else if (exp >= -23)
@@ -576,7 +554,7 @@ unsigned long long __fixunssfdi (float a1)
         return 0;
 }
 
-unsigned long long __fixunsdfdi (double a1)
+unsigned long long __fixunsdfdi(double a1)
 {
     register union double_long dl1;
     register int exp;
@@ -585,14 +563,14 @@ unsigned long long __fixunsdfdi (double a1)
     dl1.d = a1;
 
     if (dl1.ll == 0)
-	return (0);
+        return (0);
 
-    exp = EXPD (dl1) - EXCESSD - 53;
+    exp = EXPD(dl1) - EXCESSD - 53;
 
     l = MANTD_LL(dl1);
 
     if (exp >= 12)
-	return (unsigned long long)-1;
+        return (unsigned long long)-1;
     else if (exp >= 0)
         return l << exp;
     else if (exp >= -52)
@@ -601,7 +579,7 @@ unsigned long long __fixunsdfdi (double a1)
         return 0;
 }
 
-unsigned long long __fixunsxfdi (long double a1)
+unsigned long long __fixunsxfdi(long double a1)
 {
     register union ldouble_long dl1;
     register int exp;
@@ -610,37 +588,40 @@ unsigned long long __fixunsxfdi (long double a1)
     dl1.ld = a1;
 
     if (dl1.l.lower == 0 && dl1.l.upper == 0)
-	return (0);
+        return (0);
 
-    exp = EXPLD (dl1) - EXCESSLD - 64;
+    exp = EXPLD(dl1) - EXCESSLD - 64;
 
     l = dl1.l.lower;
 
     if (exp > 0)
-	return (unsigned long long)-1;
-    else if (exp >= -63) 
+        return (unsigned long long)-1;
+    else if (exp >= -63)
         return l >> -exp;
     else
         return 0;
 }
 
-long long __fixsfdi (float a1)
+long long __fixsfdi(float a1)
 {
-    long long ret; int s;
+    long long ret;
+    int s;
     ret = __fixunssfdi((s = a1 >= 0) ? a1 : -a1);
     return s ? ret : -ret;
 }
 
-long long __fixdfdi (double a1)
+long long __fixdfdi(double a1)
 {
-    long long ret; int s;
+    long long ret;
+    int s;
     ret = __fixunsdfdi((s = a1 >= 0) ? a1 : -a1);
     return s ? ret : -ret;
 }
 
-long long __fixxfdi (long double a1)
+long long __fixxfdi(long double a1)
 {
-    long long ret; int s;
+    long long ret;
+    int s;
     ret = __fixunsxfdi((s = a1 >= 0) ? a1 : -a1);
     return s ? ret : -ret;
 }
@@ -648,33 +629,35 @@ long long __fixxfdi (long double a1)
 #if defined(TCC_TARGET_X86_64) && !defined(_WIN64)
 
 #ifndef __TINYC__
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #else
 /* Avoid including stdlib.h because it is not easily available when
    cross compiling */
 #include <stddef.h> /* size_t definition is needed for a x86_64-tcc to parse memset() */
- void *malloc(unsigned long long);
- void *memset(void *s, int c, size_t n);
- void free(void*);
- void abort(void);
+void* malloc(unsigned long long);
+void* memset(void* s, int c, size_t n);
+void free(void*);
+void abort(void);
 #endif
 
 enum __va_arg_type {
-    __va_gen_reg, __va_float_reg, __va_stack
+    __va_gen_reg,
+    __va_float_reg,
+    __va_stack
 };
 
-//This should be in sync with the declaration on our include/stdarg.h
+// This should be in sync with the declaration on our include/stdarg.h
 /* GCC compatible definition of va_list. */
 typedef struct {
     unsigned int gp_offset;
     unsigned int fp_offset;
     union {
         unsigned int overflow_offset;
-        char *overflow_arg_area;
+        char* overflow_arg_area;
     };
-    char *reg_save_area;
+    char* reg_save_area;
 } __va_list_struct;
 
 #undef __va_start
@@ -682,17 +665,17 @@ typedef struct {
 #undef __va_copy
 #undef __va_end
 
-void __va_start(__va_list_struct *ap, void *fp)
+void __va_start(__va_list_struct* ap, void* fp)
 {
     memset(ap, 0, sizeof(__va_list_struct));
-    *ap = *(__va_list_struct *)((char *)fp - 16);
-    ap->overflow_arg_area = (char *)fp + ap->overflow_offset;
-    ap->reg_save_area = (char *)fp - 176 - 16;
+    *ap = *(__va_list_struct*)((char*)fp - 16);
+    ap->overflow_arg_area = (char*)fp + ap->overflow_offset;
+    ap->reg_save_area = (char*)fp - 176 - 16;
 }
 
-void *__va_arg(__va_list_struct *ap,
-               enum __va_arg_type arg_type,
-               int size, int align)
+void* __va_arg(__va_list_struct* ap,
+    enum __va_arg_type arg_type,
+    int size, int align)
 {
     size = (size + 7) & ~7;
     align = (align + 7) & ~7;
@@ -731,30 +714,30 @@ void *__va_arg(__va_list_struct *ap,
 /* Flushing for tccrun */
 #if defined(TCC_TARGET_X86_64) || defined(TCC_TARGET_I386)
 
-void __clear_cache(void *beginning, void *end)
+void __clear_cache(void* beginning, void* end)
 {
 }
 
 #elif defined(TCC_TARGET_ARM)
 
 #define _GNU_SOURCE
-#include <unistd.h>
-#include <sys/syscall.h>
 #include <stdio.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
-void __clear_cache(void *beginning, void *end)
+void __clear_cache(void* beginning, void* end)
 {
 /* __ARM_NR_cacheflush is kernel private and should not be used in user space.
  * However, there is no ARM asm parser in tcc so we use it for now */
 #if 1
     syscall(__ARM_NR_cacheflush, beginning, end, 0);
 #else
-    __asm__ ("push {r7}\n\t"
-             "mov r7, #0xf0002\n\t"
-             "mov r2, #0\n\t"
-             "swi 0\n\t"
-             "pop {r7}\n\t"
-             "ret");
+    __asm__("push {r7}\n\t"
+            "mov r7, #0xf0002\n\t"
+            "mov r2, #0\n\t"
+            "swi 0\n\t"
+            "pop {r7}\n\t"
+            "ret");
 #endif
 }
 
