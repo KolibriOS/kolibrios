@@ -66,11 +66,8 @@ qsort
 strtod
 __assert_fail
 ;____STRING____
-;memcpy
 memchr
 memcmp
-!memmove
-!memset
 strncat
 strchr
 strcat
@@ -90,7 +87,7 @@ strspn
 strstr
 strtok
 strxfrm
-_errno
+__errno
 ;____SYS____
 closedir
 opendir

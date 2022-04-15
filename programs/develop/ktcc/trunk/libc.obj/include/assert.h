@@ -4,6 +4,10 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#define assert(x) ((void)((x) || (__assert_fail(#x, __FILE__, __LINE__, __func__),0))) 
+#ifdef NDEBUG
+#define assert(x) (void)0
+#else
+#define assert(x) ((void)((x) || (__assert_fail(#x, __FILE__, __LINE__, __func__), 0)))
+#endif
 
 #endif // _ASSERT_H_

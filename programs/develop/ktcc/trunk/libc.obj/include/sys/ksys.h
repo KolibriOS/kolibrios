@@ -5,97 +5,103 @@
 /* See sysfuncs.txt file for details. */
 
 /*
- * This file was created with you in mind. Lest you reinvent the wheel. 
- * If for some reason there is not enough wrapper add! I ask you to stick to the same style: snake_case. 
- * Structure names must start with "ksys_" and end with "_t". 
- * All wrappers must start with the "_ksys_" prefix. 
- * I consider it mandatory to place the wrappers in the correct order in the official documentation. 
+ * This file was created with you in mind. Lest you reinvent the wheel.
+ * If for some reason there is not enough wrapper add! I ask you to stick to the same style: snake_case.
+ * Structure names must start with "ksys_" and end with "_t".
+ * All wrappers must start with the "_ksys_" prefix.
+ * I consider it mandatory to place the wrappers in the correct order in the official documentation.
  * Enjoy writing your code :)
 
- * Warning! The end of the file is the old definitions of function/structure names. 
- * They are for compatibility... Better not to use them. 
+ * Warning! The end of the file is the old definitions of function/structure names.
+ * They are for compatibility... Better not to use them.
 */
- 
+
 #ifndef _KSYS_H_
 #define _KSYS_H_
 
 #include <stddef.h>
+#include <stdint.h>
 
+#define KOSAPI     static inline
 #define asm_inline __asm__ __volatile__
 
 /*============== General structures ==============*/
 
-#pragma pack(push,1)
+#pragma pack(push, 1)
 
 typedef struct {
     uint8_t blue;
     uint8_t green;
     uint8_t red;
-}rgb_t;
+} rgb_t;
 
 typedef union {
     uint32_t val;
-    struct{
+    struct {
         uint8_t hour;
         uint8_t min;
         uint8_t sec;
         uint8_t _zero;
     };
-}ksys_time_t;
+} ksys_time_t;
 
 typedef union {
     uint32_t val;
-    struct{
-        uint8_t  year;
-        uint8_t  month;
-        uint8_t  day;
-        uint8_t  _zero;
+    struct {
+        uint8_t year;
+        uint8_t month;
+        uint8_t day;
+        uint8_t _zero;
     };
-}ksys_date_t;
+} ksys_date_t;
 
-typedef union{
+typedef union {
     uint32_t val;
-    struct{
-        uint16_t  x;
-        uint16_t  y;
+    struct {
+        uint16_t x;
+        uint16_t y;
     };
-}ksys_pos_t;
+} ksys_pos_t;
 
-typedef union ksys_oskey_t{
+typedef union ksys_oskey_t {
     uint32_t val;
-    struct{
+    struct {
         uint8_t state;
         uint8_t code;
         uint8_t ctrl_key;
     };
-}ksys_oskey_t;
+} ksys_oskey_t;
 
-typedef struct{
-    void *data;
+typedef struct {
+    void* data;
     size_t size;
-}ksys_ufile_t;
+} ksys_ufile_t;
 
-
-typedef struct{
-    uint32_t            p00;
-    union{
-        uint64_t        p04; 
+typedef struct {
+    uint32_t p00;
+    union {
+        uint64_t p04;
         struct {
-            uint32_t    p04dw;
-            uint32_t    p08dw;
+            uint32_t p04dw;
+            uint32_t p08dw;
         };
     };
-    uint32_t            p12;
+    uint32_t p12;
     union {
-        uint32_t        p16;
-        const char     *new_name;
-        void           *bdfe;
-        void           *buf16;
-        const void     *cbuf16;
+        uint32_t p16;
+        const char* new_name;
+        void* bdfe;
+        void* buf16;
+        const void* cbuf16;
     };
-    char                p20;
-    const char         *p21;
-}ksys70_t;
+    char p20;
+    const char* p21;
+} ksys70_t;
+
+typedef struct {
+    uint32_t status;
+    uint32_t rw_bytes;
+} ksys70_status_t;
 
 typedef struct {
     uint32_t attributes;
@@ -106,38 +112,38 @@ typedef struct {
     ksys_date_t last_access_date;
     ksys_time_t last_modification_time;
     ksys_date_t last_modification_date;
-    unsigned long long size;
+    uint64_t size;
     char name[0];
-}ksys_bdfe_t;
+} ksys_bdfe_t;
 
 typedef struct {
-  int cpu_usage;             //+0
-  int window_pos_info;       //+4
-  short int reserved1;       //+8
-  char name[12];             //+10
-  int memstart;              //+22
-  int memused;               //+26
-  int pid;                   //+30
-  int winx_start;            //+34
-  int winy_start;            //+38
-  int winx_size;             //+42
-  int winy_size;             //+46
-  short int slot_info;       //+50
-  short int reserved2;       //+52
-  int clientx;               //+54
-  int clienty;               //+58
-  int clientwidth;           //+62
-  int clientheight;          //+66
-  unsigned char window_state;//+70
-  char reserved3[1024-71];   //+71
-}ksys_thread_t;
+    int cpu_usage;                //+0
+    int window_pos_info;          //+4
+    uint16_t reserved1;           //+8
+    char name[12];                //+10
+    int memstart;                 //+22
+    int memused;                  //+26
+    int pid;                      //+30
+    int winx_start;               //+34
+    int winy_start;               //+38
+    int winx_size;                //+42
+    int winy_size;                //+46
+    uint16_t slot_info;           //+50
+    uint16_t reserved2;           //+52
+    int clientx;                  //+54
+    int clienty;                  //+58
+    int clientwidth;              //+62
+    int clientheight;             //+66
+    uint8_t window_state;         //+70
+    uint8_t reserved3[1024 - 71]; //+71
+} ksys_thread_t;
 
 typedef unsigned int ksys_color_t;
 
-typedef struct{
+typedef struct {
     ksys_color_t frame_area;
     ksys_color_t grab_bar;
-    ksys_color_t grab_bar_button; 
+    ksys_color_t grab_bar_button;
     ksys_color_t grab_button_text;
     ksys_color_t grab_text;
     ksys_color_t work_area;
@@ -145,58 +151,58 @@ typedef struct{
     ksys_color_t work_button_text;
     ksys_color_t work_text;
     ksys_color_t work_graph;
-}ksys_colors_table_t;
+} ksys_colors_table_t;
 
-typedef struct{
-    unsigned pid;      // PID of sending thread
-    unsigned datalen;  // data bytes
-    char     *data;    // data begin
-}ksys_ipc_msg;
- 
-typedef struct{
-    unsigned lock;              // nonzero is locked
-    unsigned used;              // used bytes in buffer
-    ksys_ipc_msg *data;         // data begin
-}ksys_ipc_buffer;
+typedef struct {
+    unsigned pid;     // PID of sending thread
+    unsigned datalen; // data bytes
+    char* data;       // data begin
+} ksys_ipc_msg;
+
+typedef struct {
+    unsigned lock;      // nonzero is locked
+    unsigned used;      // used bytes in buffer
+    ksys_ipc_msg* data; // data begin
+} ksys_ipc_buffer;
 
 typedef struct {
     char* func_name;
     void* func_ptr;
-}ksys_dll_t;
+} ksys_dll_t;
 
 typedef unsigned ksys_drv_hand_t;
 
-typedef struct{
+typedef struct {
     ksys_drv_hand_t handler;
     unsigned func_num;
     void* in_data_ptr;
     unsigned in_data_size;
     void* out_data_ptr;
     unsigned out_data_size;
-}ksys_ioctl_t;
+} ksys_ioctl_t;
 
-typedef struct{
-    char  key[64];
+typedef struct {
+    char key[64];
     char path[64];
-}ksys_dir_key_t;
+} ksys_dir_key_t;
 
 #pragma pack(pop)
 
 typedef rgb_t ksys_bitmap_t;
 
 enum KSYS_FS_ERRORS {
-    KSYS_FS_ERR_SUCCESS = 0,  // Success
-    KSYS_FS_ERR_1       = 1,  // Base and/or partition of a hard disk is not defined (fn21.7 & fn21.8)
-    KSYS_FS_ERR_2       = 2,  // Function is not supported for the given file system
-    KSYS_FS_ERR_3       = 3,  // Unknown file system
-    KSYS_FS_ERR_4       = 4,  // Reserved, is never returned in the current implementation
-    KSYS_FS_ERR_5       = 5,  // File not found
-    KSYS_FS_ERR_EOF     = 6,  // End of file, EOF
-    KSYS_FS_ERR_7       = 7,  // Pointer lies outside of application memory
-    KSYS_FS_ERR_8       = 8,  // Disk is full
-    KSYS_FS_ERR_9       = 9,  // FAT table is destroyed
-    KSYS_FS_ERR_10      = 10, // Access denied
-    KSYS_FS_ERR_11      = 11 // Device error
+    KSYS_FS_ERR_SUCCESS = 0, // Success
+    KSYS_FS_ERR_1 = 1,       // Base and/or partition of a hard disk is not defined (fn21.7 & fn21.8)
+    KSYS_FS_ERR_2 = 2,       // Function is not supported for the given file system
+    KSYS_FS_ERR_3 = 3,       // Unknown file system
+    KSYS_FS_ERR_4 = 4,       // Reserved, is never returned in the current implementation
+    KSYS_FS_ERR_5 = 5,       // File not found
+    KSYS_FS_ERR_EOF = 6,     // End of file, EOF
+    KSYS_FS_ERR_7 = 7,       // Pointer lies outside of application memory
+    KSYS_FS_ERR_8 = 8,       // Disk is full
+    KSYS_FS_ERR_9 = 9,       // FAT table is destroyed
+    KSYS_FS_ERR_10 = 10,     // Access denied
+    KSYS_FS_ERR_11 = 11      // Device error
 };
 
 enum KSYS_EVENTS {
@@ -212,865 +218,771 @@ enum KSYS_EVENTS {
     KSYS_EVENT_IRQBEGIN = 16 /* 16..31 IRQ0..IRQ15 interrupt =IRQBEGIN+IRQn */
 };
 
-enum KSYS_FILE_ENCODING{
-    KSYS_FILE_CP866 =1,
+enum KSYS_FILE_ENCODING {
+    KSYS_FILE_CP866 = 1,
     KSYS_FILE_UTF16LE = 2,
     KSYS_FILE_UTF8 = 3
 };
 
-static inline
-int __strcmp(const char * s1, const char * s2 )
+KOSAPI int __strcmp(const char* s1, const char* s2)
 {
-    while ((*s1) && (*s1 == *s2)){ ++s1; ++s2; }
-    return(*(unsigned char*)s1 - *(unsigned char *)s2);
+    while ((*s1) && (*s1 == *s2)) {
+        ++s1;
+        ++s2;
+    }
+    return (*(unsigned char*)s1 - *(unsigned char*)s2);
 }
 
 /* ####################################################################### */
 /* ############### С wrappers for system calls Kolibri OS ################ */
 /* ####################################################################### */
 
-
 /*=============== Function -1 - terminate thread/process ===============*/
 
-static inline
-void _ksys_exit(){
-    asm_inline("int $0x40"::"a"(-1));
+KOSAPI void _ksys_exit(void)
+{
+    asm_inline("int $0x40" ::"a"(-1));
 }
 
 /*============== Function 0 - define and draw the window. ==============*/
 
-static inline 
-void _ksys_create_window(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const char *name, ksys_color_t workcolor, uint32_t style) {
+KOSAPI void _ksys_create_window(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const char* name, ksys_color_t workcolor, uint32_t style)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(0),
-        "b"((x << 16) | ((w-1) & 0xFFFF)),
-        "c"((y << 16) | ((h-1) & 0xFFFF)),
+        "int $0x40" ::"a"(0),
+        "b"((x << 16) | ((w - 1) & 0xFFFF)),
+        "c"((y << 16) | ((h - 1) & 0xFFFF)),
         "d"((style << 24) | (workcolor & 0xFFFFFF)),
         "D"(name),
-        "S"(0) 
-        :"memory"
-     );
+        "S"(0)
+        : "memory");
 };
 
 /*================ Function 1 - put pixel in the window. ===============*/
 
-static inline
-void _ksys_draw_pixel(uint32_t x, uint32_t y, ksys_color_t color){
+KOSAPI void _ksys_draw_pixel(uint32_t x, uint32_t y, ksys_color_t color)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(1), "b"(x), "c"(y), "d"(color)
-    );
+        "int $0x40" ::"a"(1), "b"(x), "c"(y), "d"(color));
 }
 
 /*============ Function 2 - get the code of the pressed key. ===========*/
 
-static inline 
-ksys_oskey_t _ksys_get_key(void){
+KOSAPI ksys_oskey_t _ksys_get_key(void)
+{
     ksys_oskey_t val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(2)
-    );
+        : "=a"(val)
+        : "a"(2));
     return val;
 }
 
 /*==================== Function 3 - get system time. ===================*/
 
-static inline
-ksys_time_t _ksys_get_time(){
+KOSAPI ksys_time_t _ksys_get_time(void)
+{
     ksys_time_t c_time;
     asm_inline(
         "int $0x40"
-        :"=a"(c_time)
-        :"a"(3)
-        :"memory"
-    );
+        : "=a"(c_time)
+        : "a"(3)
+        : "memory");
     return c_time;
 }
 
 /*=================== Function 4 - draw text string. ===================*/
-
-static inline
-void _ksys_draw_text(const char *text, uint32_t x, uint32_t y, uint32_t len, ksys_color_t color) {
-   asm_inline(
-        "int $0x40"
-        ::"a"(4),"d"(text),
+KOSAPI void _ksys_draw_text(const char* text, uint32_t x, uint32_t y, uint32_t len, ksys_color_t color)
+{
+    asm_inline(
+        "int $0x40" ::"a"(4), "d"(text),
         "b"((x << 16) | y),
-        "S"(len),"c"(color)
-        :"memory"
-    );
+        "S"(len), "c"(color)
+        : "memory");
 }
 
 /*========================= Function 5 - delay. ========================*/
 
-static inline 
-void _ksys_delay(uint32_t time){
+KOSAPI void _ksys_delay(uint32_t time)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(5), "b"(time)
-        :"memory"
-    );
+        "int $0x40" ::"a"(5), "b"(time)
+        : "memory");
 }
 
 /*=============== Function 7 - draw image in the window. ===============*/
 
-static inline
-void _ksys_draw_bitmap(void *bitmap, int x, int y, int w, int h)
+KOSAPI void _ksys_draw_bitmap(void* bitmap, int x, int y, int w, int h)
 {
     asm_inline(
-        "int $0x40"
-        ::"a"(7), "b"(bitmap),
+        "int $0x40" ::"a"(7), "b"(bitmap),
         "c"((w << 16) | h),
         "d"((x << 16) | y)
-        :"memory"
-    );
+        : "memory");
 }
 
 /*=============== Function 8 - define/delete the button. ===============*/
 
-static inline
-void _ksys_define_button(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t id, ksys_color_t color) {
-   asm_inline(
-        "int $0x40"
-        ::"a"(8),
-        "b"((x<<16)+w),
-        "c"((y<<16)+h),
+KOSAPI void _ksys_define_button(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t id, ksys_color_t color)
+{
+    asm_inline(
+        "int $0x40" ::"a"(8),
+        "b"((x << 16) + w),
+        "c"((y << 16) + h),
         "d"(id),
-        "S"(color)
-    );
+        "S"(color));
 };
 
-static inline
-void _ksys_delete_button(uint32_t id){
+KOSAPI void _ksys_delete_button(uint32_t id)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(8),"d"(id & 0x00FFFFFF | 0x80000000)
-    );
-} 
+        "int $0x40" ::"a"(8), "d"(id & 0x00FFFFFF | 0x80000000));
+}
 
 /*============ Function 9 - information on execution thread. ===========*/
 
-static inline 
-int _ksys_thread_info(ksys_thread_t* table, int slot){
+KOSAPI int _ksys_thread_info(ksys_thread_t* table, int slot)
+{
     int val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(9), "b"(table), "c"(slot)
-        :"memory"
-    );
+        : "=a"(val)
+        : "a"(9), "b"(table), "c"(slot)
+        : "memory");
     return val;
 }
 
 /*==================== Function 10 - wait for event. ===================*/
 
-static inline
-uint32_t _ksys_wait_event(void){
+KOSAPI uint32_t _ksys_wait_event(void)
+{
     uint32_t val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(10)
-    );
+        : "=a"(val)
+        : "a"(10));
     return val;
 }
 
 /*=============== Function 11 - check for event, no wait. ==============*/
 
-static inline 
-uint32_t _ksys_check_event(void){
+KOSAPI uint32_t _ksys_check_event(void)
+{
     uint32_t val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(11)
-    );
+        : "=a"(val)
+        : "a"(11));
     return val;
 }
 
 /*=============== Function 12 - begin/end window redraw. ===============*/
 
-static inline 
-void _ksys_start_draw(){
-   asm_inline("int $0x40"::"a"(12),"b"(1));
+KOSAPI void _ksys_start_draw(void)
+{
+    asm_inline("int $0x40" ::"a"(12), "b"(1));
 }
 
-static inline 
-void _ksys_end_draw(){
-    asm_inline("int $0x40" ::"a"(12),"b"(2));
+KOSAPI void _ksys_end_draw(void)
+{
+    asm_inline("int $0x40" ::"a"(12), "b"(2));
 }
 
 /*============ Function 13 - draw a rectangle in the window. ===========*/
 
-static inline
-void _ksys_draw_bar(uint32_t x, uint32_t y, uint32_t w, uint32_t h, ksys_color_t color){
+KOSAPI void _ksys_draw_bar(uint32_t x, uint32_t y, uint32_t w, uint32_t h, ksys_color_t color)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(13), "d"(color),
+        "int $0x40" ::"a"(13), "d"(color),
         "b"((x << 16) | w),
-        "c"((y << 16) | h)
-    );
+        "c"((y << 16) | h));
 }
 
 /*=================== Function 14 - get screen size. ===================*/
 
-static inline
-ksys_pos_t _ksys_screen_size(){
-	ksys_pos_t size;
+KOSAPI ksys_pos_t _ksys_screen_size(void)
+{
+    ksys_pos_t size;
     ksys_pos_t size_tmp;
     asm_inline(
         "int $0x40"
-        :"=a"(size_tmp)
-        :"a"(14)
-    );
+        : "=a"(size_tmp)
+        : "a"(14));
     size.x = size_tmp.y;
-    size.y = size_tmp.x; 
+    size.y = size_tmp.x;
     return size;
 }
 
 /*== Function 15, subfunction 1 - set a size of the background image. ==*/
 
-static inline
-void _ksys_bg_set_size(uint32_t w, uint32_t h){
+KOSAPI void _ksys_bg_set_size(uint32_t w, uint32_t h)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(15), "b"(1), "c"(w), "d"(h)
-    );
+        "int $0x40" ::"a"(15), "b"(1), "c"(w), "d"(h));
 }
 
 /*=== Function 15, subfunction 2 - put pixel on the background image. ==*/
 
-static inline
-void _ksys_bg_put_pixel(uint32_t x, uint32_t y, uint32_t w, ksys_color_t color){
+KOSAPI void _ksys_bg_put_pixel(uint32_t x, uint32_t y, uint32_t w, ksys_color_t color)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(15), "b"(2), "c"((x+y*w)*3), "d"(color)
-    );
+        "int $0x40" ::"a"(15), "b"(2), "c"((x + y * w) * 3), "d"(color));
 }
 
 /*=========== Function 15, subfunction 3 - redraw background. ==========*/
 
-static inline
-void _ksys_bg_redraw(void){
+KOSAPI void _ksys_bg_redraw(void)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(15), "b"(3)
-    );
+        "int $0x40" ::"a"(15), "b"(3));
 }
 
 /*== Function 15, subfunction 4 - set drawing mode for the background. =*/
 
-enum KSYS_BG_MODES{
-    KSYS_BG_MODE_PAVE=1,
-    KSYS_BG_MODE_STRETCH=2
+enum KSYS_BG_MODES {
+    KSYS_BG_MODE_PAVE = 1,
+    KSYS_BG_MODE_STRETCH = 2
 };
 
-static inline 
-void _ksys_bg_set_mode(uint32_t mode){
+KOSAPI void _ksys_bg_set_mode(uint32_t mode)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(15), "b"(4), "c"(mode)
-    );
+        "int $0x40" ::"a"(15), "b"(4), "c"(mode));
 }
 
 /*===================== Function 15, subfunction 5 =====================*/
 /*============ Put block of pixels on the background image. ============*/
 
-static inline 
-void _ksys_bg_put_bitmap(ksys_bitmap_t* bitmap, size_t bitmap_size, uint32_t x, uint32_t y, uint32_t w){
+KOSAPI void _ksys_bg_put_bitmap(ksys_bitmap_t* bitmap, size_t bitmap_size, uint32_t x, uint32_t y, uint32_t w)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(15), "b"(5), "c"(bitmap), "d"((x+y*w)*3), "S"(bitmap_size)
-    );
+        "int $0x40" ::"a"(15), "b"(5), "c"(bitmap), "d"((x + y * w) * 3), "S"(bitmap_size));
 }
 
 /*===================== Function 15, subfunction 6 =====================*/
 /*======= Map background data to the address space of process. ==========*/
 
-static inline
-ksys_bitmap_t* _ksys_bg_get_map()
+KOSAPI ksys_bitmap_t* _ksys_bg_get_map(void)
 {
-    ksys_bitmap_t *bitmap;
+    ksys_bitmap_t* bitmap;
     asm_inline(
         "int $0x40"
-        :"=a"(bitmap)
-        :"a"(15), "b"(6)
-    );
+        : "=a"(bitmap)
+        : "a"(15), "b"(6));
     return bitmap;
 }
 
 /*===== Function 15, subfunction 7 - close mapped background data. =====*/
 
-static inline
-int _ksys_bg_close_map(ksys_bitmap_t* bitmap)
-{   
+KOSAPI int _ksys_bg_close_map(ksys_bitmap_t* bitmap)
+{
     int status; // 1 - OK, 0 - ERROR
     asm_inline(
         "int $0x40"
-        :"=a"(status)
-        :"a"(15), "b"(7), "c"(bitmap)
-    );
+        : "=a"(status)
+        : "a"(15), "b"(7), "c"(bitmap));
     return status;
 }
 
 /*===================== Function 15, subfunction 9 =====================*/
 /*============= Redraws a rectangular part of the background ===========*/
 
-static inline
-void _ksys_bg_redraw_bar(ksys_pos_t angle1, ksys_pos_t angle2)
+KOSAPI void _ksys_bg_redraw_bar(ksys_pos_t angle1, ksys_pos_t angle2)
 {
     asm_inline(
-        "int $0x40"
-        ::"a"(15), "b"(9), 
-        "c"(angle1.x*(1<<16)+angle2.x),
-        "d"(angle1.y*(1<<16)+angle2.y)
-    );
+        "int $0x40" ::"a"(15), "b"(9),
+        "c"(angle1.x * (1 << 16) + angle2.x),
+        "d"(angle1.y * (1 << 16) + angle2.y));
 }
 
 /*=============== Function 16 - save ramdisk on a floppy. ==============*/
 
-static inline
-int _ksys_save_ramdisk_fd(uint32_t floppy_id)
+KOSAPI int _ksys_save_ramdisk_fd(uint32_t floppy_id)
 {
     int status; // 0 - OK, 1 - ERROR
     asm_inline(
         "int $0x40"
-        :"=a"(status)
-        :"a"(16), "b"(floppy_id)
-    );
-    return status;    
+        : "=a"(status)
+        : "a"(16), "b"(floppy_id));
+    return status;
 }
 
 /*======= Function 17 - get the identifier of the pressed button. ======*/
 
-static inline
-uint32_t _ksys_get_button()
+KOSAPI uint32_t _ksys_get_button(void)
 {
     unsigned val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(17)
-    );
-    return val>>8; 
+        : "=a"(val)
+        : "a"(17));
+    return val >> 8;
 }
 
 /*===================== Function 18, subfunction 1 =====================*/
 /*============= Make deactive the window of the given thread. ==========*/
 
-static inline 
-void _ksys_unfocus_window(int slot)
+KOSAPI void _ksys_unfocus_window(int slot)
 {
     asm_inline(
-        "int $0x40"
-        ::"a"(18), "b"(1), "c"(slot)
-    );
+        "int $0x40" ::"a"(18), "b"(1), "c"(slot));
 }
 
 /*= Function 18, subfunction 2 - terminate process/thread by the slot. =*/
 
-static inline 
-void _ksys_kill_by_slot(int slot)
+KOSAPI void _ksys_kill_by_slot(int slot)
 {
     asm_inline(
-        "int $0x40"
-        ::"a"(18), "b"(2), "c"(slot)
-    );
+        "int $0x40" ::"a"(18), "b"(2), "c"(slot));
 }
 
 /*===================== Function 18, subfunction 3 =====================*/
 /*============= Make active the window of the given thread. ============*/
 
-static inline 
-void _ksys_focus_window(int slot){
+KOSAPI void _ksys_focus_window(int slot)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(18), "b"(3), "c"(slot)
-    );
+        "int $0x40" ::"a"(18), "b"(3), "c"(slot));
 }
 
 /*===================== Function 18, subfunction 4 =====================*/
 /*=========== Get counter of idle time units per one second. ===========*/
 
-static inline
-uint32_t  _ksys_get_idle(void){
+KOSAPI uint32_t _ksys_get_idle(void)
+{
     uint32_t sec;
     asm_inline(
         "int $0x40"
-        :"=a"(sec)
-        :"a"(18), "b"(4)
-    );
+        : "=a"(sec)
+        : "a"(18), "b"(4));
     return sec;
 }
 
 /*========== Function 18, subfunction 5 - get CPU clock rate. ==========*/
 /*================ modulo 2^32 clock ticks = 4GHz ======================*/
 
-static inline
-uint32_t _ksys_get_cpu_clock(void){
+KOSAPI uint32_t _ksys_get_cpu_clock(void)
+{
     uint32_t clock;
     asm_inline(
         "int $0x40"
-        :"=a"(clock)
-        :"a"(18), "b"(5)
-    );
+        : "=a"(clock)
+        : "a"(18), "b"(5));
     return clock;
 }
 
 /* Function 18, subfunction 6 - save ramdisk to the file on hard drive. */
 
-static inline
-uint32_t _ksys_save_ramdisk_hd(const char* ramdisk_path){
+KOSAPI uint32_t _ksys_save_ramdisk_hd(const char* ramdisk_path)
+{
     uint32_t fs_err;
     asm_inline(
         "int $0x40"
-        :"=a"(fs_err)
-        :"a"(18), "b"(6), "c"(ramdisk_path)
-    );
+        : "=a"(fs_err)
+        : "a"(18), "b"(6), "c"(ramdisk_path));
     return fs_err;
 }
 
 /* Function 18, subfunction 9 - system shutdown with the parameter. */
 
 enum KSYS_SHD_PARAM {
-    KSYS_SHD_POWEROFF    = 2,
-    KSYS_SHD_REBOOT      = 3,
+    KSYS_SHD_POWEROFF = 2,
+    KSYS_SHD_REBOOT = 3,
     KSYS_SHD_RESTART_KRN = 4
 };
 
-static inline
-void _ksys_shutdown(uint32_t shd_param){
+KOSAPI void _ksys_shutdown(uint32_t shd_param)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(18), "b"(9), "c"(shd_param)
-    );
+        "int $0x40" ::"a"(18), "b"(9), "c"(shd_param));
 }
 
 /*========= Function 18, subfunction 16 - get size of free RAM. ========*/
 
-static inline
-size_t _ksys_get_ram_size(void){
+KOSAPI size_t _ksys_get_ram_size(void)
+{
     size_t size;
     asm_inline(
         "int $0x40"
-        :"=a"(size)
-        :"a"(18), "b"(16) 
-    );
+        : "=a"(size)
+        : "a"(18), "b"(16));
     return size;
 }
 
 /*======== Function 18, subfunction 17 - get full amount of RAM. =======*/
 
-static inline
-size_t _ksys_get_full_ram(void){
+KOSAPI size_t _ksys_get_full_ram(void)
+{
     size_t size;
     asm_inline(
         "int $0x40"
-        :"=a"(size)
-        :"a"(18), "b"(17) 
-    );
+        : "=a"(size)
+        : "a"(18), "b"(17));
     return size;
 }
 
 /*===================== Function 18, subfunction 18 ====================*/
 /*============= Terminate process/thread by the identifier. ============*/
 
-static inline
-void _ksys_kill_by_pid(uint32_t PID)
+KOSAPI void _ksys_kill_by_pid(uint32_t PID)
 {
     asm_inline(
-        "int $0x40"
-        ::"a"(18), "b"(18), "c"(PID)
-    );
+        "int $0x40" ::"a"(18), "b"(18), "c"(PID));
 }
 
 /*===================== Function 18, subfunction 21 ====================*/
 /*=====Get the slot number of the process / thread by identifier.. =====*/
 
-static inline 
-int _ksys_get_thread_slot(int PID){
+KOSAPI int _ksys_get_thread_slot(int PID)
+{
     int val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(18), "b"(21), "c"(PID)
-    );
+        : "=a"(val)
+        : "a"(18), "b"(21), "c"(PID));
     return val;
 }
 
 /*============= Function 23 - wait for event with timeout. =============*/
 
-static inline
-uint32_t _ksys_wait_event_timeout(uint32_t timeout){
+KOSAPI uint32_t _ksys_wait_event_timeout(uint32_t timeout)
+{
     unsigned val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(23), "b"(timeout)
-    );
+        : "=a"(val)
+        : "a"(23), "b"(timeout));
     return val;
 }
 
 /*=== Function 26, subfunction 9 - get the value of the time counter. ==*/
 
-static inline
-uint32_t _ksys_get_tick_count(){
+KOSAPI uint32_t _ksys_get_tick_count(void)
+{
     unsigned val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(26),"b"(9)
-    );
+        : "=a"(val)
+        : "a"(26), "b"(9));
     return val;
 }
 
 /*===================== Function 26, subfunction 10 ====================*/
 /*========== Get the value of the high precision time counter. =========*/
 
-static inline
-uint64_t  _ksys_get_ns_count(){
+KOSAPI uint64_t _ksys_get_ns_count(void)
+{
     uint64_t val;
     asm_inline(
         "int $0x40"
-        :"=A"(val)
-        :"a"(26), "b"(10)
-    );
+        : "=A"(val)
+        : "a"(26), "b"(10));
     return val;
 }
 
 /*=================== Function 29 - get system date. ===================*/
 
-static inline
-ksys_date_t _ksys_get_date(){
+KOSAPI ksys_date_t _ksys_get_date(void)
+{
     ksys_date_t val;
-    asm_inline("int $0x40":"=a"(val):"a"(29));
+    asm_inline("int $0x40"
+               : "=a"(val)
+               : "a"(29));
     return val;
 }
 
 /*===========+ Function 30 - work with the current folder.==============*/
 /*--------- Subfunction 1 - set current folder for the thread. ---------*/
 
-static inline 
-void _ksys_setcwd(char* dir){
+KOSAPI void _ksys_setcwd(char* dir)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(30), "b"(1), "c"(dir)
-    );
+        "int $0x40" ::"a"(30), "b"(1), "c"(dir));
 }
- 
+
 /*--------- Subfunction 2 - get current folder for the thread. ---------*/
 
-static inline 
-int _ksys_getcwd(char* buf, int bufsize){
+KOSAPI int _ksys_getcwd(char* buf, int bufsize)
+{
     register int val;
     asm_inline(
         "int $0x40"
-        :"=a"(val):"a"(30), "b"(2), "c"(buf), "d"(bufsize)
-    );
+        : "=a"(val)
+        : "a"(30), "b"(2), "c"(buf), "d"(bufsize));
     return val;
 }
 
 /* ---- Subfunction 3 - install the add.system directory for the kernel ------*/
 
-static inline
-int _ksys_set_kernel_dir(ksys_dir_key_t *table){
+KOSAPI int _ksys_set_kernel_dir(ksys_dir_key_t* table)
+{
     register int val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(30), "b"(3), "c"(table)
-        :"memory"
-    );
+        : "=a"(val)
+        : "a"(30), "b"(3), "c"(table)
+        : "memory");
     return val;
 }
 
 /*=================== Function 37 - work with mouse. ===================*/
 
-enum KSYS_MOUSE_POS{
+enum KSYS_MOUSE_POS {
     KSYS_MOUSE_SCREEN_POS = 0,
     KSYS_MOUSE_WINDOW_POS = 1
 };
 
-static inline
-ksys_pos_t _ksys_get_mouse_pos(int origin){
+KOSAPI ksys_pos_t _ksys_get_mouse_pos(int origin)
+{
     ksys_pos_t pos;
     asm_inline(
         "int $0x40 \n\t"
         "rol $16, %%eax"
-        :"=a"(pos)
-        :"a"(37),"b"(origin)
-    );
+        : "=a"(pos)
+        : "a"(37), "b"(origin));
     return pos;
 }
 
-static inline
-uint32_t _ksys_get_mouse_buttons(void){ // subfunction 2 - states of the mouse buttons
-    uint32_t val;
-    asm_inline(
-        "int $0x40"
-        :"=a"(val)
-        :"a"(37),"b"(2)
-    );
-    return val;
-}
-
-static inline
-uint32_t _ksys_get_mouse_eventstate(void){   // subfunction 3 - states and events of the mouse buttons 
-    uint32_t val;
-    asm_inline(
-        "int $0x40"
-        :"=a"(val)
-        :"a"(37),"b"(3)
-    );
-    return val;
-}
-
-static inline
-uint32_t _ksys_load_cursor(void *path, uint32_t flags) { // subfunction 4 - load cursor
-    uint32_t val;
-    asm_inline(
-        "int $0x40"
-        :"=a"(val)
-        :"a"(37), "b"(4), "c"(path), "d"(flags)
-        :"memory"
-    );
-    return val;
-} 
-
-static inline 
-uint32_t _ksys_set_cursor(uint32_t cursor){ // subfunction 5 - set curso
-    uint32_t old;
-    asm_inline(
-        "int $0x40"
-        :"=a"(old)
-        :"a"(37), "b"(5), "c"(cursor)
-    );
-    return old;
-}
-
-static inline
-int _ksys_delete_cursor(uint32_t cursor){ // subfunction 6 - delete curso
-    int ret;
-    asm_inline(
-        "int $0x40"
-        :"=a"(ret)
-        :"a"(37), "b"(6), "c"(cursor)
-        :"memory"
-    );
-    return ret;
-}
-
-static inline
-uint32_t _ksys_get_mouse_wheels(void)  // subfunction 7 - get scroll data
+KOSAPI uint32_t _ksys_get_mouse_buttons(void) // subfunction 2 - states of the mouse buttons
 {
     uint32_t val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(37),"b"(7)
-    );
+        : "=a"(val)
+        : "a"(37), "b"(2));
+    return val;
+}
+
+KOSAPI uint32_t _ksys_get_mouse_eventstate(void) // subfunction 3 - states and events of the mouse buttons
+{
+    uint32_t val;
+    asm_inline(
+        "int $0x40"
+        : "=a"(val)
+        : "a"(37), "b"(3));
+    return val;
+}
+
+KOSAPI uint32_t _ksys_load_cursor(void* path, uint32_t flags) // subfunction 4 - load cursor
+{
+    uint32_t val;
+    asm_inline(
+        "int $0x40"
+        : "=a"(val)
+        : "a"(37), "b"(4), "c"(path), "d"(flags)
+        : "memory");
+    return val;
+}
+
+KOSAPI uint32_t _ksys_set_cursor(uint32_t cursor) // subfunction 5 - set cursor
+{
+    uint32_t old;
+    asm_inline(
+        "int $0x40"
+        : "=a"(old)
+        : "a"(37), "b"(5), "c"(cursor));
+    return old;
+}
+
+KOSAPI int _ksys_delete_cursor(uint32_t cursor) // subfunction 6 - delete cursor
+{
+    int ret;
+    asm_inline(
+        "int $0x40"
+        : "=a"(ret)
+        : "a"(37), "b"(6), "c"(cursor)
+        : "memory");
+    return ret;
+}
+
+KOSAPI uint32_t _ksys_get_mouse_wheels(void) // subfunction 7 - get scroll data
+{
+    uint32_t val;
+    asm_inline(
+        "int $0x40"
+        : "=a"(val)
+        : "a"(37), "b"(7));
     return val;
 }
 
 /*=========== Function 40 - set the mask for expected events. ==========*/
 
-enum KSYS_EVENT_MASK{
+enum KSYS_EVENT_MASK {
     KSYS_EVM_REDRAW = 1,
-    KSYS_EVM_KEY    = 2,
+    KSYS_EVM_KEY = 2,
     KSYS_EVM_BUTTON = 4,
-    KSYS_EVM_EXIT   = 8,
+    KSYS_EVM_EXIT = 8,
     KSYS_EVM_BACKGROUND = 16,
-    KSYS_EVM_MOUSE      = 32,
-    KSYS_EVM_IPC        = 64,
-    KSYS_EVM_STACK      = 128,
-    KSYS_EVM_DEBUG      = 256,
-    KSYS_EVM_STACK2     = 512,
-    KSYS_EVM_MOUSE_FILTER  = 0x80000000,
+    KSYS_EVM_MOUSE = 32,
+    KSYS_EVM_IPC = 64,
+    KSYS_EVM_STACK = 128,
+    KSYS_EVM_DEBUG = 256,
+    KSYS_EVM_STACK2 = 512,
+    KSYS_EVM_MOUSE_FILTER = 0x80000000,
     KSYS_EVM_CURSOR_FILTER = 0x40000000,
 };
 
-static inline
-uint32_t _ksys_set_event_mask(uint32_t mask){
+KOSAPI uint32_t _ksys_set_event_mask(uint32_t mask)
+{
     unsigned val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(40), "b"(mask)
-    );
+        : "=a"(val)
+        : "a"(40), "b"(mask));
     return val;
 }
 
 /*====================== Function 38 - draw line. ======================*/
 
-static inline
-void _ksys_draw_line(int xs, int ys, int xe, int ye, ksys_color_t color)
+KOSAPI void _ksys_draw_line(int xs, int ys, int xe, int ye, ksys_color_t color)
 {
     asm_inline(
-        "int $0x40"
-        ::"a"(38), "d"(color),
+        "int $0x40" ::"a"(38), "d"(color),
         "b"((xs << 16) | xe),
-        "c"((ys << 16) | ye)
-    );
+        "c"((ys << 16) | ye));
 }
 
 /*============= Function 47 - draw a number in the window. =============*/
 
-static inline 
-void _ksys_draw_number(int number, int x, int y, int len, ksys_color_t color){
+KOSAPI void _ksys_draw_number(int number, int x, int y, int len, ksys_color_t color)
+{
     unsigned fmt;
     fmt = len << 16 | 0x80000000; // no leading zeros + width
     asm_inline(
-        "int $0x40"
-        ::"a"(47), "b"(fmt), "c"(number), "d"((x << 16) | y), "S"(color)
-    );
+        "int $0x40" ::"a"(47), "b"(fmt), "c"(number), "d"((x << 16) | y), "S"(color));
 }
 
-static inline 
-void _ksys_draw_number_bg(unsigned number, int x, int y, int len, ksys_color_t color, ksys_color_t bg){
+KOSAPI void _ksys_draw_number_bg(unsigned number, int x, int y, int len, ksys_color_t color, ksys_color_t bg)
+{
     unsigned fmt;
     fmt = len << 16 | 0x80000000; // no leading zeros + width
     asm_inline(
-        "int $0x40"
-        ::"a"(47), "b"(fmt), "c"(number), "d"((x << 16) | y), "S"(color), "D"(bg)
-    );
+        "int $0x40" ::"a"(47), "b"(fmt), "c"(number), "d"((x << 16) | y), "S"(color), "D"(bg));
 }
 
 /*====== Function 48, subfunction 3 - get standard window colors. ======*/
 
-static inline 
-void _ksys_get_system_colors(ksys_colors_table_t *color_table)
+KOSAPI void _ksys_get_system_colors(ksys_colors_table_t* color_table)
 {
     asm_inline(
-       "int $0x40"
-        ::"a"(48),"b"(3),"c"(color_table),"d"(40)
-    );
+        "int $0x40" ::"a"(48), "b"(3), "c"(color_table), "d"(40));
 }
 
 /*============ Function 48, subfunction 4 - get skin height. ===========*/
 
-static inline
-uint32_t _ksys_get_skin_height(){
+KOSAPI uint32_t _ksys_get_skin_height()
+{
     unsigned height;
     asm_inline(
         "int $0x40"
-        :"=a"(height)
-        :"a"(48),"b"(4)
-    );
+        : "=a"(height)
+        : "a"(48), "b"(4));
     return height;
 }
 
 /*==================== Function 51 - create thread. ====================*/
 
-static inline
-int _ksys_create_thread(void* thread_entry, void* stack_top){
+KOSAPI int _ksys_create_thread(void* thread_entry, void* stack_top)
+{
     int val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(51), "b"(1), "c"(thread_entry), "d"(stack_top)
-        :"memory"
-    );
+        : "=a"(val)
+        : "a"(51), "b"(1), "c"(thread_entry), "d"(stack_top)
+        : "memory");
     return val;
 }
-
 
 /*==================== Function 54, subfunction 0 ======================*/
 /*============== Get the number of slots in the clipboard. =============*/
 
-enum KSYS_CLIP_ENCODING{
+enum KSYS_CLIP_ENCODING {
     KSYS_CLIP_UTF8 = 0,
     KSYS_CLIP_CP866 = 1,
     KSYS_CLIP_CP1251 = 2
 };
 
-enum KSYS_CLIP_TYPES{
+enum KSYS_CLIP_TYPES {
     KSYS_CLIP_TEXT = 0,
     KSYS_CLIP_IMAGE = 1,
     KSYS_CLIP_RAW = 2
 };
 
-static inline
-int _ksys_clip_num(){
+KOSAPI int _ksys_clip_num(void)
+{
     unsigned val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(54), "b"(0)
-    );
+        : "=a"(val)
+        : "a"(54), "b"(0));
     return val;
 }
- 
+
 /*==================== Function 54, subfunction 1 ======================*/
 /*================= Read the data from the clipboard. ==================-*/
 
-static inline
-char* _ksys_clip_get(int n) {  // returned buffer must be freed by _ksys_free()
+KOSAPI char* _ksys_clip_get(int n) // returned buffer must be freed by _ksys_free()
+{
     char* val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(54), "b"(1), "c"(n)
-    );
+        : "=a"(val)
+        : "a"(54), "b"(1), "c"(n));
     return val;
 }
- 
+
 /*==================== Function 54, subfunction 2 ======================*/
 /*================= Write the data to the clipboard. ===================*/
 
-static inline
-int _ksys_clip_set(int n, char *buffer){
+KOSAPI int _ksys_clip_set(int n, char* buffer)
+{
     unsigned val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(54), "b"(2), "c"(n), "d"(buffer)
-        :"memory"
-    );
+        : "=a"(val)
+        : "a"(54), "b"(2), "c"(n), "d"(buffer)
+        : "memory");
     return val;
 }
- 
+
 /*===================== Function 54, subfunction 3 =====================*/
 /*================ Delete the last slot in the clipboard ===============*/
 
-static inline
-int _ksys_clip_pop(){
-    unsigned val;
-    asm_inline (
-        "int $0x40"
-        :"=a"(val)
-        :"a"(54), "b"(3)
-    );
-    return val;
-}
- 
-/*===================== Function 54, subfunction 4 =====================*/
-/*===================== Alarm reset the lock buffer ====================*/
-
-static inline
-int _ksys_clip_unlock(){
+KOSAPI int _ksys_clip_pop()
+{
     unsigned val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(54), "b"(4)
-    );
+        : "=a"(val)
+        : "a"(54), "b"(3));
+    return val;
+}
+
+/*===================== Function 54, subfunction 4 =====================*/
+/*===================== Alarm reset the lock buffer ====================*/
+
+KOSAPI int _ksys_clip_unlock()
+{
+    unsigned val;
+    asm_inline(
+        "int $0x40"
+        : "=a"(val)
+        : "a"(54), "b"(4));
     return val;
 }
 
 /*============== Function 63 - work with the debug board. ==============*/
 
-static inline
-void _ksys_debug_putc(char c){
-    asm_inline("int $0x40"::"a"(63), "b"(1), "c"(c));
+KOSAPI void _ksys_debug_putc(char c)
+{
+    asm_inline("int $0x40" ::"a"(63), "b"(1), "c"(c));
 }
- 
-static inline
-void _ksys_debug_puts(const char* s){
-    unsigned i=0;
-    while (*(s+i)){
-        asm_inline ("int $0x40"::"a"(63), "b"(1), "c"(*(s+i)));
+
+KOSAPI void _ksys_debug_puts(const char* s)
+{
+    unsigned i = 0;
+    while (*(s + i)) {
+        asm_inline("int $0x40" ::"a"(63), "b"(1), "c"(*(s + i)));
         i++;
     }
 }
@@ -1082,104 +994,93 @@ typedef enum KSYS_KEY_INPUT_MODE {
     KSYS_KEY_INPUT_MODE_SCANC = 1,
 } ksys_key_input_mode_t;
 
-static inline
-void _ksys_set_key_input_mode(ksys_key_input_mode_t mode){
+KOSAPI void _ksys_set_key_input_mode(ksys_key_input_mode_t mode)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(66),"b"(1),"c"(mode)
-    );
+        "int $0x40" ::"a"(66), "b"(1), "c"(mode));
 }
 
 /*========= Function 67 - change position/sizes of the window. =========*/
 
-static inline 
-void _ksys_change_window(int new_x, int new_y, int new_w, int new_h){
+KOSAPI void _ksys_change_window(int new_x, int new_y, int new_w, int new_h)
+{
     asm_inline(
-        "int $0x40"
-        ::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w),"S"(new_h)
-    );
+        "int $0x40" ::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w), "S"(new_h));
 }
 
 /*======== Function 68, subfunction 12 - allocate memory block. ========*/
 
-static inline
-void* _ksys_alloc(size_t size){
-    void  *val;
+KOSAPI void* _ksys_alloc(size_t size)
+{
+    void* val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(68),"b"(12),"c"(size)
-    );
+        : "=a"(val)
+        : "a"(68), "b"(12), "c"(size));
     return val;
 }
 
 /*========== Function 68, subfunction 13 - free memory block. ==========*/
 
-static inline
-int _ksys_free(void *mem){
+KOSAPI int _ksys_free(void* mem)
+{
     int val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(68),"b"(13),"c"(mem)
-    );
+        : "=a"(val)
+        : "a"(68), "b"(13), "c"(mem));
     return val;
 }
 
 /*============= Function 68, subfunction 16 - load driver. =============*/
 
-static inline
-ksys_drv_hand_t _ksys_load_driver(char *driver_name)
+KOSAPI ksys_drv_hand_t _ksys_load_driver(char* driver_name)
 {
     ksys_drv_hand_t driver_h;
     asm_inline(
         "int $0x40"
-        :"=a"(driver_h)
-        :"a"(68), "b"(16), "c"(driver_name)
-    );
+        : "=a"(driver_h)
+        : "a"(68), "b"(16), "c"(driver_name));
     return driver_h;
 }
 
 /*============ Function 68, subfunction 17 - driver control. ===========*/
 
-static inline
-unsigned _ksys_driver_control(ksys_ioctl_t *ioctl)
+KOSAPI int _ksys_driver_control(ksys_ioctl_t* ioctl)
 {
-    unsigned status;
+    int status;
     asm_inline(
         "int $0x40"
-        :"=a"(status)
-        :"a"(68), "b"(17), "c"(ioctl)
-        :"memory"
-    );
+        : "=a"(status)
+        : "a"(68), "b"(17), "c"(ioctl)
+        : "memory");
     return status;
 }
 
 /*== Function 68, subfunction 18 - subfunction 19 - load DLL (MS COFF) ==*/
 
-static inline
-ksys_dll_t* _ksys_dlopen(const char* path){
-    ksys_dll_t *table;
+KOSAPI ksys_dll_t* _ksys_dlopen(const char* path)
+{
+    ksys_dll_t* table;
     asm_inline(
         "int $0x40"
-        :"=a"(table)
-        :"a"(68),"b"(19), "c"(path)
-        :"memory"
-    );
+        : "=a"(table)
+        : "a"(68), "b"(19), "c"(path)
+        : "memory");
     return table;
 }
 
 /* It is not a system call, it serves as an auxiliary tool*/
 
-static inline
-void* _ksys_dlsym(ksys_dll_t *table, const char* fun_name){
-    unsigned i=0;
-    while (1){
-        if (!(table+i)->func_name){
+KOSAPI void* _ksys_dlsym(ksys_dll_t* table, const char* fun_name)
+{
+    unsigned i = 0;
+    while (1) {
+        if (!(table + i)->func_name) {
             break;
-        }else{
-            if (!__strcmp(fun_name, (table+i)->func_name)){
-                return (table+i)->func_ptr;
+        } else {
+            if (!__strcmp(fun_name, (table + i)->func_name)) {
+                return (table + i)->func_ptr;
             }
         }
         i++;
@@ -1189,35 +1090,32 @@ void* _ksys_dlsym(ksys_dll_t *table, const char* fun_name){
 
 /* Function 68, subfunction 20 - reallocate memory block.*/
 
-static inline
-void* _ksys_realloc(void *mem, size_t size){
-    void *val;
+KOSAPI void* _ksys_realloc(void* mem, size_t size)
+{
+    void* val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(68),"b"(20),"c"(size),"d"(mem)
-        :"memory"
-    );
+        : "=a"(val)
+        : "a"(68), "b"(20), "c"(size), "d"(mem)
+        : "memory");
     return val;
 }
 
 /* Function 68, subfunction 21 - load driver by full name. */
 
-static inline
-ksys_drv_hand_t _ksys_load_driver_opt(char *driver_path, char *cmd_line)
+KOSAPI ksys_drv_hand_t _ksys_load_driver_opt(char* driver_path, char* cmd_line)
 {
     ksys_drv_hand_t driver_h;
     asm_inline(
         "int $0x40"
-        :"=a"(driver_h)
-        :"a"(68), "b"(21), "c"(driver_path), "d"(cmd_line)
-    );
+        : "=a"(driver_h)
+        : "a"(68), "b"(21), "c"(driver_path), "d"(cmd_line));
     return driver_h;
 }
 
 /*======== Function 68, subfunction 22 - open named memory area. =======*/
 
-enum KSYS_SHM_MODE{
+enum KSYS_SHM_MODE {
     KSYS_SHM_OPEN = 0x00,
     KSYS_SHM_OPEN_ALWAYS = 0x04,
     KSYS_SHM_CREATE = 0x08,
@@ -1225,91 +1123,80 @@ enum KSYS_SHM_MODE{
     KSYS_SHM_WRITE = 0x01,
 };
 
-static inline
-int _ksys_shm_open(char *name, int mode, int size, char **new_shm)
+KOSAPI int _ksys_shm_open(char* name, int mode, int size, char** new_shm)
 {
     int error;
     asm_inline(
         "int $0x40"
-        :"=a"(*new_shm), "=d"(error)
-        :"a"(68), "b"(22), "c"(name), "d"(size), "S"(mode)
-    );
+        : "=a"(*new_shm), "=d"(error)
+        : "a"(68), "b"(22), "c"(name), "d"(size), "S"(mode));
     return error;
 }
 
 /*======= Function 68, subfunction 23 - close named memory area. =======*/
 
-static inline
-void _ksys_shm_close(char *shm_name)
+KOSAPI void _ksys_shm_close(char* shm_name)
 {
     asm_inline(
-        "int $0x40":
-        :"a"(68), "b"(23), "c"(shm_name)
-    );
+        "int $0x40"
+        :
+        : "a"(68), "b"(23), "c"(shm_name));
 }
 
 /*====== Function 68, subfunction 26 - release memory pages ============*/
 
-static inline
-int* _ksys_unmap(void *base, size_t offset, size_t size){
-    int  *val;
+KOSAPI int* _ksys_unmap(void* base, size_t offset, size_t size)
+{
+    int* val;
     asm_inline(
         "int $0x40"
-        :"=a"(val)
-        :"a"(68),"b"(26),"c"(base),"d"(offset),"S"(size)
-    );
+        : "=a"(val)
+        : "a"(68), "b"(26), "c"(base), "d"(offset), "S"(size));
     return val;
 }
 
 /*========== Function 68, subfunction 27 - load file ===================*/
 
-static inline 
-ksys_ufile_t _ksys_load_file(const char *path)
+KOSAPI ksys_ufile_t _ksys_load_file(const char* path)
 {
     ksys_ufile_t uf;
     asm_inline(
         "int $0x40"
-        :"=a"(uf.data), "=d"(uf.size)
-        :"a"(68), "b"(27),"c"(path)
-        :"memory"
-    );
+        : "=a"(uf.data), "=d"(uf.size)
+        : "a"(68), "b"(27), "c"(path)
+        : "memory");
     return uf;
 }
 
 /*==== Function 68, subfunction 28 - load file, specifying the encoding ===*/
 
-static inline 
-ksys_ufile_t _ksys_load_file_enc(const char *path, unsigned file_encoding)
+KOSAPI ksys_ufile_t _ksys_load_file_enc(const char* path, unsigned file_encoding)
 {
     ksys_ufile_t uf;
     asm_inline(
         "int $0x40"
-        :"=a"(uf.data), "=d"(uf.size)
-        :"a"(68), "b"(28),"c"(path), "d"(file_encoding)
-        :"memory"
-    );
+        : "=a"(uf.data), "=d"(uf.size)
+        : "a"(68), "b"(28), "c"(path), "d"(file_encoding)
+        : "memory");
     return uf;
 }
 
 /*==== Function 70 - work with file system with long names support. ====*/
 
-static inline
-int _ksys_work_files(const ksys70_t *k)
+KOSAPI ksys70_status_t _ksys70(const ksys70_t* k)
 {
-    int status;
+    ksys70_status_t status;
     asm_inline(
         "int $0x40"
-        :"=a"(status)
-        :"a"(70), "b"(k)
-        :"memory"
-    );
+        : "=a"(status.status), "=b"(status.rw_bytes)
+        : "a"(70), "b"(k)
+        : "memory");
     return status;
 }
 
 /*====== Function 70, subfunction 0 - read file with long names support. ======*/
 
-static inline
-int _ksys_file_read_file(const char *name, unsigned long long offset, unsigned size, void *buf, unsigned *bytes_read)
+KOSAPI ksys70_status_t _ksys_file_read(const char* name, uint64_t offset, uint32_t size, void* buf)
 {
     ksys70_t k;
     k.p00 = 0;
@@ -1318,35 +1205,27 @@ int _ksys_file_read_file(const char *name, unsigned long long offset, unsigned s
     k.buf16 = buf;
     k.p20 = 0;
     k.p21 = name;
-    int status;
-    asm_inline(
-        "int $0x40"
-        :"=a"(status), "=b"(*bytes_read)
-        :"a"(70), "b"(&k)
-        :"memory"
-    );
-    return status;
+    return _ksys70(&k);
 }
 
 /*===================== Function 70, subfunction 2 =====================*/
 /*============ Create/rewrite file with long names support. ============*/
 
-static inline 
-int _ksys_file_create(const char* name){
+KOSAPI int _ksys_file_create(const char* name)
+{
     ksys70_t k;
-    k.p00   = 2;
+    k.p00 = 2;
     k.p04dw = 0;
     k.p08dw = 0;
-    k.p12   = 0;
-    k.p21   = name;
-    return _ksys_work_files(&k);
+    k.p12 = 0;
+    k.p21 = name;
+    return _ksys70(&k).status;
 }
 
 /*===================== Function 70, subfunction 3 =====================*/
 /*=========== Write to existing file with long names support. ==========*/
 
-static inline
-int _ksys_file_write_file(const char *name, unsigned long long offset, unsigned size, const void *buf, unsigned *bytes_written)
+KOSAPI ksys70_status_t _ksys_file_write(const char* name, uint64_t offset, uint32_t size, const void* buf)
 {
     ksys70_t k;
     k.p00 = 3;
@@ -1355,129 +1234,130 @@ int _ksys_file_write_file(const char *name, unsigned long long offset, unsigned 
     k.cbuf16 = buf;
     k.p20 = 0;
     k.p21 = name;
-    int status;
-    asm_inline(
-        "int $0x40"
-        :"=a"(status), "=b"(*bytes_written)
-        :"a"(70), "b"(&k)
-        :"memory"
-    );
-    return status;
+    return _ksys70(&k);
 }
 
 /*========== Function 70, subfunction 5 - get information on file/folder. =====*/
 
-static inline
-int _ksys_file_get_info(const char *name, ksys_bdfe_t *bdfe)
+KOSAPI int _ksys_file_info(const char* name, ksys_bdfe_t* bdfe)
 {
     ksys70_t k;
-    k.p00   = 5;
+    k.p00 = 5;
     k.p04dw = 0;
     k.p08dw = 0;
-    k.p12   = 0;
-    k.bdfe  = bdfe;
-    k.p20   = 0;
-    k.p21   = name;
-    return _ksys_work_files(&k);
+    k.p12 = 0;
+    k.bdfe = bdfe;
+    k.p20 = 0;
+    k.p21 = name;
+    return _ksys70(&k).status;
 }
+
+#define _ksys_dir_info _ksys_file_info
 
 /*=========== Function 70, subfunction 7 - start application. ===========*/
 
-static inline
-int _ksys_exec(char *app_name, char *args)
+KOSAPI int _ksys_exec(const char* app_name, char* args)
 {
     ksys70_t file_opt;
     file_opt.p00 = 7;
     file_opt.p04dw = 0;
-    file_opt.p08dw = (unsigned)args;
+    file_opt.p08dw = (uint32_t)args;
 
     file_opt.p12 = 0;
     file_opt.p16 = 0;
     file_opt.p20 = 0;
 
     file_opt.p21 = app_name;
-    return _ksys_work_files(&file_opt);
+    return _ksys70(&file_opt).status;
 }
 
 /*========== Function 70, subfunction 8 - delete file/folder. ==========*/
 
-static inline
-int _ksys_file_delete(const char *name)
+KOSAPI int _ksys_file_delete(const char* name)
 {
     ksys70_t k;
     k.p00 = 8;
     k.p20 = 0;
     k.p21 = name;
-    return _ksys_work_files(&k);
+    return _ksys70(&k).status;
 }
 
 /*============= Function 70, subfunction 9 - create folder. ============*/
 
-static inline
-int _ksys_mkdir(const char *path)
+KOSAPI int _ksys_mkdir(const char* path)
 {
     ksys70_t dir_opt;
     dir_opt.p00 = 9;
     dir_opt.p21 = path;
-    return _ksys_work_files(&dir_opt);
+    return _ksys70(&dir_opt).status;
 }
 
 /*============= Function 70, subfunction 10 - rename/move. =============*/
 
-static inline
-int _ksys_file_rename(const char *name, const char *new_name)
+KOSAPI int _ksys_file_rename(const char* name, const char* new_name)
 {
     ksys70_t k;
     k.p00 = 10;
     k.new_name = new_name;
     k.p20 = 0;
     k.p21 = name;
-    return _ksys_work_files(&k);
+    return _ksys70(&k).status;
 }
+
+#define _ksys_dir_rename _ksys_file_rename
 
 /*============= Function 77 - implements the POSIX subsystem. =============*/
 
-static inline
-int _ksys_posix_read(int pipefd, void* buff, int n)
+KOSAPI int _ksys_posix_read(int pipefd, void* buff, int n)
 {
     int count;
     asm_inline(
         "int $0x40"
-        :"=a"(count)
-        :"a"(77), "b"(10),"c"(pipefd), "d"(buff), "S"(n)
-        :"memory"
-    );
+        : "=a"(count)
+        : "a"(77), "b"(10), "c"(pipefd), "d"(buff), "S"(n)
+        : "memory");
     return count;
 }
 
-static inline
-int _ksys_posix_write(int pipefd, void* buff, int n)
+KOSAPI int _ksys_posix_write(int pipefd, void* buff, int n)
 {
     int count;
     asm_inline(
         "int $0x40"
-        :"=a"(count)
-        :"a"(77), "b"(11),"c"(pipefd), "d"(buff), "S"(n)
-        :"memory"
-    );
+        : "=a"(count)
+        : "a"(77), "b"(11), "c"(pipefd), "d"(buff), "S"(n)
+        : "memory");
     return count;
 }
 
-static inline
-int _ksys_posix_pipe2(int pipefd[2], int flags)
+KOSAPI int _ksys_posix_pipe2(int pipefd[2], int flags)
 {
     int err;
     asm_inline(
         "int $0x40"
-        :"=a"(err)
-        :"a"(77), "b"(13),"c"(pipefd), "d"(flags)
-        :"memory"
-    );
+        : "=a"(err)
+        : "a"(77), "b"(13), "c"(pipefd), "d"(flags)
+        : "memory");
     return err;
 }
 
 /* ######### Old names of functions and structures. Do not use again! ##########*/
 
-#define _ksys_get_event    _ksys_wait_event
+#define _ksys_get_event     _ksys_wait_event
+#define _ksys_file_get_info _ksys_file_info
+
+static inline int _ksys_file_read_file(const char* name, unsigned long long offset, unsigned size, void* buff, unsigned* bytes_read)
+{
+    ksys70_status_t res = _ksys_file_read(name, offset, size, buff);
+    *bytes_read = res.rw_bytes;
+    return res.status;
+}
+
+static inline int _ksys_file_write_file(const char* name, unsigned long long offset, unsigned size, const void* buff, unsigned* bytes_write)
+{
+    ksys70_status_t res = _ksys_file_write(name, offset, size, buff);
+    *bytes_write = res.rw_bytes;
+    return res.status;
+}
 
 #endif // _KSYS_H_

@@ -1,7 +1,7 @@
-#include "stddef.h"
+#include <libgen.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <libgen.h>
 #include <string.h>
 #include <sys/ksys.h>
 
@@ -12,38 +12,40 @@ enum ARGV_FILE {
     OUT = 2
 };
 
-void show_help(void){
+void show_help(void)
+{
     puts("Usage: defgen [lib.obj] [lib.def]");
 }
 
-int main(int argc, char** argv){
+int main(int argc, char** argv)
+{
 
-    if(argc!=ARGC_VALID){
+    if (argc != ARGC_VALID) {
         show_help();
         return 0;
     }
 
-    ksys_dll_t *obj_dll = _ksys_dlopen(argv[IN]);
+    ksys_dll_t* obj_dll = _ksys_dlopen(argv[IN]);
     FILE* outfile = fopen(argv[OUT], "w");
 
-    if(!obj_dll){
+    if (!obj_dll) {
         printf("File '%s' not found!\n", argv[IN]);
         return 1;
     }
 
-    if(!outfile){
+    if (!outfile) {
         printf("Unable to create file:'%s'!\n", argv[OUT]);
         return 2;
     }
 
     fprintf(outfile, "LIBRARY %s\n\n", basename(argv[IN]));
     fputs("EXPORTS\n", outfile);
-    
-    int i=0;
-    while(obj_dll[i].func_name){
-        fprintf(outfile,"%s\n", obj_dll[i].func_name);
+
+    int i = 0;
+    while (obj_dll[i].func_name) {
+        fprintf(outfile, "%s\n", obj_dll[i].func_name);
         i++;
     }
-    fclose(outfile);   
+    fclose(outfile);
     return 0;
 }

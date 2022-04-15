@@ -1,15 +1,17 @@
-#include <sys/ksys.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ksys.h>
 #include <time.h>
 
-int comp(void *a, void *b) {
+int comp(void* a, void* b)
+{
     return *(int*)a - *(int*)b;
 }
 
-int main(){
+int main()
+{
     puts("Start testing.");
     assert(NULL == ((void*)0));
     assert(RAND_MAX == 65535);
@@ -45,11 +47,11 @@ int main(){
     assert(output3.quot == 6);
     assert(output3.rem == 3);
 
-    char *st2 = malloc(sizeof(char)*2);
+    char* st2 = malloc(sizeof(char) * 2);
     assert(st2 != NULL);
     st2[0] = 'H';
     st2[1] = 'i';
-    st2 = realloc(st2, sizeof(char)*3);
+    st2 = realloc(st2, sizeof(char) * 3);
     st2[2] = '!';
     assert(!strcmp(st2, "Hi!"));
     free(st2);
@@ -61,8 +63,8 @@ int main(){
     assert(!strcmp(st2, "Hi"));
     free(st2);
 
-    char *start = "100.00 Rub";
-    char *end;
+    char* start = "100.00 Rub";
+    char* end;
     assert(strtol(start, &end, 10) == 100L);
     assert(!strcmp(end, ".00 Rub"));
 
@@ -70,17 +72,17 @@ int main(){
     assert(strtod(start, &end) == 100.0);
     assert(!strcmp(end, " Rub"));
 
-    char *st3 = "21.3e3Hello World!";
+    char* st3 = "21.3e3Hello World!";
     assert(atof(st3) == 21300.0);
 
-    int nums[10] = {5, 3, 9, 1, 8, 4, 2, 0, 7, 6};
-    qsort(nums, 10, sizeof(int), (int(*) (const void *, const void *))comp);
-    for (int i = 0;  i < 10; i++) {
+    int nums[10] = { 5, 3, 9, 1, 8, 4, 2, 0, 7, 6 };
+    qsort(nums, 10, sizeof(int), (int (*)(const void*, const void*))comp);
+    for (int i = 0; i < 10; i++) {
         assert(nums[i] == i);
     }
-    
+
     time_t libc_time = time(NULL);
-    struct tm *libc_tm = localtime(&libc_time);
+    struct tm* libc_tm = localtime(&libc_time);
     printf(asctime(libc_tm));
 
     puts("End testing.");
