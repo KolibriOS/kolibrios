@@ -8,7 +8,7 @@
 #include "SDL_events_c.h"
 #include "SDL_menuetvideo.h"
 
-extern void MenuetOS_SDL_RepaintWnd(void);
+extern void kos_SDL_RepaintWnd(void);
 
 void MenuetOS_InitOSKeymap(_THIS)
 {
@@ -170,7 +170,7 @@ void MenuetOS_PumpEvents(_THIS)
    case 0:
     return;
    case 1:
-    MenuetOS_SDL_RepaintWnd();
+	kos_SDL_RepaintWnd();
     break;
    case 2:
     key.scancode = __menuet__getkey();
@@ -218,7 +218,7 @@ void MenuetOS_PumpEvents(_THIS)
       if (dx||dy)
       {
        SDL_PrivateMouseMotion(0,1,dx,dy);
-       KolibriOS_CheckMouseMode(this);
+       kos_CheckMouseMode(this);
       }
      }
      else
