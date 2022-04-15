@@ -1,5 +1,6 @@
 #include <menuet/os.h>
 #include <kos32sys.h>
+#include <sys/ksys.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "SDL.h"
@@ -200,7 +201,10 @@ void MenuetOS_PumpEvents(_THIS)
     SDL_PrivateKeyboard(code,&key);
     break;
    case 3:
-    if(get_os_button()==1) exit(0);
+    if (_ksys_get_button()==1) {
+        SDL_CloseAudio();
+        exit(0);
+    }
     break;
    case 6: {
     int __tmp,mx,my;

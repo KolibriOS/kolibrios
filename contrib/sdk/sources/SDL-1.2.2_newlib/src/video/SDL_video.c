@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ksys.h>
 
 #include "SDL.h"
 #include "SDL_error.h"
@@ -112,32 +113,6 @@ static SDL_GrabMode SDL_WM_GrabInputOff(void);
 #ifdef HAVE_OPENGL
 static int lock_count = 0;
 #endif
-
-
-typedef union{
-    unsigned val;
-    struct{
-        short  x;
-        short  y;
-    };
-}ksys_pos_t;
-
-static inline
-ksys_pos_t _ksys_screen_size()
-{
-	ksys_pos_t size;
-    ksys_pos_t size_tmp;
-    __asm__ __volatile__(
-        "int $0x40"
-        :"=a"(size_tmp)
-        :"a"(14)
-        :"memory"
-    );
-    size.x = size_tmp.y;
-    size.y = size_tmp.x; 
-    return size;
-}
-
 
 /*
  * Initialize the video and event subsystems -- determine native pixel format
