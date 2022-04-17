@@ -7,7 +7,7 @@
   dd     I_END       ; а §¬Ґа Їа®Ја ¬¬л
   dd     MEM         ; Є®«ЁзҐбвў® Ї ¬пвЁ
   dd     STACKTOP
-  dd     0
+  dd     PATH
   dd     0
 include '..\..\macros.inc'
 include '..\..\KOSfuncs.inc'
@@ -19,10 +19,11 @@ START:
        mcall SF_SYS_MISC, SSF_LOAD_DRIVER_PE, path_drv, 0
        mov dword[drv_struct.handl],eax
        test eax,eax ;проверка загрузки
-       jnz  main
-       jmp error_drv
+       jz  error_drv
 main:
        mcall SF_SYS_MISC, SSF_CONTROL_DRIVER, drv_struct
+       cmp   byte[PATH], 0
+       jz    still
        call add_file
 still:           ;void main()
        call draw
@@ -46,9 +47,11 @@ button:
        jnz still
        xor byte[flag_micro_info],1
        jmp still
+
+align 4
 draw:
        mcall SF_REDRAW, SSF_BEGIN_DRAW
-       mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sc,sizeof.system_colors
+       mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
 
        mov eax,SF_CREATE_WINDOW
        mov ebx,0x00ff013f
@@ -60,8 +63,10 @@ draw:
 
        mcall SF_SYS_MISC, SSF_CONTROL_DRIVER, drv_struct
 
+       cmp       byte[PATH], 0
+       jz        @f
        dec       dword[update_flag]
-       jnz       @F
+       jnz       @f
        call      add_new_item
        mov       dword[update_flag], 30
 @@:
@@ -163,19 +168,19 @@ draw:
        mcall
 ;;;;;;input data driver;;;;;;;;;
        mov eax,0x004a0020
-       mov ebx,drv_data.Tctl  ;вывод данных от драйвера
+       mov ebx, drv_data.Tctl  ;вывод данных от драйвера
        call write_data
 
        add eax,0x15
-       mov ebx,drv_data.Tmax
+       mov ebx, drv_data.Tmax
        call write_data
 
        add eax,0x2a
-       mov ebx,drv_data.Tcrit
+       mov ebx, drv_data.Tcrit
        call write_data
 
        add eax,0x19
-       mov ebx,drv_data.Tccd1
+       mov ebx, drv_data.Tccd1
        call write_data
 
        add eax,0x15
@@ -207,11 +212,11 @@ draw:
        call write_data
 
        mov eax,0x00E5005f
-       mov ebx,drv_data.Tdie
+       mov ebx, drv_data.Tdie
        call write_data
 
        mov eax,0x007a004a
-       mov ebx,drv_data.Tcrit_hyst
+       mov ebx, drv_data.Tcrit_hyst
        call write_data
        jmp @f
 .micro:
@@ -240,7 +245,7 @@ draw:
        mcall
 
        mov eax,0x004a0020
-       mov ebx,drv_data.Tctl
+       mov ebx, drv_data.Tctl
        call write_data
 @@:
        mcall SF_REDRAW, SSF_END_DRAW
@@ -251,6 +256,7 @@ draw:
 ;; ebx=pointer on value
 ;; ecx register don`t save
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+align 4
 write_data:
        push eax
        push ebx
@@ -345,10 +351,11 @@ error_drv:
 exit:
        mcall SF_TERMINATE_PROCESS
 
+align 4
 add_file:
         mcall SF_FILE, graph_temp
         mov     dword[graph_temp], 3
-        mov     dword[graph_temp.size], 11
+        mov     dword[graph_temp.size], 10
         mov     dword[graph_temp.str], graph_start.new_data
         mov     eax,[drv_data.Tmax]
         mov     dword[graph_temp.index], 9
@@ -356,8 +363,10 @@ add_file:
         call    int_to_str
         mcall SF_FILE, graph_temp
 
-        mov     dword[graph_temp.index], 20
+        mov     dword[graph_temp.index], 19
+        mov     dword[graph_temp.size], 20
         ret
+align 4
 index_item:
         dd    1
 add_new_item:
@@ -365,20 +374,21 @@ add_new_item:
         imul    eax,1000
         mov     ebx, graph_start.new_data
         call    int_to_str
-        mcall SF_FILE, graph_temp
-        add     dword[graph_temp.index], 11
+        mcall SF_FILE, graph_koord_x2 ;save x2=index_item
         inc     dword[index_item]
+
         mov     eax,[drv_data.Tctl]
-        mov     ebx, graph_start.new_data
+        mov     ebx, graph_start.new_data_2
         call    int_to_str
         mcall SF_FILE, graph_temp
-        add     dword[graph_temp.index], 11
+        add     dword[graph_temp.index], 20
         ret
 
 ;eax = int   value / 1000
 ;ebx = *str
 ; из за конкретики данного прилажения(а именно измерение температуры проца), сомниваюсь
 ; что потребуется больше 3 цифр на значение(ххх.ххх) так что будет костыль
+align 4
 int_to_str:
         push    ecx edx esi
         mov     ecx, '0000'
@@ -392,8 +402,8 @@ int_to_str:
         mov     esi, 10
         push    ebx
         add     ebx, 3
-.loop:
         and     eax, 0x3ff ; 1023
+.loop:
         test    eax, eax
         jz      @f
         xor     edx, edx
@@ -406,8 +416,6 @@ int_to_str:
         pop     ebx
         add     ebx, 8;4
         pop     edx
-        ;mov     byte[ebx],'.'
-        ;add     ebx, 4
         test    edx, edx
         jz      @f
         mov     eax, edx
@@ -464,6 +472,7 @@ drv_data:
 .Tcrit_hyst      dd -1
 .sizeof = $ - drv_data ;
 
+align 4
 drv_struct:
 .handl           dd 0
                  dd 0
@@ -471,7 +480,7 @@ drv_struct:
                  dd 0
                  dd drv_data
                  dd drv_data.sizeof;52 ; 13*4
-
+align 4
 run_notify:
                  dd 7
                  dd 0
@@ -480,17 +489,33 @@ run_notify:
                  dd 0
                  db '/sys/@notify',0 ,0,0,0 ;выравнивание
 
+align 4
 update_flag:    dd 30 ;1 minut
-graph_start:    db '0 1000 0 '  ; 9 byte
-.new_data:      db '0000.0000  ' ;  10-20 byte
+graph_start:    db '0 0000 0 '  ; 9 byte
+.new_data:      db '0000.0000 ' ;  10-19 byte  10 byte
+.new_data_2:    db '0000.0000 ' ;  20-29 byte  10 byte
+
+align 4
 graph_temp:
                 dd 2
 .index:         dd 0
                 dd 0
-.size:          dd 20 ;
+.size:          dd 19 ;size 4 first value for Graph
 .str:           dd graph_start ; заменить
-                db '/tmp0/1/graph_temp.txt',0,0 ; выравнивание
-
+                db 0
+                dd PATH
+align 4
+graph_koord_x2:
+                dd 3
+                dd 2 ;index for rewrite 2 value
+                dd 0
+                dd 4
+                dd graph_start.new_data ; заменить
+                db 0
+                dd PATH
+align 4
+PATH:
+   rb 512 ; buffer for command line. string for save log.
 sc      system_colors
 I_END:
    rd 256
