@@ -131,11 +131,14 @@ __asm__(
     ".include \"math/floor.s\"\n\t"
     ".include \"math/fmod.s\"\n\t"
     ".include \"math/log.s\"\n\t"
+    ".include \"math/log2.s\"\n\t"
+    ".include \"math/log10.s\"\n\t"
     ".include \"math/modf.s\"\n\t"
     ".include \"math/modfl.s\"\n\t"
     ".include \"math/pow.s\"\n\t"
     ".include \"math/pow2.s\"\n\t"
     ".include \"math/pow10.s\"\n\t"
+    ".include \"math/round.s\"\n\t"
     ".include \"math/sqrt.s\"\n\t"
     ".include \"math/sin.s\"\n\t"
     ".include \"math/tan.s\"\n\t");
@@ -258,7 +261,6 @@ ksys_dll_t EXPORTS[] = {
     { "acosh", &acosh },
     { "asinh", &asinh },
     { "atanh", &atanh },
-    { "acosh", &acosh },
     { "frexp", &frexp },
     { "hypot", &hypot },
     { "ldexp", &ldexp },
@@ -279,6 +281,9 @@ ksys_dll_t EXPORTS[] = {
     { "floor", &floor },
     { "fmod", &fmod },
     { "log", &log },
+    { "log2", &log2 },
+    { "log10", &log10 },
+    { "round", &round },
     { "modf", &modf },
     { "modfl", &modfl },
     { "pow", &pow },
