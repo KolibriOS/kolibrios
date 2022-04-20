@@ -136,6 +136,9 @@ fabs
 floor
 fmod
 log
+log2
+log10
+round
 modf
 modfl
 pow
