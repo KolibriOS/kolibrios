@@ -139,9 +139,7 @@ __asm__(
     ".include \"math/pow2.s\"\n\t"
     ".include \"math/pow10.s\"\n\t"
     ".include \"math/round.s\"\n\t"
-    ".include \"math/sqrt.s\"\n\t"
-    ".include \"math/sin.s\"\n\t"
-    ".include \"math/tan.s\"\n\t");
+    ".include \"math/sin.s\"\n\t");
 
 __asm__(
     ".include \"string/memmove.s\"\n\t"

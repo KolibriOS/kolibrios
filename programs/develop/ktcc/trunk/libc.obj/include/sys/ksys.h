@@ -783,7 +783,7 @@ enum KSYS_CURSOR_SRC {
 
 KOSAPI void* _ksys_load_cursor(void* path, uint32_t flags) // subfunction 4 - load cursor
 {
-    uint32_t val;
+    void* val;
     asm_inline(
         "int $0x40"
         : "=a"(val)
@@ -794,7 +794,7 @@ KOSAPI void* _ksys_load_cursor(void* path, uint32_t flags) // subfunction 4 - lo
 
 KOSAPI void* _ksys_set_cursor(void* cursor) // subfunction 5 - set cursor
 {
-    uint32_t old;
+    void* old;
     asm_inline(
         "int $0x40"
         : "=a"(old)
