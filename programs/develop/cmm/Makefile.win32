@@ -15,3 +15,6 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -f $(OBJS) $(TARGET)
+
+install: $(TARGET)
+	cp c--.exe ../../cmm/c--/c--.exe

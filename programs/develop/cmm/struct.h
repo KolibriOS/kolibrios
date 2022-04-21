@@ -414,7 +414,7 @@ struct paraminfo
 
 struct MEOSheader
 {
-	unsigned char sign[25];
+	unsigned char sign[8];
 	unsigned long vers;
 	unsigned long start;
 	unsigned long size;
