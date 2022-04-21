@@ -13,8 +13,15 @@ typedef struct {
 double textwidth(const char* s, int len);
 double textheight(const char* s, int len);
 
-typedef double (*function_t)(double);
 int isalpha(char c);
 double convert(const char* s, int* len);
+
+static inline
+int roundi(double a) {
+	return round(a);
+}
+
+#define EQUALITY_VAL 0.000001
+int isequal(double a, double b);
 
 #endif /* FUNC_H */

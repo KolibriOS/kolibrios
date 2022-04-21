@@ -1,4 +1,5 @@
 #include "func.h"
+#include <math.h> // For fabs()
 
 char debuf[50] = "";
 
@@ -60,4 +61,8 @@ double convert(const char* s, int* len) {
 	res += tail/div;
 	if (len) *len=i;
 	return sign*res;
+}
+
+int isequal(double a, double b) {
+	return fabs(a-b) < EQUALITY_VAL;
 }

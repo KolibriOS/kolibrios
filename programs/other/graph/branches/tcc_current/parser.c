@@ -1,6 +1,8 @@
 #include <math.h>
 #include <string.h>
 
+#include <sys/ksys.h>
+
 #include "func.h"
 #include "parser.h"
 
@@ -15,7 +17,7 @@
 
 // error codes
 #define ERR_BADFUNCTION -1
-#define ERR_BADNUMER -2
+#define ERR_BADNUMBER -2
 #define ERR_GENERAL -3
 #define ERR_NOBRACKET -4
 #define ERR_BADVARIABLE -5
@@ -84,11 +86,11 @@ double cosec(double d) {
 }
 
 double log2_p(double d) {
-	return log(d) / log(2);
+	return log2(d);
 }
 
 double log10_p(double d) {
-	return log(d) / log(10);
+	return log10(d);
 }
 
 double log3(double d) {
@@ -167,6 +169,23 @@ int iswhite(char c) {
 }
 
 void serror(int code) {
+	/*switch (code) {
+		case ERR_BADFUNCTION:
+			_ksys_debug_puts("ERR_BADFUNCTION\n");
+			break;
+		case ERR_BADNUMBER:
+			_ksys_debug_puts("ERR_BADNUMBER\n");
+			break;
+		case ERR_NOBRACKET:
+			_ksys_debug_puts("ERR_NOBRACKET\n");
+			break;
+		case ERR_BADVARIABLE:
+			_ksys_debug_puts("ERR_BADVARIABLE\n");
+			break;
+		case ERR_OVERFLOW:
+			_ksys_debug_puts("ERR_OVERFLOW\n");
+			break;
+	}*/
 	//TODO (vitalkrilov): for what?: "::code = code;"
 	// longjmp(j, code);
 }
@@ -339,7 +358,7 @@ void primitive(double* hold) {
 	    	//if (sscanf(token, "%lf", hold) != 1)
 				*hold = convert(token, nullptr);
 			if (*hold == ERROR)
-				serror( ERR_BADNUMER);
+				serror( ERR_BADNUMBER);
 			get_token();
 			return;
 		case FUNCTION:
