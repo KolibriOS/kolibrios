@@ -76,6 +76,7 @@ void get_file_dir_loc(char *filepath, char *dir_path);
 #include "cmd/cmd_ver.c"
 #include "cmd/cmd_pwd.c"
 #include "cmd/cmd_ls.c"
+#include "cmd/cmd_lsmod.c"
 #include "cmd/cmd_ps.c"
 #include "cmd/cmd_kill.c"
 #include "cmd/cmd_pkill.c"

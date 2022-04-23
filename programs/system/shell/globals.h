@@ -54,6 +54,7 @@ int cmd_help(char cmd[]);
 int cmd_kill(char process[]);
 int cmd_pkill(char process_name[]);
 int cmd_ls(char dir[]);
+int cmd_lsmod(char param[]);
 int cmd_mkdir(char dir[]);
 int cmd_more(char file[]);
 int cmd_ps(char arg[]);
