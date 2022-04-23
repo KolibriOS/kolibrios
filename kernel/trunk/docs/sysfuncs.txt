@@ -3666,6 +3666,32 @@ Remarks:
   ebx - SSF_MEM_ALLOC_RING (29)  
 
 ======================================================================
+============ Function 68, subfunction 31 - get data driver. ==========
+======================================================================
+Параметры:
+  * eax = 68 - function number
+  * ebx = 31 - subfunction number
+  * ecx = function (1 - get first pointers on list,
+                    2 - get item list)
+  * edx = if ecx=2 pointer on structure.
+  * edi = if ecx=2 pointer on memory for structure.
+Возвращаемое значение:
+  * If ecx = 1, then ebx = fd 
+                     ecx = bk
+  * If ecx = 2, then eax = 0  ok
+                     eax = -1 error
+Примечания:
+  *  Returned structure
+   data_service:
+     .name:         rb 16
+     .fd:           rd 1
+     .bk:           rd 1
+     .base:         rd 1
+     .entry:        rd 1
+     .srv_proc:     rd 1
+
+
+======================================================================
 ====================== Function 69 - debugging. ======================
 ======================================================================
 A process can load other process as debugged by set of corresponding
