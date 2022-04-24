@@ -353,6 +353,14 @@ static void gen_static_call(int v)
 static void gcall_or_jmp(int is_jmp)
 {
     int r;
+#ifdef TCC_TARGET_KX
+	if (vtop->type.t & VT_IMPORT) {
+		o(0x15ff);
+		greloc(cur_text_section, vtop->sym, ind, R_386_32);
+		gen_le32(0);
+		return;
+	}
+#endif
     if ((vtop->r & (VT_VALMASK | VT_LVAL)) == VT_CONST) {
         /* constant case */
         if (vtop->r & VT_SYM) {

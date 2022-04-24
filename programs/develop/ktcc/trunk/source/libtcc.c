@@ -660,7 +660,11 @@ ST_FUNC void put_extern_sym2(Sym *sym, Section *section,
     else
         sh_num = section->sh_num;
 
-    if ((sym->type.t & VT_BTYPE) == VT_FUNC) {
+    if (((sym->type.t & VT_BTYPE) == VT_FUNC
+#ifdef TCC_TARGET_KX
+		) && ((vtop->type.t & VT_IMPORT) == 0
+#endif
+		)) {
         sym_type = STT_FUNC;
     } else if ((sym->type.t & VT_BTYPE) == VT_VOID) {
         sym_type = STT_NOTYPE;
@@ -859,11 +863,14 @@ PUB_FUNC void tcc_error_noabort(const char *fmt, ...)
 PUB_FUNC void tcc_error(const char *fmt, ...)
 {
     TCCState *s1 = tcc_state;
+	// { Edit by Coldy
+	if (fmt) {
     va_list ap;
 
     va_start(ap, fmt);
     error1(s1, 0, fmt, ap);
     va_end(ap);
+	} // }
     /* better than nothing: in some cases, we accept to handle errors */
     if (s1->error_set_jmp_enabled) {
         longjmp(s1->error_jmp_buf, 1);

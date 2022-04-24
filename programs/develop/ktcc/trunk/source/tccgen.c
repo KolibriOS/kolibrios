@@ -6316,7 +6316,7 @@ static int decl0(int l, int is_for_loop_init)
 
             if (ad.a.weak)
                 type.t |= VT_WEAK;
-#ifdef TCC_TARGET_PE
+#if defined(TCC_TARGET_PE) || defined(TCC_TARGET_KX)
             if (ad.a.func_import)
                 type.t |= VT_IMPORT;
             if (ad.a.func_export)

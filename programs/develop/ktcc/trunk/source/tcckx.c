@@ -1,7 +1,7 @@
 /*
  *  TCCKX.C - KolibriOS/KX file output for the TinyC Compiler
  *
- *  Copyright (c) 2021 Coldy
+ *  Copyright (c) 2021-2022 Coldy
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,6 +17,8 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+ 
+#define TCC_KX_VERSION_INFO		"0.4.6"
 
 typedef struct {
 	char magic[4];
@@ -67,7 +69,7 @@ typedef struct {
 
 			 if (dynsym_index == 0) {
 				 //if (strcmp(name, __kx_import_table_sym) != 0) {
-					 tcc_error/*_noabort*/("undefined symbol '%s'", name);
+					 tcc_error/*_noabort*/("(kx) undefined symbol '%s'", name);
 			 }
 
 			 // KOS support 32 bit only
@@ -314,7 +316,39 @@ typedef struct {
 		 tcc_free(imp);
 	}
  }
- 
+
+ // This routine is called from build_reloc to check the code for incorrect import calls
+void kx_check_import_error(int reloc_type, const char* code_base, Elf32_Addr offset, const char* symbol_name) {
+	 
+	unsigned char fError = 0;
+	char* p = (char*)(offset + code_base);
+
+	// Hook for "[extern] rtype foo([?])" declaration
+	if (((unsigned char)*((char*)(p-1))) == 0xe8){
+		// call		m32
+		tcc_error_noabort("import symbol '%s' has direct call (not supported),\n\t    use __attribute__((dllimport)) prefix", symbol_name);
+		fError = 1;
+	}
+
+	//	Hook for MSVC "__declspec(dllimport) rtype(*foo)([?])"
+	/*if ((((unsigned char)*(p + 4)) == 0xff) &&
+		(((unsigned char)*(p + 5)) == 0x10)) {*/
+	if (*((uint16_t*)(p + 4)) == 0x10ff) {
+		/*
+		   (mov		eax [m32])
+			call	dword[eax]
+		*/
+		tcc_error_noabort("import symbol '%s' has unsupported call type", symbol_name);
+		fError = 1;
+	}
+	if (reloc_type == R_386_PC32) {
+		tcc_error_noabort("incorrect relocation type for import symbol '%s'", symbol_name);
+		fError = 1;
+	}
+	if (fError)
+		tcc_abort();
+}
+  
 #if /*!*/defined(_DEBUG)// && !defined(_WIN32)
  #define	kx_debug_output		printf
 #else

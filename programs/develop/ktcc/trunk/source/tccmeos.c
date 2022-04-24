@@ -2,7 +2,7 @@
  *  TCCMEOS.C - KolibriOS/MenuetOS file output for the TinyC Compiler
  *
  *  Copyright (c) 2006 Andrey Khalyavin
- *  Copyright (c) 2021 Coldy (KX extension)
+ *  Copyright (c) 2021-2022 Coldy (KX extension)
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,6 +58,7 @@ typedef struct {
 #ifdef TCC_TARGET_KX
 	void kx_init(me_info* me);
 	void kx_build_imports(me_info* me);
+  	void kx_check_import_error(int reloc_type, const char* code_base, Elf32_Addr	offset, const char* symbol_name);
 	long kx_get_header_length(me_info* me);
 	void kx_write_header(me_info* me, FILE* f);
 	void kx_write_imports(me_info* me, FILE* f);
@@ -112,8 +113,11 @@ void build_reloc(me_info* me)
 			rel=rel_;
 			int type = ELF32_R_TYPE(rel->r_info);
 			rel_=rel+1;
-			if (type != R_386_PC32 && type != R_386_32)
+			if (type != R_386_PC32 && type != R_386_32) {
+				// gcc (and friends) object files is used?
+				tcc_error("unsupported relocation type %d", type);
 				continue;
+			}
 			int sym = ELF32_R_SYM(rel->r_info);
 			if (sym>symtab_section->data_offset/sizeof(Elf32_Sym))
 				continue;
@@ -121,34 +125,42 @@ void build_reloc(me_info* me)
 			int sect=esym->st_shndx;
       int sh_addr;
 			ss=findsection(me,sect);
+      const char* sym_name = strtab_section->data + esym->st_name;
+			int sym_index;
+			Elf32_Sym* dyn_sym;
+			// Import has more less priority in relation to local symbols
 			if (ss==0)
 			{
-        const char *sym_name = strtab_section->data + esym->st_name;
 #ifdef TCC_TARGET_KX
-				int sym_index = find_elf_sym(me->s1->dynsymtab_section, sym_name);
-				Elf32_Sym* dyn_sym;
+				 sym_index = find_elf_sym(me->s1->dynsymtab_section, sym_name);
 				if (sym_index == 0) {
 #endif
-          tcc_error_noabort("undefined symbol '%s'", sym_name);
-				continue;
+          tcc_error_noabort("undefined import symbol '%s'", sym_name);
+				  continue;
 #ifdef TCC_TARGET_KX
 			}
 				dyn_sym = &((ElfW(Sym) *)me->s1->dynsymtab_section->data)[sym_index];
 				sh_addr = dyn_sym->st_value;
 				if (sh_addr == 0) {
-					tcc_error_noabort("symbol '%s' has zero value", sym_name);
+					tcc_error_noabort("import symbol '%s' has zero value", sym_name);
 					continue;
 				}
+        
+        // Stop linking if incorrect import
+				kx_check_import_error(type, s->data, rel->r_offset, sym_name);
 #endif
 			}
-			else
+			else {
+      if (esym->st_shndx == SHN_UNDEF)
+				tcc_error("unresolved external symbol '%s'", sym_name);
 				sh_addr = ss->sh_addr;
+      }
 			if (rel->r_offset>s->data_size)
 				continue;
 			if (type==R_386_PC32)
-				*(int*)(rel->r_offset+s->data)+=/*ss->*/sh_addr+esym->st_value-rel->r_offset-s->sh_addr;
+				*(int*)(rel->r_offset+s->data)+= sh_addr+esym->st_value-rel->r_offset-s->sh_addr;
 			else if (type==R_386_32)
-				*(int*)(rel->r_offset+s->data)+=/*ss->*/sh_addr+esym->st_value;
+				*(int*)(rel->r_offset+s->data)+= sh_addr+esym->st_value;
 		}
         rel=rel_;
 		s=s->next;
