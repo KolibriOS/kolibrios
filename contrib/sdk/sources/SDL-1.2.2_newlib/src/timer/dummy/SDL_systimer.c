@@ -33,7 +33,7 @@ static char rcsid =
 #include "SDL_error.h"
 #include "SDL_timer.h"
 #include "SDL_timer_c.h"
-#include "kos32sys.h"
+#include <sys/ksys.h>
 
 #if _POSIX_THREAD_SYSCALL_SOFT
 #include <pthread.h>
@@ -43,52 +43,24 @@ static char rcsid =
 #define USE_ITIMER
 #endif
 
-
-/* The first ticks value of the application */
-//static struct timeval start;
-//static unsigned startlo,starthi;
-//static unsigned clockrate;
 static unsigned starttime;
 
 void SDL_StartTicks(void)
 {
-// gettimeofday(&start, NULL);
-//  __asm__ ("int $0x40" : "=a"(clockrate) : "a"(18),"b"(5));
-//  __asm__ ("rdtsc" : "=a"(startlo),"=d"(starthi));
-	__asm__ ("int $0x40" : "=a"(starttime) : "a"(26),"b"(9));
+	starttime = _ksys_get_tick_count();
 }
 
 
 Uint32 SDL_GetTicks (void)
 {
-/* struct timeval now;
- Uint32 ticks;
- gettimeofday(&now, NULL);
- ticks=(now.tv_sec-start.tv_sec)*1000+(now.tv_usec-start.tv_usec)/1000;
- return(ticks);*/
-	/*int res;
-	__asm__ ("rdtsc\n\t"
-		"sub (_startlo),%%eax\n\t"
-		"sbb (_starthi),%%edx\n\t"
-		"push %%eax\n\t"
-		"mov %%edx,%%eax\n\t"
-		"mov $1000,%%ecx\n\t"
-		"mul %%ecx\n\t"
-		"xchg (%%esp),%%eax\n\t"
-		"mul %%ecx\n\t"
-		"add %%edx,(%%esp)\n\t"
-		"pop %%edx\n\t"
-		"divl (_clockrate)\n\t" : "=a"(res));
-	return res;*/
-	unsigned curtime;
-	__asm__ ("int $0x40" : "=a"(curtime) : "a"(26),"b"(9));
+	unsigned curtime = _ksys_get_tick_count();
 	return (curtime-starttime)*10;
 }
 
 void SDL_Delay(unsigned ms){
     unsigned start = SDL_GetTicks();
     do{
-       delay(1);
+       _ksys_delay(1);
     }while (SDL_GetTicks()-start < ms);
 }
 

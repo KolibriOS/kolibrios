@@ -199,7 +199,7 @@ int kos_ShowWMCursor(_THIS, WMcursor* cursor)
         if (!has_null_cursor) {
             unsigned* u = malloc(32*32*4);
             if (!u) return 1;
-            memset(u,0,32*32*4);
+            memset(u, 0, 32*32*4);
             null_cursor = _ksys_load_cursor(u, KSYS_CURSOR_INDIRECT);
             free(u);
             has_null_cursor = 1;
@@ -219,8 +219,9 @@ void kos_CheckMouseMode(_THIS)
     if (this->input_grab == SDL_GRAB_OFF)
         return;
     ksys_thread_t thread_info;
-    int res = _ksys_thread_info(&thread_info, -1);
-    if (res == thread_info.window_pos_info) {
+    int top = _ksys_thread_info(&thread_info, -1);
+    
+    if (top == thread_info.pos_in_window_stack) {
         int x = thread_info.winx_start + thread_info.clientx + this->hidden->win_size_x/2;
         int y = thread_info.winy_start + thread_info.clienty + this->hidden->win_size_y/2;
         _ksys_set_mouse_pos(x, y);
@@ -268,8 +269,8 @@ static SDL_VideoDevice *kos_CreateDevice(int indx)
     dev->IconifyWindow = NULL;
     dev->GrabInput = NULL;
     dev->GetWMInfo = NULL;
-    dev->InitOSKeymap = MenuetOS_InitOSKeymap;
-    dev->PumpEvents	= MenuetOS_PumpEvents;
+    dev->InitOSKeymap = kos_InitOSKeymap;
+    dev->PumpEvents	= kos_PumpEvents;
     dev->free = kos_DeleteDevice;
     dev->CreateWMCursor = kos_CreateWMCursor;
     dev->FreeWMCursor = kos_FreeWMCursor;

@@ -14,7 +14,7 @@ struct SDL_PrivateVideoData {
  unsigned char** __lines;
 };
 
-void MenuetOS_InitOSKeymap(_THIS);
-void MenuetOS_PumpEvents(_THIS);
+void kos_InitOSKeymap(_THIS);
+void kos_PumpEvents(_THIS);
 
 #endif
