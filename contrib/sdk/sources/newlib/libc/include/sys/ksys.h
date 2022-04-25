@@ -58,8 +58,8 @@ typedef union {
 typedef union {
     uint32_t val;
     struct {
-        uint16_t x;
-        uint16_t y;
+        int16_t y;
+        int16_t x;
     };
 } ksys_pos_t;
 
@@ -116,26 +116,33 @@ typedef struct {
     char name[0];
 } ksys_bdfe_t;
 
-typedef struct {
-    int cpu_usage;                //+0
-    int window_pos_info;          //+4
-    uint16_t reserved1;           //+8
-    char name[12];                //+10
-    int memstart;                 //+22
-    int memused;                  //+26
-    int pid;                      //+30
-    int winx_start;               //+34
-    int winy_start;               //+38
-    int winx_size;                //+42
-    int winy_size;                //+46
-    uint16_t slot_info;           //+50
-    uint16_t reserved2;           //+52
-    int clientx;                  //+54
-    int clienty;                  //+58
-    int clientwidth;              //+62
-    int clientheight;             //+66
-    uint8_t window_state;         //+70
-    uint8_t reserved3[1024 - 71]; //+71
+#define KSYS_THREAD_INFO_SIZE 1024
+
+typedef union {
+    struct {
+        uint32_t cpu_usage;             // CPU usage (cycles per secondgoes)
+        uint16_t pos_in_window_stack;   // position of the thread window in the window stack
+        uint16_t slot_num_window_stack; // slot number in window stack
+        uint16_t __reserved1;           // reserved
+        char name[12];                  // process/thread name
+        uint32_t memstart;              // process address in memory
+        uint32_t memused;               // used memory size - 1
+        int pid;                        // identifier (PID/TID)
+        int winx_start;                 // window x-coordinate
+        int winy_start;                 // window y-coordinate
+        int winx_size;                  // x-axis flow window size
+        int winy_size;                  // y-axis flow window size
+        uint16_t slot_state;            // thread slot state
+        uint16_t __reserved2;           // reserved
+        int clientx;                    // client area start coordinate x-axis
+        int clienty;                    // client area start coordinate y-axis
+        int clientwidth;                // client area width
+        int clientheight;               // client area height
+        uint8_t window_state;           // window state - bitfield
+        uint8_t event_mask;             // event mask
+        uint8_t key_input_mode;         // keyboard input mode
+    };
+    uint8_t __reserved3[KSYS_THREAD_INFO_SIZE];
 } ksys_thread_t;
 
 typedef unsigned int ksys_color_t;
@@ -279,7 +286,7 @@ KOSAPI ksys_oskey_t _ksys_get_key(void)
     ksys_oskey_t val;
     asm_inline(
         "int $0x40"
-        : "=a"(val)
+        : "=a"(val.val)
         : "a"(2));
     return val;
 }
@@ -409,13 +416,10 @@ KOSAPI void _ksys_draw_bar(uint32_t x, uint32_t y, uint32_t w, uint32_t h, ksys_
 KOSAPI ksys_pos_t _ksys_screen_size(void)
 {
     ksys_pos_t size;
-    ksys_pos_t size_tmp;
     asm_inline(
         "int $0x40"
-        : "=a"(size_tmp)
+        : "=a"(size)
         : "a"(14));
-    size.x = size_tmp.y;
-    size.y = size_tmp.x;
     return size;
 }
 
@@ -637,10 +641,29 @@ KOSAPI void _ksys_kill_by_pid(uint32_t PID)
 
 /*========= Fuction 18, subfunction 19 - get/set mouse settings. ========*/
 
-KOSAPI void _ksys_set_mouse_pos(int x, int y) // sub-subfunction 4 - set the position of the mouse cursor
+typedef enum KSYS_MOUSE_SETTINGS {
+    KSYS_MOUSE_GET_SPEED = 0,              // Get mouse speed
+    KSYS_MOUSE_SET_SPEED = 1,              // Set mouse speed
+    KSYS_MOUSE_GET_SENS = 2,               // Get mouse sensitivity
+    KSYS_MOUSE_SET_SENS = 3,               // Set mouse sensitivity
+    KSYS_MOUSE_SET_POS = 4,                // Set the position of the mouse cursor
+    KSYS_MOUSE_SIM_STATE = 5,              // Simulate the state of the mouse buttons
+    KSYS_MOUSE_GET_DOUBLE_CLICK_DELAY = 6, // Get double click delay.
+    KSYS_MOUSE_SET_DOUBLE_CLICK_DELAY = 7  // Set double click delay.
+} ksys_mouse_settings_t;
+
+KOSAPI uint32_t _ksys_set_mouse_settings(ksys_mouse_settings_t settings, uint32_t arg)
 {
-    asm_inline("int $0x40" ::"a"(18), "b"(19), "c"(4), "d"(x * 65536 + y));
+    uint32_t retval;
+    asm_inline(
+        "int $0x40"
+        : "=a"(retval)
+        : "a"(18), "b"(19), "c"(settings), "d"(arg)
+        : "memory");
+    return retval;
 }
+
+#define _ksys_set_mouse_pos(X, Y) _ksys_set_mouse_settings(KSYS_MOUSE_SET_POS, X * 65536 + Y)
 
 /*===================== Function 18, subfunction 21 ====================*/
 /*=====Get the slot number of the process / thread by identifier.. =====*/
@@ -716,7 +739,7 @@ KOSAPI void _ksys_setcwd(char* dir)
 
 KOSAPI int _ksys_getcwd(char* buf, int bufsize)
 {
-    register int val;
+    int val;
     asm_inline(
         "int $0x40"
         : "=a"(val)
@@ -728,7 +751,7 @@ KOSAPI int _ksys_getcwd(char* buf, int bufsize)
 
 KOSAPI int _ksys_set_kernel_dir(ksys_dir_key_t* table)
 {
-    register int val;
+    int val;
     asm_inline(
         "int $0x40"
         : "=a"(val)
@@ -748,12 +771,19 @@ KOSAPI ksys_pos_t _ksys_get_mouse_pos(int origin)
 {
     ksys_pos_t pos;
     asm_inline(
-        "int $0x40 \n\t"
-        "rol $16, %%eax"
+        "int $0x40"
         : "=a"(pos)
         : "a"(37), "b"(origin));
     return pos;
 }
+
+enum KSYS_MOUSE_BUTTON {
+    KSYS_MOUSE_LBUTTON_PRESSED = (1 << 0),
+    KSYS_MOUSE_RBUTTON_PRESSED = (1 << 1),
+    KSYS_MOUSE_MBUTTON_PRESSED = (1 << 2),
+    KSYS_MOUSE_4BUTTON_PRESSED = (1 << 3),
+    KSYS_MOUSE_5BUTTON_PRESSED = (1 << 4)
+};
 
 KOSAPI uint32_t _ksys_get_mouse_buttons(void) // subfunction 2 - states of the mouse buttons
 {
@@ -783,7 +813,7 @@ enum KSYS_CURSOR_SRC {
 
 KOSAPI void* _ksys_load_cursor(void* path, uint32_t flags) // subfunction 4 - load cursor
 {
-    uint32_t val;
+    void* val;
     asm_inline(
         "int $0x40"
         : "=a"(val)
@@ -794,7 +824,7 @@ KOSAPI void* _ksys_load_cursor(void* path, uint32_t flags) // subfunction 4 - lo
 
 KOSAPI void* _ksys_set_cursor(void* cursor) // subfunction 5 - set cursor
 {
-    uint32_t old;
+    void* old;
     asm_inline(
         "int $0x40"
         : "=a"(old)
@@ -1016,6 +1046,30 @@ KOSAPI void _ksys_set_key_input_mode(ksys_key_input_mode_t mode)
 {
     asm_inline(
         "int $0x40" ::"a"(66), "b"(1), "c"(mode));
+}
+
+/*========= Function 66, subfunction 3 - get the state of the control keys. ========*/
+
+enum KSYS_CONTROL_KEYS {
+    KSYS_CONTROL_LSHIFT = (1 << 0),
+    KSYS_CONTROL_RSHIFT = (1 << 1),
+    KSYS_CONTROL_LCTRL = (1 << 2),
+    KSYS_CONTROL_RCTRL = (1 << 3),
+    KSYS_CONTROL_LALT = (1 << 4),
+    KSYS_CONTROL_RALT = (1 << 5),
+    KSYS_CONTROL_CAPS = (1 << 6),
+    KSYS_CONTROL_NUM_LOCK = (1 << 7),
+    KSYS_CONTROL_SCROLL_LOCK = (1 << 8)
+};
+
+KOSAPI uint32_t _ksys_get_control_key_state(void)
+{
+    uint32_t key_state;
+    asm_inline(
+        "int $0x40"
+        : "=a"(key_state)
+        : "a"(66), "b"(3));
+    return key_state;
 }
 
 /*========= Function 67 - change position/sizes of the window. =========*/
