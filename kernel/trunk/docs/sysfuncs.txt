@@ -3666,30 +3666,36 @@ Remarks:
   ebx - SSF_MEM_ALLOC_RING (29)  
 
 ======================================================================
-============ Function 68, subfunction 31 - get data driver. ==========
+=========== Function 68, subfunction 31 - get driver data. ===========
 ======================================================================
-Параметры:
+Driver structures are organized into a doubly linked list. Its head is
+a dummy structure with the forward and backward pointers only. Other
+structures, if any, are as follows:
+  * +0: 16*byte: driver name, ASCIIZ
+  * +16 = +0x10: dword: pointer to the next driver structure
+  * +20 = +0x14: dword: pointer to the previous driver structure
+  * +24 = +0x18: dword: driver's base address
+  * +28 = +0x1C: dword: driver's entry point address
+  * +32 = +0x20: dword: driver's service handler address
+
+-------------- Subsubfunction 1 - get driver list head. --------------
+Parameters:
   * eax = 68 - function number
   * ebx = 31 - subfunction number
-  * ecx = function (1 - get first pointers on list,
-                    2 - get item list)
-  * edx = if ecx=2 pointer on structure.
-  * edi = if ecx=2 pointer on memory for structure.
-Возвращаемое значение:
-  * If ecx = 1, then ebx = fd 
-                     ecx = bk
-  * If ecx = 2, then eax = 0  ok
-                     eax = -1 error
-Примечания:
-  *  Returned structure
-   data_service:
-     .name:         rb 16
-     .fd:           rd 1
-     .bk:           rd 1
-     .base:         rd 1
-     .entry:        rd 1
-     .srv_proc:     rd 1
+  * ecx = 1 - subsubfunction number
+Returned value:
+  * ebx = pointer to the next driver structure
+  * ecx = pointer to the previous driver structure
 
+--------- Subsubfunction 2 - get driver list item by pointer. --------
+Parameters:
+  * eax = 68 - function number
+  * ebx = 31 - subfunction number
+  * ecx = 2 - subsubfunction number
+  * edx = pointer to the list item
+  * edi = pointer to memory for driver data
+Returned value:
+  * eax = 0 (ok), -1 (error)
 
 ======================================================================
 ====================== Function 69 - debugging. ======================
