@@ -975,17 +975,26 @@ for _, dir in pairs(raw_dirs) do
   make_raw_command = make_raw_command .. ' && mmd -i kolibri.raw@@1M "::' .. dir .. '"'
 end
 
--- Put copying of raw_files into separate script to avoid 'execl: Argument list too long'
+-- Put copying of raw_files into separate scripts to avoid 'execl: Argument list too long'
 make_raw_command2 = "true"
+make_raw_command3 = "true"
 -- copy files
 for i,v in ipairs(raw_files) do
   local_file = v[2]
-  make_raw_command2 = make_raw_command2 .. ' && mcopy -moi kolibri.raw@@1M "' .. local_file .. '" "::' .. v[1] .. '"'
+  cmd = ' && mcopy -moi kolibri.raw@@1M "' .. local_file .. '" "::' .. v[1] .. '"'
+  if i < 1024 then -- 1024 commands require ~100kiB which is below 128kiB with some margin
+    make_raw_command2 = make_raw_command2 .. cmd
+  else
+    make_raw_command3 = make_raw_command3 .. cmd
+  end
 end
 
 make_raw_command2_file = "make_raw_command2_file"
+make_raw_command3_file = "make_raw_command3_file"
 tup.definerule{inputs = {}, command = "echo '" .. make_raw_command2 .. "' > " .. make_raw_command2_file, outputs = {make_raw_command2_file}}
+tup.definerule{inputs = {}, command = "echo '" .. make_raw_command3 .. "' > " .. make_raw_command3_file, outputs = {make_raw_command3_file}}
 
 table.insert(input_deps, make_raw_command2_file)
+table.insert(input_deps, make_raw_command3_file)
 -- generate tup rule for kolibri.raw
-tup.definerule{inputs = input_deps, command = make_raw_command .. " && bash " .. make_raw_command2_file, outputs = {"kolibri.raw"}}
+tup.definerule{inputs = input_deps, command = make_raw_command .. " && bash " .. make_raw_command2_file .. " && bash " .. make_raw_command3_file, outputs = {"kolibri.raw"}}
