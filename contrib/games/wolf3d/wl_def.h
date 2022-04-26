@@ -24,10 +24,6 @@
 #	define O_BINARY 0
 #endif
 
-#define uSDL_Delay SDL_Delay
-#define uSDL_GetTicks SDL_GetTicks
-
-
 #pragma pack(1)
 
 #if defined(_arch_dreamcast)
@@ -1395,7 +1391,7 @@ static inline fixed FixedMul(fixed a, fixed b)
 #endif
 #define DEMOCOND_SDL                   (!DEMOCOND_ORIG)
 
-#define GetTicks() (( uSDL_GetTicks()*7)/100)
+#define GetTicks() (( SDL_GetTicks()*7)/100)
 
 #define ISPOINTER(x) ((((uintptr_t)(x)) & ~0xffff) != 0)
 

@@ -1,13 +1,17 @@
 CC = kos32-gcc
 LD = kos32-ld
+OBJCOPY = kos32-objcopy
+KPACK = kpack
 
 SDK_DIR = $(abspath ../../sdk)
 
 CFLAGS = -c -fno-ident -O2 -fomit-frame-pointer -fno-ident -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -D_KOLIBRI
-LDFLAGS = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds --image-base 0
+LDFLAGS = -static -S -nostdlib -T $(SDK_DIR)/sources/newlib/app.lds --image-base 0 --subsystem native
 
 INCLUDES = -I$(SDK_DIR)/sources/newlib/libc/include -I$(SDK_DIR)/sources/SDL-1.2.2_newlib/include -I. -I SDL_mixer
 LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib -L $(SDK_DIR)/lib
+
+TARGET = bin/wolf3d
 
 OBJECTS += wl_cloudsky.o  
 OBJECTS += wl_debug.o  
@@ -40,10 +44,6 @@ OBJECTS += joystick_stub.o
 OBJECTS += kolibri.o
 OBJECTS += mame/fmopl.o
 
-SDL_OBJ += SDL/SDL_wave.o
-SDL_OBJ += SDL/SDL_audiocvt.o
-SDL_OBJ += SDL/SDL_mixer.o
-SDL_OBJ += SDL/uSDL.o
 
 SDL_MIX_OBJ += SDL_mixer/mixer.o
 SDL_MIX_OBJ += SDL_mixer/music.o
@@ -52,10 +52,12 @@ SDL_MIX_OBJ += SDL_mixer/load_voc.o
 SDL_MIX_OBJ += SDL_mixer/effects_internal.o
 SDL_MIX_OBJ += SDL_mixer/effect_position.o
 
-default: $(OBJECTS) $(SDL_MIX_OBJ) $(SDL_OBJ)
-	kos32-ld $(LDFLAGS) $(LIBPATH) --subsystem native -o bin/wolf3d $(OBJECTS) $(SDL_MIX_OBJ) $(SDL_OBJ) -lSDLn -lsound -lstdc++ -lsupc++ -lgcc -lc.dll
-	objcopy bin/wolf3d -O binary
-	kpack --nologo bin/wolf3d
+LIBS = -lSDLn -lsound -lgcc -lc.dll
+
+$(TARGET): $(OBJECTS) $(SDL_MIX_OBJ) $(SDL_OBJ)
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $(TARGET) $(OBJECTS) $(SDL_MIX_OBJ) $(SDL_OBJ) $(LIBS)
+	$(OBJCOPY) $(TARGET) -O binary
+	$(KPACK) --nologo $(TARGET)
 
 %.o : %.cpp
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
@@ -64,4 +66,4 @@ default: $(OBJECTS) $(SDL_MIX_OBJ) $(SDL_OBJ)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $<
 
 clean:
-	rm *.o SDL_mixer/*.o mame/*.o SDL/*.o *.d SDL_mixer/*.d mame/*.d SDL/*.d
+	rm -f $(OBJECTS)

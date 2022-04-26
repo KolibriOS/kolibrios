@@ -403,7 +403,7 @@ BJ_Breathe (void)
     static int which = 0, max = 10;
     int pics[2] = { L_GUYPIC, L_GUY2PIC };
 
-    uSDL_Delay(5);
+    SDL_Delay(5);
 
     if ((int32_t) GetTimeCount () - lastBreathTime > max)
     {

@@ -28,7 +28,7 @@ extern SDL_Color gamepal[256];
 // VGA hardware routines
 //
 
-#define VL_WaitVBL(a) uSDL_Delay((a)*8)
+#define VL_WaitVBL(a) SDL_Delay((a)*8)
 
 void VL_SetVGAPlaneMode (void);
 void VL_SetTextMode (void);

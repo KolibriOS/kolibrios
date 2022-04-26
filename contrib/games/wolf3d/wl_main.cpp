@@ -11,6 +11,11 @@
 #include "wl_atmos.h"
 #include <SDL_syswm.h>
 
+#ifdef _KOLIBRI
+    #include <sys/ksys.h>
+    #include <libgen.h>
+#endif
+
 /*
 =============================================================================
 
@@ -24,10 +29,6 @@
 */
 
 extern byte signon[];
-extern void kolibri_set_win_center();
-extern char* dirname(char* path);
-extern void setcwd(char* path);
-
 extern boolean SD_Started;
 /*
 =============================================================================
@@ -1128,7 +1129,7 @@ void DoJukebox(void)
 
 #ifndef SPEAR
 #ifndef UPLOAD
-    start = (( uSDL_GetTicks()/10)%3)*6;
+    start = (( SDL_GetTicks()/10)%3)*6;
 #else
     start = 0;
 #endif
@@ -1239,9 +1240,6 @@ static void InitGame()
 #endif
 
     SignonScreen ();
-#ifdef _KOLIBRI
-    kolibri_set_win_center();
-#endif    
 
 #if defined _WIN32
     if(!fullscreen)
@@ -1978,7 +1976,7 @@ extern void kolibri_set_win_max(void);
 int main (int argc, char *argv[])
 {
 #ifdef _KOLIBRI
-    setcwd(dirname(argv[0]));
+    _ksys_setcwd(dirname(argv[0]));
     kolibri_set_win_max();
 #endif
 

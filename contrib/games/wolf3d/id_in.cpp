@@ -650,7 +650,7 @@ boolean IN_UserInput(longword delay)
         IN_ProcessEvents();
 		if (IN_CheckAck())
 			return true;
-        uSDL_Delay(5);
+        SDL_Delay(5);
 	} while (GetTimeCount() - lasttime < delay);
 	return(false);
 }

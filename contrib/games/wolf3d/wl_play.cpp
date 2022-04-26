@@ -406,11 +406,11 @@ void PollControls (void)
     if (demoplayback || demorecord)   // demo recording and playback needs to be constant
     {
         // wait up to DEMOTICS Wolf tics
-        uint32_t curtime =  uSDL_GetTicks();
+        uint32_t curtime =  SDL_GetTicks();
         lasttimecount += DEMOTICS;
         int32_t timediff = (lasttimecount * 100) / 7 - curtime;
         if(timediff > 0)
-            uSDL_Delay(timediff);
+            SDL_Delay(timediff);
 
         if(timediff < -2 * DEMOTICS)       // more than 2-times DEMOTICS behind?
             lasttimecount = (curtime * 7) / 100;    // yes, set to current timecount

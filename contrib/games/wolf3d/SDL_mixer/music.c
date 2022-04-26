@@ -70,10 +70,7 @@
 #if defined(MP3_MUSIC) || defined(MP3_MAD_MUSIC)
 static SDL_AudioSpec used_mixer;
 #endif
-unsigned  uSDL_GetTicks(); 
-
-#define uSDL_Delay SDL_Delay
-#define uSDL_GetTicks SDL_GetTicks
+unsigned  SDL_GetTicks();
 
 int volatile music_active = 1;
 static int volatile music_stopped = 0;
@@ -764,7 +761,7 @@ void Mix_FreeMusic(Mix_Music *music)
 			/* Wait for any fade out to finish */
 			while ( music->fading == MIX_FADING_OUT ) {
 				SDL_UnlockAudio();
-				uSDL_Delay(100);
+				SDL_Delay(100);
 				SDL_LockAudio();
 			}
 			if ( music == music_playing ) {
@@ -1016,7 +1013,7 @@ int Mix_FadeInMusicPos(Mix_Music *music, int loops, int ms, double position)
 	/* If the current music is fading out, wait for the fade to complete */
 	while ( music_playing && (music_playing->fading == MIX_FADING_OUT) ) {
 		SDL_UnlockAudio();
-		uSDL_Delay(100);
+		SDL_Delay(100);
 		SDL_LockAudio();
 	}
 	music_active = 1;
