@@ -234,6 +234,17 @@ test_app_header:
         mov     [ebx + APP_HDR.eip], ecx
         mov     edx, [APP_HEADER_00.mem_size]
         mov     [ebx + APP_HDR._emem], edx
+
+        cmp     edx, [APP_HEADER_00.i_end]
+        jb      .fail
+
+        cmp     edx, OS_BASE ;check memory
+        jae     .fail
+        mov     ecx, [pg_data.pages_free]
+        shl     ecx, 12 ; ecx * 4kb
+        cmp     edx, ecx
+        jae     .fail
+
         shr     edx, 1
         sub     edx, 0x10
         mov     [ebx + APP_HDR.esp], edx
@@ -261,6 +272,12 @@ test_app_header:
         cmp     edx, [APP_HEADER_01.i_end]
         jb      .fail
 ; \end{diamond}[20.08.2006]
+        cmp     edx, OS_BASE ;check memory
+        jae     .fail
+        mov     ecx, [pg_data.pages_free]
+        shl     ecx, 12 ; ecx * 4kb
+        cmp     edx, ecx
+        jae     .fail
 
         mov     [ebx + APP_HDR._emem], edx
         mov     ecx, [APP_HEADER_01.stack_top]
