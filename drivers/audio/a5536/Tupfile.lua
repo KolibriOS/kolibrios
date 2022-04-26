@@ -12,7 +12,7 @@ LDFLAGS = " -nostdlib -shared -s --image-base 0 --file-alignment 512 --section-a
 NAME = "geode.sys"
 
 compile_gcc{ "geode.c" }
-OBJS.extra_inputs = {"../../ddk/libcore.a", "../../ddk/libddk.a"}
+OBJS.extra_inputs = {"../../ddk/<libddk>", "../../ddk/<libcore>"}
 
 LIBS = " -lddk -lcore "
 tup.rule(OBJS, "kos32-ld" .. LDFLAGS .. "%f -o %o " .. LIBS .. tup.getconfig("KPACK_CMD"), NAME);

@@ -1,4 +1,4 @@
-if tup.getconfig("NO_GCC") ~= "" or tup.getconfig("NO_NASM") ~= "" then return end
+if tup.getconfig("NO_GCC") ~= "" then return end
 tup.include("../../../programs/use_gcc.lua")
 
 

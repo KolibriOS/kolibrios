@@ -1,7 +1,6 @@
 if tup.getconfig("NO_GCC") ~= "" then return end
 if tup.getconfig("HELPERDIR") == ""
 then
-  if tup.getconfig("NO_NASM") ~= "" then return end -- required for SDL compilation
   HELPERDIR = "../../programs"
 end
 tup.include(HELPERDIR .. "/use_gcc.lua")
@@ -73,9 +72,6 @@ DDK_SRC = {
 }
 
 compile_gcc(DDK_SRC)
-tup.rule(OBJS, "kos32-ar -crs %o %f", "libddk.a");
+tup.rule(OBJS, "kos32-ar -crs %o %f", {"libddk.a", extra_outputs={"<libddk>"}});
 tup.rule("core.S", "kos32-as %f -o %o", "core.o");
-tup.rule("core.o", "kos32-ld -shared -s --out-implib %o --output-def core.def -o core.dll %f", {"libcore.a", extra_outputs={"core.def", "core.dll"}}); 
-
-
-
+tup.rule("core.o", "kos32-ld -shared -s --out-implib %o --output-def core.def -o core.dll %f", {"libcore.a", extra_outputs={"core.def", "core.dll", "<libcore>"}});

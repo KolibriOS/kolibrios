@@ -14,7 +14,7 @@ LDFLAGS = " -nostdlib -T acpi.lds -shared -s --image-base 0 --file-alignment 512
 NAME = "acpi.sys"
 
 compile_gcc{ "acpi.c", "scan.c", "pci_root.c", "pci_bind.c", "pci_irq.c", "pci/probe.c", "pci/pci.c", "pci/access.c" }
-OBJS.extra_inputs = {"../ddk/libcore.a", "../ddk/libddk.a", "./acpica/libacpica.a"}
+OBJS.extra_inputs = {"../ddk/<libcore>", "../ddk/<libddk>", "./acpica/libacpica.a"}
 
 LIBS = " -lacpica -lgcc -lddk -lcore "
 tup.rule(OBJS, "kos32-ld" .. LDFLAGS .. "%f -o %o " .. LIBS .. tup.getconfig("KPACK_CMD"), NAME);

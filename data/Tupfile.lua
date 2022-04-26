@@ -192,7 +192,6 @@ extra_files = {
  {"kolibrios/develop/tcc/samples/", PROGS ..  "/develop/ktcc/trunk/libc.obj/samples/*.sh"},
  {"kolibrios/develop/tcc/samples/clayer/", PROGS ..  "/develop/ktcc/trunk/libc.obj/samples/clayer/*"},
  {"kolibrios/develop/utils/SPEDump", PROGS .. "/develop/SPEDump/SPEDump.kex"},
- {"kolibrios/develop/utils/objconv", PROGS .. "/develop/objconv/objconv"},
  {"kolibrios/emul/", "common/emul/*"},
  {"kolibrios/emul/dosbox/", "common/emul/DosBox/*"},
  {"kolibrios/emul/e80/readme.txt", PROGS .. "/emulator/e80/trunk/readme.txt"},
@@ -642,9 +641,13 @@ end -- tup.getconfig('NO_NASM') ~= 'full'
 -- Programs that require JWASM to compile.
 if tup.getconfig('NO_JWASM') ~= 'full' then
 tup.append_table(img_files, {
- {"RUN", PROGS .. "/system/RunOD/1/RUN"},
  {"LIB/INPUTBOX.OBJ", PROGS .. "/develop/libraries/InputBox/INPUTBOX.OBJ"},
 })
+  if tup.getconfig('NO_GCC') ~= 'full' then
+  tup.append_table(img_files, {
+   {"RUN", PROGS .. "/system/RunOD/1/RUN"},
+  })
+  end
 end -- tup.getconfig('NO_JWASM') ~= 'full'
 
 -- Programs that require C-- to compile.
@@ -746,13 +749,7 @@ tup.append_table(extra_files, {
  {"kolibrios/games/heliothryx", PROGS .. "/games/heliothryx/heliothryx"},
  {"kolibrios/games/marblematch3", PROGS .. "/games/marblematch3/marblematch3"},
  {"kolibrios/games/nsider", PROGS .. "/games/nsider/nsider"},
- {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
- {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
  {"kolibrios/games/fridge/", PROGS .. "/games/fridge/fridge"},
- {"kolibrios/games/tyrian/", "../contrib/games/opentyrian/opentyrian"},
- {"kolibrios/games/tyrian/data/", "common/games/tyrian/data/*"},
- {"kolibrios/games/wolf3d/", "../contrib/games/wolf3d/wolf3d"},
- {"kolibrios/games/wolf3d/", "common/games/wolf3d/*"},
  {"kolibrios/develop/lua/lua", "../contrib/other/lua-5.2.0/lua"},
  {"kolibrios/develop/lua/calc.lua", "../contrib/other/lua-5.2.0/calc.lua"},
  {"kolibrios/develop/lua/console.lua", "../contrib/other/lua-5.2.0/console.lua"},
@@ -766,12 +763,23 @@ tup.append_table(extra_files, {
  {"kolibrios/develop/c--/c--", PROGS .. "/develop/cmm/cmm"},
  {"kolibrios/develop/tcc/tcc", PROGS .. "/develop/ktcc/trunk/source/tcc"},
  {"kolibrios/develop/sqlite3/sqlite3", "../contrib/sdk/sources/sqlite3/shell/sqlite3"},
+ {"kolibrios/develop/utils/objconv", PROGS .. "/develop/objconv/objconv"},
  {"kolibrios/drivers/sensors/k10temp.sys", "../drivers/sensors/k10temp/k10temp.sys"},
  {"kolibrios/drivers/acpi/acpi.sys", "../drivers/devman/acpi.sys"},
  {"kolibrios/drivers/acpi/acpi", "../drivers/devman/acpi"},
  {"kolibrios/drivers/geode/geode.sys", "common/drivers/geode/geode.sys"}, -- there is also an autobuid version that is not working
  {"kolibrios/drivers/geode/geode", "../drivers/audio/a5536/geode"},
 })
+if tup.getconfig('NO_NASM') ~= 'full' then
+  tup.append_table(extra_files, {
+   {"kolibrios/games/tyrian/", "../contrib/games/opentyrian/opentyrian"},
+   {"kolibrios/games/tyrian/data/", "common/games/tyrian/data/*"},
+   {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
+   {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
+   {"kolibrios/games/wolf3d/", "../contrib/games/wolf3d/wolf3d"},
+   {"kolibrios/games/wolf3d/", "common/games/wolf3d/*"},
+  })
+end
 -- For russian build, add russian-only programs.
 if build_type == "rus" then tup.append_table(extra_files, {
  {"kolibrios/games/21days", PROGS .. "/games/21days/21days"},

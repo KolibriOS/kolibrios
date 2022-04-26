@@ -1,7 +1,6 @@
 if tup.getconfig("NO_GCC") ~= "" then return end
 if tup.getconfig("HELPERDIR") == ""
 then
-  if tup.getconfig("NO_NASM") ~= "" then return end -- required for SDL compilation
   HELPERDIR = "../../../programs"
 end
 tup.include(HELPERDIR .. "/use_gcc.lua")
@@ -16,6 +15,6 @@ compile_gcc{
     "k10temp.c",  "../pci.c",  "../amd_nb.c", "../cpu_detect.c", "../e_msr.c" 
 }
 
-OBJS.extra_inputs = {"../../ddk/libcore.a", "../../ddk/libddk.a"}
+OBJS.extra_inputs = {"../../ddk/<libcore>", "../../ddk/<libddk>"}
 
 tup.rule(OBJS, "kos32-ld" .. LDFLAGS .. "%f -o %o " .. LIBS .. tup.getconfig("KPACK_CMD"), "k10temp.sys");
