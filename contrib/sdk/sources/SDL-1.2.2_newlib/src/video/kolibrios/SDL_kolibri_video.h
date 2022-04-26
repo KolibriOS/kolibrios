@@ -1,5 +1,5 @@
-#ifndef _SDL_menuetvideo_h
-#define _SDL_menuetvideo_h
+#ifndef _SDL_kolibri_video_h
+#define _SDL_kolibri_video_h
 
 #include "SDL_mouse.h"
 #include "SDL_sysvideo.h"

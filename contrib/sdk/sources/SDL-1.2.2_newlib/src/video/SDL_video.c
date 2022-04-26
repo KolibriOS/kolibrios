@@ -97,7 +97,7 @@ static VideoBootStrap *bootstrap[] = {
 	&ph_bootstrap,
 #endif
 #ifdef ENABLE_KOLIBRIOS
-	&mosvideo_bootstrab,
+	&kos_video_bootstrab,
 #endif
 	NULL
 };

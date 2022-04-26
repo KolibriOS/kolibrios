@@ -7,7 +7,7 @@
 #include "SDL_mouse.h"
 #include "SDL_sysvideo.h"
 #include "SDL_pixels_c.h"
-#include "SDL_menuetvideo.h"
+#include "SDL_kolibri_video.h"
 #include <string.h>
 
 static SDL_VideoDevice * vm_suf=NULL;
@@ -279,7 +279,7 @@ static SDL_VideoDevice *kos_CreateDevice(int indx)
     return dev;
 }
 
-VideoBootStrap mosvideo_bootstrab = {
+VideoBootStrap kos_video_bootstrab = {
     "kolibrios", "KolibriOS Device Driver",
     kos_Available, kos_CreateDevice,
 };

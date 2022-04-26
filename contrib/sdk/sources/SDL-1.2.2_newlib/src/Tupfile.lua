@@ -20,7 +20,7 @@ FOLDERS = {
   "timer/",
   "timer/dummy/",
   "video/",
-  "video/menuetos/",
+  "video/kolibrios/",
   "SYSCALL/src/"
 }
 

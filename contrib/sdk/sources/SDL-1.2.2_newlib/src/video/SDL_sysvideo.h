@@ -387,7 +387,7 @@ extern VideoBootStrap QZ_bootstrap;
 extern VideoBootStrap CGX_bootstrap;
 #endif
 #ifdef ENABLE_KOLIBRIOS
-extern VideoBootStrap mosvideo_bootstrab;
+extern VideoBootStrap kos_video_bootstrab;
 #endif
 /* This is the current video device */
 extern SDL_VideoDevice *current_video;

@@ -7,7 +7,7 @@
 #include "SDL_sysevents.h"
 #include "SDL_sysvideo.h"
 #include "SDL_events_c.h"
-#include "SDL_menuetvideo.h"
+#include "SDL_kolibri_video.h"
 
 extern void kos_SDL_RepaintWnd(void);
 
