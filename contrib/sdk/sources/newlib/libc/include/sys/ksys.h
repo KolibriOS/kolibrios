@@ -1,3 +1,6 @@
+#ifndef _KSYS_H_
+#define _KSYS_H_
+
 /* Copyright (C) KolibriOS team 2004-2021. All rights reserved. */
 /* Distributed under terms of the GNU General Public License    */
 
@@ -15,9 +18,6 @@
  * Warning! The end of the file is the old definitions of function/structure names.
  * They are for compatibility... Better not to use them.
 */
-
-#ifndef _KSYS_H_
-#define _KSYS_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -193,6 +193,14 @@ typedef struct {
     char path[64];
 } ksys_dir_key_t;
 
+typedef union {
+    uint8_t raw_data[24];
+    struct {
+        uint32_t id;
+        uint8_t data[20];
+    };
+} ksys_signal_info_t;
+
 #pragma pack(pop)
 
 typedef rgb_t ksys_bitmap_t;
@@ -353,6 +361,18 @@ KOSAPI void _ksys_delete_button(uint32_t id)
 }
 
 /*============ Function 9 - information on execution thread. ===========*/
+
+#define KSYS_THIS_SLOT -1
+
+enum KSYS_SLOT_STATES {
+    KSYS_SLOT_STATE_RUNNING = 0,
+    KSYS_SLOT_STATE_SUSPENDED = 1,
+    KSYS_SLOT_STATE_SUSPENDED_WAIT_EVENT = 2,
+    KSYS_SLOT_STATE_NORMAL_TERM = 3,
+    KSYS_SLOT_STATE_EXCEPT_TERM = 4,
+    KSYS_SLOT_STATE_WAIT_EVENT = 5,
+    KSYS_SLOT_STATE_FREE = 6
+};
 
 KOSAPI int _ksys_thread_info(ksys_thread_t* table, int slot)
 {
@@ -1080,6 +1100,13 @@ KOSAPI void _ksys_change_window(int new_x, int new_y, int new_w, int new_h)
         "int $0x40" ::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w), "S"(new_h));
 }
 
+/*===== Function 68, subfunction 1 - switch to the next thread of execution ====*/
+
+KOSAPI void _ksys_thread_yield(void) 
+{
+    asm_inline("int $0x40" :: "a"(68),"b"(1));
+}
+
 /*======== Function 68, subfunction 12 - allocate memory block. ========*/
 
 KOSAPI void* _ksys_alloc(size_t size)
@@ -1102,6 +1129,13 @@ KOSAPI int _ksys_free(void* mem)
         : "=a"(val)
         : "a"(68), "b"(13), "c"(mem));
     return val;
+}
+
+/*====== Function 68, subfunction 14 - Wait signal from other applications/drivers. =====*/
+
+KOSAPI void _ksys_wait_signal(ksys_signal_info_t* signal)
+{
+    asm_inline("int $0x40" :: "a"(68),"b"(14),"c"(signal) : "memory");
 }
 
 /*============= Function 68, subfunction 16 - load driver. =============*/
