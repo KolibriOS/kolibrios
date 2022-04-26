@@ -2,6 +2,7 @@ CC = kos32-gcc
 AR = kos32-ar
 LD = kos32-ld
 STRIP = kos32-strip
+NASM = nasm
 
 LIBNAME=libSDL
 
@@ -27,8 +28,8 @@ video_OBJS = video/SDL_blit_0.o video/SDL_blit_1.o video/SDL_blit_A.o \
         video/SDL_cursor.o video/SDL_gamma.o video/SDL_pixels.o \
         video/SDL_RLEaccel.o video/SDL_stretch.o video/SDL_surface.o \
         video/SDL_video.o video/SDL_yuv.o video/SDL_yuv_mmx.o \
-        video/SDL_yuv_sw.o video/menuetos/SDL_menuetevents.o \
-        video/menuetos/SDL_menuetvideo.o
+        video/SDL_yuv_sw.o video/kolibrios/SDL_kolibri_events.o \
+        video/kolibrios/SDL_kolibri_video.o
 audio_OBJS = audio/SDL_kolibri_audio.o audio/SDL_audiocvt.o audio/SDL_mixer.o audio/SDL_wave.o
 
 curr_OBJS = SDL.o SDL_error.o SDL_fatal.o SDL_getenv.o
@@ -54,19 +55,18 @@ install: $(LIBNAME)
 	mv -f $(LIBNAME) $(SDK_DIR)/lib  
  
 $(LIBNAME).a: $(OBJS)
-	$(MAKE) -C SYSCALL/src
-	$(AR) -crs  ../../../lib/$(LIBNAME).a $(OBJS) SYSCALL/src/os.o
+	$(AR) -crs  ../../../lib/$(LIBNAME).a $(OBJS) 
 
 $(LIBNAME).dll: $(OBJS)
-	$(LD) $(LDFLAGS) -o $@ $(OBJS) SYSCALL/src/os.o $(LIBS) -ldll -lsound -lc.dll
+	$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LIBS) -ldll -lsound -lc.dll
 	$(STRIP) -S $@
 
 	
 %.o : %.asm Makefile
-	nasm -Ihermes -f coff $<
+	$(NASM) -Ihermes -f coff $<
  
 %.o : %.c Makefile
 	$(CC) $(CFLAGS) -o $@ $<
  
 clean:
-	rm -f */*.o \ rm *.o \ rm */*/*.o
+	rm -f $(OBJS)

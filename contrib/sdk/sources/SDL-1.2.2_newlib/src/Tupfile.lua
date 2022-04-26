@@ -3,6 +3,8 @@ tup.include("../../../../../programs/use_gcc.lua")
 tup.include("../../../../../programs/use_newlib.lua")
 tup.include("../../../../../programs/use_sound.lua")
 INCLUDES = INCLUDES .. " -I. -I../include -Ihermes -Iaudio -Ivideo -Ievents -Ijoystick -Icdrom -Ithread -Itimer -Iendian -Ifile -ISYSCALL/include"
+
+CFLAGS = CFLAGS_OPTIMIZE_SPEED
 CFLAGS = CFLAGS .. ' -D_REENTRANT -DPACKAGE=\"SDL\" -DVERSION=\"1.2.2\"'
 CFLAGS = CFLAGS .. ' -DENABLE_AUDIO -UDISABLE_AUDIO -DDISABLE_JOYSTICK'
 CFLAGS = CFLAGS .. ' -DDISABLE_CDROM -DDISABLE_THREADS -DENABLE_TIMERS'
@@ -21,7 +23,6 @@ FOLDERS = {
   "timer/dummy/",
   "video/",
   "video/kolibrios/",
-  "SYSCALL/src/"
 }
 
 for i,v in ipairs(FOLDERS) do

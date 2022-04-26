@@ -219,7 +219,7 @@ void kos_CheckMouseMode(_THIS)
     if (this->input_grab == SDL_GRAB_OFF)
         return;
     ksys_thread_t thread_info;
-    int top = _ksys_thread_info(&thread_info, -1);
+    int top = _ksys_thread_info(&thread_info, KSYS_THIS_SLOT);
     
     if (top == thread_info.pos_in_window_stack) {
         int x = thread_info.winx_start + thread_info.clientx + this->hidden->win_size_x/2;
