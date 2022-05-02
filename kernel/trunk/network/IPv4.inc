@@ -554,7 +554,6 @@ ipv4_input:
         mov     [edx + IPv4_header.TotalLength], cx
         add     esp, 12
         xchg    cl, ch
-        inc     ecx                     ; FIXME: Why it has to be incremented?
         push    ecx edx                 ; size and pointer
         mov     edi, [edi_saved]
         jmp     .handle_it              ; edx = buf ptr, ecx = size, [esp] buf ptr, [esp+4], total size, ebx=device ptr
