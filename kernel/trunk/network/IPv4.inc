@@ -87,6 +87,7 @@ align 4
         IPv4_fragments          rb IPv4_MAX_FRAGMENTS * sizeof.IPv4_FRAGMENT_slot
 
 ;        IPv4_routes             rd IPv4_MAX_ROUTES * sizeof.IPv4_ROUTE
+        edi_saved               rd 1
 
 endg
 
@@ -457,6 +458,7 @@ ipv4_input:
         mov     esi, [esi + IPv4_FRAGMENT_slot.ptr]                     ; We found the first entry, let's calculate total size of the packet in eax, so we can allocate a buffer
         push    esi
         xor     eax, eax
+        mov     [edi_saved], edi
         or      edi, -1
 
   .count_bytes:
@@ -553,6 +555,7 @@ ipv4_input:
         add     esp, 12
         xchg    cl, ch
         push    ecx edx                 ; size and pointer
+        mov     edi, [edi_saved]
         jmp     .handle_it              ; edx = buf ptr, ecx = size, [esp] buf ptr, [esp+4], total size, ebx=device ptr
 
   .destroy_slot_pop:
