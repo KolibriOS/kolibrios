@@ -393,20 +393,20 @@ ipv4_input:
         mov     esi, [esi + IPv4_FRAGMENT_slot.ptr]
         or      edi, -1
   .find_last_entry:                                             ; The following routine will try to find the last entry
-        cmp     edi, [esi + IPv4_FRAGMENT_entry.PrevPtr]
+        cmp     edi, [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.PrevPtr]
         jne     .destroy_slot                                   ; Damn, something screwed up, remove the whole slot (and free buffers too if possible!)
         mov     edi, esi
-        mov     esi, [esi + IPv4_FRAGMENT_entry.NextPtr]
+        mov     esi, [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr]
         cmp     esi, -1
         jne     .find_last_entry
                                                                 ; We found the last entry (pointer is now in edi)
                                                                 ; We are going to overwrite the ethernet header in received packet with a FRAGMENT_entry structure
 
         pop     eax                                             ; pointer to packet
-        mov     [edi + IPv4_FRAGMENT_entry.NextPtr], eax        ; update pointer of previous entry to the new entry
-        mov     [eax + IPv4_FRAGMENT_entry.NextPtr], -1
-        mov     [eax + IPv4_FRAGMENT_entry.PrevPtr], edi
-        mov     [eax + IPv4_FRAGMENT_entry.Owner], ebx
+        mov     [edi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr], eax        ; update pointer of previous entry to the new entry
+        mov     [eax + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr], -1
+        mov     [eax + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.PrevPtr], edi
+        mov     [eax + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.Owner], ebx
 
         ret
 
@@ -437,9 +437,9 @@ ipv4_input:
         pop     eax
         mov     [esi + IPv4_FRAGMENT_slot.ptr], eax
                                                                 ; Now, replace ethernet header in original buffer with a FRAGMENT_entry structure
-        mov     [eax + IPv4_FRAGMENT_entry.NextPtr], -1
-        mov     [eax + IPv4_FRAGMENT_entry.PrevPtr], -1
-        mov     [eax + IPv4_FRAGMENT_entry.Owner], ebx
+        mov     [eax + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr], -1
+        mov     [eax + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.PrevPtr], -1
+        mov     [eax + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.Owner], ebx
 
         ret
 
@@ -460,27 +460,27 @@ ipv4_input:
         or      edi, -1
 
   .count_bytes:
-        cmp     [esi + IPv4_FRAGMENT_entry.PrevPtr], edi
+        cmp     [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.PrevPtr], edi
         jne     .destroy_slot_pop                                                       ; Damn, something screwed up, remove the whole slot (and free buffers too if possible!)
-        mov     cx, [esi + sizeof.IPv4_FRAGMENT_entry + IPv4_header.TotalLength]        ; Add total length
+        mov     cx, [esi + sizeof.NET_BUFF + sizeof.IPv4_FRAGMENT_entry + IPv4_header.TotalLength]        ; Add total length
         xchg    cl, ch
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Packet size=%u\n", cx
         add     ax, cx
-        movzx   cx, [esi + sizeof.IPv4_FRAGMENT_entry + IPv4_header.VersionAndIHL]      ; Sub Header length
+        movzx   cx, [esi + sizeof.NET_BUFF + sizeof.IPv4_FRAGMENT_entry + IPv4_header.VersionAndIHL]      ; Sub Header length
         and     cx, 0x000F
         shl     cx, 2
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Header size=%u\n", cx
         sub     ax, cx
         mov     edi, esi
-        mov     esi, [esi + IPv4_FRAGMENT_entry.NextPtr]
+        mov     esi, [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr]
         cmp     esi, -1
         jne     .count_bytes
 
         mov     esi, [esp+4]
-        mov     [edi + IPv4_FRAGMENT_entry.NextPtr], esi                                ; Add this packet to the chain, this simplifies the following code
-        mov     [esi + IPv4_FRAGMENT_entry.NextPtr], -1
-        mov     [esi + IPv4_FRAGMENT_entry.PrevPtr], edi
-        mov     [esi + IPv4_FRAGMENT_entry.Owner], ebx
+        mov     [edi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr], esi                                ; Add this packet to the chain, this simplifies the following code
+        mov     [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr], -1
+        mov     [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.PrevPtr], edi
+        mov     [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.Owner], ebx
 
         mov     cx, [edx + IPv4_header.TotalLength]                                     ; Note: This time we dont substract Header length
         xchg    cl, ch
@@ -507,18 +507,18 @@ ipv4_input:
         mov     edx, [esp+4]                                                            ; Get pointer to first fragment entry back in edx
 
   .rebuild_packet_loop:
-        movzx   ecx, [edx + sizeof.IPv4_FRAGMENT_entry + IPv4_header.FlagsAndFragmentOffset] ; Calculate the fragment offset
+        movzx   ecx, [edx + sizeof.NET_BUFF + sizeof.IPv4_FRAGMENT_entry + IPv4_header.FlagsAndFragmentOffset] ; Calculate the fragment offset
         xchg    cl, ch                                                                  ;  intel byte order
         shl     cx, 3                                                                   ;   multiply by 8 and clear first 3 bits
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Fragment offset=%u\n", cx
 
         lea     edi, [eax + ecx]                                                        ; Notice that edi will be equal to eax for first fragment
-        movzx   ebx, [edx + sizeof.IPv4_FRAGMENT_entry + IPv4_header.VersionAndIHL]     ; Find header size (in ebx) of fragment
+        movzx   ebx, [edx + sizeof.NET_BUFF + sizeof.IPv4_FRAGMENT_entry + IPv4_header.VersionAndIHL]     ; Find header size (in ebx) of fragment
         and     bx, 0x000F                                                              ;
         shl     bx, 2                                                                   ;
 
-        lea     esi, [edx + sizeof.IPv4_FRAGMENT_entry]                                 ; Set esi to the correct begin of fragment
-        movzx   ecx, [edx + sizeof.IPv4_FRAGMENT_entry + IPv4_header.TotalLength]       ; Calculate total length of fragment
+        lea     esi, [edx + sizeof.NET_BUFF + sizeof.IPv4_FRAGMENT_entry]                                 ; Set esi to the correct begin of fragment
+        movzx   ecx, [edx + sizeof.NET_BUFF + sizeof.IPv4_FRAGMENT_entry + IPv4_header.TotalLength]       ; Calculate total length of fragment
         xchg    cl, ch                                                                  ;  intel byte order
 
         cmp     edi, eax                                                                ; Is this packet the first fragment ?
@@ -537,8 +537,8 @@ ipv4_input:
         rep movsb                                                                       ;
 
         push    eax
-        push    [edx + IPv4_FRAGMENT_entry.Owner]                                       ; we need to remeber the owner, in case this is the last packet
-        push    [edx + IPv4_FRAGMENT_entry.NextPtr]                                     ; Set edx to the next pointer
+        push    [edx + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.Owner]                                       ; we need to remeber the owner, in case this is the last packet
+        push    [edx + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr]                                     ; Set edx to the next pointer
         push    edx                                                                     ; Push pointer to fragment onto stack
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Next Fragment: 0x%x\n", edx
         call    net_buff_free                                                          ; free the previous fragment buffer (this uses the value from stack)
