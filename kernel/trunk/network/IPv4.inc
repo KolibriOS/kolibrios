@@ -506,7 +506,7 @@ ipv4_input:
         call    kernel_alloc
         test    eax, eax
         je      .destroy_slot_pop                                                       ; If we dont have enough space to allocate the buffer, discard all packets in slot
-        mov     edx, [esp]                                                              ; Get pointer to first fragment entry back in edx
+        mov     edx, [esp+4]                                                            ; Get pointer to first fragment entry back in edx
 
   .rebuild_packet_loop:
         movzx   ecx, [edx + sizeof.NET_BUFF + sizeof.IPv4_FRAGMENT_entry + IPv4_header.FlagsAndFragmentOffset] ; Calculate the fragment offset
