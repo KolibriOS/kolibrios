@@ -527,6 +527,10 @@ ipv4_input:
         je      .first_fragment
         sub     cx, bx                                                                  ; If not, dont copy the header
         add     esi, ebx                                                                ;
+        add     edi, ebx                                                                ; FIXME: We should add size of header of first fragment here
+                                                                                        ; instead of size of currently copying fragment
+                                                                                        ; because the fragment offset is offset within the big IP packet
+                                                                                        ; data (not within the packet, within packet's contents)
   .first_fragment:
 
 
