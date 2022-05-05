@@ -508,6 +508,8 @@ ipv4_input:
         je      .destroy_slot_pop                                                       ; If we dont have enough space to allocate the buffer, discard all packets in slot
         mov     edx, [esp+4]                                                            ; Get pointer to first fragment entry back in edx
 
+        ; FIXME: We should create NET_BUFF in eax instead of a rugular buffer with IP packet
+
   .rebuild_packet_loop:
         movzx   ecx, [edx + sizeof.NET_BUFF + sizeof.IPv4_FRAGMENT_entry + IPv4_header.FlagsAndFragmentOffset] ; Calculate the fragment offset
         xchg    cl, ch                                                                  ;  intel byte order
@@ -556,11 +558,11 @@ ipv4_input:
         xchg    cl, ch
         mov     edx, eax
         mov     [edx + IPv4_header.TotalLength], cx
-        add     esp, 12
+        add     esp, 8                  ; Remove pointer to first buffer and pointer to last buffer from the stack
         xchg    cl, ch
-        push    ecx edx                 ; size and pointer
+        push    edx                     ; Push pointer to the new buffer with full IP packet
         mov     edi, [edi_saved]
-        jmp     .handle_it              ; edx = buf ptr, ecx = size, [esp] buf ptr, [esp+4], total size, ebx=device ptr
+        jmp     .handle_it              ; edx = buf ptr, ecx = size, [esp] buf ptr, ebx=device ptr
 
   .destroy_slot_pop:
         add     esp, 4
