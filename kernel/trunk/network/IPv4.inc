@@ -508,7 +508,7 @@ ipv4_input:
         je      .destroy_slot_pop                                                       ; If we dont have enough space to allocate the buffer, discard all packets in slot
         mov     edx, [esp+4]                                                            ; Get pointer to first fragment entry back in edx
 
-        ; FIXME: We should create NET_BUFF in eax instead of a rugular buffer with IP packet
+        ; FIXME: Allocate NET_BUFF here instead of raw IP packet buffer
 
   .rebuild_packet_loop:
         movzx   ecx, [edx + sizeof.NET_BUFF + sizeof.IPv4_FRAGMENT_entry + IPv4_header.FlagsAndFragmentOffset] ; Calculate the fragment offset
@@ -562,6 +562,15 @@ ipv4_input:
         xchg    cl, ch
         push    edx                     ; Push pointer to the new buffer with full IP packet
         mov     edi, [edi_saved]
+
+; FIXME: Remove this block once allocated network buffers handling is implemented.
+if 1
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_input: fragmented packet of size %d is dropped\n", ecx
+        call    kernel_free             ; Ptr to buffer is on the stack already
+        inc     [IPv4_packets_dumped + edi]
+        ret
+end if
+
         jmp     .handle_it              ; edx = buf ptr, ecx = size, [esp] buf ptr, ebx=device ptr
 
   .destroy_slot_pop:
