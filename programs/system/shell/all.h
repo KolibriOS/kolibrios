@@ -6,6 +6,8 @@
 #include "lang.h"
 #endif
 
+#include <stdio.h> // Added by Coldy (this should be right here)
+
 #include "system/boolean.h"
 #include "system/kolibri.h"
 //#include "system/stdlib.h"
@@ -36,8 +38,6 @@ while (1)
 	}
 }
 //--------
-
-extern int  _FUNC(sprintf)(char* buffer, const char* format, ...);
 
 #include "globals.h"
 #include "prototypes.h"

@@ -6,7 +6,7 @@ int cmd_more(char file[]) {
 	unsigned	result, i;
 	unsigned long long filesize, pos;
 	char		buf[81]; //����
-	char		temp[FILENAME_MAX];
+	char*		temp = (char*) malloc(FILENAME_MAX);
 	unsigned	flags;
 
 	if (strlen(file)<1) {
@@ -87,6 +87,7 @@ int cmd_more(char file[]) {
 		}
 	con_set_flags(flags);
 	printf ("\n\r");
+  free(temp);
 	return TRUE;
 }
 

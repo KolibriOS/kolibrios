@@ -12,6 +12,7 @@
 #define E_NOMEM		30 
 #define E_PARAM		33
 
+#undef FILENAME_MAX // Added by Coldy (elimination of conflict with stdio.h)
 #define FILENAME_MAX	1024
 
 #pragma pack(push,1)

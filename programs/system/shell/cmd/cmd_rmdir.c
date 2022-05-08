@@ -1,6 +1,6 @@
 
 int cmd_rmdir(char dir[]) {
-	char		temp[FILENAME_MAX];
+	char*		temp = (char*) malloc(FILENAME_MAX);
 	kol_struct70	k70;
 	unsigned	result;
 
@@ -35,6 +35,8 @@ int cmd_rmdir(char dir[]) {
 
 	result = kol_file_70(&k70);
 
+  free(temp);
+  
 	if (0 == result)
 		return TRUE;
 	else 

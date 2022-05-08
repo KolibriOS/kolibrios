@@ -7,7 +7,7 @@ int cmd_ls(char dir[]) {
 	unsigned	*t;
 	unsigned	type_of_file; // check is this a file or a folder
 	int		i, result;
-	char tmp[FILENAME_MAX];
+	char* tmp = (char*) malloc(FILENAME_MAX);
 
 	bool single_column_mode = FALSE;
 
@@ -121,6 +121,7 @@ int cmd_ls(char dir[]) {
 	}
 
 	free((void*)k70.p16);
+  free(tmp);
 	return TRUE;
 }
 

@@ -2,7 +2,7 @@
 int cmd_rm(char file[]) {
 
 	kol_struct70	k70;
-	char		temp[FILENAME_MAX];
+	char*		temp = (char*) malloc(FILENAME_MAX);
 	unsigned	result;
 
 	if (NULL == file || strlen(file) == 0) {
@@ -41,6 +41,8 @@ int cmd_rm(char file[]) {
 	k70.p21 = temp;
 
 	result = kol_file_70(&k70);
+  
+  free(temp);
 
 	if (0 == result)
 		return TRUE;
