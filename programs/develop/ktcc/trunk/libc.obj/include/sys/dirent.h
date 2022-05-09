@@ -23,11 +23,11 @@ typedef struct {
     ino_t num_objs;
 } DIR;
 
-extern int _FUNC(closedir)(DIR* dir);
-extern DIR* _FUNC(opendir)(const char* path);
-extern struct dirent* _FUNC(readdir)(DIR*);
-extern void _FUNC(rewinddir)(DIR* dir);
-extern void _FUNC(seekdir)(DIR* dir, unsigned pos);
-extern unsigned _FUNC(telldir)(DIR* dir);
+DLLAPI int closedir(DIR* dir);
+DLLAPI DIR* opendir(const char* path);
+DLLAPI struct dirent* readdir(DIR*);
+DLLAPI void rewinddir(DIR* dir);
+DLLAPI void seekdir(DIR* dir, unsigned pos);
+DLLAPI unsigned telldir(DIR* dir);
 
 #endif // _DIRENT_H_

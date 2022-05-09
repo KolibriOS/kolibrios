@@ -46,11 +46,9 @@ struct addrinfo {
 };  
 #pragma pack(pop)
 
-int networklib_init();
-
-extern int __stdcall (*inet_addr)(const char* hostname);
-extern char* __stdcall (*inet_ntoa)(int ip_addr);
-extern int __stdcall (*getaddrinfo)(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res);
-extern void __stdcall (*freeaddrinfo)(struct addrinfo* ai);
+DLLAPI int __stdcall inet_addr(const char* hostname);
+DLLAPI char* __stdcall inet_ntoa(int ip_addr);
+DLLAPI int __stdcall getaddrinfo(const char* hostname, const char* servname, const struct addrinfo* hints, struct addrinfo** res);
+DLLAPI void __stdcall freeaddrinfo(struct addrinfo* ai);
 
 #endif

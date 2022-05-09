@@ -13,9 +13,17 @@ typedef __SIZE_TYPE__ uintptr_t;
 #endif
 
 #ifdef _BUILD_LIBC
+
+/* FIXME: Now _FUNC is used in conio only.
+          This should be removed after revrite somme apps who use conio
+          (because these app use pointer dereferencing for conio)
+*/
 #define _FUNC(func) func
+ 
+#define DLLAPI //__attribute__((dllexport)) // Comming soon(tcc not support yet)
 #else
-#define _FUNC(func) (*func)
+#define _FUNC(func) (*func) // FIXME: this needed for legacy reason (see above)
+#define DLLAPI __attribute__((dllimport))
 #endif
 
 #define offsetof(type, field) ((size_t) & ((type*)0)->field)

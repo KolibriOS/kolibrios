@@ -11,7 +11,7 @@ typedef struct __jmp_buf_tag {
     unsigned long __ss[128 / sizeof(long)];
 } jmp_buf[1];
 
-extern int _FUNC(setjmp)(jmp_buf env);
-extern void _FUNC(longjmp)(jmp_buf env, int val);
+DLLAPI int setjmp(jmp_buf env);
+DLLAPI void longjmp(jmp_buf env, int val);
 
 #endif // _SETJMP_H_
