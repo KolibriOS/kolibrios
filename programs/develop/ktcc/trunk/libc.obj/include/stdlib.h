@@ -41,31 +41,31 @@ static inline lldiv_t lldiv(long long num, long long den)
     return (lldiv_t) { num / den, num % den };
 }
 
-DLLAPI void* malloc(size_t size);
-DLLAPI void* calloc(size_t num, size_t size);
-DLLAPI void* realloc(void* ptr, size_t newsize);
-DLLAPI void free(void* ptr);
+extern void* _FUNC(malloc)(size_t size);
+extern void* _FUNC(calloc)(size_t num, size_t size);
+extern void* _FUNC(realloc)(void* ptr, size_t newsize);
+extern void _FUNC(free)(void* ptr);
 
-DLLAPI long int strtol(const char* str, char** endptr, int base);
+extern long int _FUNC(strtol)(const char* str, char** endptr, int base);
 
-DLLAPI void exit(int status);
+extern void _FUNC(exit)(int status);
 
-DLLAPI void srand(unsigned s);
-DLLAPI int rand(void);
+extern void _FUNC(srand)(unsigned s);
+extern int _FUNC(rand)(void);
 
-DLLAPI void __assert_fail(const char* expr, const char* file, int line, const char* func);
-DLLAPI void qsort(void* base0, size_t n, size_t size, int (*compar)(const void*, const void*));
+extern void _FUNC(__assert_fail)(const char* expr, const char* file, int line, const char* func);
+extern void _FUNC(qsort)(void* base0, size_t n, size_t size, int (*compar)(const void*, const void*));
 
-DLLAPI double strtod(const char* s, char** sret);
-DLLAPI double atof(const char* ascii);
+extern double _FUNC(strtod)(const char* s, char** sret);
+extern double _FUNC(atof)(const char* ascii);
 
-DLLAPI int atoi(const char* s);
-DLLAPI long atol(const char*);
-DLLAPI long long atoll(const char*);
-DLLAPI void itoa(int n, char* s);
+extern int _FUNC(atoi)(const char* s);
+extern long _FUNC(atol)(const char*);
+extern long long _FUNC(atoll)(const char*);
+extern void _FUNC(itoa)(int n, char* s);
 
-DLLAPI int abs(int);
-DLLAPI long labs(long);
-DLLAPI long long llabs(long long);
+extern int _FUNC(abs)(int);
+extern long _FUNC(labs)(long);
+extern long long _FUNC(llabs)(long long);
 
 #endif

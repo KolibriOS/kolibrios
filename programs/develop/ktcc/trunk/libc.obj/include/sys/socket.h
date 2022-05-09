@@ -76,16 +76,16 @@ typedef struct {
 } optstruct;
 #pragma pack(pop)
 
-DLLAPI int socket(int domain, int type, int protocol);
-DLLAPI int close(int socket);
-DLLAPI int bind(int socket, const struct sockaddr* addres, int addres_len);
-DLLAPI int listen(int socket, int backlog);
-DLLAPI int connect(int socket, const struct sockaddr* address, int socket_len);
-DLLAPI int accept(int socket, const struct sockaddr* address, int address_len);
-DLLAPI int send(int socket, const void* message, size_t msg_len, int flag);
-DLLAPI int recv(int socket, void* buffer, size_t buff_len, int flag);
-DLLAPI int setsockopt(int socket, const optstruct* opt);
-DLLAPI int getsockopt(int socket, optstruct* opt);
-DLLAPI int socketpair(int* socket1, int* socket2);
+extern int _FUNC(socket)(int domain, int type, int protocol);
+extern int _FUNC(close)(int socket);
+extern int _FUNC(bind)(int socket, const struct sockaddr* addres, int addres_len);
+extern int _FUNC(listen)(int socket, int backlog);
+extern int _FUNC(connect)(int socket, const struct sockaddr* address, int socket_len);
+extern int _FUNC(accept)(int socket, const struct sockaddr* address, int address_len);
+extern int _FUNC(send)(int socket, const void* message, size_t msg_len, int flag);
+extern int _FUNC(recv)(int socket, void* buffer, size_t buff_len, int flag);
+extern int _FUNC(setsockopt)(int socket, const optstruct* opt);
+extern int _FUNC(getsockopt)(int socket, optstruct* opt);
+extern int _FUNC(socketpair)(int* socket1, int* socket2);
 
 #endif //_SOCKET_H_

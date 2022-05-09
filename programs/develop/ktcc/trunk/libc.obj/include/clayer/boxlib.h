@@ -8,6 +8,7 @@
 #include <sys/ksys.h>
 
 typedef unsigned color_t;
+int kolibri_boxlib_init(void);
 
 /*  flags meaning */
 #define ed_figure_only  0b1000000000000000 // одни символы
@@ -68,10 +69,10 @@ typedef struct {
     uint32_t ar_offset;
 } __attribute__((__packed__)) scrollbar;
 
-DLLAPI void __stdcall scrollbar_h_draw(scrollbar*);
-DLLAPI void __stdcall scrollbar_h_mouse(scrollbar*);
-DLLAPI void __stdcall scrollbar_v_draw(scrollbar*);
-DLLAPI void __stdcall scrollbar_v_mouse(scrollbar*);
+extern void __stdcall (*scrollbar_h_draw)(scrollbar*);
+extern void __stdcall (*scrollbar_h_mouse)(scrollbar*);
+extern void __stdcall (*scrollbar_v_draw)(scrollbar*);
+extern void __stdcall (*scrollbar_v_mouse)(scrollbar*);
 
 // CHECKBOX
 typedef struct {
@@ -88,9 +89,9 @@ typedef struct {
     unsigned int size_of_str;
 } check_box;
 
-DLLAPI void __stdcall check_box_draw2(check_box*);
-DLLAPI void __stdcall check_box_mouse2(check_box*);
-DLLAPI void __stdcall init_checkbox2(check_box*);
+extern void __stdcall (*check_box_draw2)(check_box*);
+extern void __stdcall (*check_box_mouse2)(check_box*);
+extern void __stdcall (*init_checkbox2)(check_box*);
 
 // DBUTTON
 typedef struct {
@@ -110,8 +111,8 @@ typedef struct {
     uint32_t click;          // clicked - 1, zero it after tested
 } pict_button;
 
-DLLAPI void __stdcall dynamic_button_draw(pict_button*);
-DLLAPI void __stdcall dynamic_button_mouse(pict_button*);
+extern void __stdcall (*dynamic_button_draw)(pict_button*);
+extern void __stdcall (*dynamic_button_mouse)(pict_button*);
 
 // EDITBOX
 
@@ -143,12 +144,12 @@ typedef struct edit_box_t {
 } edit_box;
 #pragma pack(pop)
 
-DLLAPI void __stdcall edit_box_draw(edit_box*);
-DLLAPI void __stdcall edit_box_key(edit_box*, unsigned int key_val);
-DLLAPI void __stdcall edit_box_mouse(edit_box*);
-DLLAPI void __stdcall edit_box_set_text(edit_box*, char*);
+extern void __stdcall (*edit_box_draw)(edit_box*);
+extern void __stdcall (*edit_box_key)(edit_box*, unsigned int key_val);
+extern void __stdcall (*edit_box_mouse)(edit_box*);
+extern void __stdcall (*edit_box_set_text)(edit_box*, char*);
 
-DLLAPI void __stdcall edit_box_key_safe(edit_box* e, ksys_oskey_t ch);
+extern void __stdcall (*edit_box_key_safe)(edit_box* e, ksys_oskey_t ch);
 
 // FRAME
 typedef struct {
@@ -166,7 +167,7 @@ typedef struct {
     color_t font_bg_color;
 } frame;
 
-DLLAPI void __stdcall frame_draw(frame*);
+extern void __stdcall (*frame_draw)(frame*);
 
 // MENUBAR
 typedef struct
@@ -207,9 +208,9 @@ typedef struct
     uint32_t get_mouse_flag;
 } menubar;
 
-DLLAPI void __stdcall menu_bar_draw(menubar*);
-DLLAPI void __stdcall menu_bar_mouse(menubar*);
-DLLAPI void __stdcall menu_bar_activate(menubar*);
+extern void __stdcall (*menu_bar_draw)(menubar*);
+extern void __stdcall (*menu_bar_mouse)(menubar*);
+extern void __stdcall (*menu_bar_activate)(menubar*);
 
 // OPTIONBOX
 typedef struct option_box_t {
@@ -226,8 +227,8 @@ typedef struct option_box_t {
     uint32_t flags;
 } __attribute__((__packed__)) option_box;
 
-DLLAPI void __stdcall option_box_draw(option_box**);
-DLLAPI void __stdcall option_box_mouse(option_box**);
+extern void __stdcall (*option_box_draw)(option_box**);
+extern void __stdcall (*option_box_mouse)(option_box**);
 
 // PATHSHOW
 typedef struct {
@@ -244,8 +245,8 @@ typedef struct {
     uint32_t temp_text_length;
 } __attribute__((__packed__)) pathview;
 
-DLLAPI void __stdcall path_show_prepare(pathview*);
-DLLAPI void __stdcall path_show_draw(pathview*);
+extern void __stdcall (*path_show_prepare)(pathview*);
+extern void __stdcall (*path_show_draw)(pathview*);
 
 // PROGRESSBAR
 typedef struct {
@@ -262,7 +263,7 @@ typedef struct {
     unsigned int frame_color;
 } progressbar;
 
-DLLAPI void __stdcall progressbar_draw(progressbar*);
-DLLAPI void __stdcall progressbar_progress(progressbar*);
+extern void __stdcall (*progressbar_draw)(progressbar*);
+extern void __stdcall (*progressbar_progress)(progressbar*);
 
 #endif /* KOLIBRI_BOXLIB_H */

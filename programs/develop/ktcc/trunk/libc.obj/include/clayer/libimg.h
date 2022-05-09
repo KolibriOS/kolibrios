@@ -4,9 +4,7 @@
 #define KOLIBRI_LIBIMG_H
 
 #include <stddef.h>
-#include <stdint.h>
 #include <stdbool.h>
-
 
 //list of format id's
 #define LIBIMG_FORMAT_BMP       1
@@ -97,28 +95,30 @@ typedef struct{
 #define ROTATE_90_CCW   ROTATE_270_CW
 #define ROTATE_270_CCW  ROTATE_90_CW
 
-DLLAPI Image* __stdcall img_decode(void* file_data, uint32_t size, uint32_t b_color);
-DLLAPI Image* __stdcall img_encode(Image* img, uint32_t length, uint32_t option);
-DLLAPI Image* __stdcall img_create(uint32_t width, uint32_t height, uint32_t type);
-DLLAPI void   __stdcall img_to_rgb2(Image* img, void *rgb_data);
-DLLAPI Image* __stdcall img_to_rgb(Image* img);
-DLLAPI bool   __stdcall img_flip(Image* img, uint32_t flip);
-DLLAPI bool   __stdcall img_flip_layer(Image *img, uint32_t flip);
-DLLAPI bool   __stdcall img_rotate(Image *img, uint32_t rotate);
-DLLAPI bool   __stdcall img_rotate_layer(Image* data, uint32_t rotate);
-DLLAPI void   __stdcall img_draw(Image *img, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t xoff,  uint32_t yoff);
-DLLAPI int32_t __stdcall img_count(Image *img);
-DLLAPI bool   __stdcall img_destroy(Image *img);
-DLLAPI bool   __stdcall img_destroy_layer(Image* img);
-DLLAPI Image* __stdcall img_blend(Image* dst, Image* src, uint32_t out_x, uint32_t out_y, uint32_t in_x, uint32_t in_y, uint32_t width, uint32_t height); 
-DLLAPI Image* __stdcall img_convert(Image *src, Image *dst, uint32_t dst_type, uint32_t, uint32_t); 
-DLLAPI Image* __stdcall img_resize_data(Image *src, uint32_t width, uint32_t height);
-DLLAPI Image* __stdcall img_scale(Image* src, uint32_t crop_x, uint32_t crop_y, uint32_t crop_width, uint32_t crop_height, Image* dst, uint32_t scale_type, uint32_t inter, uint32_t new_width, uint32_t new_height);
+extern Image* __stdcall (*img_decode)(void* file_data, uint32_t size, uint32_t b_color);
+extern Image* __stdcall (*img_encode)(Image* img, uint32_t length, uint32_t option);
+extern Image* __stdcall (*img_create)(uint32_t width, uint32_t height, uint32_t type);
+extern void   __stdcall (*img_to_rgb2)(Image* img, void *rgb_data);
+extern Image* __stdcall (*img_to_rgb)(Image* img);
+extern bool   __stdcall (*img_flip)(Image* img, uint32_t flip);
+extern bool   __stdcall (*img_flip_layer)(Image *img, uint32_t flip);
+extern bool   __stdcall (*img_rotate)(Image *img, uint32_t rotate);
+extern bool   __stdcall (*img_rotate_layer)(Image* data, uint32_t rotate);
+extern void   __stdcall (*img_draw)(Image *img, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t xoff,  uint32_t yoff);
+extern int32_t __stdcall (*img_count)(Image *img);
+extern bool   __stdcall (*img_destroy)(Image *img);
+extern bool   __stdcall (*img_destroy_layer)(Image* img);
+extern Image* __stdcall (*img_blend)(Image* dst, Image* src, uint32_t out_x, uint32_t out_y, uint32_t in_x, uint32_t in_y, uint32_t width, uint32_t height); 
+extern Image* __stdcall (*img_convert)(Image *src, Image *dst, uint32_t dst_type, uint32_t, uint32_t); 
+extern Image* __stdcall (*img_resize_data)(Image *src, uint32_t width, uint32_t height);
+extern Image* __stdcall (*img_scale)(Image* src, uint32_t crop_x, uint32_t crop_y, uint32_t crop_width, uint32_t crop_height, Image* dst, uint32_t scale_type, uint32_t inter, uint32_t new_width, uint32_t new_height);
 
 void img_fill_color(Image* img, uint32_t width, uint32_t height, uint32_t color){
     for (uint32_t i = 0; i < width*height; i++) {
         img->Data[i] = color;
     }
 }
+
+int kolibri_libimg_init(void);
 
 #endif /* KOLIBRI_LIBIMG_H */

@@ -115,10 +115,12 @@ color_dialog* kolibri_new_color_dialog(unsigned int type, unsigned short tlx, un
     return new_colordialog;
 }
 
-DLLAPI void __stdcall OpenDialog_init(open_dialog*);
-DLLAPI void __stdcall OpenDialog_start(open_dialog*);
+void kolibri_dialog_init();
 
-DLLAPI void __stdcall ColorDialog_init(color_dialog*);
-DLLAPI void __stdcall ColorDialog_start(color_dialog*);
+extern void __stdcall (*OpenDialog_init)(open_dialog*);
+extern void __stdcall (*OpenDialog_start)(open_dialog*);
+
+extern void __stdcall (*ColorDialog_init)(color_dialog*);
+extern void __stdcall (*ColorDialog_start)(color_dialog*);
 
 #endif

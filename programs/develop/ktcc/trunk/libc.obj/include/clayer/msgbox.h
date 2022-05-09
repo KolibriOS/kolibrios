@@ -3,7 +3,6 @@
 
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,9 +16,9 @@ typedef struct {
 
 typedef void (*msgbox_callback)(void);
 
-DLLAPI void __stdcall mb_create(msgbox *, void *thread); // clears callbacks, ! if fix lib, we can return eax as of Fn51
-DLLAPI void __stdcall mb_setfunctions(msgbox_callback*); // must be called immediately after create, zero-ended array
-DLLAPI void __stdcall mb_reinit(msgbox *);  // recalc sizes when structure changes, called auto when MsgBoxCreate
+extern void __stdcall (*mb_create)(msgbox *, void *thread); // clears callbacks, ! if fix lib, we can return eax as of Fn51
+extern void __stdcall (*mb_setfunctions)(msgbox_callback*); // must be called immediately after create, zero-ended array
+extern void __stdcall (*mb_reinit)(msgbox *);  // recalc sizes when structure changes, called auto when MsgBoxCreate
 
 static inline msgbox* kolibri_new_msgbox(char* title, char* text, int def_but, ...)
 /// text can be multilined by code 13 = "\r"

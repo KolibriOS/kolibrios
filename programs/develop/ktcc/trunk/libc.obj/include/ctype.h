@@ -41,7 +41,7 @@ extern unsigned short* __is;
 #define isascii(c) (!((c) & (~0x7f)))
 #define toascii(c) ((c)&0x7f)
 
-DLLAPI int tolower(int c);
-DLLAPI int toupper(int c);
+extern int _FUNC(tolower)(int c);
+extern int _FUNC(toupper)(int c);
 
 #endif
