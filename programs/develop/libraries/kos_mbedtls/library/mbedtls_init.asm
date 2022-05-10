@@ -70,28 +70,29 @@ import networklib, \
         inet_ntoa, 'inet_ntoa', \
         getaddrinfo, 'getaddrinfo', \
         freeaddrinfo, 'freeaddrinfo'
-	
+
+; Most aliases below was changed for compatible to latest version tcc and the libc.obj headers 	
 public inet_addr
 public inet_ntoa
-public getaddrinfo
-public freeaddrinfo
+public getaddrinfo as '__imp_getaddrinfo@16'
+public freeaddrinfo as '__imp_freeaddrinfo@4'
 
-public rand
-public memcmp
-public printf
-public calloc
-public free
-public strlen
-public _strcmp as 'strcmp'
-public strstr
+public rand as '__imp_rand'
+public memcmp as '__imp_memcmp'
+public printf as '__imp_printf'
+public calloc as '__imp_calloc'
+public free as '__imp_free'
+public strlen as '__imp_strlen'
+public _strcmp as '__imp_strcmp'
+public strstr as '__imp_strstr'
 public gmtime
-public vsnprintf
-public socket
-public connect
-public close
-public recv
-public send
-public time
-public strncmp
-public strncpy
-public snprintf
+public vsnprintf as '__imp_vsnprintf'
+public socket as '__imp_socket'
+public connect as '__imp_connect'
+public close as '__imp_close'
+public recv as '__imp_recv'
+public send as '__imp_send'
+public time as '__imp_time'
+public strncmp as '__imp_strncmp'
+public strncpy as '__imp_strncpy'
+public snprintf as '__imp_snprintf'

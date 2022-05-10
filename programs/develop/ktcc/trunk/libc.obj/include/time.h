@@ -22,10 +22,10 @@ struct tm {
 };
 #pragma pack(pop)
 
-extern time_t _FUNC(mktime)(struct tm* timeptr);
-extern time_t _FUNC(time)(time_t* timer);
-extern struct tm* _FUNC(localtime)(const time_t* timer);
-extern double _FUNC(difftime)(time_t end, time_t beginning);
-extern char* _FUNC(asctime)(const struct tm* tm);
+DLLAPI time_t mktime(struct tm* timeptr);
+DLLAPI time_t time(time_t* timer);
+DLLAPI struct tm* localtime(const time_t* timer);
+DLLAPI double difftime(time_t end, time_t beginning);
+DLLAPI char* asctime(const struct tm* tm);
 
 #endif

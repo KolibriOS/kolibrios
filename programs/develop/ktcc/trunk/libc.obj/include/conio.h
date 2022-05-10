@@ -32,9 +32,9 @@ typedef unsigned short word; /* 16-bit unsigned integer */
 
 #define CON_IGNORE_SPECIALS 0x100
 
-extern int _FUNC(con_init)(void);
-extern int _FUNC(con_init_opt)(dword wnd_width, dword wnd_height, dword scr_width, dword scr_height, const char* title);
-extern void __stdcall _FUNC((*con_exit))(int bCloseWindow);
+DLLAPI int con_init(void);
+DLLAPI int con_init_opt(dword wnd_width, dword wnd_height, dword scr_width, dword scr_height, const char* title);
+extern void __stdcall _FUNC(*con_exit)(int bCloseWindow);
 extern void __stdcall _FUNC((*con_set_title))(const char* title);
 extern void __stdcall _FUNC((*con_write_asciiz))(const char* str);
 extern void __stdcall _FUNC((*con_write_string))(const char* str, dword length);
@@ -53,6 +53,6 @@ extern char* __stdcall _FUNC((*con_gets2))(con_gets2_callback callback, char* st
 extern void __stdcall _FUNC((*con_cls))();
 extern void __stdcall _FUNC((*con_get_cursor_pos))(int* px, int* py);
 extern void __stdcall _FUNC((*con_set_cursor_pos))(int x, int y);
-extern int _FUNC(__con_is_load);
+extern int __con_is_load;
 
 #endif

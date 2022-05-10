@@ -51,18 +51,18 @@ static void * mtar_memset( void * s, int c, size_t n ){
 }
 
 #ifdef MTAR_OBJ
-
-size_t (*fread)(void *restrict, size_t size, size_t count, FILE *restrict)=NULL;
-size_t (*fwrite)(const void *restrict, size_t size, size_t count, FILE *restrict)=NULL;
-int    (*fclose)(FILE *)=NULL;
-FILE*  (*fopen)(const char *restrict, const char *restrict)=NULL;
-int    (*fseek)(FILE *, long, int)=NULL;
-long   (*ftell)(FILE *)=NULL;
-int    (*sprintf)(char* buffer, const char* format, ...)=NULL;
-int    (*sscanf)(const char*, const char *restrict, ...)=NULL;
-int    (*strcmp)(const char * s1, const char* s2)=NULL;
-char*  (*strchr)(const char* s, int c)=NULL;
-char*  (*strcpy)(char*  s1, const char* s2)=NULL;
+// All pointers was changed for compatible to latest version tcc and the libc.obj headers
+size_t (*_fread)(void *restrict, size_t size, size_t count, FILE *restrict)=NULL;
+size_t (*_fwrite)(const void *restrict, size_t size, size_t count, FILE *restrict)=NULL;
+int    (*_fclose)(FILE *)=NULL;
+FILE*  (*_fopen)(const char *restrict, const char *restrict)=NULL;
+int    (*_fseek)(FILE *, long, int)=NULL;
+long   (*_ftell)(FILE *)=NULL;
+int    (*_sprintf)(char* buffer, const char* format, ...)=NULL;
+int    (*_sscanf)(const char*, const char *restrict, ...)=NULL;
+int    (*_strcmp)(const char * s1, const char* s2)=NULL;
+char*  (*_strchr)(const char* s, int c)=NULL;
+char*  (*_strcpy)(char*  s1, const char* s2)=NULL;
 
 #endif
 
@@ -123,19 +123,19 @@ static int raw_to_header(mtar_header_t *h, const mtar_raw_header_t *rh) {
 
   /* Build and compare checksum */
   chksum1 = checksum(rh);
-  sscanf(rh->checksum, "%o", &chksum2);
+  _sscanf(rh->checksum, "%o", &chksum2);
   if (chksum1 != chksum2) {
     return MTAR_EBADCHKSUM;
   }
 
   /* Load raw header into header */
-  sscanf(rh->mode, "%o", &h->mode);
-  sscanf(rh->owner, "%o", &h->owner);
-  sscanf(rh->size, "%o", &h->size);
-  sscanf(rh->mtime, "%o", &h->mtime);
+  _sscanf(rh->mode, "%o", &h->mode);
+  _sscanf(rh->owner, "%o", &h->owner);
+  _sscanf(rh->size, "%o", &h->size);
+  _sscanf(rh->mtime, "%o", &h->mtime);
   h->type = rh->type;
-  strcpy(h->name, rh->name);
-  strcpy(h->linkname, rh->linkname);
+  _strcpy(h->name, rh->name);
+  _strcpy(h->linkname, rh->linkname);
 
   return MTAR_ESUCCESS;
 }
@@ -146,17 +146,17 @@ static int header_to_raw(mtar_raw_header_t *rh, const mtar_header_t *h) {
 
   /* Load header into raw header */
   mtar_memset(rh, 0, sizeof(*rh));
-  sprintf(rh->mode, "%o", h->mode);
-  sprintf(rh->owner, "%o", h->owner);
-  sprintf(rh->size, "%o", h->size);
-  sprintf(rh->mtime, "%o", h->mtime);
+  _sprintf(rh->mode, "%o", h->mode);
+  _sprintf(rh->owner, "%o", h->owner);
+  _sprintf(rh->size, "%o", h->size);
+  _sprintf(rh->mtime, "%o", h->mtime);
   rh->type = h->type ? h->type : MTAR_TREG;
-  strcpy(rh->name, h->name);
-  strcpy(rh->linkname, h->linkname);
+  _strcpy(rh->name, h->name);
+  _strcpy(rh->linkname, h->linkname);
 
   /* Calculate and write checksum */
   chksum = checksum(rh);
-  sprintf(rh->checksum, "%06o", chksum);
+  _sprintf(rh->checksum, "%06o", chksum);
   rh->checksum[7] = ' ';
 
   return MTAR_ESUCCESS;
@@ -180,22 +180,22 @@ const char* mtar_strerror(int err) {
 
 
 static int file_write(mtar_t *tar, const void *data, unsigned size) {
-  unsigned res = fwrite(data, 1, size, tar->stream);
+  unsigned res = _fwrite(data, 1, size, tar->stream);
   return (res == size) ? MTAR_ESUCCESS : MTAR_EWRITEFAIL;
 }
 
 static int file_read(mtar_t *tar, void *data, unsigned size) {
-  unsigned res = fread(data, 1, size, tar->stream);
+  unsigned res = _fread(data, 1, size, tar->stream);
   return (res == size) ? MTAR_ESUCCESS : MTAR_EREADFAIL;
 }
 
 static int file_seek(mtar_t *tar, unsigned offset) {
-    int res = fseek(tar->stream, offset, SEEK_SET);
+    int res = _fseek(tar->stream, offset, SEEK_SET);
   return (res == 0) ? MTAR_ESUCCESS : MTAR_ESEEKFAIL;
 }
 
 static int file_close(mtar_t *tar) {
-  fclose(tar->stream);
+  _fclose(tar->stream);
   return MTAR_ESUCCESS;
 }
 
@@ -212,11 +212,11 @@ int mtar_open(mtar_t *tar, const char *filename, const char *mode) {
   tar->close = file_close;
 
   /* Assure mode is always binary */
-  if ( strchr(mode, 'r') ) mode = "rb";
-  if ( strchr(mode, 'w') ) mode = "wb";
-  if ( strchr(mode, 'a') ) mode = "ab";
+  if ( _strchr(mode, 'r') ) mode = "rb";
+  if ( _strchr(mode, 'w') ) mode = "wb";
+  if ( _strchr(mode, 'a') ) mode = "ab";
   /* Open file */
-  tar->stream = fopen(filename, mode);
+  tar->stream = _fopen(filename, mode);
   if (!tar->stream) {
     return MTAR_EOPENFAIL;
   }
@@ -277,7 +277,7 @@ int mtar_find(mtar_t *tar, const char *name, mtar_header_t *h) {
   }
   /* Iterate all files until we hit an error or find the file */
   while ( (err = mtar_read_header(tar, &header)) == MTAR_ESUCCESS ) {
-    if ( !strcmp(header.name, name) ) {
+    if ( !_strcmp(header.name, name) ) {
       if (h) {
         *h = header;
       }
@@ -358,7 +358,7 @@ int mtar_write_file_header(mtar_t *tar, const char *name, unsigned size) {
   mtar_header_t h;
   /* Build header */
   mtar_memset(&h, 0, sizeof(h));
-  strcpy(h.name, name);
+  _strcpy(h.name, name);
   h.size = size;
   h.type = MTAR_TREG;
   h.mode = 0664;
@@ -371,7 +371,7 @@ int mtar_write_dir_header(mtar_t *tar, const char *name) {
   mtar_header_t h;
   /* Build header */
   mtar_memset(&h, 0, sizeof(h));
-  strcpy(h.name, name);
+  _strcpy(h.name, name);
   h.type = MTAR_TDIR;
   h.mode = 0775;
   /* Write header */
@@ -413,17 +413,17 @@ int mtar_init(){
     return 1;
   }
 
-  fread  = _ksys_dlsym(libc, "fread");
-  fwrite = _ksys_dlsym(libc, "fwrite");
-  fclose = _ksys_dlsym(libc, "fclose");
-  fopen  = _ksys_dlsym(libc, "fopen");
-  fseek  = _ksys_dlsym(libc, "fseek");
-  ftell  = _ksys_dlsym(libc, "ftell");
-  sprintf= _ksys_dlsym(libc, "sprintf");
-  sscanf = _ksys_dlsym(libc, "sscanf");
-  strcmp = _ksys_dlsym(libc, "strcmp");
-  strchr = _ksys_dlsym(libc, "strchr");
-  strcpy = _ksys_dlsym(libc, "strcpy");
+  _fread  = _ksys_dlsym(libc, "fread");
+  _fwrite = _ksys_dlsym(libc, "fwrite");
+  _fclose = _ksys_dlsym(libc, "fclose");
+  _fopen  = _ksys_dlsym(libc, "fopen");
+  _fseek  = _ksys_dlsym(libc, "fseek");
+  _ftell  = _ksys_dlsym(libc, "ftell");
+  _sprintf= _ksys_dlsym(libc, "sprintf");
+  _sscanf = _ksys_dlsym(libc, "sscanf");
+  _strcmp = _ksys_dlsym(libc, "strcmp");
+  _strchr = _ksys_dlsym(libc, "strchr");
+  _strcpy = _ksys_dlsym(libc, "strcpy");
   return 0;
 }
 

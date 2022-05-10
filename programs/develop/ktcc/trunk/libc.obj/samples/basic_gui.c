@@ -29,7 +29,6 @@ void draw_window()
     // define&draw window
     _ksys_create_window(10, 40, 600, 400, "My window", sys_color_table.work_area, 0x13);
     _ksys_thread_info(&proc_info, -1);
-    F
 
         win_width
         = proc_info.winx_size;

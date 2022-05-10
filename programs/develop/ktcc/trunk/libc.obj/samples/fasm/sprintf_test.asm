@@ -30,7 +30,7 @@ include '../../../../../../macros.inc'
 include '../../../../../../proc32.inc'
 include '../../../../../../KOSfuncs.inc'
 
-; no needed for autolod 
+; no needed for autoload 
 ;include '../../../../../dll.inc'
 ;include '../../../../../debug-fdo.inc'
 

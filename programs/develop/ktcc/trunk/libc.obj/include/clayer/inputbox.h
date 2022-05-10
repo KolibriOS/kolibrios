@@ -10,7 +10,7 @@
 
 #include <stddef.h>
 
-extern unsigned __stdcall (*InputBox)(void* Buffer, char* Caption, char* Prompt, char* Default,
+DLLAPI unsigned __stdcall InputBox(void* Buffer, char* Caption, char* Prompt, char* Default,
                                     unsigned long Flags, unsigned long BufferSize, void* RedrawProc);
 
 #endif // KOLIBRI_INPUTBOX_H

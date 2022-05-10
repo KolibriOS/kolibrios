@@ -7,7 +7,7 @@ int main()
 {
     if (con_init())
         return 1; // init fail
-    (*con_set_tsitle)("Console colors");
+    (*con_set_title)("Console colors");
 
     //   con_write_asciiz("\033[0;31;42m test  \n"); // red on green bk
 
