@@ -564,7 +564,7 @@ ipv4_input:
 
 ; FIXME: Remove this block once allocated network buffers handling is implemented.
 if 1
-        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_input: fragmented packet of size %d is dropped\n", ecx
+        DEBUGF  DEBUG_NETWORK_ERROR, "IPv4_input: fragmented packet is dropped\n", ecx
         call    kernel_free             ; Ptr to buffer is on the stack already
         inc     [IPv4_packets_dumped + edi]
         ret
