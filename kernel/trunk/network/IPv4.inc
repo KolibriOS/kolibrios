@@ -87,7 +87,6 @@ align 4
         IPv4_fragments          rb IPv4_MAX_FRAGMENTS * sizeof.IPv4_FRAGMENT_slot
 
 ;        IPv4_routes             rd IPv4_MAX_ROUTES * sizeof.IPv4_ROUTE
-        edi_saved               rd 1
 
 endg
 
@@ -456,9 +455,9 @@ ipv4_input:
         je      .dump
 
         mov     esi, [esi + IPv4_FRAGMENT_slot.ptr]                     ; We found the first entry, let's calculate total size of the packet in eax, so we can allocate a buffer
-        push    esi
+        push    esi                                                     ; Save pointer to first buffer on stack
+        push    edi                                                     ; Save device index on stack
         xor     eax, eax
-        mov     [edi_saved], edi
         or      edi, -1
 
   .count_bytes:
@@ -478,7 +477,7 @@ ipv4_input:
         cmp     esi, -1
         jne     .count_bytes
 
-        mov     esi, [esp+4]
+        mov     esi, [esp+8]                                                                              ; Take the current (last) buffer pointer
         mov     [edi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr], esi                                ; Add this packet to the chain, this simplifies the following code
         mov     [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr], -1
         mov     [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.PrevPtr], edi
@@ -501,12 +500,12 @@ ipv4_input:
         cmp     ax, cx
         jne     .destroy_slot_pop
 
-        push    eax
+        push    eax                                                                     ; Save total size of packet on stack
         push    eax
         call    kernel_alloc
         test    eax, eax
-        je      .destroy_slot_pop                                                       ; If we dont have enough space to allocate the buffer, discard all packets in slot
-        mov     edx, [esp+4]                                                            ; Get pointer to first fragment entry back in edx
+        je      .destroy_slot_pop12                                                     ; If we dont have enough space to allocate the buffer, discard all packets in slot
+        mov     edx, [esp+8]                                                            ; Get pointer to first fragment entry back in edx
 
         ; FIXME: Allocate NET_BUFF here instead of raw IP packet buffer
 
@@ -554,14 +553,14 @@ ipv4_input:
         cmp     edx, -1                                                                 ; Check if it is last fragment in chain
         jne     .rebuild_packet_loop
 
-        pop     ecx
+        pop     ecx                     ; Restore the total size of IP packet
+        pop     edi                     ; Restore the device index
         xchg    cl, ch
         mov     edx, eax
         mov     [edx + IPv4_header.TotalLength], cx
         add     esp, 8                  ; Remove pointer to first buffer and pointer to last buffer from the stack
         xchg    cl, ch
         push    edx                     ; Push pointer to the new buffer with full IP packet
-        mov     edi, [edi_saved]
 
 ; FIXME: Remove this block once allocated network buffers handling is implemented.
 if 1
@@ -573,11 +572,15 @@ end if
 
         jmp     .handle_it              ; edx = buf ptr, ecx = size, [esp] buf ptr, ebx=device ptr
 
+  .destroy_slot_pop12:
+        add     esp, 4 ; Remove total size from the stack
   .destroy_slot_pop:
-        add     esp, 4
+        pop     edi    ; Restore device index
+        add     esp, 4 ; Remove first buffer pointer from the stack
   .destroy_slot:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Destroy fragment slot!\n"
-        ; TODO!
+        ; TODO: What?
+        ; Last buffer pointer is on the stack now
         jmp     .dump
 
 
