@@ -1685,6 +1685,7 @@ BEGIN
         Lines.destroy(line);
         line := Lines.create(TRUE)
     END;
+    SetPos(text, cursor.X, cursor.Y);
     Lines.destroy(line);
     RW.destroy(cliptext)
 END paste;
