@@ -67,7 +67,6 @@ img_files = {
  {"SETTINGS/NETWORK.INI", "common/settings/network.ini"},
  {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
  {"SETTINGS/TASKBAR.INI", "common/settings/taskbar.ini"},
- {"SETTINGS/weather.json", PROGS .. "/other/Weather/weather.json"},
 }
 
 -- For russian build, add russian-only files.
@@ -726,6 +725,7 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/kruler", PROGS .. "/other/kruler/kruler"},
  {"kolibrios/media/qr_tool", PROGS .. "/media/qr_tool/qr_tool"},
  {"kolibrios/utils/weather", PROGS .. "/other/Weather/weather"},
+ {"kolibrios/settings/weather.json", PROGS .. "/other/Weather/weather.json"},
  {"kolibrios/utils/man2html", PROGS .."/other/man2html/man2html"},
 })
 end -- tup.getconfig('NO_TCC') ~= 'full'

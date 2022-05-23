@@ -44,7 +44,8 @@ unsigned WINDOW_W = 230;
 #define IMAGE_URL "openweathermap.org/img/w/%s.png"
   
 Image *blend=NULL;
-const char *config_name = "/sys/Settings/weather.json";
+const char *config1_name = "/sys/Settings/weather.json";
+const char *config2_name = "/kolibrios/Settings/weather.json";
 
 unsigned char char_size=1;
 uint64_t auto_update_time = 0;
@@ -227,10 +228,14 @@ void redraw_gui() // Перересовываем интерфейс
 
 void get_config(char **city, char **token, char **units) // Загружаем конфиг 
 {
-    ksys_ufile_t config_j = _ksys_load_file(config_name);
+    ksys_ufile_t config_j;
+    config_j = _ksys_load_file(config1_name);
     if(!config_j.size){
-        notify_show("'Configuration file not found!' -E");
-        exit(0);
+        config_j = _ksys_load_file(config2_name);
+        if(!config_j.size){
+            notify_show("'Configuration file not found!' -E");
+            exit(0);
+        }
     }
 
     json_value* value =json_parse (config_j.data, config_j.size); // Парсим конфиг
