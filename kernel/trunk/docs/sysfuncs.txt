@@ -146,7 +146,7 @@ Remarks:
     which can be set by subfunction 2 of function 21
     and get by subfunction 2 of function 26.
   * As a consequence, ASCII-codes take into account current
-    keyboard layout (rus/en) as opposed to scancodes.
+    keyboard layout (en, fi, etc) as opposed to scancodes.
   * This function notifies only about those hotkeys, which were
     defined by this thread by subfunction 4 of function 66.
 
@@ -1329,10 +1329,11 @@ Parameters:
   * edx = pointer to layout - table of length 128 bytes
 Or:
   * ecx = 9
-  * dx = country identifier (1=eng, 2=fi, 3=ger, 4=rus)
+  * edx = language id: 1=en, 2=fi, 3=ge, 4=ru, 5=fr, 6=et, 7=ua, 8=it,
+                       9=be, 10=sp, 11=ca
 Returned value:
   * eax = 0 - success
-  * eax = 1 - incorrect parameter
+  * eax = -1 - incorrect parameter
 Remarks:
   * If Alt is pressed, the layout with Alt is used;
     if Alt is not pressed, but Shift is pressed,
@@ -1356,7 +1357,8 @@ Remarks:
 Parameters:
   * eax = 21 - function number
   * ebx = 5 - subfunction number
-  * ecx = system language (1=eng, 2=fi, 3=ger, 4=rus)
+  * ecx = language id: 1=en, 2=fi, 3=ge, 4=ru, 5=fr, 6=et, 7=ua, 8=it,
+                       9=be, 10=sp, 11=ca
 Returned value:
   * eax = 0
 Remarks:
@@ -1571,7 +1573,8 @@ Or:
   * ebx = 2 - subfunction number
   * ecx = 9
 Returned value:
-  * eax = country identifier (1=eng, 2=fi, 3=ger, 4=rus)
+  * eax = language id: 1=en, 2=fi, 3=ge, 4=ru, 5=fr, 6=et, 7=ua, 8=it,
+                       9=be, 10=sp, 11=ca
 Remarks:
   * If Alt is pressed, the layout with Alt is used;
     if Alt is not pressed, but Shift is pressed,
@@ -1596,7 +1599,8 @@ Parameters:
   * eax = 26 - function number
   * ebx = 5 - subfunction number
 Returned value:
-  * eax = system language (1=eng, 2=fi, 3=ger, 4=rus)
+  * eax = language id: 1=en, 2=fi, 3=ge, 4=ru, 5=fr, 6=et, 7=ua, 8=it,
+                       9=be, 10=sp, 11=ca
 Remarks:
   * System language is global system variable and is not used
     by the kernel itself, however application @taskbar draws the
@@ -1818,7 +1822,7 @@ Remarks:
 =================== Function 37 - work with mouse. ===================
 ======================================================================
 
----------- Subfunction 0 - screen coordinates of the mouse -----------
+-------- Subfunction 0 - get screen coordinates of the mouse ---------
 Parameters:
   * eax = 37 - function number
   * ebx = 0 - subfunction number
@@ -1841,14 +1845,14 @@ Remarks:
     contains relative y-coordinate, and to the high word
     1 should be added.
 
-------------- Subfunction 2 - states of the mouse buttons ------------
+----------- Subfunction 2 - get states of the mouse buttons ----------
 Parameters:
   * eax = 37 - function number
   * ebx = 2 - subfunction number
 Returned value:
   * eax = bits 0-4 equal to subfunction 3
 
-------- Subfunction 3 - states and events of the mouse buttons -------
+----- Subfunction 3 - get states and events of the mouse buttons -----
 Parameters:
   * eax = 37 - function number
   * ebx = 3 - subfunction number
@@ -1941,7 +1945,8 @@ Parameters:
   * eax = 37 - function number
   * ebx = 8 - subfunction number
   * ecx = pointer to the cursor file path string
-  * edx = string encoding, details can be found in function 80 description.
+  * edx = string encoding, details can be found in function 80
+          description.
 Returned value:
   * eax = cursor handle, 0 - failed
 

@@ -201,13 +201,13 @@ dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 
 align 4
-keyboard   dd 1
+keyboard   dd SYSLANG
 
 if lang eq en
   SYSLANG = 1
 else if lang eq fi
   SYSLANG = 2
-else if lang eq de
+else if lang eq ge
   SYSLANG = 3
 else if lang eq ru
   SYSLANG = 4
@@ -215,12 +215,16 @@ else if lang eq fr
   SYSLANG = 5
 else if lang eq et
   SYSLANG = 6
-else if lang eq sp
+else if lang eq ua
   SYSLANG = 7
 else if lang eq it
   SYSLANG = 8
-else if lang eq ca
+else if lang eq be
   SYSLANG = 9
+else if lang eq sp
+  SYSLANG = 10
+else if lang eq ca
+  SYSLANG = 11
 else
   display 'unsupported language specified',13,10
 end if
