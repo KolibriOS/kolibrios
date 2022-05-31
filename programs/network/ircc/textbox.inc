@@ -361,7 +361,7 @@ draw_channel_text:
         test    al, 10000000b
         jz      .next_char              ; 1 byte wide
 
-        add     edx, 4
+        add     edx, 3
         and     al, 11111000b
         cmp     al, 11110000b
         je      .next_char              ; 4 bytes wide
