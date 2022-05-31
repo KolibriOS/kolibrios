@@ -12,6 +12,7 @@ skinlist = {
 "ConLenov/LucidChocolate/LucidChocolate.skn",
 "ConLenov/LucidCream/LucidCream.skn",
 "ConLenov/Win10/Win10.skn",
+"ConLenov/HotFox/HotFox.skn",
 "dunkaist/mursky/mursky.skn",
 "dunkaist/testtest/testtest.skn",
 "Leency/AreaSq/AreaSq.skn",
