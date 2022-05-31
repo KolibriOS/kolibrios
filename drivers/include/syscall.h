@@ -521,7 +521,7 @@ static inline void __SysMsgBoardStr(char *text)
     ::"S" (text));
 };
 
-static inline void *vzalloc(unsigned long size)
+static inline void *KernelZeroAlloc(unsigned long size)
 {
     void *mem;
 

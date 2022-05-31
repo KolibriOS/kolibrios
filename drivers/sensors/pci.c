@@ -1,14 +1,5 @@
 #include <syscall.h>
-
-#include <linux/kernel.h>
-#include <linux/mutex.h>
-#include <linux/mod_devicetable.h>
-#include <linux/slab.h>
-#include <linux/pm.h>
-#include <asm/msr.h>
 #include <linux/pci.h>
-
-extern int pci_scan_filter(u32 id, u32 busnr, u32 devfn);
 
 LIST_HEAD(devices);
 
@@ -19,31 +10,6 @@ LIST_HEAD(devices);
 
 #define IORESOURCE_ROM_COPY             (1<<2)  /* ROM is alloc'd copy, resource field overlaid */
 #define IORESOURCE_ROM_BIOS_COPY        (1<<3)  /* ROM is BIOS copy, resource field overlaid */
-
-/*
- * Translate the low bits of the PCI base
- * to the resource type
- */
-/*
-//int pci_scan_filter(u32 id, u32 busnr, u32 devfn)
-{
-    u16 vendor, device;
-    u32 class;
-    int   ret = 0;
-
-    vendor   = id & 0xffff;
-    device   = (id >> 16) & 0xffff;
-
-    if(vendor == 0x15AD )
-    {
-        class = PciRead32(busnr, devfn, PCI_CLASS_REVISION);
-        class >>= 16;
-
-        if( class == PCI_CLASS_DISPLAY_VGA )
-            ret = 1;
-    }
-    return ret;
-};*/
 
 
 static inline unsigned int pci_calc_resource_flags(unsigned int flags)
@@ -374,12 +340,11 @@ static pci_dev_t* pci_scan_device(u32 busnr, int devfn)
 
     hdr = PciRead8(busnr, devfn, PCI_HEADER_TYPE);
 
-    dev = (pci_dev_t*)kzalloc(sizeof(pci_dev_t), 0);
+    dev = (pci_dev_t*)KernelZeroAlloc(sizeof(pci_dev_t));
     if(unlikely(dev == NULL))
         return NULL;
 
     INIT_LIST_HEAD(&dev->link);
-
 
     dev->pci_dev.busnr    = busnr;
     dev->pci_dev.devfn    = devfn;
@@ -498,16 +463,13 @@ int pci_find_capability(struct pci_dev *dev, int cap)
 }
 
 
-
-
-int enum_pci_devices()
+int enum_pci_devices(void)
 {
     pci_dev_t  *dev;
     u32       last_bus;
     u32       bus = 0 , devfn = 0;
 
     last_bus = PciApi(1);
-
 
     if( unlikely(last_bus == -1))
         return -1;
@@ -530,6 +492,16 @@ int enum_pci_devices()
         dev = (pci_dev_t*)dev->link.next;
     }
     return 0;
+}
+
+void free_pci_devices(void) 
+{
+    pci_dev_t *dev = (pci_dev_t*)devices.next;
+    while(&dev->link != &devices) {
+        pci_dev_t *temp = dev;
+        dev = (pci_dev_t*)dev->link.next;
+        KernelFree(temp);
+    }
 }
 
 const struct pci_device_id* find_pci_device(pci_dev_t* pdev, const struct pci_device_id *idlist)
@@ -637,6 +609,7 @@ struct pci_dev *pci_get_class(unsigned int class, struct pci_dev *from)
    return NULL;
 }
 
+
 int pci_bus_read_config_byte (struct pci_bus *bus, u32 devfn, int pos, u8 *value)
 {
 //    raw_spin_lock_irqsave(&pci_lock, flags);
@@ -660,10 +633,7 @@ int pci_bus_read_config_dword (struct pci_bus *bus, u32 devfn, int pos, u32 *val
 {
     if ( pos & 3)
         return PCIBIOS_BAD_REGISTER_NUMBER;
-
-//    raw_spin_lock_irqsave(&pci_lock, flags);
     *value = PciRead32(bus->number, devfn, pos);
-//    raw_spin_unlock_irqrestore(&pci_lock, flags);
     return 0;
 }
 
@@ -671,11 +641,6 @@ int pci_bus_write_config_dword(struct pci_bus *bus, unsigned int devfn, int wher
 {
     if ( where & 3)
         return PCIBIOS_BAD_REGISTER_NUMBER;
-
-//    raw_spin_lock_irqsave(&pci_lock, flags);
     PciWrite32(bus->number, devfn,where, val);
-//    raw_spin_unlock_irqrestore(&pci_lock, flags);
     return 0;
 }
-
-

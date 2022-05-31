@@ -29,6 +29,9 @@
 
 struct cpuinfo_x86	boot_cpu_data;
 extern void init_amd_nbs(void);
+extern void free_pci_devices(void);
+
+#define MODNAME KBUILD_MODNAME ": "
 
 #define KERNEL_SPACE    0x80000000
 
@@ -127,7 +130,7 @@ const struct tctl_offset tctl_offset_table[] = {
 
 void read_htcreg_pci(struct pci_dev *pdev, u32 *regval)
 {
-    pci_read_config_dword(pdev, REG_HARDWARE_THERMAL_CONTROL, regval);
+	pci_read_config_dword(pdev, REG_HARDWARE_THERMAL_CONTROL, regval);
 }
 
 void read_tempreg_pci(struct pci_dev *pdev, u32 *regval)
@@ -309,7 +312,7 @@ umode_t k10temp_is_visible(const void *_data,
 	}
 	return 0444;
 }
-#if 0
+
 bool has_erratum_319(struct pci_dev *pdev)
 {
 	u32 pkg_type, reg_dram_cfg;
@@ -343,7 +346,6 @@ bool has_erratum_319(struct pci_dev *pdev)
 
 	return boot_cpu_data.x86_model < 4;
 }
-#endif
 
 const struct hwmon_channel_info *k10temp_info[] = {
 	HWMON_CHANNEL_INFO(temp,
@@ -396,21 +398,20 @@ void k10temp_get_ccd_support(struct pci_dev *pdev,
 
 int k10temp_probe(struct pci_dev *pdev, const struct pci_device_id *id, struct device *hwmon_dev)
 {
-//    int unreliable = has_erratum_319(pdev);
+	int unreliable = has_erratum_319(pdev);
 	struct device *dev = &pdev->dev;
 	struct k10temp_data *data;
 	int i;
-/*	if (unreliable) {
-		if (!force) {
+	if (unreliable) {
+/*		if (!force) {
 			dev_err(dev,"unreliable CPU thermal sensor; monitoring disabled\n");
 			return -ENODEV;
 		}
-		dev_warn(dev,
-			 "unreliable CPU thermal sensor; check erratum 319\n");
-	}
 */
-	data = kzalloc(sizeof(struct k10temp_data), GFP_KERNEL);
-    memset(data, 0x0, sizeof(struct k10temp_data)); 
+		printk(MODNAME "Unreliable CPU thermal sensor; Check erratum 319\n");
+	}
+
+	data = KernelZeroAlloc(sizeof(struct k10temp_data));
 	if (!data)
 		return -ENOMEM;
 
@@ -491,89 +492,96 @@ const struct pci_device_id k10temp_id_table[] = {
 	{}
 };
 
-#define K10TEMP_NA (~0)
-#define CHANEL_MAX 9
+#define K10TEMP_NA (-1)
+#define CHANEL_INPUT_MAX 10
 
-#pragma pack(push, 1)
-struct{
-    int Tctl;
-    int Tdie;
-    int Tccd1;
-    int Tccd2;
-    int Tccd3;
-    int Tccd4;
-    int Tccd5;
-    int Tccd6;
-    int Tccd7;
-    int Tccd8;
-    
-    int Tmax;
-    int Tcrit;
-    int Tcrit_hyst;
-}k10temp_out;
-#pragma pack(pop)
+struct {
+	int Tctl;
+	int Tdie;
+	int Tccd1;
+	int Tccd2;
+	int Tccd3;
+	int Tccd4;
+	int Tccd5;
+	int Tccd6;
+	int Tccd7;
+	int Tccd8;
+
+	int Tmax;
+	int Tcrit;
+	int Tcrit_hyst;
+} k10temp_out;
 
 struct device k10temp_device;
 
-void read_temp_info(struct device *dev, u32 attr, int channel, int *val){
-    long temp=0;
-    if(k10temp_is_visible(dev->driver_data, hwmon_temp, attr,  channel)){
-        k10temp_read_temp(dev, attr, channel, &temp);
-        *val=temp;
-	}else{
-        *val=K10TEMP_NA;
-    }
+int read_temp_info(struct device *dev, unsigned attr, int channel) {
+	long temp = K10TEMP_NA;
+	if (k10temp_is_visible(dev->driver_data, hwmon_temp, attr, channel)) { 
+		if (k10temp_read_temp(dev, attr, channel, &temp)) {
+			temp = K10TEMP_NA;
+		}
+	}
+	return (int)temp;
 }
 
-void read_all_info(struct device* dev){
-	for(int c=0; c<=CHANEL_MAX; c++){
-		read_temp_info(dev, hwmon_temp_input, c, (int*)&k10temp_out+c);
-    }
-    read_temp_info(dev, hwmon_temp_max,       0, &k10temp_out.Tmax);
-    read_temp_info(dev, hwmon_temp_crit,      0, &k10temp_out.Tcrit);
-    read_temp_info(dev, hwmon_temp_crit_hyst, 0, &k10temp_out.Tcrit_hyst);
+void read_all_info(struct device* dev)
+{
+	int* k10temp_out_array = (int*)&k10temp_out;
+	for (int c = 0; c < CHANEL_INPUT_MAX; c++) {
+		k10temp_out_array[c] = read_temp_info(dev, hwmon_temp_input, c);
+	}
 }
 
-int __stdcall service_proc(ioctl_t *my_ctl){
-    if(!my_ctl || !my_ctl->output || (int)my_ctl->output>=KERNEL_SPACE-sizeof(k10temp_out)){
-        printk("k10temp: Bad address for writing data!\n");
-        return 0;
-    }
+int __stdcall service_proc(ioctl_t *my_ctl)
+{
+	if(!my_ctl || !my_ctl->output || (int)my_ctl->output>=KERNEL_SPACE-sizeof(k10temp_out)){
+		printk(MODNAME "Bad address for writing data!\n");
+		return 0;
+	}
 
-    read_all_info(&k10temp_device);
-    
-    if(my_ctl->out_size == sizeof(k10temp_out)){
-        memcpy(my_ctl->output, &k10temp_out, sizeof(k10temp_out));
-        return 0;
-    }
-    printk("k10temp: Invalid buffer length!\n");
-    return 1;
+	read_all_info(&k10temp_device);
+
+	if(my_ctl->out_size == sizeof(k10temp_out)){
+		memcpy(my_ctl->output, &k10temp_out, sizeof(k10temp_out));
+		return 0;
+	}
+	printk(MODNAME "Invalid buffer length!\n");
+	return 1;
 }
 
-uint32_t drvEntry(int action, char *cmdline){
-	if(action != 1){
-        return 0;
-    }
-    pci_dev_t device;
-    const struct pci_device_id  *k10temp_id;
-    int  err;
+uint32_t drvEntry(int action, char *cmdline)
+{
+	if (action != 1) {
+		return 0;
+	}
+	
+	static pci_dev_t device;
+	const struct pci_device_id  *k10temp_id;
 
-    cpu_detect(&boot_cpu_data);
+	cpu_detect(&boot_cpu_data);
 
-	err = enum_pci_devices();
-    if(unlikely(err != 0)) {
-        printk("k10temp: Device enumeration failed!\n");
-        return 0;
-    }
+	if(unlikely(enum_pci_devices() != 0)) {
+		printk(MODNAME "Device enumeration failed!\n");
+		goto error;
+	}
+	
+	k10temp_id = find_pci_device(&device, k10temp_id_table);
 
-    k10temp_id = find_pci_device(&device, k10temp_id_table);
+	if (unlikely(k10temp_id == NULL)) {
+		printk(MODNAME "Device not found!\n");
+		goto error;
+	}
 
-    if(unlikely(k10temp_id == NULL)){
-        printk("k10temp: Device not found!\n");
-        return 0;
-    }
+	init_amd_nbs();
+	k10temp_probe(&device.pci_dev, k10temp_id, &k10temp_device);
 
-    init_amd_nbs();
-    k10temp_probe(&device.pci_dev, k10temp_id, &k10temp_device);
-    return RegService("k10temp", service_proc);
+	k10temp_out.Tmax = read_temp_info(&k10temp_device, hwmon_temp_max, 0);
+	k10temp_out.Tcrit = read_temp_info(&k10temp_device, hwmon_temp_crit, 0);
+	k10temp_out.Tcrit_hyst = read_temp_info(&k10temp_device, hwmon_temp_crit_hyst, 0);
+
+	return RegService(MODNAME, service_proc);
+
+error:
+	free_pci_devices();
+	return 0;
 }
