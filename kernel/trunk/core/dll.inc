@@ -287,17 +287,17 @@ align 4
 proc get_coff_sym stdcall, pSym:dword,count:dword, sz_sym:dword
 
 @@:
-        stdcall strncmp, [pSym], [sz_sym], 8
+        stdcall strncmp, [pSym], [sz_sym], sizeof.COFF_SYM.Name
         test    eax, eax
         jz      .ok
-        add     [pSym], 18
+        add     [pSym], sizeof.COFF_SYM
         dec     [count]
         jnz     @b
         xor     eax, eax
         ret
 .ok:
         mov     eax, [pSym]
-        mov     eax, [eax+8]
+        mov     eax, [eax+COFF_SYM.Value]
         ret
 endp
 
@@ -964,7 +964,7 @@ proc load_library stdcall, file_name:dword, encoding:dword
         movzx   ecx, [edx + COFF_HEADER.nSections]
         xor     ebx, ebx
 
-        add     edx, 20
+        add     edx, sizeof.COFF_HEADER
 @@:
         call    coff_get_align
         add     ebx, eax
@@ -1045,7 +1045,7 @@ proc load_library stdcall, file_name:dword, encoding:dword
         movzx   ecx, [edx + COFF_HEADER.nSections]
         lea     ecx, [ecx*5]
         lea     edi, [edi + ecx*8+20]
-        add     edx, 20
+        add     edx, sizeof.COFF_HEADER
 @@:
         movzx   eax, [edx + COFF_SECTION.NumReloc]
         lea     eax, [eax*5]
@@ -1097,7 +1097,7 @@ proc load_library stdcall, file_name:dword, encoding:dword
 ; fixup symbols
         mov     edx, ebx
         mov     eax, [ebx + COFF_HEADER.nSymbols]
-        add     edx, 20
+        add     edx, sizeof.COFF_HEADER
         mov     ecx, [esi + DLLDESCR.symbols_num]
         lea     ecx, [ecx*9]
         add     ecx, ecx
@@ -1184,7 +1184,7 @@ proc load_library stdcall, file_name:dword, encoding:dword
         shr     ecx, 12
 .map_pages_loop:
         mov     eax, [page_tabs + ecx*4]
-        and     eax, not 0xFFF
+        and     eax, -PAGE_SIZE
         or      al, PG_UR
         xchg    eax, [page_tabs + edx*4]
         test    al, 1
@@ -1194,7 +1194,7 @@ proc load_library stdcall, file_name:dword, encoding:dword
         invlpg  [ebx+edi]
         inc     ecx
         inc     edx
-        add     edi, 0x1000
+        add     edi, PAGE_SIZE
         cmp     edi, [esi + DLLDESCR.size]
         jb      .map_pages_loop
 

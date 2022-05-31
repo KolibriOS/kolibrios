@@ -4820,6 +4820,30 @@ proc is_region_userspace stdcall, base:dword, len:dword
         ret 
 endp
 
+align 4
+; @brief Check whether given string lays in userspace memory, i.e. below OS_BASE
+; @param base Base address of string
+; @return ZF = 1 if string in userspace memory,
+;         zf = 0 otherwise
+proc is_string_userspace stdcall, base:dword
+        push    eax ecx edi
+        xor     eax, eax
+        mov     edi, [base]
+
+        mov     ecx, OS_BASE-1
+        sub     ecx, edi
+        jb      .done           ; zf
+        inc     ecx
+        cmp     ecx, 0x10000    ; don't allow strings larger than 64k?
+        jbe     @f
+        mov     ecx, 0x10000
+@@:
+        repnz scasb
+.done:
+        pop     edi ecx eax
+        ret
+endp
+
 if ~ lang eq sp
 diff16 "end of .text segment",0,$
 end if

@@ -1141,8 +1141,8 @@ f68:
 .18:
         mov     eax, edx
 .19:
-        cmp     ecx, OS_BASE
-        jae     .fail
+        stdcall is_string_userspace, ecx
+        jnz     .fail
         stdcall load_library, ecx, eax
         mov     [esp + SYSCALL_STACK._eax], eax
         ret
