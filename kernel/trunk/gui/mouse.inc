@@ -718,7 +718,7 @@ dd  .loadCursorUni
         mov     eax, [MOUSE_X]
         shl     eax, 16
         mov     ax, [MOUSE_Y]
-        mov     [esp+36-4], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
 @@:
         ret
 
@@ -732,30 +732,29 @@ dd  .loadCursorUni
         shl     ebx, 16
         mov     bx, word [esi + window_data + WDATA.box.top]
         sub     eax, ebx
-        mov     edi, [current_slot_idx]
-        shl     edi, 8
-        sub     ax, word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        mov     edi, [current_slot]
+        sub     ax, word[edi + APPDATA.wnd_clientbox.top]
         rol     eax, 16
-        sub     ax, word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        sub     ax, word[edi + APPDATA.wnd_clientbox.left]
         rol     eax, 16
-        mov     [esp+36-4], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
         ret
 
 .msbutton:
         movzx   eax, byte [BTN_DOWN]
-        mov     [esp+36-4], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
         ret
 
 .msbuttonExt:
         mov     eax, [BTN_DOWN]
-        mov     [esp+36-4], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
         ret
 
 .app_load_cursor:
         cmp     ecx, OS_BASE
         jae     @f
         stdcall load_cursor, ecx, edx
-        mov     [esp+36-4], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
 @@:
         ret
 
@@ -772,19 +771,19 @@ dd  .loadCursorUni
         test    eax, eax
         jz      @f
         stdcall load_cursor, ebp, LOAD_FROM_FILE
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
 @@:
         stdcall kernel_free, ebp
         ret
 
 .app_set_cursor:
         stdcall set_cursor, ecx
-        mov     [esp+36-4], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
         ret
 
 .app_delete_cursor:
         stdcall delete_cursor, ecx
-        mov     [esp+36-4], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
         ret
 
 .msz:
@@ -795,10 +794,10 @@ dd  .loadCursorUni
         mov     ax, [MOUSE_SCROLL_H]
         shl     eax, 16
         mov     ax, [MOUSE_SCROLL_V]
-        mov     [esp+36-4], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
         and     [MOUSE_SCROLL_H], word 0
         and     [MOUSE_SCROLL_V], word 0
         ret
 @@:
-        and     [esp+36-4], dword 0
+        and     [esp + SYSCALL_STACK._eax], dword 0
         ret

@@ -422,9 +422,8 @@ align 4
         push    esi
         push    edi
 
-        mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.APPDATA
-        mov     eax, [SLOT_BASE + eax + APPDATA.tid]
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.tid]
         mov     ebx, [src]
         mov     ecx, [flags]
         call    create_cursor    ;eax, ebx, ecx
@@ -459,10 +458,9 @@ proc delete_cursor stdcall, hcursor:dword
         cmp     [esi + CURSOR.magic], 'CURS'
         jne     .fail
 
-        mov     ebx, [current_slot_idx]
-        shl     ebx, BSF sizeof.APPDATA
-        mov     ebx, [ebx + SLOT_BASE + APPDATA.tid]
-        cmp     ebx, [esi+CURSOR.pid]
+        mov     ebx, [current_slot]
+        mov     ebx, [ebx + APPDATA.tid]
+        cmp     ebx, [esi + CURSOR.pid]
         jne     .fail
 
         mov     ebx, [current_slot]
@@ -503,7 +501,7 @@ destroy_cursor:
 ;------------------------------------------------------------------------------
 align 4
 select_cursor:
-        mov     eax, [esp+4]
+        mov     eax, [esp + 4]
         mov     [_display.cursor], eax
         ret     4
 ;------------------------------------------------------------------------------
@@ -522,7 +520,7 @@ proc restore_24 stdcall, x:dword, y:dword
 
         mov     esi, cur_saved_data
         mov     ecx, [cur.w]
-        lea     ecx, [ecx+ecx*2]
+        lea     ecx, [ecx + ecx*2]
         push    ecx
 ;--------------------------------------
 align 4

@@ -827,9 +827,8 @@ v86_irq:
 v86_irq2:
         mov     esi, [v86_irqhooks + edi*8]       ; get VM handle
         mov     eax, [esi + V86_machine.process]
-        mov     ecx, [current_slot_idx]
-        shl     ecx, BSF sizeof.APPDATA
-        cmp     [SLOT_BASE + ecx + APPDATA.process], eax
+        mov     ecx, [current_slot]
+        cmp     [ecx + APPDATA.process], eax
         jnz     .notcurrent
         lea     eax, [edi+8]
         cmp     al, 10h

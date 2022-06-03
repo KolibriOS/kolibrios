@@ -105,7 +105,7 @@ align 4
 set_keyboard_data:
         movzx   eax, word[thread_count]; top window process
         movzx   eax, word[WIN_POS + eax*2]
-        shl     eax, 8
+        shl     eax, BSF sizeof.APPDATA
         mov     al, [SLOT_BASE + eax + APPDATA.keyboard_mode]
         mov     [keyboard_mode], al
         
@@ -203,6 +203,7 @@ irq1:
         in      al, 0x60
 ;--------------------------------------
 send_scancode:
+        ;DEBUGF  1, "K : Scan code: %x \n", al
         mov     [keyboard_data], al
 ; ch = scancode
 ; cl = ext_code

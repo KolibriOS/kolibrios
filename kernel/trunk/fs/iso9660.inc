@@ -56,9 +56,8 @@ reserve_cd:
 ;-----------------------------------------------------------------------------
 reserve_ok2:
         push    eax
-        mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.APPDATA
-        mov     eax, [eax + SLOT_BASE + APPDATA.tid]
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.tid]
         mov     [cd_status], eax
         pop     eax
         sti

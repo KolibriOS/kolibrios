@@ -1396,9 +1396,8 @@ align 4
         mov     edx, E_ACCESS
         ja      .fail
 
-        mov     ebx, [current_slot_idx]
-        shl     ebx, BSF sizeof.APPDATA
-        mov     ebx, [SLOT_BASE + ebx + APPDATA.tid]
+        mov     ebx, [current_slot]
+        mov     ebx, [ebx + APPDATA.tid]
         mov     eax, sizeof.SMAP
 
         call    create_kernel_object

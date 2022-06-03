@@ -342,9 +342,8 @@ lock_application_table:
         mov     ecx, application_table_mutex
         call    mutex_lock
 
-        mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.APPDATA
-        mov     eax, [eax + SLOT_BASE + APPDATA.tid]
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.tid]
 
         mov     [application_table_owner], eax
 
@@ -389,7 +388,7 @@ sys_resize_app_memory:
 @@:
         stdcall new_mem_resize, ecx
 .store_result:
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK._eax], eax
 .no_application_mem_resize:
         ret
 
