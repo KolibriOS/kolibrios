@@ -245,6 +245,118 @@ enum KSYS_TITLE_ENCODING {
     KSYS_TITLE_UTF8 = 3
 };
 
+enum KSYS_SCANCODES {
+    KSYS_SCANCODE_ANY = 0,
+    KSYS_SCANCODE_ESC = 1,
+    KSYS_SCANCODE_1 = 2,
+    KSYS_SCANCODE_2 = 3,
+    KSYS_SCANCODE_3 = 4,
+    KSYS_SCANCODE_4 = 5,
+    KSYS_SCANCODE_5 = 6,
+    KSYS_SCANCODE_6 = 7,
+    KSYS_SCANCODE_7 = 8,
+    KSYS_SCANCODE_8 = 9,
+    KSYS_SCANCODE_9 = 10,
+    KSYS_SCANCODE_0 = 11,
+    KSYS_SCANCODE_MINUS = 12,
+    KSYS_SCANCODE_EQUAL = 13,
+    KSYS_SCANCODE_BACKSPACE = 14,
+    KSYS_SCANCODE_TAB = 15,
+    KSYS_SCANCODE_Q = 16,
+    KSYS_SCANCODE_W = 17,
+    KSYS_SCANCODE_E = 18,
+    KSYS_SCANCODE_R = 19,
+    KSYS_SCANCODE_T = 20,
+    KSYS_SCANCODE_Y = 21,
+    KSYS_SCANCODE_U = 22,
+    KSYS_SCANCODE_I = 23,
+    KSYS_SCANCODE_O = 24,
+    KSYS_SCANCODE_P = 25,
+    KSYS_SCANCODE_LBRACE = 26,
+    KSYS_SCANCODE_RBRACE = 27,
+    KSYS_SCANCODE_ENTER = 28,
+     KSYS_SCANCODE_EXT_NUMPAD_ENTER = 28,
+    KSYS_SCANCODE_LCTRL = 29,
+     KSYS_SCANCODE_EXT_RCTRL = 29,
+    KSYS_SCANCODE_A = 30,
+    KSYS_SCANCODE_S = 31,
+    KSYS_SCANCODE_D = 32,
+    KSYS_SCANCODE_F = 33,
+    KSYS_SCANCODE_G = 34,
+    KSYS_SCANCODE_H = 35,
+    KSYS_SCANCODE_J = 36,
+    KSYS_SCANCODE_K = 37,
+    KSYS_SCANCODE_L = 38,
+    KSYS_SCANCODE_SEMICOLON = 39,
+    KSYS_SCANCODE_SQUOTE = 40,
+    KSYS_SCANCODE_BQUOTE = 41,
+    KSYS_SCANCODE_LSHIFT = 42,
+    KSYS_SCANCODE_BACKSLASH = 43,
+    KSYS_SCANCODE_Z = 44,
+    KSYS_SCANCODE_X = 45,
+    KSYS_SCANCODE_C = 46,
+    KSYS_SCANCODE_V = 47,
+    KSYS_SCANCODE_B = 48,
+    KSYS_SCANCODE_N = 49,
+    KSYS_SCANCODE_M = 50,
+    KSYS_SCANCODE_COMMA = 51,
+    KSYS_SCANCODE_POINT = 52,
+    KSYS_SCANCODE_SLASH = 53,
+     KSYS_SCANCODE_EXT_NUMPAD_DIV = 53,
+    KSYS_SCANCODE_RSHIFT = 54,
+    KSYS_SCANCODE_NUMPAD_MULT = 55,
+     KSYS_SCANCODE_EXT_PRTSCR = 55,
+    KSYS_SCANCODE_LALT = 56,
+     KSYS_SCANCODE_EXT_RALT = 56,
+    KSYS_SCANCODE_SPACE = 57,
+    KSYS_SCANCODE_CAPSLOCK = 58,
+    KSYS_SCANCODE_F1 = 59,
+    KSYS_SCANCODE_F2 = 60,
+    KSYS_SCANCODE_F3 = 61,
+    KSYS_SCANCODE_F4 = 62,
+    KSYS_SCANCODE_F5 = 63,
+    KSYS_SCANCODE_F6 = 64,
+    KSYS_SCANCODE_F7 = 65,
+    KSYS_SCANCODE_F8 = 66,
+    KSYS_SCANCODE_F9 = 67,
+    KSYS_SCANCODE_F10 = 68,
+    KSYS_SCANCODE_NUMLOCK = 69,
+    KSYS_SCANCODE_SCRLOCK = 70,
+    KSYS_SCANCODE_NUMPAD_7 = 71,
+     KSYS_SCANCODE_EXT_HOME = 71,
+    KSYS_SCANCODE_NUMPAD_8 = 72,
+     KSYS_SCANCODE_EXT_UP = 72,
+    KSYS_SCANCODE_NUMPAD_9 = 73,
+     KSYS_SCANCODE_EXT_PGUP = 73,
+    KSYS_SCANCODE_NUMPAD_MINUS = 74,
+    KSYS_SCANCODE_NUMPAD_4 = 75,
+     KSYS_SCANCODE_EXT_LEFT = 75,
+    KSYS_SCANCODE_NUMPAD_5 = 76,
+    KSYS_SCANCODE_NUMPAD_6 = 77,
+     KSYS_SCANCODE_EXT_RIGHT = 77,
+    KSYS_SCANCODE_NUMPAD_PLUS = 78,
+    KSYS_SCANCODE_NUMPAD_1 = 79,
+     KSYS_SCANCODE_EXT_END = 79,
+    KSYS_SCANCODE_NUMPAD_2 = 80,
+     KSYS_SCANCODE_EXT_DOWN = 80,
+    KSYS_SCANCODE_NUMPAD_3 = 81,
+     KSYS_SCANCODE_EXT_PGDOWN = 81,
+    KSYS_SCANCODE_NUMPAD_0 = 82,
+     KSYS_SCANCODE_EXT_INSERT = 82,
+    KSYS_SCANCODE_NUMPAD_COMMA = 83,
+     KSYS_SCANCODE_EXT_DELETE = 83,
+    //84-86 doesn't exist
+    KSYS_SCANCODE_F11 = 87,
+    KSYS_SCANCODE_F12 = 88,
+    //89,90 doesn't exist
+    KSYS_SCANCODE_EXT_LWIN = 91,
+    KSYS_SCANCODE_EXT_RWIN = 92,
+    KSYS_SCANCODE_EXT_MENU = 93,
+	KSYS_SCANCODE_EXT = 0xE0,
+
+    KSYS_SCANCODE_UNK_M_UP = 250 // Is it needed?
+};
+
 KOSAPI int __strcmp(const char* s1, const char* s2)
 {
     while ((*s1) && (*s1 == *s2)) {
@@ -1092,6 +1204,50 @@ KOSAPI uint32_t _ksys_get_control_key_state(void)
     return key_state;
 }
 
+/*========= Function 66, subfunction 4 - set system-wide hotkey. ========*/
+
+enum KSYS_SYS_HOTKEY_CONTROL_KEY_STATES {
+    KSYS_SYS_HOTKEY_SHIFT_NONE = 0x0,
+    KSYS_SYS_HOTKEY_SHIFT_ONE = 0x1,
+    KSYS_SYS_HOTKEY_SHIFT_BOTH = 0x2,
+    KSYS_SYS_HOTKEY_SHIFT_LEFTONLY = 0x3,
+    KSYS_SYS_HOTKEY_SHIFT_RIGHTONLY = 0x4,
+
+    KSYS_SYS_HOTKEY_CTRL_NONE = 0x00,
+    KSYS_SYS_HOTKEY_CTRL_ONE = 0x10,
+    KSYS_SYS_HOTKEY_CTRL_BOTH = 0x20,
+    KSYS_SYS_HOTKEY_CTRL_LEFTONLY = 0x30,
+    KSYS_SYS_HOTKEY_CTRL_RIGHTONLY = 0x40,
+
+    KSYS_SYS_HOTKEY_ALT_NONE = 0x000,
+    KSYS_SYS_HOTKEY_ALT_ONE = 0x100,
+    KSYS_SYS_HOTKEY_ALT_BOTH = 0x200,
+    KSYS_SYS_HOTKEY_ALT_LEFTONLY = 0x300,
+    KSYS_SYS_HOTKEY_ALT_RIGHTONLY = 0x400,
+};
+
+KOSAPI int _ksys_set_sys_hotkey(uint8_t scancode, uint16_t control_key_states) {
+    int res;
+    asm_inline(
+        "int $0x40"
+        : "=a"(res)
+        : "a"(66), "b"(4), "c"(scancode), "d"(control_key_states)
+        : "memory");
+    return res;
+}
+
+/*========= Function 66, subfunction 5 - delete installed hotkey. ========*/
+
+KOSAPI int _ksys_del_sys_hotkey(uint8_t scancode, uint16_t control_key_states) {
+    int res;
+    asm_inline(
+        "int $0x40"
+        : "=a"(res)
+        : "a"(66), "b"(5), "c"(scancode), "d"(control_key_states)
+        : "memory");
+    return res;
+}
+
 /*========= Function 67 - change position/sizes of the window. =========*/
 
 KOSAPI void _ksys_change_window(int new_x, int new_y, int new_w, int new_h)
@@ -1388,7 +1544,7 @@ KOSAPI int _ksys_file_delete(const char* name)
     return _ksys70(&k).status;
 }
 
-/*============= Function 70, subfunction 9 - create folder. ============*/
+/*============= Function 70, subfunction 9 - create folder. =============*/
 
 KOSAPI int _ksys_mkdir(const char* path)
 {
@@ -1412,7 +1568,7 @@ KOSAPI int _ksys_file_rename(const char* name, const char* new_name)
 
 #define _ksys_dir_rename _ksys_file_rename
 
-/*============  Function 71, subfunction 1 - set window title ============= */
+/*============= Function 71, subfunction 1 - set window title =============*/
 
 KOSAPI void _ksys_set_window_title(const char* title)
 {
@@ -1422,7 +1578,55 @@ KOSAPI void _ksys_set_window_title(const char* title)
 
 #define _ksys_clear_window_title() _ksys_set_window_title(NULL)
 
-/*============= Function 77 - implements the POSIX subsystem. =============*/
+/*============= Function 77, subfunction 0 - create futex object =============*/
+
+KOSAPI void* _ksys_futex_create(void* futexControlAddr) {
+    void* futexDesc;
+    asm_inline(
+        "int $0x40"
+        : "=a"(futexDesc)
+        : "a"(77), "b"(0), "c"(futexControlAddr)
+        : "memory");
+    return futexDesc;
+}
+
+/*============= Function 77, subfunction 1 - destroy futex object =============*/
+
+KOSAPI int _ksys_futex_destroy(void* futexDesc) {
+    int res;
+    asm_inline(
+        "int $0x40"
+        : "=a"(res)
+        : "a"(77), "b"(1), "c"(futexDesc)
+        : "memory");
+    return res;
+}
+
+/*============= Function 77, subfunction 2 - futex wait =============*/
+
+KOSAPI int _ksys_futex_wait(void* futexDesc, int controlVal, int timeout) {
+    int res;
+    asm_inline(
+        "int $0x40"
+        : "=a"(res)
+        : "a"(77), "b"(2), "c"(futexDesc), "d"(controlVal), "S"(timeout)
+        : "memory");
+    return res;
+}
+
+/*============= Function 77, subfunction 3 - futex wake =============*/
+
+KOSAPI int _ksys_futex_wake(void* futexDesc, int maxWakeCount) {
+    int count;
+    asm_inline(
+        "int $0x40"
+        : "=a"(count)
+        : "a"(77), "b"(3), "c"(futexDesc), "d"(maxWakeCount)
+        : "memory");
+    return count;
+}
+
+/*============= Function 77, subfunction 10 - read from file to buffer =============*/
 
 KOSAPI int _ksys_posix_read(int pipefd, void* buff, int n)
 {
@@ -1435,6 +1639,8 @@ KOSAPI int _ksys_posix_read(int pipefd, void* buff, int n)
     return count;
 }
 
+/*============= Function 77, subfunction 11 - write from buffer to file =============*/
+
 KOSAPI int _ksys_posix_write(int pipefd, void* buff, int n)
 {
     int count;
@@ -1445,6 +1651,8 @@ KOSAPI int _ksys_posix_write(int pipefd, void* buff, int n)
         : "memory");
     return count;
 }
+
+/*============= Function 77, subfunction 13 - create new pipe =============*/
 
 KOSAPI int _ksys_posix_pipe2(int pipefd[2], int flags)
 {
