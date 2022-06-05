@@ -718,7 +718,7 @@ dd  .loadCursorUni
         mov     eax, [MOUSE_X]
         shl     eax, 16
         mov     ax, [MOUSE_Y]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
 @@:
         ret
 
@@ -737,24 +737,24 @@ dd  .loadCursorUni
         rol     eax, 16
         sub     ax, word[edi + APPDATA.wnd_clientbox.left]
         rol     eax, 16
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .msbutton:
         movzx   eax, byte [BTN_DOWN]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .msbuttonExt:
         mov     eax, [BTN_DOWN]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .app_load_cursor:
         cmp     ecx, OS_BASE
         jae     @f
         stdcall load_cursor, ecx, edx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
 @@:
         ret
 
@@ -771,19 +771,19 @@ dd  .loadCursorUni
         test    eax, eax
         jz      @f
         stdcall load_cursor, ebp, LOAD_FROM_FILE
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
 @@:
         stdcall kernel_free, ebp
         ret
 
 .app_set_cursor:
         stdcall set_cursor, ecx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .app_delete_cursor:
         stdcall delete_cursor, ecx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .msz:
@@ -794,10 +794,10 @@ dd  .loadCursorUni
         mov     ax, [MOUSE_SCROLL_H]
         shl     eax, 16
         mov     ax, [MOUSE_SCROLL_V]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         and     [MOUSE_SCROLL_H], word 0
         and     [MOUSE_SCROLL_V], word 0
         ret
 @@:
-        and     [esp + SYSCALL_STACK._eax], dword 0
+        and     [esp + SYSCALL_STACK.eax], dword 0
         ret

@@ -81,7 +81,7 @@ sys_futex:
 .cmp_requeue:
 .wait_bitset:
 .wake_bitset:
-        mov     [esp + SYSCALL_STACK._eax], -1
+        mov     [esp + SYSCALL_STACK.eax], -1
         ret
 
 align 4
@@ -91,7 +91,7 @@ align 4
         jz      @F
         mov     eax, [eax + FUTEX.handle]
 @@:
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 align 4
@@ -101,7 +101,7 @@ align 4
 .destroy:
         mov     ecx, ebp
         call    destroy_futex
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 align 4
@@ -118,7 +118,7 @@ align 4
         lock cmpxchg [ecx], edx
         je      .wait_slow
 
-        mov     [esp + SYSCALL_STACK._eax], -2
+        mov     [esp + SYSCALL_STACK.eax], -2
         ret
 
 .wait_slow:
@@ -143,7 +143,7 @@ align 4
         add     esp, sizeof.MUTEX_WAITER
 
         popfd
-        mov     [esp + SYSCALL_STACK._eax], 0
+        mov     [esp + SYSCALL_STACK.eax], 0
         ret
 
 align 4
@@ -159,7 +159,7 @@ align 4
         lock cmpxchg [ecx], edx         ;wait until old_value == new_value
         je      .wait_slow_timeout
 
-        mov     [esp + SYSCALL_STACK._eax], -2
+        mov     [esp + SYSCALL_STACK.eax], -2
         ret
 
 align 4
@@ -200,7 +200,7 @@ align 4
         add     esp, sizeof.MUTEX_WAITER
 
         popfd
-        mov     [esp + SYSCALL_STACK._eax], 0
+        mov     [esp + SYSCALL_STACK.eax], 0
         ret
 
 .timeout:
@@ -208,7 +208,7 @@ align 4
         add     esp, sizeof.MUTEX_WAITER
 
         popfd
-        mov     [esp + SYSCALL_STACK._eax], -1
+        mov     [esp + SYSCALL_STACK.eax], -1
         ret
 
 
@@ -239,6 +239,6 @@ align 4
         jb      .again_wake
 .done:
         popfd
-        mov     [esp + SYSCALL_STACK._eax], ecx
+        mov     [esp + SYSCALL_STACK.eax], ecx
         ret
 

@@ -363,15 +363,15 @@ SYSTEM_RESTART     = 4
 BLIT_CLIENT_RELATIVE = 0x20000000
 
 struct SYSCALL_STACK
-        _eip            dd ?
-        _edi            dd ?    ;  +4
-        _esi            dd ?    ;  +8
-        _ebp            dd ?    ; +12
-        _esp            dd ?    ; +16
-        _ebx            dd ?    ; +20
-        _edx            dd ?    ; +24
-        _ecx            dd ?    ; +28
-        _eax            dd ?    ; +32
+        eip     dd ?    ;  +0
+        edi     dd ?    ;  +4
+        esi     dd ?    ;  +8
+        ebp     dd ?    ; +12
+        esp     dd ?    ; +16
+        ebx     dd ?    ; +20
+        edx     dd ?    ; +24
+        ecx     dd ?    ; +28
+        eax     dd ?    ; +32
 ends
 
 struct  LHEAD

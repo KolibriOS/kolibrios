@@ -115,7 +115,7 @@ sys_pipe2:
         add     esp, 5*4
         pop     ebp
         xor     eax, eax
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .err_3:
         mov     eax, ebp
@@ -132,7 +132,7 @@ sys_pipe2:
 .fail:
         mov     eax, ebp
         pop     ebp
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 purge .pipeflags
@@ -169,7 +169,7 @@ pipe_read:
 .read:
         mov     esi, [ebp + PIPE.buffer]
         add     esi, [ebp + PIPE.read_end]
-        mov     [esp + SYSCALL_STACK._eax], ecx
+        mov     [esp + SYSCALL_STACK.eax], ecx
         sub     [ebp + PIPE.count], ecx
         cld
         rep movsb
@@ -223,7 +223,7 @@ pipe_read:
         jmp     .again
 
 .eof:
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         lea     ecx, [ebp + PIPE.pipe_lock]
         call    mutex_unlock
         ret
@@ -297,7 +297,7 @@ pipe_write:
         jnz     .again
 
         pop     eax                             ; written
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .wait:
@@ -330,10 +330,10 @@ pipe_write:
         call    mutex_unlock
 
         add     esp, 4
-        mov     [esp + SYSCALL_STACK._eax], -EPIPE
+        mov     [esp + SYSCALL_STACK.eax], -EPIPE
         ret
 
 align 4
 pipe_close:
-        mov     [esp + SYSCALL_STACK._eax], -EBADF
+        mov     [esp + SYSCALL_STACK.eax], -EBADF
         ret

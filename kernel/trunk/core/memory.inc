@@ -1109,22 +1109,22 @@ f68:
         jmp     dword [f68call + ebx*4-11*4]
 .11:
         call    init_heap
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .12:
         stdcall user_alloc, ecx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .13:
         stdcall user_free, ecx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .14:
         cmp     ecx, OS_BASE
         jae     .fail
         mov     edi, ecx
         call    get_event_ex
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .16:
         test    ecx, ecx
@@ -1132,11 +1132,11 @@ f68:
         cmp     ecx, OS_BASE
         jae     .fail
         stdcall get_service, ecx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .17:
         call    srv_handlerEx   ;ecx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .18:
         mov     eax, edx
@@ -1144,13 +1144,13 @@ f68:
         stdcall is_string_userspace, ecx
         jnz     .fail
         stdcall load_library, ecx, eax
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .20:
         mov     eax, edx
         mov     ebx, ecx
         call    user_realloc            ;in: eax = pointer, ebx = new size
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .21:
         cmp     ecx, OS_BASE
@@ -1158,48 +1158,48 @@ f68:
         cmp     edx, OS_BASE
         jae     .fail
         stdcall load_pe_driver, ecx, edx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .22:
         cmp     ecx, OS_BASE
         jae     .fail
         stdcall shmem_open, ecx, edx, esi
-        mov     [esp + SYSCALL_STACK._edx], edx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.edx], edx
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .23:
         cmp     ecx, OS_BASE
         jae     .fail
         stdcall shmem_close, ecx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .24:
         mov     eax, [current_slot]
         xchg    ecx, [eax + APPDATA.exc_handler]
         xchg    edx, [eax + APPDATA.except_mask]
-        mov     [esp + SYSCALL_STACK._ebx], edx
-        mov     [esp + SYSCALL_STACK._eax], ecx
+        mov     [esp + SYSCALL_STACK.ebx], edx
+        mov     [esp + SYSCALL_STACK.eax], ecx
         ret
 .25:
         cmp     ecx, 32
         jae     .fail
         mov     eax, [current_slot]
         btr     [eax + APPDATA.except_mask], ecx
-        setc    byte[esp + SYSCALL_STACK._eax]
+        setc    byte[esp + SYSCALL_STACK.eax]
         jecxz   @f
         bts     [eax + APPDATA.except_mask], ecx
 @@:
         ret
 .26:
         stdcall user_unmap, ecx, edx, esi
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .27:
         cmp     ecx, OS_BASE
         jae     .fail
         stdcall load_file_umode, ecx
-        mov     [esp + SYSCALL_STACK._edx], edx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.edx], edx
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .28:
         cmp     ecx, OS_BASE
@@ -1214,15 +1214,15 @@ f68:
         test    eax, eax
         jz      @f
         stdcall load_file_umode, ebp
-        mov     [esp + SYSCALL_STACK._edx], edx
+        mov     [esp + SYSCALL_STACK.edx], edx
 @@:
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         stdcall kernel_free, ebp
         ret
 
 .29:
         stdcall user_ring, ecx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 ;  unload driver
@@ -1261,7 +1261,7 @@ f68:
         stdcall free, ecx
         ;dec     [count_services]
 
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .31:    ; get list service
         test    ecx, ecx
@@ -1271,9 +1271,9 @@ f68:
 
         mov     ebx, [srv.fd]
         mov     ecx, [srv.bk]
-        mov     [esp + SYSCALL_STACK._ebx], ebx  ;fd
-        mov     [esp + SYSCALL_STACK._ecx], ecx  ;bk
-        mov     [esp + SYSCALL_STACK._eax], 0
+        mov     [esp + SYSCALL_STACK.ebx], ebx  ;fd
+        mov     [esp + SYSCALL_STACK.ecx], ecx  ;bk
+        mov     [esp + SYSCALL_STACK.eax], 0
         ret
 @@:
         dec     ecx
@@ -1304,7 +1304,7 @@ f68:
 
         xor     eax, eax
 .fail:
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 align 4

@@ -64,7 +64,7 @@ sys_posix:
         jmp     dword [sys_posix_call + ebx*4]
 
 .fail:
-        mov     [esp + SYSCALL_STACK._eax], -EBADF
+        mov     [esp + SYSCALL_STACK.eax], -EBADF
         ret
 
 
@@ -95,7 +95,7 @@ sys_read:
         mov     eax, [ebp]
         jmp     dword [eax + FILEOP_READ*4]
 .fail:
-        mov     [esp + SYSCALL_STACK._eax], -EBADF
+        mov     [esp + SYSCALL_STACK.eax], -EBADF
         ret
 
 ;ssize_t write(int fd, const void *buf, size_t count);
@@ -124,6 +124,6 @@ sys_write:
         mov     eax, [ebp]
         jmp     dword [eax + FILEOP_WRITE*4]
 .fail:
-        mov     [esp + SYSCALL_STACK._eax], -EBADF
+        mov     [esp + SYSCALL_STACK.eax], -EBADF
         ret
 

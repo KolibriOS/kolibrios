@@ -388,7 +388,7 @@ sys_resize_app_memory:
 @@:
         stdcall new_mem_resize, ecx
 .store_result:
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
 .no_application_mem_resize:
         ret
 

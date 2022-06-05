@@ -1584,7 +1584,7 @@ sys_setup:
 ; 11 = enable lba read
 ; 12 = enable pci access
 ;-----------------------------------------------------------------------------
-        and     [esp + SYSCALL_STACK._eax], dword 0
+        and     [esp + SYSCALL_STACK.eax], dword 0
 ; F.21.1 - set MPU MIDI base port
         dec     ebx
         jnz     @f
@@ -1671,7 +1671,7 @@ sys_setup:
         ret
 ;--------------------------------------
 .error:
-        or      [esp + SYSCALL_STACK._eax], dword -1
+        or      [esp + SYSCALL_STACK.eax], dword -1
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -1694,7 +1694,7 @@ sys_getsetup:
         jnz     @f
 
         movzx   eax, [midi_base]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;--------------------------------------
 @@:
@@ -1741,11 +1741,11 @@ sys_getsetup:
         jnz     .error
 
         movzx   eax, word [keyboard]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .addr_error:    ; if given memory address is illegal
-        or      dword [esp + SYSCALL_STACK._eax], -1
+        or      dword [esp + SYSCALL_STACK.eax], -1
         ret        
 ;--------------------------------------
 @@:
@@ -1754,7 +1754,7 @@ sys_getsetup:
         jnz     @f
 
         mov     eax, [syslang]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;--------------------------------------
 @@:
@@ -1763,7 +1763,7 @@ sys_getsetup:
         jnz     @f
 
         mov     eax, [timer_ticks]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;--------------------------------------
 @@:
@@ -1772,8 +1772,8 @@ sys_getsetup:
         jnz     @f
 
         call    get_clock_ns
-        mov     [esp + SYSCALL_STACK._edx], edx
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.edx], edx
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;--------------------------------------
 @@:
@@ -1782,7 +1782,7 @@ sys_getsetup:
         jnz     @f
 
         mov     eax, [lba_read_enabled]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;--------------------------------------
 @@:
@@ -1791,11 +1791,11 @@ sys_getsetup:
         jnz     .error
 
         mov     eax, [pci_access_enabled]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;--------------------------------------
 .error:
-        or      [esp + SYSCALL_STACK._eax], dword -1
+        or      [esp + SYSCALL_STACK.eax], dword -1
         ret
 ;-----------------------------------------------------------------------------
 get_timer_ticks:
@@ -2006,7 +2006,7 @@ sysfn_shutdown:          ; 18.9 = system shutdown
         mov     [SYS_SHUTDOWN], al
         mov     [shutdown_processes], eax
         call    wakeup_osloop
-        and     dword [esp + SYSCALL_STACK._eax], 0
+        and     dword [esp + SYSCALL_STACK.eax], 0
  exit_for_anyone:
         ret
   uglobal
@@ -2093,11 +2093,11 @@ sysfn_terminate2:
         call    sysfn_terminate
         call    unlock_application_table
         sti
-        and     dword [esp + SYSCALL_STACK._eax], 0
+        and     dword [esp + SYSCALL_STACK.eax], 0
         ret
 .not_found:
         call    unlock_application_table
-        or      dword [esp + SYSCALL_STACK._eax], -1
+        or      dword [esp + SYSCALL_STACK.eax], -1
         ret
 ;------------------------------------------------------------------------------
 sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
@@ -2216,19 +2216,19 @@ sysfn_zmodif:
 .fail:
         xor     eax, eax
 .exit:
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 ;------------------------------------------------------------------------------
 sysfn_getidletime:              ; 18.4 = GET IDLETIME
         ;mov     eax, [TASK_TABLE+32+TASKDATA.cpu_usage]
         mov     eax, [SLOT_BASE + APPDATA.cpu_usage]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;------------------------------------------------------------------------------
 sysfn_getcpuclock:              ; 18.5 = GET TSC/SEC
         mov     eax, dword [cpu_freq]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;------------------------------------------------------------------------------
 get_cpu_freq:
@@ -2244,7 +2244,7 @@ align 4
 sysfn_getactive:        ; 18.7 = get active window
         mov     eax, [thread_count]
         movzx   eax, word [WIN_POS + eax*2]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;------------------------------------------------------------------------------
 sysfn_sound_flag:       ; 18.8 = get/set sound_flag
@@ -2252,7 +2252,7 @@ sysfn_sound_flag:       ; 18.8 = get/set sound_flag
         dec     ecx
         jnz     nogetsoundflag
         movzx   eax, byte [sound_flag]; get sound_flag
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
  nogetsoundflag:
 ;     cmp  ecx,2
@@ -2293,7 +2293,7 @@ sysfn_getversion:       ; 18.13 = get kernel ID and version
         rep movsb
         ret
 .addr_error:    ; if given memory address is illegal
-        mov     dword [esp + SYSCALL_STACK._eax], -1
+        mov     dword [esp + SYSCALL_STACK.eax], -1
         ret   
 ;------------------------------------------------------------------------------
 sysfn_waitretrace:     ; 18.14 = sys wait retrace
@@ -2304,7 +2304,7 @@ sysfn_waitretrace:     ; 18.14 = sys wait retrace
         in      al, dx
         test    al, 1000b
         jz      WaitRetrace_loop
-        and     [esp + SYSCALL_STACK._eax], dword 0
+        and     [esp + SYSCALL_STACK.eax], dword 0
         ret
 ;------------------------------------------------------------------------------
 align 4
@@ -2317,7 +2317,7 @@ sysfn_centermouse:      ; 18.15 = mouse centered
         mov     [MOUSE_Y], ax
         call    wakeup_osloop
         xor     eax, eax
-        and     [esp + SYSCALL_STACK._eax], eax
+        and     [esp + SYSCALL_STACK.eax], eax
         ret
 ;------------------------------------------------------------------------------
 sysfn_mouse_acceleration:       ; 18.19 = set/get mouse features
@@ -2327,7 +2327,7 @@ sysfn_mouse_acceleration:       ; 18.19 = set/get mouse features
 .get_mouse_acceleration:
         xor     eax, eax
         mov     ax, [mouse_speed_factor]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .set_mouse_acceleration:
         mov     [mouse_speed_factor], dx
@@ -2335,7 +2335,7 @@ sysfn_mouse_acceleration:       ; 18.19 = set/get mouse features
 .get_mouse_delay:
         xor     eax, eax
         mov     al, [mouse_delay]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .set_mouse_delay:
         mov     [mouse_delay], dl
@@ -2357,7 +2357,7 @@ sysfn_mouse_acceleration:       ; 18.19 = set/get mouse features
 .get_doubleclick_delay:
         xor     eax, eax
         mov     al, [mouse_doubleclick_delay]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .set_doubleclick_delay:
         mov     [mouse_doubleclick_delay], dl
@@ -2376,19 +2376,19 @@ dd      .set_doubleclick_delay
 sysfn_getfreemem:
         mov     eax, [pg_data.pages_free]
         shl     eax, 2
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;------------------------------------------------------------------------------
 sysfn_getallmem:
         mov     eax, [MEM_AMOUNT]
         shr     eax, 10
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;------------------------------------------------------------------------------
 sysfn_pid_to_slot:
         mov     eax, ecx
         call    pid_to_slot
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;------------------------------------------------------------------------------
 sysfn_min_rest_window:
@@ -2413,18 +2413,18 @@ sysfn_min_rest_window:
 .exit:
         popad
         xor     eax, eax
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .error:
         popad
         xor     eax, eax
         dec     eax
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;------------------------------------------------------------------------------
 sysfn_min_windows:
         call    minimize_all_window
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         call    change_task
         ret
 ;------------------------------------------------------------------------------
@@ -2487,10 +2487,10 @@ sys_cachetodiskette:
         cmp     ebx, 2
         ja      .no_floppy_save
         call    save_image
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .no_floppy_save:
-        mov     [esp + SYSCALL_STACK._eax], dword 1
+        mov     [esp + SYSCALL_STACK.eax], dword 1
         ret
 ;------------------------------------------------------------------------------
 
@@ -2524,7 +2524,7 @@ sys_getkey:
 ;--------------------------------------
 align 4
 .ret_eax:
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;--------------------------------------
 align 4
@@ -2554,7 +2554,7 @@ align 4
 align 4
 sys_getbutton:
         mov     ebx, [current_slot_idx]                         ; TOP OF WINDOW STACK
-        mov     [esp + SYSCALL_STACK._eax], dword 1
+        mov     [esp + SYSCALL_STACK.eax], dword 1
         movzx   ecx, word [WIN_STACK + ebx * 2]
         mov     edx, [thread_count] ; less than 256 processes
         cmp     ecx, edx
@@ -2565,7 +2565,7 @@ sys_getbutton:
         mov     eax, [BTN_BUFF]
         and     al, 0xFE                                    ; delete left button bit
         mov     [BTN_COUNT], byte 0
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
 ;--------------------------------------
 align 4
 .exit:
@@ -2676,11 +2676,11 @@ sys_cpuusage:
     ; return number of processes
 
         mov     eax, [thread_count]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .addr_error:    ; if given memory address is illegal
-        mov     dword [esp + SYSCALL_STACK._eax], -1
+        mov     dword [esp + SYSCALL_STACK.eax], -1
         ret   
 
 
@@ -2774,7 +2774,7 @@ sys_sheduler:
 ;.shed_counter:
 .00:
         mov     eax, [context_counter]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .02:
@@ -2804,8 +2804,8 @@ sys_sheduler:
         mov     eax, esi
         mov     ecx, edx
         rdmsr
-        mov     [esp + SYSCALL_STACK._eax], eax
-        mov     [esp + SYSCALL_STACK._ebx], edx           ;ret in ebx?
+        mov     [esp + SYSCALL_STACK.eax], eax
+        mov     [esp + SYSCALL_STACK.ebx], edx           ;ret in ebx?
         ret
 
 .04:
@@ -2834,25 +2834,25 @@ sys_sheduler:
 
 cache_disable:
         mov     eax, cr0
-        or      eax, 01100000000000000000000000000000b
+        or      eax, 01100000_00000000_00000000_00000000b
         mov     cr0, eax
         wbinvd  ;set MESI
         ret
 
 cache_enable:
         mov     eax, cr0
-        and     eax, 10011111111111111111111111111111b
+        and     eax, 10011111_11111111_11111111_11111111b
         mov     cr0, eax
         ret
 
 is_cache_enabled:
         mov     eax, cr0
         mov     ebx, eax
-        and     eax, 01100000000000000000000000000000b
+        and     eax, 01100000_00000000_00000000_00000000b
         jz      cache_disabled
-        mov     [esp + SYSCALL_STACK._eax], ebx
+        mov     [esp + SYSCALL_STACK.eax], ebx
 cache_disabled:
-        mov     dword [esp + SYSCALL_STACK._eax], eax;0
+        mov     dword [esp + SYSCALL_STACK.eax], eax;0
         ret
 
 modify_pce:
@@ -2862,7 +2862,7 @@ modify_pce:
 ;       xor eax,ebx ;invert pce
         bts     eax, 8;pce=cr4[8]
         mov     cr4, eax
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;---------------------------------------------------------------------------------------------
 
@@ -3377,7 +3377,7 @@ align 4
 set_app_param:
         mov     edi, [current_slot]
         xchg    ebx, [edi + APPDATA.event_mask] ; set new event mask
-        mov     [esp + SYSCALL_STACK._eax], ebx                    ; return old mask value
+        mov     [esp + SYSCALL_STACK.eax], ebx                    ; return old mask value
         ret
 ;-----------------------------------------------------------------------------
 
@@ -3511,7 +3511,7 @@ align 4
 syscall_reserveportarea:        ; ReservePortArea and FreePortArea
 
         call    r_f_port_area
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 ;reserve/free group of ports
@@ -4227,7 +4227,7 @@ end if
         ret
 
 @@:
-        mov     [esp + SYSCALL_STACK._eax], ecx
+        mov     [esp + SYSCALL_STACK.eax], ecx
         mov     [esp+20], ecx
         jmp     .ret
 
@@ -4242,7 +4242,7 @@ end if
         movzx   edx, byte [ebx]
         call    memmove
         dec     [msg_board_count]
-        mov     [esp + SYSCALL_STACK._eax], edx ;eax
+        mov     [esp + SYSCALL_STACK.eax], edx ;eax
         mov     [esp + 20], dword 1
         ret
 
@@ -4273,7 +4273,7 @@ sys_process_def:
         jmp     dword [f66call + ebx*4]
 
 .not_support:
-        or      [esp + SYSCALL_STACK._eax], -1
+        or      [esp + SYSCALL_STACK.eax], -1
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -4284,13 +4284,13 @@ align 4
 align 4
 .2:                             ; 2 = get keyboard mode
         movzx   eax, byte [edi + APPDATA.keyboard_mode]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;-----------------------------------------------------------------------------
 align 4
 .3:                             ;3 = get keyboard ctrl, alt, shift
         mov     eax, [kb_state]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -4303,7 +4303,7 @@ align 4
         add     eax, 16
         cmp     eax, hotkey_list+16*256
         jb      @b
-        mov     dword [esp + SYSCALL_STACK._eax], 1
+        mov     dword [esp + SYSCALL_STACK.eax], 1
         ret
 .found_free:
         mov     [eax + 8], edi
@@ -4318,7 +4318,7 @@ align 4
         jz      @f
         mov     [edx + 12], eax
 @@:
-        and     dword [esp + SYSCALL_STACK._eax], 0
+        and     dword [esp + SYSCALL_STACK.eax], 0
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -4338,7 +4338,7 @@ align 4
         mov     eax, [eax]
         jmp     .scan
 .notfound:
-        mov     dword [esp + SYSCALL_STACK._eax], 1
+        mov     dword [esp + SYSCALL_STACK.eax], 1
         ret
 .found:
         mov     ecx, [eax]
@@ -4354,7 +4354,7 @@ align 4
         mov     [eax + 8], edx
         mov     [eax + 12], edx
         mov     [eax], edx
-        mov     [esp + SYSCALL_STACK._eax], edx
+        mov     [esp + SYSCALL_STACK.eax], edx
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -4415,7 +4415,7 @@ sys_gs:                         ; direct screen access
         ja      .not_support
         jmp     dword [f61call + ebx*4]
 .not_support:
-        or      [esp + SYSCALL_STACK._eax], dword -1
+        or      [esp + SYSCALL_STACK.eax], dword -1
         ret
 
 
@@ -4423,15 +4423,15 @@ sys_gs:                         ; direct screen access
         mov     eax, [_display.width]
         shl     eax, 16
         mov     ax, word [_display.height]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .2:                             ; bits per pixel
         mov     eax, [_display.bits_per_pixel]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .3:                             ; bytes per scanline
         mov     eax, [_display.lfb_pitch]
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 align 4
@@ -4441,7 +4441,7 @@ syscall_getscreensize:                  ; GetScreenSize
         shl     eax, 16
         mov     ax, word [_display.height]
         dec     ax
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -4531,7 +4531,7 @@ align 4
 ;--------------------------------------
 align 4
 .store:
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -4544,7 +4544,7 @@ syscall_getpixel:                       ; GetPixel
         xchg    eax, ebx
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 use mouseunder area
         call    dword [GETPIXEL]; eax - x, ebx - y
-        mov     [esp + SYSCALL_STACK._eax], ecx
+        mov     [esp + SYSCALL_STACK.eax], ecx
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -4630,7 +4630,7 @@ syscall_threads:                        ; CreateThreads
         xor     ebx, ebx
         call    new_sys_threads
 
-        mov     [esp + SYSCALL_STACK._eax], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 ;------------------------------------------------------------------------------
@@ -4788,7 +4788,7 @@ sys_apm:
 
 align 4
 undefined_syscall:                      ; Undefined system call
-        mov     [esp + SYSCALL_STACK._eax], dword -1
+        mov     [esp + SYSCALL_STACK.eax], dword -1
         ret
 
 align 4
