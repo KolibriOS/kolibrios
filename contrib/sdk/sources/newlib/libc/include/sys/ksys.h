@@ -483,7 +483,7 @@ enum KSYS_SLOT_STATES {
     KSYS_SLOT_STATE_NORMAL_TERM = 3,
     KSYS_SLOT_STATE_EXCEPT_TERM = 4,
     KSYS_SLOT_STATE_WAIT_EVENT = 5,
-    KSYS_SLOT_STATE_FREE = 6
+    KSYS_SLOT_STATE_FREE = 9
 };
 
 KOSAPI int _ksys_thread_info(ksys_thread_t* table, int slot)
@@ -1580,48 +1580,48 @@ KOSAPI void _ksys_set_window_title(const char* title)
 
 /*============= Function 77, subfunction 0 - create futex object =============*/
 
-KOSAPI void* _ksys_futex_create(void* futexControlAddr) {
-    void* futexDesc;
+KOSAPI void* _ksys_futex_create(void* futex_control_addr) {
+    void* futex_desc;
     asm_inline(
         "int $0x40"
-        : "=a"(futexDesc)
-        : "a"(77), "b"(0), "c"(futexControlAddr)
+        : "=a"(futex_desc)
+        : "a"(77), "b"(0), "c"(futex_control_addr)
         : "memory");
-    return futexDesc;
+    return futex_desc;
 }
 
 /*============= Function 77, subfunction 1 - destroy futex object =============*/
 
-KOSAPI int _ksys_futex_destroy(void* futexDesc) {
+KOSAPI int _ksys_futex_destroy(void* futex_desc) {
     int res;
     asm_inline(
         "int $0x40"
         : "=a"(res)
-        : "a"(77), "b"(1), "c"(futexDesc)
+        : "a"(77), "b"(1), "c"(futex_desc)
         : "memory");
     return res;
 }
 
 /*============= Function 77, subfunction 2 - futex wait =============*/
 
-KOSAPI int _ksys_futex_wait(void* futexDesc, int controlVal, int timeout) {
+KOSAPI int _ksys_futex_wait(void* futex_desc, int control_val, int timeout) {
     int res;
     asm_inline(
         "int $0x40"
         : "=a"(res)
-        : "a"(77), "b"(2), "c"(futexDesc), "d"(controlVal), "S"(timeout)
+        : "a"(77), "b"(2), "c"(futex_desc), "d"(control_val), "S"(timeout)
         : "memory");
     return res;
 }
 
 /*============= Function 77, subfunction 3 - futex wake =============*/
 
-KOSAPI int _ksys_futex_wake(void* futexDesc, int maxWakeCount) {
+KOSAPI int _ksys_futex_wake(void* futex_desc, int max_wake_count) {
     int count;
     asm_inline(
         "int $0x40"
         : "=a"(count)
-        : "a"(77), "b"(3), "c"(futexDesc), "d"(maxWakeCount)
+        : "a"(77), "b"(3), "c"(futex_desc), "d"(max_wake_count)
         : "memory");
     return count;
 }
