@@ -3,21 +3,23 @@
 
 #include <ddk.h>
 
+#define ASSERT_CONCAT_(a, b) a##b
+#define ASSERT_CONCAT(a, b) ASSERT_CONCAT_(a, b)
+#define STATIC_ASSERT(e) enum { ASSERT_CONCAT(assert_line_, __LINE__) = 1/(!!(e)) }
+
 typedef u32 addr_t;
 typedef u32 count_t;
 
 #pragma pack(push, 1)
 
-typedef struct
-{
-  int width;
-  int height;
-  int bpp;
-  int freq;
-}videomode_t;
+typedef struct {
+    int width;
+    int height;
+    int bpp;
+    int freq;
+} videomode_t;
 
-struct kos32_pdev
-{
+struct kos32_pdev {
     struct kos32_pdev *prev;
     struct kos32_pdev *next;
     u32 devid;
@@ -27,6 +29,96 @@ struct kos32_pdev
     u8  reserved[2];
     u32 owner;
 };
+
+// struct BOX in const.inc
+struct kos_wnd_box {
+    u32 left;
+    u32 top;
+    u32 width;
+    u32 height;
+};
+
+// struct DBG_REGS in const.inc
+struct kos_dbg_regs {
+    u32 dr0;
+    u32 dr1;
+    u32 dr2;
+    u32 dr3;
+    u32 dr7;
+};
+
+struct kos_lhead {
+  struct kos_lhead *prev;
+  struct kos_lhead *next;
+};
+
+enum KOS_SLOT_STATES {
+    KOS_SLOT_STATE_RUNNING = 0,
+    KOS_SLOT_STATE_SUSPENDED = 1,
+    KOS_SLOT_STATE_SUSPENDED_WAIT_EVENT = 2,
+    KOS_SLOT_STATE_NORMAL_TERM = 3,
+    KOS_SLOT_STATE_EXCEPT_TERM = 4,
+    KOS_SLOT_STATE_WAIT_EVENT = 5,
+    KOS_SLOT_STATE_FREE = 9
+};
+
+struct kos_appdata {
+    char app_name[16];
+    struct kos_lhead list;
+    u32 process;
+    u32 fpu_state;
+    u32 exc_handler;
+    u32 except_mask;
+    u32 pl0_stack;
+    u32 cursor;
+    u32 fd_ev;
+    u32 bk_ev;
+    u32 fd_obj;
+    u32 bk_obj;
+    u32 saved_esp;
+    u32 io_map[2];
+    u32 dbg_state;
+    char* cur_dir;
+    u32 wait_timeout;
+    u32 saved_esp0;
+    u32 wait_begin;
+    u32 wait_test;
+    u32 wait_param;
+    u32 tls_base;
+    u32 event_mask;
+    u32 tid;
+    u32 draw_bgr_x;
+    u32 draw_bgr_y;
+    u8  state;
+    u8  wnd_number;
+    u16 __reserved1;
+    u32 wnd_shape;
+    u32 wnd_shape_scale;
+    u32 __reserved2;
+    u32 counter_sum;
+    struct kos_wnd_box saved_box;
+    u32 ipc_start;
+    u32 ipc_size;
+    u32 occurred_events;
+    u32 debugger_slot;
+    u32 terminate_protection;
+    u8  keyboard_mode;
+    u8  captionEncoding;
+    u8  __reserved3[2];
+    char* exec_params;
+    u32 dbg_event_mem;
+    struct kos_dbg_regs dbg_regs;
+    char* wnd_caption;
+    struct kos_wnd_box wnd_clientbox;
+    u32 priority;
+    struct kos_lhead in_schedule;
+    u32 counter_add;
+    u32 cpu_usage;
+    u32 __reserved4;
+};
+
+#define KOS_APPDATA_SIZE 256
+STATIC_ASSERT(sizeof(struct kos_appdata) == KOS_APPDATA_SIZE);
 
 typedef struct {
     unsigned            p00;
@@ -47,7 +139,7 @@ typedef struct {
     };
     char                p20;
     const char         *p21;
-}ksys70_t;
+} ksys70_t;
 
 #pragma pack(pop)
 
@@ -132,6 +224,8 @@ u32 STDCALL PciRead32(u32 bus, u32 devfn, u32 reg)__asm__("PciRead32");
 u32 STDCALL PciWrite8 (u32 bus, u32 devfn, u32 reg,u8 val) __asm__("PciWrite8");
 u32 STDCALL PciWrite16(u32 bus, u32 devfn, u32 reg,u16 val)__asm__("PciWrite16");
 u32 STDCALL PciWrite32(u32 bus, u32 devfn, u32 reg,u32 val)__asm__("PciWrite32");
+
+struct kos_appdata* IMPORT GetCurrSlot(void) __asm__("GetCurrSlot");
 
 #define pciReadByte(tag, reg) \
         PciRead8(PCI_BUS_FROM_TAG(tag),PCI_DFN_FROM_TAG(tag),(reg))
@@ -534,7 +628,8 @@ static inline void *KernelZeroAlloc(unsigned long size)
 
 static inline int power_supply_is_system_supplied(void) { return -1; };
 
-static inline int FS_Service(ksys70_t *k, int* err){
+static inline int FS_Service(ksys70_t *k, int* err)
+{
     int status;
     __asm__ __volatile__(
      "call *__imp__FS_Service"

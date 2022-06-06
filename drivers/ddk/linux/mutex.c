@@ -25,22 +25,6 @@
 #include <linux/spinlock.h>
 #include <syscall.h>
 
-struct  kos_taskdata
-{
-    u32 event_mask;
-    u32 pid;
-    u16 r0;
-    u8  state;
-    u8  r1;
-    u16 r2;
-    u8  wnd_number;
-    u8  r3;
-    u32 mem_start;
-    u32 counter_sum;
-    u32 counter_add;
-    u32 cpu_usage;
-}__attribute__((packed));
-
 static inline void mutex_set_owner(struct mutex *lock)
 {
 }
@@ -144,11 +128,12 @@ ww_mutex_set_context_fastpath(struct ww_mutex *lock,
      */
     flags = safe_cli();
     list_for_each_entry(cur, &lock->base.wait_list, list) {
-        ((struct kos_taskdata*)cur->task)->state = 0;
+        ((struct kos_appdata*)cur->task)->state = KOS_SLOT_STATE_RUNNING;
     }
     safe_sti(flags);
 }
 
+static __always_inline void
 ww_mutex_set_context_slowpath(struct ww_mutex *lock,
                               struct ww_acquire_ctx *ctx)
 {
@@ -162,7 +147,7 @@ ww_mutex_set_context_slowpath(struct ww_mutex *lock,
      * so they can recheck if they have to back off.
      */
     list_for_each_entry(cur, &lock->base.wait_list, list) {
-        ((struct kos_taskdata*)cur->task)->state = 0;
+        ((struct kos_appdata*)cur->task)->state = KOS_SLOT_STATE_RUNNING;
     }
 }
 
@@ -170,13 +155,13 @@ int __ww_mutex_lock_slowpath(struct ww_mutex *ww, struct ww_acquire_ctx *ctx)
 {
     struct mutex *lock;
     struct mutex_waiter waiter;
-    struct kos_taskdata* taskdata;
+    struct kos_appdata *appdata;
     u32 eflags;
     int ret = 0;
 
     lock = &ww->base;
-    taskdata = (struct kos_taskdata*)(0x80003010);
-    waiter.task = (u32*)taskdata;
+    appdata = GetCurrSlot();
+    waiter.task = appdata;
 
     eflags = safe_cli();
 
@@ -192,7 +177,7 @@ int __ww_mutex_lock_slowpath(struct ww_mutex *ww, struct ww_acquire_ctx *ctx)
             if (ret)
                 goto err;
         };
-        taskdata->state = 1;
+        appdata->state = KOS_SLOT_STATE_SUSPENDED;
         change_task();
     };
 

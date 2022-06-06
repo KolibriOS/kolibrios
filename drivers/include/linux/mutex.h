@@ -58,7 +58,7 @@ struct mutex {
  */
 struct mutex_waiter {
 	struct list_head	list;
-    	int                	*task;
+	void		*task;
 };
 
 

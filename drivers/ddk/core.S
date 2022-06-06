@@ -26,9 +26,13 @@
 
     .global _FreeKernelSpace
     .global _FreePage
+    .global _FS_Service
 
     .global _GetClockNs
     .global _GetCpuFreq
+
+    .global _GetCurrSlot
+
     .global _GetDisplay
     .global _GetEvent
     .global _GetPgAddr
@@ -83,8 +87,6 @@
     .global _WaitEvent
     .global _WaitEventTimeout
 
-    .global _FS_Service
-
     .def  _AcpiGetRootPtr;  .scl  2;  .type 32; .endef
 
     .def  _AllocKernelSpace;  .scl  2;  .type 32; .endef
@@ -109,10 +111,11 @@
 
     .def  _FreeKernelSpace;   .scl  2;  .type 32; .endef
     .def  _FreePage;          .scl  2;  .type 32; .endef
+    .def  _FS_Service;        .scl  2;  .type 32; .endef
 
     .def  _GetClockNs;        .scl  2;  .type 32; .endef
 
-    .def  _GetDisplay;        .scl  2;  .type 32; .endef
+    .def  _GetCurrSlot;       .scl  2;  .type 32; .endef
 
     .def  _GetDisplay;        .scl  2;  .type 32; .endef
     .def  _GetEvent;          .scl  2;  .type 32; .endef
@@ -166,9 +169,7 @@
 
     .def  _WaitEvent;         .scl  2;  .type 32; .endef
     .def  _WaitEventTimeout;  .scl  2;  .type 32; .endef
-    
-    .def _FS_Service;         .scl  2;  .type 32; .endef
-    
+
 _AcpiGetRootPtr:
 
 _AllocKernelSpace:
@@ -195,8 +196,13 @@ _DiskMediaChanged:
 _FreeKernelSpace:
 _FreePage:
 
+_FS_Service:
+
 _GetClockNs:
 _GetCpuFreq:
+
+_GetCurrSlot:
+
 _GetDisplay:
 _GetEvent:
 _GetPCIList:
@@ -247,9 +253,6 @@ _UserAlloc:
 _UserFree:
 _WaitEvent:
 _WaitEventTimeout:
-
-_FS_Service:
-
         ret
 
 .section .drectve
@@ -278,8 +281,13 @@ _FS_Service:
         .ascii " -export:FreeKernelSpace"      # stdcall
         .ascii " -export:FreePage"             #
 
+        .ascii " -export:FS_Service"           # watch system call 70
+
         .ascii " -export:GetClockNs"           #
         .ascii " -export:GetCpuFreq"           #
+
+        .ascii " -export:GetCurrSlot"
+
         .ascii " -export:GetDisplay"           # stdcall
         .ascii " -export:GetEvent"             #
         .ascii " -export:GetPCIList"           #
@@ -289,7 +297,6 @@ _FS_Service:
         .ascii " -export:GetTimerTicks"        #
         .ascii " -export:GetStackBase"         #
         .ascii " -export:GetWindowRect"        # fastcall
-
 
         .ascii " -export:KernelAlloc"          # stdcall
         .ascii " -export:KernelFree"           # stdcall
@@ -332,4 +339,3 @@ _FS_Service:
 
         .ascii " -export:WaitEvent"            # stdcall
         .ascii " -export:WaitEventTimeout"     # stdcall
-        .ascii " -export:FS_Service"           # watch system call 70
