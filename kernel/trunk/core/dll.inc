@@ -301,12 +301,6 @@ proc get_coff_sym stdcall, pSym:dword,count:dword, sz_sym:dword
         ret
 endp
 
-align 4
-proc get_curr_task
-        mov     eax, [current_slot_idx]
-        shl     eax, 8
-        ret
-endp
 
 align 4
 proc get_fileinfo stdcall, file_name:dword, info:dword

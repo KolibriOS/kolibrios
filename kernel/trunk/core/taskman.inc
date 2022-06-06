@@ -1066,5 +1066,9 @@ get_stack_base:
         mov     eax, [eax + APPDATA.pl0_stack]
         ret
 
+align 4
+get_curr_slot:
+        mov     eax, [current_slot]
+        ret
 
 include "debug.inc"

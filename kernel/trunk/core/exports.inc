@@ -99,7 +99,7 @@ __exports:
 \
           load_cursor,           'LoadCursor',         \      ;stdcall
 \
-          get_curr_task,         'GetCurrentTask',     \
+          get_curr_slot,         'GetCurrSlot',        \
           change_task,           'ChangeTask',         \
           load_file,             'LoadFile',           \      ;retval eax, ebx
           delay_ms,              'Sleep',              \
