@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (17-may-2022)";
+    HEADER = "CEdit (09-jun-2022)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -186,7 +186,7 @@ VAR
     OD: OpenDlg.Dialog;
     confirm, notFound, menuFindClicked, search, searchOpened: BOOLEAN;
 
-    switch, closing: BOOLEAN;
+    switch, closing, newtab: BOOLEAN;
     leftButton: BOOLEAN;
     LEFT, RIGHT, BOTTOM: INTEGER;
 
@@ -761,26 +761,29 @@ END getFileNum;
 
 PROCEDURE SwitchTab (n: INTEGER);
 BEGIN
-    curText := n;
-    Tabs.switch(tabs, n);
-    Switch(texts[n]);
-    resetTimer;
-    draw_window
+	curText := n;
+	Tabs.switch(tabs, n);
+	Switch(texts[n]);
+	resetTimer;
+	IF ~newtab THEN
+		draw_window
+	END
 END SwitchTab;
 
 
 PROCEDURE NewFile;
 VAR
-    nov: T.tText;
+	nov: T.tText;
 BEGIN
-    IF textsCount < maxTexts THEN
-        nov := T.New();
-        T.SetPos(nov, 0, 0);
-        insert(textsCount, nov);
-        SwitchTab(curText)
-    ELSE
-        error("too many files")
-    END
+	IF textsCount < maxTexts THEN
+		nov := T.New();
+		T.SetPos(nov, 0, 0);
+		insert(textsCount, nov);
+		newtab := TRUE;
+		SwitchTab(curText)
+	ELSE
+		error("too many files")
+	END
 END NewFile;
 
 
@@ -2082,6 +2085,7 @@ BEGIN
     debugScript := Ini.debugScript;
     leftButton := FALSE;
     resized := FALSE;
+    newtab := FALSE;
     K.ScreenSize(winWidth, winHeight);
     scrollWidth := winHeight DIV 35;
     winWidth := (winWidth*80) DIV 100 - (128 + 30);
@@ -2240,6 +2244,10 @@ BEGIN
         		scr := K.Scroll()
         	END
         |7: receiveIPC
+        END;
+        IF newtab THEN
+        	Redraw(resized, width, height, cliWidth, cliHeight);
+        	newtab := FALSE
         END
     END
 END main;
