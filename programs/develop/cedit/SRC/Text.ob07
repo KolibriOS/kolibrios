@@ -1248,7 +1248,8 @@ BEGIN
         Lines.setChar(text.curLine, n - 1, Lines.getChar(line2, n - 1));
         DEC(n)
     END;
-    Lines.modify(newLine)
+    Lines.modify(newLine);
+    SetPos(text, text.cursor.X, text.cursor.Y)
 END enter;
 
 
