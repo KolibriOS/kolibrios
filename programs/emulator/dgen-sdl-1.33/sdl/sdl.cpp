@@ -55,7 +55,7 @@ extern "C" {
 
 #ifdef _KOLIBRI
 extern "C" {
-#include <ksys.h>
+#include <sys/ksys.h>
 }
 #endif
 
