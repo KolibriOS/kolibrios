@@ -1,0 +1,26 @@
+lib_LTLIBRARIES = libhqx.la
+libhqx_la_LDFLAGS = -version-info @HQX_LTVERSION@
+if WINDOWS_BUILD
+    libhqx_la_LDFLAGS += -no-undefined
+endif
+libhqx_la_SOURCES =	\
+	init.c		\
+	hq2x_32.c	\
+	hq2x_24.c	\
+	hq2x_16.c	\
+	hq2x-int.h	\
+	hq3x_32.c	\
+	hq3x_24.c	\
+	hq3x_16.c	\
+	hq3x-int.h	\
+	hq4x_32.c	\
+	hq4x_24.c	\
+	hq4x_16.c	\
+	hq4x-int.h	\
+	common.h
+include_HEADERS = hqx.h
+
+bin_PROGRAMS = hqx
+hqx_SOURCES = hqx.c
+hqx_CPPFLAGS = -I.
+hqx_LDFLAGS = -lIL libhqx.la

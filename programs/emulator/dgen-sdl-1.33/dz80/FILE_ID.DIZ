@@ -1,0 +1,12 @@
+----------< dZ80 v2.0 >-----------
+A Zilog Z80/Z180/GBZ80 Disassembler
+Includes "undocumented", but often
+used instructions. Also supports
+  opcode map files, to determine
+ which addresses to disassemble.
+Can also create address and input
+      output port addresses.
+  Now includes scripting support.
+---  Freeware by Mark Incley  ---
+    e-mail: dz80@inkland.org
+     http://www.inkland.org

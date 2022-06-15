@@ -1,0 +1,74 @@
+                           =========================
+                           Scale2x, Scale3x, Scale4x
+                           =========================
+
+Scale2x, Scale3x and Scale4x are real-time graphics effects
+able to increase the size of small bitmaps guessing the
+missing pixels without blurring the images.
+
+They were originally developed for the AdvanceMAME project
+in the year 2001 to improve the quality of old games running
+at low video resolutions.
+
+The specification of the algorithm and more details are at :
+
+    http://scale2x.sourceforge.net
+
+This package contains some implementations of the effects
+in C and MMX Pentium assembler, and command line tools to
+convert manually .PNG images.
+
+
+1 IMPLEMENTATION
+================
+
+The files scale2x.c and scale3x.c are the fast C and MMX
+implementations of the effects.
+
+The files scalebit.c and scalebit.h are the fast C implementations
+of the effects ready to be applied to a generic bitmap.
+Note that the implementation of the Scale4x effect is not
+obvious without using a big intermediate buffer.
+
+The files scalerx.c is a simple command line processors,
+which uses the reference implementation of the effects.
+
+The files scalex.c is another simple command line processors,
+which uses the fast implementation of the effects.
+
+
+2 TOOLS
+=======
+
+The command line tools "scalerx" and "scalex" read a .PNG file
+and write another .PNG file with the effect applied.
+The syntax of the programs is :
+
+    scalerx [-k N] [-w] FROM.png TO.png
+    scalex [-k N] FROM.png TO.png
+
+The option -k can be used to select the scale factor.
+The option -w can be used to scale textures with a wraparound effect.
+
+To compile the command line tool you need the libz and libpng
+libraries.
+
+
+3 EXAMPLES
+==========
+
+The directory example/ contains some examples of the effects applyed
+to a generic image and to a test image.
+
+The suffix of the images means :
+    1 - Original image.
+    2 - Scale2x effect.
+    3 - Scale3x effect.
+    4 - Scale4x effect.
+    1x - Scaled normally 12 times.
+    2x - Scale2x effect and scaled normally up to 12 times.
+    3x - Scale3x effect and scaled normally up to 12 times.
+    4x - Scale4x effect and scaled normally up to 12 times.
+
+The `x' images have the same final size and can be used to compare
+pixel by pixel the result of the effects.

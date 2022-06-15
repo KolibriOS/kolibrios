@@ -1,0 +1,350 @@
+================================================================================
+                               dZ80 What's New?
+================================================================================
+
+********************************************************************************
+
+  E-mail: dz80@inkland.org
+      WWW: http://www.inkland.org
+          Macintosh dZ80: http://www.hinton.demon.co.uk/archive/macide.html
+
+********************************************************************************
+
+
+v2.0 - 9th March, 2002
+----------------------
+
+Additions and Changes to all versions
+
+        Please note the change of email address and URL at the top of this
+        document.
+
+        dZ80 now has scripting support. Writing a script for dZ80 allows you
+        to override, or simply modify dZ80's existing handling of opcodes.
+        Using a script, an opcode can be trapped before and/or after dZ80 has
+        processed it. This allows, for example, machine dependant "RST"
+        handling, which is different on every Z80-based machine. A Sinclair
+        ZX Spectrum script is supplied as an example. The scripting language
+        used is Lua 4.0, and its Web page at http://www.lua.org contains all
+        the tutorials and help for the language, although for simple jobs,
+        hacking the supplied example script will probably do :)
+
+        See Section 3.0 in the supplied dz80.txt file for the details on this
+        powerful new feature.
+	
+        Added configuration file support (again, courtesy of Lua!). When dZ80
+        runs, it attempts to load and execute a dz80.ini file. The Windows GUI
+        version of dZ80 continues to use the Windows registry to load and save
+        its settings, but if there's a dz80.ini in the same folder when a
+        binary file is loaded, you will be prompted if you want to import the
+        dz80.ini settings.
+
+	A special case number prefix "{" has been added. It translates to a
+        "0" if the number would otherwise start with a non-numeric value:
+
+            {1234 = 1234 (starts with a numeric character)
+            {ffff = 0ffff (starts with a non-numeric character)
+
+	You can now control whether you have the relative displacement
+        comments or not	in the disassembly. By default they're switched off.
+
+	Single instruction disassemblies (DISFLAG_SINGLE) are now much faster.
+
+        Numerous code clean-ups and minor optimisations.
+
+        Added Raffaele Sena's skip.c to the source code download. Skip is
+        now documented in dZ80.txt.
+
+Additions and Changes to the command line versions
+
+	-j command line option to enable relative displacement comments.
+
+        -k= command line option to specify a script to load and run.
+
+        -v show version information
+
+        Special case switch - "!". If the pling is placed at the start of
+        the command line, it prevents dZ80 from automatically loading
+        dz80.ini. E.g. dz80 ! file.bin file.asm
+
+Additions and Changes to the Windows version
+
+	A dZ80 output window has been added to the main GUI. This displays
+        the disassembly progress and summary as well as any error messages
+        that may appear.
+
+	Added support for Windows XP themes.
+
+        Improved options page.
+
+        Improved context help.
+
+        Miscellaneous minor improvements throughout.
+
+	Windows console version of dZ80 (dz80c.exe) is now included in the
+        package. Note that, as with all command-line versions of dZ80,
+        dz80c.exe will use dz80.ini to load its settings and not the
+        dZ80 for Windows settings which are stored in the registry.
+
+Bug Fixes (all versions)
+
+        The (DISFLAG_SINGLE | DISFLAG_UPPER) flag combination now works
+        correctly when calling dZ80_Disassemble()
+
+
+v1.50 -  10th February, 2001
+----------------------------
+
+Additions and Changes to all versions
+
+	dZ80's default radix can now be selected from octal, decimal or hex.
+	Please note that the opcode dump remains in hex regardless of the
+	radix chosen, because it becomes pretty ugly otherwise.
+
+	You can override dZ80's default number format prefix and suffixes.
+	E.g. you could change dz80's default hex format from "$1234" to
+        "1234h", "0x1234", etc.
+	
+	The directive for define byte can be changed - default is "db"
+
+	The character to mark the start of a comment can be changed - default is a semicolon.
+
+	Skipped opcode bytes are now dumped individually as "db's"
+
+	Rewritten the references feature:
+
+         + Every instruction is tracked, rather than just the first one
+
+         + The Z80 instruction that generated the reference is shown in
+           the listing.
+
+         + Items are sorted by address / port.
+
+         + It's no longer necessary to specify a "max references" amount.
+
+	"org (start address)" now precedes labelled disassemblies.
+
+	Added support for the Z80-derivative used in the Gameboy handhelds.
+
+	The dZ80 source now contains a function to disassemble a single
+        instruction. This makes it easy to drop the dZ80 source into
+        your own programs, and instantly get a Z80/Z180/Z80GB disassembler.
+        Check out the example.c file in the dZ80 source code download
+        (http://www.inkland.org/dz80)
+
+	Source code change: dZ80_Disassemble() is now thread-safe.
+	
+Additions and Changes to the command line versions
+	
+        dZ80.exe is now a 32-bit DOS executable (no more dz80-32.exe)
+
+        No more 16-bit DOS version of dZ80 - it's gone on a permanent
+        vacation :) Anyone requiring a 16-bit version of the disassembler can
+        download dZ80 1.31 from http://www.inkland.org/dz80
+
+	Parameters for the command line options can be given in hex or
+        octal by using the C style prefixes. E.g. dz80 /s=0x8000
+
+	New command line switches:
+	 
+                -d allows you to override dZ80's default of "db" to represent
+                define-byte. e.g. -d="defb"
+        
+                -f allows you to override dZ80's default comment marker ("; ")
+                e.g. -f="# "
+        
+                -i allows you to select the radix for dZ80's output.
+                        -i=16 = select hexadecimal (default)
+                        -i=10 = select decimal
+                        -i=8  = select octal
+        
+                -p and -y allow you to specify a prefix and suffix for all 
+                numbers displayed by dZ80. e.g. -p="0x" -y="" or -p="" -y="h"
+        
+                -z selects the cpu type.
+                        -z=Z80 selects Z80 (default)
+                        -z=Z180 selects the Z180
+                        -z=Z80GB selects the Gameboy's Z80 derivative
+
+Additions and Changes to the Windows version
+
+	The last file disassembled is automatically remembered and selected
+        in new sessions.
+	
+	The details of the last disassembly (for the current session) are
+        shown.
+
+	The default button on the main dialog is now "Disassemble" (just load dZ80 and hit enter
+	if you're working on the same source file!)
+
+	You can enter C style hex and octal numbers in the options screen.
+	
+Bug Fixes (all versions)
+
+	Disassembly comments are no longer affected by the upper or lowercase
+        options.
+
+	Fixed comments which were slightly out of place if on the same line as
+        a label.
+
+	Fixed the 65,535 byte limit of the "skip file" bytes option, so you
+        can finally disassemble files > 64K!
+	
+
+v1.31 - 28th February, 1998. The Raffaele Sena Release ;-)
+----------------------------------------------------------
+
+Thanks to Raffaele Sena for reporting these bugs, and for providing
+the fixes, too! I could get used to this :)
+
+Additions and Changes to all versions:
+
+        Removed references to the two non-ANSI functions "strlwr" and "strupr"
+        from the source code.
+        
+Bug Fixes:
+
+        "add ix,ix" (or "iy") was being disassembled as "add ix,hl"
+
+        If using an Opcode Map file, dZ80 would attempt to close the file
+        twice, resulting in a crash when compiled for linux.
+        Note: this problem didn't affect the DOS and Win95 versions.
+
+
+v1.30 - 29th November, 1997
+---------------------------
+
+Additions and Changes to all versions:
+
+        Added support for the Zilog Z180 processor, which fills some of the
+        holes in the Z80's EDxx opcode range. Thanks to Bruno G. for the
+        information on the Z180.
+
+        New command line swich /Z to exclude Z180 instructions from the
+        disassembly (they're treated as unknown Z80 ones instead).
+
+        To make listings clearer, blank lines are now automatically inserted
+        after a "ret", "reti", etc. This new feature can be disabled with
+        the /V command line option.
+
+        The source code for the command line version of dZ80 is freely available
+        from the dZ80 web site at http://www.inkland.org
+
+Additions and Changes to the Windows version:
+
+        The program that dZ80 launches to view the disassembly with can now be
+        selected. It defaults to using Notepad.
+
+        The source file is now re-loaded for every disassembly, so that dZ80
+        can be left running, the source file can be updated and dZ80 will
+        disassemble the updated source file without having to re-select the
+        source to re-load it.
+
+        Made some cosmetic changes.
+
+Bug Fixes:
+
+        The Windows version (dZ80w) was not using the "source file starts
+        at Z80 address" option correctly.
+
+
+v1.21 - 24th August, 1997
+-------------------------
+
+Additions and Changes:
+
+        Changed the default install folder to "Program Files\Inkland\dZ80" to
+        keep everything from Inkland in one place. If you're upgrading from
+        an earlier version of dZ80 for Windows 95, please uninstall the older
+        version first.
+
+        When performing a 2-pass (labelled) disassembly, addresses that are
+        referenced are now referred to with the label, rather than the address.
+        Easier to show than describe! E.g.
+
+          l0000: inc a          will now disassemble as:  l0000: inc a
+                 jr  nz,#0000                                    jr  nz,l0000
+
+Bug Fixes:
+
+        None
+
+
+v1.20a - 29th April, 1997
+-------------------------
+
+        The installer was rebuilt with a new version of the install builder.
+	This fixes problems with the previous installer which didn't work
+        correctly on NT 4.0
+
+        Recompiled dZ80 with VC++ 5.0, for better performance.
+
+
+v1.20 - 20th April, 1997
+------------------------
+
+        Initial public release.
+
+        This program shares the same disassembly engine as its DOS command-
+        line counterpart. That's why this first release of dZ80 for Windows 95
+        is already at v1.20!
+
+
+v1.11 - 12th January, 1997
+--------------------------
+
+Additions and Changes:
+
+        Modified the source code to be portable (i.e. separated the
+        nasty 16-bit DOS bit).
+
+        dZ80 now comes in two flavours: "dz80" the original 16-bit version
+        and "dz80-32" a 32-bit version, which works significantly faster.
+
+        The source code for dZ80 is now available for porting to another
+        platform. If you wish to convert, e-mail me at
+        dz80@inkland.org stating which platform you're wanting to
+        convert it to, and I'll send you the source.
+
+Bug Fixes:
+
+        None - really! :)
+
+
+v1.10 - 14th December, 1996
+---------------------------
+
+Additions and Changes:
+
+        Added all known undocumented ED opcodes and also the
+        "Super Loader Trap" pseudo opcode ED FB (used by some Sinclair
+        Spectrum emulator snapshot files).
+
+        Added support for opcode map files. This feature has been tested with
+        Gerton Lunter's "Z80" Sinclair Spectrum Emulator map files. See the
+        DZ80.TXT file (after installation) for information on the format of
+        these files. A small demonstraton of this feature is also supplied.
+
+        dZ80 now comes supplied with a sample Sinclair Spectrum snapshot and
+        opcode map file.
+
+        Made some minor optimisations.
+
+        All warnings and errors are now displayed via "stderr" which means
+        that they will be visible, even if dZ80's output is redirected.
+
+        Added a /q (quiet) command line option. It instructs dZ80 to only
+        display the disassembly and no other information.
+
+Bug Fixes:
+
+        Fixed a problem with disassembling opcodes EDB8 to EDBB.
+
+        Fixed a problem with the opcodes 0x22 "ld (nn),hl" and 0x33
+        "ld (nn),a", which could sometimes be disassembled as the other.
+
+
+v1.00 - 19th November, 1996
+---------------------------
+
+        Initial public release.

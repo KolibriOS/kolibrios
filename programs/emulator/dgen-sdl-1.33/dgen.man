@@ -1,0 +1,203 @@
+.Dd July 26, 2014
+.Dt DGEN 1
+.Os
+.Sh NAME
+.Nm dgen
+.Nd Sega Genesis/Mega Drive emulator
+.Sh SYNOPSIS
+.Nm dgen
+.Op Fl Pfhmv
+.Op Fl R Ar (J|U|E)
+.Op Fl H Ar HZ
+.Op Fl D Ar DEMONAME
+.Op Fl d Ar DEMONAME
+.Op Fl n Ar USEC
+.Op Fl p Ar CODE,CODE...
+.Op Fl r Ar RCFILE
+.Op Fl X Ar XFACT
+.Op Fl Y Ar YFACT
+.Op Fl S Ar FACT
+.Op Fl g Ar (0|1)
+.Op Fl G Ar XxY
+.Op Fl s Ar SLOT
+.Ar [romname [...]]
+.Sh DESCRIPTION
+The ROM image in the file
+.Ar romname
+is executed, as emulated on a Sega Genesis or Mega Drive running in 60Hz NTSC
+mode (unless the
+.Fl P
+option is specified, in which case 50Hz PAL mode is used).
+.Ar romname
+should be in raw binary or SMD format, and may be compressed with
+.Xr gzip 1 ,
+.Xr zip 1 , or
+.Xr bzip2 1 .
+.Pp
+When
+.Ar romname
+isn't specified, DGen starts without a ROM. It can be loaded later from the
+prompt. When more than a single
+.Ar romname
+is specified, they are executed sequentially.
+.Pp
+The options are as follows:
+.Bl -tag -width Fl
+.It Fl H Ar HZ
+Use a custom frame rate, can be used to accelerate or slow down emulation.
+.It Fl P
+Emulate 50Hz PAL mode (as used in European models of the Mega Drive).
+.It Fl R Ar (J|U|E)
+Emulator region. Without this option, DGen uses the first region mentioned in
+the ROM header. It should be combined with
+.Fl P
+for PAL mode. See below.
+.Bl -tag -width Fl
+.It (none)
+Autodetect (NTSC, 60Hz)
+.It Fl P
+Autodetect (PAL, 50Hz)
+.It Fl R Ar J
+Japan (NTSC, 60Hz)
+.It Fl R Ar J Fl P
+Japan (PAL, 50Hz)
+.It Fl R Ar E
+Europe (NTSC, 60Hz, music will certainly play too fast)
+.It Fl R Ar E Fl P
+Europe (PAL, 50Hz)
+.It Fl R Ar U
+America (NTSC, 60Hz)
+.It Fl R Ar U Fl P
+Same as
+.Fl R Ar E Fl P
+.El
+.It Fl f
+Run fullscreen, if possible.
+.It Fl h
+Show a brief synopsis of all options.
+.It Fl m
+MinGW only. This option prevents DGen from detaching from its control console.
+.It Fl v
+Show the version number, and exit.
+.It Fl D Ar DEMONAME
+Play back a demo recorded with the
+.Fl d
+option.
+.It Fl d Ar DEMONAME
+Record a demo of the program running, which can be later replayed with the
+.Fl D
+switch.
+.It Fl n Ar USEC
+Sleep for a number of microseconds after every frame, to give time to other
+processes.
+.It Fl p Ar CODE,CODE...
+Modify the ROM image in memory, using Game Genie or Hex style codes. Game
+Genie codes are of the form
+.Ar ABCD-EFGH
+and Hex codes are in the form
+.Ar 123456:ABCD .
+To specify more than one code, separate them with commas (do
+.Ar not
+use spaces).
+.It Fl r Ar RCFILE
+Parse another rc file after /tmp0/1/.dgen/dgenrc. Values in the specified file
+override those in the preceding files.
+.It Fl X Ar XFACT
+Scale the window XFACT times in the X direction. XFACT must be a positive
+integer.
+.It Fl Y Ar YFACT
+Scale the window YFACT times in the Y direction. YFACT must be a positive
+integer.
+.It Fl S Ar FACT
+Scale the window FACT times in both directions. FACT must be a positive integer.
+.It Fl g Ar (0|1)
+Enable/disable OpenGL (if compiled-in).
+.It Fl G Ar XxY
+Desired window size (e.g. 640x480, 800x600, etc.)
+.It Fl s Ar SLOT
+Load the saved state from the given slot at startup (0-9)
+.El
+.Sh INTERACTIVE PROMPT
+A minimalist interactive prompt inspired from
+.Xr vi 1
+can be used to perform various operations described below. It is triggered by
+pressing colon (:), the default key. Command-line editing, history and
+completion are supported.
+.Ss Commands
+.Bl -tag -width xxxx
+.It {quit, exit, q}
+Quit, or load the next
+.Ar romname
+from command-line, if any.
+.It {load, open, plug, o} Ar filename
+Load a given ROM
+.Ar filename .
+.It {unload, close, unplug}
+Unload the current ROM.
+.It config_load Ar filename
+Load configuration from file
+.Ar filename .
+.It config_save Ar filename
+Save current configuration to file
+.Ar filename .
+.It reset
+Genesis reset.
+.It {ctv_push, ctv_pop, ctv_none}
+Manage the stack of Crap TV filters (if compiled-in).
+.It calibrate Ar number
+Interactive calibration of the specified gamepad (1 or 2). If
+.Ar number
+isn't specified, default to 1.
+.It unbind Ar binding [...]
+Remove specified bindings (variables prefixed with "bind_").
+See
+.Xr dgenrc 5
+for more information about them.
+.It vgmdump start Ar filename
+.It vgmdump stop
+Manages VGM dumping/logging. If the second argument is
+.Ar start
+VGM dumping will be started at the path specified by the third argument.
+If the second argument is
+.Ar stop
+VGM dumping will be stopped and the dump finalized.
+.El
+.Ss Variables
+All configuration variables from
+.Xr dgenrc 5
+can be displayed and modified interactively, with immediate effect.
+.Bl -tag -width xxxx
+.It {int_name, bool_name, key_name, joy_name, ...} {value}
+Affect
+.Ar value
+to variable
+.Ar name .
+.It {int_name, bool_name, key_name, joy_name, ...}
+Display current value for variable
+.Ar name .
+.El
+.Sh FILES
+.Bl -tag -width /tmp0/1/.dgen/dgen/saves/* -compact
+.It Pa /tmp0/1/.dgen/dgenrc
+Contains user settings for the emulator.
+.It Pa /tmp0/1/.dgen/dgenrc.auto
+Generated file containing saved user settings.
+.It Pa /tmp0/1/.dgen/saves/*
+Save states generated by the emulator.
+.It Pa /tmp0/1/.dgen/ram/*
+Battery-backup RAM images, generated by the emulator for ROMs with save RAM.
+.It Pa /tmp0/1/.dgen/screenshots/*
+Screenshots are generated there.
+.It Pa /tmp0/1/.dgen/roms/*
+ROMs default search path.
+.It Pa /tmp0/1/.dgen/demos/*
+Demos default search path.
+.El
+.Sh AUTHORS
+This manual page was written by
+.An Joe Groff Aq joe@pknet.com .
+.An Updated by zamaz Aq zamaz@users.sourceforge.net .
+.Sh BUGS
+There are known emulation bugs, see BUGS in DGen source package.
+.Pp
+.An Report bugs to Aq http://sourceforge.net/projects/dgen/ .

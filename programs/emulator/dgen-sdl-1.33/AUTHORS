@@ -1,0 +1,83 @@
+DGen was originally written by Dave <dave@dtmnt.com>. It was ported to SDL by
+Joe Groff <joe@pknet.com> and Phil K. Hornung <falcon@pknet.com>.
+
+It was resurrected by tamentis <tamentis@neopulsar.org> in 2008 and is
+maintained by zamaz <zamaz@users.sourceforge.net> since september 2011.
+
+The following people have also made contributions to DGen:
+
+Andrew Bazan <abazan@mailbag.com>
+  - Got DGen/SDL to run under BeOS.
+Steve Snake <snake@toodarkpark.freeserve.co.uk>
+  - The author of the best DOS emulator KGen, was also very patient with my
+    stupid questions about the Genesis, thus allowing me to fix little
+    emulation quirks. ;)
+Amy Lear <Amikins@operamail.net>
+  - Helped add 8-bit sound support. :)
+Daniel Wislocki <wislocki@math.grin.edu>
+  - Improved the sound engine to be nicer to higher-end systems.
+John Stiles <stiles@emulation.net>
+  - He works on the Mac port of DGen, and what a job he does! He wrote the
+    original raster engine, and also has sped things up enormously.
+Dylan Griffiths <Dylan_G@bigfoot.com>
+  - Rewrote a lot of the string-handling code to make it much less evil-looking.
+Allen Noe <psyclone42@geocities.com>
+  - Added screenshot functionality.
+Jeff Grady <jgrady@chimera.acm.jhu.edu>
+  - Fixed compilation problems with gcc snapshots.
+Cameron Moore <cameron@unbeatenpath.net>
+  - Fixed SDL joystick initialization problems.
+Daniel Robbins <drobbins@gentoo.org>
+  - Helped fix timing problems on very fast machines.
+Andre Souza <asouza@olinux.com.br>
+  - Added OpenGL rendering mode.
+Edd Barrett <vext01@gmail.com>
+  - YM2612 debugging support.
+  - VDP bugfixes (half-submitted commands) and enhancements (sprite masking).
+  - Improved joysticks configuration.
+  - Debugger.
+  - VDP planes switching.
+  - VDP 2-cell vertical scrolling mode and other V-scroll improvements.
+  - W.A.S.D. style keybinding documentation.
+EgelMex <ellism88@gmail.com>
+  - VDP bugfixes.
+  - Code documentation with Doxygen, some refactoring.
+Andrea Musuruane <musuruan@users.sourceforge.net>
+  - Submitted patches for non-executable stack in ASM files and warnings
+    in dgenrc.5.
+Efry <efry@users.sourceforge.net>
+  - Added Cyclone 68000 v0.0088.
+  - Added DrZ80 1.0.
+Arek <arek@users.sourceforge.net>
+  - Fixed libarchive detection in configure.
+Giuseppe Gatta <tails92@gmail.com>
+  - Implemented VGM dumping.
+  - Added Pico support.
+Rocka84 <rocka84@users.sf.net>
+  - Added bindings to switch between save slots.
+
+The following people involuntarily contributed to DGen:
+
+Charles MacDonald
+  - Author of Genesis plus.
+    http://cgfm2.emuviews.com/
+Eke-Eke
+  - Author of Genesis plus GX.
+    http://code.google.com/p/genplus-gx/
+Stephane Dallongeville
+  - Author of Gens and CZ80 (used in DGen).
+    http://www.gens.me/
+David Korth
+  - Author of Gens/GS.
+    http://segaretro.org/Gens/GS
+The SpritesMind community
+  - Especially Nemesis for the technical information he published.
+    http://gendev.spritesmind.net/forum/
+Maxim Stepin & others
+  - See hqx/AUTHORS.
+Salvatore Sanfilippo, Pieter Noordhuis, Steve Bennett
+  - See linenoise/linenoise.c.
+Andrea Mazzoleni
+  - See scale2x/AUTHORS.
+Mark Incley
+  - Author of dZ80.

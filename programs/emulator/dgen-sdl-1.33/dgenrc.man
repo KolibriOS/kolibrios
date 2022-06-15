@@ -1,0 +1,463 @@
+.Dd July 26, 2014
+.Dt DGENRC 5
+.Os
+.Sh NAME
+.Nm dgenrc
+.Nd file containing settings for
+.Xr dgen 1
+.Sh SYNOPSIS
+/tmp0/1/.dgen/dgenrc
+.Sh DESCRIPTION
+The file
+.Pa /tmp0/1/.dgen/dgenrc
+is parsed by
+.Xr dgen 1
+when the emuator is started. It is used to set controller keys, as well as other
+characteristics of the emulation. The contents of this file may be overriden
+with the contents of another similarly-formatted file, via the
+.Fl r
+commandline switch.
+.Sh FILE FORMAT
+Each rc file consists of an unlimited number of lines, which each have the
+format 'fieldname = value'. A line may also be a comment, if it begins with the
+hash mark (#) character.
+.Pp
+Each
+.Ar fieldname
+is prepended by a name, which identifies the type of this field:
+.Bl -tag -width bool_*
+.It Ar key_*
+A key value. May be set to a key identifier listed in the
+.Sx KEY IDENTIFIERS
+section below.
+.It Ar joy_*
+A joystick/joypad value. May be set to a joystick identifier listed in the
+.Sx JOYSTICK IDENTIFIERS
+section below.
+.It Ar mou_*
+A mouse action. May be set to a mouse identifier listed in the
+.Sx MOUSE IDENTIFIERS
+section below.
+.It Ar bool_*
+A boolean value. "false", "no", and "0" values are taken as false, while
+"true", "yes", and any number except 0 are taken as true.
+.It Ar int_*
+An integer value, greater than or equal to 0.
+.It Ar str_*
+A string value, can be empty.
+.El
+.Pp
+Some fields take special value sets, which are addressed in their respective
+sections. None of the field names or values are case-sensitive.
+.Pp
+The fields fall under a few basic groups. They are listed below, with their
+default values in brackets ([]):
+.Pp
+All of them can be modified interactively from the prompt, as described in
+.Xr dgen 1 .
+.Sh CONTROLLERS
+.Bl -tag -width xxxx
+.It key_pad1_up [up]
+.It key_pad1_down [down]
+.It key_pad1_left [left]
+.It key_pad1_right [right]
+.It key_pad1_a [a]
+.It key_pad1_b [s]
+.It key_pad1_c [d]
+.It key_pad1_x [q]
+.It key_pad1_y [w]
+.It key_pad1_z [e]
+.It key_pad1_mode [backspace]
+.It key_pad1_start [return]
+Map keys to the first Genesis controller. Each of these fields has a
+corresponding "key_pad2" field, to map to the second controller.
+.It joy_pad1_up [joystick0-axis1-min]
+.It joy_pad1_down [joystick0-axis1-max]
+.It joy_pad1_left [joystick0-axis0-min]
+.It joy_pad1_right [joystick0-axis0-max]
+.It joy_pad1_a [joystick0-button0]
+.It joy_pad1_b [joystick0-button3]
+.It joy_pad1_c [joystick0-button1]
+.It joy_pad1_x [joystick0-button6]
+.It joy_pad1_y [joystick0-button4]
+.It joy_pad1_z [joystick0-button5]
+.It joy_pad1_mode [joystick0-button9]
+.It joy_pad1_start [joystick0-button8]
+Map joystick/joypad buttons to the first Genesis controller. Each of these
+fields has a corresponding "joy_pad2" field, to map to the second controller.
+.It bool_joystick [true]
+Use joysticks to emulate the controllers. Note that the keyboard keys will
+still work if this value is set. This field is only available if you have
+joystick support enabled.
+.It int_mouse_delay [50]
+Number of milliseconds to wait after the last mouse motion event to release
+buttons bound to such events.
+.El
+.Sh USER-DEFINED BINDINGS
+.Bl -tag -width xxxx
+.It bind_{keysym} Ar action
+.It bind_{joypad} Ar action
+.It bind_{mouse} Ar action
+Defines a new keyboard, joystick/joypad or mouse binding to an arbitrary
+action. These variables use the
+.Ar keysym
+format as defined in
+.Sx KEY IDENTIFIERS ,
+the
+.Ar joypad
+format as defined in
+.Sx JOYSTICK IDENTIFIERS ,
+or the
+.Ar mouse
+format as defined in
+.Sx MOUSE IDENTIFIERS .
+When
+.Ar action
+is prefixed with "key_", "joy_" or "mou_", it becomes an alias to the
+corresponding variable in
+.Sx CONTROLLERS .
+Otherwise, it is interpreted as if entered at the prompt, and can be used to
+modify variables or execute commands (see
+.Xr dgenrc 5
+for more information).
+No bindings are defined by default.
+.It bind_"{keysym|joypad|mouse} [{keysym|joypad|mouse} [...]]" Ar action
+Alternate syntax that supports combining several identifiers to perform
+.Ar action .
+Controller types can be mixed. Identifiers are separated by spaces. To avoid
+syntax errors, spaces must be properly escaped or quoted.
+.El
+.Sh AUDIO
+.Bl -tag -width xxxx
+.It bool_sound [true]
+Enable the sound subsystem.
+.It int_soundrate [44100]
+Sound frequency to play at, in hertz (Hz).
+.It int_soundsegs [8]
+Number of sound segments to use for sound buffering. Lower values guarantee
+low latency. Increment this only if the sound becomes choppy.
+.It int_soundsamples [0]
+Size of the system sound buffer, in samples (samples are the sound unit, sound
+rate is how many of them are played every second). Specifying 0 automatically
+choses the safest value. If you experience sound issues int_soundsegs is
+unable to solve, try to change this. Increasing it will cause noticeable audio
+lag (it is unfortunately often required on slower machines).
+.It int_volume [100]
+Volume level, in percent. Values above 100 cause distorsion.
+.It key_volume_inc [=]
+.It key_volume_dec [-]
+.It joy_volume_inc []
+.It joy_volume_dec []
+.It mou_volume_inc []
+.It mou_volume_dec []
+Bindings for volume control.
+.It bool_mjazz [false]
+MJazz option - puts 2 more FM chips in the Megadrive for a sort of 22 channel
+sound boost. Can sound good. Slows things down a lot.
+.El
+.Sh VIDEO
+.Bl -tag -width xxxx
+.It int_depth [0]
+Color depth (bits per pixel). Allowed values are 0 (automatic), 8, 15, 16, 24
+and 32. Ignored in OpenGL mode.
+.It int_width [-1]
+.It int_height [-1]
+Desired window width and height.
+.It bool_opengl [true]
+Use the OpenGL renderer, if it is available.
+.It bool_opengl_stretch [true]
+Let OpenGL stretch the screen.
+.It bool_opengl_linear [true]
+Use GL_LINEAR for textures filtering instead of GL_NEAREST.
+.It bool_opengl_32bit [true]
+Use 32 bit textures. They require more memory but are usually faster than 16
+bit textures.
+.It bool_opengl_square [false]
+Use square textures. Wastes a lot of memory but may solve OpenGL
+initialization failures.
+.It bool_fullscreen [false]
+Try to run fullscreen, if possible.
+.It int_scale [-1]
+.It int_scale_x [-1]
+.It int_scale_y [-1]
+Amount by which to scale the rendered screen from the default resolution. See
+scaling filters.
+.It bool_aspect [true]
+Retain original aspect ratio when resizing window.
+.It key_fullscreen_toggle [alt-enter]
+.It joy_fullscreen_toggle []
+.It mou_fullscreen_toggle []
+Button to toggle fullscreen mode (this may do nothing if SDL doesn't support
+fullscreen toggling on your platform.)
+.It int_info_height [-1]
+Height of the text area at the bottom of the screen, in pixels. This also
+affects the font size. Values smaller than the minimum font size make DGen
+redirect text to stdout instead. The default value of -1 makes DGen choose the
+proper height.
+.It bool_fps [false]
+Display the current number of frames per second.
+.It bool_buttons [false]
+Display pressed buttons. Can be used to help configuring them.
+.It bool_swab [false]
+Swap bytes in the video output. Sometimes useful when video output is located
+on a different system. This is implemented as a CTV filter which must be
+compiled-in to work.
+.It bool_doublebuffer [true]
+Toggle double buffering. Enabling this should prevent screen tearing from
+happening. Disabling this may improve the number of displayed frames per
+second on some systems.
+.It bool_screen_thread [false]
+When enabled, a separate thread is created to offload the displaying of
+frames. This is only useful on slower machines where flipping video buffers
+takes time, especially when V-sync is enabled and doing so blocks until the
+next frame without consuming CPU time (sometimes the case when
+bool_doublebuffer is enabled). This currently has no effect when OpenGL is
+enabled and only works if multi-threading support is compiled-in.
+.El
+.Sh SAVE STATES
+.Bl -tag -width xxxx
+.It key_slot_X [X]
+.It joy_slot_X []
+.It mou_slot_X []
+Sets the current save-state slot to number X.
+.It key_slot_next [f8]
+.It joy_slot_next []
+.It mou_slot_next []
+Switch to the next save-slot.
+.It key_slot_prev [f7]
+.It joy_slot_prev []
+.It mou_slot_prev []
+Switch to the previous save-slot.
+.It key_save [f2]
+.It joy_save []
+.It mou_save []
+Saves state to the current slot.
+.It key_load [f3]
+.It joy_load []
+.It mou_load []
+Loads state from the current slot.
+.El
+.Sh MISCELLANEOUS KEYS
+.Bl -tag -width xxxx
+.It key_fix_checksum [f1]
+.It joy_fix_checksum []
+.It mou_fix_checksum []
+Fixes the checksum value. Some older games will freeze with a red screen if
+the ROM has been hacked or modified with Game Genie codes. If it does, pressing
+this, and resetting should fix the problem.
+.It key_quit [escape]
+.It joy_quit []
+.It mou_quit []
+Exit DGen or switch to the next ROM on the command-line.
+.It key_craptv_toggle [f5]
+.It joy_craptv_toggle []
+.It mou_craptv_toggle []
+Toggles Crap-TV image filters. These filters aren't available in 8 bpp mode.
+.It key_scaling_toggle [f6]
+.It joy_scaling_toggle []
+.It mou_scaling_toggle []
+Toggles scaling algorithms. See scaling_startup below.
+.It key_reset [tab]
+.It joy_reset []
+.It mou_reset []
+Restart the Genesis emulation.
+.It key_cpu_toggle [f11]
+.It joy_cpu_toggle []
+.It mou_cpu_toggle []
+Switch CPU emulators. The x86 assembly CPU emulator StarScream is fast, but
+has glitches which affect a few games. Switching to the slower Musashi core
+will fix these problems, at a speed penalty.
+.It key_z80_toggle [f10]
+.It joy_z80_toggle []
+.It mou_z80_toggle []
+Switch Z80 emulators. MZ80 is a bit faster than CZ80, particularly in its
+assembly version (only available for x86), but CZ80 works with more
+games. This key can also disable Z80 emulation.
+.It key_stop [z]
+.It joy_stop []
+.It mou_stop []
+Pause emulation, so you can concentrate on real life for a few seconds. :)
+.It key_game_genie [f9]
+.It joy_game_genie []
+.It mou_game_genie []
+Enter a Game Genie or Hex code. This key also works in stopped mode.
+.It key_screenshot [f12]
+.It joy_screenshot []
+.It mou_screenshot []
+Take a screenshot. Not available in 8 bpp mode.
+.It key_prompt [:]
+.It joy_prompt []
+.It mou_prompt []
+Pause emulation and display interactive prompt. Also works in stopped mode.
+.It key_debug_enter [`]
+.It joy_debug_enter []
+.It mou_debug_enter []
+Break into the debugger. Only meaningful if debugger support is compiled-in.
+.El
+.Sh PREFERENCES
+.Bl -tag -width xxxx
+.It int_hz [60]
+Video refresh rate. The default is 60 as in NTSC consoles.
+.It bool_pal [false]
+When true, a PAL console is emulated. This should be used in combination with
+int_hz above for 50Hz emulation.
+.It region [' ']
+U for America (NTSC), E for Europe (PAL), J for Japan (NTSC), X for Japan
+(PAL), or empty space for autodetection (the default).
+Overrides bool_pal and int_hz.
+.It str_region_order [JUEX]
+Regions DGen is allowed to emulate when autodetection is enabled, ordered by
+preference.
+.It emu_m68k_startup [musa]
+Useful when both Musashi and StarScream are compiled-in. This option selects
+the default emulator to use ("musa" for Musashi, "star" for StarScream, "none"
+for neither). See key_cpu_toggle.
+.It emu_z80_startup [cz80]
+Useful when both CZ80 and MZ80 are compiled-in. This option selects the
+default emulator to use ("cz80", "mz80" or "none", if you want to disable it
+altogether). See key_z80_toggle.
+.It bool_autoload [false]
+Automatically load the saved state from slot 0 when DGen starts.
+.It bool_autosave [false]
+Automatically save the saved state to slot 0 upon exit. Setting both of these
+fields true, you can exit DGen, and automatically start a game where you left
+off when you start it again.
+.It bool_autoconf [true]
+Automatically dump the current configuration to dgenrc.auto before
+exiting. This file is always loaded before dgenrc at startup.
+.It bool_frameskip [true]
+Automatically skip frames, when it is necessary to maintain proper emulation
+speed. You may want to disable sound or set int_nice to a nonzero
+value when setting this to false.
+.It int_nice [0]
+If set to a non-zero value, DGen will call
+.Xr usleep 3
+with the specified parameter
+after rendering each frame. This will slow the program down (if it is running
+too fast on your computer), and allow the operating system to reclaim some
+CPU time.
+.It ctv_craptv_startup [off]
+CTV filter to use by default. Available filters are "blur", "scanline",
+"interlace" and "swab".
+.It scaling_startup [stretch]
+Scaler to use when display resolution is larger than original screen.
+Available filters are "stretch", "scale", "hqx", "hqx stretch", "scale2x",
+"scale2x stretch" and "none".
+.It bool_show_carthead [false]
+Show cartridge header info at startup.
+.It bool_raw_screenshots [false]
+Generate unfiltered screenshots.
+.It str_rom_path ["roms"]
+Directory where DGen should look for ROMs by default. It's relative to DGen's
+home directory, unless an absolute path is provided.
+.El
+.Sh DEBUGGING
+.Bl -tag -width xxxx
+.It bool_vdp_hide_plane_a [false]
+.It bool_vdp_hide_plane_b [false]
+.It bool_vdp_hide_plane_w [false]
+.It bool_vdp_hide_sprites [false]
+Hide various planes during frame rendering. Require VDP debugging to be
+compiled-in.
+.It bool_vdp_sprites_boxing [false]
+.It int_vdp_sprites_boxing_fg [0xffff00] (yellow)
+.It int_vdp_sprites_boxing_bg [0x00ff00] (green)
+Toggle sprites boxing and configure its colors. Require VDP debugging to be
+compiled-in. "fg" is for sprites with the high priority bit set, "bg" is for
+the others. Color format is 0xRRGGBB.
+.El
+.Sh EXAMPLES
+See the file "sample.dgenrc" in the DGen/SDL distribution.
+.Sh KEY IDENTIFIERS
+A key identifier can have the prefixes "shift-", "ctrl-", "alt-" and "meta-",
+or any combination thereof, to require that the specified modifier be pressed
+in combination with the key. For example, the identifier "alt-enter" would
+correspond to holding down the Alt key while pressing Enter.
+.Pp
+The "shift-" modifier only works with keys that don't generate symbols (such
+as arrow keys). Otherwise their UTF-8 representation must be used directly.
+.Pp
+The numbers "0" through "9" ("kp_0" through "kp_9" for the numeric keypad),
+letters "A" through "Z", and function keys "F1" through "F12" map to their key
+equivalents.
+In addition, the following identifiers map to their similarly-labeled key
+counterparts. Identifiers on the same line map to the same key:
+.Bd -literal -offset indent
+escape
+backspace
+tab
+capslock	caps_lock
+lshift		shift_l
+rshift		shift_r
+lctrl		ctrl_l
+lmeta		meta_l
+lalt		alt_l
+ralt		alt_r
+rmeta		meta_r
+rctrl		ctrl_r
+return		enter
+space
+
+scrollock	scroll_lock
+numlock		num_lock
+
+insert
+home
+page_up		pageup
+delete
+end
+page_down	pagedown
+left
+right
+up
+down
+
+kp_home
+kp_up
+kp_pageup	kp_page_up
+kp_left
+kp_right
+kp_end
+kp_down
+kp_pagedown	kp_page_down
+kp_insert
+kp_delete	kp_period
+
+kp_enter
+kp_divide
+kp_minus
+kp_multiply
+kp_plus
+.Ed
+.Sh JOYSTICK IDENTIFIERS
+Like key identifiers, joystick (or joypad) identifiers describe a joystick
+event. Each detected joystick is numbered starting from 0. Three different
+event types are supported.
+.Bl -tag -width xxxx
+.It Buttons: joystickX-buttonY
+For joystick/joypad number X, button number Y. "button" can be abbreviated
+as "b".
+.It Axes: joystickX-axisY-min, joystickX-axisY-max
+For joystick/joypad number X, axis number Y, and its position, which is either
+"min" (also "n", "negative") or "max" (also "p", "positive"). "axis" can be
+abbreviated as "a".
+.It Hats: joystickX-hatY-{direction}
+For joystick/joypad number X, hat number Y and direction. "hat" can be
+abbreviated as "h". Possible directions are "up", "right", "down", "left".
+.El
+.Sh MOUSE IDENTIFIERS
+These identifiers describe a mouse event. Each detected mouse is numbered
+starting from 0. Two different event types are supported.
+.Bl -tag -width xxxx
+.It Buttons: mouseX-buttonY
+For mouse number X, button number Y. "button" can be abbreviated as "b".
+.It Motions: mouseX-{direction}
+For mouse number X and direction. Possible directions are "up", "right",
+"down", "left".
+.El
+.Sh SEE ALSO
+.Xr dgen 1
+.Sh AUTHORS
+This manual page was written by
+.An Joe Groff Aq joe@pknet.com .
+.An Updated by zamaz Aq zamaz@users.sourceforge.net .

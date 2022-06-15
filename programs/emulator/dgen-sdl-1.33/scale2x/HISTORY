@@ -1,0 +1,95 @@
+                              ===================
+                              History For Scale2x
+                              ===================
+
+
+SCALE2X V2.4 2009/7
+===================
+
+* Added MMX support for x86_64 [Øyvind Karlsen]
+
+
+SCALE2X V2.3 2005/11
+====================
+
+* Some additions in the contrib/ directory.
+
+
+SCALE2X V2.2 2005/03
+====================
+
+* Fixed a typo in the algorithm documentation of scale3x.
+  Specifically the definition of the E3 point in
+  the algorithm.txt file was wrong.
+
+
+SCALE2X V2.1 2004/12
+====================
+
+* Added the `scale2x3' and `scale2x4' effects.
+* Fixed the computation of the border pixels for scale3x.
+* Fixed the scalebit.c implementation to be C++
+  compatible [Max Horn]
+
+
+SCALE2X V2.0 2004/02
+====================
+
+* Added a new revision of the `scale3x' effect. It now looks good as
+  `scale2x'.
+* Added a new optimized C version of the `scale2x' effect.
+* Added a detailed algorithm specification in the `algorithm.txt' file.
+* Minor fixes at the scalebit.c file.
+
+
+SCALE2X V1.6 2003/07
+====================
+
+* Added an example of the fast implementation of the effects
+  applied to a generic bitmap. There is also an
+  example for the not obvious Scale4x effect.
+* Revised the command line tools. Now they support all the
+  formats of .PNG images. Also images with 16 bits per
+  channel.
+* Fixed a linking problem with some libpng installations.
+
+
+SCALE2X V1.5 2003/05
+====================
+
+* Added the scale3x and scale4x command line tools.
+
+
+SCALE2X V1.4 2003/01
+====================
+
+* Added in the contrib dir a VisualC MMX assembler implementation
+  by VisualBoy from the VisualBoyAdvance emulator.
+
+
+SCALE2X V1.3 2002/12
+====================
+
+* Added the contrib dir with some example implementations.
+  Java by Randy Power and C SDL by Pete Shinners.
+
+
+SCALE2X V1.2 2002/11
+====================
+
+* The new Scale2x site is now http://scale2x.sourceforge.net
+* The MMX implementation now correctly computes the pixel on the
+  left and right border.
+* Renamed the -t option in -w.
+
+
+SCALE2X V1.1 2002/11
+====================
+
+* Added the -t option at the command line converter.
+
+
+SCALE2X V1.0 2002/11
+====================
+
+* First version of the library
