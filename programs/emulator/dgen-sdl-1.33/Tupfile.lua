@@ -1,15 +1,14 @@
 if tup.getconfig("NO_GCC") ~= "" then return end
 if tup.getconfig("HELPERDIR") == ""
 then
-  if tup.getconfig("NO_NASM") ~= "" then return end -- required for SDL compilation
+  if tup.getconfig("NO_NASM") ~= "" then return end
   HELPERDIR = "../../"
 end
 tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
 tup.include(HELPERDIR .. "/use_sdl_newlib.lua")
 
-CFLAGS = CFLAGS_OPTIMIZE_SPEED ..[[ -DPACKAGE_NAME=\"DGen/SDL\" -DPACKAGE_TARNAME=\"dgen-sdl\" -DPACKAGE_VERSION=\"1.33\" -DPACKAGE_STRING=\"DGen/SDL\ 1.33\" -DPACKAGE_BUGREPORT=\"zamaz@users.sourceforge.net\" -DPACKAGE_URL=\"http://sourceforge.net/projects/dgen\" -DPACKAGE=\"dgen-sdl\" -DVERSION=\"1.33\" -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_FTELLO=1 -DHAVE_GLOB_H=1 -DWITH_JOYSTICK=1 -DWITH_MUSA=1 -DWITH_STAR=1 -DWITH_MZ80=1 -DWITH_CZ80=1 -DWITH_X86_ASM=1 -DHAVE_MEMCPY_H=1 -DWITH_CTV=1 -DWITH_SCALE2X=1 -DWITH_X86_MZ80=1 -DWITH_X86_MMX=1 -DWITH_X86_CTV=1 -DWITH_X86_TILES=1 ]]
-
+CFLAGS = CFLAGS_OPTIMIZE_SPEED
 LDFLAGS = LDFLAGS .. " --subsystem native"
 INCLUDES = INCLUDES .. " -Isdl -I. -Iscale2x"
 

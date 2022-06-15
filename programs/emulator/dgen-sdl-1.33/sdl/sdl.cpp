@@ -6309,8 +6309,8 @@ int pd_handle_events(md &megad)
 	};
 	unsigned int hat_value_map;
 	intptr_t joypad;
-	bool pressed;
 #endif
+	bool pressed;
 	uint32_t plist[8];
 	uint32_t rlist[8];
 	unsigned int i, pi, ri;

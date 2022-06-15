@@ -40,7 +40,8 @@
 #endif
 
 #ifdef _KOLIBRI
-char* dgen_conf_dir = "/tmp0/1";
+char* kos_dgen_userdir = "/tmp0/1";
+
 #endif
 
 static const char *fopen_mode(unsigned int mode)
@@ -181,7 +182,7 @@ char *dgen_userdir(char *buf, size_t *size)
 	}
 #ifndef __MINGW32__
 	#ifdef _KOLIBRI
-	strncpy(path, dgen_conf_dir, sz_dir);
+	strncpy(path, kos_dgen_userdir, sz_dir);
 	#else
 	strncpy(path, pwd->pw_dir, sz_dir);
 	#endif
@@ -231,7 +232,7 @@ char *dgen_dir(char *buf, size_t *size, const char *sub)
 		return NULL;
 	sz_dir = strlen(pwd->pw_dir);
 	#else
-	sz_dir = strlen(dgen_conf_dir);
+	sz_dir = strlen(kos_dgen_userdir);
 	#endif
 #endif
 
@@ -263,7 +264,7 @@ char *dgen_dir(char *buf, size_t *size, const char *sub)
 	#ifndef _KOLIBRI
 	strncpy(path, pwd->pw_dir, sz_dir);
 	#else
-	strncpy(path, dgen_conf_dir, sz_dir);
+	strncpy(path, kos_dgen_userdir, sz_dir);
 	#endif
 #else
 	if (SHGetFolderPath(NULL, (CSIDL_APPDATA | CSIDL_FLAG_CREATE),
@@ -352,9 +353,12 @@ FILE *dgen_freopen(const char *relative, const char *file, unsigned int mode,
 			goto error;
 		size = strlen(path);
 	}
-	printf("HOME=%s\n", path);
+#ifndef KOLIBRI
 	if ((mode & (DGEN_WRITE | DGEN_APPEND)) && (path != NULL))
 		mkdir(path, 0777); /* XXX make that recursive */
+#else
+	mkdir(path, 0777);
+#endif
 	file_size = strlen(file);
 	if ((tmp = realloc(path, (size + !!size + file_size + 1))) == NULL)
 		goto error;
@@ -374,7 +378,6 @@ FILE *dgen_freopen(const char *relative, const char *file, unsigned int mode,
 	errno = e;
 	return f;
 error:
-	puts("ERROR");
 	free(path);
 	errno = EACCES;
 	return NULL;

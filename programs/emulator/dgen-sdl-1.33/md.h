@@ -3,6 +3,8 @@
 #ifndef __MD_H__
 #define __MD_H__
 
+#include "config.h"
+
 #define VER VERSION
 
 #include <stdint.h>
