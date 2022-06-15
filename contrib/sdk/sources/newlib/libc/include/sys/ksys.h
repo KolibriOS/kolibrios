@@ -275,9 +275,9 @@ enum KSYS_SCANCODES {
     KSYS_SCANCODE_LBRACE = 26,
     KSYS_SCANCODE_RBRACE = 27,
     KSYS_SCANCODE_ENTER = 28,
-     KSYS_SCANCODE_EXT_NUMPAD_ENTER = 28,
+    KSYS_SCANCODE_EXT_NUMPAD_ENTER = 28,
     KSYS_SCANCODE_LCTRL = 29,
-     KSYS_SCANCODE_EXT_RCTRL = 29,
+    KSYS_SCANCODE_EXT_RCTRL = 29,
     KSYS_SCANCODE_A = 30,
     KSYS_SCANCODE_S = 31,
     KSYS_SCANCODE_D = 32,
@@ -302,12 +302,12 @@ enum KSYS_SCANCODES {
     KSYS_SCANCODE_COMMA = 51,
     KSYS_SCANCODE_POINT = 52,
     KSYS_SCANCODE_SLASH = 53,
-     KSYS_SCANCODE_EXT_NUMPAD_DIV = 53,
+    KSYS_SCANCODE_EXT_NUMPAD_DIV = 53,
     KSYS_SCANCODE_RSHIFT = 54,
     KSYS_SCANCODE_NUMPAD_MULT = 55,
-     KSYS_SCANCODE_EXT_PRTSCR = 55,
+    KSYS_SCANCODE_EXT_PRTSCR = 55,
     KSYS_SCANCODE_LALT = 56,
-     KSYS_SCANCODE_EXT_RALT = 56,
+    KSYS_SCANCODE_EXT_RALT = 56,
     KSYS_SCANCODE_SPACE = 57,
     KSYS_SCANCODE_CAPSLOCK = 58,
     KSYS_SCANCODE_F1 = 59,
@@ -323,28 +323,28 @@ enum KSYS_SCANCODES {
     KSYS_SCANCODE_NUMLOCK = 69,
     KSYS_SCANCODE_SCRLOCK = 70,
     KSYS_SCANCODE_NUMPAD_7 = 71,
-     KSYS_SCANCODE_EXT_HOME = 71,
+    KSYS_SCANCODE_EXT_HOME = 71,
     KSYS_SCANCODE_NUMPAD_8 = 72,
-     KSYS_SCANCODE_EXT_UP = 72,
+    KSYS_SCANCODE_EXT_UP = 72,
     KSYS_SCANCODE_NUMPAD_9 = 73,
-     KSYS_SCANCODE_EXT_PGUP = 73,
+    KSYS_SCANCODE_EXT_PGUP = 73,
     KSYS_SCANCODE_NUMPAD_MINUS = 74,
     KSYS_SCANCODE_NUMPAD_4 = 75,
-     KSYS_SCANCODE_EXT_LEFT = 75,
+    KSYS_SCANCODE_EXT_LEFT = 75,
     KSYS_SCANCODE_NUMPAD_5 = 76,
     KSYS_SCANCODE_NUMPAD_6 = 77,
-     KSYS_SCANCODE_EXT_RIGHT = 77,
+    KSYS_SCANCODE_EXT_RIGHT = 77,
     KSYS_SCANCODE_NUMPAD_PLUS = 78,
     KSYS_SCANCODE_NUMPAD_1 = 79,
-     KSYS_SCANCODE_EXT_END = 79,
+    KSYS_SCANCODE_EXT_END = 79,
     KSYS_SCANCODE_NUMPAD_2 = 80,
-     KSYS_SCANCODE_EXT_DOWN = 80,
+    KSYS_SCANCODE_EXT_DOWN = 80,
     KSYS_SCANCODE_NUMPAD_3 = 81,
-     KSYS_SCANCODE_EXT_PGDOWN = 81,
+    KSYS_SCANCODE_EXT_PGDOWN = 81,
     KSYS_SCANCODE_NUMPAD_0 = 82,
-     KSYS_SCANCODE_EXT_INSERT = 82,
+    KSYS_SCANCODE_EXT_INSERT = 82,
     KSYS_SCANCODE_NUMPAD_COMMA = 83,
-     KSYS_SCANCODE_EXT_DELETE = 83,
+    KSYS_SCANCODE_EXT_DELETE = 83,
     //84-86 doesn't exist
     KSYS_SCANCODE_F11 = 87,
     KSYS_SCANCODE_F12 = 88,
@@ -352,7 +352,7 @@ enum KSYS_SCANCODES {
     KSYS_SCANCODE_EXT_LWIN = 91,
     KSYS_SCANCODE_EXT_RWIN = 92,
     KSYS_SCANCODE_EXT_MENU = 93,
-	KSYS_SCANCODE_EXT = 0xE0,
+    KSYS_SCANCODE_EXT = 0xE0,
 
     KSYS_SCANCODE_UNK_M_UP = 250 // Is it needed?
 };
@@ -382,7 +382,9 @@ KOSAPI void _ksys_exit(void)
 KOSAPI void _ksys_create_window(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const char* name, ksys_color_t workcolor, uint32_t style)
 {
     asm_inline(
-        "int $0x40" ::"a"(0),
+        "int $0x40"
+        :
+        : "a"(0),
         "b"((x << 16) | ((w - 1) & 0xFFFF)),
         "c"((y << 16) | ((h - 1) & 0xFFFF)),
         "d"((style << 24) | (workcolor & 0xFFFFFF)),
@@ -395,8 +397,7 @@ KOSAPI void _ksys_create_window(uint32_t x, uint32_t y, uint32_t w, uint32_t h, 
 
 KOSAPI void _ksys_draw_pixel(uint32_t x, uint32_t y, ksys_color_t color)
 {
-    asm_inline(
-        "int $0x40" ::"a"(1), "b"(x), "c"(y), "d"(color));
+    asm_inline("int $0x40" ::"a"(1), "b"(x), "c"(y), "d"(color));
 }
 
 /*============ Function 2 - get the code of the pressed key. ===========*/
@@ -428,7 +429,9 @@ KOSAPI ksys_time_t _ksys_get_time(void)
 KOSAPI void _ksys_draw_text(const char* text, uint32_t x, uint32_t y, uint32_t len, ksys_color_t color)
 {
     asm_inline(
-        "int $0x40" ::"a"(4), "d"(text),
+        "int $0x40"
+        :
+        : "a"(4), "d"(text),
         "b"((x << 16) | y),
         "S"(len), "c"(color)
         : "memory");
@@ -439,7 +442,9 @@ KOSAPI void _ksys_draw_text(const char* text, uint32_t x, uint32_t y, uint32_t l
 KOSAPI void _ksys_delay(uint32_t time)
 {
     asm_inline(
-        "int $0x40" ::"a"(5), "b"(time)
+        "int $0x40"
+        :
+        : "a"(5), "b"(time)
         : "memory");
 }
 
@@ -448,7 +453,9 @@ KOSAPI void _ksys_delay(uint32_t time)
 KOSAPI void _ksys_draw_bitmap(void* bitmap, int x, int y, int w, int h)
 {
     asm_inline(
-        "int $0x40" ::"a"(7), "b"(bitmap),
+        "int $0x40"
+        :
+        : "a"(7), "b"(bitmap),
         "c"((w << 16) | h),
         "d"((x << 16) | y)
         : "memory");
@@ -459,7 +466,9 @@ KOSAPI void _ksys_draw_bitmap(void* bitmap, int x, int y, int w, int h)
 KOSAPI void _ksys_define_button(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t id, ksys_color_t color)
 {
     asm_inline(
-        "int $0x40" ::"a"(8),
+        "int $0x40"
+        :
+        : "a"(8),
         "b"((x << 16) + w),
         "c"((y << 16) + h),
         "d"(id),
@@ -468,8 +477,7 @@ KOSAPI void _ksys_define_button(uint32_t x, uint32_t y, uint32_t w, uint32_t h, 
 
 KOSAPI void _ksys_delete_button(uint32_t id)
 {
-    asm_inline(
-        "int $0x40" ::"a"(8), "d"(id & 0x00FFFFFF | 0x80000000));
+    asm_inline("int $0x40" ::"a"(8), "d"(id & 0x00FFFFFF | 0x80000000));
 }
 
 /*============ Function 9 - information on execution thread. ===========*/
@@ -538,7 +546,9 @@ KOSAPI void _ksys_end_draw(void)
 KOSAPI void _ksys_draw_bar(uint32_t x, uint32_t y, uint32_t w, uint32_t h, ksys_color_t color)
 {
     asm_inline(
-        "int $0x40" ::"a"(13), "d"(color),
+        "int $0x40"
+        :
+        : "a"(13), "d"(color),
         "b"((x << 16) | w),
         "c"((y << 16) | h));
 }
@@ -559,24 +569,21 @@ KOSAPI ksys_pos_t _ksys_screen_size(void)
 
 KOSAPI void _ksys_bg_set_size(uint32_t w, uint32_t h)
 {
-    asm_inline(
-        "int $0x40" ::"a"(15), "b"(1), "c"(w), "d"(h));
+    asm_inline("int $0x40" ::"a"(15), "b"(1), "c"(w), "d"(h));
 }
 
 /*=== Function 15, subfunction 2 - put pixel on the background image. ==*/
 
 KOSAPI void _ksys_bg_put_pixel(uint32_t x, uint32_t y, uint32_t w, ksys_color_t color)
 {
-    asm_inline(
-        "int $0x40" ::"a"(15), "b"(2), "c"((x + y * w) * 3), "d"(color));
+    asm_inline("int $0x40" ::"a"(15), "b"(2), "c"((x + y * w) * 3), "d"(color));
 }
 
 /*=========== Function 15, subfunction 3 - redraw background. ==========*/
 
 KOSAPI void _ksys_bg_redraw(void)
 {
-    asm_inline(
-        "int $0x40" ::"a"(15), "b"(3));
+    asm_inline("int $0x40" ::"a"(15), "b"(3));
 }
 
 /*== Function 15, subfunction 4 - set drawing mode for the background. =*/
@@ -588,8 +595,7 @@ enum KSYS_BG_MODES {
 
 KOSAPI void _ksys_bg_set_mode(uint32_t mode)
 {
-    asm_inline(
-        "int $0x40" ::"a"(15), "b"(4), "c"(mode));
+    asm_inline("int $0x40" ::"a"(15), "b"(4), "c"(mode));
 }
 
 /*===================== Function 15, subfunction 5 =====================*/
@@ -598,7 +604,9 @@ KOSAPI void _ksys_bg_set_mode(uint32_t mode)
 KOSAPI void _ksys_bg_put_bitmap(ksys_bitmap_t* bitmap, size_t bitmap_size, uint32_t x, uint32_t y, uint32_t w)
 {
     asm_inline(
-        "int $0x40" ::"a"(15), "b"(5), "c"(bitmap), "d"((x + y * w) * 3), "S"(bitmap_size));
+        "int $0x40"
+        :
+        : "a"(15), "b"(5), "c"(bitmap), "d"((x + y * w) * 3), "S"(bitmap_size));
 }
 
 /*===================== Function 15, subfunction 6 =====================*/
@@ -632,7 +640,9 @@ KOSAPI int _ksys_bg_close_map(ksys_bitmap_t* bitmap)
 KOSAPI void _ksys_bg_redraw_bar(ksys_pos_t angle1, ksys_pos_t angle2)
 {
     asm_inline(
-        "int $0x40" ::"a"(15), "b"(9),
+        "int $0x40"
+        :
+        : "a"(15), "b"(9),
         "c"(angle1.x * (1 << 16) + angle2.x),
         "d"(angle1.y * (1 << 16) + angle2.y));
 }
@@ -666,8 +676,7 @@ KOSAPI uint32_t _ksys_get_button(void)
 
 KOSAPI void _ksys_unfocus_window(int slot)
 {
-    asm_inline(
-        "int $0x40" ::"a"(18), "b"(1), "c"(slot));
+    asm_inline("int $0x40" ::"a"(18), "b"(1), "c"(slot));
 }
 
 /*= Function 18, subfunction 2 - terminate process/thread by the slot. =*/
@@ -683,8 +692,7 @@ KOSAPI void _ksys_kill_by_slot(int slot)
 
 KOSAPI void _ksys_focus_window(int slot)
 {
-    asm_inline(
-        "int $0x40" ::"a"(18), "b"(3), "c"(slot));
+    asm_inline("int $0x40" ::"a"(18), "b"(3), "c"(slot));
 }
 
 /*===================== Function 18, subfunction 4 =====================*/
@@ -735,8 +743,7 @@ enum KSYS_SHD_PARAM {
 
 KOSAPI void _ksys_shutdown(uint32_t shd_param)
 {
-    asm_inline(
-        "int $0x40" ::"a"(18), "b"(9), "c"(shd_param));
+    asm_inline("int $0x40" ::"a"(18), "b"(9), "c"(shd_param));
 }
 
 /*========= Function 18, subfunction 16 - get size of free RAM. ========*/
@@ -852,9 +859,10 @@ KOSAPI uint64_t _ksys_get_ns_count(void)
 KOSAPI ksys_date_t _ksys_get_date(void)
 {
     ksys_date_t val;
-    asm_inline("int $0x40"
-               : "=a"(val)
-               : "a"(29));
+    asm_inline(
+        "int $0x40"
+        : "=a"(val)
+        : "a"(29));
     return val;
 }
 
@@ -863,8 +871,7 @@ KOSAPI ksys_date_t _ksys_get_date(void)
 
 KOSAPI void _ksys_setcwd(char* dir)
 {
-    asm_inline(
-        "int $0x40" ::"a"(30), "b"(1), "c"(dir));
+    asm_inline("int $0x40" ::"a"(30), "b"(1), "c"(dir));
 }
 
 /*--------- Subfunction 2 - get current folder for the thread. ---------*/
@@ -1017,7 +1024,9 @@ KOSAPI uint32_t _ksys_set_event_mask(uint32_t mask)
 KOSAPI void _ksys_draw_line(int xs, int ys, int xe, int ye, ksys_color_t color)
 {
     asm_inline(
-        "int $0x40" ::"a"(38), "d"(color),
+        "int $0x40"
+        :
+        : "a"(38), "d"(color),
         "b"((xs << 16) | xe),
         "c"((ys << 16) | ye));
 }
@@ -1029,7 +1038,9 @@ KOSAPI void _ksys_draw_number(int number, int x, int y, int len, ksys_color_t co
     unsigned fmt;
     fmt = len << 16 | 0x80000000; // no leading zeros + width
     asm_inline(
-        "int $0x40" ::"a"(47), "b"(fmt), "c"(number), "d"((x << 16) | y), "S"(color));
+        "int $0x40"
+        :
+        : "a"(47), "b"(fmt), "c"(number), "d"((x << 16) | y), "S"(color));
 }
 
 KOSAPI void _ksys_draw_number_bg(unsigned number, int x, int y, int len, ksys_color_t color, ksys_color_t bg)
@@ -1037,15 +1048,16 @@ KOSAPI void _ksys_draw_number_bg(unsigned number, int x, int y, int len, ksys_co
     unsigned fmt;
     fmt = len << 16 | 0x80000000; // no leading zeros + width
     asm_inline(
-        "int $0x40" ::"a"(47), "b"(fmt), "c"(number), "d"((x << 16) | y), "S"(color), "D"(bg));
+        "int $0x40"
+        :
+        : "a"(47), "b"(fmt), "c"(number), "d"((x << 16) | y), "S"(color), "D"(bg));
 }
 
 /*====== Function 48, subfunction 3 - get standard window colors. ======*/
 
 KOSAPI void _ksys_get_system_colors(ksys_colors_table_t* color_table)
 {
-    asm_inline(
-        "int $0x40" ::"a"(48), "b"(3), "c"(color_table), "d"(40));
+    asm_inline("int $0x40" ::"a"(48), "b"(3), "c"(color_table), "d"(40));
 }
 
 /*============ Function 48, subfunction 4 - get skin height. ===========*/
@@ -1167,6 +1179,24 @@ KOSAPI void _ksys_debug_puts(const char* s)
     }
 }
 
+/*========= Function 65 - draw image with the palette in window. =============*/
+
+KOSAPI void ksys_draw_bitmap_palette(void* bitmap, int x, int y, int w, int h, int bpp, void* palette, int offset)
+{
+    asm_inline(
+        "pushl %%ebp,\n\t"            // save EBP register
+        "movl 0x24(%%ebp), %%ebp\n\t" // 0x24 - "offset" param
+        "int $0x40\n\t"
+        "popl %%ebp" // restore EBP register
+        :
+        : "a"(65),
+        "b"(bitmap),
+        "c"((w << 16) + h),
+        "d"((x << 16) + y),
+        "S"(bpp),
+        "D"(palette));
+}
+
 /*========= Function 66, subfunction 1 - set keyboard input mode. ==============*/
 
 typedef enum KSYS_KEY_INPUT_MODE {
@@ -1176,8 +1206,7 @@ typedef enum KSYS_KEY_INPUT_MODE {
 
 KOSAPI void _ksys_set_key_input_mode(ksys_key_input_mode_t mode)
 {
-    asm_inline(
-        "int $0x40" ::"a"(66), "b"(1), "c"(mode));
+    asm_inline("int $0x40" ::"a"(66), "b"(1), "c"(mode));
 }
 
 /*========= Function 66, subfunction 3 - get the state of the control keys. ========*/
@@ -1226,7 +1255,8 @@ enum KSYS_SYS_HOTKEY_CONTROL_KEY_STATES {
     KSYS_SYS_HOTKEY_ALT_RIGHTONLY = 0x400,
 };
 
-KOSAPI int _ksys_set_sys_hotkey(uint8_t scancode, uint16_t control_key_states) {
+KOSAPI int _ksys_set_sys_hotkey(uint8_t scancode, uint16_t control_key_states)
+{
     int res;
     asm_inline(
         "int $0x40"
@@ -1238,7 +1268,8 @@ KOSAPI int _ksys_set_sys_hotkey(uint8_t scancode, uint16_t control_key_states) {
 
 /*========= Function 66, subfunction 5 - delete installed hotkey. ========*/
 
-KOSAPI int _ksys_del_sys_hotkey(uint8_t scancode, uint16_t control_key_states) {
+KOSAPI int _ksys_del_sys_hotkey(uint8_t scancode, uint16_t control_key_states)
+{
     int res;
     asm_inline(
         "int $0x40"
@@ -1252,15 +1283,14 @@ KOSAPI int _ksys_del_sys_hotkey(uint8_t scancode, uint16_t control_key_states) {
 
 KOSAPI void _ksys_change_window(int new_x, int new_y, int new_w, int new_h)
 {
-    asm_inline(
-        "int $0x40" ::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w), "S"(new_h));
+    asm_inline("int $0x40" ::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w), "S"(new_h));
 }
 
 /*===== Function 68, subfunction 1 - switch to the next thread of execution ====*/
 
-KOSAPI void _ksys_thread_yield(void) 
+KOSAPI void _ksys_thread_yield(void)
 {
-    asm_inline("int $0x40" :: "a"(68),"b"(1));
+    asm_inline("int $0x40" ::"a"(68), "b"(1));
 }
 
 /*======== Function 68, subfunction 12 - allocate memory block. ========*/
@@ -1291,7 +1321,11 @@ KOSAPI int _ksys_free(void* mem)
 
 KOSAPI void _ksys_wait_signal(ksys_signal_info_t* signal)
 {
-    asm_inline("int $0x40" :: "a"(68),"b"(14),"c"(signal) : "memory");
+    asm_inline(
+        "int $0x40"
+        :
+        : "a"(68), "b"(14), "c"(signal)
+        : "memory");
 }
 
 /*============= Function 68, subfunction 16 - load driver. =============*/
@@ -1572,15 +1606,19 @@ KOSAPI int _ksys_file_rename(const char* name, const char* new_name)
 
 KOSAPI void _ksys_set_window_title(const char* title)
 {
-    asm_inline("int $0x40" ::"a"(71), "b"(1), "c"(title)
-               : "memory");
+    asm_inline(
+        "int $0x40"
+        :
+        : "a"(71), "b"(1), "c"(title)
+        : "memory");
 }
 
 #define _ksys_clear_window_title() _ksys_set_window_title(NULL)
 
 /*============= Function 77, subfunction 0 - create futex object =============*/
 
-KOSAPI void* _ksys_futex_create(void* futex_control_addr) {
+KOSAPI void* _ksys_futex_create(void* futex_control_addr)
+{
     void* futex_desc;
     asm_inline(
         "int $0x40"
@@ -1592,7 +1630,8 @@ KOSAPI void* _ksys_futex_create(void* futex_control_addr) {
 
 /*============= Function 77, subfunction 1 - destroy futex object =============*/
 
-KOSAPI int _ksys_futex_destroy(void* futex_desc) {
+KOSAPI int _ksys_futex_destroy(void* futex_desc)
+{
     int res;
     asm_inline(
         "int $0x40"
@@ -1604,7 +1643,8 @@ KOSAPI int _ksys_futex_destroy(void* futex_desc) {
 
 /*============= Function 77, subfunction 2 - futex wait =============*/
 
-KOSAPI int _ksys_futex_wait(void* futex_desc, int control_val, int timeout) {
+KOSAPI int _ksys_futex_wait(void* futex_desc, int control_val, int timeout)
+{
     int res;
     asm_inline(
         "int $0x40"
@@ -1616,7 +1656,8 @@ KOSAPI int _ksys_futex_wait(void* futex_desc, int control_val, int timeout) {
 
 /*============= Function 77, subfunction 3 - futex wake =============*/
 
-KOSAPI int _ksys_futex_wake(void* futex_desc, int max_wake_count) {
+KOSAPI int _ksys_futex_wake(void* futex_desc, int max_wake_count)
+{
     int count;
     asm_inline(
         "int $0x40"
