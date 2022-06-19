@@ -7,9 +7,6 @@
 const char* wday_str[7] = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
 const char* mon_str[12] = { "Jan", "Feb", "Mar", "Ap", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
-#pragma GCC push_options
-#pragma GCC optimize("O0")
-
 #define TIME_STR_MAX 27
 
 char* asctime(const struct tm* tm)
@@ -31,4 +28,3 @@ char* asctime(const struct tm* tm)
         1900 + tm->tm_year);
     return time_str;
 }
-#pragma GCC pop_options

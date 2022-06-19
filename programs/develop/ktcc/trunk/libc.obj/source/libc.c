@@ -119,37 +119,6 @@
 #include "misc/basename.c"
 #include "misc/dirname.c"
 
-__asm__(
-    ".include \"math/acos.s\"\n\t"
-    ".include \"math/asin.s\"\n\t"
-    ".include \"math/atan.s\"\n\t"
-    ".include \"math/atan2.s\"\n\t"
-    ".include \"math/ceil.s\"\n\t"
-    ".include \"math/cos.s\"\n\t"
-    ".include \"math/exp.s\"\n\t"
-    ".include \"math/fabs.s\"\n\t"
-    ".include \"math/floor.s\"\n\t"
-    ".include \"math/fmod.s\"\n\t"
-    ".include \"math/log.s\"\n\t"
-    ".include \"math/log2.s\"\n\t"
-    ".include \"math/log10.s\"\n\t"
-    ".include \"math/modf.s\"\n\t"
-    ".include \"math/modfl.s\"\n\t"
-    ".include \"math/pow.s\"\n\t"
-    ".include \"math/pow2.s\"\n\t"
-    ".include \"math/pow10.s\"\n\t"
-    ".include \"math/round.s\"\n\t"
-    ".include \"math/sin.s\"\n\t");
-
-__asm__(
-    ".include \"string/memmove.s\"\n\t"
-    ".include \"string/memset.s\"\n\t"
-    ".include \"setjmp/longjmp.s\"\n\t"
-    ".include \"setjmp/setjmp.s\"");
-
-#include "libtcc1/libtcc1.c"
-#include "stdlib/___chkstk_ms.c"
-
 ksys_dll_t EXPORTS[] = {
     { "clearerr", &clearerr },
     { "debug_printf", &debug_printf },
