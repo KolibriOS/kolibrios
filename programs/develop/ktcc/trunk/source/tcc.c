@@ -331,7 +331,7 @@ int main(int argc, char **argv)
             if (tcc_add_file(s, filename, filetype) < 0)
                 ret = 1;
             else
-            if (s->output_type == TCC_OUTPUT_OBJ) {
+            if (s->output_type == TCC_OUTPUT_OBJ && !s->option_r) {
                 ret = !!tcc_output_file(s, s->outfile);
                 if (s->gen_deps && !ret)
                     gen_makedeps(s, s->outfile, s->deps_outfile);
@@ -360,7 +360,8 @@ int main(int argc, char **argv)
 #endif
         } else
         if (s->output_type == TCC_OUTPUT_EXE ||
-            s->output_type == TCC_OUTPUT_DLL)
+            s->output_type == TCC_OUTPUT_DLL ||
+            (s->output_type == TCC_OUTPUT_OBJ && s->option_r))
         {
             ret = !!tcc_output_file(s, s->outfile);
             if (s->gen_deps && !ret)
