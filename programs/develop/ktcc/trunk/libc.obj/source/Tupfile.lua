@@ -1,7 +1,4 @@
-if tup.getconfig("NO_FASM") ~= "" then return end
-if tup.getconfig("NO_GCC") ~= "" then return end
-HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../../../../" or tup.getconfig("HELPERDIR")
-tup.include(HELPERDIR .. "/use_gcc.lua")
+if tup.getconfig("NO_TCC") ~= "" then return end
 
 CFLAGS = " -r -nostdinc -nostdlib -DGNUC -D_BUILD_LIBC "
 INCLUDES = " -I../include"
