@@ -1,5 +1,6 @@
 #include <setjmp.h>
 
+#include "libtcc1/libtcc1.c"
 #include "ctype/is.c"
 #include "ctype/tolower.c"
 #include "ctype/toupper.c"
@@ -80,7 +81,6 @@
 #include "string/strstr.c"
 #include "string/strtok.c"
 #include "string/strxfrm.c"
-
 #include "stdlib/abs.c"
 #include "stdlib/assert.c"
 #include "stdlib/atof.c"
@@ -288,5 +288,5 @@ ksys_dll_t EXPORTS[] = {
     { "difftime", &difftime },
     { "basename", &basename },
     { "dirname", &dirname },
-    NULL,
+    NULL
 };
