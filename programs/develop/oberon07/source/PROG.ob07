@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2021, Anton Krotov
+    Copyright (c) 2018-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -51,17 +51,18 @@ CONST
     systemv*   = 14;  _systemv*   = systemv + 1;
     default16* = 16;  _default16* = default16 + 1;
     code*      = 18;  _code*      = code + 1;
+    fastcall*  = 20;  _fastcall*  = fastcall + 1;
 
     noalign* = 22;
 
-    callee_clean_up* = {default32, _default32, stdcall, _stdcall, default64, _default64};
+    callee_clean_up* = {default32, _default32, stdcall, _stdcall, default64, _default64, fastcall, _fastcall};
 
     sf_stdcall* =  0; sf_oberon*    = 1; sf_cdecl*   = 2; sf_ccall*  = 3;
     sf_win64*   =  4; sf_systemv*   = 5; sf_windows* = 6; sf_linux*  = 7;
-    sf_code*    =  8;
-    sf_noalign* =  9;
+    sf_code*    =  8; sf_fastcall*  = 9;
+    sf_noalign* = 10;
 
-    proc_flags* = {sf_stdcall, sf_cdecl, sf_ccall, sf_win64, sf_systemv, sf_windows, sf_linux, sf_code, sf_oberon};
+    proc_flags* = {sf_stdcall, sf_cdecl, sf_ccall, sf_win64, sf_systemv, sf_windows, sf_linux, sf_code, sf_oberon, sf_fastcall};
     rec_flags*  = {sf_noalign};
 
     STACK_FRAME = 2;
@@ -1219,9 +1220,9 @@ BEGIN
     program.options := options;
 
     CASE TARGETS.OS OF
-    |TARGETS.osWIN32:    program.sysflags := {sf_oberon, sf_windows, sf_stdcall, sf_cdecl, sf_ccall, sf_noalign}
-    |TARGETS.osLINUX32:  program.sysflags := {sf_oberon, sf_linux, sf_stdcall, sf_cdecl, sf_ccall, sf_noalign}
-    |TARGETS.osKOS:      program.sysflags := {sf_oberon, sf_stdcall, sf_cdecl, sf_ccall, sf_noalign}
+    |TARGETS.osWIN32:    program.sysflags := {sf_oberon, sf_windows, sf_stdcall, sf_cdecl, sf_ccall, sf_fastcall, sf_noalign}
+    |TARGETS.osLINUX32:  program.sysflags := {sf_oberon, sf_linux, sf_stdcall, sf_cdecl, sf_ccall, sf_fastcall, sf_noalign}
+    |TARGETS.osKOS:      program.sysflags := {sf_oberon, sf_stdcall, sf_cdecl, sf_ccall, sf_fastcall, sf_noalign}
     |TARGETS.osWIN64:    program.sysflags := {sf_oberon, sf_windows, sf_win64, sf_systemv, sf_ccall, sf_noalign}
     |TARGETS.osLINUX64:  program.sysflags := {sf_oberon, sf_linux, sf_win64, sf_systemv, sf_ccall, sf_noalign}
     |TARGETS.osNONE:     program.sysflags := {sf_code}

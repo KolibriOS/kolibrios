@@ -208,7 +208,7 @@ UTF-8 с BOM-сигнатурой.
 
   При объявлении процедурных типов и глобальных процедур, после ключевого
 слова PROCEDURE может быть указан флаг соглашения о вызове: [stdcall],
-[cdecl], [ccall], [windows], [linux], [oberon]. Например:
+[cdecl], [fastcall], [ccall], [windows], [linux], [oberon]. Например:
 
         PROCEDURE [ccall] MyProc (x, y, z: INTEGER): INTEGER;
 

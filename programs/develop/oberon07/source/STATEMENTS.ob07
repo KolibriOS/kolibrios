@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2021, Anton Krotov
+    Copyright (c) 2018-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -954,9 +954,10 @@ BEGIN
             PExpression(parser, e);
             PARS.check(isInt(e), pos, 66);
             IF e.obj = eCONST THEN
-                LoadConst(e)
-            END;
-            IL.AddCmd0(IL.opMOVE)
+                IL.AddCmd(IL.opCOPY, ARITH.Int(e.value))
+            ELSE
+                IL.AddCmd0(IL.opMOVE)
+            END
 
         |PROG.sysCOPY:
             FOR i := 1 TO 2 DO
@@ -974,9 +975,10 @@ BEGIN
             PExpression(parser, e);
             PARS.check(isInt(e), pos, 66);
             IF e.obj = eCONST THEN
-                LoadConst(e)
-            END;
-            IL.AddCmd0(IL.opMOVE)
+                IL.AddCmd(IL.opCOPY, ARITH.Int(e.value))
+            ELSE
+                IL.AddCmd0(IL.opMOVE)
+            END
 
         |PROG.sysCODE:
             REPEAT
@@ -1619,6 +1621,15 @@ BEGIN
         callconv := IL.call_sysv;
         fparSize := LSL(ORD(PROG.getFloatParamsPos(procType, PROG.MAXSYSVPARAM - 1, int, flt)), 5) + parSize;
         stk_par := MAX(0, int - 6) + MAX(0, flt - 8)
+    ELSIF cconv IN {PROG.fastcall, PROG._fastcall} THEN
+        IF parSize = 0 THEN
+            callconv := IL.call_stack
+        ELSIF parSize = 1 THEN
+            callconv := IL.call_fast1
+        ELSIF parSize >= 2 THEN
+            callconv := IL.call_fast2
+        END;
+        fparSize := 0
     ELSE
         callconv := IL.call_stack;
         fparSize := 0

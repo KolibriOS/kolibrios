@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2021, Anton Krotov
+    Copyright (c) 2018-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -681,7 +681,7 @@ VAR
 
     opcode, param1, param2, param3, a, b, c, n, label, L, i, cc: INTEGER;
 
-    reg1, reg2, xmm: INTEGER;
+    reg1, reg2, reg3, xmm: INTEGER;
 
     float: REAL;
 
@@ -1288,9 +1288,38 @@ BEGIN
             not(reg1)
 
         |IL.opCOPY:
-            PushAll(2);
-            pushc(param2);
-            CallRTL(IL._move)
+            IF (0 < param2) & (param2 <= 256) THEN
+                BinOp(reg1, reg2);
+                reg3 := GetAnyReg();
+                FOR n := 0 TO param2 - param2 MOD 8 - 1 BY 8 DO
+                    movrm(reg3, reg1, n);
+                    movmr(reg2, n, reg3)
+                END;
+                n := param2 - param2 MOD 8;
+                IF param2 MOD 8 >= 4 THEN
+                    movrm32(reg3, reg1, n);
+                    movmr32(reg2, n, reg3);
+                    INC(n, 4);
+                    DEC(param2, 4)
+                END;
+                IF param2 MOD 8 >= 2 THEN
+                    X86.movrm16(reg3, reg1, n);
+                    X86.movmr16(reg2, n, reg3);
+                    INC(n, 2);
+                    DEC(param2, 2)
+                END;
+                IF param2 MOD 8 = 1 THEN
+                    X86.movrm8(reg3, reg1, n);
+                    X86.movmr8(reg2, n, reg3);
+                END;
+                drop;
+                drop;
+                drop
+            ELSE
+                PushAll(2);
+                pushc(param2);
+                CallRTL(IL._move)
+            END
 
         |IL.opMOVE:
             PushAll(3);

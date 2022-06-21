@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2021, Anton Krotov
+    Copyright (c) 2018-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -666,7 +666,7 @@ BEGIN
 END _movrm;
 
 
-PROCEDURE movmr (reg1, offs, reg2: INTEGER); (* mov dword[reg1+offs], reg2_8 *)
+PROCEDURE movmr (reg1, offs, reg2: INTEGER); (* mov dword[reg1+offs], reg2 *)
 BEGIN
     _movrm(reg2, reg1, offs, 32, TRUE)
 END movmr;
@@ -730,7 +730,7 @@ PROCEDURE translate (pic: BOOLEAN; stroffs: INTEGER);
 VAR
     cmd, next: COMMAND;
 
-    reg1, reg2, fr: INTEGER;
+    reg1, reg2, reg3, fr: INTEGER;
 
     n, a, b, label, cc: INTEGER;
 
@@ -774,6 +774,14 @@ BEGIN
             OutByte2(0FFH, 0D0H + reg1);  (* call reg1 *)
             drop;
             ASSERT(R.top = -1)
+
+        |IL.opFASTCALL:
+            IF param2 = 1 THEN
+                pop(ecx)
+            ELSIF param2 = 2 THEN
+                pop(ecx);
+                pop(edx)
+            END
 
         |IL.opPRECALL:
             PushAll(0);
@@ -831,6 +839,15 @@ BEGIN
             ASSERT(R.top = -1);
 
             SetLabel(param1);
+
+            IF cmd.param3 > 0 THEN
+                pop(eax);
+                IF cmd.param3 >= 2 THEN
+                    push(edx)
+                END;
+                push(ecx);
+                push(eax)
+            END;
 
             push(ebp);
             mov(ebp, esp);
@@ -1708,9 +1725,32 @@ BEGIN
                                      L: *)
 
         |IL.opCOPY:
-            PushAll(2);
-            pushc(param2);
-            CallRTL(pic, IL._move)
+            IF (0 < param2) & (param2 <= 64) THEN
+                BinOp(reg1, reg2);
+                reg3 := GetAnyReg();
+                FOR n := 0 TO param2 - param2 MOD 4 - 1 BY 4 DO
+                    movrm(reg3, reg1, n);
+                    movmr(reg2, n, reg3)
+                END;
+                n := param2 - param2 MOD 4;
+                IF param2 MOD 4 >= 2 THEN
+                    movrm16(reg3, reg1, n);
+                    movmr16(reg2, n, reg3);
+                    INC(n, 2);
+                    DEC(param2, 2)
+                END;
+                IF param2 MOD 4 = 1 THEN
+                    movrm8(reg3, reg1, n);
+                    movmr8(reg2, n, reg3);
+                END;
+                drop;
+                drop;
+                drop
+            ELSE
+                PushAll(2);
+                pushc(param2);
+                CallRTL(pic, IL._move)
+            END
 
         |IL.opMOVE:
             PushAll(3);

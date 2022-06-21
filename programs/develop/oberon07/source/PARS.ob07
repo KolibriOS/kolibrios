@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2021, Anton Krotov
+    Copyright (c) 2018-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -445,6 +445,7 @@ VAR
         vPar:    BOOLEAN;
         dim:     INTEGER;
         t0, t1:  PROG._TYPE;
+        pos:     POSITION;
 
     BEGIN
         vPar := parser.sym = SCAN.lxVAR;
@@ -462,6 +463,7 @@ VAR
                 ExpectSym(parser, SCAN.lxIDENT)
             ELSIF parser.sym = SCAN.lxCOLON THEN
                 Next(parser);
+                getpos(parser, pos);
                 dim := 0;
                 WHILE parser.sym = SCAN.lxARRAY DO
                     INC(dim);
@@ -482,7 +484,9 @@ VAR
                     t0 := t1;
                     DEC(dim)
                 END;
-
+                IF _type.call IN {PROG.fastcall, PROG._fastcall} THEN
+                    check(t1.typ # PROG.tREAL, pos, 126)
+                END;
                 PROG.setParams(_type, t1);
                 Next(parser);
                 exit := TRUE
@@ -550,6 +554,8 @@ BEGIN
         sf := PROG.sf_code
     ELSIF parser.lex.ident.s = "oberon" THEN
         sf := PROG.sf_oberon
+    ELSIF parser.lex.ident.s = "fastcall" THEN
+        sf := PROG.sf_fastcall
     ELSIF parser.lex.ident.s = "noalign" THEN
         sf := PROG.sf_noalign
     ELSE
@@ -583,6 +589,8 @@ BEGIN
         res := PROG.systemv
     |PROG.sf_code:
         res := PROG.code
+    |PROG.sf_fastcall:
+        res := PROG.fastcall
     |PROG.sf_oberon:
         IF TARGETS.OS IN {TARGETS.osWIN32, TARGETS.osLINUX32, TARGETS.osKOS} THEN
             res := PROG.default32
@@ -1106,6 +1114,8 @@ VAR
                 enter := IL.Enter(label, -(LSL(ORD(fparams), 5) + proc._type.parSize))
             ELSIF codeProc THEN
 
+            ELSIF call IN {PROG.fastcall, PROG._fastcall} THEN
+                enter := IL.Enter(label, proc._type.parSize)
             ELSE
                 enter := IL.Enter(label, 0)
             END;

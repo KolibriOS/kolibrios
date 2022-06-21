@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2021, Anton Krotov
+    Copyright (c) 2018-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -15,6 +15,8 @@ CONST
     call_stack* = 0;
     call_win64* = 1;
     call_sysv*  = 2;
+    call_fast1* = 3;
+    call_fast2* = 4;
 
     begin_loop* = 1; end_loop* = 2;
 
@@ -80,7 +82,7 @@ CONST
     opTYPEGD* = 207; opCALLI* = 208; opPUSHIP* = 209; opSAVEIP* = 210; opEQIP* = 211; opNEIP* = 212;
     opSAVE16C* = 213; opWCHR* = 214; opHANDLER* = 215;
 
-    opSYSVCALL* = 216; opSYSVCALLI* = 217; opSYSVCALLP* = 218; opFNAME* = 219;
+    opSYSVCALL* = 216; opSYSVCALLI* = 217; opSYSVCALLP* = 218; opFNAME* = 219; opFASTCALL* = 220;
 
 
     opSADR_PARAM* = -1; opLOAD64_PARAM* = -2; opLLOAD64_PARAM* = -3; opGLOAD64_PARAM* = -4;
@@ -800,8 +802,21 @@ BEGIN
 END LeaveC;
 
 
+PROCEDURE fastcall (VAR callconv: INTEGER);
+BEGIN
+    IF callconv = call_fast1 THEN
+        AddCmd(opFASTCALL, 1);
+        callconv := call_stack
+    ELSIF callconv = call_fast2 THEN
+        AddCmd(opFASTCALL, 2);
+        callconv := call_stack
+    END
+END fastcall;
+
+
 PROCEDURE Call* (proc, callconv, fparams: INTEGER);
 BEGIN
+    fastcall(callconv);
     CASE callconv OF
     |call_stack: Jmp(opCALL, proc)
     |call_win64: Jmp(opWIN64CALL, proc)
@@ -813,6 +828,7 @@ END Call;
 
 PROCEDURE CallImp* (proc: LISTS.ITEM; callconv, fparams: INTEGER);
 BEGIN
+    fastcall(callconv);
     CASE callconv OF
     |call_stack: Jmp(opCALLI, proc(IMPORT_PROC).label)
     |call_win64: Jmp(opWIN64CALLI, proc(IMPORT_PROC).label)
@@ -824,6 +840,7 @@ END CallImp;
 
 PROCEDURE CallP* (callconv, fparams: INTEGER);
 BEGIN
+    fastcall(callconv);
     CASE callconv OF
     |call_stack: AddCmd0(opCALLP)
     |call_win64: AddCmd(opWIN64CALLP, fparams)

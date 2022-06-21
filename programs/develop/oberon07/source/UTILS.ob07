@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2021, Anton Krotov
+    Copyright (c) 2018-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -23,8 +23,8 @@ CONST
     max32* =  2147483647;
 
     vMajor* = 1;
-    vMinor* = 54;
-    Date* = "20-dec-2021";
+    vMinor* = 56;
+    Date* = "21-jun-2022";
 
     FILE_EXT* = ".ob07";
     RTL_NAME* = "RTL";

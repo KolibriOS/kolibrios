@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2021, Anton Krotov
+    Copyright (c) 2018-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -154,6 +154,7 @@ BEGIN
     |123: str := "illegal flag"
     |124: str := "unknown flag"
     |125: str := "flag not supported"
+    |126: str := "type of formal parameter should not be REAL"
     END;
     C.StringLn(str);
     C.String("  file:  ");  C.StringLn(fname);
