@@ -338,6 +338,89 @@ mouse._.move_handler:
 ; Called when cursor has been moved
 ;> eax = old x coord
 ;> ebx = old y coord
+        push    eax ebx
+
+        call    mouse._.find_sys_window_under_cursor
+        call    mouse._.check_sys_window_actions
+
+        cmp     al, mouse.WINDOW_RESIZE_SW_FLAG
+        jne     .not_sw
+        ; DEBUGF  1, "RESIZE SOUTH-WEST\n"
+
+        mov     eax, [def_cursor_dresize2]
+
+        jmp     .set_resizing_cursor
+.not_sw:
+        cmp     al, mouse.WINDOW_RESIZE_SE_FLAG
+        jne     .not_se
+        ; DEBUGF  1, "RESIZE SOUTH-EAST\n"
+
+        mov     eax, [def_cursor_dresize1]
+
+        jmp     .set_resizing_cursor
+.not_se:
+        cmp     al, mouse.WINDOW_RESIZE_W_FLAG
+        jne     .not_w
+        ; DEBUGF  1, "RESIZE WEST\n"
+
+        mov     eax, [def_cursor_hresize]
+
+        jmp     .set_resizing_cursor
+.not_w:
+        cmp     al, mouse.WINDOW_RESIZE_S_FLAG
+        jne     .not_s
+        ; DEBUGF  1, "RESIZE SOUTH\n"
+
+        mov     eax, [def_cursor_vresize]
+
+        jmp     .set_resizing_cursor
+.not_s:
+        cmp     al, mouse.WINDOW_RESIZE_E_FLAG
+        jne     .not_in_resize_area
+        ; DEBUGF  1, "RESIZE EAST\n"
+
+        mov     eax, [def_cursor_hresize]
+
+.set_resizing_cursor:
+        ; change cursor to resizing cursor
+        shl     esi, BSF sizeof.APPDATA
+        add     esi, SLOT_BASE
+        
+        ; if resizing cursor we need (eax) isnt set already, set it
+        cmp     eax, [esi + APPDATA.cursor]
+        je      @f
+        
+        xchg    eax, [esi + APPDATA.cursor] ; set resizing cursor, prev cursor goes to eax
+        ; save previous cursor (will be restored when we'll get out of the resizing area)
+        ; if we change resizing cursor to resizing cursor then dont update previous cursor
+        cmp     eax, [def_cursor_hresize]
+        je      @f
+        cmp     eax, [def_cursor_vresize]
+        je      @f
+        cmp     eax, [def_cursor_dresize1]
+        je      @f
+        cmp     eax, [def_cursor_dresize2]
+        je      @f
+
+        mov     [esi + APPDATA.temp_cursor], eax ; save prev cursor
+
+@@:
+        jmp     .end1
+.not_in_resize_area:
+        shl     esi, BSF sizeof.APPDATA
+        add     esi, SLOT_BASE
+        mov     eax, [esi + APPDATA.temp_cursor]
+
+        test    eax, eax
+        jz      .end1
+        
+        ; restore prev cursor
+        mov     [esi + APPDATA.temp_cursor], 0
+        mov     [esi + APPDATA.cursor], eax
+
+.end1:
+        pop     ebx eax
+
         cmp     [mouse.active_sys_button.pbid], 0
         jnz     .exit
 

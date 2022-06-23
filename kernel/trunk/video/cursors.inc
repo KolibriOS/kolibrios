@@ -1188,6 +1188,15 @@ end if
         je      @f
         mov     [PUTPIXEL], edx
 @@:
+        stdcall load_cursor, def_hresize, dword LOAD_FROM_MEM
+        mov     [def_cursor_hresize], eax
+        stdcall load_cursor, def_vresize, dword LOAD_FROM_MEM
+        mov     [def_cursor_vresize], eax
+        stdcall load_cursor, def_dresize1, dword LOAD_FROM_MEM
+        mov     [def_cursor_dresize1], eax
+        stdcall load_cursor, def_dresize2, dword LOAD_FROM_MEM
+        mov     [def_cursor_dresize2], eax
+
         stdcall load_cursor, clock_arrow, dword LOAD_FROM_MEM
         mov     [def_cursor_clock], eax
         stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
@@ -1228,6 +1237,22 @@ end if
 align 4
 def_arrow:
   file 'arrow.cur'
+;------------------------------------------------------------------------------
+align 4
+def_hresize:
+  file 'hresize.cur'
+;------------------------------------------------------------------------------
+align 4
+def_vresize:
+  file 'vresize.cur'
+;------------------------------------------------------------------------------
+align 4
+def_dresize1:
+  file 'dresize1.cur'
+;------------------------------------------------------------------------------
+align 4
+def_dresize2:
+  file 'dresize2.cur'
 ;------------------------------------------------------------------------------
 align 4
 clock_arrow:

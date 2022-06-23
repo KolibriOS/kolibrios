@@ -400,6 +400,10 @@ MOUSE_PICTURE       dd  ?
 
 def_cursor          dd  ?
 def_cursor_clock    dd  ?
+def_cursor_hresize  dd  ?
+def_cursor_vresize  dd  ?
+def_cursor_dresize1 dd  ?
+def_cursor_dresize2 dd  ?
 current_cursor      dd  ?
 hw_cursor           dd  ?
 cur_saved_base      dd  ?

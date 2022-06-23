@@ -538,7 +538,7 @@ struct  APPDATA
         in_schedule     LHEAD           ;+236
         counter_add     dd ?            ;+244  ; R
         cpu_usage       dd ?            ;+248  ; R
-                        dd ?            ;+252
+        temp_cursor     dd 0            ;+252  ; temporary place to save cursor
 ends
 
 assert sizeof.APPDATA = 256
