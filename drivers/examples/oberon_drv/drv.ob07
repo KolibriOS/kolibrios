@@ -1,0 +1,53 @@
+MODULE drv;
+
+IMPORT SYSTEM, API;
+
+TYPE
+	ioctl_t = RECORD
+		handle,
+		io_code,
+		input,
+		inp_size,
+		output,
+		out_size: INTEGER
+	END;
+
+
+PROCEDURE [stdcall-, "core.dll", ""] RegService (name, adr: INTEGER): INTEGER;
+
+PROCEDURE [stdcall] service_proc (my_ctl: ioctl_t): INTEGER;
+VAR
+	a, b, res: INTEGER;
+BEGIN
+	IF my_ctl.io_code = 0 THEN
+		SYSTEM.GET(my_ctl.input, a);
+		SYSTEM.GET(my_ctl.input + SYSTEM.SIZE(INTEGER), b);
+		SYSTEM.PUT(my_ctl.output, a + b);
+		res := 0
+	ELSE
+		res := -1
+	END
+	RETURN res
+END service_proc;
+
+
+PROCEDURE [stdcall-] entry (action: INTEGER; cmdline: INTEGER): INTEGER;
+VAR
+	res: INTEGER;
+BEGIN
+	IF action = 1 THEN
+		res := RegService(SYSTEM.SADR("test_drv"), SYSTEM.ADR(service_proc))
+	ELSE
+		res := 0
+	END
+	RETURN res
+END entry;
+
+
+BEGIN
+	entry(API.action, API.cmdline);
+	SYSTEM.CODE(
+		0C9H,  (*  leave  *)
+		0C3H   (*  ret    *)
+		)
+END drv.
