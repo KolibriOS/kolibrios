@@ -343,6 +343,12 @@ mouse._.move_handler:
         call    mouse._.find_sys_window_under_cursor
         call    mouse._.check_sys_window_actions
 
+        ; if now we are resizing the window, dont change the cursor
+        mov     bl, [mouse.active_sys_window.action]
+        and     bl, mouse.WINDOW_RESIZE_S_FLAG or mouse.WINDOW_RESIZE_W_FLAG or mouse.WINDOW_RESIZE_E_FLAG
+        test    bl, bl
+        jnz     .end1
+
         cmp     al, mouse.WINDOW_RESIZE_SW_FLAG
         jne     .not_sw
         ; DEBUGF  1, "RESIZE SOUTH-WEST\n"
@@ -382,6 +388,7 @@ mouse._.move_handler:
         mov     eax, [def_cursor_hresize]
 
 .set_resizing_cursor:
+        ; DEBUGF  1, ".set_resizing_cursor eax = %x\n", eax
         ; change cursor to resizing cursor
         shl     esi, BSF sizeof.APPDATA
         add     esi, SLOT_BASE
@@ -390,6 +397,7 @@ mouse._.move_handler:
         cmp     eax, [esi + APPDATA.cursor]
         je      @f
         
+        ; DEBUGF  1, "changing cursor to resizing\n"
         xchg    eax, [esi + APPDATA.cursor] ; set resizing cursor, prev cursor goes to eax
         ; save previous cursor (will be restored when we'll get out of the resizing area)
         ; if we change resizing cursor to resizing cursor then dont update previous cursor
@@ -407,6 +415,8 @@ mouse._.move_handler:
 @@:
         jmp     .end1
 .not_in_resize_area:
+        ; DEBUGF  1, ".not_in_resize_area\n"
+
         shl     esi, BSF sizeof.APPDATA
         add     esi, SLOT_BASE
         mov     eax, [esi + APPDATA.temp_cursor]

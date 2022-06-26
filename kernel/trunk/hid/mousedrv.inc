@@ -109,9 +109,6 @@ save_draw_mouse:
         push    eax
         push    ebx
 
-;        mov     ecx, [Screen_Max_X]
-;        inc     ecx
-;        mul     ecx
         mov     eax, [d_width_calc_area + eax*4]
 
         add     eax, [_display.win_map]
@@ -132,19 +129,29 @@ save_draw_mouse:
 
         ; window under cursor == active window ?
         cmp     eax, edx
-        je      @F ; if yes then just draw cursor of app
+        je      @f
 
+        ; check whether active window is being resized now:
         mov     bl, [mouse.active_sys_window.action]
         and     bl, mouse.WINDOW_RESIZE_S_FLAG or mouse.WINDOW_RESIZE_W_FLAG or mouse.WINDOW_RESIZE_E_FLAG
         test    bl, bl
-        jz      .set_def_cursor ; if active window is not being resized now
+        jz      .active_isnt_resizing
+        mov     esi, [SLOT_BASE + eax + APPDATA.cursor] ; esi = cursor of active window, it is resizing cursor
+        jmp     @f
+        .active_isnt_resizing:
 
-        ; esi = cursor of active window:
-        mov     esi, [SLOT_BASE + eax + APPDATA.cursor]
-        jmp     .draw
+        ; if cursor of window under the cursor is resizing cursor then draw it.
+        cmp     esi, [def_cursor_hresize]
+        je      @f
+        cmp     esi, [def_cursor_vresize]
+        je      @f
+        cmp     esi, [def_cursor_dresize1]
+        je      @f
+        cmp     esi, [def_cursor_dresize2]
+        je      @f
 
-.set_def_cursor:
-        mov     esi, [def_cursor]
+        ; set cursor of window under cursor
+        mov     esi, [SLOT_BASE + edx + APPDATA.cursor]
         cmp     esi, [current_cursor]
         je      .draw
 
