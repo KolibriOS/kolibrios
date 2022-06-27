@@ -146,7 +146,6 @@ void draw_window()
 	}
 	if (Form.width  < 560) { MoveSize(OLD,OLD,560,OLD); return; }
 	if (Form.height < 430) { MoveSize(OLD,OLD,OLD,430); return; }
-	scroll_v.all_redraw = scroll_h.all_redraw = 1;
 	draw_content();
 }
 
@@ -160,6 +159,8 @@ void draw_content()
 	canvas.h = Form.cheight - STATUSBAR_H - CANVASY - 1;
 	if (main_image.h > canvas.h) canvas.w -= scroll_v.size_x + 1;
 	if (main_image.w > canvas.w) canvas.h -= scroll_h.size_y + 1;
+
+	scroll_v.all_redraw = scroll_h.all_redraw = 1;
 
 	//draw panel border
 	DrawBar(CANVASX, 0, 1, Form.cheight, COL_LINE);
@@ -266,12 +267,6 @@ void draw_canvas()
 {
 	int content_w = math.min(main_image.w, canvas.w-1);
 	int content_h = math.min(main_image.h, canvas.h);
-	if (main_image.image) {
-		img_draw stdcall(main_image.image, CANVASX+1, CANVASY,
-		content_w, content_h, scroll_h.position, scroll_v.position);
- 	}
-	DrawBar(CANVASX+1+content_w, CANVASY, canvas.w - content_w - 1, content_h, COL_DARK);
-	DrawBar(CANVASX+1, CANVASY+content_h, canvas.w - 1, canvas.h - content_h, COL_DARK);
 	//Draw scroll V
 	scroll_v.max_area = main_image.h;
 	scroll_v.cur_area = scroll_v.size_y = canvas.h + 1;
@@ -282,6 +277,13 @@ void draw_canvas()
 	scroll_h.cur_area = scroll_h.size_x = canvas.w;
 	scroll_h.start_y = CANVASY + canvas.h;
 	if (main_image.w > canvas.w) scrollbar_h_draw stdcall (#scroll_h);
+	//Draw Image	
+	if (main_image.image) {
+		img_draw stdcall(main_image.image, CANVASX+1, CANVASY,
+		content_w, content_h, scroll_h.position, scroll_v.position);
+ 	}
+	DrawBar(CANVASX+1+content_w, CANVASY, canvas.w - content_w - 1, content_h, COL_DARK);
+	DrawBar(CANVASX+1, CANVASY+content_h, canvas.w - 1, canvas.h - content_h, COL_DARK);
 
 }
 
@@ -479,6 +481,7 @@ void event_rotate_left()
 {
 	img_rotate stdcall (main_image.image, ROTATE_270_CW);
 	main_image.w >< main_image.h;
+	scroll_v.position = scroll_h.position = 0;
 	draw_content();
 }
 
@@ -486,6 +489,7 @@ void event_rotate_right()
 {
 	img_rotate stdcall (main_image.image, ROTATE_90_CW);
 	main_image.w >< main_image.h;
+	scroll_v.position = scroll_h.position = 0;
 	draw_content();
 }
 
