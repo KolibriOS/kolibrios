@@ -450,7 +450,8 @@ void event_scale()
 		$pop eax
 		main_image.image = EAX;
 		main_image.set_vars();
-		draw_canvas();
+		scroll_v.position = scroll_h.position = 0;
+		draw_content();
 	}
 }
 
