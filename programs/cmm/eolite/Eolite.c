@@ -11,9 +11,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.25"
-#define TITLE_EOLITE "Eolite File Manager 5.25"
-#define TITLE_KFM "Kolibri File Manager 2.25";
+#define ABOUT_TITLE "EOLITE 5.26"
+#define TITLE_EOLITE "Eolite File Manager 5.26"
+#define TITLE_KFM "Kolibri File Manager 2.26";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -879,6 +879,7 @@ void Line_ReDraw(dword bgcol, signed filenum){
 	if (getElementSelectedFlag(filenum+files.first)) text_col=0xFF0000;
 	if (kfont.size.pt==9) || (!kfont.font)
 	{
+		// Show default font 
 		if (Form.width>=480)
 		{
 			FileShow.start_x = files.x + icon_size + 7;
@@ -889,15 +890,14 @@ void Line_ReDraw(dword bgcol, signed filenum){
 			PathShow_prepare stdcall(#FileShow);
 			PathShow_draw stdcall(#FileShow);
 		}
-	}
-	else
-	{
+	} else {
+		// Show KFONT
 		//that shit must be in a library
 		strcpy(#label_file_name, file_name_off);
 		if (volume_label) sprintf(#label_file_name, "%s [%s]", file_name_off, #volume_label);
-		if (kfont.getsize(kfont.size.pt, #label_file_name) + 141 + 26 > files.w)
+		if (kfont.get_label_width(#label_file_name) + 141 + 26 > files.w)
 		{
-			while (kfont.getsize(kfont.size.pt, #label_file_name) + 141 + 26 > files.w) {
+			while (kfont.get_label_width(#label_file_name) + 141 + 26 > files.w) {
 				ESBYTE[#label_file_name+strlen(#label_file_name)-1] = NULL;
 			}
 			strcpy(#label_file_name+strlen(#label_file_name)-2, "...");
