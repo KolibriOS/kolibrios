@@ -12,14 +12,25 @@
 
 dword picked_color;
 char picked_color_string[7];
-#define FORM_W 167
-#define FORM_H 60
-#define PICKED_SIZE 42
-#define PICKED_PADDING FORM_H - PICKED_SIZE / 2
-#define PICKED_X FORM_W - PICKED_SIZE - PICKED_PADDING
-#define BUTTON_CLOSE 1
-#define BUTTON_COPY  2
-#define BUTTON_PICK  3
+char picked_rgb_string[12];
+
+#define PICKED_SIZE 48
+#define LABEL_RGB_W 97
+#define PAD 11
+#define PICKED_X PAD + LABEL_RGB_W + PAD
+
+#define FORM_W PICKED_X + PICKED_SIZE + PAD + 1
+#define FORM_H PAD + PICKED_SIZE + PAD + 3
+
+#define BUTTON_CLOSE    1
+#define BUTTON_PICK     2
+#define BUTTON_COPY_HEX 3
+#define BUTTON_COPY_RGB 4
+
+#define COLOR_WIN_BG   0xD6D7DA
+#define COLOR_PANE_BG  0xFFFfff
+#define COLOR_3D_LIGHT 0xADAAA9
+#define COLOR_3D_DARK  0x888888
 
 //===================================================//
 //                                                   //
@@ -49,8 +60,9 @@ void main()
 		case evButton:
 			@GetButtonID();
 			if (EAX == BUTTON_CLOSE) ExitProcess();
-			if (EAX == BUTTON_COPY) EventCopyHex();
-			if (EAX == BUTTON_PICK) pick_active = true;
+			else if (EAX == BUTTON_COPY_HEX) EventCopyHex();
+			else if (EAX == BUTTON_COPY_RGB) EventCopyRgb();
+			else if (EAX == BUTTON_PICK) { pick_active = true; EventActivatePick(); }
 			break;
 
 		case evKey:
@@ -68,23 +80,29 @@ void main()
 
 void draw_window()
 {
-	DrawRectangle3D(0, 0, FORM_W, FORM_H, 0xCCCccc, 0x888888);
-	DrawRectangle3D(1, 1, FORM_W-2, FORM_H-2, 0xCCCccc, 0x888888);
-	DrawBar(2,2,FORM_W-3,FORM_H-3,0xFFFfff);
-
-	DrawRectangle(PICKED_X-2, PICKED_PADDING-2, PICKED_SIZE+3, PICKED_SIZE+3, 0xCBC6C5);
-	DefineHiddenButton(PICKED_X-1, PICKED_PADDING-1, PICKED_SIZE+1, PICKED_SIZE+1, BUTTON_PICK);
-
-	DrawCopyButton(67, 11, 35, 14);
-
+	DrawRectangle(0, 0, FORM_W, FORM_H, COLOR_3D_DARK);
+	DrawRectangle(1, 1, FORM_W-2, FORM_H-2, COLOR_PANE_BG);
+	DrawRectangle(2, 2, FORM_W-4, FORM_H-4, COLOR_3D_LIGHT);
+	DrawBar(3,3,FORM_W-5,FORM_H-5, COLOR_WIN_BG);
+	DrawButton3D(PAD, PAD, 58, 21, BUTTON_COPY_HEX, COLOR_PANE_BG);
+	DrawButton3D(PAD, 41, LABEL_RGB_W, 21, BUTTON_COPY_RGB, COLOR_PANE_BG);
+	DrawButton3D(PICKED_X-2, PAD, PICKED_SIZE+3, PICKED_SIZE+3, BUTTON_PICK, -1);
 	EventUpdateWindowContent();
+}
+
+int DrawButton3D(dword _x, _y, _w, _h, _id, _col)
+{
+	DefineHiddenButton(_x+1, _y+1, _w-2, _h-2, _id);
+	DrawRectangle3D(_x, _y, _w, _h, COLOR_3D_LIGHT, COLOR_3D_DARK);
+	DrawRectangle3D(_x+1, _y+1, _w-2, _h-2, COLOR_PANE_BG, COLOR_PANE_BG);
+	if (_col) DrawBar(_x+2, _y+2, _w-2, _h-2, _col);
 }
 
 //copy of sprintf() => %A
 void str2col(dword buf, number)
 {
 	byte s;
-	strlcpy(buf,"000000",6);
+	strcpy(buf,"000000");
 	buf+=6;
 	while(number)
 	{
@@ -101,23 +119,54 @@ void EventUpdateWindowContent()
 	str2col(#picked_color_string, picked_color);
 	rgb.DwordToRgb(picked_color);
 	
-	WriteTextWithBg(12,12, 0xD0, 0x000111, #picked_color_string, 0xFFFfff);
+	WriteTextWithBg(PAD+5, PAD+4, 0xD0, 0x000111, #picked_color_string, COLOR_PANE_BG);
 	
-	WriteNumber(12,33, 0xD0, 0xff0000, 3<<16, rgb.r);
-	WriteNumber(44,33, 0xD0, 0x008000, 3<<16, rgb.g);
-	WriteNumber(75,33, 0xD0, 0x0000ff, 3<<16, rgb.b);
+	WriteNumber(PAD+04, PAD+PAD+23, 0xD0, 0xff0000, 3<<16, rgb.r);
+	WriteNumber(PAD+36, PAD+PAD+23, 0xD0, 0x008000, 3<<16, rgb.g);
+	WriteNumber(PAD+67, PAD+PAD+23, 0xD0, 0x0000ff, 3<<16, rgb.b);
 
-	DrawBar(PICKED_X, PICKED_PADDING, PICKED_SIZE, PICKED_SIZE, picked_color);
+	DrawBar(PICKED_X, PAD+2, PICKED_SIZE, PICKED_SIZE, picked_color);
 }
 
-void DrawCopyButton(dword _x, _y, _w, _h)
+void EventActivatePick()
 {
-	DefineHiddenButton(_x+1, _y+1, _w-2, _h-2, BUTTON_COPY);
-	DrawRectangle(_x, _y, _w, _h, 0x777777);
-	WriteText(_x+6, _h-8/2 + _y, 0x80, 0x555555, "Copy");
+	DrawBar(PICKED_X, PAD+2, PICKED_SIZE, PICKED_SIZE, COLOR_PANE_BG);
+	WriteTextWithBg(-4*8+PICKED_SIZE/2+PICKED_X, PICKED_SIZE/2+PAD-5, 0xD0, 0x000111, "Pick", COLOR_PANE_BG);
 }
 
 void EventCopyHex()
 {
 	Clipboard__CopyText(#picked_color_string);
+	WriteTextWithBg(PAD+5, PAD+4, 0xD0, 0xD100C6, "Copied", COLOR_PANE_BG);
+	pause(50);
+	draw_window();
 }
+
+void EventCopyRgb()
+{
+	strcpy(#picked_rgb_string, "000,000,000");
+	rgb2str(#picked_rgb_string, rgb.r);
+	rgb2str(#picked_rgb_string+4, rgb.g);
+	rgb2str(#picked_rgb_string+8, rgb.b);
+	Clipboard__CopyText(#picked_rgb_string);
+	WriteTextWithBg(PAD+1, PAD+PAD+23, 0xD0, 0xD100C6, "   Copied   ", COLOR_PANE_BG);
+	pause(50);
+	draw_window();
+}
+
+void rgb2str(int _str, _i)
+{
+	if (_i < 10) {
+		ESBYTE[_str+2] = _i + '0';
+	} else if (_i < 100) {
+		//23
+		ESBYTE[_str+1] = _i / 10 + '0';
+		ESBYTE[_str+2] = _i % 10 + '0';
+	} else {
+		//123
+		ESBYTE[_str+0] = _i / 100 + '0';
+		ESBYTE[_str+1] = _i / 10 % 10 + '0';
+		ESBYTE[_str+2] = _i % 100 % 10 + '0';
+	}
+}
+
