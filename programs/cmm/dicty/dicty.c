@@ -27,7 +27,7 @@ proc_info Form;
 char search_word[256], translate_result[4096];
 #define TOPH 45
 #define PRONOUNCED_FILE "/tmp0/1/pronounced.txt"
-#define SPEECH_PATH "/kolibrios/media/speech/speech"
+#define SPEECH_PATH "/kolibrios/speech/speech"
 dword speaker_id;
 
 unsigned char eng_rus[] = FROM "eng_rus.dict""\0";
