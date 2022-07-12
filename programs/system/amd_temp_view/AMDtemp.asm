@@ -172,10 +172,12 @@ draw:
        call write_data
 
        add eax,0x15
+       mov byte[write_data.defaunt_color], 1
        mov ebx, drv_data.Tmax
        call write_data
 
        add eax,0x2a
+       mov byte[write_data.defaunt_color], 1
        mov ebx, drv_data.Tcrit
        call write_data
 
@@ -213,9 +215,11 @@ draw:
 
        mov eax,0x00E5005f
        mov ebx, drv_data.Tdie
+       mov byte[write_data.defaunt_color], 1
        call write_data
 
        mov eax,0x007a004a
+       mov byte[write_data.defaunt_color], 1
        mov ebx, drv_data.Tcrit_hyst
        call write_data
        jmp @f
@@ -253,7 +257,8 @@ draw:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; procedure write_data(eax, ebx);
 ;; eax=x*65536+y
-;; ebx=pointer on value
+;; ebx = pointer on value
+;; edx = 1 - set color, 0 - set defaunt color
 ;; ecx register don`t save
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 4
@@ -275,6 +280,35 @@ write_data:
        pop eax
        ret
 @@:
+       ;set color
+       push eax
+       push edx
+       push ecx
+       cmp  byte[.defaunt_color], 1
+       jnz  @f
+       mov  dword[.color_text], 0x000000cf  ;blue
+       jmp  .end_set_color
+@@:
+       xor  edx, edx
+       mov  eax, [esi]
+       imul eax, 10
+       xor  edx, edx
+       div  dword[drv_data.Tcrit]
+       cmp  eax, 9
+       jb  @f
+       mov  dword[.color_text],0x00d50000 ; red
+       jmp  .end_set_color
+@@:
+       cmp  eax, 7
+       jb  @f
+       mov  dword[.color_text],0x00f07000 ; orange
+       jmp  .end_set_color
+@@:
+       mov  dword[.color_text],0x0000d000 ; green
+.end_set_color:
+       pop  ecx
+       pop  edx
+       pop  eax
        ;write_value
 ; value / 1000 =value_in_1
 ;input value_in_1,koord_start
@@ -309,7 +343,7 @@ write_data:
        mov ebx,0x80030000
        mov eax,SF_DRAW_NUMBER
        mov esi,0x10000000
-       add esi,[sc.work_text]
+       add esi,[.color_text]
        mcall
        shl edi,16
        mov eax,SF_DRAW_TEXT
@@ -317,13 +351,13 @@ write_data:
        mov ebx,edx
 
        mov ecx,0x90000000
-       add ecx,[sc.work_text]
+       add ecx,[.color_text]
        mov edx,_dot
        mcall
        mov eax,SF_DRAW_NUMBER
        mov edx,ebx
        mov esi,0x10000000
-       add esi,[sc.work_text]
+       add esi,[.color_text]
        mov ebx,0x00030000
 
        add edx,0x80000
@@ -332,19 +366,23 @@ write_data:
        mov eax,SF_DRAW_TEXT
        mov ebx,edx
        mov ecx,0x80000000
-       add ecx,[sc.work_text]
+       add ecx,[.color_text]
        add ebx,0x180000
        mov edx,_t
        mcall
 
        mov ecx,0x90000000
-       add ecx,[sc.work_text]
+       add ecx,[.color_text]
        add ebx,0x60000
        mov edx,_C
        mcall
        pop ebx
        pop eax
+       mov byte[.defaunt_color], 0
        ret
+.color_text:    rd 1 ; color input temp
+.defaunt_color: rb 1 ; flag set color
+;; end proc
 
 error_drv:
        mcall SF_FILE,run_notify
