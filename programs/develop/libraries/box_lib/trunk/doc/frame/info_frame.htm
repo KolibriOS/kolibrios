@@ -1,0 +1,120 @@
+<html>
+    <head>
+        <title>Элемент farme</title>
+        <meta charset="UTF-8">
+	<link href="../style.css" type=text/css rel=stylesheet>
+    </head>
+    <body>
+        <p><a href="../box_lib.htm">На главную &uarr;</a></p>
+        <h1>Введение</h1>
+            <p>
+                Этот элемент предназначен для визуальной группировки остальных выводимых на экран 
+                объектов, и придания этой группе некого, объединяющего их, названия. Этот элемент
+                имеет одну функцию. 
+            </p>
+        <h1>Функция frame_draw</h1>
+            <p>Это stdcall функция принимающая указатель на структуру. Эту функцию необходимо вызывать
+                во время перерисовки окна.
+            </p>
+        <h1>Структура farme</h1>
+                    FR_STYLE         equ +0  ; Dword<br>
+                    FR_WIDTH         equ +4  ; Word <br>
+                    FR_LEFT          equ +6  ; Word <br>
+                    FR_HEIGHT        equ +8  ; Word <br>
+                    FR_TOP           equ +10 ; Word <br>
+                    FR_OUTER_COLOR   equ +12 ; Dword<br>
+                    FR_INNER_COLOR   equ +16 ; Dword<br>
+                    FR_FLAGS         equ +20 ; Dword<br>
+                    FR_TEXT          equ +24 ; Dword<br>
+                    FR_TEXT_POSITION equ +28 ; Dword<br>
+                    FR_FONT          equ +32 ; Dword<br>
+                    FR_FONT_HEIGHT   equ +36 ; Dword<br>
+                    FR_FORE_COLOR    equ +40 ; Dword<br>
+                    FR_BACK_COLOR    equ +44 ; Dword<br>
+        
+        <h1> Описание полей и флагов структуры </h1>
+            <ul>
+                <li><p>
+                    FR_STYLE - не используется
+                </p></li>
+                <li><p>
+                    FR_WIDTH - размер этого элемента по оси x
+                </p></li>
+                <li><p>
+                    FR_LEFT - x координата верхнего левого угла
+                </p></li>
+                <li><p>
+                    FR_HEIGHT - высота этого элемента 
+                </p></li>
+                <li><p>
+                    FR_TOP - y координата верхнего левого угла
+                </p></li>
+                <li><p>
+                    FR_OUTER_COLOR - внешний цвет рамки при флаге [x][000][z] 
+                </p></li>
+                <li><p>
+                    FR_INNER_COLOR - внутренний цвет рамки при флаге [x][000][z] 
+                </p></li>
+                <li><p>
+                    FR_FLAGS - это битовые флаги [x][yyy][z]. Флаги [yyy] влияют на окрас рамки, в 
+                    примере FR_OUTER_COLOR = 0xff FR_INNER_COLOR = 0xff00 
+                    <ul>
+                        <li>FR_CAPTION equ 00001b это флаг, который указывает, выводить текст или нет</li>
+                        <li>FR_DOUBLE  equ 00000b</li>
+                            <img src="SCR_1.PNG" >
+                        <li>FR_RAISED  equ 00010b</li>
+                            <img src="SCR_2.PNG" >
+                        <li>FR_SUNKEN  equ 00100b</li>
+                            <img src="SCR_3.PNG" >
+                        <li>FR_ETCHED  equ 00110b</li>
+                            <img src="SCR_4.PNG" >
+                        <li>FR_RIDGED  equ 01000b</li>
+                            <img src="SCR_5.PNG" >
+                        <li>FR_FILLED  equ 10000b это флаг, указывающий на то, закрашивать фон 
+                            внутри элемента или нет, этот флаг не влияет на фон текста</li>
+                    </ul>
+                </p></li>
+                <li><p>
+                    FR_TEXT - указатель на строку
+                </p></li>
+                <li><p>
+                    FR_TEXT_POSITION - это битовый флаг. Если он установлен в ноль, то надпись
+                    будет находится в верхней части рамки, если 1, то надпись будет в нижней
+                    части рамки.
+                </p></li>
+                <li><p>
+                    FR_FONT - шрифт и формат выводимой строки.</p> 
+                    <p>
+                    0 = 6x9  cp866<br>
+                    1 = 8x16 cp866<br>
+                    2 = 8x16 UTF-16LE<br>
+                    3 = 8x16 UTF-8<br> 
+                </p></li>
+                <li><p>
+                    FR_FONT_HEIGHT - смещение вверх выводимого текста.
+                </p></li>
+                <li><p>
+                    FR_FORE_COLOR - цвет выводимого текста.
+                </p></li>
+                <li><p>
+                    FR_BACK_COLOR - цвет фона для текста.
+                </p></li>
+            </ul>
+        <h1>Некоторые замечания по использованию</h1>
+        <p>Структура для функции не очень подходит для создания приложений, поддерживающих системные
+            цвета. По этой причине стоит перед отрисовкой элементов окна заранее заполнить некоторые
+            поля структуры, а именно: FR_OUTER_COLOR, FR_INNER_COLOR, FR_FORE_COLOR и FR_BACK_COLOR.
+            Остальные поля можно заполнить константами данными. 
+        </p>
+        <p>
+            Цвета этого элемента стоит делать в соответствии с системными цветами:
+            <ul>
+                <li>Для FR_OUTER_COLOR - sc.work_graph</li>
+                <li>Для FR_INNER_COLOR - sc.work_light</li>
+                <li>Для FR_FORE_COLOR - sc.work_text</li>
+                <li>Для FR_BACK_COLOR - sc.work</li>
+            </ul>
+        </p>
+        
+    </body>
+</html>
