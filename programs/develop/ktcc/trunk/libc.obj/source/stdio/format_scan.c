@@ -254,12 +254,12 @@ int format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vge
     long double *arg_longdouble;
     long long  digit;
     long double real;
-
+    int skip_next; // skip arguments with * char format
 
     pos = 0;
     while(*fmt)
     {
-        while (*fmt && isspace(*fmt)) fmt++; // skip paces in format str
+        while (*fmt && isspace(*fmt)) fmt++; // skip spaces in format str
 
         if (*fmt != '%')  // usual char
         {
@@ -289,6 +289,7 @@ int format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vge
         fmtc = fmt;
         posc = pos;
 
+        skip_next = 0;
         flags = 0;
         format_flag = 0;
         flag_long = 0;  // 2 = long double or long long int or wchar
@@ -315,7 +316,10 @@ int format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vge
                     format_flag = 1;
                     flags |= flag_unsigned;
                     break;
-                case '*':   case '.':  // just skip
+                case '*':
+                    skip_next = 1;
+                    break;
+                case '.':  // just skip
                     break;
                 default:
                     if(isdigit(*fmtc))  break;
@@ -374,34 +378,37 @@ int format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vge
             vungetc(&save, ch, src);
             break;
         case 'c':  // read width chars, ever spaces
-            arg_str = va_arg(argp, char*);
+            if (!skip_next) arg_str = va_arg(argp, char*);
             if (fmt1 == 0) length = 1;
             else length = fmt1;
             for (i = 0; i < length;)
             {
-                *arg_str++ = ch; i++;
+                if (!skip_next) *arg_str++ = ch;
+                i++;
                 ch = vgetc(&save, src);
                 if (ch == EOF) break;
             }
             if (i < length) goto exit_me; // not enough chars
             break;
         case 's':
-            arg_str = va_arg(argp, char*);
+            if (!skip_next) arg_str = va_arg(argp, char*);
             if (fmt1 == 0) length = 4095;   // max string scan 4096
             else length = fmt1;
             for (i = 0; i < length; i++)
             {
-                *arg_str++ = ch;
+                if (!skip_next) *arg_str++ = ch;
+
                 ch = vgetc(&save, src);
                 if (ch == EOF || isspace(ch)) break; // ok, just finish string
             }
-            *arg_str++ = '\0';
+            if (!skip_next) *arg_str++ = '\0';
             break;
         case 'd':   case 'i':   case 'u':
         case 'o':   case 'p':   case 'x':
             i = try_parse_int(&digit, ch, src, &save, vgetc, vungetc);
             if (i < 0) goto exit_me;
 
+            if (!skip_next)
             if (flag_long == 0) { arg_int = va_arg(argp, int*); *arg_int = (int)digit; } else
             if (flag_long == 1) { arg_long = va_arg(argp, long*); *arg_long = (long)digit; } else
             if (flag_long == 2) { arg_longlong = va_arg(argp, long long*); *arg_longlong = digit; }
@@ -412,6 +419,7 @@ int format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vge
             i = try_parse_real(&real, ch, src, &save, vgetc, vungetc);
             if (i < 0) goto exit_me;
 
+            if (!skip_next)
             if (flag_long == 0) { arg_float = va_arg(argp, float*); *arg_float = (float)real; } else
             if (flag_long == 1) { arg_double = va_arg(argp, double*); *arg_double = (double)real; } else
             if (flag_long == 2) { arg_longdouble = va_arg(argp, long double*); *arg_longdouble = real; }
@@ -419,7 +427,7 @@ int format_scan(const void *src, const char *fmt, va_list argp, virtual_getc vge
         }
 
         fmt = fmtc + 1;
-        nread++;
+        if (!skip_next) nread++;
     }
 exit_me:
     if (point_to_n) *point_to_n = nread;
