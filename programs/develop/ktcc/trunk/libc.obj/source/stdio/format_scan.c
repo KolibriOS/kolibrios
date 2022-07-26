@@ -24,17 +24,17 @@ typedef void (*virtual_ungetc)(void *sp, int c, const void *obj);
 
 enum flags_t
 {
-        flag_unsigned   = 0x02,
-        flag_register   = 0x04,
-        flag_plus       = 0x08,
-        flag_left_just  = 0x10,
-        flag_lead_zeros = 0x20,
-        flag_space_plus = 0x40,
-        flag_hash_sign  = 0x80,
-        flag_point      = 0x100
+    flag_unsigned   = 0x02,
+    flag_register   = 0x04,
+    flag_plus       = 0x08,
+    flag_left_just  = 0x10,
+    flag_lead_zeros = 0x20,
+    flag_space_plus = 0x40,
+    flag_hash_sign  = 0x80,
+    flag_point      = 0x100
 };
 
-int     try_parse_real(long double *real, int ch, const void *src, void *save, virtual_getc vgetc, virtual_ungetc vungetc)
+int try_parse_real(long double *real, int ch, const void *src, void *save, virtual_getc vgetc, virtual_ungetc vungetc)
 // returns 1 if OK, -1 == EOF, -2 parse broken
 {
     int sign = 1, have_digits = 0;
@@ -153,7 +153,7 @@ int     try_parse_real(long double *real, int ch, const void *src, void *save, v
     return 1;
 }
 
-int     try_parse_int(long long *digit, int ch, const void *src, void *save, virtual_getc vgetc, virtual_ungetc vungetc)
+int try_parse_int(long long *digit, int ch, const void *src, void *save, virtual_getc vgetc, virtual_ungetc vungetc)
 {
     int sign = 1, base = 10, have_digits = 0;
 
@@ -172,7 +172,7 @@ int     try_parse_int(long long *digit, int ch, const void *src, void *save, vir
     if (ch == '0')  // octal or hex, read next
     {
         ch = vgetc(save, src);
-        if (ch == 'c' || ch == 'C')
+        if (ch == 'o')
             base = 8;
         else if (ch == 'x' || ch == 'X')
             base = 16;
