@@ -1617,53 +1617,50 @@ KOSAPI void _ksys_set_window_title(const char* title)
 
 /*============= Function 77, subfunction 0 - create futex object =============*/
 
-KOSAPI void* _ksys_futex_create(void* futex_control_addr)
+KOSAPI uint32_t _ksys_futex_create(int* futex_ctrl)
 {
-    void* futex_desc;
+    uint32_t futex_desc;
     asm_inline(
         "int $0x40"
         : "=a"(futex_desc)
-        : "a"(77), "b"(0), "c"(futex_control_addr)
+        : "a"(77), "b"(0), "c"(futex_ctrl)
         : "memory");
     return futex_desc;
 }
 
 /*============= Function 77, subfunction 1 - destroy futex object =============*/
 
-KOSAPI int _ksys_futex_destroy(void* futex_desc)
+KOSAPI int _ksys_futex_destroy(uint32_t futex_desc)
 {
     int res;
     asm_inline(
         "int $0x40"
         : "=a"(res)
-        : "a"(77), "b"(1), "c"(futex_desc)
-        : "memory");
+        : "a"(77), "b"(1), "c"(futex_desc));
     return res;
 }
 
 /*============= Function 77, subfunction 2 - futex wait =============*/
 
-KOSAPI int _ksys_futex_wait(void* futex_desc, int control_val, int timeout)
+KOSAPI int _ksys_futex_wait(uint32_t futex_desc, int ctrl_val, int timeout)
 {
     int res;
     asm_inline(
         "int $0x40"
         : "=a"(res)
-        : "a"(77), "b"(2), "c"(futex_desc), "d"(control_val), "S"(timeout)
-        : "memory");
+        : "a"(77), "b"(2), "c"(futex_desc), "d"(ctrl_val), "S"(timeout));
     return res;
 }
 
 /*============= Function 77, subfunction 3 - futex wake =============*/
 
-KOSAPI int _ksys_futex_wake(void* futex_desc, int max_wake_count)
+KOSAPI int _ksys_futex_wake(uint32_t futex_desc, int max_wake_count)
 {
     int count;
     asm_inline(
         "int $0x40"
         : "=a"(count)
-        : "a"(77), "b"(3), "c"(futex_desc), "d"(max_wake_count)
-        : "memory");
+        : "a"(77), "b"(3), "c"(futex_desc), "d"(max_wake_count));
     return count;
 }
 
