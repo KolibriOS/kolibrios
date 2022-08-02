@@ -8,24 +8,23 @@
 #include <sys/ksys.h>
 #include <errno.h>
 #include <limits.h>
-//#include "format_print.h"
 
-int vsprintf (char * s, const char * format, va_list arg)
+int vsprintf(char* s, const char* format, va_list arg)
 {
     return vsnprintf(s, STDIO_MAX_MEM, format, arg);
 }
 
-int vprintf ( const char * format, va_list arg )
+int vprintf(const char* format, va_list arg)
 {
-  int len = 0;
-  char *s = malloc(STDIO_MAX_MEM);
-  if(!s){
-    errno = ENOMEM;
-    return errno;
-  }
-  con_init();
-  len = vsnprintf(s, STDIO_MAX_MEM, format, arg);
-  con_write_string(s, len);
-  free(s);
-  return(len);
+    int len = 0;
+    char* s = malloc(STDIO_MAX_MEM);
+    if (!s) {
+        errno = ENOMEM;
+        return errno;
+    }
+    con_init();
+    len = vsnprintf(s, STDIO_MAX_MEM, format, arg);
+    con_write_string(s, len);
+    free(s);
+    return (len);
 }
