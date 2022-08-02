@@ -22,5 +22,6 @@ cp     clayer/logo.png /tmp0/1/tcc_samples/logo.png
 ../tcc libc_test.c -o /tmp0/1/tcc_samples/libc_test
 ../tcc defgen.c -o /tmp0/1/tcc_samples/defgen
 ../tcc pipe.c -o /tmp0/1/tcc_samples/pipe
+../tcc futex.c -o /tmp0/1/tcc_samples/futex
 "/sys/File managers/Eolite" /tmp0/1/tcc_samples
 exit
