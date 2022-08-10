@@ -185,28 +185,31 @@ align 4
         lea     esi, [ebp + FUTEX.wait_list]
 
         list_add_tail esp, esi      ;esp= new waiter, esi= list head
-
+        sti
 .again_timeout:
         call    change_task
         mov     eax, [ebx + APPDATA.wait_param]
         test    eax, eax
         jz      .timeout
-
+        DEBUGF  1, "FUTEX no timeout [ecx]=%x edx=%x\n", [ecx], edx
         mov     eax, edx
         lock cmpxchg [ecx], edx
         jz      .again_timeout
 @@:
+        cli
         list_del esp
+        sti
         add     esp, sizeof.MUTEX_WAITER
-
         popfd
         mov     [esp + SYSCALL_STACK.eax], 0
         ret
 
 .timeout:
+        cli
         list_del esp
+        sti
         add     esp, sizeof.MUTEX_WAITER
-
+        DEBUGF  1, "FUTEX timeout\n"
         popfd
         mov     [esp + SYSCALL_STACK.eax], -1
         ret
