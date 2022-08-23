@@ -162,7 +162,7 @@ endp
 reg_service:
         xor     eax, eax
         mov     ecx, [esp+8]
-        jecxz   .nothing
+        ;jecxz   .nothing
         push    sizeof.SRV
         push    ecx
         pushd   [esp+12]
