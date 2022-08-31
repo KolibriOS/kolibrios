@@ -94,11 +94,13 @@ VAR
 
     CodeList: LISTS.LIST;
 
-    tcount: INTEGER;
+    tcount, LocVarSize, mainLocVarSize: INTEGER;
 
     FR: ARRAY 1000 OF INTEGER;
 
     fname: PATHS.PATH;
+
+    FltConstLabel, mainFltConstLabel: LABEL;
 
 
 PROCEDURE OutByte* (n: BYTE);
@@ -397,6 +399,40 @@ BEGIN
     reloc.value := value;
     LISTS.push(CodeList, reloc)
 END Reloc;
+
+
+PROCEDURE PushFlt (label: LABEL; value: REAL);
+VAR
+    a, b, n: INTEGER;
+
+
+    PROCEDURE pushImm (label: LABEL; value: INTEGER);
+    VAR
+        c: CODE;
+        i: INTEGER;
+
+    BEGIN
+        NEW(c);
+        IF isByte(value) THEN
+            c.code[0] := 6AH;
+            c.code[1] := value MOD 256;
+            c.length := 2
+        ELSE
+            c.code[0] := 68H;
+            FOR i := 1 TO 4 DO
+                c.code[i] := UTILS.Byte(value, i - 1)
+            END;
+            c.length := 5
+        END;
+        LISTS.insertL(CodeList, label, c)
+    END pushImm;
+
+
+BEGIN
+    n := UTILS.splitf(value, a, b);
+    pushImm(label, b);
+    pushImm(label, a)
+END PushFlt;
 
 
 PROCEDURE jcc* (cc, label: INTEGER);
@@ -726,13 +762,25 @@ BEGIN
 END pushm;
 
 
+PROCEDURE LoadFltConst (value: REAL);
+BEGIN
+    PushFlt(FltConstLabel, value);
+    INC(LocVarSize, 8);
+    IF FltConstLabel = mainFltConstLabel THEN
+        mainLocVarSize := LocVarSize
+    END;
+    OutByte2(0DDH, 045H + long(-LocVarSize)); (* fld qword[ebp - LocVarSize] *)
+    OutIntByte(-LocVarSize)
+END LoadFltConst;
+
+
 PROCEDURE translate (pic: BOOLEAN; stroffs: INTEGER);
 VAR
     cmd, next: COMMAND;
 
     reg1, reg2, reg3, fr: INTEGER;
 
-    n, a, b, label, cc: INTEGER;
+    n, a, label, cc: INTEGER;
 
     opcode, param1, param2: INTEGER;
 
@@ -862,7 +910,10 @@ BEGIN
                     pushc(0);
                     DEC(n)
                 END
-            END
+            END;
+            SetLabel(NewLabel());
+            FltConstLabel := CodeList.last(LABEL);
+            LocVarSize := param2 * 4
 
         |IL.opLEAVE, IL.opLEAVER, IL.opLEAVEF:
             IF opcode = IL.opLEAVER THEN
@@ -881,7 +932,7 @@ BEGIN
 
             ASSERT(fr = -1);
 
-            IF param1 > 0 THEN
+            IF LocVarSize > 0 THEN
                 mov(esp, ebp)
             END;
 
@@ -891,7 +942,9 @@ BEGIN
                 OutByte(0C2H); OutWord(param2 * 4 MOD 65536) (* ret param2*4 *)
             ELSE
                 ret
-            END
+            END;
+            FltConstLabel := mainFltConstLabel;
+            LocVarSize := mainLocVarSize
 
         |IL.opPUSHC:
             pushc(param2)
@@ -1941,11 +1994,7 @@ BEGIN
                 OutByte2(0D9H, 0E8H);     (* fld1 *)
                 OutByte2(0D9H, 0E0H)      (* fchs *)
             ELSE
-                n := UTILS.splitf(float, a, b);
-                pushc(b);
-                pushc(a);
-                OutByte3(0DDH, 004H, 024H); (* fld qword[esp] *)
-                addrc(esp, 8)
+                LoadFltConst(float)
             END
 
         |IL.opSAVEF, IL.opSAVEFI:
@@ -2085,10 +2134,8 @@ BEGIN
             IF fr > MAX_FR THEN
                 ERRORS.ErrorMsg(fname, param1, param2, FPR_ERR)
             END;
-            pushc(7FF00000H);
-            pushc(0);
-            OutByte3(0DDH, 004H, 024H);  (* fld qword[esp] *)
-            addrc(esp, 8)
+            LoadFltConst(UTILS.inf)
+
 
         |IL.opLADR_UNPK:
             n := param2 * 4;
@@ -2227,7 +2274,7 @@ BEGIN
 END translate;
 
 
-PROCEDURE prolog (pic: BOOLEAN; target, stack, dllinit, dllret: INTEGER);
+PROCEDURE prolog (pic: BOOLEAN; target, stack, dllret: INTEGER): INTEGER;
 VAR
     reg1, entry, L, dcount: INTEGER;
 
@@ -2236,9 +2283,15 @@ BEGIN
     SetLabel(entry);
     dcount := CHL.Length(IL.codes.data);
 
+    push(ebp);
+    mov(ebp, esp);
+    SetLabel(NewLabel());
+    mainFltConstLabel := CodeList.last(LABEL);
+    FltConstLabel := mainFltConstLabel;
+    mainLocVarSize := 0;
+    LocVarSize := 0;
+
     IF target = TARGETS.Win32DLL THEN
-        push(ebp);
-        mov(ebp, esp);
         pushm(ebp, 16);
         pushm(ebp, 12);
         pushm(ebp, 8);
@@ -2247,7 +2300,6 @@ BEGIN
         jcc(je, dllret);
         pushc(0)
     ELSIF target = TARGETS.KolibriOSDLL THEN
-        SetLabel(dllinit);
         OutByte(68H);  (* push IMPORT *)
         Reloc(BIN.IMPTAB, 0)
     ELSIF target = TARGETS.KolibriOS THEN
@@ -2256,7 +2308,9 @@ BEGIN
         push(reg1);    (* push IMPORT *)
         drop
     ELSIF target = TARGETS.Linux32 THEN
-        push(esp)
+        mov(eax, ebp);
+        addrc(eax, 4);
+        push(eax)
     ELSE
         pushc(0)
     END;
@@ -2297,6 +2351,8 @@ BEGIN
         mov(esp, eax);
         SetLabel(L)
     END
+
+    RETURN entry
 END prolog;
 
 
@@ -2341,8 +2397,10 @@ BEGIN
         OutByte3(0C2H, 0CH, 0) (* ret 12 *)
     ELSIF target = TARGETS.KolibriOSDLL THEN
         movrc(eax, 1);
+        OutByte(0C9H); (* leave *)
         ret
     ELSIF target = TARGETS.Linux32SO THEN
+        OutByte(0C9H); (* leave *)
         ret;
         SetLabel(sofinit);
         CallRTL(pic, IL._sofinit);
@@ -2400,7 +2458,6 @@ BEGIN
 
     program := BIN.create(IL.codes.lcount);
 
-    dllinit := NewLabel();
     dllret  := NewLabel();
     sofinit := NewLabel();
 
@@ -2414,7 +2471,7 @@ BEGIN
 
     REG.Init(R, push, pop, mov, xchg, {eax, ecx, edx});
 
-    prolog(opt.pic, target, opt.stack, dllinit, dllret);
+    dllinit := prolog(opt.pic, target, opt.stack, dllret);
     translate(opt.pic, tcount * 4);
     epilog(opt.pic, outname, target, opt.stack, opt.version, dllinit, dllret, sofinit);
 

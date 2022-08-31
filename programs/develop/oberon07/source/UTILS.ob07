@@ -23,8 +23,8 @@ CONST
     max32* =  2147483647;
 
     vMajor* = 1;
-    vMinor* = 56;
-    Date* = "21-jun-2022";
+    vMinor* = 57;
+    Date* = "31-aug-2022";
 
     FILE_EXT* = ".ob07";
     RTL_NAME* = "RTL";
@@ -36,7 +36,7 @@ VAR
 
     time*: INTEGER;
 
-    maxreal*: REAL;
+    maxreal*, inf*: REAL;
 
     target*:
 
@@ -212,5 +212,6 @@ END hexdgt;
 
 BEGIN
     time := HOST.GetTickCount();
+    inf := HOST.inf;
     maxreal := HOST.maxreal
 END UTILS.

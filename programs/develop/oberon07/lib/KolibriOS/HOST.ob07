@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2021, Anton Krotov
+    Copyright (c) 2018-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -59,7 +59,7 @@ VAR
     Params: ARRAY MAX_PARAM, 2 OF INTEGER;
     argc*: INTEGER;
 
-    maxreal*: REAL;
+    maxreal*, inf*: REAL;
 
 
 PROCEDURE [stdcall, "Console.obj", "con_init"] con_init (wnd_width, wnd_height, scr_width, scr_height, title: INTEGER);
@@ -537,6 +537,7 @@ BEGIN
         END
     END;
 
+    inf := SYSTEM.INF();
     maxreal := 1.9;
     PACK(maxreal, 1023);
     Console := TRUE;
