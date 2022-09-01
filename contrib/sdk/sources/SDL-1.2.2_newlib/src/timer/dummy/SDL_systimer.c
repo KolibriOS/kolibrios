@@ -58,10 +58,7 @@ Uint32 SDL_GetTicks (void)
 }
 
 void SDL_Delay(unsigned ms){
-    unsigned start = SDL_GetTicks();
-    do{
-       _ksys_delay(1);
-    }while (SDL_GetTicks()-start < ms);
+    _ksys_delay(ms/10+(ms%10>0));
 }
 
 int SDL_SYS_TimerInit(void)
