@@ -6,7 +6,7 @@
 #include <setjmp.h>
 #include <envz.h>
 
-#include <kos32sys.h>
+#include <sys/ksys.h>
 
 #include "list.h"
 #include "pe.h"
@@ -97,7 +97,7 @@ void* create_image(void *raw)
     dos = (PIMAGE_DOS_HEADER)raw;
     nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
 
-    img_base = user_alloc(nt->OptionalHeader.SizeOfImage);
+    img_base = _ksys_alloc(nt->OptionalHeader.SizeOfImage);
 
     if(unlikely(img_base == NULL))
         return 0;
@@ -196,9 +196,9 @@ void* load_libc()
     void     *raw_img;
     size_t    raw_size;
     void     *img_base = NULL;
-    ufile_t   uf;
+    ksys_ufile_t   uf;
 
-    uf = load_file("/kolibrios/lib/libc.dll");
+    uf = _ksys_load_file("/kolibrios/lib/libc.dll");
 
     raw_img   = uf.data;
     raw_size  = uf.size;
@@ -214,7 +214,7 @@ void* load_libc()
         img_base = create_image(raw_img);
     };
 
-    user_free(raw_img);
+    _ksys_free(raw_img);
 
     return img_base;
 

@@ -21,7 +21,8 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 <http://www.gnu.org/licenses/>.  */
 
 #include <errno.h>
-#include <kos32sys.h>
+#include <stdint.h>
+#include <sys/ksys.h>
 #include "gthr-kos32.h"
 
 #define FUTEX_INIT      0
@@ -34,6 +35,42 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 
 #define exchange_release(ptr, new) \
   __atomic_exchange_4((ptr), (new), __ATOMIC_RELEASE)
+
+#define TLS_KEY_PID         0
+#define TLS_KEY_TID         4
+#define TLS_KEY_LOW_STACK   8
+#define TLS_KEY_HIGH_STACK 12
+#define TLS_KEY_LIBC       16
+
+unsigned int tls_alloc(void);
+int tls_free(unsigned int key);
+
+static inline int tls_set(unsigned int key, void *val)
+{
+    int ret = -1;
+    if(key < 4096)
+    {
+        __asm__ __volatile__(
+        "movl %0, %%fs:(%1)"
+        ::"r"(val),"r"(key));
+        ret = 0;
+    }
+    return ret;
+};
+
+static inline void *tls_get(unsigned int key)
+{
+    void *val = (void*)-1;
+    if(key < 4096)
+    {
+        __asm__ __volatile__(
+        "movl %%fs:(%1), %0"
+        :"=r"(val)
+        :"r"(key));
+    };
+    return val;
+}
+
 
 int __gthr_kos32_once (__gthread_once_t *once, void (*func) (void))
 {
@@ -50,7 +87,7 @@ int __gthr_kos32_once (__gthread_once_t *once, void (*func) (void))
         else
         {
             while (! once->done)
-                yield();
+                _ksys_thread_yield();
         }
     }
     return 0;
@@ -92,25 +129,14 @@ int __gthr_kos32_setspecific (__gthread_key_t key, const void *ptr)
 
 void __gthr_kos32_mutex_init_function (__gthread_mutex_t *mutex)
 {
-    int handle;
-
     mutex->lock = 0;
-
-    __asm__ volatile(
-    "int $0x40\t"
-    :"=a"(handle)
-    :"a"(77),"b"(FUTEX_INIT),"c"(mutex));
-    mutex->handle = handle;
+    mutex->handle  = _ksys_futex_create(mutex);
 }
 
 void __gthr_kos32_mutex_destroy (__gthread_mutex_t *mutex)
 {
     int retval;
-
-    __asm__ volatile(
-    "int $0x40\t"
-    :"=a"(retval)
-    :"a"(77),"b"(FUTEX_DESTROY),"c"(mutex->handle));
+    _ksys_futex_destroy(mutex->handle);
 }
 
 int __gthr_kos32_mutex_lock (__gthread_mutex_t *mutex)
@@ -122,13 +148,9 @@ int __gthr_kos32_mutex_lock (__gthread_mutex_t *mutex)
 
     while (exchange_acquire (&mutex->lock, 2) != 0)
     {
-        __asm__ volatile(
-        "int $0x40\t\n"
-        :"=a"(tmp)
-        :"a"(77),"b"(FUTEX_WAIT),
-        "c"(mutex->handle),"d"(2),"S"(0));
-   }
-   return 0;
+        _ksys_futex_wait(mutex->handle, 2 , 0);
+    }
+    return 0;
 }
 
 int __gthr_kos32_mutex_trylock (__gthread_mutex_t *mutex)
@@ -146,11 +168,7 @@ int __gthr_kos32_mutex_unlock (__gthread_mutex_t *mutex)
 
     if (prev != 1)
     {
-        __asm__ volatile(
-        "int $0x40\t"
-        :"=a"(prev)
-        :"a"(77),"b"(FUTEX_WAKE),
-        "c"(mutex->handle),"d"(1));
+        _ksys_futex_wake(mutex->handle, 1);
     };
     return 0;
 }
@@ -158,14 +176,9 @@ int __gthr_kos32_mutex_unlock (__gthread_mutex_t *mutex)
 void __gthr_kos32_recursive_mutex_init_function (__gthread_recursive_mutex_t *mutex)
 {
     int handle;
-
     mutex->lock = 0;
 
-    __asm__ volatile(
-    "int $0x40\t"
-    :"=a"(handle)
-    :"a"(77),"b"(FUTEX_INIT),"c"(mutex));
-    mutex->handle = handle;
+    mutex->handle = _ksys_futex_create(mutex);
 
     mutex->depth = 0;
     mutex->owner = 0;
@@ -190,11 +203,7 @@ int __gthr_kos32_recursive_mutex_lock (__gthread_recursive_mutex_t *mutex)
     }
     else while (exchange_acquire (&mutex->lock, 2) != 0)
     {
-        __asm__ volatile(
-        "int $0x40\t\n"
-        :"=a"(tmp)
-        :"a"(77),"b"(FUTEX_WAIT),
-        "c"(mutex->handle),"d"(2),"S"(0));
+        _ksys_futex_wait(mutex->handle, 2, 0);
         mutex->depth = 1;
         mutex->owner = me;
     };
@@ -232,11 +241,7 @@ int __gthr_kos32_recursive_mutex_unlock (__gthread_recursive_mutex_t *mutex)
 
         if (prev != 1)
         {
-            __asm__ volatile(
-            "int $0x40\t"
-            :"=a"(prev)
-            :"a"(77),"b"(FUTEX_WAKE),
-            "c"(mutex->handle),"d"(1));
+            _ksys_futex_wake(mutex->handle, 1);
         };
         mutex->owner = 0;
     };
@@ -247,12 +252,7 @@ int __gthr_kos32_recursive_mutex_unlock (__gthread_recursive_mutex_t *mutex)
 int __gthr_kos32_recursive_mutex_destroy (__gthread_recursive_mutex_t *mutex)
 {
     int retval;
-
-    __asm__ volatile(
-    "int $0x40\t"
-    :"=a"(retval)
-    :"a"(77),"b"(FUTEX_DESTROY),"c"(mutex->handle));
-
+    _ksys_futex_destroy(mutex->handle);
     return 0;
 }
 

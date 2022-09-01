@@ -22,6 +22,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define KOSAPI     static inline
 #define asm_inline __asm__ __volatile__
 
@@ -1617,7 +1621,7 @@ KOSAPI void _ksys_set_window_title(const char* title)
 
 /*============= Function 77, subfunction 0 - create futex object =============*/
 
-KOSAPI uint32_t _ksys_futex_create(int* futex_ctrl)
+KOSAPI uint32_t _ksys_futex_create(void* futex_ctrl)
 {
     uint32_t futex_desc;
     asm_inline(
@@ -1721,5 +1725,9 @@ static inline int _ksys_file_write_file(const char* name, unsigned long long off
     *bytes_write = res.rw_bytes;
     return res.status;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _KSYS_H_

@@ -7,7 +7,7 @@
 #include <setjmp.h>
 #include <envz.h>
 
-#include <kos32sys.h>
+#include <sys/ksys.h>
 
 #include "list.h"
 #include "pe.h"
@@ -22,6 +22,7 @@
 void    init_loader(void *libc_image);
 void*   create_image(void *raw);
 int     link_image(void *img_base, PIMAGE_IMPORT_DESCRIPTOR imp);
+void*   load_library(const char *name);
 
 extern char* __appenv;
 extern int   __appenv_size;
@@ -266,7 +267,7 @@ void* create_image(void *raw)
     dos = (PIMAGE_DOS_HEADER)raw;
     nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
 
-    img_base = user_alloc(nt->OptionalHeader.SizeOfImage);
+    img_base = _ksys_alloc(nt->OptionalHeader.SizeOfImage);
 
     if(unlikely(img_base == NULL))
         return 0;
@@ -651,12 +652,12 @@ static void *load_lib_internal(const char *path)
     PIMAGE_NT_HEADERS32      nt;
     PIMAGE_EXPORT_DIRECTORY  exp;
 
-    ufile_t   uf;
+    ksys_ufile_t   uf;
     void     *raw_img;
     size_t    raw_size;
     void     *img_base = NULL;
 
-    uf = load_file(path);
+    uf = _ksys_load_file(path);
     raw_img  = uf.data;
     raw_size = uf.size;
 
@@ -666,12 +667,12 @@ static void *load_lib_internal(const char *path)
     if( validate_pe(raw_img, raw_size, 0) == 0)
     {
         printf("invalide module %s\n", path);
-        user_free(raw_img);
+        _ksys_free(raw_img);
         return NULL;
     };
 
     img_base = create_image(raw_img);
-    user_free(raw_img);
+    _ksys_free(raw_img);
 
     if( unlikely(img_base == NULL) )
         printf("cannot create image %s\n",path);
@@ -797,7 +798,7 @@ err2:
     free(module->img_path);
     free(module);
 err1:
-    user_free(img_base);
+    _ksys_free(img_base);
     return NULL;
 };
 

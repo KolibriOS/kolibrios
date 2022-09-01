@@ -36,7 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <sys/ksys.h>
 
 
 struct malloc_chunk {
@@ -60,33 +60,8 @@ typedef unsigned int flag_t;           /* The type of various bit flag sets */
 /* The maximum possible size_t value has all bits set */
 #define MAX_SIZE_T           (~(size_t)0)
 
-void *user_alloc(size_t size)
-{
-    void  *val;
-
-//    __asm__("int3");
-
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(val)
-    :"a"(68),"b"(12),"c"(size));
-    return val;
-}
-
-static inline
-int user_free(void *mem)
-{
-    int  val;
-
-//    __asm__("int3");
-
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(val)
-    :"a"(68),"b"(13),"c"(mem));
-    return val;
-}
-
+#define user_alloc(s) _ksys_alloc(s)
+#define user_free _ksys_free
 
 /* ------------------- size_t and alignment properties -------------------- */
 

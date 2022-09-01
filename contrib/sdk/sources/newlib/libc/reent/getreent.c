@@ -3,7 +3,7 @@
 #include <_ansi.h>
 #include <string.h>
 #include <sys/reent.h>
-#include <kos32sys.h>
+#include <sys/ksys.h>
 
 extern _VOID   _EXFUN(__sinit,(struct _reent *));
 
@@ -11,7 +11,7 @@ void init_reent()
 {
     struct _reent *ent;
 
-    ent = user_alloc(sizeof(struct _reent));
+    ent = _ksys_alloc(sizeof(struct _reent));
 
     _REENT_INIT_PTR_ZEROED(ent);
 

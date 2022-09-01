@@ -20,14 +20,14 @@
 #include <stdint.h>
 #include <time.h>
 #include <sys/time.h>
-#include <kos32sys.h>
+#include <sys/ksys.h>
 
 /* Get current value of CLOCK and store it in TP.  */
 int clock_gettime (clockid_t clock_id, struct timespec *tp)
 {
     uint64_t tsc;
 
-    tsc = get_ns_count();
+    tsc = _ksys_get_ns_count();
 
     tp->tv_sec = tsc / 1000000000;
     tp->tv_nsec = tsc % 1000000000;
