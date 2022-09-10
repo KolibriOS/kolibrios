@@ -247,6 +247,24 @@ exit:
     mcall   SF_SYSTEM, SSF_TERMINATE_THREAD, [nwin.sid]
     mcall   SF_TERMINATE_PROCESS
 ;-------------------------------------------------------------------------------
+error_exit:
+    push    .notify
+    dec     esp
+    push    0
+    push    0
+    push    .error_message
+    push    0
+    push    SSF_START_APP
+
+    mcall   SF_FILE, esp
+    add     esp, 6*4 + 1
+    mcall   SF_SYSTEM, SSF_TERMINATE_THREAD, [nwin.sid]
+    mcall   SF_TERMINATE_PROCESS
+.error_message:
+    db  '"@DOCKY\nError load @RESHARE" -tdE',0
+.notify:
+    db  '/sys/@notify',0
+;-------------------------------------------------------------------------------
 align 4
 main_loop:
     mcall   SF_WAIT_EVENT
@@ -617,6 +635,9 @@ LOAD_ICONS:
   @@:
     ; try to open shr memory, if failed then make 5 attempts more
     mcall   SF_SYS_MISC, SSF_MEM_OPEN,icons_resname ; 0 = SHM_READ
+    cmp     edx, 5
+    jz      error_exit
+
     cmp     eax,0
     jne     @f
     inc     esi
