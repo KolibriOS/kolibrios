@@ -632,17 +632,16 @@ endp
 ;-------------------------------------------------------------------------------
 LOAD_ICONS:
     mov     esi, 0 ; esi is a counter of mem_open attempts
+    mov     edi, esi
   @@:
     ; try to open shr memory, if failed then make 5 attempts more
     mcall   SF_SYS_MISC, SSF_MEM_OPEN,icons_resname ; 0 = SHM_READ
-    cmp     edx, 5
-    jz      error_exit
 
     cmp     eax,0
     jne     @f
-    inc     esi
-    cmp     esi,10
-    je      exit
+    inc     edi
+    cmp     edi,10
+    je      error_exit
     mcall   SF_SLEEP, 70
     jmp     @b
   @@:
