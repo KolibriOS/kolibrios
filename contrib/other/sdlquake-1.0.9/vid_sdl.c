@@ -4,6 +4,11 @@
 #include "quakedef.h"
 #include "d_local.h"
 
+#ifdef _KOLIBRI
+#include <sys/ksys.h>
+#endif
+
+
 viddef_t    vid;                // global video state
 unsigned short  d_8to16table[256];
 
@@ -78,10 +83,12 @@ void    VID_Init (unsigned char *palette)
             Sys_Error("VID: Bad window width/height\n");
     }
 
-    // Set video width, height and flags
     flags = (SDL_SWSURFACE|SDL_HWPALETTE);
+#ifndef _KOLIBRI
+    // Set video width, height and flags
     if ( COM_CheckParm ("-fullscreen") )
         flags |= SDL_FULLSCREEN;
+#endif
 
     // Initialize display 
     if (!(screen = SDL_SetVideoMode(vid.width, vid.height, 8, flags)))
@@ -323,12 +330,15 @@ void IN_Init (void)
 {
     if ( COM_CheckParm ("-nomouse") )
         return;
+
+    SDL_WM_GrabInput(SDL_GRAB_ON);
     mouse_x = mouse_y = 0.0;
     mouse_avail = 1;
 }
 
 void IN_Shutdown (void)
 {
+    SDL_WM_GrabInput(SDL_GRAB_OFF);
     mouse_avail = 0;
 }
 
@@ -338,7 +348,9 @@ void IN_Commands (void)
     int mouse_buttonstate;
    
     if (!mouse_avail) return;
-   
+
+    SDL_WM_GrabInput(SDL_GRAB_ON);
+
     i = SDL_GetMouseState(NULL, NULL);
     /* Quake swaps the second and third buttons */
     mouse_buttonstate = (i & ~0x06) | ((i & 0x02)<<1) | ((i & 0x04)>>1);
@@ -356,7 +368,7 @@ void IN_Move (usercmd_t *cmd)
 {
     if (!mouse_avail)
         return;
-   
+
     mouse_x *= sensitivity.value;
     mouse_y *= sensitivity.value;
    

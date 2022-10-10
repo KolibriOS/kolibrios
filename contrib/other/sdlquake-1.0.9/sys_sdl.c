@@ -11,13 +11,17 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#include <kos32sys.h>
 #if !defined(__WIN32__) && !defined(_KOLIBRI)
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/mman.h>
+#endif
+
+#ifdef _KOLIBRI
+#include <sys/ksys.h>
+#include <libgen.h>
 #endif
 
 #include "quakedef.h"
@@ -270,7 +274,7 @@ void Sys_mkdir (char *path)
 #ifdef __WIN32__
     mkdir (path);
 #else
-    //mkdir (path, 0777);
+    mkdir (path, 0777);
 #endif
 }
 
@@ -293,11 +297,11 @@ double Sys_FloatTime (void)
 #if defined(_KOLIBRI)
 	static int starttime = 0;
 
-	if ( ! starttime )
-		__asm__ __volatile__("int $0x40" : "=a"(starttime) : "a"(26), "b"(9));
+	if (!starttime) {
+		starttime = _ksys_get_tick_count();
+	}
 
-        int curtime;
-        __asm__ __volatile__("int $0x40" : "=a"(curtime) : "a"(26), "b"(9));
+	int curtime = _ksys_get_tick_count();
 	return (curtime-starttime)*0.01;
 #elif defined(__WIN32__)
 
@@ -364,7 +368,7 @@ void Sys_LineRefresh(void)
 void Sys_Sleep(void)
 {
 #ifdef _KOLIBRI
-	delay(1);
+	_ksys_delay(1);
 #else
 	SDL_Delay(1);
 #endif
@@ -384,12 +388,7 @@ void moncontrol(int x)
 
 int main (int c, char **v)
 {
-    #ifdef _KOLIBRI
-        #include "kolibri.h"
-        _ksys_setcwd(dirname(v[0]));
-    #endif
-
-	double		time, oldtime, newtime;
+	double time, oldtime, newtime;
 	quakeparms_t parms;
 	extern int vcrFile;
 	extern qboolean recording;
@@ -400,6 +399,8 @@ int main (int c, char **v)
 #ifndef _KOLIBRI
 //	signal(SIGFPE, floating_point_exception_handler);
 	signal(SIGFPE, SIG_IGN);
+#else
+	basedir = dirname(v[0]);
 #endif
 
 	parms.memsize = 8*1024*1024;
@@ -429,7 +430,7 @@ int main (int c, char **v)
             if (time < sys_ticrate.value && (vcrFile == -1 || recording) )
             {
 #ifdef _KOLIBRI
-                delay(1);
+                _ksys_delay(1);
 #else
                 SDL_Delay (1);
 #endif
