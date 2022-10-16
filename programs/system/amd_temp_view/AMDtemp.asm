@@ -1,4 +1,4 @@
-;;      Copyright (C) 2021-2022, Michail Frolov aka Doczom
+;;      Copyright (C) 2021-2022, Michael Frolov aka Doczom
 
 macro send_notify send_str{
       mov     dword[run_notify.message], send_str
@@ -22,10 +22,10 @@ include '..\..\macros.inc'
 include '..\..\KOSfuncs.inc'
 include '..\..\dll.inc'
 
-; include 'parser.inc'    ; this modul does not work
+include 'parser.inc'
 START:
 ;init heap
-        mcall  68, 11
+        mcall   68, 11
 ; load lib
         stdcall dll.Load, @IMPORT
         or      eax, eax
@@ -33,52 +33,56 @@ START:
 ;       init opendial
         invoke OpenDialog_Init, OpenDialog_data
 ; init futex
-        mcall SF_FUTEX, SSF_CREATE, futex_cmd
-        mov    [futex_handle], eax
-; parse cmd_line TODO: fix parser and testing
-        ;call    pars_cmd
-        ;test    eax, eax
-        ;jnz     exit
+        mcall   SF_FUTEX, SSF_CREATE, futex_cmd
+        mov     [futex_handle], eax
+; parse cmd_line
+        cmp     byte[PATH], 0
+        jz      @f
+        call    parse_cmd
+@@:
 ;;установка маска событий на получение переписовки и нажатия на кнопку
-       mcall SF_SET_EVENTS_MASK,0x05
+        mcall   SF_SET_EVENTS_MASK, 0x05
 ;load driver
-       mcall SF_SYS_MISC, SSF_LOAD_DRIVER_PE, [drv_ptr], 0
-       mov dword[drv_struct.handl],eax
-       test eax,eax ;проверка загрузки
-       jz  error_drv
+        mcall   SF_SYS_MISC, SSF_LOAD_DRIVER_PE, [drv_ptr], 0
+        mov     dword[drv_struct.handl], eax
+        test    eax, eax ;проверка загрузки
+        jz      error_drv
 main:
-       mcall SF_SYS_MISC, SSF_CONTROL_DRIVER, drv_struct
-       cmp   byte[PATH], 0
-       jz    still
-       ;call add_file
-still:           ;void main()
-       call draw
+        mcall   SF_SYS_MISC, SSF_CONTROL_DRIVER, drv_struct
+        cmp     dword[save_ptr], 0
+        jz      still
+        mcall   51, 1, thread_auto_save, thread_auto_save.stack
+        cmp     eax, -1
+        jz      still
+        mov     dword[PID_AUTO_SAVE], eax
+still:          ;void main()
+        call    draw
 ;;ожидание события в течении 2000мс
-       mcall SF_WAIT_EVENT_TIMEOUT,200 ;2 second
-       dec eax                   ; redraw request ?
-       je   still
-       cmp eax,2             ;button
-       jz button
-       jmp still
+        mcall   SF_WAIT_EVENT_TIMEOUT, 200 ;2 second
+        dec     eax      ; redraw request ?
+        je      still
+        cmp     eax, 2   ;button
+        jz      button
+        jmp     still
 
 button:
-       mcall SF_GET_BUTTON
+        mcall   SF_GET_BUTTON
 
-       cmp eax,1
-       jz still
-       dec ah
-       je exit
+        cmp     eax, 1
+        jz      still
+        dec     ah
+        je      exit
 ;; id button micro_info = 8
-       cmp ah,7 ;// ah-1=7
-       jnz .no_micro_info
-       xor byte[flag_micro_info],1
-       jmp still
+        cmp     ah, 7 ;// ah-1=7
+        jnz     .no_micro_info
+        xor     byte[flag_micro_info], 1
+        jmp     still
 .no_micro_info:
 ; id button log = 9
-        cmp  ah, 8 ; 9-1
-        jnz  .no_log_button
-        cmp  dword[text_log_butt], _start_log
-        jnz  .log_stop
+        cmp     ah, 8 ; 9-1
+        jnz     .no_log_button
+        cmp     dword[text_log_butt], _start_log
+        jnz     .log_stop
 
         cmp     dword[log_ptr], 0
         jnz     @f
@@ -101,310 +105,310 @@ button:
         movsw
         movsb
 @@:
-        mcall 51, 1, thread_timer, thread_timer.stack
-        mov   dword[text_log_butt], _stop_log
-        jmp still
+        mcall   51, 1, thread_timer, thread_timer.stack
+        mov     dword[text_log_butt], _stop_log
+        jmp     still
 .log_stop:
         ; пробуждаем поток через фьютекс
-        mov      byte[futex_cmd], 1  ; stop thread
-        mcall    SF_FUTEX, SSF_WAKE, [futex_handle], 1
-        mcall    68, 1 ; переключаем потоки, для того, чтобы сообщение пришло потоку с таймером
+        mov     byte[futex_cmd], 1  ; stop thread
+        mcall   SF_FUTEX, SSF_WAKE, [futex_handle], 1
+        mcall   68, 1 ; переключаем потоки, для того, чтобы сообщение пришло потоку с таймером
 
         ; меняем текст в кнопке
         mov     dword[text_log_butt], _start_log
         jmp     still
 .err_alloc_mem:
         send_notify Error_text.alloc_1
-        jmp  still
+        jmp     still
 .no_log_button:
 ; id button save = 10
-        cmp  ah, 9 ; 10-1
-        jnz  still
-        cmp  dword[log_ptr], 0
-        jnz  @f
+        cmp     ah, 9 ; 10-1
+        jnz     still
+        cmp     dword[log_ptr], 0
+        jnz     @f
         send_notify Error_text.save_log
-        jmp  still
+        jmp     still
 @@:
         cmp     byte[futex_cmd], 2 ; 2 - save file
         jnz     @f
         send_notify Error_text.save_log_1
-        jmp  still
+        jmp     still
 @@:
         ; тут вызов функции openDialog
         invoke  OpenDialog_Start, OpenDialog_data
 
-        cmp [OpenDialog_data.status],1
-        jne   still
+        cmp     [OpenDialog_data.status], 1
+        jne     still
 
         ;mov      dword[log_path], openfile_path
 
         ; пробуждаем поток через фьютекс
-        mov      byte[futex_cmd], 2  ; save_log
-        mcall    SF_FUTEX, SSF_WAKE, [futex_handle], 1
-        test     eax, eax
-        jnz      still
+        mov     byte[futex_cmd], 2  ; save_log
+        mcall   SF_FUTEX, SSF_WAKE, [futex_handle], 1
+        test    eax, eax
+        jnz     still
 
-        mcall 51, 1, thread_timer, thread_timer.stack
-        mcall    68, 1 ; переключаем потоки, для того, чтобы сообщение пришло потоку с таймером
+        mcall   51, 1, thread_timer, thread_timer.stack
+        mcall   68, 1 ; переключаем потоки, для того, чтобы сообщение пришло потоку с таймером
 @@:
-        mov      byte[futex_cmd], 3  ; save_log  & exit
-        mcall    SF_FUTEX, SSF_WAKE, [futex_handle], 1
-        test     eax, eax
-        jz       @b
-        mcall    68, 1 ; переключаем потоки, для того, чтобы сообщение пришло потоку с таймером
-        jmp  still
+        mov     byte[futex_cmd], 3  ; save_log  & exit
+        mcall   SF_FUTEX, SSF_WAKE, [futex_handle], 1
+        test    eax, eax
+        jz      @b
+        mcall   68, 1 ; переключаем потоки, для того, чтобы сообщение пришло потоку с таймером
+        jmp     still
 
 align 4
 draw:
-       mcall SF_REDRAW, SSF_BEGIN_DRAW
-       mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+        mcall   SF_REDRAW, SSF_BEGIN_DRAW
+        mcall   SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
 
-       mov eax, dword[sc.work_graph]
-       mov dword[frame_struct.FR_OUTER_COLOR], eax
-       mov eax, dword[sc.work_light]
-       mov dword[frame_struct.FR_INNER_COLOR], eax
-       mov eax, dword[sc.work_text]
-       mov dword[frame_struct.FR_FORE_COLOR], eax
-       mov eax, dword[sc.work]
-       mov dword[frame_struct.FR_BACK_COLOR], eax
+        mov     eax, dword[sc.work_graph]
+        mov     dword[frame_struct.FR_OUTER_COLOR], eax
+        mov     eax, dword[sc.work_light]
+        mov     dword[frame_struct.FR_INNER_COLOR], eax
+        mov     eax, dword[sc.work_text]
+        mov     dword[frame_struct.FR_FORE_COLOR], eax
+        mov     eax, dword[sc.work]
+        mov     dword[frame_struct.FR_BACK_COLOR], eax
 
 
-       mov eax,SF_CREATE_WINDOW
-       mov ebx,0x00ff0132
-       mov ecx,0x00150114   ; link with  80 line
-       mov edx,0x14000000
-       add edx,[sc.work]
-       mov edi,title
-       mcall
+        mov     eax, SF_CREATE_WINDOW
+        mov     ebx, 0x00ff0132
+        mov     ecx, 0x00150114   ; link with  80 line
+        mov     edx, 0x14000000
+        add     edx, [sc.work]
+        mov     edi, title
+        mcall
 
-       mcall SF_SYS_MISC, SSF_CONTROL_DRIVER, drv_struct
+        mcall   SF_SYS_MISC, SSF_CONTROL_DRIVER, drv_struct
 
-       cmp byte[flag_micro_info],1
-       mov eax,SF_CHANGE_WINDOW
-       mov ebx,-1
-       mov ecx,ebx;-1
-       jz draw.micro
+        cmp     byte[flag_micro_info], 1
+        mov     eax, SF_CHANGE_WINDOW
+        mov     ebx, -1
+        mov     ecx, ebx
+        jz      draw.micro
 
-       mov esi,0x00000115     ; link with 58 line
-       mov edx,0x00000132
-       mcall
+        mov     esi,0x00000115     ; link with 58 line
+        mov     edx,0x00000132
+        mcall
 ;;создание кнопки переключения режима
-       mov eax,SF_DEFINE_BUTTON
-       mov ebx,0x00fc0010
-       mov ecx,0x001d0015
-       mov edx,0x00000008
-       mov esi,[sc.work_button]
-       mcall
+        mov     eax, SF_DEFINE_BUTTON
+        mov     ebx, 0x00fc0010
+        mov     ecx, 0x001d0015
+        mov     edx, 0x00000008
+        mov     esi, [sc.work_button]
+        mcall
 ;;вывод знака на кнопку
 ;;так как функция writeText не должна изменять регистры
 ;;присвоения в регистры eax и ecx происходят только 1 раз
 ;; Далее, так как текст выводится почти всегда с одинаковым
 ;; смещением вниз(равным 15)  дынные(строки) имеют одинаковый
 ;; размер , то используется инструкция add
-       mov eax,SF_DRAW_TEXT
-       mov ebx,0x01000020
-       mov ecx,0x81000000
-       add ecx,[sc.work_text]
-       mov edx,_up
-       mcall
+        mov     eax, SF_DRAW_TEXT
+        mov     ebx, 0x01000020
+        mov     ecx, 0x81000000
+        add     ecx, [sc.work_text]
+        mov     edx, _up
+        mcall
 
        ;создание кнопки запуска/выключения лога
-       mov eax,SF_DEFINE_BUTTON
-       mov ebx,0x00a00070
-       mov ecx,0x004a0015
-       mov edx,0x00000009 ;id button
-       mov esi,[sc.work_button]
-       mcall
-       ; вывод текста
-       mov eax,SF_DRAW_TEXT
-       mov ebx,0x00a8004c
-       mov ecx,0x90000000
-       add ecx,[sc.work_text]
-       mov edx,[text_log_butt]
-       mcall
+        mov     eax, SF_DEFINE_BUTTON
+        mov     ebx, 0x00a00070
+        mov     ecx, 0x004a0015
+        mov     edx, 0x00000009 ;id button
+        mov     esi, [sc.work_button]
+        mcall
+        ; вывод текста
+        mov     eax, SF_DRAW_TEXT
+        mov     ebx, 0x00a8004c
+        mov     ecx, 0x90000000
+        add     ecx, [sc.work_text]
+        mov     edx, [text_log_butt]
+        mcall
 
-       ;создание кнопки сохранения лога в файл
-       mov eax,SF_DEFINE_BUTTON
-       mov ebx,0x00a00070
-       mov ecx,0x00630015
-       mov edx,0x0000000a ; id=10
-       mov esi,[sc.work_button]
-       mcall
-       ; вывод текста
-       mov eax,SF_DRAW_TEXT
-       mov ebx,0x00a80065
-       mov ecx,0x90000000
-       add ecx,[sc.work_text]
-       mov edx,_save_log
-       mcall
+        ;создание кнопки сохранения лога в файл
+        mov     eax, SF_DEFINE_BUTTON
+        mov     ebx, 0x00a00070
+        mov     ecx, 0x00630015
+        mov     edx, 0x0000000a ; id=10
+        mov     esi, [sc.work_button]
+        mcall
+        ; вывод текста
+        mov     eax, SF_DRAW_TEXT
+        mov     ebx, 0x00a80065
+        mov     ecx, 0x90000000
+        add     ecx, [sc.work_text]
+        mov     edx, _save_log
+        mcall
 
-       ;вывод "Tctl:"
-       mov ebx,0x00150035
-       mov ecx,0x90000000
-       add ecx,[sc.work_text]
-       mov edx,_Tctl
-       mcall
+        ;вывод "Tctl:"
+        mov     ebx, 0x00150035
+        mov     ecx, 0x90000000
+        add     ecx, [sc.work_text]
+        mov     edx, _Tctl
+        mcall
 
-       ;вывод "Tmax:"
-       add ebx, 0x15
-       add edx,7
-       mcall
+        ;вывод "Tmax:"
+        add      ebx, 0x15
+        add      edx, 7
+        mcall
 
-       ;вывод "Tcrit hyst:"
-       ;mov ebx,0x0015005f
-       add ebx, 0x15
-       add edx,7
-       mcall
+        ;вывод "Tcrit hyst:"
+        ;mov ebx,0x0015005f
+        add     ebx, 0x15
+        add     edx, 7
+        mcall
 
-       ;вывод "Tcrit:"
-       add ebx,0x15;0x2a
-       add edx,7
-       mcall
+        ;вывод "Tcrit:"
+        add     ebx, 0x15;0x2a
+        add     edx, 7
+        mcall
 
-       ;вывод "Tdie:"
-       ;mov ebx,0x00150089 ;0x00a5005f
-       add ebx, 0x15
-       add edx,7
-       mcall
+        ;вывод "Tdie:"
+        ;mov ebx,0x00150089 ;0x00a5005f
+        add      ebx, 0x15
+        add      edx, 7
+        mcall
 
-       ;вывод "Tccd1:"
-       add ebx,0x2b;0x19
-       add edx,7
-       mcall
+        ;вывод "Tccd1:"
+        add     ebx, 0x2b;0x19
+        add     edx, 7
+        mcall
 
-       ;вывод "Tccd2:"
-       add ebx,0x15
-       add edx,7
-       mcall
+        ;вывод "Tccd2:"
+        add     ebx, 0x15
+        add     edx, 7
+        mcall
 
-       ;вывод "Tccd3:"
-       add ebx,0x15
-       add edx,7
-       mcall
+        ;вывод "Tccd3:"
+        add     ebx, 0x15
+        add     edx, 7
+        mcall
 
-       ;вывод "Tccd4:"
-       add ebx,0x15
-       add edx,7
-       mcall
+        ;вывод "Tccd4:"
+        add     ebx, 0x15
+        add     edx, 7
+        mcall
 
-       ;вывод "Tccd5:"
-       mov ebx,0x009d00b4
-       add edx,7
-       mcall
+        ;вывод "Tccd5:"
+        mov     ebx, 0x009d00b4
+        add     edx, 7
+        mcall
 
-       ;вывод "Tccd6:"
-       add ebx,0x15
-       add edx,7
-       mcall
+        ;вывод "Tccd6:"
+        add     ebx, 0x15
+        add     edx, 7
+        mcall
 
-       ;вывод "Tccd7:"
-       add ebx,0x15
-       add edx,7
-       mcall
+        ;вывод "Tccd7:"
+        add     ebx, 0x15
+        add     edx, 7
+        mcall
 
-       ;вывод "Tccd8:"
-       add ebx,0x15
-       add edx,7
-       mcall
+        ;вывод "Tccd8:"
+        add     ebx, 0x15
+        add     edx, 7
+        mcall
 ;;;;;;input data driver;;;;;;;;;
-       mov eax,0x004a0035  ;0x004a0020
-       mov ebx, drv_data.Tctl  ;вывод данных от драйвера
-       call write_data
+        mov     eax, 0x004a0035  ;0x004a0020
+        mov     ebx, drv_data.Tctl  ;вывод данных от драйвера
+        call    write_data
 
-       add eax,0x15
-       mov byte[write_data.defaunt_color], 1
-       mov ebx, drv_data.Tmax
-       call write_data
+        add     eax, 0x15
+        mov     byte[write_data.defaunt_color], 1
+        mov     ebx, drv_data.Tmax
+        call    write_data
 
-       add eax,0x2a
-       mov byte[write_data.defaunt_color], 1
-       mov ebx, drv_data.Tcrit
-       call write_data
+        add     eax, 0x2a
+        mov     byte[write_data.defaunt_color], 1
+        mov     ebx, drv_data.Tcrit
+        call    write_data
 
-       add eax,0x40;0x19
-       mov ebx, drv_data.Tccd1
-       call write_data
+        add     eax, 0x40;0x19
+        mov     ebx, drv_data.Tccd1
+        call    write_data
 
-       add eax,0x15
-       add ebx,4
-       call write_data
+        add     eax, 0x15
+        add     ebx, 4
+        call    write_data
 
-       add eax,0x15
-       add ebx,4
-       call write_data
+        add     eax, 0x15
+        add     ebx, 4
+        call    write_data
 
-       add eax,0x15
-       add ebx,4
-       call write_data
+        add     eax, 0x15
+        add     ebx, 4
+        call    write_data
 
-       mov eax,0x00d000b4
-       add ebx,4
-       call write_data
+        mov     eax, 0x00d000b4
+        add     ebx, 4
+        call    write_data
 
-       add eax,0x15
-       add ebx,4
-       call write_data
+        add     eax, 0x15
+        add     ebx, 4
+        call    write_data
 
-       add eax,0x15
-       add ebx,4
-       call write_data
+        add     eax, 0x15
+        add     ebx, 4
+        call    write_data
 
-       add eax,0x15
-       add ebx,4
-       call write_data
+        add     eax, 0x15
+        add     ebx, 4
+        call    write_data
 
-       mov eax,0x004a0089
-       mov ebx, drv_data.Tdie
-       mov byte[write_data.defaunt_color], 1
-       call write_data
+        mov     eax, 0x004a0089
+        mov     ebx, drv_data.Tdie
+        mov     byte[write_data.defaunt_color], 1
+        call    write_data
 
-       mov eax,0x004a005f
-       mov byte[write_data.defaunt_color], 1
-       mov ebx, drv_data.Tcrit_hyst
-       call write_data
+        mov     eax, 0x004a005f
+        mov     byte[write_data.defaunt_color], 1
+        mov     ebx, drv_data.Tcrit_hyst
+        call    write_data
 
-       mov       dword[frame_struct.FR_WIDTH], 0x0f008a
-       mov       dword[frame_struct.FR_HEIGHT], 0x280075
-       mov       dword[frame_struct.FR_TEXT], frame_text_1
-       invoke    frame_draw, frame_struct
+        mov     dword[frame_struct.FR_WIDTH], 0x0f008a
+        mov     dword[frame_struct.FR_HEIGHT], 0x280075
+        mov     dword[frame_struct.FR_TEXT], frame_text_1
+        invoke  frame_draw, frame_struct
 
-       mov       dword[frame_struct.FR_WIDTH],0x0f0114
-       mov       dword[frame_struct.FR_HEIGHT], 0xa70060
-       mov       dword[frame_struct.FR_TEXT], frame_text_2
-       invoke    frame_draw, frame_struct
+        mov     dword[frame_struct.FR_WIDTH],0x0f0114
+        mov     dword[frame_struct.FR_HEIGHT], 0xa70060
+        mov     dword[frame_struct.FR_TEXT], frame_text_2
+        invoke  frame_draw, frame_struct
 
-       jmp @f
+        jmp     @f
 .micro:
-       mov esi,0x00000035
-       mov edx,0x000000c0
-       mcall
+        mov     esi, 0x00000035
+        mov     edx, 0x000000c0
+        mcall
 
-       mov eax,SF_DEFINE_BUTTON
-       mov ebx,0x00a70010
-       mov ecx,0x001d0015
-       mov edx,eax;0x00000008
-       mov esi,[sc.work_button]
-       mcall
+        mov     eax, SF_DEFINE_BUTTON
+        mov     ebx, 0x00a70010
+        mov     ecx, 0x001d0015
+        mov     edx, eax;0x00000008
+        mov     esi, [sc.work_button]
+        mcall
 
-       mov eax,SF_DRAW_TEXT;4
-       mov ebx,0x000a0020
-       mov ecx,0x90000000
-       add ecx,[sc.work_text]
-       mov edx,_Tctl
-       mcall
+        mov     eax, SF_DRAW_TEXT
+        mov     ebx, 0x000a0020
+        mov     ecx, 0x90000000
+        add     ecx, [sc.work_text]
+        mov     edx, _Tctl
+        mcall
 
-       add ebx,0x00a00000
-       mov ecx,0x81000000
-       add ecx,[sc.work_text]
-       mov edx,_down
-       mcall
+        add     ebx, 0x00a00000
+        mov     ecx, 0x81000000
+        add     ecx, [sc.work_text]
+        mov     edx, _down
+        mcall
 
-       mov eax,0x004a0020
-       mov ebx, drv_data.Tctl
-       call write_data
+        mov     eax, 0x004a0020
+        mov     ebx, drv_data.Tctl
+        call    write_data
 @@:
-       mcall SF_REDRAW, SSF_END_DRAW
-       ret
+        mcall SF_REDRAW, SSF_END_DRAW
+        ret
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; procedure write_data(eax, ebx);
 ;; eax=x*65536+y
@@ -414,59 +418,59 @@ draw:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 4
 write_data:
-       push eax  ;save koord
-       push ebx  ;save *value
-       ;mov edx,[ebx]  ;edx=value
-       mov esi,ebx
-       cmp dword[ebx],-1   ; flag ziro data
-       mov ecx,0x90000000
-       mov ebx,eax
-       jnz @f
-       ;write n/a
-       add ecx,[sc.work_text]
-       mov eax,SF_DRAW_TEXT
-       add ebx, 0x00100000
-       mov edx,_NA
-       mcall
-       pop ebx
-       pop eax
-       ret
+        push    eax  ;save koord
+        push    ebx  ;save *value
+        ;mov edx,[ebx]  ;edx=value
+        mov     esi, ebx
+        cmp     dword[ebx], -1   ; flag ziro data
+        mov     ecx, 0x90000000
+        mov     ebx, eax
+        jnz     @f
+        ;write n/a
+        add     ecx, [sc.work_text]
+        mov     eax, SF_DRAW_TEXT
+        add     ebx, 0x00100000
+        mov     edx, _NA
+        mcall
+        pop     ebx
+        pop     eax
+        ret
 @@:
-       ;set color
-       push eax
-       push edx
-       push ecx
-       mov  dword[.color_text], 0x000000cf  ;blue
-       cmp  byte[.defaunt_color], 1
-       jnz  @f
-       ;mov  dword[.color_text], 0x000000cf  ;blue
-       jmp  .end_set_color
+        ;set color
+        push    eax
+        push    edx
+        push    ecx
+        mov     dword[.color_text], 0x000000cf  ;blue
+        cmp     byte[.defaunt_color], 1
+        jnz     @f
+        ;mov  dword[.color_text], 0x000000cf  ;blue
+        jmp     .end_set_color
 @@:
-       cmp  dword[drv_data.Tcrit], -1
-       jz   .end_set_color
-       cmp  dword[drv_data.Tcrit], 0
-       jz   .end_set_color
+        cmp     dword[drv_data.Tcrit], -1
+        jz      .end_set_color
+        cmp     dword[drv_data.Tcrit], 0
+        jz      .end_set_color
 
-       xor  edx, edx
-       mov  eax, [esi]
-       imul eax, 10
-       xor  edx, edx
-       div  dword[drv_data.Tcrit]
-       cmp  eax, 9
-       jb  @f
-       mov  dword[.color_text],0x00d50000 ; red
-       jmp  .end_set_color
+        xor     edx, edx
+        mov     eax, [esi]
+        imul    eax, 10
+        xor     edx, edx
+        div     dword[drv_data.Tcrit]
+        cmp     eax, 9
+        jb      @f
+        mov     dword[.color_text], 0x00d50000 ; red
+        jmp     .end_set_color
 @@:
-       cmp  eax, 7
-       jb  @f
-       mov  dword[.color_text],0x00f07000 ; orange
-       jmp  .end_set_color
+        cmp     eax, 7
+        jb      @f
+        mov     dword[.color_text], 0x00f07000 ; orange
+        jmp     .end_set_color
 @@:
-       mov  dword[.color_text],0x0000a500 ; green
+        mov     dword[.color_text], 0x0000a500 ; green
 .end_set_color:
-       pop  ecx
-       pop  edx
-       pop  eax
+        pop     ecx
+        pop     edx
+        pop     eax
        ;write_value
 ; value / 1000 =value_in_1
 ;input value_in_1,koord_start
@@ -476,71 +480,71 @@ write_data:
 ;input ".", koord_start+dot_koord*size_w(char)
 ;value-value_in_1 = value_in_2
 ;input value_in_2, koord_start+dot_kord+1*size_w(char=8)
-       push eax ;save koord
-       mov eax,[esi] ; eax = value
-       xor edx,edx
-       mov ebx,1000
-       div ebx
-       cmp eax, 100
-       jae .dot_4
-       cmp eax, 10
-       jae .dot_3       ; ----|
-       mov edi, 0x10    ;     |
-       jmp .write       ;     |
-.dot_4:                 ;     |
-       xor edi, edi     ;     |
-       jmp .write       ;     |
-.dot_3:                 ;   <-|
-       mov edi, 8
+        push    eax ;save koord
+        mov     eax, [esi] ; eax = value
+        xor     edx, edx
+        mov     ebx, 1000
+        div     ebx
+        cmp     eax, 100
+        jae     .dot_4
+        cmp     eax, 10
+        jae     .dot_3    ; ----|
+        mov     edi, 0x10 ;     |
+        jmp     .write    ;     |
+.dot_4:                   ;     |
+        xor     edi, edi  ;     |
+        jmp     .write    ;     |
+.dot_3:                   ;   <-|
+        mov     edi, 8
 .write:
-       mov ecx,edx
-       pop edx       ; edx = koord
-       push ecx       ;save mask string
+        mov     ecx, edx
+        pop     edx     ; edx = koord
+        push    ecx     ;save mask string
 
-       shl  edi, 16
-       push edx ; save koord
-       add  edx, edi
-       mov ecx,eax   ;ecx = value/1000
-       mov ebx,0x80030000 ; ebx = mask sysfn47
-       mov eax,SF_DRAW_NUMBER
-       mov esi,0x10000000
-       add esi,[.color_text]
-       mcall
+        shl     edi, 16
+        push    edx ; save koord
+        add     edx, edi
+        mov     ecx, eax   ;ecx = value/1000
+        mov     ebx, 0x80030000 ; ebx = mask sysfn47
+        mov     eax, SF_DRAW_NUMBER
+        mov     esi, 0x10000000
+        add     esi, [.color_text]
+        mcall
 
-       pop  ebx ; ebx = koord
-       add  ebx, 0x00180000 ; x + x_size_char*3
-       mov eax,SF_DRAW_TEXT
-       mov ecx,0x90000000
-       add ecx,[.color_text]
-       mov edx,_dot
-       mcall
+        pop  ebx ; ebx = koord
+        add     ebx, 0x00180000 ; x + x_size_char*3
+        mov     eax, SF_DRAW_TEXT
+        mov     ecx, 0x90000000
+        add     ecx, [.color_text]
+        mov     edx, _dot
+        mcall
 
-       mov eax,SF_DRAW_NUMBER
-       mov edx,ebx
-       mov esi,0x10000000
-       add esi,[.color_text]
-       mov ebx,0x00030000
+        mov     eax, SF_DRAW_NUMBER
+        mov     edx, ebx
+        mov     esi, 0x10000000
+        add     esi, [.color_text]
+        mov     ebx, 0x00030000
 
-       add edx,0x80000
-       pop ecx
-       mcall
-       mov eax,SF_DRAW_TEXT
-       mov ebx,edx
-       mov ecx,0x80000000
-       add ecx,[.color_text]
-       add ebx,0x180000
-       mov edx,_t
-       mcall
+        add     edx, 0x80000
+        pop     ecx
+        mcall
+        mov     eax, SF_DRAW_TEXT
+        mov     ebx, edx
+        mov     ecx, 0x80000000
+        add     ecx, [.color_text]
+        add     ebx, 0x180000
+        mov     edx, _t
+        mcall
 
-       mov ecx,0x90000000
-       add ecx,[.color_text]
-       add ebx,0x60000
-       mov edx,_C
-       mcall
-       pop ebx
-       pop eax
-       mov byte[.defaunt_color], 0
-       ret
+        mov     ecx, 0x90000000
+        add     ecx, [.color_text]
+        add     ebx, 0x60000
+        mov     edx, _C
+        mcall
+        pop     ebx
+        pop     eax
+        mov     byte[.defaunt_color], 0
+        ret
 .color_text:    rd 1 ; color input temp
 .defaunt_color: rb 1 ; flag set color
 ;; end proc
@@ -548,18 +552,19 @@ write_data:
 error_drv:
        send_notify Error_text
 exit:
-       mov      byte[futex_cmd], 2
-       mcall    SF_FUTEX, SSF_WAKE, [futex_handle], 1
-       mcall    68, 1 ; переключаем потоки, для того, чтобы сообщение пришло потоку с таймером
-       ; destroy futex
-       mcall    SF_FUTEX, SSF_DESTROY, [futex_handle]
-       mcall    68, 13, [log_ptr] ; free page
+        mov      byte[futex_cmd], 2
+        mcall    SF_FUTEX, SSF_WAKE, [futex_handle], 1
+        mcall    68, 1 ; переключаем потоки, для того, чтобы сообщение пришло потоку с таймером
+        ; destroy futex
+        mcall    SF_FUTEX, SSF_DESTROY, [futex_handle]
+        mcall    68, 13, [log_ptr] ; free page
 
-       mcall SF_TERMINATE_PROCESS
+        mcall    18, 18, dword[PID_AUTO_SAVE]
+        mcall SF_TERMINATE_PROCESS
 
 err_load_lib:
-       send_notify Error_text.load_lib
-       mcall SF_TERMINATE_PROCESS
+        send_notify Error_text.load_lib
+        mcall SF_TERMINATE_PROCESS
 
 align 4
 index_item:
@@ -654,14 +659,14 @@ thread_timer:
         movsd
         movsd
 
-;        cmp     dword[save_file], 0
-;        jnz     .no_save_mode
-;        push    dword[log_path]
-;        mov     eax, [save_ptr]
-;        mov     [log_path], eax
-;        mcall   70, file_log
-;        pop     dword[log_path]
-;.no_save_mode:
+        cmp     dword[save_ptr], 0
+        jz      .no_save_mode
+        push    dword[log_path]
+        mov     eax, [save_ptr]
+        mov     [log_path], eax
+        mcall   70, file_log
+        pop     dword[log_path]
+.no_save_mode:
         jmp     @b
 .err_alloc_2:
         send_notify  Error_text.alloc_2
@@ -675,6 +680,51 @@ thread_timer:
 .exit:
         mov     byte[futex_cmd], 0x00
         mcall   -1
+
+thread_auto_save:
+        mcall   40, 0  ;clear event mask
+        ;calculate first data in file(4 value border graphic)
+        mov     eax,[drv_data.Tmax]
+        mov     ebx, graph_start_1.new_data
+        call    int_to_str
+        ;create file
+        mcall   70, .file
+        mov     dword[.file], 3
+        mov     dword[.log_size], 20
+        mov     dword[.log_offset], 19
+        mov     dword[.log_ptr], graph_start_1.new_data
+@@:
+        mcall   5, 100*60
+        ; add new item in file
+        push    dword[.log_offset]
+        mov     dword[.log_size], 4
+        mov     dword[.log_offset], 2
+        mov     eax,[.index_item]
+        imul    eax,1000
+        mov     ebx, graph_start_1.new_data
+        call    int_to_str
+        mcall SF_FILE, .file
+        inc     dword[.index_item]
+        pop     dword[.log_offset]
+        mov     dword[.log_size], 20
+        ; get string y koord
+        mov     eax,[drv_data.Tctl]
+        mov     ebx, graph_start_1.new_data_2
+        call    int_to_str
+        mcall SF_FILE, .file
+        add     dword[.log_offset], 20
+        jmp     @b
+        mcall   -1
+.index_item:    dd 1
+.file:
+                dd 2
+.log_offset:    dd 0
+                dd 0
+.log_size:      dd 19
+.log_ptr:       dd graph_start_1
+                db 0
+save_ptr:       dd 0 ; pointer to save file or zero
+PID_AUTO_SAVE:  dd 0 ; for break this thread
 ;Data_program;
 title       db 'AMDtemp',0
 path_drv    db '/kolibrios/drivers/sensors/k10temp.sys',0
@@ -725,8 +775,6 @@ log_path:       dd openfile_path
 futex_handle:     dd 0
 futex_cmd:        dd 0 ;1- stop 2 - save in file & no exit 3 - save in file & exit
 
-;save_file:        db 0 ; 0 - no 1 - save по старинке
-;save_ptr:         dd 0 ; pointer to save file
 drv_ptr:          dd path_drv ; pointer to path on driver
 
 frame_text_1:     db 'General info',0
@@ -799,6 +847,10 @@ run_notify:
                  dd 0
                  db '/sys/@notify',0
 align 4
+graph_start_1:  db '0 0000 0 '  ; 9 byte
+.new_data:      db '0000.0000 ' ;  10-19 byte  10 byte
+.new_data_2:    db '0000.0000 ' ;  20-29 byte  10 byte
+align 4
 graph_start:    db '0 0000 0 '  ; 9 byte
 .new_data:      db '0000.0000 ' ;  10-19 byte  10 byte
 .new_data_2:    db '0000.0000 ' ;  20-29 byte  10 byte
@@ -856,6 +908,8 @@ STACKTOP:
 
         rb      512 ; 512 byte for stack
 thread_timer.stack:
+        rb      512 ; 512 byte for stack
+thread_auto_save.stack:
 ;rb 1024
         procinfo process_information
         openfile_path:

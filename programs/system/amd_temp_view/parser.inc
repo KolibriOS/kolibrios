@@ -1,4 +1,5 @@
-pars_cmd:
+; AMDtemp -s/sd0/4/data/temp/log.grf -d"/sd0/4/data/датчик температуры com порт/sensors.sys"
+parse_cmd:
         mov     edi, PATH
         mov     ecx, 512
 .still:
@@ -9,55 +10,46 @@ pars_cmd:
         jz      .end_parser
 
         dec     edi
-        mov     ebx, edi  ;save edi
-        cmp     byte[edi],'"'
-        jnz     @f ;.skip_string
-        mov     eax, [save_file]
-        cmp     eax, [.flag_drv]
-        jae     .str_save
+        or      word[edi], 0x2020 ; переводим в нижний регистр
 
-        cmp     dword[drv_ptr], 0
-        jnz     .err
-        mov     [drv_ptr],edi
-        inc     dword[drv_ptr]
-        jmp     .skip_string
-.str_save:
-        cmp     dword[save_ptr], 0
-        jnz     .err
-        mov     [save_ptr],edi
-        inc     dword[save_ptr]
-        jmp     .skip_string
-@@:
+        cmp     word[edi], '-s'
+        jnz     @f
 
-        cmp     word[edi], 's-'
-        jnz     @f
-        cmp     dword[save_file], 0
-        jnz     @f
-        mov     [save_file], edi
-@@:
-        cmp     word[edi], 'd-'
-        jnz     @f
-        cmp     dword[.flag_drv], 0
-        jnz     @f
-        mov     [.flag_drv], edi
         add     edi, 2
+        sub     ecx, 2
+        call    .get_str
+        mov     [save_ptr],eax
+        jmp     .still
 @@:
-        cmp     edi, ebx
-        jz      .err
+        cmp     word[edi], '-d'
+        jnz     @f
+
+        add     edi, 2
+        sub     ecx, 2
+        call    .get_str
+        mov     [drv_ptr],eax
+        jmp     .still
+@@:
+        cmp     byte[edi], 0
+        jnz     @f
+.end_parser:
+        ret
+@@:
+        inc     edi
         jmp     .still
 
-.skip_string:
-        inc     edi
+.get_str:
+        push    edi
+        inc     dword[esp]
         mov     al, '"'
-        rep     scasb
-        test    ecx, ecx
-        jz      .err
-        mov     byte[edi-1], 0x00
-        jmp     .still
-.err:
-        or      eax, -1
+        cmp     byte[edi], al
+        jz      @f
+        dec     dword[esp]
+        mov     al, ' '
+        dec     edi
+@@:
+        inc     edi
+        repne   scasb
+        and     byte[edi - 1], 0
+        pop     eax
         ret
-.end_parser:
-        xor     eax, eax
-        ret
-.flag_drv:      dd 0;don`t using in other code
