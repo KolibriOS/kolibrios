@@ -83,6 +83,9 @@ sys_read:
         mov     edi, [current_process]
         mov     ebp, [edi + PROC.htab + ecx*4]
 
+        stdcall is_region_userspace, ebp, 4
+        jz      .fail
+
         cmp     [ebp + FILED.magic], 'PIPE'
         jne     .fail
         cmp     [ebp + FILED.handle], ecx
@@ -112,6 +115,9 @@ sys_write:
 
         mov     edi, [current_process]
         mov     ebp, [edi + PROC.htab+ecx*4]
+
+        stdcall is_region_userspace, ebp, 4
+        jz      .fail
 
         cmp     [ebp + FILED.magic], 'PIPE'
         jne     .fail
