@@ -39,6 +39,26 @@ START:
 no_params:
     call    find_north_bridg
 
+    test    dword[bd_id], -1 ; check zero
+    jnz     drawwindow
+
+controller_not_found:
+        push    .notify
+        dec     esp
+        push    0
+        push    0
+        push    .error_message
+        push    0
+        push    dword 7 ;SSF_START_APP
+
+        mcall   70, esp
+        add     esp, 6*4 + 1
+        mcall   -1
+.error_message:
+    db  '"KBD\nController not found" -tdE',0
+.notify:
+    db  '/sys/@notify',0
+
 drawwindow:
       mov  eax,48
       mov  ebx,3
@@ -549,6 +569,9 @@ check_parameters:
 boot_bd_enable:
 
    call    find_north_bridg
+   test    dword[bd_id], -1 ; check zero
+   jz      controller_not_found
+
    call    set_bd_stat
    mcall   -1
 
