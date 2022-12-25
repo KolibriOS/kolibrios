@@ -97,25 +97,25 @@ void main()
 		case evButton:
 			Event_ProcessButtonId(GetButtonID());
 			break;
-	  
+
 		case evKey:
 			GetKeys();
 			if (key_scancode == SCAN_CODE_ENTER) Event_ProcessButtonId(active_button_id);
-			if (window_step == WINDOW_STEP_DRIVER_LIST) 
+			if (window_step == WINDOW_STEP_DRIVER_LIST)
 			{
 				if (select_list.ProcessKey(key_scancode)) SelectList_LineChanged();
-				if (key_scancode == SCAN_CODE_TAB) 
+				if (key_scancode == SCAN_CODE_TAB)
 				{
 					ActiveButtonSwitch(11, 12);
 					Draw_DriverListWindow();
 				}
-			} 
+			}
 			break;
-		 
+
 		case evReDraw:
 			Event_DrawWindow();
 	}
-} 
+}
 
 
 void Draw_IntroWindow()
@@ -124,7 +124,7 @@ void Draw_IntroWindow()
 	y.n = Form.cheight/2 - 80;
 	WriteTextB(30+2,y.n+2,0x81,MixColors(sc.work, 0xB92234,220),T_CAUTION_TITLE);
 	WriteTextB(30,y.n,0x81,0xB92234,T_CAUTION_TITLE);
-	y.n = DrawTextViewArea(30, y.inc(30), Form.cwidth-60, Form.cheight-140, 
+	y.n = DrawTextViewArea(30, y.inc(30), Form.cwidth-60, Form.cheight-140,
 		T_CAUTION_PARAGRAPH, -1, sc.work_text);
 	active_button_id = BUTTON_ID_ASSEPT_RISK;
 	DrawStandartCaptButton(30, y.inc(10), BUTTON_ID_ASSEPT_RISK, T_ASSEPT_RISK);
@@ -137,20 +137,20 @@ void Draw_DriverListWindow()
 	int right_frame_x = Form.cwidth*46/100;
 	int readme_w = 0;
 	//LEFT FRAME
-	SelectList_Init(PADDING, PADDING, 
-		right_frame_x - PADDING - PADDING - 8 - scroll1.size_x, 
+	SelectList_Init(PADDING, PADDING,
+		right_frame_x - PADDING - PADDING - 8 - scroll1.size_x,
 		Form.cheight - PADDING - PADDING);
 	SelectList_Draw();
 	SelectList_DrawBorder();
 	//RIGHT FRAME
 	GetCurrentSectionData();
 	DrawBar(right_frame_x, PADDING+3, Form.cwidth - right_frame_x - PADDING, 80, sc.work);
-	draw_icon_32(right_frame_x, PADDING, sc.work, cur_icon);	
+	draw_icon_32(right_frame_x, PADDING, sc.work, cur_icon);
 	WriteTextB(right_frame_x+44, PADDING+3, 0x81, sc.work_text, ini_sections.get(select_list.cur_y));
 	WriteText(right_frame_x+44, PADDING+23, 0x80, sc.work_text, #cur_version);
 	if(cur_readme_path[0]) readme_w = DrawStandartCaptButton(right_frame_x, PADDING+45, BUTTON_ID_README, T_README);
 	DrawStandartCaptButton(right_frame_x + readme_w, PADDING+45, BUTTON_ID_INSTALL, T_INSTALL);
-	DrawTextViewArea(right_frame_x-2, PADDING+83, Form.cwidth - right_frame_x - PADDING, Form.cheight-PADDING-PADDING, 
+	DrawTextViewArea(right_frame_x-2, PADDING+83, Form.cwidth - right_frame_x - PADDING, Form.cheight-PADDING-PADDING,
 		#cur_description, sc.work, sc.work_text);
 }
 
@@ -159,16 +159,16 @@ void SelectList_DrawLine(dword i)
 	int yyy, list_last;
 
 	yyy = i*select_list.item_h+select_list.y;
-	
+
 	if (select_list.cur_y-select_list.first==i)
 	{
 		DrawBar(select_list.x, yyy, select_list.w, select_list.item_h, sc.button);
-		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,sc.button_text, ini_sections.get(i));
+		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,sc.button_text, ini_sections.get(i+select_list.first));
 	}
 	else
 	{
 		DrawBar(select_list.x,yyy,select_list.w, select_list.item_h, 0xFFFfff);
-		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,0, ini_sections.get(i));
+		WriteText(select_list.x+12,yyy+select_list.text_y,select_list.font_type,0, ini_sections.get(i+select_list.first));
 	}
 }
 
@@ -202,7 +202,7 @@ void Event_ProcessButtonId(int id)
 	if (id==BUTTON_ID_INSTALL) Event_RunInstall();
 }
 
-void Event_DrawWindow() 
+void Event_DrawWindow()
 {
 	sc.get();
 	DefineAndDrawWindow(215, 100, 600, 400, 0x33, sc.work, WINDOW_TITLE,0);
@@ -235,7 +235,7 @@ void Event_RunInstall()
 	pause(300);
 	if (cur_icon == 61) {
 		RestartProcessByName("/sys/@taskbar", SINGLE);
-		RestartProcessByName("/sys/@docky", SINGLE);	
-		RestartProcessByName("/sys/@icon", MULTIPLE);	
+		RestartProcessByName("/sys/@docky", SINGLE);
+		RestartProcessByName("/sys/@icon", MULTIPLE);
 	}
 }

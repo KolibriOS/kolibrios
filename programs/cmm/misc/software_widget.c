@@ -253,7 +253,7 @@ void EventIconClick(dword appid)
 		strcpy(#run_app_path, "/kolibrios/");
 		app_path+=3;
 	}
-	else if (!strncmp(app_path, "/kg/",3)) {
+	else if (!strncmp(app_path, "/kg/",4)) {
 		strcpy(#run_app_path, "/kolibrios/games/");
 		app_path+=4;
 	}
