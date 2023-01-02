@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2013-2020. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2013-2022. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License   ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -161,6 +161,8 @@ proc xfs_create_partition uses ebx esi edi
         and     eax, XFS_SB_VERSION_NUMBITS
         mov     [edi+XFS.version], eax
 
+        mov     [edi+XFS.conv_time_to_kos_epoch], xfs._.conv_time_to_kos_epoch
+
         movbe   eax, [ebx+xfs_sb.sb_features2]
         mov     [edi+XFS.features2], eax
         cmp     [edi+XFS.version], 5
@@ -198,6 +200,10 @@ proc xfs_create_partition uses ebx esi edi
         mov     [edi+XFS.dir_block_size], sizeof.xfs_dir3_data_hdr
         mov     [edi+XFS.bmbt_block_size], sizeof.xfs_bmbt3_block
         mov     [edi+XFS.da_blkinfo_size], sizeof.xfs_da3_blkinfo
+        test    [edi+XFS.features_incompat], XFS_SB_FEAT_INCOMPAT_BIGTIME
+        jz      @f      ; no bigtime
+        mov     [edi+XFS.conv_time_to_kos_epoch], xfs._.conv_bigtime_to_kos_epoch
+@@:
 .vcommon:
 
         movzx   eax, [ebx+xfs_sb.sb_inodesize]
@@ -1373,14 +1379,45 @@ proc xfs._.get_inode_number_sf
         ret
 endp
 
+proc xfs._.conv_time_to_kos_epoch
+        movbe   eax, [ecx+DQ.hi_be]
+        call    fsTime2bdfe
+        ret
+endp
 
-proc xfs_get_inode_info uses ebx, _src, _dst
+proc xfs._.conv_bigtime_to_kos_epoch
+NANOSEC_PER_SEC = 1_000_000_000
+BIGTIME_TO_UNIX_OFFSET = 0x80000000     ; int32 min
+UNIXTIME_TO_KOS_OFFSET = (365*31+8)*24*60*60  ; 01.01.1970--01.01.2001
+BIGTIME_TO_KOS_OFFSET = BIGTIME_TO_UNIX_OFFSET + UNIXTIME_TO_KOS_OFFSET
+BIGTIME_TO_KOS_OFFSET_NS = BIGTIME_TO_KOS_OFFSET * NANOSEC_PER_SEC
+        movbe   edx, [ecx+DQ.hi_be]
+        movbe   eax, [ecx+DQ.lo_be]
+        sub     eax, BIGTIME_TO_KOS_OFFSET_NS AND 0xffffffff
+        sbb     edx, BIGTIME_TO_KOS_OFFSET_NS SHR 32
+        jnc     .after_kos_epoch_begin
+        xor     eax, eax        ; set to very begin of kolibrios epoch
+        xor     edx, edx
+        jmp     .time_to_bdfe
+.after_kos_epoch_begin:
+        cmp     edx, NANOSEC_PER_SEC
+        jb      .time_to_bdfe
+        mov     edx, NANOSEC_PER_SEC - 1
+        mov     eax, -1         ; very end of kolibrios epoch
+.time_to_bdfe:
+        mov     ecx, NANOSEC_PER_SEC
+        div     ecx
+        call    fsTime2bdfe
+        ret
+endp
+
+proc xfs_get_inode_info uses ebx esi edi, _src, _dst
         ; get access time and other file properties
         ; useful for browsing directories
         ; called for each dir entry
         xor     eax, eax
-        mov     edx, [_src]
-        movzx   ecx, [edx+xfs_inode.di_core.di_mode]
+        mov     esi, [_src]
+        movzx   ecx, [esi+xfs_inode.di_core.di_mode]
         xchg    cl, ch
         test    ecx, S_IFDIR
         jz      @f
@@ -1388,29 +1425,18 @@ proc xfs_get_inode_info uses ebx, _src, _dst
 @@:
         mov     edi, [_dst]
         mov     [edi+bdfe.attr], eax
-        movbe   eax, [edx+xfs_inode.di_core.di_size.lo]
-        mov     [edi+bdfe.size.hi], eax
-        movbe   eax, [edx+xfs_inode.di_core.di_size.hi]
+        movbe   edx, [esi+xfs_inode.di_core.di_size.hi_be]
+        movbe   eax, [esi+xfs_inode.di_core.di_size.lo_be]
+        mov     [edi+bdfe.size.hi], edx
         mov     [edi+bdfe.size.lo], eax
 
-        add     edi, 8
-        movbe   eax, [edx+xfs_inode.di_core.di_ctime.t_sec]
-        push    edx
-        sub     eax, 978307200  ; 01.01.1970-01.01.2001 = (365*31+8)*24*60*60
-        call    fsTime2bdfe
-        pop     edx
-
-        movbe   eax, [edx+xfs_inode.di_core.di_atime.t_sec]
-        push    edx
-        sub     eax, 978307200  ; 01.01.1970-01.01.2001 = (365*31+8)*24*60*60
-        call    fsTime2bdfe
-        pop     edx
-
-        movbe   eax, [edx+xfs_inode.di_core.di_mtime.t_sec]
-        push    edx
-        sub     eax, 978307200  ; 01.01.1970-01.01.2001 = (365*31+8)*24*60*60
-        call    fsTime2bdfe
-        pop     edx
+        add     edi, bdfe.ctime
+        lea     ecx, [esi+xfs_inode.di_core.di_ctime]
+        call    [ebp+XFS.conv_time_to_kos_epoch]
+        lea     ecx, [esi+xfs_inode.di_core.di_atime]
+        call    [ebp+XFS.conv_time_to_kos_epoch]
+        lea     ecx, [esi+xfs_inode.di_core.di_mtime]
+        call    [ebp+XFS.conv_time_to_kos_epoch]
 
         movi    eax, ERROR_SUCCESS
         cmp     esp, esp

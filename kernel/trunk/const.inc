@@ -682,8 +682,14 @@ struct  HDLL
 ends
 
 struct DQ
-        lo dd ?
-        hi dd ?
+        union
+                lo    dd ?
+                hi_be dd ?      ; big endian
+        ends
+        union
+                hi    dd ?
+                lo_be dd ?
+        ends
 ends
 
 struct e820entry

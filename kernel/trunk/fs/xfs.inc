@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2013-2020. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2013-2022. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License   ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,9 +86,11 @@ XFS_SB_VERSION2_SUPPORTED = XFS_SB_VERSION2_LAZYSBCOUNTBIT OR \
 XFS_SB_FEAT_INCOMPAT_FTYPE     = 1      ; filetype in dirent
 XFS_SB_FEAT_INCOMPAT_SPINODES  = 2      ; sparse inode chunks
 XFS_SB_FEAT_INCOMPAT_META_UUID = 4      ; metadata UUID
+XFS_SB_FEAT_INCOMPAT_BIGTIME   = 8      ; large timestamps
 XFS_SB_FEAT_INCOMPAT_SUPPORTED = XFS_SB_FEAT_INCOMPAT_FTYPE    OR \
                                  XFS_SB_FEAT_INCOMPAT_SPINODES OR \
-                                 XFS_SB_FEAT_INCOMPAT_META_UUID
+                                 XFS_SB_FEAT_INCOMPAT_META_UUID OR \
+                                 XFS_SB_FEAT_INCOMPAT_BIGTIME
 
 ; bitfield lengths for packed extent
 ; MSB to LSB / left to right
@@ -198,12 +200,6 @@ struct xfs_sb
         sb_meta_uuid             rb 16  ; metadata file system unique id
 ends
 
-; structure to store create, access and modification time in inode core
-struct xfs_timestamp
-        t_sec           dd ?
-        t_nsec          dd ?    ; nanoseconds
-ends
-
 ; inode core structure: basic information about file
 struct xfs_dinode_core
         di_magic         dw ?           ; inode magic = XFS_DINODE_MAGIC
@@ -217,9 +213,9 @@ struct xfs_dinode_core
         di_projid        dw ?           ; owner's project id
         di_pad           rb 8           ; unused, zeroed space
         di_flushiter     dw ?           ; incremented on flush
-        di_atime         xfs_timestamp  ; time last accessed
-        di_mtime         xfs_timestamp  ; time last modified
-        di_ctime         xfs_timestamp  ; time created/inode modified
+        di_atime         DQ             ; time last accessed
+        di_mtime         DQ               ; time last modified
+        di_ctime         DQ             ; time created/inode modified
         di_size          DQ ?           ; number of bytes in file
         di_nblocks       DQ ?           ; number of direct & btree blocks used
         di_extsize       dd ?           ; basic/minimum extent size for file
@@ -243,7 +239,7 @@ struct xfs_dinode3_core xfs_dinode_core
         di_pad2          rb 12          ; more padding for future expansion
 
         ; fields only written to during inode creation
-        di_crtime        xfs_timestamp  ; time created
+        di_crtime        DQ             ; time created
         di_ino           DQ ?           ; inode number
         di_uuid          rb 16          ; UUID of the filesystem
 ends
@@ -537,6 +533,7 @@ struct XFS PARTITION
         dir_leafn_size          dd ?
         da_node_size            dd ?
         da_blkinfo_size         dd ?
+        conv_time_to_kos_epoch  dd ?
         ; helpers, temporary vars, etc
         ; should go to file descriptor and local vars?
         cur_block               dd ?
@@ -609,8 +606,6 @@ ends
 struct bdfe
         attr     dd ?
         nameenc  dd ?
-;        nameenc  db ?
-;        reserved db 3 dup(?)
         ctime    dd ?
         cdate    dd ?
         atime    dd ?
