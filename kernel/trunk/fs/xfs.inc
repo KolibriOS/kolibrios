@@ -83,14 +83,17 @@ XFS_SB_VERSION2_SUPPORTED = XFS_SB_VERSION2_LAZYSBCOUNTBIT OR \
                             XFS_SB_VERSION2_CRCBIT         OR \
                             XFS_SB_VERSION2_FTYPE
 
-XFS_SB_FEAT_INCOMPAT_FTYPE     = 1      ; filetype in dirent
-XFS_SB_FEAT_INCOMPAT_SPINODES  = 2      ; sparse inode chunks
-XFS_SB_FEAT_INCOMPAT_META_UUID = 4      ; metadata UUID
-XFS_SB_FEAT_INCOMPAT_BIGTIME   = 8      ; large timestamps
-XFS_SB_FEAT_INCOMPAT_SUPPORTED = XFS_SB_FEAT_INCOMPAT_FTYPE    OR \
-                                 XFS_SB_FEAT_INCOMPAT_SPINODES OR \
-                                 XFS_SB_FEAT_INCOMPAT_META_UUID OR \
-                                 XFS_SB_FEAT_INCOMPAT_BIGTIME
+XFS_SB_FEAT_INCOMPAT_FTYPE       = 0x01 ; filetype in dirent
+XFS_SB_FEAT_INCOMPAT_SPINODES    = 0x02 ; sparse inode chunks
+XFS_SB_FEAT_INCOMPAT_META_UUID   = 0x04 ; metadata UUID
+XFS_SB_FEAT_INCOMPAT_BIGTIME     = 0x08 ; large timestamps
+XFS_SB_FEAT_INCOMPAT_NEEDSREPAIR = 0x10 ; e.g. for upgrade to nrext64
+XFS_SB_FEAT_INCOMPAT_NREXT64     = 0x20 ; 64bit extent counters
+XFS_SB_FEAT_INCOMPAT_SUPPORTED   = XFS_SB_FEAT_INCOMPAT_FTYPE    OR \
+                                   XFS_SB_FEAT_INCOMPAT_SPINODES OR \
+                                   XFS_SB_FEAT_INCOMPAT_META_UUID OR \
+                                   XFS_SB_FEAT_INCOMPAT_BIGTIME OR \
+                                   XFS_SB_FEAT_INCOMPAT_NREXT64
 
 ; bitfield lengths for packed extent
 ; MSB to LSB / left to right
@@ -210,17 +213,24 @@ struct xfs_dinode_core
         di_uid           dd ?           ; owner's user id
         di_gid           dd ?           ; owner's group id
         di_nlink         dd ?           ; number of links to file
-        di_projid        dw ?           ; owner's project id
-        di_pad           rb 8           ; unused, zeroed space
-        di_flushiter     dw ?           ; incremented on flush
+        di_projid        dd ?           ; owner's project id
+        di_big_nextents  DQ ?           ; iff NREXT64 is set
         di_atime         DQ             ; time last accessed
         di_mtime         DQ               ; time last modified
         di_ctime         DQ             ; time created/inode modified
         di_size          DQ ?           ; number of bytes in file
         di_nblocks       DQ ?           ; number of direct & btree blocks used
         di_extsize       dd ?           ; basic/minimum extent size for file
-        di_nextents      dd ?           ; number of extents in data fork
-        di_anextents     dw ?           ; number of extents in attribute fork
+        union
+            struct
+                di_nextents      dd ?   ; number of extents in data fork
+                di_anextents     dw ?   ; number of extents in attribute fork
+            ends
+            struct
+                di_big_anextents dd ?   ; attr extent counter is 32bit for NREXT64
+                di_nrext64_pad   dw ?
+            ends
+        ends
         di_forkoff       db ?           ; attr fork offs, <<3 for 64b align
         di_aformat       db ?           ; format of attr fork's data
         di_dmevmask      dd ?           ; DMIG event mask
@@ -469,25 +479,6 @@ ends
 
 struct xfs_inode
         di_core                 xfs_dinode_core ; main info, aka core
-        union
-                di_u            db ?            ; data fork inode part
-                dir2_sf         xfs_dir2_sf
-                bmx             xfs_dir2_bmx
-        ends
-;        di_a                    db ?           ; data attribute
-ends
-
-struct xfs_agf
-        agf_magicnum    dd ?    ; magic number == XFS_AGF_MAGIC
-        agf_versionnum  dd ?    ; header version == XFS_AGF_VERSION
-        agf_seqno       dd ?    ; sequence # starting from 0
-        agf_length      dd ?    ; size in blocks of AG
-        agf_roots       dd ?
-        agf_levels      dd ?
-        agf_flfirst     dd ?
-        agf_fllast      dd ?
-        agf_flcount     dd ?
-        agf_freeblks    dd ?    ; free blocks in AG
 ends
 
 ; internal data for every XFS partition
@@ -534,6 +525,7 @@ struct XFS PARTITION
         da_node_size            dd ?
         da_blkinfo_size         dd ?
         conv_time_to_kos_epoch  dd ?
+        nextents_offset         dd ?
         ; helpers, temporary vars, etc
         ; should go to file descriptor and local vars?
         cur_block               dd ?

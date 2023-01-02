@@ -162,6 +162,7 @@ proc xfs_create_partition uses ebx esi edi
         mov     [edi+XFS.version], eax
 
         mov     [edi+XFS.conv_time_to_kos_epoch], xfs._.conv_time_to_kos_epoch
+        mov     [edi+XFS.nextents_offset], xfs_inode.di_core.di_nextents
 
         movbe   eax, [ebx+xfs_sb.sb_features2]
         mov     [edi+XFS.features2], eax
@@ -203,6 +204,10 @@ proc xfs_create_partition uses ebx esi edi
         test    [edi+XFS.features_incompat], XFS_SB_FEAT_INCOMPAT_BIGTIME
         jz      @f      ; no bigtime
         mov     [edi+XFS.conv_time_to_kos_epoch], xfs._.conv_bigtime_to_kos_epoch
+@@:
+        test    [edi+XFS.features_incompat], XFS_SB_FEAT_INCOMPAT_NREXT64
+        jz      @f      ; no bigtime
+        mov     [edi+XFS.nextents_offset], xfs_inode.di_core.di_big_nextents.lo_be
 @@:
 .vcommon:
 
@@ -305,7 +310,6 @@ proc xfs_create_partition uses ebx esi edi
 
         ; we do need XFS.blocksize bytes for single inode
         ; minimal file system structure is block, inodes are packed in blocks
-        ; FIXME
         mov     eax, [edi+XFS.blocksize]
         call    malloc
         mov     [edi+XFS.cur_inode], eax
@@ -675,7 +679,8 @@ proc xfs._.readdir_leaf_node uses esi, _inode_data, _out_buf
         mov     [ebp+XFS.entries_read], 0
         mov     eax, ebx
         add     eax, [ebp+XFS.inode_core_size]
-        movbe   edx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     edx, [ebp+XFS.nextents_offset]
+        movbe   edx, [ebx+edx]
         mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.lo]
         mov     [ebp+XFS.offset_begin.lo], ecx
         mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.hi]
@@ -692,7 +697,8 @@ proc xfs._.readdir_leaf_node uses esi, _inode_data, _out_buf
         mov     [ebp+XFS.entries_left_in_dir], eax
         add     [_out_buf], sizeof.bdfe_hdr
         mov     [ebp+XFS.entries_read], 0
-        movbe   edx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     edx, [ebp+XFS.nextents_offset]
+        movbe   edx, [ebx+edx]
         mov     eax, ebx
         add     eax, [ebp+XFS.inode_core_size]
         lea     ecx, [_out_buf]
@@ -775,7 +781,6 @@ proc xfs._.dir_btree_skip_read uses ebx ecx edx esi edi, _cur_dirblock, _offset_
         mov     eax, ebx
         add     eax, [ebp+XFS.dirblocksize]
         mov     [ebp+XFS.max_dirblockaddr], eax
-;        add     ebx, xfs_dir2_block.u
         add     ebx, [ebp+XFS.dir_block_size]
 .next:
         movi    eax, ERROR_SUCCESS
@@ -797,13 +802,14 @@ proc xfs._.readdir_btree uses esi, _inode_data, _out_buf
         mov     [ebp+XFS.cur_inode_save], ebx
         mov     [ebp+XFS.entries_read], 0
         mov     eax, [ebp+XFS.inodesize]
-        sub     eax, xfs_inode.di_u
+        sub     eax, [ebp+XFS.inode_core_size]
         movzx   ecx, [ebx+xfs_inode.di_core.di_forkoff]
         jecxz   @f
         shl     ecx, 3
         mov     eax, ecx
 @@:
-        lea     edx, [ebx+xfs_inode.di_u]
+        mov     edx, ebx
+        add     edx, [ebp+XFS.inode_core_size]
         mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.lo]
         mov     [ebp+XFS.offset_begin.lo], ecx
         mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.hi]
@@ -820,13 +826,14 @@ proc xfs._.readdir_btree uses esi, _inode_data, _out_buf
         mov     [ebp+XFS.entries_read], 0
         add     [_out_buf], sizeof.bdfe_hdr
         mov     eax, [ebp+XFS.inodesize]
-        sub     eax, xfs_inode.di_u
+        sub     eax, [ebp+XFS.inode_core_size]
         movzx   ecx, [ebx+xfs_inode.di_core.di_forkoff]
         jecxz   @f
         shl     ecx, 3
         mov     eax, ecx
 @@:
-        lea     edx, [ebx+xfs_inode.di_u]
+        mov     edx, ebx
+        add     edx, [ebp+XFS.inode_core_size]
         mov     [ebp+XFS.offset_begin.lo], 0
         mov     [ebp+XFS.offset_begin.hi], 0
         mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.lo]
@@ -1048,7 +1055,8 @@ proc xfs._.get_inode_by_addr uses ebx esi edi, _inode_buf
         jz      .btree
         jmp     .error
 .extents:
-        movbe   ecx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     ecx, [ebp+XFS.nextents_offset]
+        movbe   ecx, [ebx+ecx]
         add     ebx, [ebp+XFS.inode_core_size]
         mov     [ebp+XFS.offset_begin.lo], eax
         mov     [ebp+XFS.offset_begin.hi], edx
@@ -1081,7 +1089,8 @@ endp
 
 
 proc xfs._.lookup_leaf uses ebx esi edi, _name, _len
-        movbe   ecx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     ecx, [ebp+XFS.nextents_offset]
+        movbe   ecx, [ebx+ecx]
         add     ebx, [ebp+XFS.inode_core_size]
         mov     eax, [ebp+XFS.dir2_leaf_offset_blocks.lo]
         mov     [ebp+XFS.offset_begin.lo], ecx
@@ -1124,15 +1133,15 @@ endl
         mov     [ebp+XFS.cur_inode_save], ebx
         stdcall xfs_hashname, [_name+4], [_len]
         mov     [.hash], eax
-        mov     eax, ebx
-        add     eax, [ebp+XFS.inode_core_size]
-        movbe   edx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     edx, [ebp+XFS.nextents_offset]
+        movbe   edx, [ebx+edx]
         mov     esi, [ebp+XFS.dir2_leaf_offset_blocks.lo]
 .begin:
         mov     ebx, [ebp+XFS.cur_inode_save]
         mov     eax, ebx
         add     eax, [ebp+XFS.inode_core_size]
-        movbe   edx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     edx, [ebp+XFS.nextents_offset]
+        movbe   edx, [ebx+edx]
         mov     ebx, eax
         mov     [ebp+XFS.offset_begin.lo], esi
         mov     [ebp+XFS.offset_begin.hi], 0
@@ -1214,9 +1223,9 @@ endl
         test    ecx, ecx
         jnz     @f
         mov     ecx, [ebp+XFS.inodesize]
-        sub     ecx, xfs_inode.di_u
+        sub     ecx, [ebp+XFS.inode_core_size]
 @@:
-        add     ebx, xfs_inode.di_u
+        add     ebx, [ebp+XFS.inode_core_size]
         stdcall xfs._.btree_read_block, ebx, ecx, eax, edx, [ebp+XFS.cur_dirblock]
         mov     ebx, [ebp+XFS.cur_dirblock]
         cmp     [ebx+xfs_da_intnode.hdr.info.magic], XFS_DA_NODE_MAGIC
@@ -1445,7 +1454,7 @@ endp
 
 
 proc xfs._.extent_unpack uses eax ebx ecx edx, _extent_data
-        ; extents come as packet 128bit bitfields
+        ; extents come as packed 128bit bitfields
         ; unpack them to access internal fields
         ; write result to the XFS.extent structure
         mov     ebx, [_extent_data]
@@ -1783,7 +1792,8 @@ endl
 .extent_list:
         mov     eax, ebx
         add     eax, [ebp+XFS.inode_core_size]
-        movbe   edx, [ebx+xfs_inode.di_core.di_nextents]
+        mov     edx, [ebp+XFS.nextents_offset]
+        movbe   edx, [ebx+edx]
         mov     ecx, [.offset_begin.lo]
         mov     [ebp+XFS.offset_begin.lo], ecx
         mov     ecx, [.offset_begin.hi]
@@ -1922,13 +1932,13 @@ proc xfs._.long_btree.seek uses ebx esi edi, _ptr, _size
         jmp     .common
 .not_root:
         mov     esi, [ebp+XFS.blocksize]
-        sub     esi, sizeof.xfs_bmbt_block
+        sub     esi, [ebp+XFS.bmbt_block_size]
         shr     esi, 4
         shl     esi, 3
         movzx   eax, [ebx+xfs_bmbt_block.bb_level]
         movzx   ecx, [ebx+xfs_bmbt_block.bb_numrecs]
         xchg    cl, ch
-        add     ebx, sizeof.xfs_bmbt_block
+        add     ebx, [ebp+XFS.bmbt_block_size]
 .common:
         test    eax, eax
         jz      .leaf
@@ -2129,7 +2139,8 @@ endp
 
 
 proc xfs._.get_last_dirblock uses ecx
-        movbe   eax, [ebx+xfs_inode.di_core.di_nextents]
+        mov     eax, [ebp+XFS.nextents_offset]
+        movbe   eax, [ebx+eax]
 assert (sizeof.xfs_bmbt_rec AND (sizeof.xfs_bmbt_rec - 1)) = 0
         shl     eax, BSF sizeof.xfs_bmbt_rec
         add     eax, [ebp+XFS.inode_core_size]
