@@ -1896,7 +1896,7 @@ proc xfs._.get_before_by_hashval uses ebx edx esi edi, _base, _count, _hash
         movbe   eax, [ebx+xfs_da3_intnode.btree+ecx*sizeof.xfs_da_node_entry+xfs_da_node_entry.hashval]
 @@:
         cmp     eax, edi
-        ja      .node.leaf_found
+        jae     .node.leaf_found
         inc     ecx
         cmp     ecx, edx
         jnz     .node.next
