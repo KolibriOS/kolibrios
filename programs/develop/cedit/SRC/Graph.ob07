@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -289,7 +289,7 @@ BEGIN
             n := MAX(MIN(n, (canvas.width - x) DIV font.width), 0);
             color := canvas.color;
             canvas.color := canvas.backColor;
-            FillRect(canvas, x, y, x + n*font.width, y + font.height);
+            FillRect(canvas, x, y, x + n*font.width - 1, y + font.height);
             canvas.color := color;
             WHILE n > 0 DO
                 SYSTEM.GET(text + i*WCHAR_SIZE, c);

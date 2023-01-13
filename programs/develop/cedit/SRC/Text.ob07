@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -2257,7 +2257,7 @@ BEGIN
     pos := MAX((selBeg - text.scroll.X), 0);
     x := pos*charWidth + padding.left;
     G.SetColor(canvas, colors.selback);
-    G.FillRect(canvas, x - 2, y - inter DIV 2, x + 1 + Len*charWidth, y - inter DIV 2 + charHeight);
+    G.FillRect(canvas, x - 1, y - inter DIV 2, x + Len*charWidth, y - inter DIV 2 + charHeight);
     G.TextOut(canvas, pos*charWidth + padding.left, y, Lines.getPChar(line, firstCharIdx), Len, colors.seltext)
 END drawSelect;
 
