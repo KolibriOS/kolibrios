@@ -19,6 +19,21 @@ __exports:
           disk_del,              'DiskDel',            \
           disk_media_changed,    'DiskMediaChanged',   \      ;stdcall
 \
+          fs_read32_sys,         'FsRead32Sys',        \
+          fs_read32_app,         'FsRead32App',        \
+          fs_read64_sys,         'FsRead64Sys',        \
+          fs_read64_app,         'FsRead64App',        \
+\
+          fs_write32_sys,        'FsWrite32Sys',       \
+          fs_write32_app,        'FsWrite32App',       \
+          fs_write64_sys,        'FsWrite64Sys',       \
+          fs_write64_app,        'FsWrite64App',       \
+\
+          fs_add,                'FsAdd',              \
+\         ;fs_del,                'FsDel',              \
+\
+          disk_sync,             'DiskSync',           \
+\
           create_event,          'CreateEvent',        \      ; ecx, esi
           destroy_event,         'DestroyEvent',       \      ;
           raise_event,           'RaiseEvent',         \      ; eax, ebx, edx, esi

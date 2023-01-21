@@ -25,6 +25,114 @@ maxPathLength = 1000h
 image_of_eax EQU esp+32
 image_of_ebx EQU esp+20
 
+; fs api for drivers
+struct  FileSystem
+        Next            dd ?
+        Prev            dd ?
+        Creat_part      dd ?  ; %FSNAME%_create_partition
+        UserFuncs       dd ? ; for fs_del
+        Name            rd 16 ;ascii string + \n
+ends
+
+
+fs_list:
+        dd      fs_list
+        dd      fs_list
+;.look:  dd      0
+
+; IN: ecx = %FSNAME%_create_partition
+;     edx = ptr to UserFuncs
+;     [esp] = fs name
+;OUT: eax = list item
+fs_add:
+        push    ecx edx
+        ; add in fs_list
+        mov     eax, sizeof.FileSystem
+        call    malloc
+        pop     edx ecx
+        test    eax, eax
+        jz      .err
+
+        mov     [eax + FileSystem.Creat_part], ecx
+        mov     [eax + FileSystem.UserFuncs], edx
+        mov     edx, [esp + 4]
+        mov     [eax + FileSystem.Name], edx
+        mov     edx, eax
+
+        cli          ; DELETE
+        list_add_tail edx, fs_list
+        sti          ; DELETE
+        mov     edx, ecx ; save function
+
+        ;DEBUGF  1, 'K : FS: find partition\n'
+        ; check all disks
+        mov     esi, [disk_list]
+.new_disk:
+        cmp     dword[esi], disk_list
+        jz      .end
+
+        push    edx
+        mov     eax, [esi + DISK.MediaInfo.SectorSize]
+        shl     eax, 2
+        stdcall kernel_alloc, eax   ;get buffer
+        test    eax, eax
+        pop     edx
+        jz      .end ; no memory
+        mov     ebx, eax
+
+        mov     ecx, [esi + DISK.NumPartitions]
+        dec     ecx
+        shl     ecx, 2 ; to dword
+        add     ecx, [esi + DISK.Partitions]
+@@:
+        mov     ebp, [ecx]
+        cmp     [ebp + PARTITION.FSUserFunctions], default_fs_functions
+        jnz     .no_fs
+
+        ;DEBUGF  1, 'K : FS: found partition\n'
+        push    ecx edx
+
+        xor     eax, eax     ; first sector of the partition
+        call    fs_read32_sys
+        push    eax
+        ;DEBUGF  1, 'K : FS: call driver func = %x\n', edx
+
+        call    edx ; creat_partition
+        add     esp, 4
+        ;DEBUGF  1, 'K : FS: end call\n'
+        pop     edx ecx
+
+        test    eax, eax
+        jz      .no_fs
+        ; save and delete old struct
+        xchg    [ecx], eax
+        push    ecx edx
+        call    free
+        pop     edx ecx
+        ;DEBUGF  1, 'K : FS: set fs for partition\n'
+.no_fs:
+        ;sub     ecx, 4
+        cmp     ecx, [esi + DISK.Partitions]
+        lea     ecx, [ecx - 4]
+        jnz     @b
+
+        push    edx
+        stdcall kernel_free, ebx
+        pop     edx
+
+        mov     esi, [esi]
+        jmp     .new_disk
+.end:
+.err:
+        ret
+; IN: ecx = list item
+;OUT: -
+;fs_del:
+;
+;        ret
+
+
+
 ; System function 70 security check
 align 4
 proc file_system_is_operation_safe stdcall, inf_struct_ptr: dword
