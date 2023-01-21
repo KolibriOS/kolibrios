@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2022, Anton Krotov
+    Copyright (c) 2018-2023, Anton Krotov
     All rights reserved.
 *)
 
@@ -1152,14 +1152,13 @@ BEGIN
             movrm(reg1, reg1, 0)
 
         |IL.opPARAM:
-            n := param2;
-            IF n = 1 THEN
+            IF param2 = 1 THEN
                 UnOp(reg1);
                 push(reg1);
                 drop
             ELSE
-                ASSERT(R.top + 1 <= n);
-                PushAll(n)
+                ASSERT(R.top + 1 <= param2);
+                PushAll(param2)
             END
 
         |IL.opJNZ1:
@@ -1344,8 +1343,8 @@ BEGIN
 
         |IL.opNEW:
             PushAll(1);
-            n := param2 + 8;
-            ASSERT(UTILS.Align(n, 8));
+            n := param2 + 16;
+            ASSERT(UTILS.Align(n, 16));
             pushc(n);
             pushc(param1);
             CallRTL(IL._new)
@@ -1787,11 +1786,6 @@ BEGIN
             X86._movrm(reg1, reg1, 0, param2 * 8, FALSE);
             X86._movrm(reg1, reg2, 0, param2 * 8, TRUE)
 
-        |IL.opCHKBYTE:
-            BinOp(reg1, reg2);
-            cmprc(reg1, 256);
-            jcc(jb, param1)
-
         |IL.opCHKIDX:
             UnOp(reg1);
             cmprc(reg1, param2);
@@ -1831,14 +1825,6 @@ BEGIN
 
             INCL(R.regs, reg1);
             ASSERT(REG.GetReg(R, reg1))
-
-        |IL.opCHR:
-            UnOp(reg1);
-            andrc(reg1, 255)
-
-        |IL.opWCHR:
-            UnOp(reg1);
-            andrc(reg1, 65535)
 
         |IL.opEQP, IL.opNEP, IL.opEQIP, IL.opNEIP:
             UnOp(reg1);
@@ -2385,6 +2371,7 @@ VAR
 
 BEGIN
     Xmm[0] := 0;
+    X86.align16(TRUE);
     tcount := CHL.Length(IL.codes.types);
 
     Win64RegPar[0] := rcx;

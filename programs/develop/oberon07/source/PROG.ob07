@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2022, Anton Krotov
+    Copyright (c) 2018-2023, Anton Krotov
     All rights reserved.
 *)
 
@@ -41,6 +41,7 @@ CONST
     sysPUT8*   = 35;  sysPUT16*  = 36;  stCOPY*   = 37;  stWCHR*   = 38;
     sysWSADR*  = 39;  sysPUT32*  = 40;  (*sysNOP*   = 41;  sysEINT*  = 42;
     sysDINT*   = 43;*)sysGET8*   = 44;  sysGET16* = 45;  sysGET32* = 46;
+    sysVAL* = 47;
 
     default32* =  2;  _default32* = default32 + 1;
     stdcall*   =  4;  _stdcall*   = stdcall + 1;
@@ -239,13 +240,18 @@ END NewIdent;
 
 PROCEDURE getOffset* (varIdent: IDENT): INTEGER;
 VAR
-    size: INTEGER;
+    size, glob_align: INTEGER;
 
 BEGIN
     IF varIdent.offset = -1 THEN
         size := varIdent._type.size;
         IF varIdent.global THEN
-            IF UTILS.Align(program.bss, varIdent._type.align) THEN
+            IF TARGETS.WinLin THEN
+                glob_align := 16
+            ELSE
+                glob_align := varIdent._type.align
+            END;
+            IF UTILS.Align(program.bss, glob_align) THEN
                 IF UTILS.maxint - program.bss >= size THEN
                     varIdent.offset := program.bss;
                     INC(program.bss, size)
@@ -1109,6 +1115,7 @@ BEGIN
     EnterProc(unit, "put8",   idSYSPROC, sysPUT8);
     EnterProc(unit, "code",   idSYSPROC, sysCODE);
     EnterProc(unit, "move",   idSYSPROC, sysMOVE);
+    EnterProc(unit, "val",    idSYSPROC, sysVAL);
            (*
     IF program.target.sys = mConst.Target_iMSP430 THEN
         EnterProc(unit, "nop",  idSYSPROC, sysNOP);
@@ -1256,7 +1263,11 @@ BEGIN
 
     IF TARGETS.RealSize # 0 THEN
         program.stTypes.tREAL := enterType(tREAL, TARGETS.RealSize, 0, NIL);
-        program.stTypes.tREAL.align := TARGETS.RealSize
+        IF TARGETS.OS = TARGETS.osLINUX32 THEN
+            program.stTypes.tREAL.align := 4
+        ELSE
+            program.stTypes.tREAL.align := TARGETS.RealSize
+        END
     END;
 
     program.stTypes.tSTRING := enterType(tSTRING, TARGETS.WordSize, 0, NIL);

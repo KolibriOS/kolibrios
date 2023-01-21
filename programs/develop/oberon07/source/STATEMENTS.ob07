@@ -402,12 +402,6 @@ BEGIN
                         IL.AddCmd(IL.opSAVE8C, ARITH.Int(e.value))
                     END
                 ELSE
-                    IF chkBYTE IN Options.checking THEN
-                        label := IL.NewLabel();
-                        IL.AddCmd2(IL.opCHKBYTE, label, 0);
-                        IL.OnError(line, errBYTE);
-                        IL.SetLabel(label)
-                    END;
                     IL.AddCmd0(IL.opSAVE8)
                 END
             END
@@ -1062,7 +1056,7 @@ BEGIN
                 IF chkCHR IN Options.checking THEN
                     CheckRange(256, pos.line, errCHR)
                 ELSE
-                    IL.AddCmd0(IL.opCHR)
+                    IL.AddCmd(IL.opMODR, 256)
                 END
             END
 
@@ -1077,7 +1071,7 @@ BEGIN
                 IF chkWCHR IN Options.checking THEN
                     CheckRange(65536, pos.line, errWCHR)
                 ELSE
-                    IL.AddCmd0(IL.opWCHR)
+                    IL.AddCmd(IL.opMODR, 65536)
                 END
             END
 
@@ -1392,6 +1386,8 @@ VAR
     field:  PROG.FIELD;
     pos:    PARS.POSITION;
     t, idx: PARS.EXPR;
+    sysVal: BOOLEAN;
+    n:      INTEGER;
 
 
     PROCEDURE LoadAdr (e: PARS.EXPR);
@@ -1444,7 +1440,6 @@ VAR
         _type: PROG._TYPE;
 
     BEGIN
-
         IF chkIDX IN Options.checking THEN
             label := IL.NewLabel();
             IL.AddCmd2(IL.opCHKIDX2, label, 0);
@@ -1477,12 +1472,35 @@ VAR
 
 BEGIN
     qualident(parser, e);
+    sysVal := (e.obj = eSYSPROC) & (e.stproc = PROG.sysVAL);
+    IF sysVal THEN
+        PARS.checklex(parser, SCAN.lxLROUND);
+        PARS.Next(parser);
+        getpos(parser, pos);
+        designator(parser, e);
+        PARS.check(isVar(e), pos, 93);
+        IF PROG.isOpenArray(e._type) THEN
+            n := PROG.Dim(e._type);
+            WHILE n > 0 DO
+                IL.drop;
+                DEC(n)
+            END
+        END;
+        PARS.checklex(parser, SCAN.lxCOMMA);
+        PARS.Next(parser);
+        getpos(parser, pos);
+        qualident(parser, t);
+        PARS.check(t.obj = eTYPE, pos, 79);
+        e._type := t._type;
+        PARS.checklex(parser, SCAN.lxRROUND);
+        PARS.Next(parser)
+    END;
 
     IF e.obj IN {ePROC, eIMP} THEN
         PROG.UseProc(parser.unit, e.ident.proc)
     END;
 
-    IF isVar(e) THEN
+    IF isVar(e) & ~sysVal THEN
         LoadAdr(e)
     END;
 
@@ -2599,6 +2617,9 @@ BEGIN
 
         NextPos(parser, pos);
         expression(parser, e1);
+        IF (e._type.typ = PROG.tBYTE) & (e1.obj # eCONST) & (e1._type.typ = PROG.tINTEGER) & (chkBYTE IN Options.checking) THEN
+            CheckRange(256, pos.line, errBYTE)
+        END;
 
         IL.setlast(endcall.prev(IL.COMMAND));
 

@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2019-2021, Anton Krotov
+    Copyright (c) 2019-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -91,6 +91,10 @@ TYPE
 
     RELOCCODE = ARRAY 7 OF INTEGER;
 
+    MEM = RECORD
+        start, size, startReserve, endReserve: INTEGER
+    END;
+
 
 VAR
 
@@ -105,11 +109,9 @@ VAR
     StkCount: INTEGER;
 
     Target: RECORD
-        FlashAdr,
-        SRAMAdr,
+        flash, sram: MEM;
         IVTLen,
-        MinStack,
-        Reserved: INTEGER;
+        MinStkSize: INTEGER;
         InstrSet: SET;
         isNXP: BOOLEAN
     END;
@@ -1151,14 +1153,13 @@ BEGIN
             PushAll(0)
 
         |IL.opPARAM:
-            n := param2;
-            IF n = 1 THEN
+            IF param2 = 1 THEN
                 UnOp(r1);
                 push(r1);
                 drop
             ELSE
-                ASSERT(R.top + 1 <= n);
-                PushAll(n)
+                ASSERT(R.top + 1 <= param2);
+                PushAll(param2)
             END
 
         |IL.opCLEANUP:
@@ -1587,14 +1588,6 @@ BEGIN
             Tst(r1);
             SetCC(jne, r1)
 
-        |IL.opCHR:
-            UnOp(r1);
-            Code(0B2C0H + r1 * 9) (* uxtb r1, r1 *)
-
-        |IL.opWCHR:
-            UnOp(r1);
-            Code(0B280H + r1 * 9) (* uxth r1, r1 *)
-
         |IL.opASR, IL.opROR, IL.opLSL, IL.opLSR:
             BinOp(r1, r2);
             Shift(opcode, r1, r2);
@@ -1619,11 +1612,6 @@ BEGIN
                 |IL.opLSR2: LsrImm(r1, n)
                 END
             END
-
-        |IL.opCHKBYTE:
-            BinOp(r1, r2);
-            CmpConst(r1, 256);
-            jcc(jb, param1)
 
         |IL.opCHKIDX:
             UnOp(r1);
@@ -2344,33 +2332,36 @@ BEGIN
 END epilog;
 
 
-PROCEDURE SetTarget (FlashStart, SRAMStart: INTEGER; InstrSet: SET; isNXP: BOOLEAN);
+PROCEDURE SetTarget (FlashStart, FlashSize, FlashReserve, SRAMStart, SRAMSize, SRAMReserve: INTEGER; InstrSet: SET; isNXP: BOOLEAN);
 BEGIN
-    Target.FlashAdr := FlashStart;
-    Target.SRAMAdr  := SRAMStart;
+    Target.flash.start := FlashStart;    
+    Target.flash.size  := FlashSize;
+    (*Target.flash.startReserve := 0;*)
+    Target.flash.endReserve := FlashReserve;
+
+    Target.sram.start := SRAMStart;
+    Target.sram.size  := SRAMSize;
+    Target.sram.startReserve := 0;
+    Target.sram.endReserve   := SRAMReserve;
+
     Target.InstrSet := InstrSet;
     Target.isNXP    := isNXP;
 
-    Target.IVTLen   := 256; (* >= 192 *)
-    Target.Reserved := 0;
-    Target.MinStack := 512;
+    Target.IVTLen := 256; (* >= 192 *)
+    Target.MinStkSize := 256;
 END SetTarget;
 
 
 PROCEDURE CodeGen* (outname: ARRAY OF CHAR; target: INTEGER; options: PROG.OPTIONS);
 VAR
     opt: PROG.OPTIONS;
-
-    ram, rom, i, j: INTEGER;
-
-    DataAdr, BssAdr, DataSize, BssSize, CodeSize: INTEGER;
+    i, j, DataAdr, BssAdr, DataSize, BssSize, CodeSize: INTEGER;
 
 BEGIN
-    ram := MIN(MAX(options.ram, minRAM), maxRAM) * 1024;
-    rom := MIN(MAX(options.rom, minROM), maxROM) * 1024;
-
     IF target = TARGETS.STM32CM3 THEN
-        SetTarget(08000000H, 20000000H, CortexM3, FALSE)
+        SetTarget(08000000H, MIN(MAX(options.rom, minROM), maxROM) * 1024, 0,
+                  20000000H, MIN(MAX(options.ram, minRAM), maxRAM) * 1024, 0,
+                  CortexM3, FALSE)
     END;
 
     tcount := CHL.Length(IL.codes.types);
@@ -2384,33 +2375,33 @@ BEGIN
 
     StkCount := 0;
 
-    DataAdr := Target.SRAMAdr + Target.Reserved;
-    DataSize := CHL.Length(IL.codes.data) + tcount * 4 + Target.Reserved;
+    DataAdr := Target.sram.start + Target.sram.startReserve;
+    DataSize := CHL.Length(IL.codes.data) + tcount * 4 + Target.sram.startReserve;
     WHILE DataSize MOD 4 # 0 DO
         CHL.PushByte(IL.codes.data, 0);
         INC(DataSize)
     END;
-    BssAdr := DataAdr + DataSize - Target.Reserved;
+    BssAdr := DataAdr + DataSize - Target.sram.startReserve;
 
     IL.set_bss(MAX(IL.codes.bss, MAX(IL.codes.dmin - CHL.Length(IL.codes.data), 4)));
 
     BssSize := IL.codes.bss;
     ASSERT(UTILS.Align(BssSize, 4));
 
-    prolog(BssSize, tcount, ORD(opt.pic), Target.SRAMAdr + ram, Target.IVTLen);
+    prolog(BssSize, tcount, ORD(opt.pic), Target.sram.start + Target.sram.size - Target.sram.endReserve, Target.IVTLen);
     translate(ORD(opt.pic), tcount * 4);
     epilog;
 
-    fixup(Target.FlashAdr, DataAdr, BssAdr);
+    fixup(Target.flash.start, DataAdr, BssAdr);
 
     INC(DataSize, BssSize);
     CodeSize := CHL.Length(program.code);
 
-    IF CodeSize > rom THEN
+    IF CodeSize > Target.flash.size - Target.flash.endReserve THEN
         ERRORS.Error(203)
     END;
 
-    IF DataSize > ram - Target.MinStack THEN
+    IF DataSize > Target.sram.size - Target.MinStkSize - Target.sram.endReserve THEN
         ERRORS.Error(204)
     END;
 
@@ -2426,15 +2417,17 @@ BEGIN
 
     WR.Create(outname);
 
-    HEX.Data2(program.code, 0, CodeSize, high(Target.FlashAdr));
+    HEX.Data2(program.code, 0, CodeSize, high(Target.flash.start));
     HEX.End;
 
     WR.Close;
 
     C.Dashes;
-    C.String(  "  rom:  "); C.Int(CodeSize); C.String(" of "); C.Int(rom); C.String("  ("); C.Int(CodeSize * 100 DIV rom); C.StringLn("%)");
+    C.String(  "  rom:  "); C.Int(CodeSize); C.String(" of "); C.Int(Target.flash.size - Target.flash.endReserve);
+        C.String("  ("); C.Int(CodeSize * 100 DIV (Target.flash.size - Target.flash.endReserve)); C.StringLn("%)");
     C.Ln;
-    C.String(  "  ram:  "); C.Int(DataSize); C.String(" of "); C.Int(ram); C.String("  ("); C.Int(DataSize * 100 DIV ram); C.StringLn("%)")
+    C.String(  "  ram:  "); C.Int(DataSize); C.String(" of "); C.Int(Target.sram.size - Target.sram.endReserve);
+        C.String("  ("); C.Int(DataSize * 100 DIV (Target.sram.size - Target.sram.endReserve)); C.StringLn("%)")
 END CodeGen;
 
 

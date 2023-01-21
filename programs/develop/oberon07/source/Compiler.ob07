@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2022, Anton Krotov
+    Copyright (c) 2018-2023, Anton Krotov
     All rights reserved.
 *)
 
@@ -48,6 +48,7 @@ VAR
 
 
 BEGIN
+    options.lower := TRUE;
     out := "";
     checking := options.checking;
     _end := FALSE;
@@ -133,6 +134,9 @@ BEGIN
         ELSIF param = "-lower" THEN
             options.lower := TRUE
 
+        ELSIF param = "-upper" THEN
+            options.lower := FALSE
+
         ELSIF param = "-pic" THEN
             options.pic := TRUE
 
@@ -215,7 +219,7 @@ BEGIN
     C.Ln;
     C.String("Akron Oberon Compiler v"); C.Int(UTILS.vMajor); C.String("."); C.Int2(UTILS.vMinor);
         C.String(" ("); C.Int(UTILS.bit_depth); C.StringLn("-bit) " + UTILS.Date);
-    C.StringLn("Copyright (c) 2018-2022, Anton Krotov");
+    C.StringLn("Copyright (c) 2018-2023, Anton Krotov");
 
     IF inname = "" THEN
         C.Ln;
@@ -243,7 +247,8 @@ BEGIN
         C.StringLn("  -stk <size>           set size of stack in Mbytes (Windows, Linux, KolibriOS)"); C.Ln;
         C.StringLn("  -nochk <'ptibcwra'>   disable runtime checking (pointers, types, indexes,");
         C.StringLn("                        BYTE, CHR, WCHR)"); C.Ln;
-        C.StringLn("  -lower                allow lower case for keywords"); C.Ln;
+        C.StringLn("  -lower                allow lower case for keywords (default)"); C.Ln;
+        C.StringLn("  -upper                only upper case for keywords"); C.Ln;
         C.StringLn("  -def <identifier>     define conditional compilation symbol"); C.Ln;
         C.StringLn("  -ver <major.minor>    set version of program (KolibriOS DLL)"); C.Ln;
         C.StringLn("  -ram <size>           set size of RAM in bytes (MSP430) or Kbytes (STM32)"); C.Ln;

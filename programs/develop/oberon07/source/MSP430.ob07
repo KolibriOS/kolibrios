@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2019-2021, Anton Krotov
+    Copyright (c) 2019-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -984,11 +984,6 @@ BEGIN
             drop;
             Op2(opMOV + bw(param2 = 1), src_x(param1, SR), dst_x(0, reg2))
 
-        |IL.opCHKBYTE:
-            BinOp(reg1, reg2);
-            Op2(opCMP, imm(256), reg1);
-            jcc(jb, param1)
-
         |IL.opCHKIDX:
             UnOp(reg1);
             Op2(opCMP, imm(param2), reg1);
@@ -1411,10 +1406,6 @@ BEGIN
             Pop(R5);
             Test(ACC);
             jcc(jne, param1)
-
-        |IL.opCHR:
-            UnOp(reg1);
-            Op2(opAND, imm(255), reg1)
 
         |IL.opABS:
             UnOp(reg1);

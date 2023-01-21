@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2021, Anton Krotov
+    Copyright (c) 2018-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -217,7 +217,6 @@ END opFloat2;
 PROCEDURE fconv* (s: ARRAY OF CHAR; VAR v: VALUE; VAR error: INTEGER);
 VAR
     value:    REAL;
-    frac:     REAL;
     exp10:    REAL;
     i, n, d:  INTEGER;
     minus:    BOOLEAN;
@@ -225,32 +224,24 @@ VAR
 BEGIN
     error := 0;
     value := 0.0;
-    frac  := 0.0;
-    exp10 := 1.0;
     minus := FALSE;
     n := 0;
 
-    i := 0;
-    WHILE (error = 0) & STRINGS.digit(s[i]) DO
-        IF opFloat2(value, 10.0, "*") & opFloat2(value, FLT(digit[ORD(s[i])]), "+") THEN
+    exp10 := 0.0;
+    WHILE (error = 0) & (STRINGS.digit(s[i]) OR (s[i] = ".")) DO
+        IF s[i] = "." THEN
+            exp10 := 1.0;
             INC(i)
         ELSE
-            error := 4
+            IF opFloat2(value, 10.0, "*") & opFloat2(value, FLT(digit[ORD(s[i])]), "+") & opFloat2(exp10, 10.0, "*") THEN
+                INC(i)
+            ELSE
+                error := 4
+            END
         END
     END;
 
-    INC(i);
-
-    WHILE (error = 0) & STRINGS.digit(s[i]) DO
-        IF opFloat2(frac, 10.0, "*") & opFloat2(frac, FLT(digit[ORD(s[i])]), "+") THEN
-            exp10 := exp10 * 10.0;
-            INC(i)
-        ELSE
-            error := 4
-        END
-    END;
-
-    IF ~opFloat2(value, frac / exp10, "+") THEN
+    IF ~opFloat2(value, exp10, "/") THEN
         error := 4
     END;
 

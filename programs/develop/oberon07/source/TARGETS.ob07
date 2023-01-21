@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2019-2021, Anton Krotov
+    Copyright (c) 2019-2021, 2023, Anton Krotov
     All rights reserved.
 *)
 
@@ -67,7 +67,7 @@ VAR
 
     target*, CPU*, BitDepth*, OS*, RealSize*, WordSize*, AdrSize*, InstrSize*: INTEGER;
     ComLinePar*, LibDir*, FileExt*: STRING;
-    Import*, Dispose*, RTL*, Dll*, LittleEndian*: BOOLEAN;
+    Import*, Dispose*, RTL*, Dll*, LittleEndian*, WinLin*: BOOLEAN;
 
 
 PROCEDURE Enter (idx, CPU, RealSize, OS: INTEGER; ComLinePar, LibDir, FileExt: STRING);
@@ -110,6 +110,7 @@ BEGIN
         Dispose := ~(target IN noDISPOSE);
         RTL := ~(target IN noRTL);
         Dll := target IN {Linux32SO, Linux64SO, Win32DLL, Win64DLL, KolibriOSDLL};
+        WinLin := OS IN {osWIN32, osLINUX32, osWIN64, osLINUX64};
         WordSize := BitDepth DIV 8;
         AdrSize  := WordSize
     END

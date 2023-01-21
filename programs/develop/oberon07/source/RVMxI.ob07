@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2020-2021, Anton Krotov
+    Copyright (c) 2020-2022, Anton Krotov
     All rights reserved.
 *)
 
@@ -790,14 +790,6 @@ BEGIN
             UnOp(r1);
             Emit(opLSRC, r1, param2 MOD (szWord * 8))
 
-        |IL.opCHR:
-            UnOp(r1);
-            Emit(opANDC, r1, 255)
-
-        |IL.opWCHR:
-            UnOp(r1);
-            Emit(opANDC, r1, 65535)
-
         |IL.opABS:
             UnOp(r1);
             Emit(opCMPC, r1, 0);
@@ -957,11 +949,6 @@ BEGIN
                 Emit(opSNE, r1, 0)
             END;
             drop
-
-        |IL.opCHKBYTE:
-            BinOp(r1, r2);
-            Emit(opCMPC, r1, 256);
-            Emit(opJBT, param1, 0)
 
         |IL.opCHKIDX:
             UnOp(r1);

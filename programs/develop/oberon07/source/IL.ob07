@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2022, Anton Krotov
+    Copyright (c) 2018-2023, Anton Krotov
     All rights reserved.
 *)
 
@@ -24,7 +24,7 @@ CONST
     opCOPYA* = 6; opCASET* = 7; opMULC* = 8; opMUL* = 9; opDIV* = 10; opMOD* = 11;
     opDIVL* = 12; opMODL* = 13; opDIVR* = 14; opMODR* = 15; opUMINUS* = 16;
     opADD* = 17; opSUB* = 18; opONERR* = 19; opSUBL* = 20; opADDC* = 21; opSUBR* = 22;
-    opSAVE* = 23; opSAVEC* = 24; opSAVE8* = 25; opSAVE8C* = 26; opCHKBYTE* = 27; opDROP* = 28;
+    opSAVE* = 23; opSAVEC* = 24; opSAVE8* = 25; opSAVE8C* = 26; (*opCHKBYTE* = 27;*) opDROP* = 28;
     opNOT* = 29;
 
     opEQ*  = 30; opNE* = opEQ + 1; opLT* = opEQ + 2; opLE* = opEQ + 3; opGT* = opEQ + 4; opGE* = opEQ + 5 (* 35 *);
@@ -72,7 +72,7 @@ CONST
     opPUSHT* = 169; opTYPEGR* = 170; opISREC* = 171; opCHKIDX* = 172; opPARAM* = 173;
     opCHKIDX2* = 174; opLEN* = 175; opROT* = 176; opSAVES* = 177; opSADR* = 178; opLENGTHW* = 179;
 
-    opCHR* = 180; opENDSW* = 181; opLEAVEF* = 182; opCLEANUP* = 183; opMOVE* = 184;
+    (*opCHR* = 180;*) opENDSW* = 181; opLEAVEF* = 182; opCLEANUP* = 183; opMOVE* = 184;
     opLSR* = 185; opLSR1* = 186; opLSR2* = 187;
     opMIN* = 188; opMINC* = 189; opMAX* = 190; opMAXC* = 191; opSYSVALIGN16* = 192;
     opEQB* = 193; opNEB* = 194; opINF* = 195; opWIN64ALIGN16* = 196; opVLOAD8* = 197; opGLOAD8* = 198;
@@ -80,7 +80,7 @@ CONST
     opLOAD64* = 202; opLLOAD64* = 203; opVLOAD64* = 204; opGLOAD64* = 205; opSAVE64* = 206;
 
     opTYPEGD* = 207; opCALLI* = 208; opPUSHIP* = 209; opSAVEIP* = 210; opEQIP* = 211; opNEIP* = 212;
-    opSAVE16C* = 213; opWCHR* = 214; opHANDLER* = 215;
+    opSAVE16C* = 213; (*opWCHR* = 214;*) opHANDLER* = 215;
 
     opSYSVCALL* = 216; opSYSVCALLI* = 217; opSYSVCALLP* = 218; opFNAME* = 219; opFASTCALL* = 220;
 
@@ -265,12 +265,22 @@ BEGIN
 END PutByte;
 
 
+PROCEDURE AlignData (n: INTEGER);
+BEGIN
+    WHILE CHL.Length(codes.data) MOD n # 0 DO
+        PutByte(0)
+    END
+END AlignData;
+
+
 PROCEDURE putstr* (s: ARRAY OF CHAR): INTEGER;
 VAR
     i, n, res: INTEGER;
 BEGIN
+    IF TARGETS.WinLin THEN
+        AlignData(16)
+    END;
     res := CHL.Length(codes.data);
-
     i := 0;
     n := LENGTH(s);
     WHILE i < n DO
@@ -290,6 +300,9 @@ VAR
 
 BEGIN
     IF codes.charoffs[c] = -1 THEN
+        IF TARGETS.WinLin THEN
+            AlignData(16)
+        END;
         res := CHL.Length(codes.data);
         PutByte(c);
         PutByte(0);
@@ -307,12 +320,12 @@ VAR
     i, n, res: INTEGER;
 
 BEGIN
-    res := CHL.Length(codes.data);
-
-    IF ODD(res) THEN
-        PutByte(0);
-        INC(res)
+    IF TARGETS.WinLin THEN
+        AlignData(16)
+    ELSE
+        AlignData(2)
     END;
+    res := CHL.Length(codes.data);
 
     n := STRINGS.Utf8To16(s, codes.wstr);
 
@@ -341,12 +354,12 @@ VAR
 
 BEGIN
     IF codes.wcharoffs[c] = -1 THEN
-        res := CHL.Length(codes.data);
-
-        IF ODD(res) THEN
-            PutByte(0);
-            INC(res)
+        IF TARGETS.WinLin THEN
+            AlignData(16)
+        ELSE
+            AlignData(2)
         END;
+        res := CHL.Length(codes.data);
 
         IF TARGETS.LittleEndian THEN
             PutByte(c MOD 256);

@@ -1,13 +1,13 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2021, Anton Krotov
+    Copyright (c) 2018-2022, Anton Krotov
     All rights reserved.
 *)
 
 MODULE FILES;
 
-IMPORT UTILS, C := COLLECTIONS, CONSOLE;
+IMPORT UTILS, C := COLLECTIONS;
 
 
 TYPE

@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2013-2014, 2018-2020 Anton Krotov
+    Copyright (c) 2013-2014, 2018-2022 Anton Krotov
     All rights reserved.
 *)
 
@@ -271,8 +271,7 @@ BEGIN
     ELSIF x < -15.0 THEN
         x := -1.0
     ELSE
-        x := exp(2.0 * x);
-        x := (x - 1.0) / (x + 1.0)
+        x := 1.0 - 2.0 / (exp(2.0 * x) + 1.0)
     END
 
     RETURN x
