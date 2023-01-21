@@ -39,7 +39,7 @@ CONST
 
     mark_width = 2;
     pad_left = mark_width + 3;
-    pad_top = 0;
+    pad_top = 1;
     inter = 2;
 
 
@@ -2234,7 +2234,7 @@ BEGIN
 	    cursor := text.cursor;
 	    scrollX := text.scroll.X;
 	    scrollY := text.scroll.Y;
-	    IF ~((scrollY > cursor.Y) OR (scrollY + textsize.Y <= cursor.Y) OR
+	    IF ~((scrollY > cursor.Y) OR (scrollY + textsize.Y + 1 <= cursor.Y) OR
 	       (scrollX > cursor.X) OR (scrollX + textsize.X <= cursor.X)) THEN
 	        x := (cursor.X - scrollX)*charWidth + padding.left;
 	        y1 := (cursor.Y - scrollY)*charHeight + padding.top + (inter DIV 2 + 1);
@@ -2336,9 +2336,10 @@ BEGIN
     y := padding.top + inter DIV 2;
     n := text.scroll.Y;
     firstLine := getLine2(text, n);
+
     IF text.smallMove THEN
     	line := text.curLine;
-    	cnt := textsize.Y - 1;
+    	cnt := textsize.Y;
     	y := y + charHeight*(text.cursor.Y - text.scroll.Y);
     	G.SetColor(canvas, colors.back);
     	G.FillRect(canvas, padding.left - 2, y - inter DIV 2, size.X - 1, y - inter DIV 2 + charHeight);
@@ -2348,7 +2349,7 @@ BEGIN
     	cnt := 0
     END;
 
-    WHILE (line # NIL) & (cnt < textsize.Y) DO
+    WHILE (line # NIL) & (cnt <= textsize.Y) DO
         backColor := colors.back;
         IF (line = text.curLine) & ~selected(text) THEN
             G.SetColor(canvas, colors.curline);
@@ -2383,7 +2384,7 @@ BEGIN
     line := firstLine;
     SetColor(colors.numtext, colors.numback);
     y := padding.top + inter DIV 2;
-    n := MIN(text.scroll.Y + textsize.Y, text.count);
+    n := MIN(text.scroll.Y + textsize.Y + 1, text.count);
     FOR i := text.scroll.Y + 1 TO n DO
         IF lineNumbers THEN
             IF (i MOD 10 = 0) OR (i - 1 = text.cursor.Y) OR line.label THEN
@@ -2396,8 +2397,8 @@ BEGIN
         END;
         IF line.label THEN
             FOR x := wNum DIV 2 TO (padding.left - pad_left) - wNum DIV 2 DO
-                G.notVLine(canvas, x, y, y + charHeight - inter);
-                G.xorVLine(canvas, x, y, y + charHeight - inter)
+                G.notVLine(canvas, x, y, y + charHeight - (inter + 1));
+                G.xorVLine(canvas, x, y, y + charHeight - (inter + 1))
             END
         END;
         NextLine(line);
@@ -2409,7 +2410,7 @@ BEGIN
     		firstLine := text.curLine;
     		lastLine := firstLine
     	ELSE
-    	    lastLine := getLine2(text, MIN(text.scroll.Y + textsize.Y, text.count) - 1)
+    	    lastLine := getLine2(text, MIN(text.scroll.Y + textsize.Y + 1, text.count) - 1)
         END;
         p := text.foundList.first(Search.tPos);
         WHILE p # NIL DO

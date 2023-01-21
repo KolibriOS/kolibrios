@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (13-jan-2023)";
+    HEADER = "CEdit (21-jan-2023)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -65,7 +65,7 @@ CONST
 
     toolbarTop = Menu.MainMenuHeight + 3;
 
-    TOP = toolbarTop + Toolbar.BtnSize + 10 + Tabs.tabHeight;
+    TOP = toolbarTop + Toolbar.BtnSize + 9 + Tabs.tabHeight;
 
     minWinWidth = 635; minWinHeight = 550;
 
@@ -168,6 +168,8 @@ CONST
 
 	SHIFT = Menu.SHIFT;
 	CTRL  = Menu.CTRL;
+
+	ClippingArea = 50;
 
 
 VAR
@@ -446,7 +448,8 @@ BEGIN
     END;
     BOTTOM := SB.height() + scrollWidth - 1;
     G.destroy(canvas);
-    canvas := G.CreateCanvas(cliWidth - (LEFT + RIGHT + 2 + RIGHT_PADDING), cliHeight - (TOP + BOTTOM + 1));
+    canvas := G.CreateCanvas(cliWidth - (LEFT + RIGHT + 2 + RIGHT_PADDING), cliHeight - (TOP + BOTTOM + 1 - ClippingArea));
+    DEC(canvas.height, ClippingArea);
     Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, cliWidth - (LEFT + RIGHT + 2 + RIGHT_PADDING), Tabs.tabHeight);
     G.SetFont(canvas, font);
     T.setCanvas(canvas);
@@ -2099,7 +2102,8 @@ BEGIN
     RIGHT := scrollWidth - 2;
     BOTTOM := SB.height() + scrollWidth - 1;
     SkinHeight := K.SkinHeight();
-    canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 11 + RIGHT_PADDING), winHeight - (TOP + BOTTOM + 5) - SkinHeight);
+    canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 11 + RIGHT_PADDING), winHeight - (TOP + BOTTOM + 5 - ClippingArea) - SkinHeight);
+    DEC(canvas.height, ClippingArea);
     tabs := Tabs.create();
     Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, canvas.width, Tabs.tabHeight);
     font := G.fonts[Ini.font];

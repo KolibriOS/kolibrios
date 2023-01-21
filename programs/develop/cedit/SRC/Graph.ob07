@@ -45,7 +45,7 @@ TYPE
 
     tCanvas* = POINTER TO RECORD
         bitmap: INTEGER;
-        width*, height*: INTEGER;
+        width*, height*, sizeY: INTEGER;
         color, backColor, textColor: INTEGER;
         font*: tFont;
         mode: INTEGER
@@ -166,22 +166,18 @@ END VLine;
 
 PROCEDURE notVLine* (canvas: tCanvas; x, y1, y2: INTEGER);
 BEGIN
-    IF (0 <= y1) & (y1 < canvas.height) & (0 <= y2) & (y2 < canvas.height) THEN
-        canvas.mode := modeNOT;
-        VLine(canvas, x, y1, y2);
-        canvas.mode := modeCOPY
-    END
+	canvas.mode := modeNOT;
+	VLine(canvas, x, y1, y2);
+	canvas.mode := modeCOPY
 END notVLine;
 
 
 PROCEDURE xorVLine* (canvas: tCanvas; x, y1, y2: INTEGER);
 BEGIN
-    IF (0 <= y1) & (y1 < canvas.height) & (0 <= y2) & (y2 < canvas.height) THEN
-        canvas.mode := modeXOR;
-        SetColor(canvas, 0FF0000H);
-        VLine(canvas, x, y1, y2);
-        canvas.mode := modeCOPY
-    END
+	canvas.mode := modeXOR;
+	SetColor(canvas, 0FF0000H);
+	VLine(canvas, x, y1, y2);
+	canvas.mode := modeCOPY
 END xorVLine;
 
 
@@ -259,7 +255,7 @@ BEGIN
     w := canvas.width*4;
     ptr := canvas.bitmap;
     ptr2 := ptr;
-    i := canvas.height - 1;
+    i := canvas.sizeY - 1;
     WHILE i > 0 DO
         INC(ptr2, w);
         SYSTEM.MOVE(ptr, ptr2, w);
@@ -277,7 +273,7 @@ VAR
     c: WCHAR;
 BEGIN
 	font := canvas.font;
-    IF (0 <= y) & (y <= canvas.height - font.height - 1) THEN
+    IF (0 <= y) & (y <= canvas.sizeY - font.height - 1) THEN
         IF x < 0 THEN
             i := -(x DIV font.width);
             INC(x, i*font.width);
@@ -339,6 +335,7 @@ BEGIN
     INC(canvas.bitmap, 8);
     canvas.width := width;
     canvas.height := height;
+    canvas.sizeY := height;
     canvas.mode := modeCOPY
     RETURN canvas
 END CreateCanvas;

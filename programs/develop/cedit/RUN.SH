@@ -1,3 +1,3 @@
 #SHS
-/tmp0/1/cedit.kex
+/tmp0/1/cedit
 exit

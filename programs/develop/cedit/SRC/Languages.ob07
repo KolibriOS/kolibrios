@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -434,7 +434,8 @@ BEGIN
 END EnterKW;
 
 
-PROCEDURE loadKW (VAR KW: ARRAY OF tKeyWords; VAR delim: tDelimiters; getStr: procGetStr; lang: ARRAY OF CHAR);
+PROCEDURE loadKW (lang: INTEGER; VAR KW: ARRAY OF tKeyWords; VAR delim: tDelimiters; getStr: procGetStr;
+					lang_name: ARRAY OF CHAR);
 VAR
     s: ARRAY 16*1024 OF CHAR;
     key: ARRAY 4 OF CHAR;
@@ -443,7 +444,7 @@ BEGIN
 	FOR i := 0 TO LEN(delim) - 1 DO
 		delim[i] := FALSE
 	END;
-	getStr(lang, "delim", s);
+	getStr(lang_name, "delim", s);
 	i := 0;
 	WHILE s[i] # 0X DO
 		delim[ORD(s[i])] := TRUE;
@@ -453,7 +454,10 @@ BEGIN
     FOR i := 0 TO 2 DO
         KW[i].cnt := 0;
         key[2] := CHR(ORD("1") + i);
-        getStr(lang, key, s);
+        getStr(lang_name, key, s);
+        IF ~(lang IN csLang) THEN
+        	Utils.upcase(s)
+        END;
         EnterKW(s, KW[i])
     END
 END loadKW;
@@ -498,14 +502,14 @@ END getExt;
 PROCEDURE init* (getStr: procGetStr);
 BEGIN
 	currentLang := langText;
-	loadKW(KW[langText],   Delim[langText],   getStr, "lang_Text");
-    loadKW(KW[langOberon], Delim[langOberon], getStr, "lang_Oberon");
-    loadKW(KW[langC],      Delim[langC],      getStr, "lang_C");
-    loadKW(KW[langPascal], Delim[langPascal], getStr, "lang_Pascal");
-    loadKW(KW[langLua],    Delim[langLua],    getStr, "lang_Lua");
-    loadKW(KW[langIni],    Delim[langIni],    getStr, "lang_Ini");
-    loadKW(KW[langFasm],   Delim[langFasm],   getStr, "lang_Fasm");
-    loadKW(KW[langJSON],   Delim[langJSON],   getStr, "lang_JSON");
+	loadKW(langText,   KW[langText],   Delim[langText],   getStr, "lang_Text");
+    loadKW(langOberon, KW[langOberon], Delim[langOberon], getStr, "lang_Oberon");
+    loadKW(langC,      KW[langC],      Delim[langC],      getStr, "lang_C");
+    loadKW(langPascal, KW[langPascal], Delim[langPascal], getStr, "lang_Pascal");
+    loadKW(langLua,    KW[langLua],    Delim[langLua],    getStr, "lang_Lua");
+    loadKW(langIni,    KW[langIni],    Delim[langIni],    getStr, "lang_Ini");
+    loadKW(langFasm,   KW[langFasm],   Delim[langFasm],   getStr, "lang_Fasm");
+    loadKW(langJSON,   KW[langJSON],   Delim[langJSON],   getStr, "lang_JSON");
 
     fileExt[ 0].ext := "OB07"; fileExt[ 0].lang := langOberon;
     fileExt[ 1].ext := "C";    fileExt[ 1].lang := langC;
