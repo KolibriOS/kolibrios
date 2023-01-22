@@ -1,7 +1,7 @@
 ﻿(*
     BSD 2-Clause License
 
-    Copyright (c) 2018-2022, Anton Krotov
+    Copyright (c) 2018-2023, Anton Krotov
     All rights reserved.
 *)
 
@@ -1137,7 +1137,7 @@ BEGIN
             END
 
         |PROG.stORD:
-            IL.AddCmd(IL.opPRECALL, 0);
+            cmd1 := IL.getlast();
             PExpression(parser, e);
             PARS.check(isChar(e) OR isBoolean(e) OR isSet(e) OR isCharW(e) OR isStringW1(e), pos, 66);
             IF e.obj = eCONST THEN
@@ -1148,6 +1148,12 @@ BEGIN
                 END
             ELSE
                 IF isBoolean(e) THEN
+                    cmd2 := IL.getlast();
+                    IL.setlast(cmd1);
+                    IL.AddCmd(IL.opPRECALL, 0);
+                    IL.AddCmd0(IL.opRES);
+                    IL.drop;
+                    IL.setlast(cmd2);
                     IL._ord
                 END
             END;
