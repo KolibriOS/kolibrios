@@ -1,0 +1,159 @@
+(*
+    Copyright 2016, 2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE ReadFile;
+
+IMPORT sys := SYSTEM, K := KOSAPI, S := Strings, File, SU := SysUtils, Encode;
+
+
+VAR
+
+  Mem, Pos, Size, FSize*: INTEGER;
+
+  Error*: BOOLEAN;
+
+
+PROCEDURE Adr*(): INTEGER;
+  RETURN Mem + Pos
+END Adr;
+
+
+PROCEDURE Next*(VAR ch: CHAR);
+BEGIN
+  INC(Pos);
+  sys.GET(Mem + Pos, ch)
+END Next;
+
+
+PROCEDURE Progress*(): REAL;
+VAR res: REAL;
+BEGIN
+  res := FLT(Pos) / FLT(Size);
+  IF res < 0.0 THEN
+    res := 0.0
+  END;
+  IF res > 1.0 THEN
+    res := 1.0
+  END
+  RETURN res
+END Progress;
+
+
+PROCEDURE Load*(FileName: S.STRING);
+VAR F: File.FS; pos, FileSize: INTEGER;
+BEGIN
+  Error := TRUE;
+  Mem := 0;
+  F := File.Open(FileName);
+  SU.ErrorIf(F = NIL, 1);
+  FileSize := File.Seek(F, 0, File.SEEK_END);
+  Size := FileSize;
+  SU.ErrorIf(FileSize <= 0, 1);
+  pos := File.Seek(F, 0, File.SEEK_BEG);
+  SU.ErrorIf(pos # 0, 1);
+  Mem := K.malloc(FileSize + 1024);
+  SU.MemError(Mem = 0);
+  pos := File.Read(F, Mem, FileSize);
+  SU.ErrorIf(pos # FileSize, 1);
+  sys.PUT(Mem + FileSize, 0X);
+  File.Close(F);
+  Pos := -1;
+  Error := FALSE;
+  FSize := FileSize
+END Load;
+
+
+PROCEDURE Free*;
+BEGIN
+  IF Mem # 0 THEN
+    Mem := K.free(Mem)
+  END
+END Free;
+
+
+PROCEDURE Conv*(cp: Encode.CP);
+VAR m, nov, mem2, k: INTEGER; c: CHAR;
+BEGIN
+  m := Mem;
+  k := 0;
+  REPEAT
+    sys.GET(m, c); INC(m);
+    k := k + cp[ORD(c)].len
+  UNTIL c = 0X;
+  nov := K.malloc(k + 1024);
+  SU.MemError(nov = 0);
+  Size := k;
+  mem2 := nov;
+  m := Mem;
+  REPEAT
+    sys.GET(m, c); INC(m);
+    sys.MOVE(sys.ADR(cp[ORD(c)].utf8), nov, cp[ORD(c)].len);
+    nov := nov + cp[ORD(c)].len
+  UNTIL c = 0X;
+  Pos := -1;
+  Mem := K.free(Mem);
+  Mem := mem2;
+END Conv;
+
+
+PROCEDURE SeekBeg*;
+BEGIN
+  Pos := -1
+END SeekBeg;
+
+
+PROCEDURE Int*(): INTEGER;
+VAR i: INTEGER;
+BEGIN
+  sys.GET(Mem + Pos, i)
+  RETURN i
+END Int;
+
+
+PROCEDURE FileSize*(name: S.STRING): INTEGER;
+VAR F: File.FS; res: INTEGER;
+BEGIN
+  F := File.Open(name);
+  res := File.Seek(F, 0, 2);
+  File.Close(F)
+  RETURN res
+END FileSize;
+
+
+PROCEDURE ChkSum* (name: S.STRING): INTEGER;
+VAR
+	ptr, size, res: INTEGER;
+	b: BYTE;
+BEGIN
+	res := 0;
+	ptr := File.Load(name, size);
+	IF ptr # 0 THEN
+		WHILE size > 0 DO
+			sys.GET(ptr, b);
+			INC(res, b);
+			INC(ptr);
+			DEC(size)
+		END;
+		ptr := K.free(ptr)
+	END
+	RETURN res
+END ChkSum;
+
+
+END ReadFile.

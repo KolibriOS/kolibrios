@@ -1,0 +1,167 @@
+﻿(*
+    Copyright 2021, 2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Toolbar;
+
+IMPORT
+	Icons, K := SysUtils;
+
+CONST
+	max = 14;
+
+    BtnSize* = 26;
+    BtnInter = 5;
+    DelimSize = 7;
+    IconPad = (BtnSize - Icons.SIZE) DIV 2;
+
+TYPE
+	tButtonText = ARRAY 4 OF CHAR;
+
+	tButton = RECORD
+		btn, icon, x: INTEGER;
+		text: tButtonText;
+		enabled: BOOLEAN
+	END;
+
+	tToolbar* = RECORD
+		buttons: ARRAY max OF tButton;
+		x, y, cnt, width: INTEGER;
+		icons, grayIcons: INTEGER;
+		colors: RECORD back, text, disText, light, shadow, window: INTEGER	END
+	END;
+
+
+PROCEDURE drawIcons* (toolbar: tToolbar);
+VAR
+	i, icons, color: INTEGER;
+	button: tButton;
+BEGIN
+	i := 0;
+	WHILE i < toolbar.cnt DO
+		button := toolbar.buttons[i];
+		IF button.btn # 0 THEN
+			IF button.enabled THEN
+				icons := toolbar.icons;
+				color := toolbar.colors.text
+			ELSE
+				icons := toolbar.grayIcons;
+				color := toolbar.colors.disText
+			END;
+			IF button.icon # -1 THEN
+				Icons.draw(icons, button.icon, button.x + IconPad, toolbar.y + IconPad)
+			ELSE
+			    K.DrawRect(button.x + 1, toolbar.y + 1, BtnSize - 1, BtnSize - 1, toolbar.colors.back);
+    			K.DrawText69(button.x + (BtnSize - LENGTH(button.text)*6) DIV 2, toolbar.y + (BtnSize - 9) DIV 2 + 2, color, button.text)
+			END
+		END;
+		INC(i)
+	END
+END drawIcons;
+
+
+PROCEDURE setColors (VAR toolbar: tToolbar);
+BEGIN
+	toolbar.colors.back    := 0F2EFECH;
+	toolbar.colors.text    := 00000FFH;
+	toolbar.colors.disText := 0808080H;
+	toolbar.colors.light   := 0FEFEFEH;
+	toolbar.colors.shadow  := 09F9C9AH;
+	toolbar.colors.window  := K.winColor
+END setColors;
+
+
+PROCEDURE draw* (VAR toolbar: tToolbar);
+VAR
+	i, x, y, btn: INTEGER;
+	button: tButton;
+BEGIN
+	setColors(toolbar);
+	Icons.get(toolbar.icons, toolbar.grayIcons, toolbar.colors.back);
+	i := 0;
+	WHILE i < toolbar.cnt DO
+		button := toolbar.buttons[i];
+		btn := button.btn;
+		IF btn # 0 THEN
+			x := button.x;
+			y := toolbar.y;
+			K.DrawRect(x + 1, y + 1, BtnSize, BtnSize - 1, toolbar.colors.back);
+			K.DrawLine(x + 1, y + BtnSize, x + BtnSize - 1, y + BtnSize, toolbar.colors.shadow);
+			K.DrawLine(x + 1, y, x + BtnSize  - 1, y, toolbar.colors.light);
+			K.DrawLine(x, y + 1, x, y + BtnSize - 1, toolbar.colors.light);
+			K.PutPixel(x + BtnSize, y + 1, toolbar.colors.light);
+			K.PutPixel(x, y + BtnSize - 1, toolbar.colors.shadow);
+			K.PutPixel(x + BtnSize, y + BtnSize - 1, toolbar.colors.shadow);
+			K.CreateButton(btn + ORD({30}), x, y, BtnSize, BtnSize, 0, "")
+		END;
+		INC(i)
+	END;
+	drawIcons(toolbar)
+END draw;
+
+
+PROCEDURE enable* (VAR toolbar: tToolbar; btn: INTEGER; value: BOOLEAN);
+VAR
+	i: INTEGER;
+BEGIN
+	i := 0;
+	WHILE (i < toolbar.cnt) & (toolbar.buttons[i].btn # btn) DO
+		INC(i)
+	END;
+	IF i < toolbar.cnt THEN
+		toolbar.buttons[i].enabled := value
+	END
+END enable;
+
+
+PROCEDURE add* (VAR toolbar: tToolbar; btn, icon: INTEGER; text: tButtonText);
+VAR
+	button: tButton;
+BEGIN
+	ASSERT(toolbar.cnt < max);
+	button.btn := btn;
+	button.icon := icon;
+	button.x := toolbar.width + toolbar.x;
+	button.text := text;
+	button.enabled := TRUE;
+	toolbar.buttons[toolbar.cnt] := button;
+	INC(toolbar.cnt);
+	IF btn # 0 THEN
+		INC(toolbar.width, BtnSize + BtnInter)
+	ELSE
+		INC(toolbar.width, DelimSize)
+	END
+END add;
+
+
+PROCEDURE delimiter* (VAR toolbar: tToolbar);
+BEGIN
+	add(toolbar, 0, 0, "")
+END delimiter;
+
+
+PROCEDURE create* (VAR toolbar: tToolbar; x, y: INTEGER);
+BEGIN
+	toolbar.x := x;
+	toolbar.y := y;
+	toolbar.cnt := 0;
+	toolbar.width := 0
+END create;
+
+
+END Toolbar.

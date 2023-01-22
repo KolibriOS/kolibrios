@@ -1,0 +1,58 @@
+(*
+    Copyright 2016, 2021 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Window;
+
+IMPORT S := Strings;
+
+TYPE
+
+  TRect* = RECORD
+    Left*, Top*, Width*, Height* : INTEGER
+  END;
+
+  TWindow* = RECORD (TRect)
+    Caption*             : S.STRING;
+    Created*             : BOOLEAN;
+    dWidth*, dHeight*    : INTEGER
+  END;
+
+PROCEDURE InitWindow*(VAR Window: TWindow; Left, Top, Width, Height: INTEGER; Caption: ARRAY OF CHAR);
+BEGIN
+  Window.Left    := Left;
+  Window.Top     := Top;
+  Window.Width   := Width;
+  Window.Height  := Height;
+  Window.Created := FALSE;
+  Window.dWidth  := 0;
+  Window.dHeight := 0;
+  COPY(Caption, Window.Caption)
+END InitWindow;
+
+
+PROCEDURE InitRect*(VAR Rect: TRect; Left, Top, Width, Height: INTEGER);
+BEGIN
+  Rect.Left   := Left;
+  Rect.Top    := Top;
+  Rect.Width  := Width;
+  Rect.Height := Height
+END InitRect;
+
+
+END Window.

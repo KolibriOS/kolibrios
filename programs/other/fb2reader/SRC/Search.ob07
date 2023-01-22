@@ -1,0 +1,645 @@
+﻿(*
+    Copyright 2020, 2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Search;
+
+IMPORT
+
+    XML, G := Graph, Window, Font, S := Strings, LISTS, SYSTEM,
+    SU := SysUtils, K := KOSAPI, SearchForm;
+
+
+TYPE
+
+    STRING* = SearchForm.STRING;
+
+    PFind = PROCEDURE (d: INTEGER);
+
+    TRect = POINTER TO RECORD (LISTS.ITEM)
+
+        x1, y1, x2, y2: INTEGER
+
+    END;
+
+    TPos = POINTER TO RECORD (LISTS.ITEM)
+
+        n, first, last: INTEGER;
+        RectList: LISTS.LIST
+
+    END;
+
+    TextIdx = POINTER TO RECORD
+
+        cnt, offs: ARRAY 256 OF INTEGER;
+        table: INTEGER;
+        data, size: INTEGER
+
+    END;
+
+    Text = POINTER TO RECORD (LISTS.ITEM)
+
+        case: BOOLEAN;
+        idx0, idx1: TextIdx;
+        str0, str1: STRING;
+        PosList: LISTS.LIST;
+        curPos: TPos;
+        found: INTEGER;
+        body: XML.TAG
+
+    END;
+
+
+VAR
+
+    TextList: LISTS.LIST;
+    Body: XML.TAG;
+    Find: PFind;
+
+
+PROCEDURE SelText (Col: Window.TRect; min, max, Ycur, LineH: INTEGER; right: BOOLEAN; rect: TRect; cur: BOOLEAN);
+VAR
+    y, y0, color: INTEGER;
+
+BEGIN
+    y  := rect.y1 - Ycur;
+    y0 := y - y MOD LineH;
+    IF (min <= y0) & (y0 <= max) THEN
+        IF cur THEN
+            color := 0FF0000H
+        ELSE
+            color := 0
+        END;
+        G.BoxNotXOR(Col.Left + rect.x1 + 1, Col.Top + y - Col.Height * ORD(right), Col.Left + rect.x2, Col.Top + y - Col.Height * ORD(right) + Font.FontH(), color)
+    END
+END SelText;
+
+
+PROCEDURE draw* (body: XML.TAG; ColLeft, ColRight: Window.TRect; Ycur, LineH: INTEGER; TwoCol: BOOLEAN);
+VAR
+    rect: TRect;
+    pos, cur: TPos;
+
+BEGIN
+    Body := body;
+    IF body.text # NIL THEN
+        pos := body.text(Text).PosList.first(TPos);
+        cur := body.text(Text).curPos
+    ELSE
+        pos := NIL;
+        cur := NIL
+    END;
+    WHILE pos # NIL DO
+        rect := pos.RectList.first(TRect);
+        WHILE rect # NIL DO
+            SelText(ColLeft, 0, ColLeft.Height - LineH, Ycur, LineH, FALSE, rect, pos = cur);
+            IF TwoCol THEN
+                SelText(ColRight, ColLeft.Height, ColLeft.Height + ColRight.Height - LineH, Ycur, LineH, TRUE, rect, pos = cur)
+            END;
+            rect := rect.next(TRect)
+        END;
+        pos := pos.next(TPos)
+    END
+END draw;
+
+
+PROCEDURE getc_utf8 (VAR text, size, code: INTEGER);
+VAR
+    c:    BYTE;
+    n, k: INTEGER;
+    end:  BOOLEAN;
+
+BEGIN
+    ASSERT(size > 0);
+    code := 0;
+    end := FALSE;
+    REPEAT
+        SYSTEM.GET(text, c);
+        INC(text);
+        DEC(size);
+        CASE c OF
+        |  0..127:
+            code := c;
+            end := TRUE
+
+        |128..191:
+            code := code * 64 + c MOD 64;
+            DEC(n);
+            end := n <= 0
+
+        |192..255:
+            k := LSL(c, 24);
+            n := -2;
+            REPEAT
+                k := ROR(k, -1);
+                INC(n)
+            UNTIL ~ODD(k);
+            k := LSL(c, n + 25);
+            code := LSR(k, n + 25)
+
+        END
+    UNTIL (size = 0) OR end
+END getc_utf8;
+
+
+PROCEDURE textlen (body: XML.ELEMENT; VAR length: INTEGER);
+VAR
+    cur: XML.ELEMENT;
+
+BEGIN
+    cur := body;
+    WHILE (cur # NIL) DO
+        IF cur IS XML.TAG THEN
+            textlen(cur(XML.TAG).child.first, length)
+        ELSIF cur IS XML.WORD THEN
+            INC(length, cur(XML.WORD).value.last - cur(XML.WORD).value.first + 1)
+        ELSIF cur IS XML.SPACE THEN
+            INC(length)
+        END;
+        cur := cur.next
+    END
+END textlen;
+
+
+PROCEDURE puttext (body: XML.ELEMENT; VAR buf: INTEGER);
+VAR
+    cur: XML.ELEMENT;
+    len: INTEGER;
+
+BEGIN
+    cur := body;
+    WHILE (cur # NIL) DO
+        IF cur IS XML.TAG THEN
+            puttext(cur(XML.TAG).child.first, buf)
+        ELSIF cur IS XML.WORD THEN
+            len := cur(XML.WORD).value.last - cur(XML.WORD).value.first + 1;
+            SYSTEM.MOVE(cur(XML.WORD).value.first, buf, len);
+            INC(buf, len)
+        ELSIF cur IS XML.SPACE THEN
+            SYSTEM.PUT(buf, 20X);
+            INC(buf)
+        END;
+        cur := cur.next
+    END
+END puttext;
+
+
+PROCEDURE cap (code: INTEGER): INTEGER;
+BEGIN
+    CASE code OF
+    |61H..7AH, 430H..44FH:
+        DEC(code, 32)
+    |451H..45FH:
+        DEC(code, 80)
+    |491H:
+        code := 490H
+    ELSE
+    END
+    RETURN code
+END cap;
+
+
+PROCEDURE UpCase (s1, s2, length: INTEGER);
+VAR
+    code, n: INTEGER;
+    u: S.UTF8;
+
+BEGIN
+    WHILE length > 0 DO
+        getc_utf8(s1, length, code);
+        S.utf8(cap(code), u);
+        n := LENGTH(u);
+        SYSTEM.MOVE(SYSTEM.ADR(u[0]), s2, n);
+        INC(s2, n)
+    END
+END UpCase;
+
+
+PROCEDURE create (body: XML.ELEMENT);
+VAR
+    length, buf, buf1, temp: INTEGER;
+    text: Text;
+    xml: XML.ELEMENT;
+
+
+    PROCEDURE index (idx: TextIdx; buf, length: INTEGER);
+    VAR
+        i: INTEGER;
+        c: CHAR;
+        offs, temp: INTEGER;
+
+    BEGIN
+        idx.data := buf;
+        idx.size := length;
+
+        FOR i := 0 TO 255 DO
+            idx.offs[i] := 0;
+            idx.cnt[i] := 0
+        END;
+
+        i := length;
+
+        WHILE i > 0 DO
+            SYSTEM.GET(buf, c);
+            INC(idx.offs[ORD(c)]);
+            DEC(i);
+            INC(buf)
+        END;
+
+        offs := 0;
+
+        FOR i := 0 TO 255 DO
+            temp := offs;
+            INC(offs, idx.offs[i]);
+            idx.offs[i] := temp * 4
+        END;
+
+        idx.table := K.malloc(offs * 4);
+        SU.MemError(idx.table = 0);
+
+        i := length;
+        buf := idx.data;
+
+        WHILE i > 0 DO
+            SYSTEM.GET(buf, c);
+            SYSTEM.PUT(idx.table + idx.offs[ORD(c)] + idx.cnt[ORD(c)] * 4, length - i);
+            INC(idx.cnt[ORD(c)]);
+            DEC(i);
+            INC(buf)
+        END
+    END index;
+
+
+BEGIN
+    NEW(text);
+    text.body := body(XML.TAG);
+    text.PosList := LISTS.create(NIL);
+
+    xml := body;
+    body := body(XML.TAG).child.first;
+    textlen(body, length);
+    buf := K.malloc(length);
+    SU.MemError(buf = 0);
+    temp := buf;
+    puttext(body, temp);
+
+    NEW(text.idx0);
+    index(text.idx0, buf, length);
+
+    buf1 := K.malloc(length);
+    SU.MemError(buf1 = 0);
+
+    UpCase(buf, buf1, length);
+
+    NEW(text.idx1);
+    index(text.idx1, buf1, text.idx0.size);
+
+    text.case := FALSE;
+
+    text.str0 := "";
+    text.str1 := "";
+    xml(XML.TAG).text := text;
+    LISTS.push(TextList, text)
+END create;
+
+
+PROCEDURE select (body: XML.ELEMENT; VAR pos: TPos; VAR curpos, strong, italic, code: INTEGER);
+VAR
+    cur   : XML.ELEMENT;
+    word  : XML.WORD;
+    space : XML.SPACE;
+
+    tag_value, len, wbeg, wend, selbeg, selend,
+    a, b, z, x, w: INTEGER;
+
+
+    PROCEDURE New (RectList: LISTS.LIST; x1, y1, x2, y2: INTEGER);
+    VAR rect: TRect;
+    BEGIN
+        NEW(rect);
+        rect.x1 := x1; rect.y1 := y1;
+        rect.x2 := x2; rect.y2 := y2;
+        LISTS.push(RectList, rect)
+    END New;
+
+
+BEGIN
+    cur := body;
+    WHILE (cur # NIL) & (pos # NIL) DO
+        selbeg := pos.first;
+        selend := pos.last;
+        IF cur IS XML.TAG THEN
+            tag_value := cur(XML.TAG).value;
+
+            CASE tag_value OF
+            |XML.tag_title, XML.tag_strong, XML.tag_th:
+                INC(strong);
+                Font.Bold(TRUE)
+            |XML.tag_epigraph, XML.tag_cite, XML.tag_emphasis:
+                INC(italic);
+                Font.Italic(TRUE, FALSE)
+            |XML.tag_code:
+                Font.sysfont(TRUE);
+                INC(code)
+            ELSE
+            END;
+
+            select(cur(XML.TAG).child.first, pos, curpos, strong, italic, code);
+
+            CASE tag_value OF
+            |XML.tag_title, XML.tag_strong, XML.tag_th, XML.tag_text_author, XML.tag_date:
+                DEC(strong);
+                Font.Bold(strong > 0)
+            |XML.tag_epigraph, XML.tag_cite, XML.tag_emphasis:
+                DEC(italic);
+                Font.Italic(italic > 0, FALSE)
+            |XML.tag_code:
+                DEC(code);
+                Font.sysfont(code > 0)
+            ELSE
+            END;
+
+            IF pos # NIL THEN
+                selbeg := pos.first;
+                selend := pos.last
+            END
+        ELSIF cur IS XML.WORD THEN
+            word := cur(XML.WORD);
+            len := word.value.last - word.value.first + 1;
+            wbeg := curpos;
+            wend := curpos + len - 1;
+            INC(curpos, len);
+
+            a := MAX(wbeg, selbeg);
+            b := MIN(wend, selend);
+
+            IF b >= a THEN
+                x := word.width;
+                IF (a = wbeg) & (b = wend) THEN
+                    New(pos.RectList, word.X, word.Y, word.X + word.width, word.Y + Font.FontH());
+                ELSIF (a = selbeg) & (b = wend) THEN
+                    z := selbeg - wbeg;
+                    INC(word.value.first, z);
+                    word.width := Font.TextWidth(word.value, S.Utf8Length(word.value));
+                    INC(word.X, x - word.width);
+                    New(pos.RectList, word.X, word.Y, word.X + word.width, word.Y + Font.FontH());
+                    DEC(word.value.first, z);
+                    DEC(word.X, x - word.width)
+                ELSIF (a = wbeg) & (b = selend) THEN
+                    z := wend - selend;
+                    DEC(word.value.last, z);
+                    word.width := Font.TextWidth(word.value, S.Utf8Length(word.value));
+                    New(pos.RectList, word.X, word.Y, word.X + word.width, word.Y + Font.FontH());
+                    INC(word.value.last, z)
+                ELSIF (a = selbeg) & (b = selend) THEN
+                    z := selbeg - wbeg;
+                    w := wend - selend;
+                    INC(word.value.first, z);
+                    INC(word.X, x - Font.TextWidth(word.value, S.Utf8Length(word.value)));
+                    DEC(word.value.last, w);
+                    word.width := Font.TextWidth(word.value, S.Utf8Length(word.value));
+                    New(pos.RectList, word.X, word.Y, word.X + word.width, word.Y + Font.FontH());
+                    INC(word.value.last, w);
+                    DEC(word.X, x - Font.TextWidth(word.value, S.Utf8Length(word.value)));
+                    DEC(word.value.first, z)
+                END;
+                word.width := x
+            END
+        ELSIF cur IS XML.SPACE THEN
+            IF (selbeg <= curpos) & (curpos <= selend) THEN
+                space := cur(XML.SPACE);
+                New(pos.RectList, space.X, space.Y, space.X + space.width, space.Y + Font.FontH())
+            END;
+            len := 1;
+            INC(curpos)
+        END;
+        IF curpos > selend THEN
+            IF pos # NIL THEN
+                pos := pos.next(TPos);
+            END;
+            IF cur IS XML.TEXT THEN
+                DEC(curpos, len)
+            ELSE  (* tag *)
+                cur := cur.next
+            END
+        ELSE
+            cur := cur.next
+        END
+    END
+END select;
+
+
+PROCEDURE streq (s1, s2, n: INTEGER): BOOLEAN;
+VAR
+    c1, c2: CHAR;
+
+BEGIN
+    REPEAT
+        SYSTEM.GET(s1, c1); INC(s1);
+        SYSTEM.GET(s2, c2); INC(s2);
+        DEC(n)
+    UNTIL (n = 0) OR (c1 # c2)
+
+    RETURN c1 = c2
+END streq;
+
+
+PROCEDURE destroy (VAR item: LISTS.ITEM);
+BEGIN
+    LISTS.destroy(item(TPos).RectList);
+    DISPOSE(item)
+END destroy;
+
+
+PROCEDURE find (body: XML.TAG; str: STRING);
+VAR
+    c: CHAR;
+    offs, i, pos, strong, italic, code: INTEGER;
+    posItem: TPos;
+    text: Text;
+    pstr, slen: INTEGER;
+    idx: TextIdx;
+
+BEGIN
+    text := body.text(Text);
+    text.found := 0;
+    LISTS.destroy(text.PosList);
+    text.PosList := LISTS.create(NIL);
+
+    text.str0 := str;
+    UpCase(SYSTEM.ADR(str[0]), SYSTEM.ADR(text.str1[0]), LENGTH(str));
+
+    IF text.case THEN
+        idx := text.idx0;
+        pstr := SYSTEM.ADR(text.str0[0])
+    ELSE
+        idx := text.idx1;
+        pstr := SYSTEM.ADR(text.str1[0])
+    END;
+
+    slen := LENGTH(str);
+
+    SYSTEM.GET(pstr, c);
+    offs := idx.offs[ORD(c)];
+    i := idx.cnt[ORD(c)];
+    WHILE i > 0 DO
+        SYSTEM.GET(idx.table + offs, pos);
+        INC(offs, 4);
+        IF (pos + slen <= idx.size) & streq(pstr, idx.data + pos, slen) THEN
+            NEW(posItem);
+            posItem.n := text.found;
+            posItem.first := pos;
+            posItem.last := pos + slen - 1;
+            posItem.RectList := LISTS.create(NIL);
+            posItem.destroy := destroy;
+            LISTS.push(text.PosList, posItem);
+            INC(text.found)
+        END;
+        DEC(i)
+    END;
+    posItem := text.PosList.first(TPos);
+    pos := 0; strong := 0; italic := 0; code := 0;
+    select(body.child.first, posItem, pos, strong, italic, code);
+    text.curPos := NIL
+END find;
+
+
+PROCEDURE ffirst (body: XML.TAG);
+VAR
+    text: Text;
+
+BEGIN
+    text := body.text(Text);
+    IF text.str0 # "" THEN
+        find(body, text.str0);
+        text.curPos := text.PosList.first(TPos)
+    END
+END ffirst;
+
+
+PROCEDURE found* (body: XML.TAG): BOOLEAN;
+    RETURN (body # NIL) & (body.text # NIL) & (body.text(Text).found # 0)
+END found;
+
+
+PROCEDURE fnext* (body: XML.TAG; VAR y: INTEGER; d: INTEGER);
+VAR
+    text: Text;
+    rect: TRect;
+    cur:  LISTS.ITEM;
+
+BEGIN
+    text := body.text(Text);
+    IF (text # NIL) & (text.found # 0) THEN
+        cur := text.curPos;
+        CASE d OF
+        |1:
+            IF cur.next # NIL THEN
+                cur := cur.next
+            ELSE
+                cur := text.PosList.first
+            END
+
+        |-1:
+            IF cur.prev # NIL THEN
+                cur := cur.prev
+            ELSE
+                cur := text.PosList.last
+            END
+
+        |0:
+            cur := text.PosList.first
+
+        END;
+        text.curPos := cur(TPos);
+        rect := text.curPos.RectList.first(TRect);
+        IF rect # NIL THEN
+            y := rect.y1
+        END
+    ELSE
+        y := -1
+    END
+END fnext;
+
+
+PROCEDURE open* (_find: PFind);
+BEGIN
+    Find := _find;
+    SearchForm.open
+END open;
+
+
+PROCEDURE close*;
+VAR
+    text: Text;
+    body: XML.TAG;
+
+BEGIN
+    body := Body;
+    text := body.text(Text);
+    IF text # NIL THEN
+        LISTS.destroy(text.PosList);
+        text.PosList := LISTS.create(NIL);
+        text.found := 0;
+        text.curPos := NIL
+    END
+END close;
+
+
+PROCEDURE resize*;
+VAR
+    n: INTEGER;
+    text: Text;
+    item: LISTS.ITEM;
+
+BEGIN
+    text := TextList.first(Text);
+    WHILE text # NIL DO
+        IF text.found # 0 THEN
+            n := text.curPos.n;
+            find(text.body, text.str0);
+            item := LISTS.get(text.PosList, n);
+            text.curPos := item(TPos)
+        END;
+        text := text.next(Text)
+    END
+END resize;
+
+
+PROCEDURE callback (case: BOOLEAN; str: STRING): BOOLEAN;
+VAR
+    body: XML.TAG;
+
+BEGIN
+    body := Body;
+    IF body.text = NIL THEN
+        create(body)
+    END;
+    body.text(Text).case := case;
+    body.text(Text).str0 := str;
+    ffirst(body);
+    Find(0)
+
+    RETURN body.text(Text).found # 0
+END callback;
+
+
+BEGIN
+    TextList := LISTS.create(NIL);
+    SearchForm.init(callback)
+END Search.

@@ -1,0 +1,199 @@
+﻿(*
+    Copyright 2020-2021 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE SearchForm;
+
+IMPORT
+
+    SYSTEM, SU := SysUtils, W := Window, box_lib, K := KOSAPI, Encode, S := Strings;
+
+
+CONST
+
+    BTN_CLOSE  =  1;
+    BTN_FIND   = 19;
+    BTN_CANCEL = 20;
+
+    BtnH = 25;
+    BtnW = 80;
+
+    WINDOW_BEVEL = 4;
+
+    MAXCHARS = 2000;
+
+
+TYPE
+
+    STRING* = ARRAY MAXCHARS OF CHAR;
+
+    PROC = PROCEDURE (case: BOOLEAN; str: STRING): BOOLEAN;
+
+
+VAR
+
+    PID, Slot: INTEGER;
+    Stack: ARRAY 1000000 OF CHAR;
+    Window: W.TWindow;
+    str: STRING;
+
+    callback: PROC;
+    case: box_lib.checkbox;
+    text: box_lib.edit_box;
+
+
+PROCEDURE DrawText (x, y: INTEGER; text: ARRAY OF CHAR);
+VAR
+	L: INTEGER;
+BEGIN
+	L := LENGTH(text);
+	SU.Box(x, y, L*SU.FontW, SU.FontH, SU.winColor, SU.winColor);
+	SU.OutText(x, y, text, L, SU.textColor)
+END DrawText;
+
+
+PROCEDURE buttons;
+BEGIN
+    SU.CreateButton(BTN_FIND, 5, 80, BtnW, BtnH, SU.btnColor, "find");
+    SU.CreateButton(BTN_CANCEL, 5 - BtnW + text.width, 80, BtnW, BtnH, SU.btnColor, "cancel");
+    box_lib.check_box_draw2(case); DrawText(25, 50, "match case");
+    box_lib.edit_box_draw(text)
+END buttons;
+
+
+PROCEDURE DrawWindow;
+BEGIN
+	SU.GetSystemColors;
+    SU.WindowRedrawStatus(1);
+    SU.DefineAndDrawWindow(Window.Left, Window.Top, Window.Width, Window.Height,
+          SU.winColor, LSL(ORD({0, 1}), 4) + 4, Window.Caption);
+    buttons;
+    SU.WindowRedrawStatus(2)
+END DrawWindow;
+
+
+PROCEDURE close* (ok: BOOLEAN);
+VAR
+    pid, i, j, k, n: INTEGER;
+    found: BOOLEAN;
+    str0: STRING;
+    u: S.UTF8;
+
+BEGIN
+    found := TRUE;
+    box_lib.edit_box_get_value(text, str);
+
+    IF ok THEN
+        IF str # "" THEN
+            j := 0;
+            i := 0;
+            WHILE str[i] # 0X DO
+                u := Encode.CP866[ORD(str[i])].utf8;
+                n := Encode.CP866[ORD(str[i])].len;
+                FOR k := 0 TO n - 1 DO
+                    str0[j] := u[k];
+                    INC(j)
+                END;
+                INC(i)
+            END;
+            found := callback(box_lib.check_box_get_value(case), str0)
+        ELSE
+            found := FALSE
+        END
+    END;
+
+    IF found THEN
+        pid := PID;
+        PID := 0;
+        IF pid # 0 THEN
+            SU.TerminateThreadId(pid)
+        END
+    ELSE
+        IF str # "" THEN
+        	DrawText(5 + BtnW + 10, 80 + 4, "not found")
+        END
+    END
+END close;
+
+
+PROCEDURE ButtonClick;
+BEGIN
+    CASE SU.GetButtonCode() OF
+    |0                     :
+    |BTN_CLOSE, BTN_CANCEL : close(FALSE)
+    |BTN_FIND              : close(TRUE)
+    END;
+    buttons
+END ButtonClick;
+
+
+PROCEDURE show;
+VAR
+    scrWidth, scrHeight, key: INTEGER;
+
+BEGIN
+    SU.SetEventsMask({0, 1, 2, 5, 30, 31});
+    W.InitWindow(Window, 0, 0, 320, 140, "Search");
+    SU.GetScreenSize(scrWidth, scrHeight);
+    Window.Left := (scrWidth - Window.Width) DIV 2;
+    Window.Top  := (scrHeight - Window.Height) DIV 2;
+
+    DrawWindow;
+    WHILE TRUE DO
+        CASE SU.WaitForEvent() OF
+        |1: DrawWindow
+        |2: key := K.sysfunc1(2);
+        	IF key DIV 65536 = 28 THEN
+        		close(TRUE)
+        	ELSIF key DIV 65536 = 1 THEN
+        		close(FALSE)
+        	ELSE
+        		box_lib.edit_box_key_safe(text, key)
+        	END
+        |3: ButtonClick
+        |6:
+            box_lib.check_box_mouse2(case);
+            box_lib.edit_box_mouse(text)
+        ELSE
+        END
+    END
+END show;
+
+
+PROCEDURE open*;
+BEGIN
+    IF PID = 0 THEN
+        PID  := SU.NewThread(show, Stack);
+        Slot := SU.GetThreadSlot(PID)
+    ELSE
+        SU.FocusWindow(Slot)
+    END
+END open;
+
+
+PROCEDURE init* (proc: PROC);
+BEGIN
+    callback := proc;
+    PID := 0;
+    case := box_lib.kolibri_new_check_box(5, 50, 16, 16, SYSTEM.SADR(""), 14 * 8 + 5);
+    text := box_lib.kolibri_new_edit_box(5, 10, 300, MAXCHARS DIV 3);
+    text.flags := 4002H;
+END init;
+
+
+END SearchForm.

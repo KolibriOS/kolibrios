@@ -1,0 +1,466 @@
+﻿(*
+    Copyright 2018-2020 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE kfonts;
+
+IMPORT File, sys := SYSTEM, LISTS, KOSAPI, S := Strings;
+
+
+CONST
+
+    MIN_FONT_SIZE   =  8;
+    MAX_FONT_SIZE   = 46;
+
+    bold*           =  1;
+    //italic*         =  2;
+    underline*      =  4;
+    strike_through* =  8;
+    //smoothing*      = 16;
+    //bpp32*          = 32;
+
+
+TYPE
+
+    FNAME = ARRAY 2048 OF CHAR;
+
+    FILE = RECORD
+
+        name: FNAME;
+        data, size, pos: INTEGER
+
+    END;
+
+    PIX = POINTER TO RECORD (LISTS.ITEM)
+
+        x, y: INTEGER
+
+    END;
+
+    FONT = POINTER TO RECORD
+
+        chars,
+        smooth:  ARRAY 256 OF LISTS.LIST;
+        width:   ARRAY 256 OF INTEGER;
+        height:  INTEGER;
+        file:    FILE
+
+    END;
+
+    TFont* = FONT;
+
+
+PROCEDURE getch (VAR F: FILE): CHAR;
+VAR
+    ch: CHAR;
+BEGIN
+    IF (F.pos >= 0) & (F.pos < F.size) THEN
+        sys.GET(F.data + F.pos, ch);
+        INC(F.pos)
+    ELSE
+        ch := 0X
+    END
+    RETURN ch
+END getch;
+
+
+PROCEDURE getint (VAR F: FILE): INTEGER;
+VAR
+    i: INTEGER;
+BEGIN
+    IF (F.pos >= 0) & (F.pos < F.size) THEN
+        sys.GET(F.data + F.pos, i);
+        INC(F.pos, 4)
+    ELSE
+        i := 0
+    END
+    RETURN i
+END getint;
+
+
+PROCEDURE getpix (list: LISTS.LIST; x, y: INTEGER): BOOLEAN;
+VAR
+    pix: PIX;
+    res: BOOLEAN;
+
+BEGIN
+    res := FALSE;
+    pix := list.first(PIX);
+    WHILE pix # NIL DO
+        IF (pix.x = x) & (pix.y = y) THEN
+            res := TRUE;
+            pix := NIL
+        ELSE
+            pix := pix.next(PIX)
+        END
+    END
+
+    RETURN res
+END getpix;
+
+
+PROCEDURE process (font: FONT; n: INTEGER);
+VAR
+    xsize, ysize, size, ch_size, xmax: INTEGER;
+    ptr: INTEGER; i, c: INTEGER;
+    s: SET; x, y: INTEGER;
+    eoc: BOOLEAN;
+
+    pix: PIX; chr, smooth: LISTS.LIST;
+BEGIN
+    font.file.pos := n * 4;
+    ptr := getint(font.file) + 156;
+    font.file.pos := ptr;
+    size := getint(font.file);
+    INC(font.file.pos, size - 6);
+    xsize := ORD(getch(font.file));
+    ysize := ORD(getch(font.file));
+    ch_size := (size - 6) DIV 256;
+
+    INC(ptr, 4);
+
+    font.height := ysize;
+
+    FOR c := 0 TO 255 DO
+        chr := font.chars[c];
+        smooth := font.smooth[c];
+        font.file.pos := ptr + c * ch_size;
+
+        x := 0; y := 0; eoc := FALSE;
+        xmax := 0;
+
+        eoc := (xsize = 0) OR (ysize = 0);
+
+        WHILE ~eoc DO
+
+            s := BITS(getint(font.file));
+            i := 0;
+
+            WHILE i <= 31 DO
+                IF i IN s THEN
+                    NEW(pix);
+                    IF x > xmax THEN
+                        xmax := x
+                    END;
+                    pix.x := x;
+                    pix.y := y;
+                    LISTS.push(chr, pix)
+                END;
+                INC(x);
+                IF x = xsize THEN
+                    x := 0;
+                    INC(y);
+                    IF y = ysize THEN
+                        eoc := TRUE;
+                        i := 31
+                    END
+                END;
+                INC(i)
+            END
+
+        END;
+
+        FOR x := 0 TO xsize - 2 DO
+            FOR y := 0 TO ysize - 2 DO
+                IF getpix(chr, x, y) & getpix(chr, x + 1, y + 1) &
+                   ~getpix(chr, x + 1, y) & ~getpix(chr, x, y + 1) THEN
+
+                    IF ~getpix(smooth, x + 1, y) THEN
+                        NEW(pix);
+                        pix.x := x + 1;
+                        pix.y := y;
+                        LISTS.push(smooth, pix);
+                    END;
+
+                    IF ~getpix(smooth, x, y + 1) THEN
+                        NEW(pix);
+                        pix.x := x;
+                        pix.y := y + 1;
+                        LISTS.push(smooth, pix)
+                    END
+                END
+            END
+        END;
+
+        FOR x := 1 TO xsize - 1 DO
+            FOR y := 0 TO ysize - 2 DO
+                IF getpix(chr, x, y) & getpix(chr, x - 1, y + 1) &
+                   ~getpix(chr, x - 1, y) & ~getpix(chr, x, y + 1) THEN
+
+                    IF ~getpix(smooth, x - 1, y) THEN
+                        NEW(pix);
+                        pix.x := x - 1;
+                        pix.y := y;
+                        LISTS.push(smooth, pix);
+                    END;
+
+                    IF ~getpix(smooth, x, y + 1) THEN
+                        NEW(pix);
+                        pix.x := x;
+                        pix.y := y + 1;
+                        LISTS.push(smooth, pix)
+                    END
+                END
+            END
+        END;
+
+        IF xmax = 0 THEN
+            xmax := xsize DIV 3
+        END;
+
+        font.width[c] := xmax
+
+    END
+
+END process;
+
+
+PROCEDURE getrgb(color: INTEGER; VAR r, g, b: INTEGER);
+BEGIN
+    b := ORD(BITS(color) * {0..7});
+    g := ORD(BITS(LSR(color, 8)) * {0..7});
+    r := ORD(BITS(LSR(color, 16)) * {0..7})
+END getrgb;
+
+
+PROCEDURE rgb(r, g, b: INTEGER): INTEGER;
+    RETURN b + LSL(g, 8) + LSL(r, 16)
+END rgb;
+
+
+PROCEDURE OutChar (font: FONT; canvas: INTEGER; x, y: INTEGER; c: CHAR; color: INTEGER);
+VAR
+    xsize, ysize: INTEGER;
+    pix: PIX;
+    bkcolor: INTEGER;
+    r0, b0, g0, r, g, b: INTEGER;
+    ptr: INTEGER;
+BEGIN
+    sys.GET(canvas, xsize);
+    sys.GET(canvas, ysize);
+    INC(canvas, 8);
+    getrgb(color, r0, g0, b0);
+
+    pix := font.chars[ORD(c)].first(PIX);
+    WHILE pix # NIL DO
+        sys.PUT(canvas + ((pix.y + y) * xsize + (pix.x + x)) * 4, color);
+        pix := pix.next(PIX)
+    END;
+
+    pix := font.smooth[ORD(c)].first(PIX);
+    WHILE pix # NIL DO
+        ptr := canvas + ((pix.y + y) * xsize + (pix.x + x)) * 4;
+        sys.GET(ptr, bkcolor);
+        getrgb(bkcolor, r, g, b);
+
+        r := (r * 7 + r0 * 2) DIV 9;
+        g := (g * 7 + g0 * 2) DIV 9;
+        b := (b * 7 + b0 * 2) DIV 9;
+
+        sys.PUT(ptr, rgb(r, g, b));
+        pix := pix.next(PIX)
+    END
+
+END OutChar;
+
+
+PROCEDURE TextHeight* (font: FONT): INTEGER;
+VAR
+    res: INTEGER;
+
+BEGIN
+    IF font # NIL THEN
+        res := font.height
+    ELSE
+        res := 0
+    END
+
+    RETURN res
+END TextHeight;
+
+
+
+PROCEDURE TextOut* (font: FONT; canvas: INTEGER; x, y: INTEGER; text: INTEGER; length: INTEGER; color: INTEGER; flags: INTEGER);
+VAR
+    c: CHAR;
+    x1: INTEGER;
+
+BEGIN
+    IF font # NIL THEN
+        x1 := x;
+        WHILE length > 0 DO
+            sys.GET(text, c);
+            INC(text);
+            DEC(length);
+            OutChar(font, canvas, x, y, c, color);
+            IF BITS(bold) * BITS(flags) = BITS(bold) THEN
+                INC(x);
+                OutChar(font, canvas, x, y, c, color)
+            END;
+            INC(x, font.width[ORD(c)])
+        END;
+        IF length = -1 THEN
+            sys.GET(text, c);
+            INC(text);
+            WHILE c # 0X DO
+                OutChar(font, canvas, x, y, c, color);
+                IF BITS(bold) * BITS(flags) = BITS(bold) THEN
+                    INC(x);
+                    OutChar(font, canvas, x, y, c, color)
+                END;
+                INC(x, font.width[ORD(c)]);
+                sys.GET(text, c);
+                INC(text)
+            END
+        END
+    END
+END TextOut;
+
+
+PROCEDURE TextWidth* (font: FONT; text: INTEGER; length: INTEGER; flags: INTEGER): INTEGER;
+VAR
+    c: CHAR;
+    res: INTEGER;
+
+BEGIN
+    res := 0;
+
+    IF font # NIL THEN
+        WHILE length > 0 DO
+            sys.GET(text, c);
+            INC(text);
+            DEC(length);
+            IF BITS(bold) * BITS(flags) = BITS(bold) THEN
+                INC(res)
+            END;
+            INC(res, font.width[ORD(c)])
+        END;
+        IF length = -1 THEN
+            sys.GET(text, c);
+            INC(text);
+            WHILE c # 0X DO
+                IF BITS(bold) * BITS(flags) = BITS(bold) THEN
+                    INC(res)
+                END;
+                INC(res, font.width[ORD(c)]);
+                sys.GET(text, c);
+                INC(text)
+            END
+        END
+    END
+
+    RETURN res
+END TextWidth;
+
+
+PROCEDURE Enabled*(font: FONT; size: INTEGER): BOOLEAN;
+VAR
+    offset, temp: INTEGER;
+
+BEGIN
+    offset := -1;
+    IF (MIN_FONT_SIZE <= size) & (size <= MAX_FONT_SIZE) & (font # NIL) THEN
+        temp := font.file.data + (size - 8) * 4;
+        IF (font.file.data <= temp) & (temp <= font.file.size + font.file.data - 4) THEN
+            sys.GET(temp, offset)
+        END
+    END
+    RETURN offset # -1
+END Enabled;
+
+
+PROCEDURE LoadFont* (fname: ARRAY OF CHAR): FONT;
+VAR
+    font: FONT;
+    c:    INTEGER;
+    ptr:  INTEGER;
+
+BEGIN
+    NEW(font);
+    IF font # NIL THEN
+        font.file.data := File.Load(fname, font.file.size);
+        IF font.file.data # 0 THEN
+            ptr := KOSAPI.malloc(font.file.size + 4096);
+            IF ptr # 0 THEN
+
+                sys.MOVE(font.file.data, ptr, font.file.size);
+                font.file.data := KOSAPI.sysfunc3(68, 13, font.file.data);
+                font.file.data := ptr;
+
+                font.file.pos := 0;
+                COPY(fname, font.file.name);
+
+                FOR c := 0 TO 255 DO
+                    font.chars[c] := LISTS.create(NIL);
+                    font.smooth[c] := LISTS.create(NIL);
+                    font.width[c] := 0;
+                    font.height := 0
+                END
+
+            ELSE
+                font.file.data := KOSAPI.sysfunc3(68, 13, font.file.data);
+                DISPOSE(font)
+            END
+
+        ELSE
+            DISPOSE(font)
+        END
+    END
+
+    RETURN font
+END LoadFont;
+
+
+PROCEDURE Destroy* (VAR font: FONT);
+VAR
+    c: INTEGER;
+
+BEGIN
+    IF font # NIL THEN
+        FOR c := 0 TO 255 DO
+            LISTS.destroy(font.chars[c]);
+            LISTS.destroy(font.smooth[c]);
+        END;
+        IF font.file.data # 0 THEN
+            font.file.data := KOSAPI.sysfunc3(68, 13, font.file.data)
+        END;
+        DISPOSE(font)
+    END
+END Destroy;
+
+
+PROCEDURE SetSize* (VAR font: FONT; size: INTEGER): BOOLEAN;
+VAR
+    res: BOOLEAN;
+    fname: FNAME;
+
+BEGIN
+    IF Enabled(font, size) THEN
+        fname := font.file.name;
+        Destroy(font);
+        font := LoadFont(fname);
+        process(font, size - 8);
+        res := TRUE
+    ELSE
+        res := FALSE
+    END
+    RETURN res
+END SetSize;
+
+
+END kfonts.

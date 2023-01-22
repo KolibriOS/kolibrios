@@ -1,0 +1,414 @@
+(*
+    Copyright 2016, 2019, 2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Strings;
+
+IMPORT sys := SYSTEM, KOSAPI;
+
+
+TYPE
+
+  STRING* = ARRAY 1024 OF CHAR;
+
+  UTF8*   = ARRAY 8 OF CHAR;
+
+  CHARS*  = RECORD first*, last* : INTEGER END;
+
+
+VAR
+
+  CS: BOOLEAN;
+
+
+PROCEDURE [ccall,   "base64.obj",      ""] base64_decode (inp, outp: INTEGER; Len: INTEGER): INTEGER; END;
+PROCEDURE [stdcall, "rasterworks.obj", ""] countUTF8Z (string, byteQuantity: INTEGER): INTEGER; END;
+
+PROCEDURE DelLeft(VAR s: STRING; count: INTEGER);
+VAR i, max: INTEGER;
+BEGIN
+  max := LENGTH(s) - count - 1;
+  IF max >= 0 THEN
+    FOR i := 0 TO max DO
+      s[i] := s[i + count]
+    END
+  END
+END DelLeft;
+
+
+PROCEDURE Trim*(VAR s: STRING; ch: CHAR);
+VAR i, n: INTEGER;
+BEGIN
+  i := 0;
+  WHILE s[i] = ch DO
+    INC(i)
+  END;
+  DelLeft(s, i);
+  n := LENGTH(s) - 1;
+  IF n >= 0 THEN
+    i := n;
+    WHILE s[i] = ch DO
+      DEC(i)
+    END;
+    IF n # i THEN
+      s[i + 1] := 0X
+    END
+  END
+END Trim;
+
+
+PROCEDURE GetChar*(chars: CHARS; i: INTEGER): CHAR;
+VAR c: CHAR;
+BEGIN
+  ASSERT(chars.first + i <= chars.last);
+  sys.GET(chars.first + i, c)
+  RETURN c
+END GetChar;
+
+
+PROCEDURE Reverse*(VAR s: ARRAY OF CHAR);
+VAR i, j: INTEGER; c: CHAR;
+BEGIN
+  i := 0;
+  j := LENGTH(s) - 1;
+  WHILE i < j DO
+    c := s[i];
+    s[i] := s[j];
+    s[j] := c;
+    INC(i);
+    DEC(j)
+  END
+END Reverse;
+
+
+PROCEDURE IntToString*(x: INTEGER; VAR s: STRING);
+VAR n, i: INTEGER;
+BEGIN
+  i := 0;
+  REPEAT
+    n := x MOD 10;
+    x := x DIV 10;
+    s[i] := CHR(ORD("0") + n);
+    INC(i)
+  UNTIL x = 0;
+  s[i] := 0X;
+  Reverse(s)
+END IntToString;
+
+
+PROCEDURE isdigit(c: CHAR): BOOLEAN;
+  RETURN ("0" <= c) & (c <= "9")
+END isdigit;
+
+
+PROCEDURE CharsToInt*(s: CHARS; VAR err: BOOLEAN): INTEGER;
+VAR n, i, res, len: INTEGER; c: CHAR;
+BEGIN
+  res := 0;
+  len := s.last - s.first + 1;
+  err := len <= 0;
+  FOR i := 0 TO s.last - s.first DO
+    c := GetChar(s, i);
+    IF isdigit(c) THEN
+      n := ORD(c) - ORD("0");
+      res := res * 10 + n
+    ELSE
+      err := TRUE
+    END
+  END
+  RETURN res
+END CharsToInt;
+
+
+PROCEDURE Append*(VAR str1: STRING; str2: STRING);
+VAR
+  len1, len2 : INTEGER;
+  i, j       : INTEGER;
+BEGIN
+  len1 := LENGTH(str1);
+  len2 := LENGTH(str2);
+  ASSERT(len1 + len2 < LEN(str1));
+  j := len1;
+  FOR i := 0 TO len2 - 1 DO
+    str1[j] := str2[i];
+    INC(j)
+  END;
+  str1[j] := 0X
+END Append;
+
+
+PROCEDURE GetPath*(VAR S: STRING);
+VAR i, j: INTEGER;
+BEGIN
+  j := 0;
+  i := LENGTH(S) - 1;
+  WHILE i >= 0 DO
+    IF S[i] = "/" THEN
+      j := i;
+      i := 0
+    END;
+    DEC(i)
+  END;
+  S[j] := 0X
+END GetPath;
+
+
+PROCEDURE PutChar*(chars: CHARS; i: INTEGER; c: CHAR);
+BEGIN
+  ASSERT(chars.first + i <= chars.last);
+  sys.PUT(chars.first + i, c)
+END PutChar;
+
+
+PROCEDURE StrToChars*(str: ARRAY OF CHAR; VAR chars: CHARS);
+BEGIN
+  ASSERT(str # "");
+  chars.first := sys.ADR(str[0]);
+  chars.last  := sys.ADR(str[LENGTH(str) - 1])
+END StrToChars;
+
+
+PROCEDURE PtrToString*(ptr: INTEGER; VAR S: STRING);
+VAR i: INTEGER; c: CHAR;
+BEGIN
+  i := 0;
+  REPEAT
+    sys.GET(ptr, c);
+    S[i] := c;
+    INC(i);
+    INC(ptr)
+  UNTIL (c = 0X) OR (i = LEN(S));
+  S[i - 1] := 0X
+END PtrToString;
+
+
+PROCEDURE CharsEq*(chars1, chars2: CHARS): BOOLEAN;
+VAR
+  pos, len2  : INTEGER;
+  c1, c2     : CHAR;
+  Result     : BOOLEAN;
+
+  PROCEDURE CAP(VAR c: CHAR);
+  BEGIN
+    IF ~CS & ("a" <= c) & (c <= "z") THEN
+      c := CHR(ORD(c) - 32)
+    END
+  END CAP;
+
+BEGIN
+  pos  := chars1.last - chars1.first;
+  len2 := chars2.last - chars2.first;
+  IF pos = len2 THEN
+    REPEAT
+      c1 := GetChar(chars1, pos);
+      c2 := GetChar(chars2, pos);
+      CAP(c1);
+      CAP(c2);
+      DEC(pos)
+    UNTIL (c1 # c2) OR (pos = -1);
+    Result := c1 = c2
+  ELSE
+    Result := FALSE
+  END
+  RETURN Result
+END CharsEq;
+
+
+PROCEDURE CharsEqStr*(chars: CHARS; str: STRING): BOOLEAN;
+VAR
+  chars2: CHARS;
+BEGIN
+  StrToChars(str, chars2)
+  RETURN CharsEq(chars, chars2)
+END CharsEqStr;
+
+
+PROCEDURE SetCS*(value: BOOLEAN);
+BEGIN
+  CS := value
+END SetCS;
+
+
+PROCEDURE Utf8Length*(chars: CHARS): INTEGER;
+  RETURN countUTF8Z(chars.first, chars.last - chars.first + 1)
+END Utf8Length;
+
+
+PROCEDURE Replace*(VAR chars: CHARS; str1, str2: ARRAY OF CHAR);
+VAR
+  temp: CHARS;
+  s   : CHARS;
+  len1: INTEGER;
+  len2: INTEGER;
+  diff: INTEGER;
+
+  PROCEDURE Put(first, last, len1, len2, diff: INTEGER; str2: ARRAY OF CHAR);
+  VAR i: INTEGER; c: CHAR;
+  BEGIN
+    sys.MOVE(sys.ADR(str2[0]), first, len2);
+    FOR i := first + len1 TO last DO
+      sys.GET(i, c);
+      sys.PUT(i - diff, c);
+    END
+  END Put;
+
+BEGIN
+  len1 := LENGTH(str1);
+  len2 := LENGTH(str2);
+  diff := len1 - len2;
+  ASSERT(diff >= 0);
+  ASSERT(len1 > 0);
+  StrToChars(str1, s);
+  temp := chars;
+  temp.last := temp.first + len1 - 1;
+  WHILE temp.last <= chars.last DO
+    IF CharsEq(temp, s) THEN
+      Put(temp.first, chars.last, len1, len2, diff, str2);
+      chars.last := chars.last - diff;
+      temp.first := temp.first + len2;
+      temp.last  := temp.first + len1 - 1
+    ELSE
+      INC(temp.first);
+      INC(temp.last)
+    END
+  END
+END Replace;
+
+
+PROCEDURE utf8*(code: INTEGER; VAR uchar: UTF8);
+BEGIN
+  uchar[0] := 0X;
+  IF code < 80H THEN
+    uchar[0] := CHR(code);
+    uchar[1] := 0X
+  ELSIF code < 800H THEN
+    uchar[1] := CHR(ORD(BITS(code) * {0..5}) + 80H);
+    uchar[0] := CHR(ASR(code, 6) + 0C0H);
+    uchar[2] := 0X
+  ELSIF code < 10000H THEN
+    uchar[2] := CHR(ORD(BITS(code) * {0..5}) + 80H);
+    code := ASR(code, 6);
+    uchar[1] := CHR(ORD(BITS(code) * {0..5}) + 80H);
+    uchar[0] := CHR(ASR(code, 6) + 0E0H);
+    uchar[3] := 0X
+(*
+  ELSIF code < 200000H THEN
+  ELSIF code < 4000000H THEN
+  ELSE  *)
+  END
+END utf8;
+
+
+PROCEDURE EntOct*(VAR chars: CHARS): BOOLEAN;
+VAR
+  i     : INTEGER;
+  c     : CHAR;
+  amp   : BOOLEAN;
+  oct   : BOOLEAN;
+  val   : INTEGER;
+  exit  : BOOLEAN;
+  str   : STRING;
+  str2  : STRING;
+  uchar : UTF8;
+  res   : BOOLEAN;
+
+BEGIN
+  i := 0;
+  amp := FALSE;
+  oct := FALSE;
+  res := FALSE;
+  WHILE i <= chars.last - chars.first DO
+    c := GetChar(chars, i);
+    CASE c OF
+    |"&":
+      amp := TRUE;
+      oct := FALSE
+    |"#":
+      oct := amp;
+      amp := FALSE
+    |"0".."9":
+      IF oct THEN
+        val := 0;
+        str := "&#";
+        str2[1] := 0X;
+        exit := FALSE;
+        REPEAT
+          val := val * 10 + ORD(c) - ORD("0");
+          str2[0] := c;
+          Append(str, str2);
+          INC(i);
+          IF i <= chars.last - chars.first THEN
+            c := GetChar(chars, i)
+          ELSE
+            exit := TRUE
+          END
+        UNTIL ~isdigit(c) OR exit;
+        IF c = ";" THEN
+          str2[0] := c;
+          Append(str, str2);
+          utf8(val, uchar);
+          Replace(chars, str, uchar);
+          res := TRUE;
+          i := chars.last - chars.first
+        ELSE
+          IF ~exit THEN
+            DEC(i);
+            amp := FALSE;
+            oct := FALSE
+          END
+        END
+      ELSE
+        amp := FALSE
+      END
+    ELSE
+      amp := FALSE;
+      oct := FALSE
+    END;
+    INC(i)
+  END
+  RETURN res
+END EntOct;
+
+
+PROCEDURE UCase*(VAR s: STRING);
+VAR i, n: INTEGER; c: CHAR;
+BEGIN
+  n := LENGTH(s) - 1;
+  FOR i := 0 TO n DO
+    c := s[i];
+    IF ("a" <= c) & (c <= "z") OR (0A0X <= c) & (c <= 0AFX) THEN
+      c := CHR(ORD(c) - 32)
+    ELSIF (0E0X <= c) & (c <= 0EFX) THEN
+      c := CHR(ORD(c) - 50H)
+    ELSIF (c = 0F1X) OR (c = 0F3X) OR (c = 0F5X) OR (c = 0F7X) THEN
+      c := CHR(ORD(c) - 1)
+    END;
+    s[i] := c
+  END
+END UCase;
+
+
+PROCEDURE Base64* (VAR chars: CHARS);
+BEGIN
+	chars.last := chars.first + base64_decode(chars.first, chars.first, chars.last - chars.first + 1) - 1
+END Base64;
+
+
+BEGIN
+  CS := TRUE
+END Strings.

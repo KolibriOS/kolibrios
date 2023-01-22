@@ -1,0 +1,135 @@
+﻿(*
+    Copyright 2018, 2020 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE LISTS;
+
+
+TYPE
+
+    LIST* = POINTER TO rLIST;
+
+    ITEM* = POINTER TO rITEM;
+
+    rITEM* = RECORD
+
+        prev*, next*: ITEM;
+
+        destroy*: PROCEDURE (VAR item: ITEM)
+
+    END;
+
+    rLIST* = RECORD
+
+        first*, last*: ITEM
+
+    END;
+
+
+PROCEDURE push* (list: LIST; item: ITEM);
+BEGIN
+    ASSERT(list # NIL);
+    ASSERT(item # NIL);
+
+    IF list.first = NIL THEN
+        list.first := item;
+        list.last  := item;
+        item.prev  := NIL;
+        item.next  := NIL
+    ELSE
+        ASSERT(list.last # NIL);
+        item.prev := list.last;
+        list.last.next := item;
+        item.next := NIL;
+        list.last := item
+    END
+END push;
+
+
+PROCEDURE get* (list: LIST; n: INTEGER): ITEM;
+VAR
+    cur: ITEM;
+
+BEGIN
+    cur := list.first;
+    WHILE (cur # NIL) & (n > 0) DO
+        cur := cur.next;
+        DEC(n)
+    END
+
+    RETURN cur
+END get;
+
+
+PROCEDURE idx* (list: LIST; item: ITEM): INTEGER;
+VAR
+    cur: ITEM;
+    n: INTEGER;
+
+BEGIN
+    ASSERT(item # NIL);
+    n := 0;
+    cur := list.first;
+    WHILE (cur # NIL) & (cur # item) DO
+        cur := cur.next;
+        INC(n)
+    END;
+
+    IF cur = NIL THEN
+        n := -1
+    END
+
+    RETURN n
+END idx;
+
+
+PROCEDURE create* (list: LIST): LIST;
+BEGIN
+    IF list = NIL THEN
+        NEW(list)
+    END;
+
+    list.first := NIL;
+    list.last  := NIL
+
+    RETURN list
+END create;
+
+
+PROCEDURE destroy* (VAR list: LIST);
+VAR
+    item, next: ITEM;
+
+BEGIN
+    IF list # NIL THEN
+        item := list.first;
+        WHILE item # NIL DO
+            next := item.next;
+            IF item.destroy # NIL THEN
+                item.destroy(item)
+            ELSE
+                DISPOSE(item)
+            END;
+            item := next
+        END;
+        DISPOSE(list)
+    END
+END destroy;
+
+
+END LISTS.

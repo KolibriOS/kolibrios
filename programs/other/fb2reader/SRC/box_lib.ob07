@@ -1,0 +1,236 @@
+﻿(*
+    Copyright 2016, 2017, 2020, 2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE box_lib;
+
+IMPORT sys := SYSTEM, KOSAPI;
+
+
+CONST
+
+  CHECKBOX_IS_SET* = 1;
+
+
+TYPE
+
+  checkbox* = POINTER TO RECORD
+
+    left_s: INTEGER;
+    top_s: INTEGER;
+    ch_text_margin*: INTEGER;
+    color: INTEGER;
+    border_color: INTEGER;
+    text_color: INTEGER;
+    text: INTEGER;
+    flags*: SET;
+
+    (* Users can use members above this *)
+    size_of_str: INTEGER
+
+  END;
+
+
+  scrollbar* = POINTER TO RECORD
+
+    x_w: INTEGER;
+    y_h*: INTEGER;
+    btn_height: INTEGER;
+    typ: INTEGER;
+    max_area*: INTEGER;
+    cur_area*: INTEGER;
+    position*: INTEGER;
+    back_color: INTEGER;
+    front_color: INTEGER;
+    line_color: INTEGER;
+    redraw: INTEGER;
+
+    delta: WCHAR;
+    delta2: WCHAR;
+    r_size_x: WCHAR;
+    r_start_x: WCHAR;
+    r_size_y: WCHAR;
+    r_start_y: WCHAR;
+
+    m_pos: INTEGER;
+    m_pos2: INTEGER;
+    m_keys: INTEGER;
+    run_size: INTEGER;
+    position2: INTEGER;
+    work_size: INTEGER;
+    all_redraw: INTEGER;
+    ar_offset: INTEGER
+
+  END;
+
+  edit_box* = POINTER TO RECORD
+    width*,
+    left,
+    top,
+    color,
+    shift_color,
+    focus_border_color,
+    blur_border_color,
+    text_color*,
+    max: INTEGER;
+    text*: INTEGER;
+    mouse_variable: INTEGER;
+    flags*,
+
+    size,
+    pos: INTEGER;
+    (* The following struct members are not used by the users of API *)
+    offset, cl_curs_x, cl_curs_y, shift, shift_old, height, char_width: INTEGER
+  END;
+
+
+PROCEDURE [stdcall, "box_lib.obj", ""] check_box_draw2* (cb: checkbox); END;
+PROCEDURE [stdcall, "box_lib.obj", ""] check_box_mouse2* (cb: checkbox); END;
+PROCEDURE [stdcall, "box_lib.obj", ""] init_checkbox2 (cb: checkbox); END;
+
+PROCEDURE [stdcall, "box_lib.obj", ""] scrollbar_h_draw* (sb: scrollbar); END;
+PROCEDURE [stdcall, "box_lib.obj", ""] scrollbar_h_mouse* (sb: scrollbar); END;
+PROCEDURE [stdcall, "box_lib.obj", ""] scrollbar_v_draw* (sb: scrollbar); END;
+PROCEDURE [stdcall, "box_lib.obj", ""] scrollbar_v_mouse* (sb: scrollbar); END;
+
+PROCEDURE [stdcall, "box_lib.obj", ""] edit_box_draw* (eb: edit_box); END;
+PROCEDURE [stdcall, "box_lib.obj", ""] edit_box_key_safe* (eb: edit_box; key: INTEGER); END;
+PROCEDURE [stdcall, "box_lib.obj", ""] edit_box_mouse* (eb: edit_box); END;
+PROCEDURE [stdcall, "box_lib.obj", ""] edit_box_set_text* (eb: edit_box; text: INTEGER); END;
+
+
+PROCEDURE edit_box_get_value* (text: edit_box; VAR str: ARRAY OF CHAR);
+VAR
+    ptr, max, i: INTEGER;
+
+BEGIN
+    ptr := text.text;
+    max := text.max;
+    ASSERT(max < LEN(str));
+    i := 0;
+    REPEAT
+        sys.GET(ptr, str[i]);
+        INC(i);
+        INC(ptr)
+    UNTIL (str[i - 1] = 0X) OR (i = max);
+    str[i] := 0X
+END edit_box_get_value;
+
+
+PROCEDURE memset(adr: INTEGER; c: CHAR; n: INTEGER);
+BEGIN
+  WHILE n > 0 DO
+    sys.PUT(adr, c);
+    INC(adr);
+    DEC(n)
+  END
+END memset;
+
+
+PROCEDURE check_box_set_value* (cb: checkbox; value: BOOLEAN);
+BEGIN
+  IF cb # NIL THEN
+    IF value THEN
+      INCL(cb.flags, CHECKBOX_IS_SET)
+    ELSE
+      EXCL(cb.flags, CHECKBOX_IS_SET)
+    END
+  END
+END check_box_set_value;
+
+
+PROCEDURE check_box_get_value* (cb: checkbox): BOOLEAN;
+VAR res: BOOLEAN;
+BEGIN
+  res := FALSE;
+  IF cb # NIL THEN
+    res := CHECKBOX_IS_SET IN cb.flags
+  END
+  RETURN res
+END check_box_get_value;
+
+
+PROCEDURE kolibri_new_check_box* (tlx, tly, sizex, sizey, label_text, text_margin: INTEGER): checkbox;
+VAR new_checkbox: checkbox;
+BEGIN
+  NEW(new_checkbox);
+  new_checkbox.left_s := tlx * 65536 + sizex;
+  new_checkbox.top_s  := tly * 65536 + sizey;
+  new_checkbox.ch_text_margin := text_margin;
+  new_checkbox.color := 80808080H;
+  new_checkbox.border_color := 0000FF00H;
+  new_checkbox.text_color := 00000000H;
+  new_checkbox.text := label_text;
+  new_checkbox.flags := {3};
+  init_checkbox2(new_checkbox)
+  RETURN new_checkbox
+END kolibri_new_check_box;
+
+
+PROCEDURE kolibri_scrollbar*(sb: scrollbar; x_w, y_h, btn_height, max_area, cur_area, position, back_color, front_color, line_color, typ: INTEGER): scrollbar;
+BEGIN
+  memset(sys.ADR(sb^), 0X, sys.SIZE(scrollbar));
+  sb.x_w := x_w;
+  sb.y_h := y_h;
+  sb.btn_height := btn_height;
+  sb.typ := typ;
+  sb.max_area := max_area;
+  sb.cur_area := cur_area;
+  sb.position := position;
+  sb.line_color := line_color;
+  sb.back_color := back_color;
+  sb.front_color := front_color;
+  sb.ar_offset := 1;
+  sb.all_redraw := 1
+  RETURN sb
+END kolibri_scrollbar;
+
+
+PROCEDURE kolibri_new_scrollbar*(x_w, y_h, btn_height, max_area, cur_area, position, back_color, front_color, line_color, typ: INTEGER): scrollbar;
+VAR sb: scrollbar;
+BEGIN
+  NEW(sb);
+  RETURN kolibri_scrollbar(sb, x_w, y_h, btn_height, max_area, cur_area, position, back_color, front_color, line_color, typ)
+END kolibri_new_scrollbar;
+
+
+PROCEDURE kolibri_new_edit_box* (tlx, tly, width, max_chars: INTEGER): edit_box;
+VAR
+    new_textbox: edit_box;
+
+BEGIN
+    NEW(new_textbox);
+
+    new_textbox.width := width;
+    new_textbox.left := tlx;
+    new_textbox.top := tly;
+    new_textbox.color := 0FFFFFFH;
+    new_textbox.shift_color := 06A9480H;
+    new_textbox.focus_border_color := 0;
+    new_textbox.blur_border_color := 06A9480H;
+    new_textbox.text_color := 30000000H;
+    new_textbox.max := max_chars;
+    new_textbox.text := KOSAPI.malloc(max_chars + 2);
+    new_textbox.mouse_variable := 0;
+    new_textbox.flags := 0
+
+    RETURN new_textbox
+END kolibri_new_edit_box;
+
+
+END box_lib.

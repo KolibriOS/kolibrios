@@ -1,0 +1,149 @@
+(*
+    Copyright 2016, 2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Ini;
+
+IMPORT KOSAPI, sys := SYSTEM, S := Strings, File;
+
+
+CONST
+
+  IniFileName = "/sys/settings/fb2read.ini";
+
+
+VAR
+
+	History*, Browser*, Default*, Font*, Files*, Picture* : S.STRING;
+	b_pict*: BOOLEAN;
+	buffer: ARRAY 5000 OF CHAR;
+
+
+PROCEDURE [stdcall, "libini.obj", "ini_enum_keys"] enum_keys (f_name, sec_name: S.STRING; callback: INTEGER); END;
+PROCEDURE [stdcall, "libini.obj", "ini_get_color"] get_color (f_name, sec_name, key_name: S.STRING; def_val: INTEGER): INTEGER; END;
+
+PROCEDURE Save* (Colors: ARRAY OF INTEGER; b_pict: BOOLEAN);
+VAR F: File.FS; pos: INTEGER;
+
+  PROCEDURE WriteStr(str: S.STRING; VAR pos: INTEGER);
+  BEGIN
+    sys.MOVE(sys.ADR(str[0]), pos, LENGTH(str));
+    pos := pos + LENGTH(str)
+  END WriteStr;
+
+  PROCEDURE WriteLn (VAR pos: INTEGER);
+  BEGIN
+    WriteStr(0DX, pos);
+    WriteStr(0AX, pos)
+  END WriteLn;
+
+  PROCEDURE GetRGB(color: INTEGER; VAR r, g, b: INTEGER);
+  BEGIN
+    b := ORD(BITS(color) * {0..7});
+    g := ORD(BITS(LSR(color, 8)) * {0..7});
+    r := ORD(BITS(LSR(color, 16)) * {0..7})
+  END GetRGB;
+
+  PROCEDURE WriteColor(color: INTEGER; VAR pos: INTEGER);
+  VAR r, g, b: INTEGER; s: S.STRING;
+  BEGIN
+    GetRGB(color, r, g, b);
+    S.IntToString(r, s); WriteStr(s, pos); WriteStr(",", pos);
+    S.IntToString(g, s); WriteStr(s, pos); WriteStr(",", pos);
+    S.IntToString(b, s); WriteStr(s, pos);
+  END WriteColor;
+
+BEGIN
+  pos := sys.ADR(buffer[0]);
+  F := File.Create(IniFileName);
+  WriteStr("[Paths]", pos);                                  WriteLn(pos);
+  WriteStr("history=", pos);    WriteStr(History, pos);      WriteLn(pos);
+  WriteStr("browser=", pos);    WriteStr(Browser, pos);      WriteLn(pos);
+  WriteStr("default=", pos);    WriteStr(Default, pos);      WriteLn(pos);
+  WriteStr("font=", pos);       WriteStr(Font, pos);         WriteLn(pos);
+  WriteStr("picture=", pos);    WriteStr(Picture, pos);      WriteLn(pos);
+  WriteStr("[Files]", pos);                                  WriteLn(pos);
+  WriteStr("files=", pos);      WriteStr(Files, pos);        WriteLn(pos);
+  WriteStr("[Flags]", pos);                                  WriteLn(pos);
+  WriteStr("picture=", pos);
+  IF b_pict THEN
+    WriteStr("on", pos)
+  ELSE
+    WriteStr("off", pos)
+  END;
+  WriteLn(pos);
+  WriteStr("[Colors]", pos);                              WriteLn(pos);
+  WriteStr("back=", pos);    WriteColor(Colors[0], pos);  WriteLn(pos);
+  WriteStr("text=", pos);    WriteColor(Colors[1], pos);  WriteLn(pos);
+  WriteStr("italic=", pos);  WriteColor(Colors[2], pos);  WriteLn(pos);
+  WriteStr("link=", pos);    WriteColor(Colors[3], pos);  WriteLn(pos);
+  WriteStr("visited=", pos); WriteColor(Colors[4], pos);  WriteLn(pos);
+  pos := File.Write(F, sys.ADR(buffer[0]), pos - sys.ADR(buffer[0]));
+  File.Close(F)
+END Save;
+
+
+PROCEDURE [stdcall] callback(f_name, sec_name, key_name, key_value: S.STRING): INTEGER;
+BEGIN
+  IF    sec_name = "Paths" THEN
+    IF    key_name = "history" THEN
+      History := key_value
+    ELSIF key_name = "browser" THEN
+      Browser := key_value
+    ELSIF key_name = "default" THEN
+      Default := key_value
+    ELSIF key_name = "font" THEN
+      Font    := key_value
+    ELSIF key_name = "picture" THEN
+      Picture := key_value
+    END
+  ELSIF    sec_name = "Files" THEN
+    IF key_name = "files" THEN
+      Files := key_value
+    END
+  ELSIF    sec_name = "Flags" THEN
+    IF key_name = "picture" THEN
+      b_pict := key_value = "on"
+    END
+  END
+  RETURN 1
+END callback;
+
+
+PROCEDURE GetColor*(key: S.STRING; def: INTEGER): INTEGER;
+  RETURN get_color(IniFileName, "Colors", key, def)
+END GetColor;
+
+
+PROCEDURE SetDefaultPath*(Path: S.STRING);
+BEGIN
+  Default := Path;
+END SetDefaultPath;
+
+
+PROCEDURE SetPicturePath*(Path: S.STRING);
+BEGIN
+  Picture := Path;
+END SetPicturePath;
+
+
+BEGIN
+	enum_keys(IniFileName, "Paths",  sys.ADR(callback));
+	enum_keys(IniFileName, "Files",  sys.ADR(callback));
+	enum_keys(IniFileName, "Flags",  sys.ADR(callback));
+END Ini.

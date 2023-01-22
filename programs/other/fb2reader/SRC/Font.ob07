@@ -1,0 +1,176 @@
+(*
+    Copyright 2016, 2018, 2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Font;
+
+IMPORT W := Window, S := Strings, G := Graph, sys := SYSTEM, K := KOSAPI, Conv, Ini, KF := kfonts;
+
+VAR
+
+  kf_font, kf_loaded, kf_enabled: BOOLEAN;
+  cp1251buf: ARRAY 102400 OF CHAR;
+
+  KFont*: KF.TFont;
+
+  Font*: RECORD
+    color* : INTEGER;
+    size   : INTEGER;
+    bold   : BOOLEAN;
+    italic : BOOLEAN;
+    strike : BOOLEAN
+  END;
+
+  ItalicColor, NormalColor: INTEGER;
+
+
+PROCEDURE KFText(X, Y: INTEGER; first, quantity: INTEGER; canvas: G.PBuffer);
+BEGIN
+  KF.TextOut(KFont, canvas.adr - 8, X, Y, first, quantity, Font.color, ORD(Font.bold) + ORD(Font.italic) * 2 + ORD(Font.strike) * 8)
+END KFText;
+
+
+PROCEDURE sysfont*(sf: BOOLEAN);
+BEGIN
+  kf_font := ~sf & kf_enabled;
+END sysfont;
+
+
+PROCEDURE params*(): INTEGER;
+  RETURN Font.size + 0 + LSL(3, 16) + LSL(ORD(Font.bold) + ORD(Font.italic) * 2 + 128, 24)
+END params;
+
+
+PROCEDURE SetFontColor*(color: INTEGER);
+BEGIN
+	Font.color := color
+END SetFontColor;
+
+
+PROCEDURE Bold*(bold: BOOLEAN);
+BEGIN
+  Font.bold := bold
+END Bold;
+
+
+PROCEDURE Italic*(italic, notLink: BOOLEAN);
+BEGIN
+	Font.italic := italic;
+	IF italic THEN
+		IF notLink THEN
+			SetFontColor(ItalicColor)
+		END
+	ELSE
+		IF notLink THEN
+			SetFontColor(NormalColor)
+		END
+	END
+END Italic;
+
+
+PROCEDURE Strike*(strike: BOOLEAN);
+BEGIN
+  Font.strike := strike
+END Strike;
+
+
+PROCEDURE FontW(): INTEGER;
+  RETURN ASR(Font.size, 1)
+END FontW;
+
+
+PROCEDURE FontH*(): INTEGER;
+VAR res: INTEGER;
+BEGIN
+  IF kf_font THEN
+    res := KF.TextHeight(KFont)
+  ELSE
+    res := Font.size
+  END
+  RETURN res
+END FontH;
+
+
+PROCEDURE TextWidth*(text: S.CHARS; length: INTEGER): INTEGER;
+VAR res: INTEGER;
+BEGIN
+  IF kf_font THEN
+    Conv.convert(text.first, sys.ADR(cp1251buf[0]), length);
+    res := KF.TextWidth(KFont, sys.ADR(cp1251buf[0]), length, ORD(Font.bold) + ORD(Font.italic) * 2)
+  ELSE
+    res := length * FontW()
+  END
+  RETURN res
+END TextWidth;
+
+
+PROCEDURE MonoWidth*(): INTEGER;
+  RETURN FontW()
+END MonoWidth;
+
+
+PROCEDURE StrikeText*(Rect: W.TRect; X, Y: INTEGER; width: INTEGER);
+VAR y: INTEGER;
+BEGIN
+  IF Font.strike THEN
+    y := Y + FontH() DIV 2;
+//    X := X + ORD(Font.italic & kf_font) * ((KF.TextHeight(KFont) DIV 2) DIV 3);
+    G.SetColor(Font.color);
+    G.HLine(X + Rect.Left, X + Rect.Left + width, y + Rect.Top);
+    IF Font.size >= 28 THEN
+      INC(y);
+      G.HLine(X + Rect.Left, X + Rect.Left + width, y + Rect.Top);
+    END
+  END
+END StrikeText;
+
+
+PROCEDURE Text*(Rect: W.TRect; X, Y: INTEGER; adr: INTEGER; length: INTEGER);
+BEGIN
+  IF kf_font THEN
+    Conv.convert(adr, sys.ADR(cp1251buf[0]), length);
+    KFText(X + Rect.Left, Y + Rect.Top, sys.ADR(cp1251buf[0]), length, G.Buffer)
+  ELSE
+    G.SetColor(Font.color);
+    G.TextOut(X + Rect.Left, Y + Rect.Top, adr, length, Font.size, params())
+  END
+END Text;
+
+
+PROCEDURE Init*(italic, normal, fs: INTEGER);
+BEGIN
+  ItalicColor := italic;
+  NormalColor := normal;
+  IF KF.SetSize(KFont, fs) THEN
+    Font.size := KF.TextHeight(KFont);
+    kf_font := TRUE;
+    kf_enabled := TRUE
+  ELSE
+    Font.size := fs;
+    kf_font := FALSE;
+    kf_enabled := FALSE
+  END
+END Init;
+
+
+BEGIN
+  KFont := KF.LoadFont(Ini.Font);
+  kf_loaded := KFont # NIL;
+  kf_font := kf_loaded;
+  kf_enabled := kf_loaded
+END Font.

@@ -1,0 +1,163 @@
+﻿(*
+    Copyright 2016, 2018, 2020-2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE SelEnc;
+
+IMPORT
+
+    SU := SysUtils, W := Window, OpenDlg, S := Strings, TXT := Txt2FB2, SYSTEM, K := KOSAPI, Settings, File;
+
+
+CONST
+
+    BtnH      =  30;
+    BtnW      = 150;
+    BtnX      =   5;
+    BtnY      =  10;
+    BtnInter  =  10;
+
+    tempfile* = "/tmp0/1/~temp.fb2";
+
+
+VAR
+
+    Window    : W.TWindow;
+    ENCODING* : INTEGER;
+    FileName  : S.STRING;
+
+
+PROCEDURE Buttons;
+VAR
+    Y : INTEGER;
+
+BEGIN
+    Y := BtnY;
+    SU.CreateButton(TXT.AUTO,   BtnX, Y, BtnW, BtnH, SU.btnColor, "AUTO"   ); INC(Y, BtnH + BtnInter);
+    SU.CreateButton(TXT.CP866,  BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-866" ); INC(Y, BtnH + BtnInter);
+    SU.CreateButton(TXT.CP1251, BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-1251"); INC(Y, BtnH + BtnInter);
+    SU.CreateButton(TXT.CP1252, BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-1252"); INC(Y, BtnH + BtnInter);
+    SU.CreateButton(TXT.CP1250, BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-1250"); INC(Y, BtnH + BtnInter);
+    SU.CreateButton(TXT.UTF8,   BtnX, Y, BtnW, BtnH, SU.btnColor, "UTF-8"  )
+END Buttons;
+
+
+PROCEDURE DrawWindow;
+BEGIN
+	SU.GetSystemColors;
+    SU.WindowRedrawStatus(1);
+    SU.DefineAndDrawWindow(Window.Left, Window.Top, Window.Width, Window.Height,
+          SU.winColor, LSL(ORD({0, 1}), 4) + 4, Window.Caption);
+    Buttons;
+    SU.WindowRedrawStatus(2)
+END DrawWindow;
+
+
+PROCEDURE auto (fname: S.STRING): INTEGER;
+VAR
+    enc, data, size, ptr: INTEGER;
+
+
+    PROCEDURE SearchPair (ptr, size: INTEGER; chr1, chr2: BYTE): BOOLEAN;
+    VAR
+        c, c0: BYTE;
+        res: BOOLEAN;
+
+    BEGIN
+        c := 0;
+        res := FALSE;
+        WHILE (size > 0) & ~res DO
+            c0 := c;
+            SYSTEM.GET(ptr, c);
+            IF (c = chr2) & (c0 = chr1) THEN
+                res := TRUE
+            END;
+            INC(ptr);
+            DEC(size)
+        END
+
+        RETURN res
+    END SearchPair;
+
+
+BEGIN
+    data := File.Load(fname, size);
+    SU.ErrorIf(data = 0, 1);
+    ptr := data;
+
+    IF SearchPair(ptr, size, 208, 190) THEN
+        enc := TXT.UTF8
+    ELSE
+        IF SearchPair(ptr, size, 239, 240) OR SearchPair(ptr, size, 241, 242) THEN
+            enc := TXT.CP1251
+        ELSE
+            enc := TXT.CP866
+        END
+    END;
+
+    data := K.free(data)
+
+    RETURN enc
+END auto;
+
+
+PROCEDURE ButtonClick;
+VAR
+    btn_code: INTEGER;
+    program, file: S.STRING;
+
+BEGIN
+    btn_code := SU.GetButtonCode();
+    IF btn_code = TXT.AUTO THEN
+        ENCODING := auto(FileName)
+    ELSE
+        ENCODING := btn_code
+    END;
+    TXT.convert(FileName, tempfile, ENCODING);
+    S.PtrToString(K.GetName(), program);
+    file := tempfile;
+    file[0] := "!";
+    SU.Run(program, SYSTEM.ADR(file));
+    SU.Halt
+END ButtonClick;
+
+
+PROCEDURE Show*(FName: S.STRING);
+VAR
+    X1, Y1, X2, Y2: INTEGER;
+
+BEGIN
+    FileName := FName;
+    SU.SetEventsMask({0, 2, 31});
+    SU.GetScreenArea(X1, Y1, X2, Y2);
+    W.InitWindow(Window, 0, 0, BtnX * 2 + BtnW + 10, (BtnH + BtnInter) * 6 + BtnY * 2 + SU.SkinHeight() - 5, "Encoding");
+    Window.Left := (X2 - X1 - Window.Width) DIV 2;
+    Window.Top  := (Y2 - Y1 - Window.Height) DIV 2;
+    DrawWindow;
+    WHILE TRUE DO
+        CASE SU.WaitForEvent() OF
+        |1 : DrawWindow
+        |3 : ButtonClick
+        END
+    END
+END Show;
+
+
+BEGIN
+    ENCODING := 0
+END SelEnc.

@@ -1,0 +1,755 @@
+﻿(*
+    Copyright 2016, 2020, 2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE XML;
+
+IMPORT SU := SysUtils, RF := ReadFile, S := Strings, Encode, V := Vector, tables, LISTS;
+
+
+CONST
+
+    tag_p*                =  1;
+    tag_v*                =  2;
+    tag_section*          =  3;
+    tag_stanza*           =  4;
+    tag_empty_line*       =  5;
+    tag_subtitle*         =  6;
+    tag_date*             =  7;
+    tag_text_author*      =  8;
+    tag_a*                =  9;
+    tag_sub*              = 10;
+    tag_sup*              = 11;
+    tag_code*             = 12;
+    tag_poem*             = 13;
+    tag_title*            = 14;
+    tag_FictionBook*      = 15;
+    tag_body*             = 16;
+    tag_strikethrough*    = 17;
+    tag_strong*           = 18;
+    tag_cite*             = 19;
+    tag_epigraph*         = 20;
+    tag_emphasis*         = 21;
+    tag_image*            = 22;
+    tag_binary*           = 23;
+    tag_coverpage*        = 24;
+    tag_description*      = 25;
+    tag_xml*              = 26;
+    tag_annotation*       = 27;
+    tag_contents_item*    = 28;
+    tag_table*            = 29;
+    tag_tr*               = 30;
+    tag_td*               = 31;
+    tag_th*               = 32;
+    tag_unknown*          = -1;
+
+
+TYPE
+
+  ELEMENT* = POINTER TO DESC_ELEMENT;
+
+  TEXT*    = POINTER TO DESC_TEXT;
+
+  SPACE*   = POINTER TO DESC_SPACE;
+
+  WORD*    = POINTER TO DESC_WORD;
+
+  TAG*     = POINTER TO DESC_TAG;
+
+  ATTR*    = POINTER TO DESC_ATTR;
+
+  TAG_ID   = POINTER TO DESC_TAG_ID;
+
+
+  LIST*  = RECORD first*, last* : ELEMENT END;
+
+  DESC_ELEMENT* = RECORD (V.ANYREC)
+    parent*, next* : ELEMENT
+  END;
+
+  DESC_TEXT = RECORD (DESC_ELEMENT)
+    X*, Y*  : INTEGER;
+    width*  : INTEGER
+  END;
+
+  DESC_SPACE = RECORD (DESC_TEXT)
+
+  END;
+
+  DESC_WORD = RECORD (DESC_TEXT)
+    length* : INTEGER;
+    value*  : S.CHARS
+  END;
+
+  DESC_TAG = RECORD (DESC_ELEMENT)
+    name*    : S.CHARS;
+    value*   : INTEGER;
+    child*   : LIST;
+    attr*    : LIST;
+    Ymin*    : INTEGER;
+    Ymax*    : INTEGER;
+    X*       : INTEGER;
+    Width*   : INTEGER;
+    Clicked* : BOOLEAN;
+    Visited* : BOOLEAN;
+    img*     : INTEGER;
+    num*     : INTEGER;
+    cell*    : INTEGER;
+    table*   : tables.Table;
+    text*    : LISTS.ITEM
+  END;
+
+  DESC_ATTR = RECORD (DESC_ELEMENT)
+    name  : S.CHARS;
+    value : S.CHARS
+  END;
+
+  DESC_TAG_ID = RECORD (DESC_ELEMENT)
+    tag : TAG;
+    id  : S.CHARS
+  END;
+
+
+VAR
+    ch: CHAR; binary: BOOLEAN;
+
+    Root, Current, Header, FB*: ELEMENT;
+
+    Tag_id: LIST;
+
+    tire1, tire2, nbsp, ellipsis, apo,
+    quot1, quot2, quot3, quot4, quot5, quot6, quot7,
+    number, bullet, euro,
+    dash1, dash2: S.UTF8;
+
+    num: INTEGER;
+    Tags: V.VECTOR;
+
+
+PROCEDURE GetTagByNum*(n: INTEGER): TAG;
+VAR ptr: V.ANYPTR;
+BEGIN
+  ptr := V.get(Tags, n)
+  RETURN ptr(TAG)
+END GetTagByNum;
+
+
+PROCEDURE ListCount*(list: LIST): INTEGER;
+VAR cur: ELEMENT; res: INTEGER;
+BEGIN
+  res := 0;
+  cur := list.first;
+  WHILE cur # NIL DO
+    INC(res);
+    cur := cur.next
+  END
+  RETURN res
+END ListCount;
+
+
+PROCEDURE GetTagByID(id: S.CHARS): TAG;
+VAR
+  cur    : TAG_ID;
+  Result : TAG;
+BEGIN
+  Result := NIL;
+  cur := Tag_id.first(TAG_ID);
+  WHILE cur # NIL DO
+    IF S.CharsEq(id, cur.id) THEN
+      Result := cur.tag;
+      cur := NIL
+    ELSE
+      cur := cur.next(TAG_ID)
+    END
+  END
+  RETURN Result
+END GetTagByID;
+
+
+PROCEDURE GetAttr*(tag: TAG; attr_name: S.STRING; VAR attr_value: S.CHARS): BOOLEAN;
+VAR attr: ELEMENT;
+    found: BOOLEAN;
+BEGIN
+  found := FALSE;
+  attr := tag.attr.first;
+  WHILE ~found & (attr # NIL) DO
+    IF S.CharsEqStr(attr(ATTR).name, attr_name) THEN
+      attr_value := attr(ATTR).value;
+      INC(attr_value.first);
+      DEC(attr_value.last);
+      found := TRUE
+    ELSE
+      attr := attr.next
+    END
+  END
+  RETURN found
+END GetAttr;
+
+
+PROCEDURE IsHref(attr_name: S.CHARS): BOOLEAN;
+VAR chars: S.CHARS;
+BEGIN
+  chars := attr_name;
+  chars.first := chars.last - 4
+  RETURN S.CharsEqStr(chars, ":href")
+END IsHref;
+
+
+PROCEDURE GetRef*(tag: TAG; VAR note: BOOLEAN; VAR URL: INTEGER): TAG;
+VAR
+  attr   : ATTR;
+  chars  : S.CHARS;
+  Result : TAG;
+BEGIN
+  Result := NIL;
+  note := FALSE;
+  URL := 0;
+  attr := tag.attr.first(ATTR);
+  WHILE attr # NIL DO
+    IF IsHref(attr.name) THEN
+      chars := attr.value;
+      INC(chars.first);
+      IF S.GetChar(chars, 0) = "#" THEN
+        DEC(chars.last);
+        INC(chars.first);
+        Result := GetTagByID(chars)
+      ELSE
+        S.PutChar(chars, chars.last - chars.first, 0X);
+        URL := chars.first
+      END
+    ELSIF S.CharsEqStr(attr.name, "type") THEN
+      chars := attr.value;
+      INC(chars.first);
+      DEC(chars.last);
+      note := S.CharsEqStr(chars, "note")
+    END;
+    attr := attr.next(ATTR)
+  END
+  RETURN Result
+END GetRef;
+
+
+PROCEDURE IsNote*(tag: TAG): BOOLEAN;
+VAR
+  res  : TAG;
+  note : BOOLEAN;
+  URL  : INTEGER;
+BEGIN
+  res := GetRef(tag, note, URL)
+  RETURN note
+END IsNote;
+
+
+PROCEDURE CreateTag*(): TAG;
+VAR tag: TAG;
+BEGIN
+  NEW(tag);
+  tag.Visited := FALSE;
+  SU.MemError(tag = NIL);
+  INC(num);
+  tag.num := num;
+  V.push(Tags, tag)
+  RETURN tag
+END CreateTag;
+
+
+PROCEDURE CreateWord*(): WORD;
+VAR word: WORD;
+BEGIN
+  NEW(word);
+  SU.MemError(word = NIL)
+  RETURN word
+END CreateWord;
+
+
+PROCEDURE CreateSpace(): SPACE;
+VAR space: SPACE;
+BEGIN
+  NEW(space);
+  SU.MemError(space = NIL)
+  RETURN space
+END CreateSpace;
+
+
+PROCEDURE CreateAttr(): ATTR;
+VAR attr: ATTR;
+BEGIN
+  NEW(attr);
+  SU.MemError(attr = NIL)
+  RETURN attr
+END CreateAttr;
+
+
+PROCEDURE AddItem*(VAR list: LIST; item: ELEMENT);
+BEGIN
+  IF list.first = NIL THEN
+    list.first := item
+  ELSE
+    list.last.next := item
+  END;
+  list.last := item
+END AddItem;
+
+
+PROCEDURE DelLastItem*(VAR list: LIST);
+VAR cur: ELEMENT;
+BEGIN
+  IF list.first = list.last THEN
+    IF list.last # NIL THEN
+      DISPOSE(list.last)
+    END;
+    list.first := NIL
+  ELSE
+    cur := list.first;
+    WHILE cur.next # list.last DO
+      cur := cur.next
+    END;
+    DISPOSE(list.last);
+    cur.next := NIL;
+    list.last := cur
+  END
+END DelLastItem;
+
+
+PROCEDURE AddChild*(tag: TAG; child: ELEMENT);
+BEGIN
+  AddItem(tag.child, child);
+  child.parent := tag
+END AddChild;
+
+
+PROCEDURE AddAttr(tag: TAG; attr: ATTR);
+BEGIN
+  AddItem(tag.attr, attr);
+  attr.parent := tag
+END AddAttr;
+
+
+PROCEDURE Copy*(node: ELEMENT): ELEMENT;
+VAR
+  space : SPACE;
+  word  : WORD;
+  tag   : TAG;
+  cur   : ELEMENT;
+  num   : INTEGER;
+
+  Result : ELEMENT;
+BEGIN
+  IF node IS TAG THEN
+    tag := CreateTag();
+    num := tag.num;
+    tag^ := node(TAG)^;
+    tag.num := num;
+    tag.child.first := NIL;
+    tag.child.last  := NIL;
+    cur := node(TAG).child.first;
+    WHILE cur # NIL DO
+      AddChild(tag, Copy(cur));
+      cur := cur.next
+    END;
+    Result := tag
+  ELSIF node IS WORD THEN
+    word := CreateWord();
+    word^ := node(WORD)^;
+    Result := word
+  ELSIF node IS SPACE THEN
+    space := CreateSpace();
+    space^ := node(SPACE)^;
+    Result := space
+  END;
+  Result.next := NIL
+  RETURN Result
+END Copy;
+
+
+PROCEDURE IsIdentChar(): BOOLEAN;
+  RETURN ("A" <= ch) & (ch <= "Z") OR
+         ("a" <= ch) & (ch <= "z") OR
+         ("0" <= ch) & (ch <= "9") OR
+         (ch  = "?") OR (ch  = "!") OR
+         (ch  = ":") OR (ch  = "_") OR
+         (ch  = "-")
+END IsIdentChar;
+
+
+PROCEDURE Space(): BOOLEAN;
+  RETURN (ch # 0X) & (ch <= 20X)
+END Space;
+
+
+PROCEDURE Ident(VAR id: S.CHARS);
+BEGIN
+  id.first := RF.Adr();
+  WHILE IsIdentChar() DO
+    RF.Next(ch)
+  END;
+  id.last := RF.Adr() - 1
+END Ident;
+
+
+PROCEDURE Skip;
+BEGIN
+  WHILE Space() DO
+    RF.Next(ch)
+  END
+END Skip;
+
+
+PROCEDURE String(VAR str: S.CHARS);
+VAR quot: CHAR;
+BEGIN
+  SU.ErrorIf((ch # "'") & (ch # 22X), 1);
+  str.first := RF.Adr();
+  quot := ch;
+  REPEAT
+    RF.Next(ch)
+  UNTIL (ch = quot) OR (ch = 0X);
+  SU.ErrorIf(ch = 0X, 2);
+  str.last := RF.Adr();
+  RF.Next(ch)
+END String;
+
+
+PROCEDURE SetTagValue(tag: TAG);
+VAR
+  value : INTEGER;
+  name  : S.CHARS;
+BEGIN
+  name := tag.name;
+  IF    S.CharsEqStr(name, "p") THEN
+    value := tag_p
+  ELSIF S.CharsEqStr(name, "v") THEN
+    value := tag_v
+  ELSIF S.CharsEqStr(name, "section") THEN
+    value := tag_section
+  ELSIF S.CharsEqStr(name, "stanza") THEN
+    value := tag_stanza
+  ELSIF S.CharsEqStr(name, "empty-line") THEN
+    value := tag_empty_line
+  ELSIF S.CharsEqStr(name, "subtitle") THEN
+    value := tag_subtitle
+  ELSIF S.CharsEqStr(name, "date") THEN
+    value := tag_date
+  ELSIF S.CharsEqStr(name, "text-author") THEN
+    value := tag_text_author
+  ELSIF S.CharsEqStr(name, "a") THEN
+    value := tag_a
+  ELSIF S.CharsEqStr(name, "sub") THEN
+    value := tag_sub
+  ELSIF S.CharsEqStr(name, "sup") THEN
+    value := tag_sup
+  ELSIF S.CharsEqStr(name, "code") THEN
+    value := tag_code
+  ELSIF S.CharsEqStr(name, "poem") THEN
+    value := tag_poem
+  ELSIF S.CharsEqStr(name, "title") THEN
+    value := tag_title
+  ELSIF S.CharsEqStr(name, "FictionBook") THEN
+    value := tag_FictionBook;
+    FB := tag
+  ELSIF S.CharsEqStr(name, "body") THEN
+    value := tag_body
+  ELSIF S.CharsEqStr(name, "strikethrough") THEN
+    value := tag_strikethrough
+  ELSIF S.CharsEqStr(name, "strong") THEN
+    value := tag_strong
+  ELSIF S.CharsEqStr(name, "cite") THEN
+    value := tag_cite
+  ELSIF S.CharsEqStr(name, "epigraph") THEN
+    value := tag_epigraph
+  ELSIF S.CharsEqStr(name, "emphasis") THEN
+    value := tag_emphasis
+  ELSIF S.CharsEqStr(name, "image") THEN
+    value := tag_image
+  ELSIF S.CharsEqStr(name, "binary") THEN
+    binary := TRUE;
+    value := tag_binary
+  ELSIF S.CharsEqStr(name, "coverpage") THEN
+    value := tag_coverpage
+  ELSIF S.CharsEqStr(name, "description") THEN
+    value := tag_description
+  ELSIF S.CharsEqStr(name, "annotation") THEN
+    value := tag_annotation
+  ELSIF S.CharsEqStr(name, "table") THEN
+    value := tag_table
+  ELSIF S.CharsEqStr(name, "tr") THEN
+    value := tag_tr
+  ELSIF S.CharsEqStr(name, "td") THEN
+    value := tag_td
+  ELSIF S.CharsEqStr(name, "th") THEN
+    value := tag_th
+  ELSIF S.CharsEqStr(name, "?xml") THEN
+    value := tag_xml;
+    Header := tag
+  ELSE
+    value := tag_unknown
+  END;
+  tag.value := value
+END SetTagValue;
+
+
+PROCEDURE ReadTag;
+VAR tag: TAG; name: S.CHARS; attr: ATTR; tag_id: TAG_ID;
+BEGIN
+  RF.Next(ch);
+  Skip;
+  IF ch = "/" THEN
+    RF.Next(ch);
+    Skip;
+    SU.ErrorIf(~IsIdentChar(), 3);
+    Ident(name);
+    Skip;
+    SU.ErrorIf(ch # ">", 4);
+    RF.Next(ch);
+    tag := Current(TAG);
+    SU.ErrorIf(~S.CharsEq(tag.name, name), 5);
+    IF tag.value = tag_binary THEN
+      binary := FALSE;
+      IF tag.child.first IS WORD THEN
+        S.Base64(tag.child.first(WORD).value)
+      END
+    END;
+    Current := Current.parent
+  ELSE
+    tag := CreateTag();
+    AddChild(Current(TAG), tag);
+    Current := tag;
+    SU.ErrorIf(~IsIdentChar(), 6);
+    Ident(tag.name);
+    SetTagValue(tag);
+    WHILE Space() DO
+      Skip;
+      IF IsIdentChar() THEN
+        attr := CreateAttr();
+        Ident(attr.name);
+        Skip;
+        SU.ErrorIf(ch # "=", 7);
+        RF.Next(ch);
+        Skip;
+        String(attr.value);
+        AddAttr(Current(TAG), attr);
+        IF S.CharsEqStr(attr.name, "id") THEN
+          NEW(tag_id);
+          SU.MemError(tag_id = NIL);
+          tag_id.tag := Current(TAG);
+          tag_id.id  := attr.value;
+          INC(tag_id.id.first);
+          DEC(tag_id.id.last);
+          AddItem(Tag_id, tag_id)
+        END
+      END
+    END;
+    IF ch = "/" THEN
+      RF.Next(ch);
+      IF Current(TAG).value = tag_binary THEN
+        binary := FALSE
+      END;
+      Current := Current.parent
+    ELSIF ch = "?" THEN
+      RF.Next(ch);
+      SU.ErrorIf(Current(TAG).value # tag_xml, 8);
+      Current := Current.parent
+    END;
+    SU.ErrorIf(ch # ">", 9);
+    RF.Next(ch)
+  END
+END ReadTag;
+
+
+PROCEDURE ReadSpace;
+VAR space: SPACE;
+BEGIN
+  space := CreateSpace();
+  AddChild(Current(TAG), space);
+  RF.Next(ch)
+END ReadSpace;
+
+
+PROCEDURE ReadWord;
+VAR word: WORD; chars: S.CHARS; repl: BOOLEAN;
+BEGIN
+  word := CreateWord();
+  word.value.first := RF.Adr();
+  repl := FALSE;
+  WHILE ((ch > 20X) OR binary) & (ch # 0X) & (ch # "<") DO
+    repl := repl OR (ch = "&") OR (ch = 0C2X) OR (ch >= 0E0X) & (ch < 0F0X);
+    RF.Next(ch)
+  END;
+  word.value.last := RF.Adr() - 1;
+  IF repl THEN
+    chars := word.value;
+    S.Replace(chars, "&amp;",  "&");
+    S.Replace(chars, "&lt;",   "<");
+    S.Replace(chars, "&gt;",   ">");
+    S.Replace(chars, "&quot;", 22X);
+    S.Replace(chars, "&apos;", "'");
+    WHILE S.EntOct(chars) DO END;
+    S.Replace(chars, tire1, "--");
+    S.Replace(chars, tire2, "--");
+    S.Replace(chars, nbsp, " ");
+    S.Replace(chars, ellipsis, "...");
+    S.Replace(chars, quot1, 22X);
+    S.Replace(chars, quot2, 22X);
+    S.Replace(chars, quot3, 22X);
+    S.Replace(chars, quot4, "'");
+    S.Replace(chars, quot5, ",");
+    S.Replace(chars, quot6, "<");
+    S.Replace(chars, quot7, ">");
+    S.Replace(chars, number, "No.");
+    S.Replace(chars, apo, "'");
+    S.Replace(chars, dash1, "-");
+    S.Replace(chars, dash2, "-");
+    S.Replace(chars, bullet, "*");
+    S.Replace(chars, euro, "EUR");
+    word.value := chars
+  END;
+  AddChild(Current(TAG), word)
+END ReadWord;
+
+
+PROCEDURE Comment(): BOOLEAN;
+CONST com = 2D2D213CH;
+VAR res: BOOLEAN;
+BEGIN
+  res := FALSE;
+  IF RF.Int() = com THEN
+    RF.Next(ch);
+    RF.Next(ch);
+    RF.Next(ch);
+    RF.Next(ch);
+
+    REPEAT
+      RF.Next(ch);
+      IF ch = "-" THEN
+        RF.Next(ch);
+        WHILE (ch = "-") & ~res DO
+          RF.Next(ch);
+          IF ch = ">" THEN
+            RF.Next(ch);
+            res := TRUE
+          END
+        END
+      END
+    UNTIL (ch = 0X) OR res
+
+  END
+  RETURN res
+END Comment;
+
+
+PROCEDURE Prolog;
+VAR attr: ATTR; chars: S.CHARS;
+BEGIN
+  RF.Next(ch);
+  IF ch = 0EFX THEN
+    RF.Next(ch);
+    SU.ErrorIf(ch # 0BBX, 16);
+    RF.Next(ch);
+    SU.ErrorIf(ch # 0BFX, 16);
+    RF.Next(ch)
+  END;
+  Skip;
+  IF ch = "<" THEN
+    ReadTag
+  END;
+
+  SU.ErrorIf(Header = NIL, 15);
+
+  attr := Header(TAG).attr.first(ATTR);
+  WHILE attr # NIL DO
+    IF S.CharsEqStr(attr.name, "encoding") THEN
+      chars := attr.value;
+      INC(chars.first);
+      DEC(chars.last);
+      S.SetCS(FALSE);
+      IF    S.CharsEqStr(chars, "windows-1250") THEN
+        RF.Conv(Encode.W1250)
+      ELSIF S.CharsEqStr(chars, "windows-1251") THEN
+        RF.Conv(Encode.W1251)
+      ELSIF S.CharsEqStr(chars, "windows-1252") THEN
+        RF.Conv(Encode.W1252)
+      ELSIF S.CharsEqStr(chars, "cp866"       ) THEN
+        RF.Conv(Encode.CP866)
+      ELSIF S.CharsEqStr(chars, "utf-8"       ) THEN
+        RF.SeekBeg
+      ELSE
+        SU.ErrorIf(TRUE, 14)
+      END;
+      S.SetCS(TRUE)
+    END;
+    attr := attr.next(ATTR)
+  END
+END Prolog;
+
+
+PROCEDURE Parse;
+BEGIN
+  Prolog;
+  binary := FALSE;
+  RF.Next(ch);
+  WHILE ch = "<" DO
+    IF ~Comment() THEN
+      ReadTag
+    END
+  ELSIF Space() & ~binary DO
+    ReadSpace
+  ELSIF (ch # 0X) DO
+    ReadWord
+  END
+END Parse;
+
+
+PROCEDURE Open*(FileName: S.STRING);
+BEGIN
+  Root := CreateTag();
+  Current := Root;
+  Header := NIL;
+  FB := NIL;
+  num := 0;
+  RF.Load(FileName);
+  Parse;
+  SU.ErrorIf(Current # Root, 10)
+END Open;
+
+
+PROCEDURE Init;
+BEGIN
+  S.utf8(8212, tire1);
+  S.utf8(8211, tire2);
+  S.utf8( 160, nbsp);
+  S.utf8(8230, ellipsis);
+  S.utf8(8217, apo);
+  S.utf8(8220, quot1);
+  S.utf8(8221, quot2);
+  S.utf8(8222, quot3);
+  S.utf8(8216, quot4);
+  S.utf8(8218, quot5);
+  S.utf8(8249, quot6);
+  S.utf8(8250, quot7);
+  S.utf8(8470, number);
+  S.utf8(8208, dash1);
+  S.utf8(8209, dash2);
+  S.utf8(8226, bullet);
+  S.utf8(8364, euro);
+  Tags := V.create(1024)
+END Init;
+
+
+BEGIN
+  Init
+END XML.

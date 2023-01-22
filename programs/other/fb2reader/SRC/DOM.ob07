@@ -1,0 +1,1756 @@
+﻿(*
+    Copyright 2016-2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE DOM;
+
+IMPORT XML, SU := SysUtils, S := Strings, Font, Window, G := Graph, LibImg,
+       RF := ReadFile, File, Write, Read, Ini, K := KOSAPI, sys := SYSTEM,
+       V := Vector, Cursor, box_lib, tables, Search;
+
+
+CONST
+
+  BACK_COLOR*       = 0;
+  TEXT_COLOR*       = 1;
+  ITALIC_COLOR*     = 2;
+  LINK_COLOR*       = 3;
+  VISITED_COLOR*    = 4;
+  CLICKED_COLOR*    = 5;
+
+  CellPadding       = 5;
+
+
+TYPE
+
+  TSettings* = RECORD
+
+    Colors*   : ARRAY 6 OF INTEGER;
+    FontSize* : INTEGER;
+    TwoCol*   : BOOLEAN;
+    b_pict*   : BOOLEAN;
+
+    PADDING*   : RECORD Left, Right, Top*, Bottom, ColInter, LRpc*, CInt*: INTEGER END;
+
+    PARAGRAPH*,
+    EPIGRAPH*,
+    LEVEL,
+    SUB,
+    SUP,
+    InterLin*,
+    Picture*,
+    SpaceW: INTEGER
+
+  END;
+
+  StackItem = POINTER TO TStackItem;
+
+  TStackItem = RECORD (XML.DESC_ELEMENT)
+
+    body : XML.TAG;
+    Ycur : INTEGER;
+    d    : REAL
+
+  END;
+
+
+VAR
+
+  Settings* : TSettings;
+  Canvas_X, Canvas_Y: INTEGER;
+  ColLeft   : Window.TRect;
+  ColRight  : Window.TRect;
+
+  Ymin, Ymax, Ycur : INTEGER;
+
+  X, Y, W, LineH, W1, W2: INTEGER;
+
+  epigraph  : INTEGER;
+  sup, sub  : INTEGER;
+  ref_depth : INTEGER;
+  align     : INTEGER;
+  code      : INTEGER;
+  strong    : INTEGER;
+  italic    : INTEGER;
+  strike    : INTEGER;
+  refer     : INTEGER;
+
+  Text      : ARRAY 100000 OF XML.TEXT;
+  TextCount : INTEGER;
+
+  Lines: INTEGER;
+
+  description, contents, mainbody, body, ref, cover, clickRef, hoverRef: XML.TAG;
+
+  MainBody: BOOLEAN;
+
+  f_stk, b_stk, vis_ref: XML.LIST;
+
+  FilePath, FileName: S.STRING;
+
+  done, last, resized, loaded*, mouseDown: BOOLEAN;
+
+  Stack*: ARRAY 1000000 OF CHAR;
+
+  Ycont: INTEGER;
+
+  history: File.FS;
+
+  references: V.VECTOR;
+  cursor: INTEGER;
+
+  fsize2, chksum: INTEGER;
+
+  sb: box_lib.scrollbar;
+  urlstr* : S.STRING;
+  DrawStatus, DrawToolbar: PROCEDURE;
+
+
+PROCEDURE PushRef(ref: XML.TAG);
+VAR item: StackItem;
+BEGIN
+  NEW(item);
+  item.body := ref;
+  XML.AddItem(vis_ref, item);
+END PushRef;
+
+
+PROCEDURE Push(VAR stk: XML.LIST);
+VAR item: StackItem;
+BEGIN
+  NEW(item);
+  item.body := body;
+  item.Ycur := Ycur;
+  XML.AddItem(stk, item);
+  IF body = contents THEN
+    Ycont := Ycur
+  END
+END Push;
+
+
+PROCEDURE Pop(VAR stk: XML.LIST);
+VAR item : StackItem;
+BEGIN
+  item := stk.last(StackItem);
+  IF item # NIL THEN
+    body := item.body;
+    Ymin := body.Ymin;
+    Ymax := body.Ymax;
+    Ycur := item.Ycur;
+    XML.DelLastItem(stk)
+  END
+END Pop;
+
+
+PROCEDURE Clear(VAR stk: XML.LIST);
+BEGIN
+  REPEAT
+    XML.DelLastItem(stk)
+  UNTIL stk.last = NIL
+END Clear;
+
+
+PROCEDURE AddToLine(text: XML.TEXT);
+BEGIN
+  Text[TextCount] := text;
+  INC(TextCount)
+END AddToLine;
+
+
+PROCEDURE Epigraph(): INTEGER;
+  RETURN ORD(epigraph > 0) * Settings.EPIGRAPH
+END Epigraph;
+
+
+PROCEDURE SpaceWidth(): INTEGER;
+VAR Result: INTEGER;
+BEGIN
+  IF code > 0 THEN
+    Result := Font.MonoWidth()
+  ELSE
+    Result := Settings.SpaceW
+  END
+  RETURN Result
+END SpaceWidth;
+
+
+PROCEDURE Trim;
+VAR n: INTEGER;
+BEGIN
+  IF TextCount > 0 THEN
+    n := TextCount - 1;
+    WHILE (n >= 0) & (Text[n] IS XML.SPACE) DO
+      Text[n].width := -1;
+      DEC(n)
+    END;
+    TextCount := n + 1
+  END
+END Trim;
+
+
+PROCEDURE Align;
+VAR
+  i, n, sp, d, quo, rem, x: INTEGER;
+  text: XML.TEXT;
+BEGIN
+  IF (TextCount > 0) & (code = 0) & (align # 3) THEN
+    sp := 0;
+    Trim;
+    n := TextCount - 1;
+    IF n >= 0 THEN
+      d := W - Text[n].X - Text[n].width
+    END;
+    IF align = 1 THEN
+      x := (d + Text[0].X) DIV 2
+    ELSIF align = 2 THEN
+      x := d + Text[0].X
+    ELSIF align = 0 THEN
+      x := Text[0].X;
+      FOR i := 0 TO n DO
+        IF Text[i] IS XML.SPACE THEN
+          INC(sp)
+        END
+      END;
+      IF sp > 0 THEN
+        quo := d DIV sp;
+        rem := d MOD sp;
+        FOR i := 0 TO n DO
+          IF Text[i] IS XML.SPACE THEN
+            text := Text[i];
+            text.width := text.width + quo + ORD(rem > 0);
+            DEC(rem)
+          END
+        END
+      END
+    END;
+    FOR i := 0 TO n DO
+      text := Text[i];
+      text.X := x;
+      INC(x, text.width)
+    END
+  END
+END Align;
+
+
+PROCEDURE NewLine;
+BEGIN
+  IF align # 0 THEN
+    Align
+  END;
+  X := Epigraph();
+  INC(Y, LineH);
+  TextCount := 0
+END NewLine;
+
+
+PROCEDURE Sup(open: BOOLEAN);
+BEGIN
+  IF open THEN
+    IF sup = 0 THEN
+      DEC(Y, Settings.SUP)
+    END;
+    INC(sup)
+  ELSE
+    DEC(sup);
+    IF sup = 0 THEN
+      INC(Y, Settings.SUP)
+    END
+  END
+END Sup;
+
+
+PROCEDURE Sub(open: BOOLEAN);
+BEGIN
+  IF open THEN
+    IF sub = 0 THEN
+      INC(Y, Settings.SUB)
+    END;
+    INC(sub)
+  ELSE
+    DEC(sub);
+    IF sub = 0 THEN
+      DEC(Y, Settings.SUB)
+    END
+  END
+END Sub;
+
+
+PROCEDURE Split(word: XML.WORD);
+VAR
+  i, n, max, len: INTEGER;
+  c: CHAR;
+  rem: XML.WORD;
+BEGIN
+  WHILE Font.TextWidth(word.value, max) <= W DO
+    INC(max)
+  END;
+  DEC(max);
+  IF max = 0 THEN
+    max := 1
+  END;
+  i := 0;
+  n := 0;
+  len := word.value.last - word.value.first + 1;
+  WHILE (n <= max) & (i < len) DO
+    c := S.GetChar(word.value, i);
+    INC(n);
+    IF (80X <= c) & (c <= 0BFX) THEN
+      DEC(n)
+    END;
+    INC(i)
+  END;
+  IF n > max THEN
+    DEC(i);
+    rem := XML.CreateWord();
+    rem^ := word^;
+    rem.value.first := word.value.first + i;
+    word.next := rem;
+    word.value.last := rem.value.first - 1;
+    word.length := S.Utf8Length(word.value);
+    word.width := Font.TextWidth(word.value, word.length)
+  END
+END Split;
+
+
+PROCEDURE Depth(tag: XML.ELEMENT): INTEGER;
+VAR n: INTEGER;
+BEGIN
+  n := 0;
+  WHILE tag # NIL DO
+    IF tag(XML.TAG).value = XML.tag_section THEN
+      INC(n)
+    END;
+    tag := tag.parent
+  END
+  RETURN n
+END Depth;
+
+
+PROCEDURE shift(tag: XML.TAG; shx, shy: INTEGER);
+VAR cur: XML.ELEMENT; t: XML.TAG;
+BEGIN
+  cur := tag.child.first;
+  WHILE cur # NIL DO
+    IF cur IS XML.TAG THEN
+      t := cur(XML.TAG);
+      INC(t.X, shx);
+      INC(t.Ymin, shy);
+      INC(t.Ymax, shy);
+      shift(t, shx, shy)
+    ELSIF cur IS XML.TEXT THEN
+      INC(cur(XML.TEXT).X, shx);
+      INC(cur(XML.TEXT).Y, shy)
+    END;
+    cur := cur.next
+  END
+END shift;
+
+
+PROCEDURE getspan(td: XML.TAG; span: S.STRING): INTEGER;
+VAR res: INTEGER;
+    attr_value: S.CHARS;
+    err: BOOLEAN;
+BEGIN
+  IF XML.GetAttr(td, span, attr_value) THEN
+    res := S.CharsToInt(attr_value, err);
+    IF err OR (res <= 0) THEN
+      res := 1
+    END
+  ELSE
+    res := 1
+  END
+  RETURN res
+END getspan;
+
+
+PROCEDURE td(t: tables.Table; tag: XML.TAG);
+BEGIN
+  tag.cell := t.cells.count;
+  tables.td(t, getspan(tag, "colspan"), getspan(tag, "rowspan"))
+END td;
+
+
+PROCEDURE tr(t: tables.Table; tag: XML.TAG);
+VAR
+  cur       : XML.ELEMENT;
+  cell      : XML.TAG;
+BEGIN
+  tables.tr(t);
+  cur := tag.child.first;
+  WHILE cur # NIL DO
+    IF cur IS XML.TAG THEN
+      cell := cur(XML.TAG);
+      IF (cell.value = XML.tag_td) OR (cell.value = XML.tag_th) THEN
+        cell.table := t;
+        td(t, cell)
+      END
+    END;
+    cur := cur.next
+  END
+END tr;
+
+
+PROCEDURE table(t: tables.Table; tag: XML.TAG; open: BOOLEAN);
+VAR
+  cur       : XML.ELEMENT;
+  row       : XML.TAG;
+BEGIN
+  IF open THEN
+    tables.table(t, W, TRUE);
+    cur := tag.child.first;
+    WHILE cur # NIL DO
+      IF cur IS XML.TAG THEN
+        row := cur(XML.TAG);
+        IF row.value = XML.tag_tr THEN
+          row.table := t;
+          tr(t, row)
+        END
+      END;
+      cur := cur.next
+    END;
+    tables.table(t, W, FALSE)
+  END
+END table;
+
+
+PROCEDURE layout(body: XML.ELEMENT);
+VAR
+  cur       : XML.ELEMENT;
+  tag       : XML.TAG;
+  word      : XML.WORD;
+  text      : XML.TEXT;
+  tag_value : INTEGER;
+  _align    : INTEGER;
+  title     : XML.ELEMENT;
+  width     : INTEGER;
+  height1   : INTEGER;
+  height2   : INTEGER;
+
+
+  PROCEDURE Image (VAR tag: XML.TAG);
+  VAR
+    note  : BOOLEAN;
+    img   : XML.TAG;
+    URL   : INTEGER;
+    chars : S.CHARS;
+    sizeY : INTEGER;
+    FName : S.STRING;
+    path  : S.STRING;
+  BEGIN
+    IF tag.img # 0 THEN
+      LibImg.img_destroy(tag.img)
+    END;
+    img := XML.GetRef(tag, note, URL);
+    IF img # NIL THEN
+      IF img.child.first IS XML.WORD THEN
+        chars := img.child.first(XML.WORD).value;
+        tag.img := LibImg.GetImg(chars.first, chars.last - chars.first + 1, W, sizeY);
+        IF tag.img # 0 THEN
+          INC(Y, (sizeY DIV LineH) * LineH);
+          NewLine;
+          tag.Ymax := Y - Y MOD LineH
+        END
+      END
+    ELSIF URL # 0 THEN
+      S.PtrToString(URL, FName);
+      tag.img := LibImg.LoadFromFile(FName, W, sizeY);
+      IF tag.img = 0 THEN
+        path := FilePath;
+        IF FName[0] # "/" THEN
+          S.Append(path, "/")
+        END;
+        S.Append(path, FName);
+        tag.img := LibImg.LoadFromFile(path, W, sizeY);
+      END;
+      IF tag.img # 0 THEN
+        INC(Y, (sizeY DIV LineH) * LineH);
+        NewLine;
+        tag.Ymax := Y - Y MOD LineH
+      END
+    END
+  END Image;
+
+
+BEGIN
+  cur := body;
+  WHILE cur # NIL DO
+    IF cur IS XML.TAG THEN
+      tag := cur(XML.TAG);
+      tag_value := tag.value;
+      CASE tag_value OF
+      |XML.tag_p, XML.tag_v:
+        Trim;
+        IF TextCount > 0 THEN
+          NewLine
+        END;
+        X := Settings.PARAGRAPH + Epigraph()
+      |XML.tag_epigraph:
+        NewLine;
+        INC(epigraph)
+      |XML.tag_contents_item:
+        INC(ref_depth);
+        Settings.EPIGRAPH := Settings.LEVEL * Depth(tag);
+        _align := align;
+        align := 3
+      |XML.tag_title:
+        INC(strong);
+        Font.Bold(TRUE);
+        _align := align;
+        align := 1;
+        IF MainBody THEN
+          tag.value := XML.tag_contents_item;
+          title := XML.Copy(tag);
+          XML.AddChild(contents, title);
+          title.parent := tag.parent;
+          tag.value := XML.tag_title
+        END
+      |XML.tag_subtitle:
+        NewLine;
+        _align := align;
+        align := 1
+      |XML.tag_text_author, XML.tag_date:
+        _align := align;
+        align := 2
+      |XML.tag_section, XML.tag_body, XML.tag_empty_line, XML.tag_poem, XML.tag_stanza, XML.tag_annotation, XML.tag_cite:
+        NewLine
+      |XML.tag_a:
+        INC(ref_depth);
+        IF XML.IsNote(tag) THEN
+          Sup(TRUE)
+        END
+      |XML.tag_sup:
+        Sup(TRUE)
+      |XML.tag_sub:
+        Sub(TRUE)
+      |XML.tag_code:
+        Font.sysfont(TRUE);
+        INC(code)
+      |XML.tag_image:
+        tag.X := 0;
+        NewLine;
+        NewLine
+      |XML.tag_coverpage:
+        cover := tag
+
+      |XML.tag_table:
+        NewLine;
+        tables.destroy(tag.table);
+        NEW(tag.table);
+        table(tag.table, tag, TRUE)
+      |XML.tag_td, XML.tag_th:
+        IF tag_value = XML.tag_th THEN
+          INC(strong);
+          Font.Bold(TRUE);
+        END;
+        SU.ErrorIf(tag.parent(XML.TAG).value # XML.tag_tr, 21);
+        NewLine; DEC(Y, LineH);
+        tag.Width := tables.get_width(tag.table, tag.cell);
+        tag.X := tables.get_x(tag.table, tag.cell);
+        width := W;
+        W := tag.Width - 2 * CellPadding;
+        IF W <= 0 THEN
+          W := 1
+        END
+      |XML.tag_tr:
+        SU.ErrorIf(tag.parent(XML.TAG).value # XML.tag_table, 20)
+
+      |XML.tag_strong:
+        INC(strong);
+        Font.Bold(TRUE)
+      ELSE
+      END;
+
+      tag.Ymin := Y - Y MOD LineH;
+      layout(tag.child.first);
+      tag.Ymax := Y - Y MOD LineH;
+
+      CASE tag_value OF
+      |XML.tag_epigraph:
+        NewLine;
+        DEC(epigraph)
+      |XML.tag_subtitle:
+        NewLine;
+        NewLine;
+        align := _align
+      |XML.tag_title, XML.tag_text_author, XML.tag_date:
+        DEC(strong);
+        Font.Bold(strong > 0);
+        NewLine;
+        align := _align
+      |XML.tag_contents_item:
+        DEC(ref_depth);
+        align := _align;
+      |XML.tag_section, XML.tag_poem, XML.tag_v, XML.tag_p, XML.tag_annotation, XML.tag_cite:
+        NewLine
+      |XML.tag_a:
+        DEC(ref_depth);
+        IF XML.IsNote(tag) THEN
+          Sup(FALSE)
+        END
+      |XML.tag_sup:
+        Sup(FALSE)
+      |XML.tag_sub:
+        Sub(FALSE)
+      |XML.tag_code:
+        DEC(code);
+        Font.sysfont(code > 0)
+      |XML.tag_image:
+        Image(tag)
+
+      |XML.tag_table:
+        Y := tag.Ymin + tables.get_table_height(tag.table);
+        tag.Ymax := Y - Y MOD LineH;
+        NewLine;
+      |XML.tag_td, XML.tag_th:
+        IF tag_value = XML.tag_th THEN
+          DEC(strong);
+          Font.Bold(strong > 0)
+        END;
+        W := width;
+        NewLine;
+        Y := tag.Ymin + Settings.SUP; //!!!
+        height1 := tables.get_height(tag.table, tag.cell);
+        height2 := tag.Ymax - tag.Ymin + LineH;
+        IF height2 > height1 THEN
+          tables.set_height(tag.table, tag.cell, height2)
+        END;
+        INC(tag.Ymin, tables.get_y(tag.table, tag.cell));
+        INC(tag.Ymax, tables.get_height(tag.table, tag.cell));
+        shift(tag, tag.X + CellPadding, tables.get_y(tag.table, tag.cell));
+
+      |XML.tag_strong:
+        DEC(strong);
+        Font.Bold(strong > 0)
+      ELSE
+      END
+    ELSIF cur IS XML.WORD THEN
+      word := cur(XML.WORD);
+      word.length := S.Utf8Length(word.value);
+      word.width := Font.TextWidth(word.value, word.length);
+      IF W - X < word.width THEN
+        Align;
+        NewLine
+      END;
+      IF W < word.width THEN
+        Split(word)
+      END
+    ELSIF cur IS XML.SPACE THEN
+      IF W - X < SpaceWidth() THEN
+          cur(XML.SPACE).width := 0
+      ELSE
+          cur(XML.SPACE).width := SpaceWidth()
+      END
+    END;
+    IF cur IS XML.TEXT THEN
+      IF ref_depth > 0 THEN
+        V.push(references, cur)
+      END;
+      text := cur(XML.TEXT);
+      text.X := X;
+      text.Y := Y;
+      INC(X, text.width);
+      AddToLine(text)
+    END;
+    cur := cur.next
+  END
+END layout;
+
+
+PROCEDURE layout2(body: XML.ELEMENT);
+VAR
+  color : INTEGER;
+  cur   : XML.ELEMENT;
+  text  : XML.TEXT;
+  tag   : XML.TAG;
+  y, y0 : INTEGER;
+  value : INTEGER;
+
+  PROCEDURE DrawText(Col: Window.TRect; min, max, y0, y: INTEGER; right: BOOLEAN; VAR text: XML.TEXT);
+  VAR word: XML.WORD;
+  BEGIN
+    IF (min <= y0) & (y0 <= max) THEN
+      Font.sysfont(code > 0);
+      IF text IS XML.WORD THEN
+        word := text(XML.WORD);
+        Font.Text(Col, word.X, y - Col.Height * ORD(right), word.value.first, word.length);
+      END;
+      Font.StrikeText(Col, text.X, y - Col.Height * ORD(right), text.width)
+    END
+  END DrawText;
+
+  PROCEDURE Image(VAR tag: XML.TAG);
+  VAR sizeX, sizeY, img, y: INTEGER;
+  BEGIN
+    IF tag.img # 0 THEN
+      y := Ycur;
+      LibImg.GetInf(tag.img, sizeX, sizeY, img);
+      IF (y <= tag.Ymax) & (tag.Ymin <= y + ColLeft.Height) THEN
+        G.Image(ColLeft.Left + tag.X, tag.Ymin - y + ColLeft.Top, sizeX, sizeY, img, ColLeft.Top, ColLeft.Top + ColLeft.Height - 1)
+      END;
+      IF Settings.TwoCol THEN
+        y := Ycur + ColLeft.Height;
+        IF (y <= tag.Ymax) & (tag.Ymin <= y + ColRight.Height) THEN
+          G.Image(ColRight.Left + tag.X, tag.Ymin - y + ColLeft.Top, sizeX, sizeY, img, ColRight.Top, ColRight.Top + ColRight.Height - 1)
+        END
+      END
+    END
+  END Image;
+
+  PROCEDURE td(VAR tag: XML.TAG);
+  VAR x1, y1, x2, y2, cl: INTEGER;
+  BEGIN
+    x1 := tag.X + ColLeft.Left;
+    y1 := tag.Ymin - Ycur + ColLeft.Top;
+    x2 := x1 + tag.Width;
+    y2 := y1 + tables.get_height(tag.table, tag.cell);
+    cl := G.GetColor();
+    G.SetColor(Settings.Colors[TEXT_COLOR]);
+    G.Rect(x1, y1, x2, y2);
+    IF Settings.TwoCol THEN
+      x1 := x1 - ColLeft.Left + ColRight.Left;
+      x2 := x2 - ColLeft.Left + ColRight.Left;
+      y1 := y1 - ColLeft.Height;
+      y2 := y2 - ColLeft.Height;
+      G.Rect(x1, y1, x2, y2)
+    END;
+    G.SetColor(cl)
+  END td;
+
+BEGIN
+  cur := body;
+  WHILE cur # NIL DO
+    IF cur IS XML.TAG THEN
+      tag := cur(XML.TAG);
+      IF (tag.value = XML.tag_td) OR (tag.value = XML.tag_th) THEN
+         tag.Ymax := tag.Ymin + tables.get_height(tag.table, tag.cell)
+      END;
+
+      IF (tag.Ymin < Ycur + LineH * Lines * (ORD(Settings.TwoCol) + 1)) & (tag.Ymax >= Ycur) OR (tag.value = XML.tag_tr) THEN
+
+      value := tag.value;
+      CASE value OF
+      |XML.tag_a:
+      	INC(refer);
+        color := Font.Font.color;
+        IF tag.Clicked THEN
+          Font.SetFontColor(Settings.Colors[CLICKED_COLOR])
+        ELSE
+          IF tag.Visited THEN
+            Font.SetFontColor(Settings.Colors[VISITED_COLOR])
+          ELSE
+            Font.SetFontColor(Settings.Colors[LINK_COLOR])
+          END
+        END
+      |XML.tag_contents_item:
+		IF tag.Clicked THEN
+			INC(refer);
+			color := Font.Font.color;
+			Font.SetFontColor(Settings.Colors[CLICKED_COLOR])
+		ELSIF tag.Visited THEN
+			INC(refer);
+			color := Font.Font.color;
+			Font.SetFontColor(Settings.Colors[VISITED_COLOR])
+		END
+      |XML.tag_title, XML.tag_strong, XML.tag_th:
+        INC(strong);
+        Font.Bold(TRUE)
+      |XML.tag_strikethrough:
+        INC(strike);
+        Font.Strike(TRUE)
+      |XML.tag_epigraph, XML.tag_cite, XML.tag_emphasis:
+        INC(italic);
+        Font.Italic(TRUE, refer = 0)
+      |XML.tag_image:
+        Image(tag)
+      |XML.tag_code:
+        INC(code)
+      ELSE
+      END;
+      layout2(tag.child.first);
+      CASE value OF
+      |XML.tag_a:
+      	DEC(refer);
+        Font.SetFontColor(color)
+      |XML.tag_contents_item:
+		IF tag.Clicked OR tag.Visited THEN
+			DEC(refer);
+			Font.SetFontColor(color)
+		END
+      |XML.tag_title, XML.tag_strong:
+        DEC(strong);
+        Font.Bold(strong > 0)
+      |XML.tag_strikethrough:
+        DEC(strike);
+        Font.Strike(strike > 0)
+      |XML.tag_epigraph, XML.tag_cite, XML.tag_emphasis:
+        DEC(italic);
+        Font.Italic(italic > 0, refer = 0)
+      |XML.tag_td:
+        td(tag)
+      |XML.tag_th:
+        DEC(strong);
+        Font.Bold(strong > 0);
+        td(tag)
+      |XML.tag_code:
+        DEC(code)
+      ELSE
+      END
+
+      END
+    ELSIF cur IS XML.TEXT THEN
+      text := cur(XML.TEXT);
+      y  := text.Y - Ycur;
+      y0 := y - y MOD LineH;
+      DrawText(ColLeft, 0, ColLeft.Height - LineH, y0, y, FALSE, text);
+      IF Settings.TwoCol THEN
+        DrawText(ColRight, ColLeft.Height, ColLeft.Height + ColRight.Height - LineH, y0, y, TRUE, text)
+      END
+    END;
+    cur := cur.next
+  END
+END layout2;
+
+
+PROCEDURE DrawProgress(progress_color: INTEGER);
+VAR max_X, max_Y: INTEGER;
+BEGIN
+  max_X := G.Buffer.Width - 1;
+  max_Y := G.Buffer.Height - 1;
+  G.SetColor(0);
+  G.HLine(0, max_X, 0);
+  G.HLine(0, max_X, max_Y);
+  G.VLine(0, 0, max_Y);
+  sb.max_area := (Ymax - Ymin) DIV LineH + 50;
+  sb.cur_area := 50;
+  sb.position := (Ycur - Ymin) DIV LineH;
+  box_lib.scrollbar_v_draw(sb)
+END DrawProgress;
+
+
+PROCEDURE Draw*;
+VAR back, max_X, max_Y: INTEGER;
+BEGIN
+  back  := Settings.Colors[BACK_COLOR];
+  max_X := G.Buffer.Width - 1;
+  max_Y := G.Buffer.Height - 1;
+  G.Copy(G.Buffer3, G.Buffer, 0, G.Buffer.Height, 0);
+  Font.SetFontColor(Settings.Colors[TEXT_COLOR]);
+  IF ((body = description) OR (body = contents)) & Settings.TwoCol THEN
+    Settings.TwoCol := FALSE;
+    layout2(body.child.first);
+    Settings.TwoCol := TRUE;
+    Search.draw(body, ColLeft, ColRight, Ycur, LineH, FALSE)
+  ELSE
+    layout2(body.child.first);
+    Search.draw(body, ColLeft, ColRight, Ycur, LineH, Settings.TwoCol)
+  END;
+  G.Copy(G.Buffer3, G.Buffer, 0, ColLeft.Top + 1, 0);
+  G.Copy(G.Buffer3, G.Buffer, max_Y - ColLeft.Top, ColLeft.Top + 1, max_Y - ColLeft.Top);
+  DrawProgress(0);
+  G.Draw(Canvas_X, Canvas_Y);
+  DrawToolbar;
+  DrawStatus
+END Draw;
+
+
+PROCEDURE BackEnabled* (): BOOLEAN;
+	RETURN b_stk.first # NIL
+END BackEnabled;
+
+
+PROCEDURE FrwEnabled* (): BOOLEAN;
+	RETURN f_stk.first # NIL
+END FrwEnabled;
+
+
+PROCEDURE ContentsEnabled* (): BOOLEAN;
+	RETURN (contents # NIL) (*& (body # contents)*)
+END ContentsEnabled;
+
+
+PROCEDURE DescrEnabled* (): BOOLEAN;
+	RETURN (description # NIL) (*& (body # description)*)
+END DescrEnabled;
+
+
+PROCEDURE Back*;
+BEGIN
+  IF b_stk.first # NIL THEN
+    Push(f_stk);
+    Pop(b_stk)
+  END
+END Back;
+
+
+PROCEDURE Forward*;
+BEGIN
+  IF f_stk.first # NIL THEN
+    Push(b_stk);
+    Pop(f_stk)
+  END
+END Forward;
+
+
+PROCEDURE Contents*;
+BEGIN
+  IF (contents # NIL) & (body # contents) THEN
+    Push(b_stk);
+    Clear(f_stk);
+    body := contents;
+    Ycur := Ycont;
+    Ymin := 0;
+    Ymax := body.Ymax
+  END
+END Contents;
+
+
+PROCEDURE Descr*;
+BEGIN
+  IF (description # NIL) & (body # description) THEN
+    Push(b_stk);
+    Clear(f_stk);
+    body := description;
+    Ycur := 0;
+    Ymin := 0;
+    Ymax := body.Ymax
+  END
+END Descr;
+
+
+PROCEDURE Up*;
+BEGIN
+  DEC(Ycur, LineH);
+  SU.MinMax(Ycur, Ymin, Ymax)
+END Up;
+
+
+PROCEDURE Down*;
+BEGIN
+  INC(Ycur, LineH);
+  SU.MinMax(Ycur, Ymin, Ymax)
+END Down;
+
+
+PROCEDURE PageUp*;
+VAR i: INTEGER;
+BEGIN
+  FOR i := 1 TO Lines * (ORD(Settings.TwoCol) + 1) DO
+    Up
+  END
+END PageUp;
+
+
+PROCEDURE PageDown*;
+VAR i: INTEGER;
+BEGIN
+  FOR i := 1 TO Lines * (ORD(Settings.TwoCol) + 1) DO
+    Down
+  END
+END PageDown;
+
+
+PROCEDURE Home*;
+BEGIN
+  IF Ycur # Ymin THEN
+    Push(b_stk);
+    Clear(f_stk);
+    Ycur := Ymin
+  END
+END Home;
+
+
+PROCEDURE End*;
+BEGIN
+  IF Ycur # Ymax THEN
+    Push(b_stk);
+    Clear(f_stk);
+    Ycur := Ymax
+  END
+END End;
+
+
+PROCEDURE ScrollBar*;
+BEGIN
+  Ycur := sb.position * LineH + Ymin
+END ScrollBar;
+
+
+PROCEDURE GetBody(tag: XML.TAG): XML.TAG;
+BEGIN
+  WHILE (tag # NIL) & (tag.value # XML.tag_body) DO
+    tag := tag.parent(XML.TAG)
+  END
+  RETURN tag
+END GetBody;
+
+
+PROCEDURE layout3(Body: XML.ELEMENT; X, Y: INTEGER);
+VAR
+  ptr   : V.ANYPTR;
+  text  : XML.TEXT;
+  sect  : XML.TAG;
+  y     : INTEGER;
+  i     : INTEGER;
+BEGIN
+  i := 0;
+  WHILE i < references.count DO
+    ptr := V.get(references, i);
+    text := ptr(XML.TEXT);
+    y  := text.Y - Ycur;
+    IF (y <= Y) & (Y <= y + Font.FontH()) & (text.X <= X) & (X <= text.X + text.width) THEN
+      sect := text.parent(XML.TAG);
+      IF Body = contents THEN
+        WHILE (sect # NIL) & (sect.value # XML.tag_contents_item) DO
+          sect := sect.parent(XML.TAG)
+        END
+      ELSE
+        WHILE (sect # NIL) & (sect # Body) DO
+          IF sect.value = XML.tag_contents_item THEN
+            sect := NIL
+          ELSE
+            sect := sect.parent(XML.TAG)
+          END
+        END
+      END;
+
+      IF sect # NIL THEN
+        sect := text.parent(XML.TAG);
+        WHILE sect # NIL DO
+          IF (sect.value = XML.tag_contents_item) & (Body = contents) OR (sect.value = XML.tag_a) THEN
+            ref := sect;
+            sect := NIL;
+            i := references.count
+          ELSE
+            sect := sect.parent(XML.TAG)
+          END
+        END
+      END
+    END;
+    INC(i)
+  END
+END layout3;
+
+
+PROCEDURE MouseDown;
+BEGIN
+	IF ~mouseDown THEN
+		mouseDown := TRUE;
+		clickRef := ref;
+		ref.Clicked := TRUE;
+		Draw
+	END
+END MouseDown;
+
+
+PROCEDURE MouseUp;
+VAR
+	note : BOOLEAN;
+	URL  : INTEGER;
+	redraw: BOOLEAN;
+BEGIN
+	redraw := FALSE;
+	mouseDown := FALSE;
+	IF (ref # NIL) & (clickRef = ref) & ref.Clicked THEN
+		redraw := TRUE;
+        ref.Clicked := FALSE;
+		note := FALSE;
+		URL := 0;
+		IF ref.value = XML.tag_a THEN
+			ref := XML.GetRef(ref, note, URL)
+		ELSE
+			ref := ref.parent(XML.TAG)
+		END;
+		IF ref # NIL THEN
+			Push(b_stk);
+			Clear(f_stk);
+			Ycur := ref.Ymin;
+			IF note THEN
+			  	body := ref
+			ELSE
+			  	body := GetBody(ref)
+			END;
+			Ymax := body.Ymax;
+			Ymin := body.Ymin;
+
+			IF ~clickRef.Visited THEN
+				clickRef.Visited := TRUE;
+				PushRef(clickRef)
+			END
+		ELSIF URL # 0 THEN
+			SU.Run(Ini.Browser, URL);
+			IF ~clickRef.Visited THEN
+				clickRef.Visited := TRUE;
+				PushRef(clickRef)
+			END
+		END;
+
+	END;
+	IF clickRef # NIL THEN
+		clickRef.Clicked := FALSE;
+		clickRef := NIL;
+		redraw := TRUE
+	END;
+	IF hoverRef # NIL THEN
+		hoverRef.Clicked := FALSE;
+		hoverRef := NIL;
+		redraw := TRUE
+	END;
+	IF redraw THEN
+		Draw
+	END
+END MouseUp;
+
+
+PROCEDURE Click*(X, Y: INTEGER; clicked: BOOLEAN);
+VAR
+  note : BOOLEAN;
+  URL  : INTEGER;
+  urlchars: S.CHARS;
+  urlstr1 : S.STRING;
+BEGIN
+  DEC(Y, Settings.PADDING.Top);
+  DEC(X, Settings.PADDING.Left);
+  IF (0 <= Y) & (Y <= Lines * LineH) THEN
+    ref := NIL;
+    layout3(body, X, Y);
+    IF (ref = NIL) & Settings.TwoCol THEN
+      layout3(body, X - ColLeft.Width - Settings.PADDING.ColInter, Y + Lines * LineH);
+    END;
+    hoverRef := ref;
+	IF clicked THEN
+		MouseDown
+	ELSE
+		MouseUp
+	END;
+    IF ref # NIL THEN
+      SU.SetCursor(cursor);
+      note := FALSE;
+      URL := 0;
+      IF ref.value = XML.tag_a THEN
+        ref := XML.GetRef(ref, note, URL)
+      END;
+      IF URL # 0 THEN
+        S.PtrToString(URL, urlstr1);
+        S.StrToChars(urlstr1, urlchars)
+      END
+    ELSE
+      SU.SetCursor(0);
+      urlstr1 := ""
+    END;
+    IF urlstr1 # urlstr THEN
+      urlstr := urlstr1;
+      DrawStatus
+    END
+  ELSE
+      SU.SetCursor(0);
+      urlstr := "";
+      ref := NIL;
+      DrawStatus
+  END
+END Click;
+
+
+PROCEDURE Scroll*(value: INTEGER);
+BEGIN
+  value := 2 * value;
+  WHILE value > 0 DO
+    Down;
+    DEC(value)
+  ELSIF value < 0 DO
+    Up;
+    INC(value)
+  END
+END Scroll;
+
+
+PROCEDURE main(fb: XML.ELEMENT; Contents: BOOLEAN);
+VAR
+  cur: XML.ELEMENT;
+  tag: XML.TAG;
+  par, epi: INTEGER;
+
+
+  PROCEDURE lout(body: XML.ELEMENT);
+  BEGIN
+    TextCount := 0;
+    X := 0;
+    Y := Settings.SUP;
+    layout(body(XML.TAG).child.first);
+    body(XML.TAG).Ymax := Y - Settings.SUP
+  END lout;
+
+  PROCEDURE lout_one_col(body: XML.ELEMENT);
+  BEGIN
+    IF body # NIL THEN
+      IF Settings.TwoCol THEN
+        W := W2;
+        Settings.TwoCol := FALSE;
+        lout(body);
+        Settings.TwoCol := TRUE;
+        W := W1
+      ELSE
+        lout(body)
+      END
+    END
+  END lout_one_col;
+
+BEGIN
+  TextCount := 0;
+  sup := 0;
+  sub := 0;
+  epigraph := 0;
+  align := 0;
+  code := 0;
+  strong := 0;
+  italic := 0;
+  strike := 0;
+  refer := 0;
+  SU.ErrorIf(fb = NIL, 11);
+  MainBody := FALSE;
+  description := NIL;
+  mainbody := NIL;
+  cover := NIL;
+  cur := fb;
+  cur := cur(XML.TAG).child.first;
+  WHILE (cur # NIL) & (mainbody = NIL) DO
+    IF cur IS XML.TAG THEN
+      tag := cur(XML.TAG);
+      IF tag.value = XML.tag_description THEN
+        description := tag
+      ELSIF tag.value = XML.tag_body THEN
+        mainbody := tag
+      END
+    END;
+    cur := cur.next
+  END;
+  SU.ErrorIf(mainbody = NIL, 12);
+
+  WHILE cur # NIL DO
+    IF (cur IS XML.TAG) & (cur(XML.TAG).value = XML.tag_body) THEN
+      lout(cur)
+    END;
+    cur := cur.next
+  END;
+
+  IF Contents THEN
+    contents := XML.CreateTag();
+    MainBody := TRUE;
+  END;
+  lout(mainbody);
+  IF Contents & (contents.child.first = NIL) THEN
+    DISPOSE(contents)
+  END;
+  MainBody := FALSE;
+  epigraph := 1;
+  par := Settings.PARAGRAPH;
+  epi := Settings.EPIGRAPH;
+  Settings.PARAGRAPH := 0;
+  Settings.EPIGRAPH := 0;
+  lout_one_col(contents);
+  Settings.EPIGRAPH := epi;
+  Settings.PARAGRAPH := par;
+  epigraph := 0;
+  lout_one_col(description);
+  body := mainbody;
+  Ymax := body.Ymax;
+  Ycur := 0;
+  Ymin := 0;
+  Ycont := 0
+END main;
+
+
+PROCEDURE Find* (d: INTEGER);
+VAR
+    y, min, max: INTEGER;
+
+BEGIN
+    Search.fnext(body, y, d);
+    IF y >= 0 THEN
+        DEC(y, y MOD LineH);
+        min := Ycur;
+        IF Settings.TwoCol THEN
+            max := min + ColLeft.Height + ColRight.Height - LineH
+        ELSE
+            max := min + ColLeft.Height - LineH
+        END;
+
+        IF (y < min) OR (y > max) THEN
+            Ycur := MAX(y - ColLeft.Height DIV 2, 0)
+        END;
+
+        DEC(Ycur, Ycur MOD LineH)
+    END
+END Find;
+
+
+PROCEDURE OpenSearch*;
+BEGIN
+    Search.open(Find)
+END OpenSearch;
+
+
+PROCEDURE CloseSearch*;
+BEGIN
+    Search.close
+END CloseSearch;
+
+
+PROCEDURE found* (): BOOLEAN;
+    RETURN Search.found(body)
+END found;
+
+
+PROCEDURE FontSizeChange(fs: INTEGER);
+BEGIN
+  Settings.SUP               :=  fs DIV 4;
+  Settings.SUB               :=  fs DIV 4;
+  Settings.SpaceW            :=  fs DIV 2;
+  Settings.LEVEL             :=  Settings.PARAGRAPH;
+  Settings.PADDING.Bottom    :=  Settings.PADDING.Top;
+  Settings.PADDING.Left      :=  G.Buffer.Width * Settings.PADDING.LRpc DIV 100;
+  IF Settings.PADDING.Left = 0 THEN
+    Settings.PADDING.Left := 1
+  END;
+  Settings.PADDING.Right     :=  Settings.PADDING.Left;
+  Settings.PADDING.ColInter  :=  G.Buffer.Width * Settings.PADDING.CInt DIV 100;
+
+  LineH := Font.FontH() + Settings.SUP + Settings.SUB + Settings.InterLin;
+  Window.InitRect(
+    ColLeft, Settings.PADDING.Left, Settings.PADDING.Top,
+    G.Buffer.Width - Settings.PADDING.Left - Settings.PADDING.Right,
+    G.Buffer.Height - Settings.PADDING.Top - Settings.PADDING.Bottom);
+  IF Settings.TwoCol THEN
+    ColLeft.Width := (ColLeft.Width - Settings.PADDING.ColInter) DIV 2;
+    ColRight := ColLeft;
+    ColRight.Left := ColLeft.Left + ColLeft.Width + Settings.PADDING.ColInter
+  END;
+  W := ColLeft.Width;
+  Lines := ColLeft.Height DIV LineH;
+  ColLeft.Height  := Lines * LineH;
+  ColRight.Height := ColLeft.Height;
+END FontSizeChange;
+
+
+PROCEDURE Resize*(Width, Height: INTEGER);
+VAR d: REAL; resize: BOOLEAN; sizeX, sizeY, data: INTEGER;
+
+  PROCEDURE stk1(stk: XML.LIST);
+  VAR cur: StackItem;
+  BEGIN
+    cur := stk.first(StackItem);
+    WHILE cur # NIL DO
+      cur.d := FLT(cur.Ycur - cur.body.Ymin) / FLT(cur.body.Ymax - cur.body.Ymin);
+      cur := cur.next(StackItem)
+    END
+  END stk1;
+
+  PROCEDURE stk2(stk: XML.LIST);
+  VAR cur: StackItem;
+  BEGIN
+    cur := stk.first(StackItem);
+    WHILE cur # NIL DO
+      cur.Ycur := FLOOR(FLT(cur.body.Ymax - cur.body.Ymin) * cur.d) + cur.body.Ymin;
+      cur.Ycur := cur.Ycur - cur.Ycur MOD LineH;
+      SU.MinMax(cur.Ycur, cur.body.Ymin, cur.body.Ymax);
+      cur := cur.next(StackItem)
+    END
+  END stk2;
+
+BEGIN
+  resize := (Width # G.Buffer.Width) OR resized;
+  G.Resize(Width, Height);
+  G.SetColor(Settings.Colors[BACK_COLOR]);
+  IF (Settings.Picture # 0) & Settings.b_pict THEN
+    LibImg.GetInf(Settings.Picture, sizeX, sizeY, data);
+    G.BackImage(sizeX, sizeY, data);
+  ELSE
+    G.Clear;
+    G.Copy(G.Buffer, G.Buffer3, 0, G.Buffer.Height, 0)
+  END;
+
+  IF Font.FontH() # 0 THEN
+    FontSizeChange(Font.FontH());
+  ELSE
+    FontSizeChange(Settings.FontSize);
+  END;
+
+  ColLeft.Width  := G.Buffer.Width - Settings.PADDING.Left - Settings.PADDING.Right;
+  IF Settings.TwoCol THEN
+    ColLeft.Width  := (ColLeft.Width - Settings.PADDING.ColInter) DIV 2;
+    ColRight.Width := ColLeft.Width;
+    ColRight.Left  := ColLeft.Left + ColLeft.Width + Settings.PADDING.ColInter
+  END;
+  ColLeft.Height  := G.Buffer.Height - Settings.PADDING.Top  - Settings.PADDING.Bottom;
+  Lines           := ColLeft.Height DIV LineH;
+  ColLeft.Height  := Lines * LineH;
+  ColRight.Height := ColLeft.Height;
+
+  IF done & resize THEN
+    resized := FALSE;
+    Push(b_stk);
+    stk1(b_stk);
+    stk1(f_stk);
+    IF contents # NIL THEN
+      d := FLT(Ycont) / FLT(contents.Ymax)
+    END;
+    W := ColLeft.Width;
+    W2 := ColLeft.Width + ColRight.Width + Settings.PADDING.ColInter;
+    W1 := W;
+    main(XML.FB, FALSE);
+    Search.resize;
+    stk2(b_stk);
+    stk2(f_stk);
+    IF contents # NIL THEN
+      Ycont := FLOOR(FLT(contents.Ymax) * d);
+      Ycont := Ycont - Ycont MOD LineH;
+      SU.MinMax(Ycont, 0, contents.Ymax)
+    END;
+    Pop(b_stk);
+  END
+END Resize;
+
+
+PROCEDURE SetColors*;
+BEGIN
+  Settings.Colors[BACK_COLOR]     := Ini.GetColor("back",    Settings.Colors[BACK_COLOR]);
+  Settings.Colors[TEXT_COLOR]     := Ini.GetColor("text",    Settings.Colors[TEXT_COLOR]);
+  Settings.Colors[ITALIC_COLOR]   := Ini.GetColor("italic",  Settings.Colors[ITALIC_COLOR]);
+  Settings.Colors[LINK_COLOR]     := Ini.GetColor("link",    Settings.Colors[LINK_COLOR]);
+  Settings.Colors[VISITED_COLOR]  := Ini.GetColor("visited", Settings.Colors[LINK_COLOR]);
+END SetColors;
+
+
+PROCEDURE Resized(set1, set2: TSettings): BOOLEAN;
+  RETURN (set1.FontSize # set2.FontSize) OR (set1.TwoCol # set2.TwoCol) OR
+         (set1.PARAGRAPH # set2.PARAGRAPH) OR (set1.EPIGRAPH # set2.EPIGRAPH) OR
+         (set1.PADDING.LRpc # set2.PADDING.LRpc) OR (set1.PADDING.CInt # set2.PADDING.CInt)
+         OR (set1.InterLin # set2.InterLin)
+END Resized;
+
+
+PROCEDURE SetSettings*(NewSet: TSettings);
+BEGIN
+  resized := Resized(Settings, NewSet) OR resized;
+  Settings := NewSet;
+  Font.Init(Settings.Colors[ITALIC_COLOR], Settings.Colors[TEXT_COLOR], Settings.FontSize);
+  Resize(G.Buffer.Width, G.Buffer.Height)
+END SetSettings;
+
+
+PROCEDURE Init*(Left, Top, Width, Height: INTEGER);
+BEGIN
+  G.Resize(Width, Height);
+  Canvas_X := Left;
+  Canvas_Y := Top
+END Init;
+
+
+PROCEDURE Start;
+BEGIN
+  XML.Open(FileName);
+  main(XML.FB, TRUE);
+  done := TRUE;
+  SU.Halt
+END Start;
+
+
+PROCEDURE CleanHistory*(fname: S.STRING);
+VAR F: File.FS; pos, pos2, fsize, size, buf, buf2: INTEGER; c: CHAR;
+BEGIN
+  F := File.Open(fname);
+  IF F # NIL THEN
+    fsize := File.Seek(F, 0, 2);
+    pos := File.Seek(F, 0, 0);
+    buf := K.malloc(fsize + 1024);
+    buf2 := K.malloc(fsize + 1024);
+    pos := File.Read(F, buf, fsize);
+    File.Close(F);
+    pos := 0;
+    pos2 := 0;
+    WHILE pos < fsize DO
+      sys.GET(buf + pos, size);
+      sys.GET(buf + pos + 4, c);
+      IF c = 0X THEN
+        sys.MOVE(buf + pos, buf2 + pos2, size);
+        pos2 := pos2 + size
+      END;
+      pos := pos + size
+    END;
+    F := File.Create(fname);
+    pos := File.Write(F, buf2, pos2);
+    File.Close(F);
+    buf := K.free(buf);
+    buf2 := K.free(buf2)
+  END
+END CleanHistory;
+
+
+PROCEDURE Save;
+VAR history: File.FS; win_size_x, win_size_y, size, pos: INTEGER;
+
+  PROCEDURE WriteInt(history: File.FS; x: INTEGER);
+  BEGIN
+    IF Write.Int(history, x) THEN END
+  END WriteInt;
+
+  PROCEDURE WriteStk(history: File.FS; VAR stk: XML.LIST; links: BOOLEAN);
+  VAR
+      cur: StackItem;
+  BEGIN
+    WriteInt(history, XML.ListCount(stk));
+    cur := stk.first(StackItem);
+    WHILE cur # NIL DO
+      WriteInt(history, cur.body.num);
+      IF ~links THEN
+      	WriteInt(history, cur.Ycur)
+      END;
+      cur := cur.next(StackItem)
+    END
+  END WriteStk;
+
+BEGIN
+  Ini.Save(Settings.Colors, Settings.b_pict);
+  history := File.Open(Ini.History);
+  IF history = NIL THEN
+    history := File.Create(Ini.History)
+  ELSE
+    pos := File.Seek(history, 0 , 2)
+  END;
+  size := 1 + 18*4 + 1 + 8*(XML.ListCount(b_stk) + XML.ListCount(f_stk)) + 4*XML.ListCount(vis_ref) + 12;
+  WriteInt(history, size);
+  IF Write.Char(history, 0X) THEN END;
+  WriteInt(history, fsize2);
+  WriteInt(history, chksum);
+  SU.GetWindowSize(win_size_x, win_size_y);
+  WriteInt(history, win_size_x);
+  WriteInt(history, win_size_y);
+  WriteInt(history, Settings.PADDING.LRpc);
+  WriteInt(history, Settings.PADDING.Top);
+  WriteInt(history, Settings.PADDING.CInt);
+  WriteInt(history, Settings.PARAGRAPH);
+  WriteInt(history, Settings.EPIGRAPH);
+  WriteInt(history, Settings.InterLin);
+
+  IF Write.Boolean(history, Settings.TwoCol) THEN END;
+
+  WriteInt(history, Settings.FontSize);
+  WriteInt(history, body.num);
+  WriteInt(history, Ymin);
+  WriteInt(history, Ymax);
+  WriteInt(history, Ycur);
+  WriteInt(history, Ycont);
+
+  WriteStk(history, b_stk, FALSE);
+  WriteStk(history, f_stk, FALSE);
+  WriteStk(history, vis_ref, TRUE);
+
+  WriteInt(history, size);
+
+  File.Close(history);
+  CleanHistory(Ini.History)
+END Save;
+
+
+PROCEDURE ReadInt(VAR x: INTEGER);
+BEGIN
+  IF Read.Int(history, x) THEN END
+END ReadInt;
+
+
+PROCEDURE Load;
+VAR body_num, ycur, size, pos: INTEGER;
+
+  PROCEDURE ReadStk(VAR stk: XML.LIST);
+  VAR n, num: INTEGER;
+  BEGIN
+    ReadInt(n);
+    WHILE n > 0 DO
+      ReadInt(num);
+      body := XML.GetTagByNum(num);
+      ReadInt(Ycur);
+      Push(stk);
+      DEC(n)
+    END
+  END ReadStk;
+
+	PROCEDURE ReadRef;
+	VAR
+		n, num: INTEGER;
+		ref: XML.TAG;
+	BEGIN
+		ReadInt(n);
+		WHILE n > 0 DO
+			ReadInt(num);
+			ref := XML.GetTagByNum(num);
+			IF ref # NIL THEN
+				PushRef(ref);
+				ref.Visited := TRUE
+			END;
+			DEC(n)
+		END
+	END ReadRef;
+
+BEGIN
+  ReadInt(Settings.PADDING.LRpc);
+  ReadInt(Settings.PADDING.Top);
+  ReadInt(Settings.PADDING.CInt);
+  ReadInt(Settings.PARAGRAPH);
+  ReadInt(Settings.EPIGRAPH);
+  ReadInt(Settings.InterLin);
+  IF Read.Boolean(history, Settings.TwoCol) THEN END;
+  ReadInt(Settings.FontSize);
+
+  SetSettings(Settings);
+
+  ReadInt(body_num);
+  ReadInt(Ymin);
+  ReadInt(Ymax);
+  ReadInt(ycur);
+  ReadInt(Ycont);
+
+  ReadStk(b_stk);
+  ReadStk(f_stk);
+  ReadRef;
+
+  ReadInt(size);
+  pos := File.Seek(history, -size, 1);
+  pos := File.Seek(history, 4, 1);
+  IF Write.Char(history, 1X) THEN END;
+
+  Ycur := ycur;
+  body := XML.GetTagByNum(body_num);
+  File.Close(history)
+END Load;
+
+
+PROCEDURE GetWinSize*(hist_fn: S.STRING; VAR win_size_x, win_size_y: INTEGER);
+VAR c: CHAR; size, pos, x, y, fsize, _chksum: INTEGER; found: BOOLEAN;
+BEGIN
+  fsize2 := RF.FileSize(hist_fn);
+  chksum := RF.ChkSum(hist_fn);
+  found := FALSE;
+  history := File.Open(Ini.History);
+  pos := File.Seek(history, -4, 2);
+  last := FALSE;
+  WHILE pos >= 0 DO
+    IF Read.Int(history, size) THEN
+      pos := File.Seek(history, -size + 4, 1);
+    END;
+    IF Read.Char(history, c) THEN END;
+    ReadInt(fsize);
+    ReadInt(_chksum);
+    IF (c = 0X) & (fsize = fsize2) & (_chksum = chksum) THEN
+      found := TRUE;
+      IF Read.Int(history, x) & Read.Int(history, y) THEN
+        win_size_x := x;
+        win_size_y := y;
+      ELSE
+        found := FALSE
+      END;
+      pos := -1
+    ELSE
+      IF ~last THEN
+        last := TRUE;
+        ReadInt(x);
+        ReadInt(y);
+        ReadInt(Settings.PADDING.LRpc);
+        ReadInt(Settings.PADDING.Top);
+        ReadInt(Settings.PADDING.CInt);
+        ReadInt(Settings.PARAGRAPH);
+        ReadInt(Settings.EPIGRAPH);
+        ReadInt(Settings.InterLin);
+        IF Read.Boolean(history, Settings.TwoCol) THEN END;
+        ReadInt(Settings.FontSize);
+      END;
+      pos := File.Seek(history, pos - 8, 0)
+    END
+  END;
+  IF ~found THEN
+    File.Close(history)
+  END
+END GetWinSize;
+
+
+PROCEDURE Open*(FName: S.STRING; DrawWindow, _DrawStatus, _DrawToolbar: SU.ENTRY);
+VAR PID, event: INTEGER;
+BEGIN
+  DrawStatus := _DrawStatus;
+  DrawToolbar := _DrawToolbar;
+  cursor := SU.LoadCursor(Cursor.GetCursor());
+  references := V.create(1024);
+  ref_depth := 0;
+  done := FALSE;
+  loaded := FALSE;
+  FilePath := FName;
+  FileName := FName;
+  S.GetPath(FilePath);
+  W  := ColLeft.Width;
+  W1 := W;
+  W2 := ColLeft.Width + ColRight.Width + Settings.PADDING.ColInter;
+  Lines := ColLeft.Height DIV LineH;
+  ColLeft.Height := Lines * LineH;
+  PID := SU.NewThread(Start, Stack);
+  WHILE ~SU.IsTerminated(PID) DO
+    event := SU.CheckEvent();
+    IF event = 3 THEN
+      SU.TerminateThreadId(PID);
+      SU.Halt
+    END;
+    G.Progress(RF.Progress());
+    G.Draw(Canvas_X, Canvas_Y);
+    DrawWindow;
+    SU.Pause(30)
+  END;
+  IF ~done THEN
+    SU.Halt
+  END;
+  loaded := TRUE;
+  resized := TRUE;
+  IF history # NIL THEN
+    Load
+  ELSE
+    SetSettings(Settings)
+  END
+END Open;
+
+
+PROCEDURE Close*;
+BEGIN
+  SU.DelCursor(cursor);
+  Save;
+  SU.Halt
+END Close;
+
+
+PROCEDURE SetScrollBar*(_sb: box_lib.scrollbar);
+BEGIN
+  sb := _sb
+END SetScrollBar;
+
+
+PROCEDURE Set_b_pict*(b_pict: BOOLEAN);
+BEGIN
+  Settings.b_pict := b_pict
+END Set_b_pict;
+
+
+BEGIN
+	clickRef := NIL;
+	hoverRef := NIL;
+	mouseDown := FALSE
+END DOM.

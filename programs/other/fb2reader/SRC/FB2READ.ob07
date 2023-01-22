@@ -1,0 +1,366 @@
+﻿(*
+    Copyright 2016-2023 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE FB2READ;
+
+IMPORT
+
+    DOM, SU := SysUtils, S := Strings, W := Window, Settings, OpenDlg,
+    G := Graph, SelEnc, Ini, File, box_lib, Font, SearchForm, Toolbar;
+
+
+CONST
+
+  CLOSE            =  1;
+  BACK             = 16;
+  FORWARD          = 17;
+  CONTENTS         = 18;
+  DESCR            = 19;
+  SETTINGS         = 20;
+  SEARCH           = 21;
+
+  KEY_DOWN_CODE    = 177;
+  KEY_UP_CODE      = 178;
+  KEY_PG_DOWN_CODE = 183;
+  KEY_PG_UP_CODE   = 184;
+  KEY_HOME_CODE    = 180;
+  KEY_END_CODE     = 181;
+  KEY_F2_CODE      =  51;
+  KEY_F3_CODE      =  52;
+  KEY_F4_CODE      =  53;
+  KEY_F10_CODE     =  49;
+
+  TOOLBAR_LEFT     = 5;
+  TOOLBAR_TOP      = 6;
+  BUTTON_HEIGHT    = 24;
+
+  CANVAS_LEFT      = 1;
+  CANVAS_TOP       = 2 * TOOLBAR_TOP + Toolbar.BtnSize;
+
+  WINDOW_BEVEL     = 4;
+
+  SCROLLBAR_WIDTH  = 20;
+  STATUSBAR_HEIGHT = 18;
+
+VAR
+
+  Window     : W.TWindow;
+  toolbar    : Toolbar.tToolbar;
+  SkinHeight : INTEGER;
+  Open       : OpenDlg.Dialog;
+  FileName   : S.STRING;
+  sb         : box_lib.scrollbar;
+
+
+PROCEDURE ToolbarEnable;
+BEGIN
+	Toolbar.enable(toolbar, BACK,     DOM.BackEnabled());
+	Toolbar.enable(toolbar, FORWARD,  DOM.FrwEnabled());
+	Toolbar.enable(toolbar, CONTENTS, DOM.ContentsEnabled());
+	Toolbar.enable(toolbar, DESCR,    DOM.DescrEnabled());
+END ToolbarEnable;
+
+
+PROCEDURE ToolBar;
+BEGIN
+	sb := box_lib.kolibri_scrollbar(sb, (G.Buffer.Width + CANVAS_LEFT) * 65536 + SCROLLBAR_WIDTH + 1,
+		CANVAS_TOP * 65536 + G.Buffer.Height, SCROLLBAR_WIDTH, sb.max_area, sb.cur_area, sb.position, SU.lightColor, SU.btnColor, 0, 0);
+	box_lib.scrollbar_v_draw(sb);
+	ToolbarEnable;
+	Toolbar.draw(toolbar);
+END ToolBar;
+
+
+PROCEDURE Resize;
+VAR Width, Height: INTEGER;
+BEGIN
+  SU.GetWindowPos(Window.Left, Window.Top);
+  SU.GetWindowSize(Width, Height);
+  IF (Window.Width # Width) OR (Window.Height # Height) OR (SkinHeight # SU.SkinHeight()) THEN
+    SU.MinMax(Width,  640, 65535);
+    SU.MinMax(Height, 400, 65535);
+    Window.dWidth  := Width - Window.Width;
+    Window.dHeight := Height - Window.Height;
+    Window.Width   := Width;
+    Window.Height  := Height;
+    SU.SetWindowSize(Width, Height);
+    DOM.Resize(G.Buffer.Width + Window.dWidth, G.Buffer.Height + Window.dHeight + (SkinHeight - SU.SkinHeight()));
+    SkinHeight := SU.SkinHeight()
+  END
+END Resize;
+
+
+PROCEDURE DrawStatus;
+BEGIN
+  SU.DrawRect(0, Window.Height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 1, Window.Width - 2 * WINDOW_BEVEL - 1, STATUSBAR_HEIGHT, SU.winColor);
+  IF DOM.urlstr # "" THEN
+    SU.OutText(CANVAS_LEFT, Window.Height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 2, DOM.urlstr,
+      MIN(LENGTH(DOM.urlstr), (Window.Width - 2 * WINDOW_BEVEL - 1 - CANVAS_LEFT * 2) DIV 8), SU.textColor)
+  ELSIF DOM.found() THEN
+    SU.OutText(CANVAS_LEFT,  Window.Height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 2,
+                "F2 - first | F3 - next | F4 - prev. | F10 - exit", 48, SU.textColor)
+  END
+END DrawStatus;
+
+
+PROCEDURE DrawWindow;
+BEGIN
+  SU.GetSystemColors;
+  SU.WindowRedrawStatus(1);
+  IF Window.Created THEN
+    Resize
+  ELSE
+    Window.Created := TRUE
+  END;
+  SU.DefineAndDrawWindow(Window.Left, Window.Top, Window.Width, Window.Height,
+        SU.winColor, LSL(ORD({0, 1, 2}), 4) + 4 - ORD(DOM.loaded), Window.Caption);
+  SU.DrawRect(0, 0, Window.Width - 2 * WINDOW_BEVEL - 1, CANVAS_TOP, SU.winColor);
+  SU.DrawRect(0, Window.Height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 1, Window.Width - 2 * WINDOW_BEVEL - 1, STATUSBAR_HEIGHT, SU.winColor);
+  SU.DrawRect(0, 0, CANVAS_LEFT, Window.Height - SkinHeight - WINDOW_BEVEL, SU.winColor);
+  SU.DrawRect(Window.Width - 2 * WINDOW_BEVEL - CANVAS_LEFT - 1 - SCROLLBAR_WIDTH - 2, 0, CANVAS_LEFT + SCROLLBAR_WIDTH + 2, Window.Height - SkinHeight - WINDOW_BEVEL, SU.winColor);
+  IF DOM.loaded THEN
+    ToolBar;
+    DOM.Draw;
+    DrawStatus
+  END;
+  SU.WindowRedrawStatus(2)
+END DrawWindow;
+
+
+PROCEDURE ConvMousePos(VAR X, Y: INTEGER);
+BEGIN
+  X := X - Window.Left - WINDOW_BEVEL - 1;
+  Y := Y - Window.Top - SkinHeight
+END ConvMousePos;
+
+
+PROCEDURE DrawToolbar;
+BEGIN
+	ToolbarEnable;
+	Toolbar.drawIcons(toolbar)
+END DrawToolbar;
+
+
+PROCEDURE ButtonClick;
+BEGIN
+  CASE SU.GetButtonCode() OF
+  |0        :
+  |CLOSE    : SearchForm.close(FALSE);
+              Settings.Close;
+              DOM.Close
+  |BACK     : DOM.Back
+  |FORWARD  : DOM.Forward
+  |CONTENTS : DOM.Contents
+  |DESCR    : DOM.Descr
+  |SEARCH   : DOM.OpenSearch
+  |SETTINGS : Settings.Open
+  END;
+  DOM.Draw;
+  DrawStatus
+END ButtonClick;
+
+
+PROCEDURE KeyDown;
+BEGIN
+  CASE SU.GetKeyCode() OF
+  |KEY_DOWN_CODE    : DOM.Down
+  |KEY_UP_CODE      : DOM.Up
+  |KEY_PG_DOWN_CODE : DOM.PageDown
+  |KEY_PG_UP_CODE   : DOM.PageUp
+  |KEY_HOME_CODE    : DOM.Home
+  |KEY_END_CODE     : DOM.End
+  |KEY_F2_CODE      : DOM.Find(0)
+  |KEY_F3_CODE      : DOM.Find(1)
+  |KEY_F4_CODE      : DOM.Find(-1)
+  |KEY_F10_CODE     : DOM.CloseSearch
+  ELSE
+  END;
+  DOM.Draw;
+  DrawStatus
+END KeyDown;
+
+
+PROCEDURE CanvasIsClicked(X, Y: INTEGER): BOOLEAN;
+  RETURN
+    (CANVAS_LEFT <= X) & (X < CANVAS_LEFT + G.Buffer.Width)  &
+    (CANVAS_TOP  <= Y) & (Y < CANVAS_TOP  + G.Buffer.Height)
+END CanvasIsClicked;
+
+
+PROCEDURE MouseEvent;
+
+VAR
+
+  mouse_status : SET;
+  X, Y         : INTEGER;
+  scroll       : INTEGER;
+
+BEGIN
+  SU.MousePos(X, Y);
+  mouse_status := SU.MouseStatus();
+  scroll := SU.MouseVScroll();
+  IF SU.L_BUTTON IN mouse_status THEN
+    ConvMousePos(X, Y);
+    IF CanvasIsClicked(X, Y) THEN
+      X := X - CANVAS_LEFT;
+      Y := Y - CANVAS_TOP;
+      DOM.Click(X, Y, TRUE)
+    END
+  ELSIF scroll # 0 THEN
+    DOM.Scroll(scroll);
+    DOM.Draw
+  ELSE
+    ConvMousePos(X, Y);
+    IF CanvasIsClicked(X, Y) THEN
+      X := X - CANVAS_LEFT;
+      Y := Y - CANVAS_TOP;
+      DOM.Click(X, Y, FALSE)
+    END
+  END
+END MouseEvent;
+
+
+PROCEDURE Empty;
+END Empty;
+
+
+PROCEDURE OpenFile;
+BEGIN
+  Open := OpenDlg.Create(Empty, 0, Ini.Default, Ini.Files);
+  OpenDlg.Show(Open, 500, 400);
+  WHILE Open.status = 2 DO
+    SU.Pause(30)
+  END;
+  IF Open.status = 0 THEN
+    SU.Halt
+  END;
+  COPY(Open.FilePath, FileName);
+  OpenDlg.Destroy(Open)
+END OpenFile;
+
+
+PROCEDURE IsFB2(FileName: S.STRING): BOOLEAN;
+VAR temp: S.STRING;
+BEGIN
+  temp := FileName;
+  S.Reverse(temp);
+  temp[4] := 0X;
+  S.UCase(temp)
+  RETURN temp = "2BF."
+END IsFB2;
+
+
+PROCEDURE main(title: ARRAY OF CHAR);
+VAR WinW, X1, Y1, X2, Y2, scr_pos: INTEGER; Win2: W.TWindow; resize: BOOLEAN; FilePath: S.STRING; defpath: BOOLEAN;
+BEGIN
+  SkinHeight := SU.SkinHeight();
+  sb := box_lib.kolibri_new_scrollbar(10 * 65536 + 200, 10 * 65536 + 30, 25, 15, 10, 0, 0, 0, 0, 0);
+  DOM.SetScrollBar(sb);
+  defpath := TRUE;
+  SU.GetParam(FileName);
+  IF FileName = "" THEN
+    OpenFile
+  END;
+
+  IF FileName[0] = "!" THEN
+    FileName[0] := "/";
+    defpath := FALSE
+  END;
+
+  IF defpath THEN
+    FilePath := FileName;
+    S.GetPath(FilePath);
+    Ini.SetDefaultPath(FilePath);
+    DOM.SetColors;
+    DOM.Set_b_pict(Ini.b_pict);
+    Ini.Save(DOM.Settings.Colors, DOM.Settings.b_pict)
+  END;
+
+  IF ~IsFB2(FileName) THEN
+    SelEnc.Show(FileName)
+  END;
+
+  SU.SetEventsMask({0, 1, 2, 5, 31});
+  SU.GetScreenArea(X1, Y1, X2, Y2);
+  WinW := (X2 - X1) DIV 2;
+  W.InitWindow(Window, WinW DIV 2, Y1, WinW, Y2 - Y1, title);
+  Settings.Default;
+  DOM.GetWinSize(FileName, Window.Width, Window.Height);
+
+  Win2 := Window;
+  resize := FALSE;
+  IF Win2.Width > X2 - X1 THEN
+    Win2.Width := X2 - X1;
+    resize := TRUE
+  END;
+
+  IF Win2.Height > Y2 - Y1 THEN
+    Win2.Height := Y2 - Y1;
+    resize := TRUE
+  END;
+
+  DOM.Init(CANVAS_LEFT, CANVAS_TOP,
+        Window.Width - 2 * CANVAS_LEFT - 2 * WINDOW_BEVEL - 1 - SCROLLBAR_WIDTH - 2,
+        Window.Height - SkinHeight - CANVAS_TOP - WINDOW_BEVEL - STATUSBAR_HEIGHT + 1);
+  DOM.SetColors;
+  DOM.Set_b_pict(Ini.b_pict);
+  Window := Win2;
+  G.Resize2(Window.Width - 2 * CANVAS_LEFT - 2 * WINDOW_BEVEL - 1 - SCROLLBAR_WIDTH, Window.Height - SkinHeight - CANVAS_TOP - WINDOW_BEVEL + 1 - STATUSBAR_HEIGHT);
+  S.Append(Window.Caption, " - ");
+  S.Append(Window.Caption, FileName);
+
+	Toolbar.create(toolbar, TOOLBAR_LEFT, TOOLBAR_TOP);
+    Toolbar.add(toolbar, BACK,      30, "");
+    Toolbar.add(toolbar, FORWARD,   31, "");
+    Toolbar.delimiter(toolbar);
+    Toolbar.add(toolbar, CONTENTS,   3, "");
+    Toolbar.delimiter(toolbar);
+    Toolbar.add(toolbar, SEARCH,    49, "");
+    Toolbar.delimiter(toolbar);
+    Toolbar.add(toolbar, DESCR,     66, "");
+    Toolbar.delimiter(toolbar);
+    Toolbar.add(toolbar, SETTINGS,  60, "");
+
+  DOM.Open(FileName, DrawWindow, DrawStatus, DrawToolbar);
+  IF resize THEN
+    DOM.Resize(Window.Width - 2 * CANVAS_LEFT - 2 * WINDOW_BEVEL - 1 - SCROLLBAR_WIDTH, Window.Height - SkinHeight - CANVAS_TOP - WINDOW_BEVEL + 1 - STATUSBAR_HEIGHT)
+  END;
+
+  DrawWindow;
+  scr_pos := sb.position;
+  WHILE TRUE DO
+    CASE SU.WaitForEvent() OF
+    |1 : DrawWindow
+    |2 : KeyDown
+    |3 : ButtonClick
+    |6 : box_lib.scrollbar_v_mouse(sb);
+         IF sb.position # scr_pos THEN
+           DOM.ScrollBar;
+           DOM.Draw;
+           scr_pos := sb.position;
+         END;
+         MouseEvent
+    END
+  END
+END main;
+
+
+BEGIN
+  main("FB2 Reader v0.97")
+END FB2READ.

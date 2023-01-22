@@ -1,0 +1,365 @@
+(*
+    Copyright 2016, 2019, 2021, 2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE SysUtils;
+
+IMPORT K := KOSAPI, sys := SYSTEM, S := Strings;
+
+
+CONST
+
+  L_BUTTON* = 0;
+
+  FontH* = 16;
+  FontW* =  8;
+
+
+TYPE
+
+  ENTRY* = PROCEDURE;
+
+
+VAR
+	(*darkColor*,*) lightColor*,
+    winColor*, textColor*, btnColor*, btnTextColor*,
+    borderColor*: INTEGER;
+
+
+PROCEDURE GetParam*(VAR Param: S.STRING);
+VAR
+  adr    : INTEGER;
+  c      : CHAR;
+  i, max : INTEGER;
+BEGIN
+  adr := K.GetCommandLine();
+  i := 0;
+  max := LEN(Param) - 1;
+  REPEAT
+    sys.GET(adr, c);
+    INC(adr);
+    Param[i] := c;
+    INC(i)
+  UNTIL (c = 0X) OR (i = max);
+  Param[i] := 0X;
+  S.Trim(Param, 20X);
+  S.Trim(Param, 22X)
+END GetParam;
+
+
+PROCEDURE Halt*;
+BEGIN
+    K.sysfunc1(-1)
+END Halt;
+
+
+PROCEDURE Run*(program: S.STRING; param: INTEGER);
+TYPE
+
+  info_struct = RECORD
+    subfunc : INTEGER;
+    flags   : INTEGER;
+    param   : INTEGER;
+    rsrvd1  : INTEGER;
+    rsrvd2  : INTEGER;
+    fname   : ARRAY 1024 OF CHAR
+  END;
+
+VAR
+  info: info_struct;
+
+BEGIN
+  info.subfunc := 7;
+  info.flags   := 0;
+  info.param   := param;
+  info.rsrvd1  := 0;
+  info.rsrvd2  := 0;
+  COPY(program, info.fname);
+  K.sysfunc2(70, sys.ADR(info))
+END Run;
+
+
+PROCEDURE ErrorIf*(condition: BOOLEAN; code: INTEGER);
+VAR str, str2: S.STRING;
+BEGIN
+  IF condition THEN
+    str := "'FB2 ERROR: ";
+    S.IntToString(code, str2);
+    S.Append(str, str2);
+    S.Append(str, "' -E");
+    Run("/sys/@notify", sys.ADR(str[0]));
+    Halt
+  END
+END ErrorIf;
+
+
+PROCEDURE MemError*(err: BOOLEAN);
+BEGIN
+  ErrorIf(err, 13)
+END MemError;
+
+
+PROCEDURE MinMax*(VAR value: INTEGER; min, max: INTEGER);
+BEGIN
+  value := MIN(MAX(value, min), max)
+END MinMax;
+
+
+PROCEDURE MousePos*(VAR X, Y: INTEGER);
+VAR res: INTEGER;
+BEGIN
+  res := K.sysfunc2(37, 0);
+  X := LSR(res, 16);
+  Y := ORD(BITS(res) * {0..15});
+END MousePos;
+
+
+PROCEDURE MouseVScroll*(): INTEGER;
+	RETURN ASR(LSL(K.sysfunc2(37, 7), 16), 16)
+END MouseVScroll;
+
+
+PROCEDURE MouseStatus*(): SET;
+  RETURN BITS(K.sysfunc2(37, 2))
+END MouseStatus;
+
+
+PROCEDURE WindowRedrawStatus*(status: INTEGER);
+BEGIN
+    K.sysfunc2(12, status)
+END WindowRedrawStatus;
+
+
+PROCEDURE DefineAndDrawWindow*(Left, Top, Width, Height, Color, Style: INTEGER; Caption: ARRAY OF CHAR);
+BEGIN
+    K.sysfunc6(0, LSL(Left, 16) + Width, LSL(Top, 16) + Height, Color + LSL(Style, 24), 0, sys.ADR(Caption[0]))
+END DefineAndDrawWindow;
+
+
+PROCEDURE WaitForEvent*(): INTEGER;
+  RETURN K.sysfunc1(10)
+END WaitForEvent;
+
+
+PROCEDURE CheckEvent*(): INTEGER;
+  RETURN K.sysfunc1(11)
+END CheckEvent;
+
+
+PROCEDURE SetEventsMask*(mask: SET);
+BEGIN
+    K.sysfunc2(40, ORD(mask))
+END SetEventsMask;
+
+
+PROCEDURE GetKeyCode*(): INTEGER;
+  RETURN LSR(LSL(K.sysfunc1(2), 16), 24)
+END GetKeyCode;
+
+
+PROCEDURE GetButtonCode*(): INTEGER;
+VAR res, button_code: INTEGER;
+BEGIN
+  res := K.sysfunc1(17);
+  IF ORD(BITS(res) * {0..7}) = 0 THEN
+    button_code := LSR(res, 8)
+  ELSE
+    button_code := 0
+  END
+  RETURN button_code
+END GetButtonCode;
+
+
+PROCEDURE OutText*(X, Y: INTEGER; Text: ARRAY OF CHAR; length: INTEGER; color: INTEGER);
+BEGIN
+    K.sysfunc6(4, LSL(X, 16) + Y, LSL(3 * 16, 24) + color, sys.ADR(Text[0]), length, 0)
+END OutText;
+
+
+PROCEDURE GetWindowPos*(VAR Left, Top: INTEGER);
+VAR info: ARRAY 1024 OF CHAR;
+BEGIN
+  K.sysfunc3(9, sys.ADR(info[0]), -1);
+  sys.GET(sys.ADR(info[34]), Left);
+  sys.GET(sys.ADR(info[38]), Top)
+END GetWindowPos;
+
+
+PROCEDURE GetWindowSize*(VAR Width, Height: INTEGER);
+VAR info: ARRAY 1024 OF CHAR;
+BEGIN
+  K.sysfunc3(9, sys.ADR(info[0]), -1);
+  sys.GET(sys.ADR(info[42]), Width);
+  sys.GET(sys.ADR(info[46]), Height)
+END GetWindowSize;
+
+
+PROCEDURE SetWindowSize*(Width, Height: INTEGER);
+BEGIN
+    K.sysfunc5(67, -1, -1, Width, Height)
+END SetWindowSize;
+
+
+PROCEDURE GetScreenSize*(VAR Width, Height: INTEGER);
+VAR res: INTEGER;
+BEGIN
+  res := K.sysfunc1(14);
+  Width := LSR(res, 16) + 1;
+  Height := ORD(BITS(res) * {0..15}) + 1
+END GetScreenSize;
+
+
+PROCEDURE GetScreenArea*(VAR X1, Y1, X2, Y2: INTEGER);
+VAR eax, ebx: INTEGER;
+BEGIN
+  eax := K.sysfunc22(48, 5, ebx);
+  X1 := LSR(eax, 16);
+  Y1 := LSR(ebx, 16);
+  X2 := ORD(BITS(eax) * {0..15});
+  Y2 := ORD(BITS(ebx) * {0..15})
+END GetScreenArea;
+
+
+PROCEDURE SkinHeight*(): INTEGER;
+  RETURN K.sysfunc2(48, 4)
+END SkinHeight;
+
+
+PROCEDURE DrawRect*(Left, Top, Width, Height, Color: INTEGER);
+BEGIN
+    K.sysfunc4(13, LSL(Left, 16) + Width, LSL(Top, 16) + Height, Color)
+END DrawRect;
+
+
+PROCEDURE NewThread*(eip: ENTRY; stack: ARRAY OF CHAR): INTEGER;
+VAR entry: INTEGER;
+BEGIN
+  sys.GET(sys.ADR(eip), entry)
+  RETURN K.sysfunc4(51, 1, entry, sys.ADR(stack[0]) + LEN(stack))
+END NewThread;
+
+
+PROCEDURE Pause*(time: INTEGER);
+BEGIN
+    K.sysfunc2(5, time)
+END Pause;
+
+
+PROCEDURE GetThreadSlot*(PID: INTEGER): INTEGER;
+  RETURN K.sysfunc3(18, 21, PID)
+END GetThreadSlot;
+
+
+PROCEDURE TerminateThreadId*(PID: INTEGER);
+BEGIN
+    K.sysfunc3(18, 18, PID)
+END TerminateThreadId;
+
+
+PROCEDURE IsTerminated*(PID: INTEGER): BOOLEAN;
+  RETURN GetThreadSlot(PID) = 0
+END IsTerminated;
+
+
+PROCEDURE FocusWindow*(Slot: INTEGER);
+BEGIN
+    K.sysfunc3(18, 3, Slot)
+END FocusWindow;
+
+
+PROCEDURE CreateButton*(id, Left, Top, Width, Height, Color: INTEGER; Caption: ARRAY OF CHAR);
+VAR
+  X, Y, len: INTEGER;
+
+BEGIN
+  len := LENGTH(Caption);
+  K.sysfunc5(8, LSL(Left, 16) + Width, LSL(Top, 16) + Height, id, btnColor);
+  X := Left + (Width - FontW * len) DIV 2;
+  Y := Top + (Height - FontH) DIV 2 + 1;
+  OutText(X, Y, Caption, len, btnTextColor)
+END CreateButton;
+
+
+PROCEDURE DrawLine* (x1, y1, x2, y2: INTEGER; color: INTEGER);
+BEGIN
+	K.sysfunc4(38, x1*65536 + x2, y1*65536 + y2, color)
+END DrawLine;
+
+
+PROCEDURE Box*(Left, Top, Width, Height, BrushColor, PenColor: INTEGER);
+BEGIN
+  K.sysfunc4(13, LSL(Left, 16) + Width, LSL(Top, 16) + Height, BrushColor);
+  DrawLine(Left, Top, Left + Width, Top, PenColor);
+  DrawLine(Left + Width, Top, Left + Width, Top + Height, PenColor);
+  DrawLine(Left + Width, Top + Height, Left, Top + Height, PenColor);
+  DrawLine(Left, Top + Height, Left, Top, PenColor);
+END Box;
+
+
+PROCEDURE LoadCursor*(cursor: INTEGER): INTEGER;
+  RETURN K.sysfunc4(37, 4, cursor, 1)
+END LoadCursor;
+
+
+PROCEDURE SetCursor*(handle: INTEGER);
+BEGIN
+    K.sysfunc3(37, 5, handle)
+END SetCursor;
+
+
+PROCEDURE DelCursor*(handle: INTEGER);
+BEGIN
+    K.sysfunc3(37, 6, handle)
+END DelCursor;
+
+
+PROCEDURE DrawImage* (data, sizeX, sizeY, x, y: INTEGER);
+BEGIN
+    K.sysfunc4(7, data, sizeX*65536 + sizeY, x*65536 + y)
+END DrawImage;
+
+
+PROCEDURE DrawText69* (x, y, color: INTEGER; text: ARRAY OF CHAR);
+BEGIN
+    K.sysfunc6(4, x*65536 + y, color + LSL(080H, 24), sys.ADR(text[0]), 0, 0)
+END DrawText69;
+
+
+PROCEDURE PutPixel* (x, y, color: INTEGER);
+BEGIN
+	K.sysfunc5(1, x, y, color, 0)
+END PutPixel;
+
+
+PROCEDURE GetSystemColors*;
+VAR
+    buf: ARRAY 10 OF INTEGER;
+BEGIN
+    ASSERT(LEN(buf) >= 10);
+    K.sysfunc4(48, 3, sys.ADR(buf[0]), 40);
+	(*darkColor := buf[2];*)
+	lightColor := buf[3];
+    winColor := buf[5];
+    textColor := buf[8];
+    btnColor := buf[6];
+    btnTextColor := buf[7];
+    borderColor := buf[9];
+END GetSystemColors;
+
+
+END SysUtils.

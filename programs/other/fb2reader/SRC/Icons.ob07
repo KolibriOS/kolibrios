@@ -1,0 +1,106 @@
+﻿(*
+    Copyright 2021, 2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Icons;
+
+IMPORT
+    LibImg, K := SysUtils, Graph, File, KOSAPI, SYSTEM;
+
+CONST
+	fileName = "/sys/Icons16.png";
+	SIZE* = 18;
+
+VAR
+	source: INTEGER;
+
+(*
+PROCEDURE copy (src, dst: INTEGER);
+VAR
+	src_width, src_height,
+	dst_width, dst_height,
+	src_data, dst_data: INTEGER;
+BEGIN
+	LibImg.GetInf(src, src_width, src_height, src_data);
+	LibImg.GetInf(dst, dst_width, dst_height, dst_data);
+	ASSERT(src_width = dst_width);
+	ASSERT(src_height = dst_height);
+	SYSTEM.MOVE(src_data, dst_data, src_width*src_height*4)
+END copy;
+*)
+
+
+PROCEDURE load (): INTEGER;
+VAR
+	height: INTEGER;
+BEGIN
+	RETURN LibImg.LoadFromFile(fileName, SIZE, height)
+END load;
+
+
+PROCEDURE draw* (icons, n, x, y: INTEGER);
+VAR
+	width, height, data: INTEGER;
+BEGIN
+	LibImg.GetInf(icons, width, height, data);
+	KOSAPI.sysfunc7(65, data + SIZE*SIZE*4*n, SIZE*65536 + SIZE, x*65536 + y, 32, 0, 0)
+END draw;
+
+
+PROCEDURE iconsBackColor (icons: INTEGER; BackColor: INTEGER);
+VAR
+	width, height, data, x, y, pix: INTEGER;
+	b, g, r, gr: BYTE;
+BEGIN
+	LibImg.GetInf(icons, width, height, data);
+	FOR y := 0 TO height - 1 DO
+		FOR x := 0 TO width - 1 DO
+			SYSTEM.GET32(data, pix);
+			Graph.getRGB(pix, r, g, b);
+			gr := (r + g + b) DIV 3;
+			IF BackColor = -1 THEN
+				pix := gr + 256*gr + 65536*gr
+			ELSIF gr = 255 THEN
+				pix := BackColor
+			END;
+			SYSTEM.PUT32(data, pix);
+			INC(data, 4)
+		END
+	END
+END iconsBackColor;
+
+
+PROCEDURE get* (VAR icons, grayIcons: INTEGER; BackColor: INTEGER);
+BEGIN
+	IF source = 0 THEN
+		source := load();
+		icons := load();
+		grayIcons := load();
+		iconsBackColor(grayIcons, -1);
+		iconsBackColor(grayIcons, BackColor);
+		iconsBackColor(icons, BackColor)
+	(*ELSE
+		copy(source, icons);
+		copy(source, grayIcons)*)
+	END;
+END get;
+
+
+BEGIN
+	source := 0
+END Icons.

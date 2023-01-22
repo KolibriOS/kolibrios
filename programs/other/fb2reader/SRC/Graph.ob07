@@ -1,0 +1,310 @@
+﻿(*
+    Copyright 2016-2020, 2022 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Graph;
+
+IMPORT K := KOSAPI, sys := SYSTEM, SU := SysUtils, LibImg;
+
+
+TYPE
+
+  TBuffer = RECORD Width*, Height*, adr*, Color: INTEGER END;
+  PBuffer* = POINTER TO TBuffer;
+
+
+VAR
+
+  Buffer*, Buffer2, Buffer3*: PBuffer;
+
+
+PROCEDURE [stdcall-, "rasterworks.obj", ""] drawText (canvas, x, y, string, charQuantity, fontColor, params: INTEGER): INTEGER; END;
+
+PROCEDURE Destroy*(VAR Buffer: PBuffer);
+BEGIN
+  IF Buffer # NIL THEN
+    IF Buffer.adr # 0 THEN
+      DEC(Buffer.adr, 8);
+      Buffer.adr := K.free(Buffer.adr)
+    END;
+    DISPOSE(Buffer)
+  END
+END Destroy;
+
+
+PROCEDURE Create*(Width, Height: INTEGER): PBuffer;
+VAR res: PBuffer;
+BEGIN
+  NEW(res);
+  res.adr := K.malloc(Width * Height * 4 + 8);
+  sys.PUT(res.adr, Width);
+  sys.PUT(res.adr + 4, Height);
+  res.Width := Width;
+  res.Height := Height;
+  INC(res.adr, 8);
+  RETURN res
+END Create;
+
+
+PROCEDURE getRGB* (color: INTEGER; VAR r, g, b: BYTE);
+BEGIN
+	b := color MOD 256;
+	g := color DIV 256 MOD 256;
+	r := color DIV 65536 MOD 256
+END getRGB;
+
+
+PROCEDURE Fill*(Buffer: PBuffer; Color: INTEGER);
+VAR p, n, i: INTEGER;
+BEGIN
+  p := Buffer.adr;
+  n := Buffer.Width * Buffer.Height;
+  FOR i := 1 TO n DO
+    sys.PUT(p, Color);
+    INC(p, 4)
+  END
+END Fill;
+
+
+PROCEDURE HLine*(X1, X2, Y: INTEGER);
+VAR
+    p1, p2, i, color: INTEGER;
+
+BEGIN
+    IF X1 <= X2 THEN
+        SU.MinMax(Y, 0, Buffer.Height - 1);
+        color := Buffer.Color;
+        p1 := Buffer.adr + 4 * (Y * Buffer.Width + X1);
+        p2 := p1 + (X2 - X1) * 4;
+        FOR i := p1 TO p2 BY 4 DO
+            sys.PUT(i, color)
+        END
+    END
+END HLine;
+
+
+PROCEDURE HLineNotXOR (X1, X2, Y, color: INTEGER);
+VAR
+    p1, p2, i: INTEGER;
+    pix: SET;
+
+BEGIN
+    IF X1 <= X2 THEN
+        SU.MinMax(Y, 0, Buffer.Height - 1);
+        p1 := Buffer.adr + 4 * (Y * Buffer.Width + X1);
+        p2 := p1 + (X2 - X1) * 4;
+        FOR i := p1 TO p2 BY 4 DO
+            sys.GET(i, pix);
+            pix := (-pix) / BITS(color) - {24..31};
+            sys.PUT(i, pix)
+        END
+    END
+END HLineNotXOR;
+
+
+PROCEDURE VLine*(X, Y1, Y2: INTEGER);
+VAR p1, p2, line_size, color: INTEGER;
+BEGIN
+  ASSERT(Y1 <= Y2);
+  SU.MinMax(Y1, 0, Buffer.Height - 1);
+  SU.MinMax(Y2, 0, Buffer.Height - 1);
+  color := Buffer.Color;
+  line_size := Buffer.Width * 4;
+  p1 := Buffer.adr + line_size * Y1 + 4 * X;
+  p2 := p1 + (Y2 - Y1) * line_size;
+  WHILE p1 <= p2 DO
+    sys.PUT(p1, color);
+    p1 := p1 + line_size
+  END
+END VLine;
+
+
+PROCEDURE Box(X1, Y1, X2, Y2: INTEGER);
+VAR y: INTEGER;
+BEGIN
+  FOR y := Y1 TO Y2 DO
+    HLine(X1, X2, y)
+  END
+END Box;
+
+
+PROCEDURE BoxNotXOR* (X1, Y1, X2, Y2, color: INTEGER);
+VAR y: INTEGER;
+BEGIN
+    FOR y := Y1 TO Y2 DO
+        HLineNotXOR(X1, X2, y, color)
+    END
+END BoxNotXOR;
+
+
+PROCEDURE SetColor*(color: INTEGER);
+BEGIN
+  Buffer.Color := color
+END SetColor;
+
+
+PROCEDURE GetColor*(): INTEGER;
+  RETURN Buffer.Color
+END GetColor;
+
+
+PROCEDURE TextOut*(X, Y: INTEGER; Text: INTEGER; length: INTEGER; size, params: INTEGER);
+BEGIN
+	drawText(Buffer.adr - 8, X, Y, Text, length, 0FF000000H + Buffer.Color, params)
+END TextOut;
+
+
+PROCEDURE Resize2*(Width, Height: INTEGER);
+BEGIN
+  Buffer2.Width := Width;
+  Buffer2.Height := Height;
+END Resize2;
+
+
+PROCEDURE Image* (X, Y, sizeX, sizeY, ptr, Ymin, Ymax: INTEGER);
+VAR
+	y: INTEGER;
+BEGIN
+	ASSERT(sizeX <= Buffer.Width);
+	FOR y := 0 TO sizeY - 1 DO
+		IF (Ymin <= Y) & (Y < Ymax) THEN
+			sys.MOVE(ptr + sizeX*4*y, Buffer.adr + (Buffer.Width*Y + X)*4, sizeX*4)
+		END;
+		INC(Y)
+	END
+END Image;
+
+
+PROCEDURE Image2(Buffer: PBuffer; X, Y, sizeX, sizeY, ptr: INTEGER);
+VAR x, y, pix, left: INTEGER;
+BEGIN
+  left := X;
+  FOR y := 0 TO sizeY - 1 DO
+      X := left;
+      FOR x := 0 TO sizeX - 1 DO
+        sys.GET32(ptr + (y*sizeX + x)*4, pix);
+        IF (X < Buffer.Width) & (Y < Buffer.Height) THEN
+          sys.PUT32(Buffer.adr + (Buffer.Width*Y + X)*4, pix)
+        END;
+        INC(X)
+      END;
+    INC(Y)
+  END
+END Image2;
+
+
+PROCEDURE BackImage*(sizeX, sizeY, ptr: INTEGER);
+VAR x, y: INTEGER;
+BEGIN
+  IF ptr # 0 THEN
+    y := 0;
+    WHILE y < Buffer3.Height DO
+      x := 0;
+      WHILE x < Buffer3.Width DO
+        Image2(Buffer3, x, y, sizeX, sizeY, ptr);
+        INC(x, sizeX)
+      END;
+      INC(y, sizeY)
+    END
+  END
+END BackImage;
+
+
+PROCEDURE Copy*(src, dst: PBuffer; y_src, lines, y_dst: INTEGER);
+BEGIN
+  sys.MOVE(src.adr + y_src * src.Width * 4, dst.adr + y_dst * dst.Width * 4, lines * dst.Width * 4)
+END Copy;
+
+
+PROCEDURE Clear*;
+VAR p, color: INTEGER;
+BEGIN
+  color := Buffer.Color;
+  FOR p := Buffer.adr TO Buffer.adr + Buffer.Width * Buffer.Height * 4 - 4 BY 4 DO
+    sys.PUT(p, color)
+  END
+END Clear;
+
+
+PROCEDURE Draw*(X, Y: INTEGER);
+BEGIN
+  K.sysfunc7(65, Buffer.adr, Buffer.Width * 65536 + Buffer.Height, X * 65536 + Y, 32, 0, 0)
+END Draw;
+
+
+PROCEDURE Rect*(X1, Y1, X2, Y2: INTEGER);
+BEGIN
+  VLine(X1, Y1, Y2);
+  VLine(X2, Y1, Y2);
+  HLine(X1, X2, Y1);
+  HLine(X1, X2, Y2)
+END Rect;
+
+
+PROCEDURE Progress*(value: REAL);
+VAR W4, W2, H2: INTEGER;
+BEGIN
+  W4 := Buffer2.Width DIV 4;
+  W2 := Buffer2.Width DIV 2;
+  H2 := Buffer2.Height DIV 2;
+  SetColor(0FFFFFFH);
+  Clear;
+  SetColor(0);
+  Rect(W4, H2 - 50, 3 * W4, H2 + 30);
+  TextOut(W2 - 10 * 8 DIV 2, H2 - 50 + 15, sys.SADR("Loading..."), 10, 1, 16 + 0 + LSL(3, 16) + LSL(128, 24));
+  SetColor(000000FFH);
+  Box(W4 + 10, H2, W4 + 10 + FLOOR( FLT(W2 - 20) * value ), H2 + 15);
+END Progress;
+
+
+PROCEDURE Resize3(Buffer: PBuffer; Width, Height: INTEGER);
+BEGIN
+  IF Buffer.adr # 0 THEN
+    DEC(Buffer.adr, 8)
+  END;
+  Buffer.adr := K.realloc(Buffer.adr, Width * Height * 4 + 8);
+  SU.MemError(Buffer.adr = 0);
+  sys.PUT(Buffer.adr, Width);
+  sys.PUT(Buffer.adr + 4, Height);
+  INC(Buffer.adr, 8);
+  Buffer.Width  := Width;
+  Buffer.Height := Height
+END Resize3;
+
+
+PROCEDURE Resize*(Width, Height: INTEGER);
+BEGIN
+  Resize3(Buffer,  Width, Height);
+  Resize3(Buffer3, Width, Height);
+END Resize;
+
+
+PROCEDURE Init;
+VAR Width, Height: INTEGER;
+BEGIN
+  NEW(Buffer);
+  NEW(Buffer2);
+  NEW(Buffer3);
+  SU.GetScreenSize(Width, Height);
+  Resize(Width, Height)
+END Init;
+
+
+BEGIN
+  Init
+END Graph.

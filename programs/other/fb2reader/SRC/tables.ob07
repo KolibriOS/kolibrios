@@ -1,0 +1,256 @@
+(*
+    Copyright 2016 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE tables;
+
+IMPORT V := Vector;
+
+
+TYPE
+
+
+  Int  = POINTER TO RECORD (V.ANYREC) value: INTEGER END;
+
+  Cell = POINTER TO RECORD (V.ANYREC) top, bottom, left, right, colspan, rowspan: INTEGER END;
+
+  Tab  = POINTER TO RECORD (V.ANYREC) col, row: INTEGER END;
+
+  Table* = POINTER TO RECORD
+
+    tab     :  V.VECTOR;
+    h_lines :  V.VECTOR;
+    v_lines :  V.VECTOR;
+    cells*  :  V.VECTOR;
+
+    tab_x, tab_y, max_length: INTEGER
+
+  END;
+
+
+PROCEDURE GetCell (t: Table; cell: INTEGER): Cell;
+VAR any: V.ANYPTR;
+BEGIN
+  any := V.get(t.cells, cell)
+  RETURN any(Cell)
+END GetCell;
+
+
+PROCEDURE GetInt (v: V.VECTOR; idx: INTEGER): INTEGER;
+VAR any: V.ANYPTR;
+BEGIN
+  any := V.get(v, idx)
+  RETURN any(Int).value
+END GetInt;
+
+
+PROCEDURE PutInt (v: V.VECTOR; idx, value: INTEGER);
+VAR any: V.ANYPTR;
+BEGIN
+  any := V.get(v, idx);
+  any(Int).value := value
+END PutInt;
+
+
+PROCEDURE PushInt (v: V.VECTOR; value: INTEGER);
+VAR int: Int;
+BEGIN
+  NEW(int);
+  int.value := value;
+  V.push(v, int)
+END PushInt;
+
+
+PROCEDURE get_tab_xy (t: Table; x, y: INTEGER): BOOLEAN;
+VAR i: INTEGER;
+    tab: Tab; any: V.ANYPTR;
+    res: BOOLEAN;
+BEGIN
+  res := FALSE;
+  i := 0;
+  WHILE (i < t.tab.count) & ~res DO
+    any := V.get(t.tab, i);
+    tab := any(Tab);
+    res := (tab.col = x) & (tab.row = y);
+    INC(i)
+  END
+  RETURN res
+END get_tab_xy;
+
+
+PROCEDURE set_tab_xy (t: Table; x, y: INTEGER);
+VAR tab: Tab;
+BEGIN
+  NEW(tab);
+  tab.col := x;
+  tab.row := y;
+  V.push(t.tab, tab)
+END set_tab_xy;
+
+
+PROCEDURE tr* (t: Table);
+BEGIN
+  INC(t.tab_y);
+  WHILE t.h_lines.count < t.tab_y + 10 DO
+    PushInt(t.h_lines, 0)
+  END;
+  t.tab_x := 0;
+  WHILE get_tab_xy(t, t.tab_x, t.tab_y) DO
+    INC(t.tab_x);
+    WHILE t.v_lines.count < t.tab_x + 10 DO
+      PushInt(t.v_lines, 0)
+    END
+  END
+END tr;
+
+
+PROCEDURE td* (t: Table; colspan, rowspan: INTEGER);
+VAR i, j: INTEGER; _cell: Cell;
+BEGIN
+  FOR i := t.tab_x TO t.tab_x + colspan - 1 DO
+    FOR j := t.tab_y TO t.tab_y + rowspan - 1 DO
+      set_tab_xy(t, i, j);
+      IF i > t.max_length THEN
+        t.max_length := i
+      END
+    END
+  END;
+  NEW(_cell);
+  _cell.left    := t.tab_x;
+  _cell.top     := t.tab_y;
+  _cell.right   := t.tab_x + colspan;
+  WHILE t.v_lines.count < _cell.right + 10 DO
+    PushInt(t.v_lines, 0)
+  END;
+  _cell.bottom  := t.tab_y + rowspan;
+  WHILE t.h_lines.count < _cell.bottom + 10 DO
+    PushInt(t.h_lines, 0)
+  END;
+  _cell.colspan := colspan;
+  _cell.rowspan := rowspan;
+  V.push(t.cells, _cell);
+  WHILE get_tab_xy(t, t.tab_x, t.tab_y) DO
+    INC(t.tab_x);
+    WHILE t.v_lines.count < t.tab_x + 10 DO
+      PushInt(t.v_lines, 0)
+    END
+  END
+END td;
+
+
+PROCEDURE set_width* (t: Table; cell, width: INTEGER);
+VAR left, right, old_width, d_width, i: INTEGER; _cell: Cell;
+BEGIN
+  _cell := GetCell(t, cell);
+  right := GetInt(t.v_lines, _cell.right);
+  left  := GetInt(t.v_lines, _cell.left);
+  old_width := right - left;
+  d_width := width - old_width;
+  PutInt(t.v_lines, _cell.right, left + width);
+  FOR i := _cell.right + 1 TO t.v_lines.count - 1 DO
+    PutInt(t.v_lines, i, GetInt(t.v_lines, i) + d_width)
+  END
+END set_width;
+
+
+PROCEDURE set_height* (t: Table; cell, height: INTEGER);
+VAR top, bottom, old_height, d_height, i: INTEGER; _cell: Cell;
+BEGIN
+  _cell := GetCell(t, cell);
+  top := GetInt(t.h_lines, _cell.top);
+  bottom  := GetInt(t.h_lines, _cell.bottom);
+  old_height := bottom - top;
+  d_height := height - old_height;
+  PutInt(t.h_lines, _cell.bottom, top + height);
+  FOR i := _cell.bottom + 1 TO t.h_lines.count - 1 DO
+    PutInt(t.h_lines, i, GetInt(t.h_lines, i) + d_height)
+  END
+END set_height;
+
+
+PROCEDURE get_height* (t: Table; cell: INTEGER): INTEGER;
+VAR _cell: Cell;
+BEGIN
+  _cell := GetCell(t, cell)
+  RETURN GetInt(t.h_lines, _cell.bottom) - GetInt(t.h_lines, _cell.top)
+END get_height;
+
+
+PROCEDURE get_width* (t: Table; cell: INTEGER): INTEGER;
+VAR _cell: Cell;
+BEGIN
+  _cell := GetCell(t, cell)
+  RETURN GetInt(t.v_lines, _cell.right) - GetInt(t.v_lines, _cell.left)
+END get_width;
+
+
+PROCEDURE get_x* (t: Table; cell: INTEGER): INTEGER;
+VAR _cell: Cell;
+BEGIN
+  _cell := GetCell(t, cell)
+  RETURN GetInt(t.v_lines, _cell.left)
+END get_x;
+
+
+PROCEDURE get_y* (t: Table; cell: INTEGER): INTEGER;
+VAR _cell: Cell;
+BEGIN
+  _cell := GetCell(t, cell)
+  RETURN GetInt(t.h_lines, _cell.top)
+END get_y;
+
+
+PROCEDURE get_table_height* (t: Table): INTEGER;
+  RETURN GetInt(t.h_lines, t.tab_y + 1)
+END get_table_height;
+
+
+PROCEDURE table* (t: Table; tab_width: INTEGER; open: BOOLEAN);
+VAR i, width: INTEGER; _cell: Cell;
+BEGIN
+  IF open THEN
+    t.cells   := V.create(1024);
+    t.v_lines := V.create(1024);
+    t.h_lines := V.create(1024);
+    t.tab     := V.create(1024);
+    t.tab_x := 0;
+    t.tab_y := -1;
+    t.max_length := 0;
+  ELSE
+    width := tab_width DIV (t.max_length + 1);
+    FOR i := 0 TO t.cells.count - 1 DO
+      _cell := GetCell(t, i);
+      set_width(t, i, width * _cell.colspan)
+    END
+  END
+END table;
+
+
+PROCEDURE destroy* (t: Table);
+BEGIN
+  IF t # NIL THEN
+    V.destroy(t.tab,     NIL);
+    V.destroy(t.h_lines, NIL);
+    V.destroy(t.v_lines, NIL);
+    V.destroy(t.cells,   NIL);
+    DISPOSE(t)
+  END
+END destroy;
+
+
+END tables.
