@@ -3377,7 +3377,7 @@ align 4
 set_app_param:
         mov     edi, [current_slot]
         xchg    ebx, [edi + APPDATA.event_mask] ; set new event mask
-        mov     [esp + SYSCALL_STACK.eax], ebx                    ; return old mask value
+        mov     [esp + SYSCALL_STACK.eax], ebx  ; return old mask value
         ret
 ;-----------------------------------------------------------------------------
 
@@ -3393,7 +3393,6 @@ if 1
 align 4
 delay_hs:     ; delay in 1/100 secs
 ; ebx = delay time
-
         pushad
         push    ebx
         xor     esi, esi
@@ -4226,24 +4225,23 @@ end if
         pop     ebx eax
         ret
 
-@@:
-        mov     [esp + SYSCALL_STACK.eax], ecx
-        mov     [esp+20], ecx
-        jmp     .ret
-
 .read:
         cmp     eax, 2
         jne     .ret
-        test    ecx, ecx
-        jz      @b
         add     esp, 8  ; returning data in ebx and eax, so no need to restore them
+        test    ecx, ecx
+        jnz     @f
+        mov     [esp + SYSCALL_STACK.eax], ecx
+        mov     [esp + SYSCALL_STACK.ebx], ecx
+        ret
+@@:
         mov     eax, msg_board_data+1
         mov     ebx, msg_board_data
         movzx   edx, byte [ebx]
         call    memmove
         dec     [msg_board_count]
-        mov     [esp + SYSCALL_STACK.eax], edx ;eax
-        mov     [esp + 20], dword 1
+        mov     [esp + SYSCALL_STACK.eax], edx
+        mov     [esp + SYSCALL_STACK.ebx], 1
         ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
