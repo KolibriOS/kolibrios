@@ -35,16 +35,16 @@ CONST
   SETTINGS         = 20;
   SEARCH           = 21;
 
-  KEY_DOWN_CODE    = 177;
-  KEY_UP_CODE      = 178;
-  KEY_PG_DOWN_CODE = 183;
-  KEY_PG_UP_CODE   = 184;
-  KEY_HOME_CODE    = 180;
-  KEY_END_CODE     = 181;
-  KEY_F2_CODE      =  51;
-  KEY_F3_CODE      =  52;
-  KEY_F4_CODE      =  53;
-  KEY_F10_CODE     =  49;
+  KEY_DOWN         = 80;
+  KEY_UP           = 72;
+  KEY_PG_DOWN      = 81;
+  KEY_PG_UP        = 73;
+  KEY_HOME         = 71;
+  KEY_END          = 79;
+  KEY_F2           = 60;
+  KEY_F3           = 61;
+  KEY_F4           = 62;
+  KEY_F10          = 68;
 
   TOOLBAR_LEFT     = 5;
   TOOLBAR_TOP      = 6;
@@ -60,7 +60,7 @@ CONST
 
 VAR
 
-  Window     : W.TWindow;
+  Window     : W.tWindow;
   toolbar    : Toolbar.tToolbar;
   SkinHeight : INTEGER;
   Open       : OpenDlg.Dialog;
@@ -90,15 +90,15 @@ END ToolBar;
 PROCEDURE Resize;
 VAR Width, Height: INTEGER;
 BEGIN
-  SU.GetWindowPos(Window.Left, Window.Top);
+  SU.GetWindowPos(Window.left, Window.top);
   SU.GetWindowSize(Width, Height);
-  IF (Window.Width # Width) OR (Window.Height # Height) OR (SkinHeight # SU.SkinHeight()) THEN
+  IF (Window.width # Width) OR (Window.height # Height) OR (SkinHeight # SU.SkinHeight()) THEN
     SU.MinMax(Width,  640, 65535);
     SU.MinMax(Height, 400, 65535);
-    Window.dWidth  := Width - Window.Width;
-    Window.dHeight := Height - Window.Height;
-    Window.Width   := Width;
-    Window.Height  := Height;
+    Window.dWidth  := Width - Window.width;
+    Window.dHeight := Height - Window.height;
+    Window.width   := Width;
+    Window.height  := Height;
     SU.SetWindowSize(Width, Height);
     DOM.Resize(G.Buffer.Width + Window.dWidth, G.Buffer.Height + Window.dHeight + (SkinHeight - SU.SkinHeight()));
     SkinHeight := SU.SkinHeight()
@@ -108,12 +108,12 @@ END Resize;
 
 PROCEDURE DrawStatus;
 BEGIN
-  SU.DrawRect(0, Window.Height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 1, Window.Width - 2 * WINDOW_BEVEL - 1, STATUSBAR_HEIGHT, SU.winColor);
+  SU.DrawRect(0, Window.height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 1, Window.width - 2 * WINDOW_BEVEL - 1, STATUSBAR_HEIGHT, SU.winColor);
   IF DOM.urlstr # "" THEN
-    SU.OutText(CANVAS_LEFT, Window.Height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 2, DOM.urlstr,
-      MIN(LENGTH(DOM.urlstr), (Window.Width - 2 * WINDOW_BEVEL - 1 - CANVAS_LEFT * 2) DIV 8), SU.textColor)
+    SU.OutText(CANVAS_LEFT, Window.height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 2, DOM.urlstr,
+      MIN(LENGTH(DOM.urlstr), (Window.width - 2 * WINDOW_BEVEL - 1 - CANVAS_LEFT * 2) DIV 8), SU.textColor)
   ELSIF DOM.found() THEN
-    SU.OutText(CANVAS_LEFT,  Window.Height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 2,
+    SU.OutText(CANVAS_LEFT,  Window.height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 2,
                 "F2 - first | F3 - next | F4 - prev. | F10 - exit", 48, SU.textColor)
   END
 END DrawStatus;
@@ -123,17 +123,17 @@ PROCEDURE DrawWindow;
 BEGIN
   SU.GetSystemColors;
   SU.WindowRedrawStatus(1);
-  IF Window.Created THEN
+  IF Window.created THEN
     Resize
   ELSE
-    Window.Created := TRUE
+    Window.created := TRUE
   END;
-  SU.DefineAndDrawWindow(Window.Left, Window.Top, Window.Width, Window.Height,
-        SU.winColor, LSL(ORD({0, 1, 2}), 4) + 4 - ORD(DOM.loaded), Window.Caption);
-  SU.DrawRect(0, 0, Window.Width - 2 * WINDOW_BEVEL - 1, CANVAS_TOP, SU.winColor);
-  SU.DrawRect(0, Window.Height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 1, Window.Width - 2 * WINDOW_BEVEL - 1, STATUSBAR_HEIGHT, SU.winColor);
-  SU.DrawRect(0, 0, CANVAS_LEFT, Window.Height - SkinHeight - WINDOW_BEVEL, SU.winColor);
-  SU.DrawRect(Window.Width - 2 * WINDOW_BEVEL - CANVAS_LEFT - 1 - SCROLLBAR_WIDTH - 2, 0, CANVAS_LEFT + SCROLLBAR_WIDTH + 2, Window.Height - SkinHeight - WINDOW_BEVEL, SU.winColor);
+  SU.DefineAndDrawWindow(Window.left, Window.top, Window.width, Window.height,
+        SU.winColor, LSL(ORD({0, 1, 2}), 4) + 4 - ORD(DOM.loaded), Window.caption);
+  SU.DrawRect(0, 0, Window.width - 2 * WINDOW_BEVEL - 1, CANVAS_TOP, SU.winColor);
+  SU.DrawRect(0, Window.height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 1, Window.width - 2 * WINDOW_BEVEL - 1, STATUSBAR_HEIGHT, SU.winColor);
+  SU.DrawRect(0, 0, CANVAS_LEFT, Window.height - SkinHeight - WINDOW_BEVEL, SU.winColor);
+  SU.DrawRect(Window.width - 2 * WINDOW_BEVEL - CANVAS_LEFT - 1 - SCROLLBAR_WIDTH - 2, 0, CANVAS_LEFT + SCROLLBAR_WIDTH + 2, Window.height - SkinHeight - WINDOW_BEVEL, SU.winColor);
   IF DOM.loaded THEN
     ToolBar;
     DOM.Draw;
@@ -145,8 +145,8 @@ END DrawWindow;
 
 PROCEDURE ConvMousePos(VAR X, Y: INTEGER);
 BEGIN
-  X := X - Window.Left - WINDOW_BEVEL - 1;
-  Y := Y - Window.Top - SkinHeight
+  X := X - Window.left - WINDOW_BEVEL - 1;
+  Y := Y - Window.top - SkinHeight
 END ConvMousePos;
 
 
@@ -177,22 +177,28 @@ END ButtonClick;
 
 
 PROCEDURE KeyDown;
+VAR
+	key: INTEGER;
+	shift, ctrl: BOOLEAN;
 BEGIN
-  CASE SU.GetKeyCode() OF
-  |KEY_DOWN_CODE    : DOM.Down
-  |KEY_UP_CODE      : DOM.Up
-  |KEY_PG_DOWN_CODE : DOM.PageDown
-  |KEY_PG_UP_CODE   : DOM.PageUp
-  |KEY_HOME_CODE    : DOM.Home
-  |KEY_END_CODE     : DOM.End
-  |KEY_F2_CODE      : DOM.Find(0)
-  |KEY_F3_CODE      : DOM.Find(1)
-  |KEY_F4_CODE      : DOM.Find(-1)
-  |KEY_F10_CODE     : DOM.CloseSearch
-  ELSE
-  END;
-  DOM.Draw;
-  DrawStatus
+	SU.getKBState(shift, ctrl);
+	key := SU.GetKey() DIV 65536;
+	CASE key OF
+	|KEY_DOWN    : DOM.Scroll(1)
+	|KEY_UP      : DOM.Scroll(-1)
+	|KEY_PG_DOWN : DOM.PageDown
+	|KEY_PG_UP   : DOM.PageUp
+	|KEY_HOME    : DOM.Home
+	|KEY_END     : DOM.End
+	|KEY_F2      : DOM.Find(0)
+	|KEY_F3      : DOM.Find(1)
+	|KEY_F4      : DOM.Find(-1)
+	|KEY_F10     : DOM.CloseSearch
+	|33          : IF ctrl THEN DOM.OpenSearch END (* ctrl-F *)
+	ELSE
+	END;
+	DOM.Draw;
+	DrawStatus
 END KeyDown;
 
 
@@ -204,13 +210,10 @@ END CanvasIsClicked;
 
 
 PROCEDURE MouseEvent;
-
 VAR
-
   mouse_status : SET;
   X, Y         : INTEGER;
   scroll       : INTEGER;
-
 BEGIN
   SU.MousePos(X, Y);
   mouse_status := SU.MouseStatus();
@@ -223,7 +226,7 @@ BEGIN
       DOM.Click(X, Y, TRUE)
     END
   ELSIF scroll # 0 THEN
-    DOM.Scroll(scroll);
+    DOM.Scroll(scroll*2);
     DOM.Draw
   ELSE
     ConvMousePos(X, Y);
@@ -267,7 +270,7 @@ END IsFB2;
 
 
 PROCEDURE main(title: ARRAY OF CHAR);
-VAR WinW, X1, Y1, X2, Y2, scr_pos: INTEGER; Win2: W.TWindow; resize: BOOLEAN; FilePath: S.STRING; defpath: BOOLEAN;
+VAR WinW, X1, Y1, X2, Y2, scr_pos: INTEGER; Win2: W.tWindow; resize: BOOLEAN; FilePath: S.STRING; defpath: BOOLEAN;
 BEGIN
   SkinHeight := SU.SkinHeight();
   sb := box_lib.kolibri_new_scrollbar(10 * 65536 + 200, 10 * 65536 + 30, 25, 15, 10, 0, 0, 0, 0, 0);
@@ -299,31 +302,31 @@ BEGIN
   SU.SetEventsMask({0, 1, 2, 5, 31});
   SU.GetScreenArea(X1, Y1, X2, Y2);
   WinW := (X2 - X1) DIV 2;
-  W.InitWindow(Window, WinW DIV 2, Y1, WinW, Y2 - Y1, title);
+  W.init(Window, WinW DIV 2, Y1, WinW, Y2 - Y1, title);
   Settings.Default;
-  DOM.GetWinSize(FileName, Window.Width, Window.Height);
+  DOM.GetWinSize(FileName, Window.width, Window.height);
 
   Win2 := Window;
   resize := FALSE;
-  IF Win2.Width > X2 - X1 THEN
-    Win2.Width := X2 - X1;
+  IF Win2.width > X2 - X1 THEN
+    Win2.width := X2 - X1;
     resize := TRUE
   END;
 
-  IF Win2.Height > Y2 - Y1 THEN
-    Win2.Height := Y2 - Y1;
+  IF Win2.height > Y2 - Y1 THEN
+    Win2.height := Y2 - Y1;
     resize := TRUE
   END;
 
   DOM.Init(CANVAS_LEFT, CANVAS_TOP,
-        Window.Width - 2 * CANVAS_LEFT - 2 * WINDOW_BEVEL - 1 - SCROLLBAR_WIDTH - 2,
-        Window.Height - SkinHeight - CANVAS_TOP - WINDOW_BEVEL - STATUSBAR_HEIGHT + 1);
+        Window.width - 2 * CANVAS_LEFT - 2 * WINDOW_BEVEL - 1 - SCROLLBAR_WIDTH - 2,
+        Window.height - SkinHeight - CANVAS_TOP - WINDOW_BEVEL - STATUSBAR_HEIGHT + 1);
   DOM.SetColors;
   DOM.Set_b_pict(Ini.b_pict);
   Window := Win2;
-  G.Resize2(Window.Width - 2 * CANVAS_LEFT - 2 * WINDOW_BEVEL - 1 - SCROLLBAR_WIDTH, Window.Height - SkinHeight - CANVAS_TOP - WINDOW_BEVEL + 1 - STATUSBAR_HEIGHT);
-  S.Append(Window.Caption, " - ");
-  S.Append(Window.Caption, FileName);
+  G.InitSize(Window.width - 2 * CANVAS_LEFT - 2 * WINDOW_BEVEL - 1 - SCROLLBAR_WIDTH, Window.height - SkinHeight - CANVAS_TOP - WINDOW_BEVEL + 1 - STATUSBAR_HEIGHT);
+  S.Append(Window.caption, " - ");
+  S.Append(Window.caption, FileName);
 
 	Toolbar.create(toolbar, TOOLBAR_LEFT, TOOLBAR_TOP);
     Toolbar.add(toolbar, BACK,      30, "");
@@ -339,7 +342,7 @@ BEGIN
 
   DOM.Open(FileName, DrawWindow, DrawStatus, DrawToolbar);
   IF resize THEN
-    DOM.Resize(Window.Width - 2 * CANVAS_LEFT - 2 * WINDOW_BEVEL - 1 - SCROLLBAR_WIDTH, Window.Height - SkinHeight - CANVAS_TOP - WINDOW_BEVEL + 1 - STATUSBAR_HEIGHT)
+    DOM.Resize(Window.width - 2 * CANVAS_LEFT - 2 * WINDOW_BEVEL - 1 - SCROLLBAR_WIDTH, Window.height - SkinHeight - CANVAS_TOP - WINDOW_BEVEL + 1 - STATUSBAR_HEIGHT)
   END;
 
   DrawWindow;
@@ -362,5 +365,5 @@ END main;
 
 
 BEGIN
-  main("FB2 Reader v0.97")
+  main("FB2 Reader v0.97a")
 END FB2READ.

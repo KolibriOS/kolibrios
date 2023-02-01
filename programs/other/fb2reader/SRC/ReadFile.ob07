@@ -1,5 +1,5 @@
 (*
-    Copyright 2016, 2022 Anton Krotov
+    Copyright 2016, 2022, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -19,7 +19,7 @@
 
 MODULE ReadFile;
 
-IMPORT sys := SYSTEM, K := KOSAPI, S := Strings, File, SU := SysUtils, Encode;
+IMPORT sys := SYSTEM, K := KOSAPI, S := Strings, File, SU := SysUtils, Encoding;
 
 
 VAR
@@ -87,7 +87,7 @@ BEGIN
 END Free;
 
 
-PROCEDURE Conv*(cp: Encode.CP);
+PROCEDURE Conv*(cp: Encoding.tCodePage);
 VAR m, nov, mem2, k: INTEGER; c: CHAR;
 BEGIN
   m := Mem;

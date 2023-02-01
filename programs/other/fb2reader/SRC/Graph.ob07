@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016-2020, 2022 Anton Krotov
+    Copyright 2016-2020, 2022, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -19,44 +19,44 @@
 
 MODULE Graph;
 
-IMPORT K := KOSAPI, sys := SYSTEM, SU := SysUtils, LibImg;
+IMPORT K := KOSAPI, sys := SYSTEM, SU := SysUtils;
 
 
 TYPE
 
-  TBuffer = RECORD Width*, Height*, adr*, Color: INTEGER END;
-  PBuffer* = POINTER TO TBuffer;
+  tBuffer* = POINTER TO RECORD Width*, Height*, bitmap*, Color: INTEGER END;
 
 
 VAR
 
-  Buffer*, Buffer2, Buffer3*: PBuffer;
+  Buffer*, BackImg*: tBuffer;
+  Width0, Height0: INTEGER;
 
 
 PROCEDURE [stdcall-, "rasterworks.obj", ""] drawText (canvas, x, y, string, charQuantity, fontColor, params: INTEGER): INTEGER; END;
 
-PROCEDURE Destroy*(VAR Buffer: PBuffer);
+PROCEDURE Destroy*(VAR Buffer: tBuffer);
 BEGIN
   IF Buffer # NIL THEN
-    IF Buffer.adr # 0 THEN
-      DEC(Buffer.adr, 8);
-      Buffer.adr := K.free(Buffer.adr)
+    IF Buffer.bitmap # 0 THEN
+      DEC(Buffer.bitmap, 8);
+      Buffer.bitmap := K.free(Buffer.bitmap)
     END;
     DISPOSE(Buffer)
   END
 END Destroy;
 
 
-PROCEDURE Create*(Width, Height: INTEGER): PBuffer;
-VAR res: PBuffer;
+PROCEDURE Create*(Width, Height: INTEGER): tBuffer;
+VAR res: tBuffer;
 BEGIN
   NEW(res);
-  res.adr := K.malloc(Width * Height * 4 + 8);
-  sys.PUT(res.adr, Width);
-  sys.PUT(res.adr + 4, Height);
+  res.bitmap := K.malloc(Width * Height * 4 + 8);
+  sys.PUT(res.bitmap, Width);
+  sys.PUT(res.bitmap + 4, Height);
   res.Width := Width;
   res.Height := Height;
-  INC(res.adr, 8);
+  INC(res.bitmap, 8);
   RETURN res
 END Create;
 
@@ -69,15 +69,15 @@ BEGIN
 END getRGB;
 
 
-PROCEDURE Fill*(Buffer: PBuffer; Color: INTEGER);
+PROCEDURE Fill* (Buffer: tBuffer; Color: INTEGER);
 VAR p, n, i: INTEGER;
 BEGIN
-  p := Buffer.adr;
-  n := Buffer.Width * Buffer.Height;
-  FOR i := 1 TO n DO
-    sys.PUT(p, Color);
-    INC(p, 4)
-  END
+	p := Buffer.bitmap;
+	n := Buffer.Width * Buffer.Height;
+	FOR i := 1 TO n DO
+    	sys.PUT(p, Color);
+		INC(p, 4)
+	END
 END Fill;
 
 
@@ -89,7 +89,7 @@ BEGIN
     IF X1 <= X2 THEN
         SU.MinMax(Y, 0, Buffer.Height - 1);
         color := Buffer.Color;
-        p1 := Buffer.adr + 4 * (Y * Buffer.Width + X1);
+        p1 := Buffer.bitmap + 4 * (Y * Buffer.Width + X1);
         p2 := p1 + (X2 - X1) * 4;
         FOR i := p1 TO p2 BY 4 DO
             sys.PUT(i, color)
@@ -106,7 +106,7 @@ VAR
 BEGIN
     IF X1 <= X2 THEN
         SU.MinMax(Y, 0, Buffer.Height - 1);
-        p1 := Buffer.adr + 4 * (Y * Buffer.Width + X1);
+        p1 := Buffer.bitmap + 4 * (Y * Buffer.Width + X1);
         p2 := p1 + (X2 - X1) * 4;
         FOR i := p1 TO p2 BY 4 DO
             sys.GET(i, pix);
@@ -125,7 +125,7 @@ BEGIN
   SU.MinMax(Y2, 0, Buffer.Height - 1);
   color := Buffer.Color;
   line_size := Buffer.Width * 4;
-  p1 := Buffer.adr + line_size * Y1 + 4 * X;
+  p1 := Buffer.bitmap + line_size * Y1 + 4 * X;
   p2 := p1 + (Y2 - Y1) * line_size;
   WHILE p1 <= p2 DO
     sys.PUT(p1, color);
@@ -165,15 +165,15 @@ END GetColor;
 
 PROCEDURE TextOut*(X, Y: INTEGER; Text: INTEGER; length: INTEGER; size, params: INTEGER);
 BEGIN
-	drawText(Buffer.adr - 8, X, Y, Text, length, 0FF000000H + Buffer.Color, params)
+	drawText(Buffer.bitmap - 8, X, Y, Text, length, 0FF000000H + Buffer.Color, params)
 END TextOut;
 
 
-PROCEDURE Resize2*(Width, Height: INTEGER);
+PROCEDURE InitSize* (Width, Height: INTEGER);
 BEGIN
-  Buffer2.Width := Width;
-  Buffer2.Height := Height;
-END Resize2;
+	Width0 := Width;
+	Height0 := Height;
+END InitSize;
 
 
 PROCEDURE Image* (X, Y, sizeX, sizeY, ptr, Ymin, Ymax: INTEGER);
@@ -183,14 +183,14 @@ BEGIN
 	ASSERT(sizeX <= Buffer.Width);
 	FOR y := 0 TO sizeY - 1 DO
 		IF (Ymin <= Y) & (Y < Ymax) THEN
-			sys.MOVE(ptr + sizeX*4*y, Buffer.adr + (Buffer.Width*Y + X)*4, sizeX*4)
+			sys.MOVE(ptr + sizeX*4*y, Buffer.bitmap + (Buffer.Width*Y + X)*4, sizeX*4)
 		END;
 		INC(Y)
 	END
 END Image;
 
 
-PROCEDURE Image2(Buffer: PBuffer; X, Y, sizeX, sizeY, ptr: INTEGER);
+PROCEDURE Image2(Buffer: tBuffer; X, Y, sizeX, sizeY, ptr: INTEGER);
 VAR x, y, pix, left: INTEGER;
 BEGIN
   left := X;
@@ -199,7 +199,7 @@ BEGIN
       FOR x := 0 TO sizeX - 1 DO
         sys.GET32(ptr + (y*sizeX + x)*4, pix);
         IF (X < Buffer.Width) & (Y < Buffer.Height) THEN
-          sys.PUT32(Buffer.adr + (Buffer.Width*Y + X)*4, pix)
+          sys.PUT32(Buffer.bitmap + (Buffer.Width*Y + X)*4, pix)
         END;
         INC(X)
       END;
@@ -213,10 +213,10 @@ VAR x, y: INTEGER;
 BEGIN
   IF ptr # 0 THEN
     y := 0;
-    WHILE y < Buffer3.Height DO
+    WHILE y < BackImg.Height DO
       x := 0;
-      WHILE x < Buffer3.Width DO
-        Image2(Buffer3, x, y, sizeX, sizeY, ptr);
+      WHILE x < BackImg.Width DO
+        Image2(BackImg, x, y, sizeX, sizeY, ptr);
         INC(x, sizeX)
       END;
       INC(y, sizeY)
@@ -225,25 +225,15 @@ BEGIN
 END BackImage;
 
 
-PROCEDURE Copy*(src, dst: PBuffer; y_src, lines, y_dst: INTEGER);
+PROCEDURE Copy*(src, dst: tBuffer; y_src, lines, y_dst: INTEGER);
 BEGIN
-  sys.MOVE(src.adr + y_src * src.Width * 4, dst.adr + y_dst * dst.Width * 4, lines * dst.Width * 4)
+  sys.MOVE(src.bitmap + y_src * src.Width * 4, dst.bitmap + y_dst * dst.Width * 4, lines * dst.Width * 4)
 END Copy;
-
-
-PROCEDURE Clear*;
-VAR p, color: INTEGER;
-BEGIN
-  color := Buffer.Color;
-  FOR p := Buffer.adr TO Buffer.adr + Buffer.Width * Buffer.Height * 4 - 4 BY 4 DO
-    sys.PUT(p, color)
-  END
-END Clear;
 
 
 PROCEDURE Draw*(X, Y: INTEGER);
 BEGIN
-  K.sysfunc7(65, Buffer.adr, Buffer.Width * 65536 + Buffer.Height, X * 65536 + Y, 32, 0, 0)
+  K.sysfunc7(65, Buffer.bitmap, Buffer.Width * 65536 + Buffer.Height, X * 65536 + Y, 32, 0, 0)
 END Draw;
 
 
@@ -259,11 +249,10 @@ END Rect;
 PROCEDURE Progress*(value: REAL);
 VAR W4, W2, H2: INTEGER;
 BEGIN
-  W4 := Buffer2.Width DIV 4;
-  W2 := Buffer2.Width DIV 2;
-  H2 := Buffer2.Height DIV 2;
-  SetColor(0FFFFFFH);
-  Clear;
+  W2 := Width0 DIV 2;
+  W4 := W2 DIV 2;
+  H2 := Height0 DIV 2;
+  Fill(Buffer, 0FFFFFFH);
   SetColor(0);
   Rect(W4, H2 - 50, 3 * W4, H2 + 30);
   TextOut(W2 - 10 * 8 DIV 2, H2 - 50 + 15, sys.SADR("Loading..."), 10, 1, 16 + 0 + LSL(3, 16) + LSL(128, 24));
@@ -272,37 +261,52 @@ BEGIN
 END Progress;
 
 
-PROCEDURE Resize3(Buffer: PBuffer; Width, Height: INTEGER);
+PROCEDURE _resize (Buffer: tBuffer; Width, Height: INTEGER);
 BEGIN
-  IF Buffer.adr # 0 THEN
-    DEC(Buffer.adr, 8)
+  IF Buffer.bitmap # 0 THEN
+    DEC(Buffer.bitmap, 8)
   END;
-  Buffer.adr := K.realloc(Buffer.adr, Width * Height * 4 + 8);
-  SU.MemError(Buffer.adr = 0);
-  sys.PUT(Buffer.adr, Width);
-  sys.PUT(Buffer.adr + 4, Height);
-  INC(Buffer.adr, 8);
+  Buffer.bitmap := K.realloc(Buffer.bitmap, Width * Height * 4 + 8);
+  SU.MemError(Buffer.bitmap = 0);
+  sys.PUT(Buffer.bitmap, Width);
+  sys.PUT(Buffer.bitmap + 4, Height);
+  INC(Buffer.bitmap, 8);
   Buffer.Width  := Width;
   Buffer.Height := Height
-END Resize3;
+END _resize;
 
 
 PROCEDURE Resize*(Width, Height: INTEGER);
 BEGIN
-  Resize3(Buffer,  Width, Height);
-  Resize3(Buffer3, Width, Height);
+	_resize(Buffer,  Width, Height);
+	IF BackImg # NIL THEN
+		_resize(BackImg, Width, Height)
+	END
 END Resize;
 
 
 PROCEDURE Init;
 VAR Width, Height: INTEGER;
 BEGIN
-  NEW(Buffer);
-  NEW(Buffer2);
-  NEW(Buffer3);
-  SU.GetScreenSize(Width, Height);
-  Resize(Width, Height)
+	BackImg := NIL;
+	NEW(Buffer);
+	SU.GetScreenSize(Width, Height);
+	Resize(Width, Height)
 END Init;
+
+
+PROCEDURE CreateBackImg*;
+BEGIN
+	IF BackImg = NIL THEN
+		BackImg := Create(Buffer.Width, Buffer.Height)
+	END
+END CreateBackImg;
+
+
+PROCEDURE DestroyBackImg*;
+BEGIN
+	Destroy(BackImg)
+END DestroyBackImg;
 
 
 BEGIN

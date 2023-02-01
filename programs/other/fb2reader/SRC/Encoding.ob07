@@ -1,0 +1,266 @@
+(*
+    Copyright 2016, 2023 Anton Krotov
+
+    This file is part of fb2read.
+
+    fb2read is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    fb2read is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with fb2read. If not, see <http://www.gnu.org/licenses/>.
+*)
+
+MODULE Encoding;
+
+IMPORT SYSTEM;
+
+
+CONST
+	TABLE_SIZE = 65536;
+
+
+TYPE
+	tUtf8* = ARRAY 4 OF CHAR;
+	tCodePage* = ARRAY 256 OF RECORD code*, len*: INTEGER; utf8*: tUtf8 END;
+
+
+VAR
+	cp1250*, cp1251*, cp1252*, cp866*: tCodePage;
+
+	table1251: ARRAY TABLE_SIZE OF BYTE;
+
+
+PROCEDURE getUtf8Char* (VAR ptr, size: INTEGER): INTEGER;
+VAR
+	c: BYTE;
+	n, k, code: INTEGER;
+	end: BOOLEAN;
+BEGIN
+	code := 0;
+	end := FALSE;
+	REPEAT
+		SYSTEM.GET(ptr, c);
+		INC(ptr);
+		DEC(size);
+		CASE c OF
+		|  0..127:
+			code := c;
+			end := TRUE
+
+		|128..191:
+			code := code * 64 + c MOD 64;
+			DEC(n);
+			end := n <= 0
+
+		|192..255:
+			k := LSL(c, 24);
+			n := -2;
+			REPEAT
+				k := ROR(k, -1);
+				INC(n)
+			UNTIL k MOD 2 = 0;
+			k := LSL(c, n + 25);
+			code := LSR(k, n + 25)
+
+		END
+	UNTIL (size = 0) OR end
+	RETURN code
+END getUtf8Char;
+
+
+PROCEDURE convert1251* (src, dst: INTEGER; len: INTEGER);
+VAR
+	val, size: INTEGER;
+BEGIN
+	WHILE len > 0 DO
+		size := 0;
+		val := getUtf8Char(src, size);
+		IF (0 <= val) & (val < TABLE_SIZE) THEN
+			SYSTEM.PUT8(dst, table1251[val])
+		ELSE
+			SYSTEM.PUT8(dst, ORD("?"))
+		END;
+		INC(dst);
+		DEC(len)
+	END
+END convert1251;
+
+
+PROCEDURE utf8* (code: INTEGER; VAR utf8char: tUtf8);
+BEGIN
+	utf8char[0] := 0X;
+	IF code < 80H THEN
+		utf8char[0] := CHR(code);
+		utf8char[1] := 0X
+	ELSIF code < 800H THEN
+		utf8char[1] := CHR(code MOD 64 + 80H);
+		utf8char[0] := CHR(code DIV 64 + 0C0H);
+		utf8char[2] := 0X
+	ELSIF code < 10000H THEN
+		utf8char[2] := CHR(code MOD 64 + 80H);
+		code := code DIV 64;
+		utf8char[1] := CHR(code MOD 64 + 80H);
+		utf8char[0] := CHR(code DIV 64 + 0E0H);
+		utf8char[3] := 0X
+	(*
+	ELSIF code < 200000H THEN
+	ELSIF code < 4000000H THEN
+	ELSE *)
+	END
+END utf8;
+
+
+PROCEDURE ucs2to1251 (code: INTEGER): BYTE;
+VAR
+	i: INTEGER;
+BEGIN
+	i := 255;
+	WHILE (i >= 0) & (cp1251[i].code # code) DO
+		DEC(i)
+	END;
+	IF i < 0 THEN
+		i := ORD("?")
+	END
+	RETURN i
+END ucs2to1251;
+
+
+PROCEDURE initCP (VAR cp: tCodePage);
+VAR
+	i: INTEGER;
+BEGIN
+	FOR i := 0H TO 7FH DO
+		cp[i].code := i
+	END;
+	FOR i := 0H TO 0FFH DO
+		utf8(cp[i].code, cp[i].utf8);
+		cp[i].len := LENGTH(cp[i].utf8)
+	END
+END initCP;
+
+
+PROCEDURE init8 (VAR cp: tCodePage; VAR n: INTEGER; a, b, c, d, e, f, g, h: INTEGER);
+BEGIN
+	cp[n].code := a; INC(n);
+	cp[n].code := b; INC(n);
+	cp[n].code := c; INC(n);
+	cp[n].code := d; INC(n);
+	cp[n].code := e; INC(n);
+	cp[n].code := f; INC(n);
+	cp[n].code := g; INC(n);
+	cp[n].code := h; INC(n);
+END init8;
+
+
+PROCEDURE init1250 (VAR cp: tCodePage);
+VAR
+	n: INTEGER;
+BEGIN
+	n := 80H;
+	init8(cp, n, 20ACH,   20H, 201AH,   20H, 201EH, 2026H, 2020H, 2021H);
+	init8(cp, n,   20H, 2030H, 0160H, 2039H, 015AH, 0164H, 017DH, 0179H);
+	init8(cp, n,   20H, 2018H, 2019H, 201CH, 201DH, 2022H, 2013H, 2014H);
+	init8(cp, n,   20H, 2122H, 0161H, 203AH, 015BH, 0165H, 017EH, 017AH);
+	init8(cp, n, 00A0H, 02C7H, 02D8H, 0141H, 00A4H, 0104H, 00A6H, 00A7H);
+	init8(cp, n, 00A8H, 00A9H, 015EH, 00ABH, 00ACH, 00ADH, 00AEH, 017BH);
+	init8(cp, n, 00B0H, 00B1H, 02DBH, 0142H, 00B4H, 00B5H, 00B6H, 00B7H);
+	init8(cp, n, 00B8H, 0105H, 015FH, 00BBH, 013DH, 02DDH, 013EH, 017CH);
+	init8(cp, n, 0154H, 00C1H, 00C2H, 0102H, 00C4H, 0139H, 0106H, 00C7H);
+	init8(cp, n, 010CH, 00C9H, 0118H, 00CBH, 011AH, 00CDH, 00CEH, 010EH);
+	init8(cp, n, 0110H, 0143H, 0147H, 00D3H, 00D4H, 0150H, 00D6H, 00D7H);
+	init8(cp, n, 0158H, 016EH, 00DAH, 0170H, 00DCH, 00DDH, 0162H, 00DFH);
+	init8(cp, n, 0155H, 00E1H, 00E2H, 0103H, 00E4H, 013AH, 0107H, 00E7H);
+	init8(cp, n, 010DH, 00E9H, 0119H, 00EBH, 011BH, 00EDH, 00EEH, 010FH);
+	init8(cp, n, 0111H, 0144H, 0148H, 00F3H, 00F4H, 0151H, 00F6H, 00F7H);
+	init8(cp, n, 0159H, 016FH, 00FAH, 0171H, 00FCH, 00FDH, 0163H, 02D9H);
+	initCP(cp)
+END init1250;
+
+
+PROCEDURE init1251 (VAR cp: tCodePage);
+VAR
+	n, i: INTEGER;
+BEGIN
+	n := 80H;
+	init8(cp, n, 0402H, 0403H, 201AH, 0453H, 201EH, 2026H, 2020H, 2021H);
+	init8(cp, n, 20ACH, 2030H, 0409H, 2039H, 040AH, 040CH, 040BH, 040FH);
+	init8(cp, n, 0452H, 2018H, 2019H, 201CH, 201DH, 2022H, 2013H, 2014H);
+	init8(cp, n,   20H, 2122H, 0459H, 203AH, 045AH, 045CH, 045BH, 045FH);
+	init8(cp, n, 00A0H, 040EH, 045EH, 0408H, 00A4H, 0490H, 00A6H, 00A7H);
+	init8(cp, n, 0401H, 00A9H, 0404H, 00ABH, 00ACH, 00ADH, 00AEH, 0407H);
+	init8(cp, n, 00B0H, 00B1H, 0406H, 0456H, 0491H, 00B5H, 00B6H, 00B7H);
+	init8(cp, n, 0451H, 2116H, 0454H, 00BBH, 0458H, 0405H, 0455H, 0457H);
+	FOR i := 0410H TO 044FH DO
+		cp[i - 350H].code := i
+	END;
+	initCP(cp)
+END init1251;
+
+
+PROCEDURE init1252 (VAR cp: tCodePage);
+VAR
+	n, i: INTEGER;
+BEGIN
+	n := 80H;
+	init8(cp, n, 20ACH,   20H, 201AH, 0192H, 201EH, 2026H, 2020H, 2021H);
+	init8(cp, n, 02C6H, 2030H, 0160H, 2039H, 0152H,   20H, 017DH,   20H);
+	init8(cp, n,   20H, 2018H, 2019H, 201CH, 201DH, 2022H, 2013H, 2014H);
+	init8(cp, n, 02DCH, 2122H, 0161H, 203AH, 0153H,   20H, 017EH, 0178H);
+	FOR i := 0A0H TO 0FFH DO
+		cp[i].code := i
+	END;
+	initCP(cp)
+END init1252;
+
+
+PROCEDURE init866 (VAR cp: tCodePage);
+VAR
+	n, i: INTEGER;
+BEGIN
+	FOR i := 0410H TO 043FH DO
+		cp[i - 0410H + 80H].code := i
+	END;
+	FOR i := 0440H TO 044FH DO
+		cp[i - 0440H + 0E0H].code := i
+	END;
+
+	n := 0B0H;
+	init8(cp, n, 2591H, 2592H, 2593H, 2502H, 2524H, 2561H, 2562H, 2556H);
+	init8(cp, n, 2555H, 2563H, 2551H, 2557H, 255DH, 255CH, 255BH, 2510H);
+	init8(cp, n, 2514H, 2534H, 252CH, 251CH, 2500H, 253CH, 255EH, 255FH);
+	init8(cp, n, 255AH, 2554H, 2569H, 2566H, 2560H, 2550H, 256CH, 2567H);
+	init8(cp, n, 2568H, 2564H, 2565H, 2559H, 2558H, 2552H, 2553H, 256BH);
+	init8(cp, n, 256AH, 2518H, 250CH, 2588H, 2584H, 258CH, 2590H, 2580H);
+
+	n := 0F0H;
+	init8(cp, n, 0401H, 0451H, 0404H, 0454H, 0407H, 0457H, 040EH, 045EH);
+	init8(cp, n, 00B0H, 2219H, 00B7H, 221AH, 2116H, 00A4H, 25A0H, 00A0H);
+
+	initCP(cp)
+END init866;
+
+
+PROCEDURE init;
+VAR
+	i: INTEGER;
+BEGIN
+	init1250(cp1250);
+	init1251(cp1251);
+	init1252(cp1252);
+	init866(cp866);
+	FOR i := 0 TO TABLE_SIZE - 1 DO
+		table1251[i] := ucs2to1251(i)
+	END
+END init;
+
+
+BEGIN
+	init
+END Encoding.

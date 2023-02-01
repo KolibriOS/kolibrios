@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2020, 2022 Anton Krotov
+    Copyright 2020, 2022, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -22,7 +22,7 @@ MODULE Search;
 IMPORT
 
     XML, G := Graph, Window, Font, S := Strings, LISTS, SYSTEM,
-    SU := SysUtils, K := KOSAPI, SearchForm;
+    SU := SysUtils, K := KOSAPI, SearchForm, Encoding;
 
 
 TYPE
@@ -72,7 +72,7 @@ VAR
     Find: PFind;
 
 
-PROCEDURE SelText (Col: Window.TRect; min, max, Ycur, LineH: INTEGER; right: BOOLEAN; rect: TRect; cur: BOOLEAN);
+PROCEDURE SelText (Col: Window.tRect; min, max, Ycur, LineH: INTEGER; right: BOOLEAN; rect: TRect; cur: BOOLEAN);
 VAR
     y, y0, color: INTEGER;
 
@@ -85,12 +85,12 @@ BEGIN
         ELSE
             color := 0
         END;
-        G.BoxNotXOR(Col.Left + rect.x1 + 1, Col.Top + y - Col.Height * ORD(right), Col.Left + rect.x2, Col.Top + y - Col.Height * ORD(right) + Font.FontH(), color)
+        G.BoxNotXOR(Col.left + rect.x1 + 1, Col.top + y - Col.height * ORD(right), Col.left + rect.x2, Col.top + y - Col.height * ORD(right) + Font.FontH(), color)
     END
 END SelText;
 
 
-PROCEDURE draw* (body: XML.TAG; ColLeft, ColRight: Window.TRect; Ycur, LineH: INTEGER; TwoCol: BOOLEAN);
+PROCEDURE draw* (body: XML.TAG; ColLeft, ColRight: Window.tRect; Ycur, LineH: INTEGER; TwoCol: BOOLEAN);
 VAR
     rect: TRect;
     pos, cur: TPos;
@@ -107,54 +107,15 @@ BEGIN
     WHILE pos # NIL DO
         rect := pos.RectList.first(TRect);
         WHILE rect # NIL DO
-            SelText(ColLeft, 0, ColLeft.Height - LineH, Ycur, LineH, FALSE, rect, pos = cur);
+            SelText(ColLeft, 0, ColLeft.height - LineH, Ycur, LineH, FALSE, rect, pos = cur);
             IF TwoCol THEN
-                SelText(ColRight, ColLeft.Height, ColLeft.Height + ColRight.Height - LineH, Ycur, LineH, TRUE, rect, pos = cur)
+                SelText(ColRight, ColLeft.height, ColLeft.height + ColRight.height - LineH, Ycur, LineH, TRUE, rect, pos = cur)
             END;
             rect := rect.next(TRect)
         END;
         pos := pos.next(TPos)
     END
 END draw;
-
-
-PROCEDURE getc_utf8 (VAR text, size, code: INTEGER);
-VAR
-    c:    BYTE;
-    n, k: INTEGER;
-    end:  BOOLEAN;
-
-BEGIN
-    ASSERT(size > 0);
-    code := 0;
-    end := FALSE;
-    REPEAT
-        SYSTEM.GET(text, c);
-        INC(text);
-        DEC(size);
-        CASE c OF
-        |  0..127:
-            code := c;
-            end := TRUE
-
-        |128..191:
-            code := code * 64 + c MOD 64;
-            DEC(n);
-            end := n <= 0
-
-        |192..255:
-            k := LSL(c, 24);
-            n := -2;
-            REPEAT
-                k := ROR(k, -1);
-                INC(n)
-            UNTIL ~ODD(k);
-            k := LSL(c, n + 25);
-            code := LSR(k, n + 25)
-
-        END
-    UNTIL (size = 0) OR end
-END getc_utf8;
 
 
 PROCEDURE textlen (body: XML.ELEMENT; VAR length: INTEGER);
@@ -214,20 +175,18 @@ BEGIN
 END cap;
 
 
-PROCEDURE UpCase (s1, s2, length: INTEGER);
+PROCEDURE upcase (src, dst, length: INTEGER);
 VAR
-    code, n: INTEGER;
-    u: S.UTF8;
-
+    n: INTEGER;
+    u: Encoding.tUtf8;
 BEGIN
     WHILE length > 0 DO
-        getc_utf8(s1, length, code);
-        S.utf8(cap(code), u);
+        Encoding.utf8(cap(Encoding.getUtf8Char(src, length)), u);
         n := LENGTH(u);
-        SYSTEM.MOVE(SYSTEM.ADR(u[0]), s2, n);
-        INC(s2, n)
+        SYSTEM.MOVE(SYSTEM.ADR(u[0]), dst, n);
+        INC(dst, n)
     END
-END UpCase;
+END upcase;
 
 
 PROCEDURE create (body: XML.ELEMENT);
@@ -304,7 +263,7 @@ BEGIN
     buf1 := K.malloc(length);
     SU.MemError(buf1 = 0);
 
-    UpCase(buf, buf1, length);
+    upcase(buf, buf1, length);
 
     NEW(text.idx1);
     index(text.idx1, buf1, text.idx0.size);
@@ -482,7 +441,7 @@ BEGIN
     text.PosList := LISTS.create(NIL);
 
     text.str0 := str;
-    UpCase(SYSTEM.ADR(str[0]), SYSTEM.ADR(text.str1[0]), LENGTH(str));
+    upcase(SYSTEM.ADR(str[0]), SYSTEM.ADR(text.str1[0]), LENGTH(str));
 
     IF text.case THEN
         idx := text.idx0;
@@ -588,6 +547,7 @@ PROCEDURE close*;
 VAR
     text: Text;
     body: XML.TAG;
+    nullptr: INTEGER;
 
 BEGIN
     body := Body;
@@ -596,7 +556,15 @@ BEGIN
         LISTS.destroy(text.PosList);
         text.PosList := LISTS.create(NIL);
         text.found := 0;
-        text.curPos := NIL
+        text.curPos := NIL;
+        nullptr := K.free(text.idx0.table);
+        nullptr := K.free(text.idx0.data);
+        nullptr := K.free(text.idx1.table);
+        nullptr := K.free(text.idx1.data);
+        DISPOSE(text.idx0);
+        DISPOSE(text.idx1);
+        DISPOSE(text);
+        body.text := NIL
     END
 END close;
 

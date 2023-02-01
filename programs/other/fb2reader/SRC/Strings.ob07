@@ -1,5 +1,5 @@
 (*
-    Copyright 2016, 2019, 2022 Anton Krotov
+    Copyright 2016, 2019, 2022, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -19,14 +19,12 @@
 
 MODULE Strings;
 
-IMPORT sys := SYSTEM, KOSAPI;
+IMPORT sys := SYSTEM, Encoding;
 
 
 TYPE
 
   STRING* = ARRAY 1024 OF CHAR;
-
-  UTF8*   = ARRAY 8 OF CHAR;
 
   CHARS*  = RECORD first*, last* : INTEGER END;
 
@@ -290,30 +288,6 @@ BEGIN
 END Replace;
 
 
-PROCEDURE utf8*(code: INTEGER; VAR uchar: UTF8);
-BEGIN
-  uchar[0] := 0X;
-  IF code < 80H THEN
-    uchar[0] := CHR(code);
-    uchar[1] := 0X
-  ELSIF code < 800H THEN
-    uchar[1] := CHR(ORD(BITS(code) * {0..5}) + 80H);
-    uchar[0] := CHR(ASR(code, 6) + 0C0H);
-    uchar[2] := 0X
-  ELSIF code < 10000H THEN
-    uchar[2] := CHR(ORD(BITS(code) * {0..5}) + 80H);
-    code := ASR(code, 6);
-    uchar[1] := CHR(ORD(BITS(code) * {0..5}) + 80H);
-    uchar[0] := CHR(ASR(code, 6) + 0E0H);
-    uchar[3] := 0X
-(*
-  ELSIF code < 200000H THEN
-  ELSIF code < 4000000H THEN
-  ELSE  *)
-  END
-END utf8;
-
-
 PROCEDURE EntOct*(VAR chars: CHARS): BOOLEAN;
 VAR
   i     : INTEGER;
@@ -324,7 +298,7 @@ VAR
   exit  : BOOLEAN;
   str   : STRING;
   str2  : STRING;
-  uchar : UTF8;
+  uchar : Encoding.tUtf8;
   res   : BOOLEAN;
 
 BEGIN
@@ -361,7 +335,7 @@ BEGIN
         IF c = ";" THEN
           str2[0] := c;
           Append(str, str2);
-          utf8(val, uchar);
+          Encoding.utf8(val, uchar);
           Replace(chars, str, uchar);
           res := TRUE;
           i := chars.last - chars.first

@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2020, 2022 Anton Krotov
+    Copyright 2016, 2020, 2022, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -19,7 +19,7 @@
 
 MODULE XML;
 
-IMPORT SU := SysUtils, RF := ReadFile, S := Strings, Encode, V := Vector, tables, LISTS;
+IMPORT SU := SysUtils, RF := ReadFile, S := Strings, E := Encoding, V := Vector, tables, LISTS;
 
 
 CONST
@@ -135,7 +135,7 @@ VAR
     tire1, tire2, nbsp, ellipsis, apo,
     quot1, quot2, quot3, quot4, quot5, quot6, quot7,
     number, bullet, euro,
-    dash1, dash2: S.UTF8;
+    dash1, dash2: E.tUtf8;
 
     num: INTEGER;
     Tags: V.VECTOR;
@@ -678,13 +678,13 @@ BEGIN
       DEC(chars.last);
       S.SetCS(FALSE);
       IF    S.CharsEqStr(chars, "windows-1250") THEN
-        RF.Conv(Encode.W1250)
+        RF.Conv(E.cp1250)
       ELSIF S.CharsEqStr(chars, "windows-1251") THEN
-        RF.Conv(Encode.W1251)
+        RF.Conv(E.cp1251)
       ELSIF S.CharsEqStr(chars, "windows-1252") THEN
-        RF.Conv(Encode.W1252)
+        RF.Conv(E.cp1252)
       ELSIF S.CharsEqStr(chars, "cp866"       ) THEN
-        RF.Conv(Encode.CP866)
+        RF.Conv(E.cp866)
       ELSIF S.CharsEqStr(chars, "utf-8"       ) THEN
         RF.SeekBeg
       ELSE
@@ -729,23 +729,23 @@ END Open;
 
 PROCEDURE Init;
 BEGIN
-  S.utf8(8212, tire1);
-  S.utf8(8211, tire2);
-  S.utf8( 160, nbsp);
-  S.utf8(8230, ellipsis);
-  S.utf8(8217, apo);
-  S.utf8(8220, quot1);
-  S.utf8(8221, quot2);
-  S.utf8(8222, quot3);
-  S.utf8(8216, quot4);
-  S.utf8(8218, quot5);
-  S.utf8(8249, quot6);
-  S.utf8(8250, quot7);
-  S.utf8(8470, number);
-  S.utf8(8208, dash1);
-  S.utf8(8209, dash2);
-  S.utf8(8226, bullet);
-  S.utf8(8364, euro);
+  E.utf8(8212, tire1);
+  E.utf8(8211, tire2);
+  E.utf8( 160, nbsp);
+  E.utf8(8230, ellipsis);
+  E.utf8(8217, apo);
+  E.utf8(8220, quot1);
+  E.utf8(8221, quot2);
+  E.utf8(8222, quot3);
+  E.utf8(8216, quot4);
+  E.utf8(8218, quot5);
+  E.utf8(8249, quot6);
+  E.utf8(8250, quot7);
+  E.utf8(8470, number);
+  E.utf8(8208, dash1);
+  E.utf8(8209, dash2);
+  E.utf8(8226, bullet);
+  E.utf8(8364, euro);
   Tags := V.create(1024)
 END Init;
 

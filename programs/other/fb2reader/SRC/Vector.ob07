@@ -1,5 +1,5 @@
 (*
-    Copyright 2016 Anton Krotov
+    Copyright 2016, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -19,86 +19,90 @@
 
 MODULE Vector;
 
+IMPORT SYSTEM, K := KOSAPI;
 
-IMPORT sys := SYSTEM, K := KOSAPI;
+
+CONST
+	ptr_size = 4;
 
 
 TYPE
 
-  DESC_VECTOR = RECORD
+	DESC_VECTOR = RECORD
+		data   : INTEGER;
+		count* : INTEGER;
+		size   : INTEGER
+	END;
 
-    data   : INTEGER;
-    count* : INTEGER;
-    size   : INTEGER
+	VECTOR* = POINTER TO DESC_VECTOR;
 
-  END;
+	ANYREC* = RECORD END;
 
-  VECTOR* = POINTER TO DESC_VECTOR;
+	ANYPTR* = POINTER TO ANYREC;
 
-  ANYREC* = RECORD END;
-
-  ANYPTR* = POINTER TO ANYREC;
-
-  DESTRUCTOR* = PROCEDURE (VAR ptr: ANYPTR);
+	DESTRUCTOR* = PROCEDURE (VAR ptr: ANYPTR);
 
 
 PROCEDURE push* (vector: VECTOR; value: ANYPTR);
 BEGIN
-  IF vector.count = vector.size THEN
-    vector.data := K.realloc(vector.data, (vector.size + 1024) * 4);
-    vector.size := vector.size + 1024
-  END;
-  sys.PUT(vector.data + vector.count * 4, value);
-  INC(vector.count)
+	IF vector.count = vector.size THEN
+		vector.data := K.realloc(vector.data, (vector.size + 1024) * ptr_size);
+		vector.size := vector.size + 1024
+	END;
+	SYSTEM.PUT(vector.data + vector.count * ptr_size, value);
+	INC(vector.count)
 END push;
 
 
 PROCEDURE get* (vector: VECTOR; idx: INTEGER): ANYPTR;
-VAR res: ANYPTR;
+VAR
+	res: ANYPTR;
 BEGIN
-  ASSERT( (0 <= idx) & (idx < vector.count) );
-  sys.GET(vector.data + idx * 4, res)
-  RETURN res
+	ASSERT( (0 <= idx) & (idx < vector.count) );
+	SYSTEM.GET(vector.data + idx * ptr_size, res)
+	RETURN res
 END get;
 
 
 PROCEDURE put* (vector: VECTOR; idx: INTEGER; value: ANYPTR);
 BEGIN
-  ASSERT( (0 <= idx) & (idx < vector.count) );
-  sys.PUT(vector.data + idx * 4, value)
+	ASSERT( (0 <= idx) & (idx < vector.count) );
+	SYSTEM.PUT(vector.data + idx * ptr_size, value)
 END put;
 
 
 PROCEDURE create* (size: INTEGER): VECTOR;
-VAR vector: VECTOR;
+VAR
+	vector: VECTOR;
 BEGIN
-  NEW(vector);
-  vector.data  := K.malloc(4 * size);
-  vector.size  := size;
-  vector.count := 0
-  RETURN vector
+	NEW(vector);
+	vector.data  := K.malloc(ptr_size * size);
+	vector.size  := size;
+	vector.count := 0
+	RETURN vector
 END create;
 
 
 PROCEDURE def_destructor (VAR any: ANYPTR);
 BEGIN
-  DISPOSE(any)
+	DISPOSE(any)
 END def_destructor;
 
 
 PROCEDURE destroy* (VAR vector: VECTOR; destructor: DESTRUCTOR);
-VAR i: INTEGER;
-    any: ANYPTR;
+VAR
+	i: INTEGER;
+	any: ANYPTR;
 BEGIN
-  IF destructor = NIL THEN
-    destructor := def_destructor
-  END;
-  FOR i := 0 TO vector.count - 1 DO
-    any := get(vector, i);
-    destructor(any)
-  END;
-  vector.data := K.free(vector.data);
-  DISPOSE(vector)
+	IF destructor = NIL THEN
+		destructor := def_destructor
+	END;
+	FOR i := 0 TO vector.count - 1 DO
+		any := get(vector, i);
+		destructor(any)
+	END;
+	vector.data := K.free(vector.data);
+	DISPOSE(vector)
 END destroy;
 
 

@@ -1,5 +1,5 @@
 (*
-    Copyright 2016, 2019, 2021, 2022 Anton Krotov
+    Copyright 2016, 2019, 2021-2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -135,7 +135,7 @@ END MouseVScroll;
 
 
 PROCEDURE MouseStatus*(): SET;
-  RETURN BITS(K.sysfunc2(37, 2))
+  RETURN BITS(K.sysfunc2(37, 3))
 END MouseStatus;
 
 
@@ -167,9 +167,24 @@ BEGIN
 END SetEventsMask;
 
 
-PROCEDURE GetKeyCode*(): INTEGER;
-  RETURN LSR(LSL(K.sysfunc1(2), 16), 24)
-END GetKeyCode;
+PROCEDURE GetKey* (): INTEGER;
+    RETURN K.sysfunc1(2)
+END GetKey;
+
+
+PROCEDURE GetControlKeys* (): SET;
+    RETURN BITS(K.sysfunc2(66, 3))
+END GetControlKeys;
+
+
+PROCEDURE getKBState* (VAR shift, ctrl: BOOLEAN);
+VAR
+    kbState: SET;
+BEGIN
+    kbState := GetControlKeys();
+    shift := {0, 1} * kbState # {};
+    ctrl := {2, 3} * kbState # {};
+END getKBState;
 
 
 PROCEDURE GetButtonCode*(): INTEGER;

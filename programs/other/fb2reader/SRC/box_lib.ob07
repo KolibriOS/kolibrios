@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2017, 2020, 2022 Anton Krotov
+    Copyright 2016, 2017, 2020, 2022, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -48,7 +48,7 @@ TYPE
 
   scrollbar* = POINTER TO RECORD
 
-    x_w: INTEGER;
+    x_w*: INTEGER;
     y_h*: INTEGER;
     btn_height: INTEGER;
     typ: INTEGER;

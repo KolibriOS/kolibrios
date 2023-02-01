@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2020-2021 Anton Krotov
+    Copyright 2020-2021, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -21,7 +21,7 @@ MODULE SearchForm;
 
 IMPORT
 
-    SYSTEM, SU := SysUtils, W := Window, box_lib, K := KOSAPI, Encode, S := Strings;
+    SYSTEM, SU := SysUtils, W := Window, box_lib, K := KOSAPI, Encoding;
 
 
 CONST
@@ -49,7 +49,7 @@ VAR
 
     PID, Slot: INTEGER;
     Stack: ARRAY 1000000 OF CHAR;
-    Window: W.TWindow;
+    Window: W.tWindow;
     str: STRING;
 
     callback: PROC;
@@ -80,8 +80,8 @@ PROCEDURE DrawWindow;
 BEGIN
 	SU.GetSystemColors;
     SU.WindowRedrawStatus(1);
-    SU.DefineAndDrawWindow(Window.Left, Window.Top, Window.Width, Window.Height,
-          SU.winColor, LSL(ORD({0, 1}), 4) + 4, Window.Caption);
+    SU.DefineAndDrawWindow(Window.left, Window.top, Window.width, Window.height,
+          SU.winColor, LSL(ORD({0, 1}), 4) + 4, Window.caption);
     buttons;
     SU.WindowRedrawStatus(2)
 END DrawWindow;
@@ -92,7 +92,7 @@ VAR
     pid, i, j, k, n: INTEGER;
     found: BOOLEAN;
     str0: STRING;
-    u: S.UTF8;
+    u: Encoding.tUtf8;
 
 BEGIN
     found := TRUE;
@@ -103,8 +103,8 @@ BEGIN
             j := 0;
             i := 0;
             WHILE str[i] # 0X DO
-                u := Encode.CP866[ORD(str[i])].utf8;
-                n := Encode.CP866[ORD(str[i])].len;
+                u := Encoding.cp866[ORD(str[i])].utf8;
+                n := Encoding.cp866[ORD(str[i])].len;
                 FOR k := 0 TO n - 1 DO
                     str0[j] := u[k];
                     INC(j)
@@ -148,19 +148,19 @@ VAR
 
 BEGIN
     SU.SetEventsMask({0, 1, 2, 5, 30, 31});
-    W.InitWindow(Window, 0, 0, 320, 140, "Search");
+    W.init(Window, 0, 0, 320, 140, "Search");
     SU.GetScreenSize(scrWidth, scrHeight);
-    Window.Left := (scrWidth - Window.Width) DIV 2;
-    Window.Top  := (scrHeight - Window.Height) DIV 2;
+    Window.left := (scrWidth - Window.width) DIV 2;
+    Window.top  := (scrHeight - Window.height) DIV 2;
 
     DrawWindow;
     WHILE TRUE DO
         CASE SU.WaitForEvent() OF
         |1: DrawWindow
-        |2: key := K.sysfunc1(2);
-        	IF key DIV 65536 = 28 THEN
+        |2: key := SU.GetKey();
+        	IF key DIV 65536 = 28 THEN (* enter *)
         		close(TRUE)
-        	ELSIF key DIV 65536 = 1 THEN
+        	ELSIF key DIV 65536 = 1 THEN (* esc *)
         		close(FALSE)
         	ELSE
         		box_lib.edit_box_key_safe(text, key)

@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2018, 2020-2022 Anton Krotov
+    Copyright 2016, 2018, 2020-2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -19,7 +19,7 @@
 
 MODULE Settings;
 
-IMPORT SU := SysUtils, W := Window, C := ColorDlg, DOM, S := Strings,
+IMPORT SU := SysUtils, W := Window, C := ColorDlg, DOM, S := Strings, K := KOSAPI, File,
        Font, KF := kfonts, OD := OpenDlg, LibImg, G := Graph, Ini, box_lib, sys := SYSTEM;
 
 
@@ -56,7 +56,7 @@ CONST
 
 VAR
 
-  Window   : W.TWindow;
+  Window   : W.tWindow;
   PID      : INTEGER;
   Slot     : INTEGER;
   Color    : C.Dialog;
@@ -69,6 +69,7 @@ VAR
   check2   : box_lib.checkbox;
   OpenPict : OD.Dialog;
   picture  : INTEGER;
+  picture_fsize : INTEGER;
 
   picture_path : S.STRING;
 
@@ -79,8 +80,9 @@ BEGIN
   IF PID # 0 THEN
     pid := PID;
     PID := 0;
-    IF (picture # 0) & (picture # Data.Picture) THEN
-      LibImg.img_destroy(picture)
+    IF (picture # Data.Picture) & (picture # 0) THEN
+    	picture := K.free(picture);
+    	picture_fsize := 0
     END;
     C.Destroy(Color);
     OD.Destroy(OpenPict);
@@ -91,7 +93,7 @@ END Close;
 
 PROCEDURE ClearWindow;
 BEGIN
-  SU.Box(0, 0, Window.Width - 10, Window.Height - SU.SkinHeight() - 5, SU.winColor, SU.winColor)
+  SU.Box(0, 0, Window.width - 10, Window.height - SU.SkinHeight() - 5, SU.winColor, SU.winColor)
 END ClearWindow;
 
 
@@ -130,18 +132,18 @@ VAR
   X, Y, TextY       : INTEGER;
   WinW, WinH, SkinH : INTEGER;
   i                 : INTEGER;
-  Rect              : W.TRect;
+  Rect              : W.tRect;
 
 BEGIN
-  Rect.Left := 10;
-  Rect.Top := 85;
-  Rect.Width := 210;
-  Rect.Height := 255;
-  SU.Box(Rect.Left, Rect.Top, Rect.Width, Rect.Height, SU.winColor, SU.borderColor);
-  SU.Box(Rect.Left + 230, Rect.Top, Rect.Width + 170, Rect.Height, SU.winColor, SU.borderColor);
+  Rect.left := 10;
+  Rect.top := 85;
+  Rect.width := 210;
+  Rect.height := 255;
+  SU.Box(Rect.left, Rect.top, Rect.width, Rect.height, SU.winColor, SU.borderColor);
+  SU.Box(Rect.left + 230, Rect.top, Rect.width + 170, Rect.height, SU.winColor, SU.borderColor);
 
-  WinW := Window.Width;
-  WinH := Window.Height;
+  WinW := Window.width;
+  WinH := Window.height;
   SkinH := SU.SkinHeight();
   X := 125;
   Y := 10;
@@ -178,8 +180,8 @@ BEGIN
 
   Y := Y - 6;
 
-  SU.CreateButton(DAY,   (Rect.Width - (BtnW + 5 + BtnW)) DIV 2 + Rect.Left,                       Y, 80, BtnH, SU.btnColor, "Day"   );
-  SU.CreateButton(NIGHT, (Rect.Width - (BtnW + 5 + BtnW)) DIV 2 + Rect.Left + 5 + BtnW,            Y, 80, BtnH, SU.btnColor, "Night" );
+  SU.CreateButton(DAY,   (Rect.width - (BtnW + 5 + BtnW)) DIV 2 + Rect.left,                       Y, 80, BtnH, SU.btnColor, "Day"   );
+  SU.CreateButton(NIGHT, (Rect.width - (BtnW + 5 + BtnW)) DIV 2 + Rect.left + 5 + BtnW,            Y, 80, BtnH, SU.btnColor, "Night" );
 
   SU.CreateButton(APPLY,  (WinW - (BtnW + 5 + BtnW) - 10) DIV 2,            WinH - BtnH - SkinH - 10, 80, BtnH, SU.btnColor, "Apply" );
   SU.CreateButton(CANCEL, (WinW - (BtnW + 5 + BtnW) - 10) DIV 2 + 5 + BtnW, WinH - BtnH - SkinH - 10, 80, BtnH, SU.btnColor, "Cancel");
@@ -197,8 +199,8 @@ PROCEDURE DrawWindow;
 BEGIN
   SU.GetSystemColors;
   SU.WindowRedrawStatus(1);
-  SU.DefineAndDrawWindow(Window.Left, Window.Top, Window.Width, Window.Height,
-        SU.winColor, LSL(ORD({0, 1}), 4) + 4, Window.Caption);
+  SU.DefineAndDrawWindow(Window.left, Window.top, Window.width, Window.height,
+        SU.winColor, LSL(ORD({0, 1}), 4) + 4, Window.caption);
   Buttons;
   SU.WindowRedrawStatus(2)
 END DrawWindow;
@@ -258,28 +260,31 @@ BEGIN
   Data.PARAGRAPH    := sb[4].position;
   Data.EPIGRAPH     := sb[5].position;
   Data.InterLin     := sb[6].position;
-  IF Data.Picture # picture THEN
-    IF Data.Picture # 0 THEN
-      LibImg.img_destroy(Data.Picture)
+  IF (picture # 0) & (picture # Data.Picture) THEN
+  	IF Data.Picture # 0 THEN
+    	Data.Picture := K.free(Data.Picture)
     END;
     Data.Picture := picture;
+    Data.picture_fsize := picture_fsize;
     Ini.SetPicturePath(picture_path)
   END;
   picture := 0;
+  picture_fsize := 0;
   DOM.SetSettings(Data);
   Close
 END Apply;
 
 
 PROCEDURE LoadPicture(file_path: S.STRING);
-VAR ysize, img: INTEGER;
+VAR fsize, img: INTEGER;
 BEGIN
-  img := LibImg.LoadFromFile(file_path, 10240000, ysize);
+  img := File.Load(file_path, fsize);
   IF img # 0 THEN
     IF (picture # 0) & (picture # Data.Picture) THEN
-      LibImg.img_destroy(picture)
+      picture := K.free(picture)
     END;
     picture := img;
+    picture_fsize := fsize;
     picture_path := file_path
   END
 END LoadPicture;
@@ -335,6 +340,7 @@ BEGIN
   Data.EPIGRAPH     := 100;
   Data.InterLin     := 0;
   Data.Picture      := picture;
+  Data.picture_fsize := picture_fsize;
   DOM.SetSettings(Data)
 END Default;
 
@@ -343,14 +349,15 @@ PROCEDURE Show;
 VAR i, scrWidth, scrHeight: INTEGER;
 BEGIN
   SU.SetEventsMask({0, 2, 5, 30, 31});
-  W.InitWindow(Window, 0, 0, 640, 420, "Settings");
+  W.init(Window, 0, 0, 640, 420, "Settings");
   SU.GetScreenSize(scrWidth, scrHeight);
-  Window.Left := (scrWidth - Window.Width) DIV 2;
-  Window.Top  := (scrHeight - Window.Height) DIV 2;
+  Window.left := (scrWidth - Window.width) DIV 2;
+  Window.top  := (scrHeight - Window.height) DIV 2;
   Color := C.Create(DrawWindow);
   OpenPict := OD.Create(DrawWindow, 0, "/sys", "JPG|PNG|BMP|GIF");
   Data := DOM.Settings;
   picture := Data.Picture;
+  picture_fsize := Data.picture_fsize;
   DrawWindow;
   WHILE TRUE DO
     CASE SU.WaitForEvent() OF
@@ -409,6 +416,7 @@ BEGIN
   check2 := box_lib.kolibri_new_check_box(TextLeft, 10 + 5,               16, 16, sys.SADR(""), LENGTH(bpicture) * 8 + 5);
   check1 := box_lib.kolibri_new_check_box(TextLeft, 10 + (BtnH + 10) + 5, 16, 16, sys.SADR(""), LENGTH(twocol)  * 8 + 5);
   picture := 0;
+  picture_fsize := 0;
   IF Ini.Picture # "" THEN
     LoadPicture(Ini.Picture)
   END

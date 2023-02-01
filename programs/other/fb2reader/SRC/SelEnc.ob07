@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2018, 2020-2022 Anton Krotov
+    Copyright 2016, 2018, 2020-2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -20,40 +20,42 @@
 MODULE SelEnc;
 
 IMPORT
-
-    SU := SysUtils, W := Window, OpenDlg, S := Strings, TXT := Txt2FB2, SYSTEM, K := KOSAPI, Settings, File;
+    SU := SysUtils, W := Window, S := Strings, SYSTEM, K := KOSAPI, File;
 
 
 CONST
+	AUTO     =  15;
+	CP866    =  16;
+	CP1251   =  17;
+	CP1252   =  18;
+	CP1250   =  19;
+	UTF8     =  20;
 
-    BtnH      =  30;
-    BtnW      = 150;
-    BtnX      =   5;
-    BtnY      =  10;
-    BtnInter  =  10;
+    BtnH     =  30;
+    BtnW     = 150;
+    BtnX     =   5;
+    BtnY     =  10;
+    BtnInter =  10;
 
     tempfile* = "/tmp0/1/~temp.fb2";
 
 
 VAR
-
-    Window    : W.TWindow;
-    ENCODING* : INTEGER;
-    FileName  : S.STRING;
+    Window: W.tWindow;
+    pos, mem, mem2, pos2: INTEGER;
 
 
 PROCEDURE Buttons;
 VAR
     Y : INTEGER;
-
 BEGIN
     Y := BtnY;
-    SU.CreateButton(TXT.AUTO,   BtnX, Y, BtnW, BtnH, SU.btnColor, "AUTO"   ); INC(Y, BtnH + BtnInter);
-    SU.CreateButton(TXT.CP866,  BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-866" ); INC(Y, BtnH + BtnInter);
-    SU.CreateButton(TXT.CP1251, BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-1251"); INC(Y, BtnH + BtnInter);
-    SU.CreateButton(TXT.CP1252, BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-1252"); INC(Y, BtnH + BtnInter);
-    SU.CreateButton(TXT.CP1250, BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-1250"); INC(Y, BtnH + BtnInter);
-    SU.CreateButton(TXT.UTF8,   BtnX, Y, BtnW, BtnH, SU.btnColor, "UTF-8"  )
+    SU.CreateButton(AUTO,   BtnX, Y, BtnW, BtnH, SU.btnColor, "AUTO"   ); INC(Y, BtnH + BtnInter);
+    SU.CreateButton(CP866,  BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-866" ); INC(Y, BtnH + BtnInter);
+    SU.CreateButton(CP1251, BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-1251"); INC(Y, BtnH + BtnInter);
+    SU.CreateButton(CP1252, BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-1252"); INC(Y, BtnH + BtnInter);
+    SU.CreateButton(CP1250, BtnX, Y, BtnW, BtnH, SU.btnColor, "CP-1250"); INC(Y, BtnH + BtnInter);
+    SU.CreateButton(UTF8,   BtnX, Y, BtnW, BtnH, SU.btnColor, "UTF-8"  )
 END Buttons;
 
 
@@ -61,16 +63,94 @@ PROCEDURE DrawWindow;
 BEGIN
 	SU.GetSystemColors;
     SU.WindowRedrawStatus(1);
-    SU.DefineAndDrawWindow(Window.Left, Window.Top, Window.Width, Window.Height,
-          SU.winColor, LSL(ORD({0, 1}), 4) + 4, Window.Caption);
+    SU.DefineAndDrawWindow(Window.left, Window.top, Window.width, Window.height,
+          SU.winColor, LSL(ORD({0, 1}), 4) + 4, Window.caption);
     Buttons;
     SU.WindowRedrawStatus(2)
 END DrawWindow;
 
 
-PROCEDURE auto (fname: S.STRING): INTEGER;
+PROCEDURE getch (): CHAR;
 VAR
-    enc, data, size, ptr: INTEGER;
+	ch: CHAR;
+BEGIN
+	SYSTEM.GET(mem + pos, ch);
+	INC(pos)
+	RETURN ch
+END getch;
+
+
+PROCEDURE WriteStr (s: ARRAY OF CHAR);
+BEGIN
+	SYSTEM.MOVE(SYSTEM.ADR(s[0]), mem2 + pos2, LENGTH(s));
+	pos2 := pos2 + LENGTH(s)
+END WriteStr;
+
+
+PROCEDURE WriteChar (ch: CHAR);
+BEGIN
+	SYSTEM.PUT(mem2 + pos2, ch);
+	INC(pos2)
+END WriteChar;
+
+
+PROCEDURE convert (ibuf, size: INTEGER; out: S.STRING; encoding: INTEGER);
+CONST
+	buf_size = 1024*16;
+VAR
+	F: File.FS;
+	n: INTEGER;
+	CR: BOOLEAN;
+	ch: CHAR;
+	buffer: ARRAY buf_size OF BYTE;
+BEGIN
+	mem := ibuf;
+	pos := 0;
+	F := File.Create(out);
+	mem2 := SYSTEM.ADR(buffer[0]);
+	pos2 := 0;
+	WriteStr('<?xml encoding = "');
+	CASE encoding OF
+	|CP866  : WriteStr("cp866")
+	|CP1251 : WriteStr("windows-1251")
+	|CP1252 : WriteStr("windows-1252")
+	|CP1250 : WriteStr("windows-1250")
+	|UTF8   : WriteStr("utf-8")
+	ELSE
+		SU.Halt
+	END;
+	WriteStr('"?>' + 0DX + 0AX + "<FictionBook><body>");
+
+	WHILE pos < size DO
+		IF pos2 > buf_size - 32 THEN
+			n := File.Write(F, mem2, pos2);
+			pos2 := 0
+		END;
+		ch := getch();
+		CASE ch OF
+		|"<": WriteStr("&lt;")
+		|">": WriteStr("&gt;")
+		|"&": WriteStr("&amp;")
+		|"'": WriteStr("&apos;")
+		|'"': WriteStr("&quot;")
+		|0DX: WriteStr("<empty-line/>")
+		|0AX: IF ~CR THEN WriteStr("<empty-line/>") END
+		| 0X: WriteChar(20X)
+		ELSE
+			WriteChar(ch)
+		END;
+		CR := ch = 0DX
+	END;
+
+	WriteStr("</body></FictionBook>");
+	n := File.Write(F, mem2, pos2);
+	File.Close(F)
+END convert;
+
+
+PROCEDURE auto (ptr, size: INTEGER): INTEGER;
+VAR
+    enc: INTEGER;
 
 
     PROCEDURE SearchPair (ptr, size: INTEGER; chr1, chr2: BYTE): BOOLEAN;
@@ -96,39 +176,32 @@ VAR
 
 
 BEGIN
-    data := File.Load(fname, size);
-    SU.ErrorIf(data = 0, 1);
-    ptr := data;
-
     IF SearchPair(ptr, size, 208, 190) THEN
-        enc := TXT.UTF8
+        enc := UTF8
     ELSE
         IF SearchPair(ptr, size, 239, 240) OR SearchPair(ptr, size, 241, 242) THEN
-            enc := TXT.CP1251
+            enc := CP1251
         ELSE
-            enc := TXT.CP866
+            enc := CP866
         END
-    END;
-
-    data := K.free(data)
-
+    END
     RETURN enc
 END auto;
 
 
-PROCEDURE ButtonClick;
+PROCEDURE ButtonClick (fname: S.STRING);
 VAR
-    btn_code: INTEGER;
+    encoding: INTEGER;
     program, file: S.STRING;
-
+    data, size: INTEGER;
 BEGIN
-    btn_code := SU.GetButtonCode();
-    IF btn_code = TXT.AUTO THEN
-        ENCODING := auto(FileName)
-    ELSE
-        ENCODING := btn_code
+    data := File.Load(fname, size);
+    SU.ErrorIf(data = 0, 1);
+    encoding := SU.GetButtonCode();
+    IF encoding = AUTO THEN
+        encoding := auto(data, size)
     END;
-    TXT.convert(FileName, tempfile, ENCODING);
+    convert(data, size, tempfile, encoding);
     S.PtrToString(K.GetName(), program);
     file := tempfile;
     file[0] := "!";
@@ -137,27 +210,23 @@ BEGIN
 END ButtonClick;
 
 
-PROCEDURE Show*(FName: S.STRING);
+PROCEDURE Show* (fname: S.STRING);
 VAR
     X1, Y1, X2, Y2: INTEGER;
-
 BEGIN
-    FileName := FName;
     SU.SetEventsMask({0, 2, 31});
     SU.GetScreenArea(X1, Y1, X2, Y2);
-    W.InitWindow(Window, 0, 0, BtnX * 2 + BtnW + 10, (BtnH + BtnInter) * 6 + BtnY * 2 + SU.SkinHeight() - 5, "Encoding");
-    Window.Left := (X2 - X1 - Window.Width) DIV 2;
-    Window.Top  := (Y2 - Y1 - Window.Height) DIV 2;
+    W.init(Window, 0, 0, BtnX * 2 + BtnW + 10, (BtnH + BtnInter) * 6 + BtnY * 2 + SU.SkinHeight() - 5, "Encoding");
+    Window.left := (X2 - X1 - Window.width) DIV 2;
+    Window.top  := (Y2 - Y1 - Window.height) DIV 2;
     DrawWindow;
     WHILE TRUE DO
         CASE SU.WaitForEvent() OF
-        |1 : DrawWindow
-        |3 : ButtonClick
+        |1: DrawWindow
+        |3: ButtonClick(fname)
         END
     END
 END Show;
 
 
-BEGIN
-    ENCODING := 0
 END SelEnc.

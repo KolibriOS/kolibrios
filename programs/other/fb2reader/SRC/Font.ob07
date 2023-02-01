@@ -1,5 +1,5 @@
 (*
-    Copyright 2016, 2018, 2022 Anton Krotov
+    Copyright 2016, 2018, 2022, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -19,11 +19,13 @@
 
 MODULE Font;
 
-IMPORT W := Window, S := Strings, G := Graph, sys := SYSTEM, K := KOSAPI, Conv, Ini, KF := kfonts;
+IMPORT
+	W := Window, S := Strings, G := Graph, sys := SYSTEM, K := KOSAPI,
+	Encoding, Ini, KF := kfonts;
 
 VAR
 
-  kf_font, kf_loaded, kf_enabled: BOOLEAN;
+  kf_font, kf_enabled: BOOLEAN;
   cp1251buf: ARRAY 102400 OF CHAR;
 
   KFont*: KF.TFont;
@@ -39,9 +41,9 @@ VAR
   ItalicColor, NormalColor: INTEGER;
 
 
-PROCEDURE KFText(X, Y: INTEGER; first, quantity: INTEGER; canvas: G.PBuffer);
+PROCEDURE KFText(X, Y: INTEGER; first, quantity: INTEGER; canvas: G.tBuffer);
 BEGIN
-  KF.TextOut(KFont, canvas.adr - 8, X, Y, first, quantity, Font.color, ORD(Font.bold) + ORD(Font.italic) * 2 + ORD(Font.strike) * 8)
+  KF.TextOut(KFont, canvas.bitmap - 8, X, Y, first, quantity, Font.color, ORD(Font.bold) + ORD(Font.italic) * 2 + ORD(Font.strike) * 8)
 END KFText;
 
 
@@ -110,7 +112,7 @@ PROCEDURE TextWidth*(text: S.CHARS; length: INTEGER): INTEGER;
 VAR res: INTEGER;
 BEGIN
   IF kf_font THEN
-    Conv.convert(text.first, sys.ADR(cp1251buf[0]), length);
+    Encoding.convert1251(text.first, sys.ADR(cp1251buf[0]), length);
     res := KF.TextWidth(KFont, sys.ADR(cp1251buf[0]), length, ORD(Font.bold) + ORD(Font.italic) * 2)
   ELSE
     res := length * FontW()
@@ -124,30 +126,30 @@ PROCEDURE MonoWidth*(): INTEGER;
 END MonoWidth;
 
 
-PROCEDURE StrikeText*(Rect: W.TRect; X, Y: INTEGER; width: INTEGER);
+PROCEDURE StrikeText*(Rect: W.tRect; X, Y: INTEGER; width: INTEGER);
 VAR y: INTEGER;
 BEGIN
   IF Font.strike THEN
     y := Y + FontH() DIV 2;
 //    X := X + ORD(Font.italic & kf_font) * ((KF.TextHeight(KFont) DIV 2) DIV 3);
     G.SetColor(Font.color);
-    G.HLine(X + Rect.Left, X + Rect.Left + width, y + Rect.Top);
+    G.HLine(X + Rect.left, X + Rect.left + width, y + Rect.top);
     IF Font.size >= 28 THEN
       INC(y);
-      G.HLine(X + Rect.Left, X + Rect.Left + width, y + Rect.Top);
+      G.HLine(X + Rect.left, X + Rect.left + width, y + Rect.top);
     END
   END
 END StrikeText;
 
 
-PROCEDURE Text*(Rect: W.TRect; X, Y: INTEGER; adr: INTEGER; length: INTEGER);
+PROCEDURE Text*(Rect: W.tRect; X, Y: INTEGER; adr: INTEGER; length: INTEGER);
 BEGIN
   IF kf_font THEN
-    Conv.convert(adr, sys.ADR(cp1251buf[0]), length);
-    KFText(X + Rect.Left, Y + Rect.Top, sys.ADR(cp1251buf[0]), length, G.Buffer)
+    Encoding.convert1251(adr, sys.ADR(cp1251buf[0]), length);
+    KFText(X + Rect.left, Y + Rect.top, sys.ADR(cp1251buf[0]), length, G.Buffer)
   ELSE
     G.SetColor(Font.color);
-    G.TextOut(X + Rect.Left, Y + Rect.Top, adr, length, Font.size, params())
+    G.TextOut(X + Rect.left, Y + Rect.top, adr, length, Font.size, params())
   END
 END Text;
 
@@ -170,7 +172,6 @@ END Init;
 
 BEGIN
   KFont := KF.LoadFont(Ini.Font);
-  kf_loaded := KFont # NIL;
-  kf_font := kf_loaded;
-  kf_enabled := kf_loaded
+  kf_font := KFont # NIL;
+  kf_enabled := kf_font
 END Font.

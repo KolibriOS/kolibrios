@@ -1,5 +1,5 @@
 (*
-    Copyright 2016, 2022 Anton Krotov
+    Copyright 2016, 2022, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -19,21 +19,29 @@
 
 MODULE LibImg;
 
-IMPORT sys := SYSTEM, KOSAPI, File, S := Strings;
+IMPORT SYSTEM, KOSAPI, File, S := Strings;
 
 
 PROCEDURE [stdcall, "Libimg.obj", ""] img_decode (data, size, options: INTEGER): INTEGER; END;
-PROCEDURE [stdcall, "Libimg.obj", ""] img_to_rgb2 (data, data_rgb: INTEGER); END;
 PROCEDURE [stdcall, "Libimg.obj", ""] img_scale (src, crop_x, crop_y, crop_width, crop_height, dst, scale, inter, param1, param2: INTEGER): INTEGER; END;
-PROCEDURE [stdcall, "Libimg.obj", ""] img_destroy* (img: INTEGER); END;
+PROCEDURE [stdcall, "Libimg.obj", ""] img_destroy (img: INTEGER); END;
 PROCEDURE [stdcall, "Libimg.obj", ""] img_convert (src, dst, dst_type, flags, param: INTEGER): INTEGER; END;
+
+
+PROCEDURE Destroy* (VAR img: INTEGER);
+BEGIN
+	IF img # 0 THEN
+		img_destroy(img);
+		img := 0
+	END
+END Destroy;
 
 
 PROCEDURE GetInf* (img: INTEGER; VAR sizeX, sizeY, data: INTEGER);
 BEGIN
-	sys.GET(img +  4, sizeX);
-	sys.GET(img +  8, sizeY);
-	sys.GET(img + 24, data)
+	SYSTEM.GET(img +  4, sizeX);
+	SYSTEM.GET(img +  8, sizeY);
+	SYSTEM.GET(img + 24, data)
 END GetInf;
 
 
@@ -43,9 +51,9 @@ VAR
 BEGIN
 	image_data := img_decode(ptr, size, 0);
 	IF image_data # 0 THEN
-		sys.GET(image_data + 4, x);
-		sys.GET(image_data + 8, y);
-		sys.GET(image_data + 20, type);
+		SYSTEM.GET(image_data + 4, x);
+		SYSTEM.GET(image_data + 8, y);
+		SYSTEM.GET(image_data + 20, type);
 		IF type # 3 THEN
 			dst := img_convert(image_data, 0, 3, 0, 0);
 			img_destroy(image_data);
@@ -57,7 +65,7 @@ BEGIN
 			image_data := dst
 		END;
 		IF image_data # 0 THEN
-			sys.GET(image_data +  8, sizeY)
+			SYSTEM.GET(image_data +  8, sizeY)
 		END
 	END
 	RETURN image_data

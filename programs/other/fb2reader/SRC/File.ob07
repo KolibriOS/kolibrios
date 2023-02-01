@@ -1,5 +1,5 @@
 (*
-    Copyright 2016, 2019 Anton Krotov
+    Copyright 2016, 2019, 2023 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -251,5 +251,36 @@ BEGIN
   END
   RETURN res = 0
 END DeleteDir;
+
+
+PROCEDURE ReadChar* (F: FS; VAR x: CHAR): BOOLEAN;
+	RETURN Read(F, sys.ADR(x), sys.SIZE(CHAR)) = sys.SIZE(CHAR)
+END ReadChar;
+
+
+PROCEDURE ReadInt* (F: FS; VAR x: INTEGER): BOOLEAN;
+	RETURN Read(F, sys.ADR(x), sys.SIZE(INTEGER)) = sys.SIZE(INTEGER)
+END ReadInt;
+
+
+PROCEDURE ReadBool* (F: FS; VAR x: BOOLEAN): BOOLEAN;
+	RETURN Read(F, sys.ADR(x), sys.SIZE(BOOLEAN)) = sys.SIZE(BOOLEAN)
+END ReadBool;
+
+
+PROCEDURE WriteChar*(F: FS; x: CHAR): BOOLEAN;
+	RETURN Write(F, sys.ADR(x), sys.SIZE(CHAR)) = sys.SIZE(CHAR)
+END WriteChar;
+
+
+PROCEDURE WriteInt*(F: FS; x: INTEGER): BOOLEAN;
+	RETURN Write(F, sys.ADR(x), sys.SIZE(INTEGER)) = sys.SIZE(INTEGER)
+END WriteInt;
+
+
+PROCEDURE WriteBool*(F: FS; x: BOOLEAN): BOOLEAN;
+	RETURN Write(F, sys.ADR(x), sys.SIZE(BOOLEAN)) = sys.SIZE(BOOLEAN)
+END WriteBool;
+
 
 END File.

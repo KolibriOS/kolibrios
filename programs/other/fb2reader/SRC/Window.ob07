@@ -1,5 +1,5 @@
 (*
-    Copyright 2016, 2021 Anton Krotov
+    Copyright 2016, 2021, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -23,36 +23,34 @@ IMPORT S := Strings;
 
 TYPE
 
-  TRect* = RECORD
-    Left*, Top*, Width*, Height* : INTEGER
-  END;
+	tRect* = RECORD
+		left*, top*, width*, height* : INTEGER
+	END;
 
-  TWindow* = RECORD (TRect)
-    Caption*             : S.STRING;
-    Created*             : BOOLEAN;
-    dWidth*, dHeight*    : INTEGER
-  END;
+	tWindow* = RECORD (tRect)
+		caption*           : S.STRING;
+		created*           : BOOLEAN;
+		dWidth*, dHeight*  : INTEGER
+	END;
 
-PROCEDURE InitWindow*(VAR Window: TWindow; Left, Top, Width, Height: INTEGER; Caption: ARRAY OF CHAR);
+
+PROCEDURE initRect* (VAR Rect: tRect; left, top, width, height: INTEGER);
 BEGIN
-  Window.Left    := Left;
-  Window.Top     := Top;
-  Window.Width   := Width;
-  Window.Height  := Height;
-  Window.Created := FALSE;
-  Window.dWidth  := 0;
-  Window.dHeight := 0;
-  COPY(Caption, Window.Caption)
-END InitWindow;
+	Rect.left   := left;
+	Rect.top    := top;
+	Rect.width  := width;
+	Rect.height := height
+END initRect;
 
 
-PROCEDURE InitRect*(VAR Rect: TRect; Left, Top, Width, Height: INTEGER);
+PROCEDURE init* (VAR window: tWindow; left, top, width, height: INTEGER; caption: ARRAY OF CHAR);
 BEGIN
-  Rect.Left   := Left;
-  Rect.Top    := Top;
-  Rect.Width  := Width;
-  Rect.Height := Height
-END InitRect;
+	initRect(window, left, top, width, height);
+	window.created := FALSE;
+	window.dWidth  := 0;
+	window.dHeight := 0;
+	COPY(caption, window.caption)
+END init;
 
 
 END Window.

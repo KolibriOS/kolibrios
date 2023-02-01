@@ -1,5 +1,5 @@
 (*
-    Copyright 2016 Anton Krotov
+    Copyright 2016, 2023 Anton Krotov
 
     This file is part of fb2read.
 
@@ -20,12 +20,12 @@
 MODULE Cursor;
 
 
-IMPORT sys := SYSTEM;
+IMPORT SYSTEM;
 
 
 PROCEDURE [stdcall] cur;
 BEGIN
-sys.CODE(
+SYSTEM.CODE(
 000H, 000H, 002H, 000H, 001H, 000H, 020H, 020H, 000H, 000H,
 005H, 000H, 000H, 000H, 0A8H, 00CH, 000H, 000H, 016H, 000H,
 000H, 000H, 028H, 000H, 000H, 000H, 020H, 000H, 000H, 000H,
@@ -357,7 +357,7 @@ END cur;
 
 
 PROCEDURE GetCursor* (): INTEGER;
-  RETURN sys.ADR(cur) + 3
+	RETURN SYSTEM.ADR(cur) + 3
 END GetCursor;
 
 
