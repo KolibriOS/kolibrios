@@ -55,17 +55,17 @@ proc init_mem
         cmp     byte [edi + e820entry.type], 1
         jne     .unusable
 
-        test    eax, 0xFFF
+        test    eax, PAGE_SIZE-1
         jz      @f
         neg     eax
-        and     eax, 0xFFF
+        and     eax, PAGE_SIZE-1
         add     [edi + e820entry.addr.lo], eax
         adc     [edi + e820entry.addr.hi], 0
         sub     [edi + e820entry.size.lo], eax
         sbb     [edi + e820entry.size.hi], 0
         jc      .unusable
 @@:
-        and     [edi + e820entry.size.lo], not 0xFFF
+        and     [edi + e820entry.size.lo], -PAGE_SIZE
         jz      .unusable
 ; ignore memory after 4 GiB
         cmp     [edi + e820entry.addr.hi], 0
@@ -76,7 +76,7 @@ proc init_mem
         add     eax, [edi + e820entry.size.lo]
         jnc     @f
 .overflow:
-        mov     eax, 0xFFFFF000
+        mov     eax, -PAGE_SIZE
 @@:
         cmp     edx, eax
         jae     @f
@@ -103,20 +103,20 @@ proc init_mem
         shr     edx, 3
         mov     [pg_data.pagemap_size - OS_BASE], edx
 
-        add     edx, (sys_pgmap - OS_BASE)+4095
-        and     edx, not 4095
+        add     edx, (sys_pgmap - OS_BASE)+PAGE_SIZE-1
+        and     edx, -PAGE_SIZE
         mov     [tmp_page_tabs], edx
 
         mov     edx, esi
         and     edx, -1024
-        cmp     edx, (OS_BASE/4096)
+        cmp     edx, (OS_BASE/PAGE_SIZE)
         jbe     @F
-        mov     edx, (OS_BASE/4096)
+        mov     edx, (OS_BASE/PAGE_SIZE)
         jmp     .set
 @@:
-        cmp     edx, (HEAP_BASE - OS_BASE + HEAP_MIN_SIZE)/4096
+        cmp     edx, (HEAP_BASE - OS_BASE + HEAP_MIN_SIZE)/PAGE_SIZE
         jae     .set
-        mov     edx, (HEAP_BASE - OS_BASE + HEAP_MIN_SIZE)/4096
+        mov     edx, (HEAP_BASE - OS_BASE + HEAP_MIN_SIZE)/PAGE_SIZE
 .set:
         mov     [pg_data.kernel_pages - OS_BASE], edx
         shr     edx, 10
@@ -124,11 +124,11 @@ proc init_mem
 
         xor     eax, eax
         mov     edi, sys_proc - OS_BASE
-        mov     ecx, 8192/4
+        mov     ecx, 2*PAGE_SIZE/4
         cld
         rep stosd
 
-        mov     edx, (sys_proc - OS_BASE + PROC.pdt_0) + 0x800; (OS_BASE shr 20)
+        mov     edx, (sys_proc - OS_BASE + PROC.pdt_0) + (OS_BASE shr 20)
         bt      [cpu_caps - OS_BASE], CAPS_PSE
         jnc     .no_PSE
 
@@ -151,7 +151,7 @@ proc init_mem
         mov     edi, [tmp_page_tabs]
 @@:                                   ;
         stosd
-        add     eax, 0x1000
+        add     eax, PAGE_SIZE
         dec     ecx
         jnz     @B
 
@@ -168,7 +168,7 @@ proc init_mem
 
 .map_kernel_tabs:
         stosd
-        add     eax, 0x1000
+        add     eax, PAGE_SIZE
         dec     ecx
         jnz     .map_kernel_tabs
 
