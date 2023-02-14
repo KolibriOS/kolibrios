@@ -372,7 +372,7 @@ proc create_process stdcall, app_size:dword
 
         mov     eax, edi
         call    get_pg_addr
-        mov     [edi - 4096 + PROC.pdt_0_phys], eax
+        mov     [edi - PAGE_SIZE + PROC.pdt_0_phys], eax
 
         mov     ecx, (OS_BASE shr 20)/4
         xor     eax, eax
@@ -384,9 +384,9 @@ proc create_process stdcall, app_size:dword
 
         mov     eax, [edi - 8192 + PROC.pdt_0_phys]
         or      eax, PG_SWR
-        mov     [edi - 4096 + (page_tabs shr 20)], eax
+        mov     [edi - PAGE_SIZE + (page_tabs shr 20)], eax
 
-        lea     edx, [edi-4096]
+        lea     edx, [edi - PAGE_SIZE]
         mov     esi, [app_tabs]
 
 .alloc_page_dir:
@@ -474,7 +474,7 @@ align 4
         mov     eax, [esi]
         test    eax, 1
         jz      .next
-        and     eax, not 0xFFF
+        and     eax, -PAGE_SIZE
         stdcall map_page, [tmp_task_ptab], eax, PG_SWR
         stdcall destroy_page_table, [tmp_task_ptab]
         mov     eax, [esi]
@@ -730,7 +730,7 @@ proc new_sys_threads
         jz      @F
 
         push    edx
-        stdcall user_alloc, 4096
+        stdcall user_alloc, PAGE_SIZE
         pop     edx
         test    eax, eax
         jz      .failed1;eax=0
@@ -763,8 +763,8 @@ proc map_process_image stdcall, img_size:dword, file_base:dword, file_size:dword
         mov     edx, [img_size]
         mov     esi, [file_base]
         mov     ecx, [file_size]
-        add     edx, 4095
-        add     ecx, 4095
+        add     edx, PAGE_SIZE-1
+        add     ecx, PAGE_SIZE-1
         shr     edx, 12        ; total pages
         shr     ecx, 12        ; image pages
 
@@ -774,7 +774,7 @@ proc map_process_image stdcall, img_size:dword, file_base:dword, file_size:dword
 
 .map_image:
         lodsd
-        and     eax, -4096
+        and     eax, -PAGE_SIZE
         or      eax, PG_UWR
         stosd
         dec     edx
@@ -794,10 +794,10 @@ proc map_process_image stdcall, img_size:dword, file_base:dword, file_size:dword
 
         mov     edi, [file_size]
         mov     ecx, [img_size]
-        add     edi, 4095
-        and     edi, -4096
-        add     ecx, 4095
-        and     ecx, -4096
+        add     edi, PAGE_SIZE-1
+        and     edi, -PAGE_SIZE
+        add     ecx, PAGE_SIZE-1
+        and     ecx, -PAGE_SIZE
         sub     ecx, edi
         shr     ecx, 2
         xor     eax, eax
@@ -843,8 +843,8 @@ common_app_entry:
         cmp     ecx, 256
         jb      .copy_cmdline
         mov     edi, [ebp + APP_HDR._emem]
-        add     edi, 4095
-        and     edi, -4096
+        add     edi, PAGE_SIZE-1
+        and     edi, -PAGE_SIZE
         sub     edi, ecx
         dec     edi
         cmp     word [6], '00'
@@ -864,7 +864,7 @@ common_app_entry:
         cmp     word [6], '02'
         jne     .try_load_dll ;.cleanup
         call    init_heap
-        stdcall user_alloc, 4096
+        stdcall user_alloc, PAGE_SIZE
         mov     edx, [current_slot]
         mov     [edx + APPDATA.tls_base], eax
         mov     [tls_data_l+2], ax

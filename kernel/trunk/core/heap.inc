@@ -137,7 +137,7 @@ proc init_kernel_heap
         mov     [edi + MEM_BLOCK.list.next], eax
         mov     [edi + MEM_BLOCK.list.prev], eax
         mov     [edi + MEM_BLOCK.base], HEAP_BASE
-        mov     [edi + MEM_BLOCK.size], 4096*sizeof.MEM_BLOCK
+        mov     [edi + MEM_BLOCK.size], PAGE_SIZE * sizeof.MEM_BLOCK
         mov     [edi + MEM_BLOCK.flags], MEM_BLOCK_USED
 
         mov     [ecx + MEM_BLOCK.next_block], eax
@@ -150,11 +150,11 @@ proc init_kernel_heap
 
         mov     [ebx + MEM_BLOCK.next_block], ecx
         mov     [ebx + MEM_BLOCK.prev_block], edi
-        mov     [ebx + MEM_BLOCK.base], HEAP_BASE + 4096*sizeof.MEM_BLOCK
+        mov     [ebx + MEM_BLOCK.base], HEAP_BASE + PAGE_SIZE * sizeof.MEM_BLOCK
 
         mov     ecx, [pg_data.kernel_pages]
         shl     ecx, 12
-        sub     ecx, HEAP_BASE-OS_BASE + 4096*sizeof.MEM_BLOCK
+        sub     ecx, HEAP_BASE-OS_BASE + PAGE_SIZE * sizeof.MEM_BLOCK
         mov     [heap_size], ecx
         mov     [heap_free], ecx
         mov     [ebx + MEM_BLOCK.size], ecx
@@ -166,7 +166,7 @@ proc init_kernel_heap
         mov     ecx, mem_block_list + 63*8
         list_add ebx, ecx
 
-        mov     ecx, 4096-3-1
+        mov     ecx, PAGE_SIZE -3-1
         mov     eax, HEAP_BASE + sizeof.MEM_BLOCK*4
 
         mov     [next_memblock], HEAP_BASE + sizeof.MEM_BLOCK *3
@@ -268,8 +268,8 @@ proc alloc_kernel_space stdcall, size:dword
         push    edi
 
         mov     eax, [size]
-        add     eax, 4095
-        and     eax, not 4095
+        add     eax, PAGE_SIZE-1
+        and     eax, -PAGE_SIZE
         mov     [size], eax
 
         cmp     eax, [heap_free]
@@ -461,8 +461,8 @@ proc kernel_alloc stdcall, size:dword
         push    edi
 
         mov     eax, [size]
-        add     eax, 4095
-        and     eax, not 4095;
+        add     eax, PAGE_SIZE-1
+        and     eax, -PAGE_SIZE;
         mov     [size], eax
         and     eax, eax
         jz      .err
@@ -502,7 +502,7 @@ proc kernel_alloc stdcall, size:dword
         jz      .err
 
         stdcall map_page, edx, eax, dword (PG_GLOBAL + PG_SWR)
-        add     edx, 0x1000
+        add     edx, PAGE_SIZE
         dec     ebx
         jnz     @B
 .end:
@@ -565,8 +565,8 @@ proc init_heap
         call    mutex_init
 
         mov     esi, [ebx + PROC.mem_used]
-        add     esi, 4095
-        and     esi, not 4095
+        add     esi, PAGE_SIZE-1
+        and     esi, -PAGE_SIZE
         mov     [ebx + PROC.mem_used], esi
         mov     eax, HEAP_TOP
         mov     [ebx + PROC.heap_base], esi
@@ -592,7 +592,7 @@ proc user_alloc stdcall, alloc_size:dword
 
         mov     ecx, [alloc_size]
         add     ecx, (4095 + PAGE_SIZE)
-        and     ecx, not 4095
+        and     ecx, -PAGE_SIZE
         mov     esi, [ebx + PROC.heap_base]
         mov     edi, [ebx + PROC.heap_top]
   .scan:
@@ -604,7 +604,7 @@ proc user_alloc stdcall, alloc_size:dword
         mov     eax, [page_tabs + ebx*4]
         test    al, MEM_BLOCK_FREE
         jz      .test_used
-        and     eax, 0xFFFFF000
+        and     eax, -PAGE_SIZE
         cmp     eax, ecx   ;alloc_size
         jb      .m_next
         jz      @f
@@ -630,14 +630,14 @@ proc user_alloc stdcall, alloc_size:dword
 
         mov     edx, [current_process]
         mov     ebx, [alloc_size]
-        add     ebx, 0xFFF
-        and     ebx, not 0xFFF
+        add     ebx, PAGE_SIZE-1
+        and     ebx, -PAGE_SIZE
         add     [edx + PROC.mem_used], ebx
 
         lea     ecx, [edx + PROC.heap_lock]
         call    mutex_unlock
 
-        lea     eax, [esi + 4096]
+        lea     eax, [esi + PAGE_SIZE]
 
         pop     edi
         pop     esi
@@ -647,7 +647,7 @@ proc user_alloc stdcall, alloc_size:dword
         test    al, MEM_BLOCK_USED
         jz      .m_exit
 
-        and     eax, 0xFFFFF000 ; not PAGESIZE
+        and     eax, -PAGE_SIZE
 .m_next:
         add     esi, eax
         jmp     .scan
@@ -675,9 +675,9 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         call    mutex_lock
 
         mov     edx, [address]
-        and     edx, not 0xFFF
+        and     edx, -PAGE_SIZE
         mov     [address], edx
-        sub     edx, 0x1000
+        sub     edx, PAGE_SIZE
         jb      .error
         mov     esi, [ebx + PROC.heap_base]
         mov     edi, [ebx + PROC.heap_top]
@@ -690,7 +690,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         shr     ebx, 12
         mov     eax, [page_tabs + ebx*4]
         mov     ecx, eax
-        and     ecx, 0xFFFFF000
+        and     ecx, -PAGE_SIZE
         add     ecx, esi
         cmp     edx, ecx
         jb      .found
@@ -711,7 +711,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
         jz      .error
         mov     eax, ecx
         sub     eax, edx
-        sub     eax, 0x1000
+        sub     eax, PAGE_SIZE
         cmp     eax, [alloc_size]
         jb      .error
 
@@ -729,7 +729,7 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
   .nofirst:
         mov     eax, [alloc_size]
         add     eax, 0x1FFF
-        and     eax, not 0xFFF
+        and     eax, -PAGE_SIZE
         mov     ebx, edx
         add     edx, eax
         shr     ebx, 12
@@ -754,8 +754,8 @@ proc user_alloc_at stdcall, address:dword, alloc_size:dword
   .nothird:
         mov     edx, [current_process]
         mov     ebx, [alloc_size]
-        add     ebx, 0xFFF
-        and     ebx, not 0xFFF
+        add     ebx, PAGE_SIZE-1
+        and     ebx, -PAGE_SIZE
         add     [edx + PROC.mem_used], ebx
 
         lea     ecx, [edx + PROC.heap_lock]
@@ -792,11 +792,11 @@ proc user_free stdcall, base:dword
         test    al, MEM_BLOCK_DONT_FREE
         jnz     .cantfree
 
-        and     eax, not 4095
+        and     eax, -PAGE_SIZE
         mov     ecx, eax
         or      al, MEM_BLOCK_FREE
         mov     [page_tabs + (esi-1)*4], eax
-        sub     ecx, 4096
+        sub     ecx, PAGE_SIZE
         mov     ebx, ecx
         shr     ecx, 12
         jz      .released
@@ -873,7 +873,7 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         lea     edx, [page_tabs + edx*4]  ; unmap offset
 
         mov     ecx, [size]
-        add     ecx, 4095
+        add     ecx, PAGE_SIZE-1
         shr     ecx, 12                 ; unmap size in pages
 
         shr     eax, 12                 ; block size  +  1 page
@@ -884,7 +884,7 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         ja      .error
 
         mov     ebx, [offset]
-        and     ebx, not 4095           ; is it required ?
+        and     ebx, -PAGE_SIZE         ; is it required ?
         add     ebx, [base]
 
   .unmap:
@@ -898,7 +898,7 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         invlpg  [ebx]                   ; when we start using
         call    free_page               ; empty c-o-w page instead this ?
   @@:
-        add     ebx, 4096       ; PAGESIZE?
+        add     ebx, PAGE_SIZE
         add     edx, 4
         dec     ecx
         jnz     .unmap
@@ -948,7 +948,7 @@ user_normalize:
         jz      .err
         and     dword[page_tabs + edx*4], 0
         add     eax, ebx
-        and     eax, not 4095           ; not (PAGESIZE - 1)    ?
+        and     eax, -PAGE_SIZE
         or      eax, MEM_BLOCK_FREE
         mov     [page_tabs + esi*4], eax
         jmp     @B
@@ -978,7 +978,7 @@ user_realloc:
         call    mutex_lock
         pop     eax
 
-        lea     ecx, [eax - 0x1000]
+        lea     ecx, [eax - PAGE_SIZE]
         shr     ecx, 12
         mov     edx, [page_tabs + ecx*4]
         test    dl, MEM_BLOCK_USED
@@ -1022,11 +1022,11 @@ user_realloc:
         cmp     ebx, 1
         jnz     .nofreeall
         mov     eax, [page_tabs + ecx*4]
-        and     eax, not 0xFFF
+        and     eax, -PAGE_SIZE
         mov     edx, [current_process]
         mov     ebx, [edx + PROC.mem_used]
         sub     ebx, eax
-        add     ebx, 0x1000
+        add     ebx, PAGE_SIZE
         or      al, MEM_BLOCK_FREE
         mov     [page_tabs + ecx*4], eax
         push    esi edi
@@ -1174,7 +1174,7 @@ user_realloc:
         shl     eax, 12
         push    eax
         mov     eax, [page_tabs + ecx*4]
-        and     eax, not 0xFFF
+        and     eax, -PAGE_SIZE
         or      al, MEM_BLOCK_FREE
         sub     edx, ecx
         mov     [page_tabs + ecx*4], eax
@@ -1333,8 +1333,8 @@ align 4
         test    ecx, ecx
         jz      .fail
 
-        add     ecx, 4095
-        and     ecx, -4096
+        add     ecx, PAGE_SIZE-1
+        and     ecx, -PAGE_SIZE
         mov     [size], ecx
 
         mov     eax, sizeof.SMEM
@@ -1438,7 +1438,7 @@ align 4
         or      edx, PG_SHARED + PG_UR
 @@:
         lodsd
-        and     eax, 0xFFFFF000
+        and     eax, -PAGE_SIZE
         or      eax, edx
         stosd
         loop    @B

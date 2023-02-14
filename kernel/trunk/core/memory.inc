@@ -173,10 +173,10 @@ proc map_io_mem stdcall, base:dword, size:dword, flags:dword
         push    edi
         mov     eax, [size]
         add     eax, [base]
-        add     eax, 4095
-        and     eax, -4096
+        add     eax, PAGE_SIZE-1
+        and     eax, -PAGE_SIZE
         mov     ecx, [base]
-        and     ecx, -4096
+        and     ecx, -PAGE_SIZE
         sub     eax, ecx
         mov     [size], eax
 
@@ -185,7 +185,7 @@ proc map_io_mem stdcall, base:dword, size:dword, flags:dword
         jz      .fail
         push    eax
 
-        mov     edi, 0x1000
+        mov     edi, PAGE_SIZE
         mov     ebx, eax
         mov     ecx, [size]
         mov     edx, [base]
@@ -203,7 +203,7 @@ proc map_io_mem stdcall, base:dword, size:dword, flags:dword
 
         pop     eax
         mov     edx, [base]
-        and     edx, 4095
+        and     edx, PAGE_SIZE-1
         add     eax, edx
 .fail:
         pop     edi
@@ -236,8 +236,8 @@ commit_pages:
 @@:
         stosd
         invlpg  [ebx]
-        add     eax, 0x1000
-        add     ebx, 0x1000
+        add     eax, PAGE_SIZE
+        add     ebx, PAGE_SIZE
         loop    @B
 
         pop     edi
@@ -294,7 +294,7 @@ release_pages:
 
         mov     ebx, eax
 .next:
-        add     edi, 0x1000
+        add     edi, PAGE_SIZE
         add     esi, 4
         loop    @B
 
@@ -327,7 +327,7 @@ unmap_pages:
 @@:
         stosd
         invlpg  [edx]
-        add     edx, 0x1000
+        add     edx, PAGE_SIZE
         loop    @b
 
         pop     edi
@@ -340,7 +340,7 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
         mov     ebx, [lin_addr]
         shr     ebx, 22
         mov     eax, [phis_addr]
-        and     eax, not 0xFFF
+        and     eax, -PAGE_SIZE
         or      eax, PG_UWR
         mov     dword [master_tab + ebx*4], eax
         mov     eax, [lin_addr]
@@ -389,7 +389,7 @@ proc create_trampoline_pgmap
 ; Therefore, allocate memory with kernel_alloc,
 ; this will allocate physical page and a linear address somewhere,
 ; and deallocate only linear address with free_kernel_space.
-        stdcall kernel_alloc, 0x1000
+        stdcall kernel_alloc, PAGE_SIZE
         mov     edi, eax
         mov     esi, master_tab
         mov     ecx, 1024
@@ -418,12 +418,12 @@ proc new_mem_resize stdcall, new_size:dword
         jne     .exit
 
         mov     edi, [new_size]
-        add     edi, 4095
+        add     edi, PAGE_SIZE-1
         and     edi, not 4095
         mov     [new_size], edi
 
         mov     esi, [ebx + PROC.mem_used]
-        add     esi, 4095
+        add     esi, PAGE_SIZE-1
         and     esi, not 4095
 
         cmp     edi, esi
@@ -447,7 +447,7 @@ proc new_mem_resize stdcall, new_size:dword
 
 .next:
         inc     edi
-        add     ebx, 0x1000
+        add     ebx, PAGE_SIZE
         cmp     edi, esi
         jb      @B
 
@@ -548,7 +548,7 @@ get_pg_addr:
         shr     eax, 12
         mov     eax, [page_tabs + (eax+(OS_BASE shr 12))*4]
 @@:
-        and     eax, 0xFFFFF000
+        and     eax, -PAGE_SIZE
         ret
 
 
@@ -606,7 +606,7 @@ proc page_fault_handler
         stdcall map_page, [.err_addr], eax, PG_UWR
 
         mov     edi, [.err_addr]
-        and     edi, 0xFFFFF000
+        and     edi, -PAGE_SIZE
         mov     ecx, 1024
         xor     eax, eax
        ;cld     ;caller is duty for this
@@ -619,7 +619,7 @@ proc page_fault_handler
 .err_access:
 ; access denied? this may be a result of copy-on-write protection for DLL
 ; check list of HDLLs
-        and     ebx, not 0xFFF
+        and     ebx, -PAGE_SIZE
         mov     eax, [current_process]
         mov     eax, [eax + PROC.dlls_list_ptr]
         test    eax, eax
@@ -680,7 +680,7 @@ proc page_fault_handler
         stdcall map_page, [.err_addr], eax, dword PG_SWR
         pop     eax
         mov     edi, [.err_addr]
-        and     edi, -4096
+        and     edi, -PAGE_SIZE
         lea     esi, [edi+(not tss._io_map_0)+1]; -tss._io_map_0
 
         mov     ebx, esi
@@ -690,7 +690,7 @@ proc page_fault_handler
         mov     [edx + APPDATA.io_map + ebx*4], eax
 
         add     esi, [default_io_map]
-        mov     ecx, 4096/4
+        mov     ecx, PAGE_SIZE/4
        ;cld     ;caller is duty for this
         rep movsd
         jmp     .exit
@@ -719,14 +719,14 @@ proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
         shr     ebx, 22
         mov     eax, [eax + PROC.pdt_0 + ebx*4]                 ;get page table
         mov     esi, [ipc_ptab]
-        and     eax, 0xFFFFF000
+        and     eax, -PAGE_SIZE
         jz      .exit
         stdcall map_page, esi, eax, PG_SWR
 @@:
         mov     edi, [lin_addr]
-        and     edi, 0xFFFFF000
+        and     edi, -PAGE_SIZE
         mov     ecx, [buf_size]
-        add     ecx, 4095
+        add     ecx, PAGE_SIZE-1
         shr     ecx, 12
         inc     ecx                  ; ???????????
 
@@ -749,7 +749,7 @@ proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
         inc     ebx
         mov     eax, [process]
         mov     eax, [eax + PROC.pdt_0 + ebx*4]
-        and     eax, 0xFFFFF000
+        and     eax, -PAGE_SIZE
         jz      .exit
 
         stdcall map_page, esi, eax, PG_SWR
@@ -782,14 +782,14 @@ proc map_memEx stdcall, lin_addr:dword,slot:dword,\
         shr     ebx, 22
         mov     eax, [eax + PROC.pdt_0 + ebx*4]                 ;get page table
         mov     esi, [proc_mem_tab]
-        and     eax, 0xFFFFF000
+        and     eax, -PAGE_SIZE
         jz      .exit
         stdcall map_page, esi, eax, PG_SWR
 @@:
         mov     edi, [lin_addr]
-        and     edi, 0xFFFFF000
+        and     edi, -PAGE_SIZE
         mov     ecx, [buf_size]
-        add     ecx, 4095
+        add     ecx, PAGE_SIZE-1
         shr     ecx, 12
         inc     ecx                  ; ???????????
 
@@ -812,7 +812,7 @@ proc map_memEx stdcall, lin_addr:dword,slot:dword,\
         inc     ebx
         mov     eax, [process]
         mov     eax, [eax + PROC.pdt_0 + ebx*4]
-        and     eax, 0xFFFFF000
+        and     eax, -PAGE_SIZE
         jz      .exit
 
         stdcall map_page, esi, eax, PG_SWR
@@ -874,7 +874,7 @@ proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         cmp     ecx, eax
         jz      .no_hdll
         mov     ebx, [ofs]
-        and     ebx, not 0xFFF
+        and     ebx, -PAGE_SIZE
         sub     ebx, [ecx + HDLL.base]
         cmp     ebx, [ecx + HDLL.size]
         jb      .hdll_found
@@ -897,7 +897,7 @@ proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         stdcall map_page, edi, eax, [req_access]
         push    esi edi
         mov     esi, ebx
-        mov     ecx, 4096/4
+        mov     ecx, PAGE_SIZE/4
         rep movsd
         pop     edi esi
         pop     ecx ebx
@@ -926,12 +926,12 @@ sys_IPC:
         mov     [eax + APPDATA.ipc_size], edx
 
         add     edx, ecx
-        add     edx, 4095
-        and     edx, not 4095
+        add     edx, PAGE_SIZE-1
+        and     edx, -PAGE_SIZE
 
 .touch:
         mov     eax, [ecx]
-        add     ecx, 0x1000
+        add     ecx, PAGE_SIZE
         cmp     ecx, edx
         jb      .touch
 
