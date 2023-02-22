@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -92,7 +92,9 @@ VAR
 	button: tButton;
 BEGIN
 	setColors(toolbar);
-	Icons.get(toolbar.icons, toolbar.grayIcons, toolbar.colors.back);
+	IF (toolbar.icons = 0) OR (toolbar.grayIcons = 0) THEN
+		Icons.get(toolbar.icons, toolbar.grayIcons, toolbar.colors.back)
+	END;
 	i := 0;
 	WHILE i < toolbar.cnt DO
 		button := toolbar.buttons[i];
@@ -160,7 +162,9 @@ BEGIN
 	toolbar.x := x;
 	toolbar.y := y;
 	toolbar.cnt := 0;
-	toolbar.width := 0
+	toolbar.width := 0;
+	toolbar.icons := 0;
+	toolbar.grayIcons := 0;
 END create;
 
 

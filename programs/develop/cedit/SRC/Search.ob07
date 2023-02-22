@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -24,17 +24,19 @@ IMPORT
 
 
 TYPE
-
     tBuffer* = CB.tBuffer;
 
-    IdxTable* = ARRAY 65536, 2 OF INTEGER;
+    tIdxTable = ARRAY 65536, 2 OF INTEGER;
 
     tPos* = POINTER TO RECORD (List.tItem)
         pos*: INTEGER
     END;
 
+VAR
+	table: POINTER TO RECORD data: tIdxTable END;
 
-PROCEDURE index* (text: tBuffer; VAR table: IdxTable; cs: BOOLEAN): tBuffer;
+
+PROCEDURE _index (text: tBuffer; cs: BOOLEAN; VAR table: tIdxTable): tBuffer;
 VAR
     pChar, cnt, i: INTEGER;
     c: WCHAR;
@@ -80,19 +82,29 @@ BEGIN
     END
 
     RETURN res
+END _index;
+
+
+PROCEDURE index* (text: tBuffer; cs: BOOLEAN): tBuffer;
+BEGIN
+	IF table = NIL THEN
+		NEW(table)
+	END
+	RETURN _index(text, cs, table.data)
 END index;
 
 
-PROCEDURE find* (text: tBuffer; table: IdxTable; s: ARRAY OF WCHAR; whole: BOOLEAN; list: List.tList);
+PROCEDURE find* (text: tBuffer; s: ARRAY OF WCHAR; whole: BOOLEAN; list: List.tList);
 VAR
     k, pos, n, x, prev_item_pos: INTEGER;
     item: tPos;
     c1, c2: WCHAR;
     flag: BOOLEAN;
 BEGIN
+	ASSERT(table # NIL);
     n := LENGTH(s);
-    k := table[ORD(s[0]), 1];
-    pos := table[ORD(s[0]), 0];
+    k := table.data[ORD(s[0]), 1];
+    pos := table.data[ORD(s[0]), 0];
     prev_item_pos := 0;
     WHILE k > 0 DO
         SYSTEM.GET(pos, x);
@@ -105,7 +117,8 @@ BEGIN
                     c1 := 0X
                 END;
                 SYSTEM.GET(text.dataPtr + (x + n)*SYSTEM.SIZE(WCHAR), c2);
-                flag := Utils.isLetter(c1) OR Utils.isLetter(c2) OR Utils.isDigit(c1) OR Utils.isDigit(c2) OR (c1 = "_") OR (c2 = "_")
+                flag := Utils.isLetter(c1) OR Utils.isLetter(c2) OR Utils.isDigit(c1) OR Utils.isDigit(c2) OR
+                	(c1 = "_") OR (c2 = "_")
             END;
             IF ~flag & (x >= prev_item_pos) THEN
                 prev_item_pos := x + n;
@@ -120,4 +133,14 @@ BEGIN
 END find;
 
 
+PROCEDURE close*;
+BEGIN
+	IF table # NIL THEN
+		DISPOSE(table)
+	END
+END close;
+
+
+BEGIN
+	table := NIL
 END Search.

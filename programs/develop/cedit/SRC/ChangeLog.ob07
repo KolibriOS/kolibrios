@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -23,7 +23,8 @@ IMPORT List, Lines, API, SYSTEM;
 
 TYPE
     tIntItem = POINTER TO RECORD (List.tItem)
-        adr, val: INTEGER
+    	cnt: INTEGER;
+    	adr, val: ARRAY 8 OF INTEGER
     END;
 
     tBoolItem = POINTER TO RECORD (List.tItem)
@@ -33,11 +34,13 @@ TYPE
     END;
 
     tUntypedPtr = POINTER TO RECORD (List.tItem)
-        p: INTEGER
+    	cnt: INTEGER;
+    	p: ARRAY 64 OF INTEGER
     END;
 
     tTypedPtr = POINTER TO RECORD (List.tItem)
-        p: List.tItem
+    	cnt: INTEGER;
+    	p: ARRAY 64 OF List.tItem
     END;
 
     tGuard* = POINTER TO RECORD (List.tItem)
@@ -45,7 +48,7 @@ TYPE
     END;
 
     tLog* = POINTER TO RECORD
-        Log*, Pointers*: List.tList;
+        Log*, TPointers, UPointers: List.tList;
         guard, first: tGuard;
         isLast: BOOLEAN
     END;
@@ -103,12 +106,16 @@ END setGuard;
 
 
 PROCEDURE redo* (item: List.tItem);
+VAR
+	i: INTEGER;
 BEGIN
-    IF item IS tIntItem THEN
-        SYSTEM.PUT(item(tIntItem).adr, item(tIntItem).val)
-    ELSIF item IS tBoolItem THEN
-        SYSTEM.PUT(item(tBoolItem).adr, item(tBoolItem).val)
-    END
+	IF item IS tIntItem THEN
+		FOR i := 0 TO item(tIntItem).cnt - 1 DO
+			SYSTEM.PUT(item(tIntItem).adr[i], item(tIntItem).val[i])
+		END
+	ELSIF item IS tBoolItem THEN
+		SYSTEM.PUT(item(tBoolItem).adr, item(tBoolItem).val)
+	END
 END redo;
 
 
@@ -162,15 +169,26 @@ END save;
 
 PROCEDURE changeWord (adrV, adrX: INTEGER);
 VAR
-    item: tIntItem;
+	item: tIntItem;
+	cur: List.tItem;
 BEGIN
-    NEW(item);
-    item.adr := adrV;
-    SYSTEM.GET(adrX, item.val);
-    IF ~CL.isLast THEN
-        clear(CL.guard)
-    END;
-    List.append(CL.Log, item)
+	IF ~CL.isLast THEN
+		clear(CL.guard)
+	END;
+	cur := CL.Log.last;
+	WHILE (cur # NIL) & ~(cur IS tGuard) & ~(cur IS tIntItem) DO
+		cur := cur.prev
+	END;
+	IF (cur IS tIntItem) & (cur(tIntItem).cnt < LEN(cur(tIntItem).adr)) THEN
+		item := cur(tIntItem)
+	ELSE
+		NEW(item);
+		item.cnt := 0;
+		List.append(CL.Log, item)
+	END;
+	item.adr[item.cnt] := adrV;
+	SYSTEM.GET(adrX, item.val[item.cnt]);
+	INC(item.cnt)
 END changeWord;
 
 
@@ -264,28 +282,38 @@ END changePtr;
 
 PROCEDURE typedPtr (p: List.tItem);
 VAR
-    item: tTypedPtr;
+	item: tTypedPtr;
 BEGIN
-    NEW(item);
-    item.p := p;
-    List.append(CL.Pointers, item)
+	item := CL.TPointers.last(tTypedPtr);
+	IF (item = NIL) OR (item.cnt = LEN(item.p)) THEN
+		NEW(item);
+		item.cnt := 0;
+		List.append(CL.TPointers, item)
+	END;
+	item.p[item.cnt] := p;
+	INC(item.cnt)
 END typedPtr;
 
 
 PROCEDURE untypedPtr (p: INTEGER);
 VAR
-    item: tUntypedPtr;
+	item: tUntypedPtr;
 BEGIN
-    NEW(item);
-    item.p := p;
-    List.append(CL.Pointers, item)
+	item := CL.UPointers.last(tUntypedPtr);
+	IF (item = NIL) OR (item.cnt = LEN(item.p)) THEN
+		NEW(item);
+		item.cnt := 0;
+		List.append(CL.UPointers, item)
+	END;
+	item.p[item.cnt] := p;
+	INC(item.cnt)
 END untypedPtr;
 
 
-PROCEDURE set* (_CL: tLog);
+PROCEDURE setLog* (_CL: tLog);
 BEGIN
     CL := _CL
-END set;
+END setLog;
 
 
 PROCEDURE create* (VAR maxLength: INTEGER): tLog;
@@ -297,7 +325,8 @@ BEGIN
     newLog.first := NIL;
     newLog.isLast := TRUE;
     newLog.Log := List.create(NIL);
-    newLog.Pointers := List.create(NIL);
+    newLog.TPointers := List.create(NIL);
+    newLog.UPointers := List.create(NIL);
     CL := newLog;
     Lines.setMaxLength(maxLength)
     RETURN newLog
@@ -307,7 +336,7 @@ END create;
 PROCEDURE destroy* (VAR log: tLog);
 VAR
 	item: List.tItem;
-	res: INTEGER;
+	res, i: INTEGER;
 BEGIN
 	IF log # NIL THEN
 		item := List.pop(log.Log);
@@ -317,17 +346,25 @@ BEGIN
 		END;
 		DISPOSE(log.Log);
 
-		item := List.pop(log.Pointers);
+		item := List.pop(log.TPointers);
 		WHILE item # NIL DO
-            IF item IS tUntypedPtr THEN
-                res := API._DISPOSE(item(tUntypedPtr).p)
-            ELSIF item IS tTypedPtr THEN
-                DISPOSE(item(tTypedPtr).p)
-            END;
+			FOR i := 0 TO item(tTypedPtr).cnt - 1 DO
+				DISPOSE(item(tTypedPtr).p[i])
+			END;
 			DISPOSE(item);
-			item := List.pop(log.Pointers)
+			item := List.pop(log.TPointers)
 		END;
-		DISPOSE(log.Pointers);
+		DISPOSE(log.TPointers);
+
+		item := List.pop(log.UPointers);
+		WHILE item # NIL DO
+			FOR i := 0 TO item(tUntypedPtr).cnt - 1 DO
+				res := API._DISPOSE(item(tUntypedPtr).p[i])
+			END;
+			DISPOSE(item);
+			item := List.pop(log.UPointers)
+		END;
+		DISPOSE(log.UPointers);
 
 		DISPOSE(log)
 	END

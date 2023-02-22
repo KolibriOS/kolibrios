@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -238,6 +238,7 @@ BEGIN
     m.active := FALSE;
    	resetTimer;
     m.tid := 0;
+    G.destroy(m.canvas);
     K.Exit
 END exit;
 
@@ -249,6 +250,7 @@ BEGIN
     	resetTimer
     END;
     m.tid := 0;
+    G.destroy(m.canvas);
     K.Exit
 END escape;
 
@@ -354,6 +356,7 @@ BEGIN
     	END;
     	temp := m.tid;
     	m.tid := 0;
+    	G.destroy(m.canvas);
         K.ExitID(temp);
         m.active := FALSE
     END
@@ -509,6 +512,7 @@ BEGIN
 	            	IF m.parent # NIL THEN
 	            		temp := m.parent.tid;
 	            		m.parent.tid := 0;
+	            		G.destroy(m.parent.canvas);
 	            		K.ExitID(temp)
 	            	END;
 	                exit(m)
@@ -567,6 +571,10 @@ BEGIN
         IF K.GetThreadSlot(TIDs[L]) = 0 THEN
         	m.winX := x;
         	m.winY := y;
+        	IF m.canvas = NIL THEN
+    			m.canvas := G.CreateCanvas(m.width + 1, m.height + 1);
+			    G.SetFont(m.canvas, m.font)
+    		END;
 	        SYSTEM.PUT(SYSTEM.ADR(stack[L][LEN(stack[0]) - 1]), m);
     	    m.tid := K.CreateThread(SYSTEM.ADR(window), stack[L]);
         	TIDs[L] := m.tid
@@ -678,8 +686,8 @@ BEGIN
     m.width  := maxLength*fontWidth + LEFT + RIGHT;
     m.height := items.count*itemHeight - 2;
     m.font := G.fonts[1];
-    m.canvas := G.CreateCanvas(m.width + 1, m.height + 1);
-    G.SetFont(m.canvas, m.font)
+(*    m.canvas := G.CreateCanvas(m.width + 1, m.height + 1);
+    G.SetFont(m.canvas, m.font)*)
     RETURN m
 END create;
 

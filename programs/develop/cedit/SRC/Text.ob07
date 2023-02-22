@@ -100,7 +100,6 @@ VAR
     size, textsize: tPoint;
     charWidth, charHeight: INTEGER;
     autoIndents*, lineNumbers*, autoBrackets*, trimSpace*: BOOLEAN;
-    idxTable: Search.IdxTable;
 
 
 PROCEDURE setLang* (text: tText; lang: INTEGER);
@@ -911,9 +910,11 @@ BEGIN
 	END;
 	IF text.searchText # "" THEN
 		plainText := plain(text);
-		idxData := Search.index(plainText, idxTable, cs);
-		Search.find(plainText, idxTable, text.searchText, whole, text.foundList);
+		idxData := Search.index(plainText, cs);
+		Search.find(plainText, text.searchText, whole, text.foundList);
 		res := text.foundList.count > 0
+	ELSE
+		Search.close
 	END;
 	CB.destroy(plainText);
 	CB.destroy(idxData);
@@ -2462,7 +2463,7 @@ END draw;
 
 PROCEDURE switch* (text: tText);
 BEGIN
-    ChangeLog.set(text.chLog);
+    ChangeLog.setLog(text.chLog);
     Lines.setMaxLength(text.maxLength);
     Lang.setCurLang(text.lang)
 END switch;

@@ -439,7 +439,8 @@ PROCEDURE loadKW (lang: INTEGER; VAR KW: ARRAY OF tKeyWords; VAR delim: tDelimit
 VAR
     s: ARRAY 16*1024 OF CHAR;
     key: ARRAY 4 OF CHAR;
-    i: INTEGER;
+    i, j, k: INTEGER;
+    w: WCHAR;
 BEGIN
 	FOR i := 0 TO LEN(delim) - 1 DO
 		delim[i] := FALSE
@@ -457,6 +458,19 @@ BEGIN
         getStr(lang_name, key, s);
         IF ~(lang IN csLang) THEN
         	Utils.upcase(s)
+        END;
+        IF lang = langOberon THEN
+	        k := LENGTH(s);
+    	    s[k] := ",";
+	        FOR j := 0 TO k - 1 DO
+		        s[j + k + 1] := s[j];
+		        w := WCHR(ORD(s[j]));
+		        IF Utils.low(w) THEN
+		        	s[j + k + 1] := CHR(ORD(w) MOD 256)
+		        END
+    	    END;
+    	    k := 2*k + 1;
+    	    s[k] := 0X
         END;
         EnterKW(s, KW[i])
     END

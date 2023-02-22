@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -22,7 +22,7 @@ MODULE Encodings;
 CONST
     CP866* = 0; CP1251* = 1; UTF8* = 2; UTF8BOM* = 3; (*UTF16LE* = 4;*)
 
-    UNDEF* = -1;
+    UNDEF* = ORD("?");
 
     EOL_CRLF* = 0; EOL_LF* = 1; EOL_CR* = 2;
     CR = 0DX; LF = 0AX;
@@ -35,7 +35,7 @@ TYPE
 VAR
     cp1251*, cp866*: CP;
     names*: ARRAY 4, 16 OF WCHAR;
-    UNI*: ARRAY 65536, 2 OF INTEGER;
+    UNI*: ARRAY 65536, 2 OF BYTE;
 
     eol*: ARRAY 3 OF tEOL;
     eolNames*: ARRAY 3, 16 OF WCHAR;
@@ -117,12 +117,8 @@ BEGIN
         UNI[i, CP1251] := UNDEF
     END;
     FOR i := 0 TO 255 DO
-        IF cp1251[i] # UNDEF THEN
-            UNI[cp1251[i], CP1251] := i
-        END;
-        IF cp866[i] # UNDEF THEN
-            UNI[cp866[i], CP866] := i
-        END
+        UNI[cp1251[i], CP1251] := i;
+        UNI[cp866[i], CP866] := i
     END
 END setUNI;
 

@@ -24,11 +24,11 @@ IMPORT
     U := Utils, Lines, Menu, List,
     G := Graph, T := Text, E := Encodings,
     CB := Clipboard, Languages,
-    ChangeLog, Scroll, CheckBox,
+    ChangeLog, Scroll, CheckBox, Icons,
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (21-jan-2023)";
+    HEADER = "CEdit (22-feb-2023)";
 
     ShellFilter = "";
     EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
@@ -2149,20 +2149,20 @@ BEGIN
     Shortcuts;
 
     Toolbar.create(toolbar, LEFT_PADDING + 5, toolbarTop);
-    Toolbar.add(toolbar, btnNew,     2, "");
-    Toolbar.add(toolbar, btnOpen,    0, "");
-    Toolbar.add(toolbar, btnSave,    5, "");
+    Toolbar.add(toolbar, btnNew,    Icons.icoNew, "");
+    Toolbar.add(toolbar, btnOpen,   Icons.icoOpen, "");
+    Toolbar.add(toolbar, btnSave,   Icons.icoSave, "");
     Toolbar.delimiter(toolbar);
-    Toolbar.add(toolbar, btnSearch, 49, "");
+    Toolbar.add(toolbar, btnSearch, Icons.icoSearch, "");
     Toolbar.delimiter(toolbar);
-    Toolbar.add(toolbar, btnUndo,   37, "");
-    Toolbar.add(toolbar, btnRedo,   36, "");
+    Toolbar.add(toolbar, btnUndo,   Icons.icoUndo, "");
+    Toolbar.add(toolbar, btnRedo,   Icons.icoRedo, "");
     Toolbar.delimiter(toolbar);
     Toolbar.add(toolbar, btnUpper,  -1, "AB");
     Toolbar.add(toolbar, btnLower,  -1, "ab");
     Toolbar.delimiter(toolbar);
-    Toolbar.add(toolbar, btnBuild,  54, "");
-    Toolbar.add(toolbar, btnRun,    53, "");
+    Toolbar.add(toolbar, btnBuild,  Icons.icoBuild, "");
+    Toolbar.add(toolbar, btnRun,    Icons.icoRun, "");
 
     filePath := "/sys";
     IF Args.argc = 1 THEN
