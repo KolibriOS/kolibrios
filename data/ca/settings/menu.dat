@@ -78,9 +78,9 @@
 05 Guardar imatge RD     |rdsave
 #8  **** ARCHIUS ****
 24 KFAR                  |File Managers/kfar
-20 fNav                  |File Managers/fNav/fNav
 05 KFM2                  |File Managers/kfm2
 50 Eolite                |File Managers/Eolite
+20 fNav                * |/kolibrios/utils/fNav/fNav
 #9 **** PROCÉS DE DADES ****
 16 Calculadora           |calc
 03 Tinypad               |tinypad

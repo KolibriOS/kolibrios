@@ -79,8 +79,8 @@
 #8 **** ‘¨αβ¥¬  > ”
 50 Eolite               |File Managers/Eolite
 05 KFM2                 |File Managers/kfm2
-20 fNav                 |File Managers/fNav/fNav
 64 KFAR                 |File Managers/kfar
+20 fNav               * |/kolibrios/utils/fNav/fNav
 65 NDN                * |/kolibrios/utils/ndn/ndn
 05 Classic KFM        * |/kolibrios/utils/kfm/kfm
 #9 **** ‘¨αβ¥¬  > ‘―¥ζ.Ά®§¬®¦­®αβ¨

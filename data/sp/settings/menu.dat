@@ -88,8 +88,8 @@
 #10  **** ARCHIVOS
 50 Eolite                |File Managers/Eolite
 05 KFM2                  |File Managers/kfm2
-20 fNav                  |File Managers/fNav/fNav
 24 KFAR                  |File Managers/kfar
+20 fNav               *  |/kolibrios/utils/fNav/fNav
 24 NDN                *  |/kolibrios/utils/ndn/ndn
 #11 **** PROCESO DE DATOS
 16 Calculadora           |calc
