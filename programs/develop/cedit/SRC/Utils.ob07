@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -152,21 +152,22 @@ END isHex;
 
 
 PROCEDURE isLetter* (ch: WCHAR): BOOLEAN;
-    RETURN ("a" <= ch) & (ch <= "z") OR ("A" <= ch) & (ch <= "Z")
+    RETURN ("a" <= ch) & (ch <= "z") OR ("A" <= ch) & (ch <= "Z") OR
+    	(* cyrillic *)
+    		(430X <= ch) & (ch <= 44FX) OR (410X <= ch) & (ch <= 42FX) OR
+    		(ch = 491X) OR (ch = 490X) OR (450X <= ch) & (ch <= 45FX) OR
+    		(400X <= ch) & (ch <= 40FX)
 END isLetter;
 
 
-PROCEDURE cap* (VAR ch: WCHAR): BOOLEAN;
+PROCEDURE upper* (VAR ch: WCHAR): BOOLEAN;
 VAR
     res: BOOLEAN;
 BEGIN
-    IF ("a" <= ch) & (ch <= "z") THEN
-        ch := WCHR(ORD(ch) - (ORD("z") - ORD("Z")));
-        res := TRUE
-    ELSIF (430H <= ORD(ch)) & (ORD(ch) <= 44FH) THEN
+    IF ("a" <= ch) & (ch <= "z") OR (430X <= ch) & (ch <= 44FX) THEN
         ch := WCHR(ORD(ch) - 20H);
         res := TRUE
-    ELSIF (450H <= ORD(ch)) & (ORD(ch) <= 45FH) THEN
+    ELSIF (450X <= ch) & (ch <= 45FX) THEN
         ch := WCHR(ORD(ch) - 50H);
         res := TRUE
     ELSIF ch = 491X THEN
@@ -176,60 +177,17 @@ BEGIN
         res := FALSE
     END
     RETURN res
-END cap;
+END upper;
 
 
-PROCEDURE cap8 (VAR ch: CHAR): BOOLEAN;
+PROCEDURE lower* (VAR ch: WCHAR): BOOLEAN;
 VAR
     res: BOOLEAN;
 BEGIN
-    IF ("a" <= ch) & (ch <= "z") THEN
-        ch := CHR(ORD(ch) - (ORD("z") - ORD("Z")));
-        res := TRUE
-    ELSE
-        res := FALSE
-    END
-    RETURN res
-END cap8;
-
-
-PROCEDURE upcase* (VAR s: ARRAY OF CHAR);
-VAR
-    i: INTEGER;
-BEGIN
-    i := LENGTH(s) - 1;
-    WHILE i >= 0 DO
-        IF cap8(s[i]) THEN
-        END;
-        DEC(i)
-    END
-END upcase;
-
-
-PROCEDURE upcase16* (VAR s: ARRAY OF WCHAR);
-VAR
-    i: INTEGER;
-BEGIN
-    i := LENGTH(s) - 1;
-    WHILE i >= 0 DO
-        IF cap(s[i]) THEN
-        END;
-        DEC(i)
-    END
-END upcase16;
-
-
-PROCEDURE low* (VAR ch: WCHAR): BOOLEAN;
-VAR
-    res: BOOLEAN;
-BEGIN
-    IF ("A" <= ch) & (ch <= "Z") THEN
-        ch := WCHR(ORD(ch) + (ORD("z") - ORD("Z")));
-        res := TRUE
-    ELSIF (410H <= ORD(ch)) & (ORD(ch) <= 42FH) THEN
+    IF ("A" <= ch) & (ch <= "Z") OR (410X <= ch) & (ch <= 42FX) THEN
         ch := WCHR(ORD(ch) + 20H);
         res := TRUE
-    ELSIF (400H <= ORD(ch)) & (ORD(ch) <= 40FH) THEN
+    ELSIF (400X <= ch) & (ch <= 40FX) THEN
         ch := WCHR(ORD(ch) + 50H);
         res := TRUE
     ELSIF ch = 490X THEN
@@ -239,21 +197,34 @@ BEGIN
         res := FALSE
     END
     RETURN res
-END low;
+END lower;
 
 
-PROCEDURE lowcase* (VAR s: ARRAY OF CHAR);
+PROCEDURE lowcase* (VAR s: ARRAY OF WCHAR);
+VAR
+    i: INTEGER;
+BEGIN
+    i := LENGTH(s) - 1;
+    WHILE i >= 0 DO
+        IF lower(s[i]) THEN
+        END;
+        DEC(i)
+    END
+END lowcase;
+
+
+PROCEDURE lowcase8* (VAR s: ARRAY OF CHAR);
 VAR
     i: INTEGER;
 BEGIN
     i := LENGTH(s) - 1;
     WHILE i >= 0 DO
         IF ("A" <= s[i]) & (s[i] <= "Z") THEN
-        	s[i] := CHR(ORD(s[i]) + 32)
+        	s[i] := CHR(ORD(s[i]) + 20H)
         END;
         DEC(i)
     END
-END lowcase;
+END lowcase8;
 
 
 PROCEDURE str2int* (s: ARRAY OF WCHAR; VAR val: INTEGER): BOOLEAN;
@@ -334,19 +305,6 @@ BEGIN
     END
     RETURN res
 END lg10;
-
-
-PROCEDURE sgn* (x: INTEGER): INTEGER;
-BEGIN
-    IF x > 0 THEN
-        x := 1
-    ELSIF x < 0 THEN
-        x := -1
-    ELSE
-        x := 0
-    END
-    RETURN x
-END sgn;
 
 
 PROCEDURE between* (a, b, c: INTEGER): BOOLEAN;

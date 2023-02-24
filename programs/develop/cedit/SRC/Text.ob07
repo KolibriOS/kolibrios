@@ -119,7 +119,7 @@ VAR
 BEGIN
     text.fileName := name;
     U.getFileName(name, ext, ".");
-    U.upcase(ext);
+    U.lowcase8(ext);
     setLang(text, Lang.getLang(ext))
 END setName;
 
@@ -352,20 +352,20 @@ VAR
     END PrintComment;
 
 
-    PROCEDURE cap (c: WCHAR): WCHAR;
+    PROCEDURE upper (c: WCHAR): WCHAR;
     BEGIN
-        IF U.cap(c) THEN END
+        IF U.upper(c) THEN END
         RETURN c
-    END cap;
+    END upper;
 
 
     PROCEDURE UL (c: WCHAR): BOOLEAN;
-        RETURN (cap(c) = "U") OR (cap(c) = "L")
+        RETURN (upper(c) = "U") OR (upper(c) = "L")
     END UL;
 
 
     PROCEDURE FL (c: WCHAR): BOOLEAN;
-        RETURN (cap(c) = "F") OR (cap(c) = "L")
+        RETURN (upper(c) = "F") OR (upper(c) = "L")
     END FL;
 
 
@@ -384,7 +384,7 @@ VAR
         DEC(i);
         lexLen := getString(line, first, i - first + 1, s);
         IF ~cs THEN
-            U.upcase16(s)
+            U.lowcase(s)
         END;
         IF Lang.isKey(s, text.lang, 1) THEN
             color := colors.key1
@@ -451,16 +451,16 @@ BEGIN
                 k := i;
                 INC(i);
                 c := Lines.getChar(line, i);
-                IF (cap(c) = "X") & (Lines.getChar(line, i - 1) = "0") THEN
+                IF (upper(c) = "X") & (Lines.getChar(line, i - 1) = "0") THEN
                     INC(i);
                     hex := TRUE
                 END;
 
-                WHILE U.isHex(cap(Lines.getChar(line, i))) DO
+                WHILE U.isHex(upper(Lines.getChar(line, i))) DO
                     INC(i)
                 END;
 
-                IF (cap(Lines.getChar(line, i)) = "H") & ~hex THEN
+                IF (upper(Lines.getChar(line, i)) = "H") & ~hex THEN
                     INC(i)
                 END;
 
@@ -508,11 +508,11 @@ BEGIN
 	                    DEC(i);
 	                    c := Lines.getChar(line, i)
 	                END;
-	                IF (cap(c) = "X") & (Lines.getChar(line, i - 1) = "0") THEN
+	                IF (upper(c) = "X") & (Lines.getChar(line, i - 1) = "0") THEN
 	                    REPEAT
 	                        INC(i);
 	                        c := Lines.getChar(line, i)
-	                    UNTIL ~U.isHex(cap(c));
+	                    UNTIL ~U.isHex(upper(c));
 	                    IF UL(c) THEN
 	                        INC(i)
 	                    END
@@ -531,7 +531,7 @@ BEGIN
 	                            INC(i)
 	                        END;
 	                        c := Lines.getChar(line, i);
-	                        IF cap(c) = "E" THEN
+	                        IF upper(c) = "E" THEN
 	                            INC(i);
 	                            c := Lines.getChar(line, i);
 	                            IF (c = "+") OR (c = "-") THEN
@@ -672,7 +672,7 @@ BEGIN
 	                cond := 0
 	            ELSIF U.isDigit(c) THEN
 	                k := i;
-	                IF (c = "0") & (cap(Lines.getChar(line, i + 1)) = "X") THEN
+	                IF (c = "0") & (upper(Lines.getChar(line, i + 1)) = "X") THEN
 	                    isDgt := U.isHex;
 	                    hex := TRUE;
 	                    INC(i, 2)
@@ -680,7 +680,7 @@ BEGIN
 	                    isDgt := U.isDigit;
 	                    hex := FALSE
 	                END;
-	                WHILE isDgt(cap(Lines.getChar(line, i))) DO
+	                WHILE isDgt(upper(Lines.getChar(line, i))) DO
 	                    INC(i)
 	                END;
 	                IF Lines.getChar(line, i) = "." THEN
@@ -688,16 +688,16 @@ BEGIN
 	                    IF Lines.getChar(line, i) = "." THEN
 	                        DEC(i)
 	                    END;
-	                    WHILE isDgt(cap(Lines.getChar(line, i))) DO
+	                    WHILE isDgt(upper(Lines.getChar(line, i))) DO
 	                        INC(i)
 	                    END
 	                END;
-	                IF (cap(Lines.getChar(line, i)) = "E") OR hex & (cap(Lines.getChar(line, i)) = "P") THEN
+	                IF (upper(Lines.getChar(line, i)) = "E") OR hex & (upper(Lines.getChar(line, i)) = "P") THEN
 	                    INC(i);
 	                    IF (Lines.getChar(line, i) = "-") OR (Lines.getChar(line, i) = "+") THEN
 	                        INC(i)
 	                    END;
-	                    WHILE isDgt(cap(Lines.getChar(line, i))) DO
+	                    WHILE isDgt(upper(Lines.getChar(line, i))) DO
 	                        INC(i)
 	                    END
 	                END;
@@ -771,7 +771,7 @@ BEGIN
 	                END;
 	                k := i;
 	                INC(i);
-	                WHILE U.isHex(cap(Lines.getChar(line, i))) DO
+	                WHILE U.isHex(upper(Lines.getChar(line, i))) DO
 	                    INC(i)
 	                END;
 	                DEC(i);
@@ -790,7 +790,7 @@ BEGIN
 	                    WHILE U.isDigit(Lines.getChar(line, i)) DO
 	                        INC(i)
 	                    END;
-	                    IF cap(Lines.getChar(line, i)) = "E" THEN
+	                    IF upper(Lines.getChar(line, i)) = "E" THEN
 	                        INC(i);
 	                        IF (Lines.getChar(line, i) = "-") OR (Lines.getChar(line, i) = "+") THEN
 	                            INC(i)
@@ -906,7 +906,7 @@ BEGIN
 	text.cs := cs;
 	text.searchText := s;
 	IF ~cs THEN
-		U.upcase16(text.searchText)
+		U.lowcase(text.searchText)
 	END;
 	IF text.searchText # "" THEN
 		plainText := plain(text);
@@ -1787,9 +1787,9 @@ BEGIN
     END;
 
     IF upper THEN
-    	func := U.cap
+    	func := U.upper
     ELSE
-    	func := U.low
+    	func := U.lower
     END;
 
     IF Lines.convert(line, i + 1, text.cursor.X - 1, func) THEN
@@ -1815,9 +1815,9 @@ BEGIN
         cnt := selEnd.Y - selBeg.Y;
 
 	    IF upper THEN
-	    	func := U.cap
+	    	func := U.upper
 	    ELSE
-	    	func := U.low
+	    	func := U.lower
 	    END;
 
         IF cnt = 0 THEN
@@ -2293,13 +2293,13 @@ END setPadding;
 
 PROCEDURE draw* (text: tText);
 VAR
-    y, n, cnt, i, x: INTEGER;
+    y, n, cnt, i, x, pos: INTEGER;
     line, firstLine, lastLine: tLine;
     selBeg, selEnd: tPoint;
     s: ARRAY 12 OF WCHAR;
     backColor, numWidth, xNum, wNum: INTEGER;
-    p: Search.tPos;
     guard: tGuard;
+    p: Search.tPos;
 BEGIN
     IF text.comments THEN
         Comments(text)
@@ -2413,23 +2413,26 @@ BEGIN
     	ELSE
     	    lastLine := getLine2(text, MIN(text.scroll.Y + textsize.Y + 1, text.count) - 1)
         END;
+
+        i := 0;
         p := text.foundList.first(Search.tPos);
-        WHILE p # NIL DO
+        pos := Search.next(p, i);
+        WHILE pos # -1 DO
         	y := padding.top + inter DIV 2;
         	IF text.smallMove THEN
         		y := y + charHeight*(text.cursor.Y - text.scroll.Y)
             END;
-            IF (firstLine.pos <= p.pos) & (p.pos <= lastLine.pos + lastLine.length) THEN
+            IF (firstLine.pos <= pos) & (pos <= lastLine.pos + lastLine.length) THEN
                 line := firstLine;
-                WHILE (line.pos <= p.pos) & (line # lastLine) DO
+                WHILE (line.pos <= pos) & (line # lastLine) DO
                     NextLine(line);
                     INC(y, charHeight)
                 END;
-                IF (line # lastLine) & (line # firstLine) OR (line = lastLine) & (line.pos > p.pos) THEN
+                IF (line # lastLine) & (line # firstLine) OR (line = lastLine) & (line.pos > pos) THEN
                     PrevLine(line);
                     DEC(y, charHeight)
                 END;
-                x := (p.pos - line.pos - text.scroll.X)*charWidth + padding.left;
+                x := (pos - line.pos - text.scroll.X)*charWidth + padding.left;
                 n := LENGTH(text.searchText)*charWidth;
                 WHILE n > 0 DO
                     IF x >= padding.left THEN
@@ -2439,7 +2442,7 @@ BEGIN
                     DEC(n)
                 END
             END;
-            p := p.next(Search.tPos)
+            pos := Search.next(p, i)
         END
     END;
 
@@ -2609,40 +2612,41 @@ END open;
 PROCEDURE findNext* (text: tText; prev: BOOLEAN): BOOLEAN;
 VAR
     cursorPos, x, y, X, Y, Len: INTEGER;
-    p: Search.tPos;
     line: tLine;
     res: BOOLEAN;
+    pos, i, pos0: INTEGER;
+    p: Search.tPos;
 BEGIN
     X := text.cursor.X;
     Y := text.cursor.Y;
     text.cursor.X := MIN(text.cursor.X, text.curLine.length);
     cursorPos := text.curLine.pos + text.cursor.X - ORD(prev) - ORD(~prev & (text.foundSel = 0));
+    pos0 := -1;
+    i := 0;
     p := text.foundList.first(Search.tPos);
-    WHILE (p # NIL) & (p.pos <= cursorPos) DO
-        p := p.next(Search.tPos)
+    pos := Search.next(p, i);
+    WHILE (pos # -1) & (pos <= cursorPos) DO
+    	pos0 := pos;
+    	pos := Search.next(p, i)
     END;
     IF prev THEN
-        IF p = NIL THEN
-            p := text.foundList.last(Search.tPos)
-        ELSE
-            p := p.prev(Search.tPos)
-        END
+    	pos := pos0
     END;
-    res := p # NIL;
+    res := pos # -1;
     IF res THEN
         y := 0;
         line := text.first(tLine);
-        WHILE (line.pos <= p.pos) & (line.next # NIL) DO
+        WHILE (line.pos <= pos) & (line.next # NIL) DO
             NextLine(line);
             INC(y)
         END;
-        IF (line.next # NIL) OR (line.pos > p.pos) THEN
+        IF (line.next # NIL) OR (line.pos > pos) THEN
             PrevLine(line);
             DEC(y)
         END;
         resetSelect(text);
         searchScroll(text, y);
-        x := p.pos - line.pos;
+        x := pos - line.pos;
         Len := LENGTH(text.searchText);
         IF x + Len > text.scroll.X + textsize.X THEN
             text.scroll.X := MAX(x + Len - textsize.X + 3, 0)
@@ -2688,9 +2692,9 @@ END replace;
 
 PROCEDURE replaceAll* (text: tText; s: ARRAY OF WCHAR; n: INTEGER): INTEGER;
 VAR
-    p: Search.tPos;
     line: tLine;
-    y, k, d, pos, y0: INTEGER;
+    y, k, d, pos, y0, i, c: INTEGER;
+    p: Search.tPos;
 BEGIN
     resetSelect(text);
     SetPos(text, 0, 0);
@@ -2699,9 +2703,11 @@ BEGIN
     y0 := -1;
     k := 0;
     d := LENGTH(s) - n;
+    c := 0;
+    i := 0;
     p := text.foundList.first(Search.tPos);
-    WHILE p # NIL DO
-        pos := p.pos;
+    pos := Search.next(p, i);
+    WHILE pos # -1 DO
         WHILE (line.pos <= pos) & (line.next # NIL) DO
             NextLine(line);
             INC(y)
@@ -2719,9 +2725,10 @@ BEGIN
         SetPos(text, pos - line.pos + k, y);
         text.foundSel := n;
         replace(text, s, n);
-        p := p.next(Search.tPos)
+        INC(c);
+        pos := Search.next(p, i)
     END
-    RETURN text.foundList.count
+    RETURN c
 END replaceAll;
 
 

@@ -141,7 +141,7 @@ BEGIN
 				REPEAT
 					INC(pos);
 					c := Lines.getChar(line, pos);
-					IF Utils.cap(c) THEN END;
+					IF Utils.upper(c) THEN END;
 					IF Utils.isHex(c) THEN
 						INC(k)
 					ELSE
@@ -166,7 +166,7 @@ BEGIN
 				REPEAT
 					INC(pos);
 					c := Lines.getChar(line, pos);
-					IF Utils.cap(c) THEN END;
+					IF Utils.upper(c) THEN END;
 					IF Utils.isHex(c) THEN
 						INC(k)
 					ELSE
@@ -457,7 +457,7 @@ BEGIN
         key[2] := CHR(ORD("1") + i);
         getStr(lang_name, key, s);
         IF ~(lang IN csLang) THEN
-        	Utils.upcase(s)
+        	Utils.lowcase8(s)
         END;
         IF lang = langOberon THEN
 	        k := LENGTH(s);
@@ -465,7 +465,7 @@ BEGIN
 	        FOR j := 0 TO k - 1 DO
 		        s[j + k + 1] := s[j];
 		        w := WCHR(ORD(s[j]));
-		        IF Utils.low(w) THEN
+		        IF Utils.lower(w) THEN
 		        	s[j + k + 1] := CHR(ORD(w) MOD 256)
 		        END
     	    END;
@@ -508,8 +508,7 @@ BEGIN
 	WHILE fileExt[i].lang # lang DO
 		INC(i)
 	END;
-	COPY(fileExt[i].ext, ext);
-	Utils.lowcase(ext)
+	COPY(fileExt[i].ext, ext)
 END getExt;
 
 
@@ -525,17 +524,17 @@ BEGIN
     loadKW(langFasm,   KW[langFasm],   Delim[langFasm],   getStr, "lang_Fasm");
     loadKW(langJSON,   KW[langJSON],   Delim[langJSON],   getStr, "lang_JSON");
 
-    fileExt[ 0].ext := "OB07"; fileExt[ 0].lang := langOberon;
-    fileExt[ 1].ext := "C";    fileExt[ 1].lang := langC;
-    fileExt[ 2].ext := "H";    fileExt[ 2].lang := langC;
-    fileExt[ 3].ext := "CPP";  fileExt[ 3].lang := langC;
-    fileExt[ 4].ext := "PAS";  fileExt[ 4].lang := langPascal;
-    fileExt[ 5].ext := "PP";   fileExt[ 5].lang := langPascal;
-    fileExt[ 6].ext := "ASM";  fileExt[ 6].lang := langFasm;
-    fileExt[ 7].ext := "LUA";  fileExt[ 7].lang := langLua;
-    fileExt[ 8].ext := "INI";  fileExt[ 8].lang := langIni;
-    fileExt[ 9].ext := "JSON"; fileExt[ 9].lang := langJSON;
-    fileExt[10].ext := "TXT";  fileExt[10].lang := langText;
+    fileExt[ 0].ext := "ob07"; fileExt[ 0].lang := langOberon;
+    fileExt[ 1].ext := "c";    fileExt[ 1].lang := langC;
+    fileExt[ 2].ext := "h";    fileExt[ 2].lang := langC;
+    fileExt[ 3].ext := "cpp";  fileExt[ 3].lang := langC;
+    fileExt[ 4].ext := "pas";  fileExt[ 4].lang := langPascal;
+    fileExt[ 5].ext := "pp";   fileExt[ 5].lang := langPascal;
+    fileExt[ 6].ext := "asm";  fileExt[ 6].lang := langFasm;
+    fileExt[ 7].ext := "lua";  fileExt[ 7].lang := langLua;
+    fileExt[ 8].ext := "ini";  fileExt[ 8].lang := langIni;
+    fileExt[ 9].ext := "json"; fileExt[ 9].lang := langJSON;
+    fileExt[10].ext := "txt";  fileExt[10].lang := langText;
 END init;
 
 

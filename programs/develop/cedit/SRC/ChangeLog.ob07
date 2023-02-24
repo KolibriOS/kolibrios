@@ -21,58 +21,66 @@ MODULE ChangeLog;
 
 IMPORT List, Lines, API, SYSTEM;
 
+CONST
+	boolItemSize = 8;
+	fillMap = {0..boolItemSize-1};
+
 TYPE
-    tIntItem = POINTER TO RECORD (List.tItem)
-    	cnt: INTEGER;
-    	adr, val: ARRAY 8 OF INTEGER
-    END;
+	tIntItem = POINTER TO RECORD (List.tItem)
+		cnt: INTEGER;
+		adr, val: ARRAY 8 OF INTEGER
+	END;
 
-    tBoolItem = POINTER TO RECORD (List.tItem)
-        line: Lines.tLine;
-        adr: INTEGER;
-        val, save: BOOLEAN
-    END;
+	tBoolItem = POINTER TO RECORD (List.tItem)
+		map: SET;
+		data: ARRAY boolItemSize OF
+			RECORD
+				line: Lines.tLine;
+				adr: INTEGER;
+				val, save: BOOLEAN
+			END
+	END;
 
-    tUntypedPtr = POINTER TO RECORD (List.tItem)
-    	cnt: INTEGER;
-    	p: ARRAY 64 OF INTEGER
-    END;
+	tUntypedPtr = POINTER TO RECORD (List.tItem)
+		cnt: INTEGER;
+		p: ARRAY 64 OF INTEGER
+	END;
 
-    tTypedPtr = POINTER TO RECORD (List.tItem)
-    	cnt: INTEGER;
-    	p: ARRAY 64 OF List.tItem
-    END;
+	tTypedPtr = POINTER TO RECORD (List.tItem)
+		cnt: INTEGER;
+		p: ARRAY 64 OF List.tItem
+	END;
 
-    tGuard* = POINTER TO RECORD (List.tItem)
-        saved*: BOOLEAN
-    END;
+	tGuard* = POINTER TO RECORD (List.tItem)
+		saved*: BOOLEAN
+	END;
 
-    tLog* = POINTER TO RECORD
-        Log*, TPointers, UPointers: List.tList;
-        guard, first: tGuard;
-        isLast: BOOLEAN
-    END;
+	tLog* = POINTER TO RECORD
+		Log*, TPointers, UPointers: List.tList;
+		guard, first: tGuard;
+		isLast: BOOLEAN
+	END;
 
 
 VAR
-    CL*: tLog;
+	CL*: tLog;
 
 
 PROCEDURE isLastGuard* (guard: tGuard): BOOLEAN;
 VAR
-    item: List.tItem;
-    res: BOOLEAN;
+	item: List.tItem;
+	res: BOOLEAN;
 BEGIN
-    IF guard # NIL THEN
-        item := CL.Log.last;
-        WHILE ~(item IS tGuard) DO
-            item := item.prev
-        END;
-        res := guard = item
-    ELSE
-        res := TRUE
-    END
-    RETURN res
+	IF guard # NIL THEN
+		item := CL.Log.last;
+		WHILE ~(item IS tGuard) DO
+			item := item.prev
+		END;
+		res := guard = item
+	ELSE
+		res := TRUE
+	END
+	RETURN res
 END isLastGuard;
 
 
@@ -100,8 +108,8 @@ END isFirstGuard;
 
 PROCEDURE setGuard* (_guard: tGuard);
 BEGIN
-    CL.guard := _guard;
-    CL.isLast := isLastGuard(_guard)
+	CL.guard := _guard;
+	CL.isLast := isLastGuard(_guard)
 END setGuard;
 
 
@@ -114,23 +122,27 @@ BEGIN
 			SYSTEM.PUT(item(tIntItem).adr[i], item(tIntItem).val[i])
 		END
 	ELSIF item IS tBoolItem THEN
-		SYSTEM.PUT(item(tBoolItem).adr, item(tBoolItem).val)
+		FOR i := 0 TO boolItemSize - 1 DO
+			IF i IN item(tBoolItem).map THEN
+				SYSTEM.PUT(item(tBoolItem).data[i].adr, item(tBoolItem).data[i].val)
+			END
+		END
 	END
 END redo;
 
 
 PROCEDURE clear (guard: tGuard);
 VAR
-    item: List.tItem;
+	item: List.tItem;
 BEGIN
-    CL.isLast := TRUE;
-    REPEAT
-        item := List.pop(CL.Log);
-        IF item # guard THEN
-            DISPOSE(item)
-        END
-    UNTIL item = guard;
-    List.append(CL.Log, item)
+	CL.isLast := TRUE;
+	REPEAT
+		item := List.pop(CL.Log);
+		IF item # guard THEN
+			DISPOSE(item)
+		END
+	UNTIL item = guard;
+	List.append(CL.Log, item)
 END clear;
 
 
@@ -139,31 +151,34 @@ VAR
 	item: List.tItem;
 	boolItem: tBoolItem;
 	cur: List.tItem;
-	del: BOOLEAN;
+	i: INTEGER;
 BEGIN
-    item := CL.Log.first;
-    WHILE item # NIL DO
-        IF item IS tGuard THEN
-            item(tGuard).saved := FALSE
-        END;
-        item := item.next
-    END;
-    guard.saved := TRUE;
+	item := CL.Log.first;
+	WHILE item # NIL DO
+		IF item IS tGuard THEN
+			item(tGuard).saved := FALSE
+		END;
+		item := item.next
+	END;
+	guard.saved := TRUE;
 
-    cur := CL.guard.prev;
-    WHILE cur # NIL DO
-        IF cur IS tBoolItem THEN
-            boolItem := cur(tBoolItem);
-            del := boolItem.save & boolItem.line.modified
-        ELSE
-            del := FALSE
-        END;
-        cur := cur.prev;
-        IF del THEN
-            List.delete(CL.Log, boolItem);
-            DISPOSE(boolItem)
-        END
-    END
+	cur := CL.guard.prev;
+	WHILE cur # NIL DO
+		IF cur IS tBoolItem THEN
+			boolItem := cur(tBoolItem);
+			FOR i := 0 TO boolItemSize - 1 DO
+				IF (i IN boolItem.map) & boolItem.data[i].save &
+						boolItem.data[i].line.modified THEN
+					EXCL(boolItem.map, i)
+				END
+			END
+		END;
+		cur := cur.prev;
+		IF boolItem.map = {} THEN
+			List.delete(CL.Log, boolItem);
+			DISPOSE(boolItem)
+		END
+	END
 END save;
 
 
@@ -192,91 +207,124 @@ BEGIN
 END changeWord;
 
 
-PROCEDURE changeBool (line: Lines.tLine; VAR v: BOOLEAN; x: BOOLEAN);
-VAR
-    item: tBoolItem;
-BEGIN
-    NEW(item);
-    item.line := line;
-    item.adr := SYSTEM.ADR(v);
-    item.val := x;
-    item.save := FALSE;
-    IF ~CL.isLast THEN
-        clear(CL.guard)
-    END;
-    List.append(CL.Log, item)
-END changeBool;
-
-
 PROCEDURE delSaved*;
 VAR
-    boolItem: tBoolItem;
-    cur: List.tItem;
-    del: BOOLEAN;
+	boolItem: tBoolItem;
+	cur: List.tItem;
+	i: INTEGER;
 BEGIN
-    cur := CL.guard.next;
-    WHILE cur # NIL DO
-        IF cur IS tBoolItem THEN
-            boolItem := cur(tBoolItem);
-            del := boolItem.save
-        ELSE
-            del := FALSE
-        END;
-        cur := cur.next;
-        IF del THEN
-            List.delete(CL.Log, boolItem);
-            DISPOSE(boolItem)
-        END
-    END
+	cur := CL.guard.next;
+	WHILE cur # NIL DO
+		IF cur IS tBoolItem THEN
+			boolItem := cur(tBoolItem);
+			FOR i := 0 TO boolItemSize - 1 DO
+				IF (i IN boolItem.map) & boolItem.data[i].save THEN
+					EXCL(boolItem.map, i)
+				END
+			END
+		END;
+		cur := cur.next;
+		IF boolItem.map = {} THEN
+			List.delete(CL.Log, boolItem);
+			DISPOSE(boolItem)
+		END
+	END
 END delSaved;
 
 
 PROCEDURE delCurSaved*;
 VAR
-    boolItem: tBoolItem;
-    cur: List.tItem;
-    del: BOOLEAN;
+	boolItem: tBoolItem;
+	cur: List.tItem;
+	i: INTEGER;
 BEGIN
-    cur := CL.guard.prev;
-    WHILE (cur # NIL) & ~(cur IS tGuard) DO
-        IF cur IS tBoolItem THEN
-            boolItem := cur(tBoolItem);
-            del := boolItem.save
-        ELSE
-            del := FALSE
-        END;
-        cur := cur.prev;
-        IF del THEN
-            SYSTEM.PUT(boolItem.adr, ~boolItem.val);
-            List.delete(CL.Log, boolItem);
-            DISPOSE(boolItem)
-        END
-    END
+	cur := CL.guard.prev;
+	WHILE (cur # NIL) & ~(cur IS tGuard) DO
+		IF cur IS tBoolItem THEN
+			boolItem := cur(tBoolItem);
+			FOR i := 0 TO boolItemSize - 1 DO
+				IF (i IN boolItem.map) & boolItem.data[i].save THEN
+					SYSTEM.PUT(boolItem.data[i].adr, ~boolItem.data[i].val);
+					EXCL(boolItem.map, i)
+				END
+			END
+		END;
+		cur := cur.prev;
+		IF boolItem.map = {} THEN
+			List.delete(CL.Log, boolItem);
+			DISPOSE(boolItem)
+		END
+	END
 END delCurSaved;
 
 
-PROCEDURE changeBool2 (line: Lines.tLine; VAR v: BOOLEAN; x: BOOLEAN);
+PROCEDURE _changeBool (fn2: BOOLEAN; line: Lines.tLine; VAR v: BOOLEAN; x: BOOLEAN);
 VAR
-    item: tBoolItem;
+	item: tBoolItem;
+	cur: List.tItem;
+	i: INTEGER;
 BEGIN
-    NEW(item);
-    item.line := line;
-    item.adr := SYSTEM.ADR(v);
-    item.val := x;
-    item.save := TRUE;
-    List.insert(CL.Log, CL.guard.prev, item)
+	IF fn2 THEN
+		cur := CL.guard.prev
+	ELSE
+		IF ~CL.isLast THEN
+			clear(CL.guard)
+		END;
+		cur := CL.Log.last
+	END;
+
+	WHILE (cur # NIL) & ~(cur IS tGuard) &
+			(~(cur IS tBoolItem) OR (cur(tBoolItem).map = fillMap)) DO
+		cur := cur.prev
+	END;
+	IF (cur IS tBoolItem) & (cur(tBoolItem).map # fillMap) THEN
+		item := cur(tBoolItem)
+	ELSE
+		NEW(item);
+		item.map := {};
+		IF fn2 THEN
+			List.insert(CL.Log, CL.guard.prev, item)
+		ELSE
+			List.append(CL.Log, item)
+		END
+	END;
+
+	i := 0;
+	WHILE i < boolItemSize DO
+		IF ~(i IN item.map) THEN
+			item.data[i].line := line;
+			item.data[i].adr := SYSTEM.ADR(v);
+			item.data[i].val := x;
+			item.data[i].save := fn2;
+			INCL(item.map, i);
+			i := boolItemSize
+		END;
+		INC(i)
+	END
+END _changeBool;
+
+
+PROCEDURE changeBool (line: Lines.tLine; VAR v: BOOLEAN; x: BOOLEAN);
+BEGIN
+	_changeBool(FALSE, line, v, x)
+END changeBool;
+
+
+PROCEDURE changeBool2 (line: Lines.tLine; VAR v: BOOLEAN; x: BOOLEAN);
+BEGIN
+	_changeBool(TRUE, line, v, x)
 END changeBool2;
 
 
 PROCEDURE changeInt* (VAR v: INTEGER; x: INTEGER);
 BEGIN
-    changeWord(SYSTEM.ADR(v), SYSTEM.ADR(x))
+	changeWord(SYSTEM.ADR(v), SYSTEM.ADR(x))
 END changeInt;
 
 
 PROCEDURE changePtr (VAR v: List.tItem; x: List.tItem);
 BEGIN
-    changeWord(SYSTEM.ADR(v), SYSTEM.ADR(x))
+	changeWord(SYSTEM.ADR(v), SYSTEM.ADR(x))
 END changePtr;
 
 
@@ -312,24 +360,24 @@ END untypedPtr;
 
 PROCEDURE setLog* (_CL: tLog);
 BEGIN
-    CL := _CL
+	CL := _CL
 END setLog;
 
 
 PROCEDURE create* (VAR maxLength: INTEGER): tLog;
 VAR
-    newLog: tLog;
+	newLog: tLog;
 BEGIN
-    NEW(newLog);
-    newLog.guard := NIL;
-    newLog.first := NIL;
-    newLog.isLast := TRUE;
-    newLog.Log := List.create(NIL);
-    newLog.TPointers := List.create(NIL);
-    newLog.UPointers := List.create(NIL);
-    CL := newLog;
-    Lines.setMaxLength(maxLength)
-    RETURN newLog
+	NEW(newLog);
+	newLog.guard := NIL;
+	newLog.first := NIL;
+	newLog.isLast := TRUE;
+	newLog.Log := List.create(NIL);
+	newLog.TPointers := List.create(NIL);
+	newLog.UPointers := List.create(NIL);
+	CL := newLog;
+	Lines.setMaxLength(maxLength)
+	RETURN newLog
 END create;
 
 
@@ -372,6 +420,6 @@ END destroy;
 
 
 BEGIN
-    List.init(changeInt, changePtr);
-    Lines.init(changeInt, changePtr, changeBool, changeBool2, typedPtr, untypedPtr)
+	List.init(changeInt, changePtr);
+	Lines.init(changeInt, changePtr, changeBool, changeBool2, typedPtr, untypedPtr)
 END ChangeLog.

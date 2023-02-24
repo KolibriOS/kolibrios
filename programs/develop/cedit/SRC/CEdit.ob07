@@ -28,10 +28,10 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (22-feb-2023)";
+    HEADER = "CEdit (24-feb-2023)";
 
     ShellFilter = "";
-    EditFilter = "SH|INC|TXT|ASM|OB07|C|CPP|H|PAS|PP|LUA|INI|JSON";
+    EditFilter = "sh|inc|txt|asm|ob07|c|cpp|h|pas|pp|lua|ini|json";
 
     fontWidth = K.fontWidth;
     fontHeight = K.fontHeight;
@@ -745,8 +745,8 @@ VAR
     BEGIN
         n1 := name1;
         n2 := name2;
-        U.upcase(n1);
-        U.upcase(n2)
+        U.lowcase8(n1);
+        U.lowcase8(n2)
         RETURN n1 = n2
     END nameEq;
 

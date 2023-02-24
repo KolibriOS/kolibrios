@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -31,12 +31,14 @@ CONST
     curTabHeight = 26;
     scrWidth = 15;
     btnCloseColor* = 0EF999FH;
+    modifColor = 0FF0000H;
+    strLen = 30;
 
 TYPE
 
     tItem = POINTER TO RECORD (List.tItem)
 
-        val: RW.tFileName;
+        val: ARRAY strLen + 1 OF CHAR;
         modified: BOOLEAN
 
     END;
@@ -91,7 +93,7 @@ BEGIN
 
     K.DrawText866bk(x + K.fontWidth + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, textColor, color, s);
     IF modified THEN
-    	K.DrawText866bk(x + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, textColor, color, "*")
+    	K.DrawText866bk(x + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, modifColor, color, "*")
     END;
     K.CreateButton(id + ORD({30}) + btnID, x + 1, y - 1, width - 1, height - 1, 0, "");
     left := x + width - btnCloseSize - 5;
@@ -184,14 +186,30 @@ BEGIN
 END draw;
 
 
+PROCEDURE setText (item: tItem; s: ARRAY OF CHAR);
+VAR
+	i: INTEGER;
+BEGIN
+	IF LENGTH(s) > strLen THEN
+		FOR i := 0 TO strLen - 4 DO
+			item.val[i] := s[i]
+		END;
+		item.val[strLen - 3] := 0X;
+		U.append8(item.val, "...")
+	ELSE
+		COPY(s, item.val)
+	END
+END setText;
+
+
 PROCEDURE add* (t: tTabs; s: ARRAY OF CHAR);
 VAR
-    item: tItem;
+	item: tItem;
 BEGIN
-    NEW(item);
-    item.val := s;
-    item.modified := FALSE;
-    List.append(t.strings, item);
+	NEW(item);
+	setText(item, s);
+	item.modified := FALSE;
+	List.append(t.strings, item)
 END add;
 
 
@@ -212,7 +230,7 @@ VAR
     item: List.tItem;
 BEGIN
     item := List.getItem(t.strings, n);
-    item(tItem).val := s
+    setText(item(tItem), s)
 END rename;
 
 
