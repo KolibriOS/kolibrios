@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -21,7 +21,7 @@ MODULE Ini;
 
 IMPORT
 
-    SYSTEM, RW, Text, Utils, File, List, Languages, KolibriOS, Lines;
+    SYSTEM, RW, Text, Utils, File, List, Languages, Lines;
 
 
 CONST
@@ -167,11 +167,11 @@ BEGIN
 	autoBrackets := get_int(IniFileName, "settings", "auto_brackets", 0) # 0;
 	trimSpace    := get_int(IniFileName, "settings", "trim_space",    1) # 0;
 	font := get_int(IniFileName, "settings", "font", 1);
-	IF ~((0 <= font) & (font <= 2)) THEN
+	IF (font < 0) OR (font > 2) THEN
 		font := 1
 	END;
 	theme := get_int(IniFileName, "settings", "theme", 0);
-	IF ~((0 <= theme) & (theme <= sections.count - 1)) THEN
+	IF (theme < 0) OR (theme >= sections.count) THEN
 		theme := 0
 	END;
     getStr("settings", "build", buildScript);

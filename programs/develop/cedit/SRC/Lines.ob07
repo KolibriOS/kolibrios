@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -39,7 +39,7 @@ TYPE
     END;
 
     PmovInt = PROCEDURE (VAR v: INTEGER; x: INTEGER);
-    PmovBool = PROCEDURE (line: tLine; VAR v: BOOLEAN; x: BOOLEAN);
+    PmovBool = PROCEDURE (save: BOOLEAN; VAR v1: BOOLEAN; x1: BOOLEAN; VAR v2: BOOLEAN; x2: BOOLEAN);
     PmovPtr = PROCEDURE (VAR v: List.tItem; x: List.tItem);
 
     PTypedPtr = PROCEDURE (p: List.tItem);
@@ -57,7 +57,7 @@ TYPE
 VAR
 
     _movInt: PmovInt;
-    _movBool, _movBool2: PmovBool;
+    _movBool: PmovBool;
     _movPtr: PmovPtr;
     _typedPtr: PTypedPtr;
     _untypedPtr: PUntypedPtr;
@@ -121,18 +121,6 @@ PROCEDURE movInt (VAR v: INTEGER; x: INTEGER);
 BEGIN
     _movInt(v, x)
 END movInt;
-
-
-PROCEDURE movBool (line: tLine; VAR v: BOOLEAN; x: BOOLEAN);
-BEGIN
-    _movBool(line, v, x)
-END movBool;
-
-
-PROCEDURE movBool2 (line: tLine; VAR v: BOOLEAN; x: BOOLEAN);
-BEGIN
-    _movBool2(line, v, x)
-END movBool2;
 
 
 PROCEDURE movPtr (VAR v: List.tItem; x: List.tItem);
@@ -206,8 +194,7 @@ BEGIN
     line.modified := FALSE;
     line.saved := FALSE;
     IF ~temp THEN
-        movBool(line, line.modified, FALSE);
-        movBool(line, line.saved, FALSE)
+        _movBool(FALSE, line.modified, FALSE, line.saved, FALSE)
     END;
     line.cin := 0;
     line.cout := 0;
@@ -272,8 +259,7 @@ END tabWidth;
 PROCEDURE save* (line: tLine);
 BEGIN
     IF ~line.temp THEN
-        movBool2(line, line.saved, TRUE);
-        movBool2(line, line.modified, FALSE)
+    	_movBool(TRUE, line.modified, FALSE, line.saved, TRUE)
     END;
     line.modified := FALSE;
     line.saved := TRUE
@@ -451,8 +437,7 @@ END fixTabs;
 PROCEDURE modify* (line: tLine);
 BEGIN
     IF ~line.temp THEN
-        movBool(line, line.modified, TRUE);
-        movBool(line, line.saved, FALSE)
+        _movBool(FALSE, line.modified, TRUE, line.saved, FALSE)
     END;
     line.modified := TRUE;
     line.saved := FALSE;
@@ -532,12 +517,11 @@ BEGIN
 END convert;
 
 
-PROCEDURE init* (movInt: PmovInt; movPtr: PmovPtr; movBool, movBool2: PmovBool; typedPtr: PTypedPtr; untypedPtr: PUntypedPtr);
+PROCEDURE init* (movInt: PmovInt; movPtr: PmovPtr; movBool: PmovBool; typedPtr: PTypedPtr; untypedPtr: PUntypedPtr);
 BEGIN
     _movInt := movInt;
     _movPtr := movPtr;
     _movBool := movBool;
-    _movBool2 := movBool2;
     _typedPtr := typedPtr;
     _untypedPtr := untypedPtr;
 END init;

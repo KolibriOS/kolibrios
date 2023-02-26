@@ -68,7 +68,7 @@ TYPE
         smallChange: INTEGER;
         modified*, smallMove,
         comments, guard, fasm*,
-        search, cs, whole: BOOLEAN;
+        search, cs, whole, wordSel: BOOLEAN;
         edition*: tGuard;
         curLine: tLine;
         lang*: INTEGER;
@@ -929,7 +929,8 @@ BEGIN
     text.modified := TRUE;
     text.comments := TRUE;
     text.search := TRUE;
-    text.guard := TRUE
+    text.guard := TRUE;
+    text.wordSel := TRUE
 END modify;
 
 
@@ -1055,7 +1056,8 @@ BEGIN
     setSelect(text);
     text.foundSel := 0;
     ShowCursor;
-    text.CurX := -1
+    text.CurX := -1;
+    text.wordSel := TRUE
 END SetPos;
 
 
@@ -1992,30 +1994,33 @@ VAR
     str: tString;
     curLine: tLine;
 BEGIN
-    curLine := text.curLine;
-    IF selected(text) & (text.cursor.Y = text.select.Y) THEN
-        getSelect(text, selBeg, selEnd);
-        x1 := selBeg.X;
-        x2 := selEnd.X;
-        n := getString(curLine, x1, x2 - x1, str);
-    ELSE
-        str := ""
-    END;
-    IF str # "" THEN
-        i := 0;
-        WHILE (i < n) & isWordChar(str[i]) DO
-            INC(i)
-        END;
-        IF (i # n) OR
-            ((x1 > 0) & isWordChar(Lines.getChar(curLine, x1 - 1))) OR
-            ((x2 < curLine.length) & isWordChar(Lines.getChar(curLine, x2))) THEN
-            str := ""
-        END
-    END;
-    IF text.searchText # str THEN
-    	text.smallMove := FALSE
-    END;
-    IF search(text, str, Lang.isCS(text.lang), TRUE) THEN END
+	IF text.wordSel THEN
+	    curLine := text.curLine;
+	    IF selected(text) & (text.cursor.Y = text.select.Y) THEN
+	        getSelect(text, selBeg, selEnd);
+	        x1 := selBeg.X;
+	        x2 := selEnd.X;
+	        n := getString(curLine, x1, x2 - x1, str);
+	    ELSE
+	        str := ""
+	    END;
+	    IF str # "" THEN
+	        i := 0;
+	        WHILE (i < n) & isWordChar(str[i]) DO
+	            INC(i)
+	        END;
+	        IF (i # n) OR
+	            ((x1 > 0) & isWordChar(Lines.getChar(curLine, x1 - 1))) OR
+	            ((x2 < curLine.length) & isWordChar(Lines.getChar(curLine, x2))) THEN
+	            str := ""
+	        END
+	    END;
+	    IF text.searchText # str THEN
+	    	text.smallMove := FALSE
+	    END;
+	    IF search(text, str, Lang.isCS(text.lang), TRUE) THEN END;
+	    text.wordSel := FALSE
+    END
 END wordSel;
 
 
@@ -2495,6 +2500,7 @@ BEGIN
     text.cs := FALSE;
     text.whole := FALSE;
     text.guard := TRUE;
+    text.wordSel := FALSE;
     text.edition := NIL;
     text.foundList := List.create(NIL);
     text.searchText := "";
