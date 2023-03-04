@@ -1,0 +1,13 @@
+.Description=NDN Password
+.Author=CandyMan
+.Version=1.0
+
+~N~DN password
+Оп-п-п-а
+Неверный пароль
+В другой раз
+Пароль
+Еще раз
+
+OK
+Cancel

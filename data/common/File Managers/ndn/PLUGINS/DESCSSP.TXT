@@ -1,0 +1,11 @@
+.Description=Wyszukaj/Zaznacz opis
+.Autor=CandyMan
+.Wersja=1.0
+
+Opis Szukaj/Zaznacz
+Opis Szybkie wyszukiwanie
+Zaznacz wedˆug opisu...
+Odznacz wedˆug opisu...
+~O~pis
+~S~ymbole wieloznaczne
+Opis Szukaj

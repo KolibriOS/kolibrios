@@ -1,0 +1,13 @@
+.Description=Hasˆo NDN
+.Author=CandyMan
+.Version=1.0
+
+~H~asˆo NDN
+Uwaga
+Zˆe Hasˆo
+½egnaj
+Hasˆo
+Powt¢rz
+
+OK
+Anuluj

@@ -1,0 +1,11 @@
+.Description=Description Search/Select
+.Author=CandyMan
+.Version=1.0
+
+Description Search/Select
+Description Speed Search
+Select by description...
+Unselect by description...
+~D~escription
+~W~ildcards
+Description Search

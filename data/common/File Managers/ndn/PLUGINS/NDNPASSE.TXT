@@ -1,0 +1,13 @@
+.Description=NDN password
+.Author=CandyMan
+.Version=1.0
+
+~N~DN password
+Attention
+Wrong password
+Bye
+Password
+Re type
+
+OK
+Cancel
