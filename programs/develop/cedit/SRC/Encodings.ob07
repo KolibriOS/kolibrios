@@ -20,80 +20,80 @@
 MODULE Encodings;
 
 CONST
-    CP866* = 0; CP1251* = 1; UTF8* = 2; UTF8BOM* = 3; (*UTF16LE* = 4;*)
+	CP866* = 0; CP1251* = 1; UTF8* = 2; UTF8BOM* = 3; (*UTF16LE* = 4;*)
 
-    UNDEF* = ORD("?");
+	UNDEF* = ORD("?");
 
-    EOL_CRLF* = 0; EOL_LF* = 1; EOL_CR* = 2;
-    CR = 0DX; LF = 0AX;
+	EOL_CRLF* = 0; EOL_LF* = 1; EOL_CR* = 2;
+	CR = 0DX; LF = 0AX;
 
 TYPE
-    CP* = ARRAY 256 OF INTEGER;
+	CP* = ARRAY 256 OF INTEGER;
 
-    tEOL* = ARRAY 3 OF WCHAR;
+	tEOL* = ARRAY 3 OF WCHAR;
 
 VAR
-    cp1251*, cp866*: CP;
-    names*: ARRAY 4, 16 OF WCHAR;
-    UNI*: ARRAY 65536, 2 OF BYTE;
+	cp1251*, cp866*: CP;
+	names*: ARRAY 4, 16 OF WCHAR;
+	UNI*: ARRAY 65536, 2 OF BYTE;
 
-    eol*: ARRAY 3 OF tEOL;
-    eolNames*: ARRAY 3, 16 OF WCHAR;
+	eol*: ARRAY 3 OF tEOL;
+	eolNames*: ARRAY 3, 16 OF WCHAR;
 
 
 PROCEDURE InitCP (VAR cp: CP);
 VAR
-    i: INTEGER;
+	i: INTEGER;
 BEGIN
-    FOR i := 0H TO 7FH DO
-        cp[i] := i
-    END
+	FOR i := 0H TO 7FH DO
+		cp[i] := i
+	END
 END InitCP;
 
 
 PROCEDURE Init8 (VAR cp: CP; VAR n: INTEGER; a, b, c, d, e, f, g, h: INTEGER);
 BEGIN
-    cp[n] := a; INC(n);
-    cp[n] := b; INC(n);
-    cp[n] := c; INC(n);
-    cp[n] := d; INC(n);
-    cp[n] := e; INC(n);
-    cp[n] := f; INC(n);
-    cp[n] := g; INC(n);
-    cp[n] := h; INC(n);
+	cp[n] := a; INC(n);
+	cp[n] := b; INC(n);
+	cp[n] := c; INC(n);
+	cp[n] := d; INC(n);
+	cp[n] := e; INC(n);
+	cp[n] := f; INC(n);
+	cp[n] := g; INC(n);
+	cp[n] := h; INC(n);
 END Init8;
 
 
 PROCEDURE InitCP1251 (VAR cp: CP);
 VAR
-    n, i: INTEGER;
+	n, i: INTEGER;
 BEGIN
 	InitCP(cp);
-    FOR i := 0410H TO 044FH DO
-        cp[i - 350H] := i
-    END;
-    n := 80H;
-    Init8(cp, n, 0402H, 0403H, 201AH, 0453H, 201EH, 2026H, 2020H, 2021H);
-    Init8(cp, n, 20ACH, 2030H, 0409H, 2039H, 040AH, 040CH, 040BH, 040FH);
-    Init8(cp, n, 0452H, 2018H, 2019H, 201CH, 201DH, 2022H, 2013H, 2014H);
-    Init8(cp, n, UNDEF, 2122H, 0459H, 203AH, 045AH, 045CH, 045BH, 045FH);
-    Init8(cp, n, 00A0H, 040EH, 045EH, 0408H, 00A4H, 0490H, 00A6H, 00A7H);
-    Init8(cp, n, 0401H, 00A9H, 0404H, 00ABH, 00ACH, 00ADH, 00AEH, 0407H);
-    Init8(cp, n, 00B0H, 00B1H, 0406H, 0456H, 0491H, 00B5H, 00B6H, 00B7H);
-    Init8(cp, n, 0451H, 2116H, 0454H, 00BBH, 0458H, 0405H, 0455H, 0457H);
+	FOR i := 0410H TO 044FH DO
+		cp[i - 350H] := i
+	END;
+	n := 80H;
+	Init8(cp, n, 0402H, 0403H, 201AH, 0453H, 201EH, 2026H, 2020H, 2021H);
+	Init8(cp, n, 20ACH, 2030H, 0409H, 2039H, 040AH, 040CH, 040BH, 040FH);
+	Init8(cp, n, 0452H, 2018H, 2019H, 201CH, 201DH, 2022H, 2013H, 2014H);
+	Init8(cp, n, UNDEF, 2122H, 0459H, 203AH, 045AH, 045CH, 045BH, 045FH);
+	Init8(cp, n, 00A0H, 040EH, 045EH, 0408H, 00A4H, 0490H, 00A6H, 00A7H);
+	Init8(cp, n, 0401H, 00A9H, 0404H, 00ABH, 00ACH, 00ADH, 00AEH, 0407H);
+	Init8(cp, n, 00B0H, 00B1H, 0406H, 0456H, 0491H, 00B5H, 00B6H, 00B7H);
+	Init8(cp, n, 0451H, 2116H, 0454H, 00BBH, 0458H, 0405H, 0455H, 0457H);
 END InitCP1251;
 
 
 PROCEDURE InitCP866 (VAR cp: CP);
 VAR
-    n, i: INTEGER;
+	n, i: INTEGER;
 BEGIN
 	InitCP(cp);
 	FOR i := 0410H TO 043FH DO
-	   cp[i - 390H] := i
+		cp[i - 390H] := i
 	END;
 	FOR i := 0440H TO 044FH DO
-	   cp[i - 360H] := i
+		cp[i - 360H] := i
 	END;
 	n := 0B0H;
 	Init8(cp, n, 2591H, 2592H, 2593H, 2502H, 2524H, 2561H, 2562H, 2556H);
@@ -110,31 +110,31 @@ END InitCP866;
 
 PROCEDURE setUNI;
 VAR
-    i: INTEGER;
+	i: INTEGER;
 BEGIN
-    FOR i := 0 TO 65535 DO
-        UNI[i, CP866]  := UNDEF;
-        UNI[i, CP1251] := UNDEF
-    END;
-    FOR i := 0 TO 255 DO
-        UNI[cp1251[i], CP1251] := i;
-        UNI[cp866[i], CP866] := i
-    END
+	FOR i := 0 TO 65535 DO
+		UNI[i, CP866]  := UNDEF;
+		UNI[i, CP1251] := UNDEF
+	END;
+	FOR i := 0 TO 255 DO
+		UNI[cp1251[i], CP1251] := i;
+		UNI[cp866[i], CP866] := i
+	END
 END setUNI;
 
 
 BEGIN
-    eol[EOL_CRLF] := CR + LF;
-    eol[EOL_LF]   := LF;
-    eol[EOL_CR]   := CR;
-    eolNames[EOL_CRLF] := "CRLF";
-    eolNames[EOL_LF]   := "LF";
-    eolNames[EOL_CR]   := "CR";
-    names[CP866]   := "CP866";
-    names[CP1251]  := "CP1251";
-    names[UTF8]    := "UTF-8";
-    names[UTF8BOM] := "UTF-8-BOM";
-    InitCP1251(cp1251);
-    InitCP866(cp866);
-    setUNI
+	eol[EOL_CRLF] := CR + LF;
+	eol[EOL_LF]   := LF;
+	eol[EOL_CR]   := CR;
+	eolNames[EOL_CRLF] := "CRLF";
+	eolNames[EOL_LF]   := "LF";
+	eolNames[EOL_CR]   := "CR";
+	names[CP866]   := "CP866";
+	names[CP1251]  := "CP1251";
+	names[UTF8]    := "UTF-8";
+	names[UTF8BOM] := "UTF-8-BOM";
+	InitCP1251(cp1251);
+	InitCP866(cp866);
+	setUNI
 END Encodings.

@@ -597,7 +597,7 @@ BEGIN
 	                    WHILE U.isDigit(Lines.getChar(line, i)) DO
 	                        INC(i)
 	                    END;
-	                    IF Lines.getChar(line, i) = "E" THEN
+	                    IF upper(Lines.getChar(line, i)) = "E" THEN
 	                        INC(i);
 	                        IF (Lines.getChar(line, i) = "+") OR (Lines.getChar(line, i) = "-") THEN
 	                            INC(i)
@@ -606,9 +606,9 @@ BEGIN
 	                            INC(i)
 	                        END
 	                    END
-	                ELSIF Lines.getChar(line, i) = "H" THEN
+	                ELSIF upper(Lines.getChar(line, i)) = "H" THEN
 	                    INC(i)
-	                ELSIF Lines.getChar(line, i) = "X" THEN
+	                ELSIF upper(Lines.getChar(line, i)) = "X" THEN
 	                    color := colors.string;
 	                    INC(i)
 	                END

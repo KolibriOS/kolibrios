@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -108,8 +108,8 @@ BEGIN
 	G.clear(canvas);
 	G.SetColor(canvas, K.colors.line);
 	G.Rect(canvas, 0, 0, width - 1, height - 1);
+	SetColor(canvas, scroll.btn # -1);
 	IF scroll.vertical THEN
-		SetColor(canvas, scroll.btn # -1);
 		Rect(canvas, 0, 0, width - 1, btn - 1);
 		SetColor(canvas, scroll.btn # 1);
 		Rect(canvas, 0, height - btn, width - 1, height - 1);
@@ -135,7 +135,6 @@ BEGIN
 		y := y + height - btn - d DIV 2 + 1;
 		G.Triangle(canvas, x1 - 1, y, x2, y, G.triDown);
 	ELSE
-		SetColor(canvas, scroll.btn # -1);
 		Rect(canvas, 0, 0, btn - 1, height - 1);
 		SetColor(canvas, scroll.btn # 1);
 		Rect(canvas, width - btn, 0, width - 1, height - 1);

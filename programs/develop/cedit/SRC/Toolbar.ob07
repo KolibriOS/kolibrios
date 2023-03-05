@@ -25,10 +25,10 @@ IMPORT
 CONST
 	max = 14;
 
-    BtnSize* = 26;
-    BtnInter = 5;
-    DelimSize = 7;
-    IconPad = (BtnSize - Icons.SIZE) DIV 2;
+	BtnSize* = 26;
+	BtnInter = 5;
+	DelimSize = 7;
+	IconPad = (BtnSize - Icons.SIZE) DIV 2;
 
 TYPE
 	tButtonText = ARRAY 4 OF CHAR;
@@ -66,8 +66,8 @@ BEGIN
 			IF button.icon # -1 THEN
 				Icons.draw(icons, button.icon, button.x + IconPad, toolbar.y + IconPad)
 			ELSE
-			    K.DrawRect(button.x + 1, toolbar.y + 1, BtnSize - 1, BtnSize - 1, toolbar.colors.back);
-    			K.DrawText69(button.x + (BtnSize - LENGTH(button.text)*6) DIV 2, toolbar.y + (BtnSize - 9) DIV 2 + 2, color, button.text)
+				K.DrawRect(button.x + 1, toolbar.y + 1, BtnSize - 1, BtnSize - 1, toolbar.colors.back);
+				K.DrawText69(button.x + (BtnSize - LENGTH(button.text)*6) DIV 2, toolbar.y + (BtnSize - 9) DIV 2 + 2, color, button.text)
 			END
 		END;
 		INC(i)

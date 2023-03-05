@@ -23,27 +23,27 @@ IMPORT SYSTEM;
 
 CONST
 
-    SPACE* = 20X;
-    SLASH* = "/";
+	SPACE* = 20X;
+	SLASH* = "/";
 
-    OS* = "KOS";
+	OS* = "KOS";
 
 
 PROCEDURE streq* (s1, s2: INTEGER; n: INTEGER): BOOLEAN;
 VAR
-    c1, c2: WCHAR;
-    res: BOOLEAN;
+	c1, c2: WCHAR;
+	res: BOOLEAN;
 BEGIN
 	res := TRUE;
-    WHILE (n > 0) & res DO
-        SYSTEM.GET(s1, c1);
-        SYSTEM.GET(s2, c2);
-        res := c1 = c2;
-        INC(s1, SYSTEM.SIZE(WCHAR));
-        INC(s2, SYSTEM.SIZE(WCHAR));
-        DEC(n)
-    END
-    RETURN res
+	WHILE (n > 0) & res DO
+		SYSTEM.GET(s1, c1);
+		SYSTEM.GET(s2, c2);
+		res := c1 = c2;
+		INC(s1, SYSTEM.SIZE(WCHAR));
+		INC(s2, SYSTEM.SIZE(WCHAR));
+		DEC(n)
+	END
+	RETURN res
 END streq;
 
 
@@ -137,26 +137,26 @@ END int2str;
 
 
 PROCEDURE isDigit* (ch: WCHAR): BOOLEAN;
-    RETURN ("0" <= ch) & (ch <= "9")
+	RETURN ("0" <= ch) & (ch <= "9")
 END isDigit;
 
 
 PROCEDURE isOct* (ch: WCHAR): BOOLEAN;
-    RETURN ("0" <= ch) & (ch <= "7")
+	RETURN ("0" <= ch) & (ch <= "7")
 END isOct;
 
 
 PROCEDURE isHex* (ch: WCHAR): BOOLEAN;
-    RETURN ("0" <= ch) & (ch <= "9") OR ("A" <= ch) & (ch <= "F")
+	RETURN ("0" <= ch) & (ch <= "9") OR ("A" <= ch) & (ch <= "F")
 END isHex;
 
 
 PROCEDURE isLetter* (ch: WCHAR): BOOLEAN;
-    RETURN ("a" <= ch) & (ch <= "z") OR ("A" <= ch) & (ch <= "Z") OR
-    	(* cyrillic *)
-    		(430X <= ch) & (ch <= 44FX) OR (410X <= ch) & (ch <= 42FX) OR
-    		(ch = 491X) OR (ch = 490X) OR (450X <= ch) & (ch <= 45FX) OR
-    		(400X <= ch) & (ch <= 40FX)
+	RETURN ("a" <= ch) & (ch <= "z") OR ("A" <= ch) & (ch <= "Z") OR
+		(* cyrillic *)
+			(430X <= ch) & (ch <= 44FX) OR (410X <= ch) & (ch <= 42FX) OR
+			(ch = 491X) OR (ch = 490X) OR (450X <= ch) & (ch <= 45FX) OR
+			(400X <= ch) & (ch <= 40FX)
 END isLetter;
 
 

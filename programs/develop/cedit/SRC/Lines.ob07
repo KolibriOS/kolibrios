@@ -28,6 +28,7 @@ CONST
     TAB* = 9X;
     NUL* = 0FDD0X;
     TAB1* = 0FDD1X;
+    MAX_TAB_WIDTH* = 16;
 
 TYPE
 
@@ -540,8 +541,8 @@ BEGIN
     END;
     tabs := _tab > 0;
     tab := ABS(_tab);
-    IF tab > 32 THEN
-    	tab := 32
+    IF tab > MAX_TAB_WIDTH THEN
+    	tab := MAX_TAB_WIDTH
     END
 END setTabs;
 
