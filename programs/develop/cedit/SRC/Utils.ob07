@@ -325,4 +325,9 @@ BEGIN
 END inString;
 
 
+PROCEDURE isWordChar* (c: WCHAR): BOOLEAN;
+	RETURN isLetter(c) OR isDigit(c) OR (c = "_")
+END isWordChar;
+
+
 END Utils.

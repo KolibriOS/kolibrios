@@ -858,42 +858,81 @@ BEGIN
 END parse;
 
 
-PROCEDURE plain (text: tText): CB.tBuffer;
+PROCEDURE plain (text: tText; textStart, textEnd: tPoint; _copy: BOOLEAN): CB.tBuffer;
 VAR
-    buf: CB.tBuffer;
-    size: INTEGER;
-    line: tLine;
+	first, line: tLine;
+	cnt, n: INTEGER;
+	buffer: CB.tBuffer;
+
+
+	PROCEDURE append (buffer: CB.tBuffer; line: tLine; first, last: INTEGER; _copy: BOOLEAN);
+	BEGIN
+		IF first <= last THEN
+			CB.append(buffer, line, first, last)
+		ELSE
+			IF (U.OS = "KOS") & _copy THEN
+				CB.appends(buffer, SPACE, 0, 0)
+			END
+		END
+	END append;
+
+
 BEGIN
-    size := 0;
-    line := text.first(tLine);
-    WHILE line # NIL DO
-        line.pos := size;
-        INC(size, line.length);
-        NextLine(line);
-        IF line # NIL THEN
-            INC(size, CB.lenEOL)
-        END
-    END;
-    buf := CB.create(size + 2);
-    line := text.first(tLine);
-    WHILE line # NIL DO
-        CB.append(buf, line, 0, line.length - 1);
-        NextLine(line);
-        IF line # NIL THEN
-            CB.eol(buf)
-        END
-    END;
-    CB.appends(buf, 0X, 0, 0);
-    CB.appends(buf, 0X, 0, 0)
-    RETURN buf
+	IF ~_copy THEN
+		cnt := -lenEOL;
+		line := text.first(tLine);
+		WHILE line # NIL DO
+			INC(cnt, lenEOL);
+			line.pos := cnt;
+			INC(cnt, line.length);
+			NextLine(line)
+		END
+	END;
+
+	first := getLine2(text, textStart.Y);
+	line := first;
+
+	n := textEnd.Y - textStart.Y;
+	cnt := 0;
+	WHILE n >= 0 DO
+		INC(cnt, line.length + lenEOL);
+		IF (U.OS = "KOS") & _copy & (line.length = 0) THEN
+			INC(cnt)
+		END;
+		NextLine(line);
+		DEC(n)
+	END;
+
+	buffer := CB.create(cnt + 2); (* +2 wchars EOT *)
+
+	n := textEnd.Y - textStart.Y;
+	line := first;
+	IF n = 0 THEN
+		append(buffer, line, textStart.X, textEnd.X - 1, _copy)
+	ELSE
+		append(buffer, line, textStart.X, line.length - 1, _copy);
+		REPEAT
+			DEC(n);
+			CB.eol(buffer);
+			NextLine(line);
+			IF n > 0 THEN
+				append(buffer, line, 0, line.length - 1, _copy)
+			END
+		UNTIL n = 0;
+		append(buffer, line, 0, textEnd.X - 1, _copy)
+	END
+
+	RETURN buffer
 END plain;
 
 
-PROCEDURE search* (text: tText; s: ARRAY OF WCHAR; cs, whole: BOOLEAN): BOOLEAN;
+PROCEDURE _search (text: tText; s: ARRAY OF WCHAR; cs, whole: BOOLEAN; textStart, textEnd: tPoint): BOOLEAN;
 VAR
 	pos: List.tItem;
 	res: BOOLEAN;
-	plainText, idxData: Search.tBuffer;
+	plainText, idxData: CB.tBuffer;
+	first: tLine;
+
 BEGIN
 	res := TRUE;
 	plainText := NIL;
@@ -909,9 +948,12 @@ BEGIN
 		U.lowcase(text.searchText)
 	END;
 	IF text.searchText # "" THEN
-		plainText := plain(text);
+		first := getLine2(text, textStart.Y);
+		plainText := plain(text, textStart, textEnd, FALSE);
+		CB.appends(plainText, 0X, 0, 0);
+		CB.appends(plainText, 0X, 0, 0);
 		idxData := Search.index(plainText, cs);
-		Search.find(plainText, text.searchText, whole, text.foundList);
+		Search.find(plainText, text.searchText, whole, text.foundList, first.pos + textStart.X);
 		res := text.foundList.count > 0
 	ELSE
 		Search.close
@@ -921,16 +963,38 @@ BEGIN
 	text.search := FALSE;
 	text.foundSel := 0
 	RETURN res
+END _search;
+
+
+PROCEDURE search* (text: tText; s: ARRAY OF WCHAR; cs, whole: BOOLEAN): BOOLEAN;
+VAR
+	textStart, textEnd: tPoint;
+(*
+	PROCEDURE _getSelect (text: tText; VAR selBeg, selEnd: tPoint);
+	BEGIN
+	    selBeg := text.cursor^;
+	    selEnd := text.select^;
+	    IF (selBeg.Y > selEnd.Y) OR (selBeg.Y = selEnd.Y) & (selBeg.X > selEnd.X) THEN
+	        selBeg := text.select^;
+	        selEnd := text.cursor^
+	    END
+	END _getSelect;*)
+
+BEGIN
+	textStart.Y := 0; textStart.X := 0;
+	textEnd.Y := text.count - 1; textEnd.X := text.last(tLine).length;
+	//_getSelect(text, textStart, textEnd)
+	RETURN _search(text, s, cs, whole, textStart, textEnd)
 END search;
 
 
 PROCEDURE modify (text: tText);
 BEGIN
-    text.modified := TRUE;
-    text.comments := TRUE;
-    text.search := TRUE;
-    text.guard := TRUE;
-    text.wordSel := TRUE
+	text.modified := TRUE;
+	text.comments := TRUE;
+	text.search := TRUE;
+	text.guard := TRUE;
+	text.wordSel := TRUE
 END modify;
 
 
@@ -966,24 +1030,24 @@ END getEol;
 
 PROCEDURE DelLine (text: tText; line: tLine);
 BEGIN
-    List._delete(text, line);
-    Lines.destroy(line);
-    modify(text)
+	List._delete(text, line);
+	Lines.destroy(line);
+	modify(text)
 END DelLine;
 
 
 PROCEDURE setSelect (text: tText);
 BEGIN
-    IF text.select = text.cursor THEN
-        text.select2^ := text.cursor^;
-        text.select := text.select2
-    END
+	IF text.select = text.cursor THEN
+		text.select2^ := text.cursor^;
+		text.select := text.select2
+	END
 END setSelect;
 
 
 PROCEDURE resetSelect* (text: tText);
 BEGIN
-    text.select := text.cursor
+	text.select := text.cursor
 END resetSelect;
 
 
@@ -1572,62 +1636,17 @@ BEGIN
 END getSelCnt;
 
 
-PROCEDURE copy (text: tText);
+PROCEDURE Copy (text: tText);
 VAR
-    selBeg, selEnd: tPoint;
-    first, line: tLine;
-    cnt, n: INTEGER;
-    buffer: CB.tBuffer;
-
-
-    PROCEDURE append (buffer: CB.tBuffer; line: tLine; first, last: INTEGER);
-    BEGIN
-        IF first <= last THEN
-            CB.append(buffer, line, first, last)
-        ELSE
-            IF U.OS = "KOS" THEN
-                CB.appends(buffer, SPACE, 0, 0)
-            END
-        END
-    END append;
-
-
+	selStart, selEnd: tPoint;
+	buffer: CB.tBuffer;
 BEGIN
-    getSelect(text, selBeg, selEnd);
-
-    first := getLine2(text, selBeg.Y);
-    line := first;
-
-    n := selEnd.Y - selBeg.Y;
-    cnt := 0;
-    WHILE n >= 0 DO
-        INC(cnt, line.length + (lenEOL + ORD(U.OS = "KOS")));
-        NextLine(line);
-        DEC(n)
-    END;
-
-    buffer := CB.create(cnt + 2); (* +2 wchars EOT *)
-
-    n := selEnd.Y - selBeg.Y;
-    line := first;
-    IF n = 0 THEN
-        append(buffer, line, selBeg.X, selEnd.X - 1)
-    ELSE
-        append(buffer, line, selBeg.X, line.length - 1);
-        REPEAT
-            DEC(n);
-            CB.eol(buffer);
-            NextLine(line);
-            IF n > 0 THEN
-                append(buffer, line, 0, line.length - 1)
-            END
-        UNTIL n = 0;
-        append(buffer, line, 0, selEnd.X - 1)
-    END;
+	getSelect(text, selStart, selEnd);
+	buffer := plain(text, selStart, selEnd, TRUE);
     CB.eot(buffer);
     CB.put(buffer);
     CB.destroy(buffer)
-END copy;
+END Copy;
 
 
 PROCEDURE paste (text: tText);
@@ -1969,11 +1988,6 @@ BEGIN
 END MoveLines;
 
 
-PROCEDURE isWordChar (c: WCHAR): BOOLEAN;
-    RETURN U.isLetter(c) OR U.isDigit(c) OR (c = "_")
-END isWordChar;
-
-
 PROCEDURE getSelectedText* (text: tText; VAR s: ARRAY OF WCHAR);
 VAR
     n: INTEGER;
@@ -2006,12 +2020,12 @@ BEGIN
 	    END;
 	    IF str # "" THEN
 	        i := 0;
-	        WHILE (i < n) & isWordChar(str[i]) DO
+	        WHILE (i < n) & U.isWordChar(str[i]) DO
 	            INC(i)
 	        END;
 	        IF (i # n) OR
-	            ((x1 > 0) & isWordChar(Lines.getChar(curLine, x1 - 1))) OR
-	            ((x2 < curLine.length) & isWordChar(Lines.getChar(curLine, x2))) THEN
+	            ((x1 > 0) & U.isWordChar(Lines.getChar(curLine, x1 - 1))) OR
+	            ((x2 < curLine.length) & U.isWordChar(Lines.getChar(curLine, x2))) THEN
 	            str := ""
 	        END
 	    END;
@@ -2029,8 +2043,8 @@ VAR
 	c: WCHAR;
 BEGIN
 	c := Lines.getChar(line, pos);
-	IF isWordChar(c) THEN
-		WHILE (pos < line.length) & isWordChar(Lines.getChar(line, pos)) DO
+	IF U.isWordChar(c) THEN
+		WHILE (pos < line.length) & U.isWordChar(Lines.getChar(line, pos)) DO
 			INC(pos)
 		END
 	ELSIF Lines.isSpace(c) THEN
@@ -2038,7 +2052,7 @@ BEGIN
 			INC(pos)
 		END
 	ELSE
-		WHILE (pos < line.length) & ~Lines.isSpace(Lines.getChar(line, pos)) & ~isWordChar(Lines.getChar(line, pos)) DO
+		WHILE (pos < line.length) & ~Lines.isSpace(Lines.getChar(line, pos)) & ~U.isWordChar(Lines.getChar(line, pos)) DO
 			INC(pos)
 		END
 	END
@@ -2151,7 +2165,7 @@ BEGIN
     |ORD("C"), ORD("X"):
         IF ctrl THEN
             IF selected(text) THEN
-                copy(text);
+                Copy(text);
                 IF code = ORD("X") THEN
                 	delSelect(text)
                 END
@@ -2208,18 +2222,18 @@ BEGIN
     cursorX := text.cursor.X;
     line := text.curLine;
     x1 := cursorX - 1;
-    IF (cursorX < line.length) & isWordChar(Lines.getChar(line, cursorX)) THEN
+    IF (cursorX < line.length) & U.isWordChar(Lines.getChar(line, cursorX)) THEN
         x2 := cursorX;
-        WHILE (x2 < line.length) & isWordChar(Lines.getChar(line, x2)) DO
+        WHILE (x2 < line.length) & U.isWordChar(Lines.getChar(line, x2)) DO
             INC(x2)
         END
     ELSE
-        WHILE (x1 >= 0) & ~isWordChar(Lines.getChar(line, x1)) DO
+        WHILE (x1 >= 0) & ~U.isWordChar(Lines.getChar(line, x1)) DO
             DEC(x1)
         END;
         x2 := x1 + 1
     END;
-    WHILE (x1 >= 0) & isWordChar(Lines.getChar(line, x1)) DO
+    WHILE (x1 >= 0) & U.isWordChar(Lines.getChar(line, x1)) DO
         DEC(x1)
     END;
     INC(x1);

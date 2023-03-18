@@ -26,7 +26,7 @@ CONST
 	itemSize = 64;
 
 TYPE
-	tBuffer* = CB.tBuffer;
+	tBuffer = CB.tBuffer;
 
 	tIdxTable = ARRAY 65536, 2 OF INTEGER;
 
@@ -115,15 +115,20 @@ BEGIN
 END next;
 
 
-PROCEDURE find* (text: tBuffer; s: ARRAY OF WCHAR; whole: BOOLEAN; list: List.tList);
+PROCEDURE find* (text: tBuffer; s: ARRAY OF WCHAR; whole: BOOLEAN; list: List.tList; offset: INTEGER);
 VAR
-	k, pos, n, x, prev_item_pos: INTEGER;
+	k, pos, n, i, x, prev_item_pos: INTEGER;
 	item: tPos;
 	c1, c2: WCHAR;
 	flag: BOOLEAN;
 BEGIN
 	ASSERT(table # NIL);
 	n := LENGTH(s);
+	i := 0;
+	WHILE (i < n) & whole DO
+		whole := Utils.isWordChar(s[i]);
+		INC(i)
+	END;
 	k := table.data[ORD(s[0]), 1];
 	pos := table.data[ORD(s[0]), 0];
 	prev_item_pos := 0;
@@ -138,8 +143,7 @@ BEGIN
 					c1 := 0X
 				END;
 				SYSTEM.GET(text.dataPtr + (x + n)*SYSTEM.SIZE(WCHAR), c2);
-				flag := Utils.isLetter(c1) OR Utils.isLetter(c2) OR Utils.isDigit(c1) OR Utils.isDigit(c2) OR
-					(c1 = "_") OR (c2 = "_")
+				flag := Utils.isWordChar(c1) OR Utils.isWordChar(c2)
 			END;
 			IF ~flag & (x >= prev_item_pos) THEN
 				prev_item_pos := x + n;
@@ -149,7 +153,7 @@ BEGIN
 					item.cnt := 0;
 					List.append(list, item)
 				END;
-				item.pos[item.cnt] := x;
+				item.pos[item.cnt] := x + offset;
 				INC(item.cnt)
 			END
 		END;
