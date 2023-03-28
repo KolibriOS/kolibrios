@@ -115,10 +115,24 @@ BEGIN
 END next;
 
 
+PROCEDURE add* (list: List.tList; pos: INTEGER);
+VAR
+	item: tPos;
+BEGIN
+	item := list.last(tPos);
+	IF (item = NIL) OR (item.cnt = itemSize) THEN
+		NEW(item);
+		item.cnt := 0;
+		List.append(list, item)
+	END;
+	item.pos[item.cnt] := pos;
+	INC(item.cnt)
+END add;
+
+
 PROCEDURE find* (text: tBuffer; s: ARRAY OF WCHAR; whole: BOOLEAN; list: List.tList; offset: INTEGER);
 VAR
 	k, pos, n, i, x, prev_item_pos: INTEGER;
-	item: tPos;
 	c1, c2: WCHAR;
 	flag: BOOLEAN;
 BEGIN
@@ -147,14 +161,7 @@ BEGIN
 			END;
 			IF ~flag & (x >= prev_item_pos) THEN
 				prev_item_pos := x + n;
-				item := list.last(tPos);
-				IF (item = NIL) OR (item.cnt = itemSize) THEN
-					NEW(item);
-					item.cnt := 0;
-					List.append(list, item)
-				END;
-				item.pos[item.cnt] := x + offset;
-				INC(item.cnt)
+				add(list, x + offset)
 			END
 		END;
 		INC(pos, SYSTEM.SIZE(INTEGER));

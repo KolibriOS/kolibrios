@@ -200,6 +200,13 @@ BEGIN
 END lower;
 
 
+PROCEDURE lcase* (ch: WCHAR): WCHAR;
+BEGIN
+	IF lower(ch) THEN END
+	RETURN ch
+END lcase;
+
+
 PROCEDURE lowcase* (VAR s: ARRAY OF WCHAR);
 VAR
     i: INTEGER;

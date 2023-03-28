@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (18-mar-2023)";
+    HEADER = "CEdit (29-mar-2023)";
 
     ShellFilter = "";
     EditFilter = "sh|inc|txt|asm|ob07|c|cpp|h|pas|pp|lua|ini|json";
@@ -411,6 +411,9 @@ BEGIN
 	        CheckBox.draw(BKW);
 	        CheckBox.draw(CS);
 	        CheckBox.draw(WH);
+        END;
+        IF ~search OR (searchText = "") THEN
+            T.wordSel(text)
         END;
         drawText;
         NotFound;
@@ -1633,11 +1636,31 @@ END HideSearch;
 
 PROCEDURE KeyDown (key: INTEGER);
 VAR
-    keyCode: INTEGER;
-    shift, ctrl: BOOLEAN;
+    keyCode, ah: INTEGER;
+    shift, ctrl, rep: BOOLEAN;
 BEGIN
 	K.getKBState(shift, ctrl);
+	rep := FALSE;
     keyCode := key DIV 65536;
+
+    (* Numpad *)
+    ah := (key DIV 256) MOD 256;
+    CASE keyCode OF
+    |83: IF ah = 46 THEN keyCode := 52 END (* . / Del  *)
+    |82: IF ah = 48 THEN keyCode := 11 END (* 0 / Ins  *)
+    |79: IF ah = 49 THEN keyCode :=  2 END (* 1 / End  *)
+    |80: IF ah = 50 THEN keyCode :=  3 END (* 2 / Down *)
+    |81: IF ah = 51 THEN keyCode :=  4 END (* 3 / PgDn *)
+    |75: IF ah = 52 THEN keyCode :=  5 END (* 4 / <-   *)
+    |76: IF ah = 55 THEN keyCode := -1 END (* 5 / --- *)
+    |77: IF ah = 54 THEN keyCode :=  7 END (* 6 / ->   *)
+    |71: IF ah = 55 THEN keyCode :=  8 END (* 7 / Home *)
+    |72: IF ah = 56 THEN keyCode :=  9 END (* 8 / Up   *)
+    |73: IF ah = 57 THEN keyCode := 10 END (* 9 / PgUp *)
+    ELSE
+    	(* nothing to do *)
+    END;
+
     IF confirm THEN
         IF keyCode = 28 THEN (* Enter *)
             save(text);
@@ -1647,7 +1670,9 @@ BEGIN
         END;
         key := -1
     ELSE
-        IF keyCode = 61 THEN (* F3 *)
+    	IF keyCode = -1 THEN
+    		key := -1
+        ELSIF keyCode = 61 THEN (* F3 *)
             key := -1;
             IF search & (searchText # "") THEN
                 IF shift THEN
@@ -1779,17 +1804,26 @@ BEGIN
                         END
                     ELSE
                         T.input(text, E.cp866[key DIV 256 MOD 256]);
+                        IF key DIV 256 MOD 256 = 13 THEN
+                        	rep := TRUE
+                        END;
                         key := -1
                     END
                 END;
                 IF key >= 0 THEN
-                    T.key(text, key, shift, ctrl)
+                    T.key(text, key, shift, ctrl);
+                    IF ((key = 38) OR (key = 40) OR (key = ORD("D"))) & ctrl THEN
+                    	rep := TRUE
+                    END
                 END
             END
         END
     END;
     IF key # -2 THEN
-        repaint
+        repaint;
+        IF rep THEN
+        	repaint
+        END
     END
 END KeyDown;
 

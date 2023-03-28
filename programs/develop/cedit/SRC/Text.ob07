@@ -878,17 +878,6 @@ VAR
 
 
 BEGIN
-	IF ~_copy THEN
-		cnt := -lenEOL;
-		line := text.first(tLine);
-		WHILE line # NIL DO
-			INC(cnt, lenEOL);
-			line.pos := cnt;
-			INC(cnt, line.length);
-			NextLine(line)
-		END
-	END;
-
 	first := getLine2(text, textStart.Y);
 	line := first;
 
@@ -926,9 +915,30 @@ BEGIN
 END plain;
 
 
-PROCEDURE _search (text: tText; s: ARRAY OF WCHAR; cs, whole: BOOLEAN; textStart, textEnd: tPoint): BOOLEAN;
+PROCEDURE ClearSearch (text: tText);
 VAR
 	pos: List.tItem;
+	line: tLine;
+	cnt: INTEGER;
+BEGIN
+	cnt := -lenEOL;
+	line := text.first(tLine);
+	WHILE line # NIL DO
+		INC(cnt, lenEOL);
+		line.pos := cnt;
+		INC(cnt, line.length);
+		NextLine(line)
+	END;
+
+	WHILE text.foundList.count # 0 DO
+		pos := List.pop(text.foundList);
+		DISPOSE(pos)
+	END
+END ClearSearch;
+
+
+PROCEDURE _search (text: tText; s: ARRAY OF WCHAR; cs, whole: BOOLEAN; textStart, textEnd: tPoint): BOOLEAN;
+VAR
 	res: BOOLEAN;
 	plainText, idxData: CB.tBuffer;
 	first: tLine;
@@ -937,10 +947,6 @@ BEGIN
 	res := TRUE;
 	plainText := NIL;
 	idxData := NIL;
-	WHILE text.foundList.count # 0 DO
-		pos := List.pop(text.foundList);
-		DISPOSE(pos)
-	END;
 	text.whole := whole;
 	text.cs := cs;
 	text.searchText := s;
@@ -969,23 +975,146 @@ END _search;
 PROCEDURE search* (text: tText; s: ARRAY OF WCHAR; cs, whole: BOOLEAN): BOOLEAN;
 VAR
 	textStart, textEnd: tPoint;
-(*
-	PROCEDURE _getSelect (text: tText; VAR selBeg, selEnd: tPoint);
-	BEGIN
-	    selBeg := text.cursor^;
-	    selEnd := text.select^;
-	    IF (selBeg.Y > selEnd.Y) OR (selBeg.Y = selEnd.Y) & (selBeg.X > selEnd.X) THEN
-	        selBeg := text.select^;
-	        selEnd := text.cursor^
-	    END
-	END _getSelect;*)
-
 BEGIN
 	textStart.Y := 0; textStart.X := 0;
 	textEnd.Y := text.count - 1; textEnd.X := text.last(tLine).length;
-	//_getSelect(text, textStart, textEnd)
+	ClearSearch(text)
 	RETURN _search(text, s, cs, whole, textStart, textEnd)
 END search;
+
+
+PROCEDURE fasm_anon (text: tText);
+VAR
+	textStart, textEnd: tPoint;
+	res, frw, back, label, anon_label: BOOLEAN;
+	Y1, Y2, i, k, j: INTEGER;
+	line, Label: tLine;
+	str: ARRAY 8 OF WCHAR;
+
+
+	PROCEDURE anon (line: tLine): BOOLEAN;
+	VAR
+		i: INTEGER;
+	BEGIN
+		i := leadingSpaces(line)
+		RETURN (Lines.getChar(line, i) = "@") &
+				(Lines.getChar(line, i + 1) = "@") &
+				(Lines.getChar(line, i + 2) = ":")
+	END anon;
+
+
+BEGIN
+	frw := FALSE;
+	back := FALSE;
+	label := FALSE;
+	line := text.curLine;
+
+	i := text.cursor.X;
+	j := 0;
+	FOR k := i - 3 TO i + 2 DO
+		str[j] := U.lcase(Lines.getChar(line, k));
+		INC(j)
+	END;
+	j := 3;
+
+	anon_label := anon(line);
+
+	IF str[j] = "@" THEN
+		IF str[j + 1] = "f" THEN
+			frw := TRUE
+		ELSIF (str[j + 1] = "b") OR (str[j + 1] = "r") THEN
+			back := TRUE
+		ELSIF anon_label & (((str[j + 1] = "@") & (str[j + 2] = ":")) OR
+				((str[j - 1] = "@") & (str[j + 1] = ":"))) THEN
+			label := TRUE
+		END
+	ELSIF str[j - 1] = "@" THEN
+		IF str[j] = "f" THEN
+			frw := TRUE
+		ELSIF (str[j] = "b") OR (str[j] = "r") THEN
+			back := TRUE
+		ELSIF anon_label & (str[j] = ":") & (str[j - 2] = "@") THEN
+			label := TRUE
+		END
+	ELSIF anon_label & (str[j] = ":") & (str[j - 1] = "@") & (str[j - 2] = "@") THEN
+		label := TRUE
+	ELSIF (str[j - 1] = "f") & (str[j - 2] = "@") THEN
+		frw := TRUE
+	ELSIF ((str[j - 1] = "b") OR (str[j - 1] = "r")) & (str[j - 2] = "@") THEN
+		back := TRUE
+	ELSIF anon_label & (str[j - 1] = ":") & (str[j - 2] = "@") & (str[j - 3] = "@") THEN
+		label := TRUE
+	END;
+
+	IF back OR frw OR label THEN
+		Y1 := text.cursor.Y;
+		Y2 := Y1;
+
+		IF label THEN
+			Label := line;
+			DEC(Y1)
+		ELSE
+			Label := NIL
+		END;
+
+		line := getLine2(text, Y1);
+		WHILE (Y1 > 0) & ~anon(line) DO
+			PrevLine(line);
+			DEC(Y1)
+		END;
+
+		line := getLine2(text, Y2);
+		IF anon(line) THEN
+			NextLine(line);
+			INC(Y2)
+		END;
+
+		WHILE (Y2 < text.count) & ~anon(line) DO
+			NextLine(line);
+			INC(Y2)
+		END;
+
+		IF Y1 < 0 THEN
+			Y1 := 0
+		ELSIF back THEN
+			Label := getLine2(text, Y1)
+		END;
+		textStart.Y := Y1; textStart.X := 0;
+		IF Y2 = text.count THEN
+			DEC(Y2);
+			textEnd.X := text.last(tLine).length
+		ELSIF frw THEN
+			Label := getLine2(text, Y2);
+			textEnd.X := 0
+		END;
+		textEnd.Y := Y2;
+		ClearSearch(text);
+		text.smallMove := FALSE;
+		IF (Label # NIL) & ~anon(Label) THEN
+			Label := NIL
+		END
+	END;
+
+	IF frw THEN
+		res := _search(text, "@f", FALSE, FALSE, textStart, textEnd);
+		IF Label # NIL THEN
+			Search.add(text.foundList, Label.pos + leadingSpaces(Label))
+		END
+	ELSIF back THEN
+		IF Label # NIL THEN
+			Search.add(text.foundList, Label.pos + leadingSpaces(Label))
+		END;
+		res := _search(text, "@b", FALSE, FALSE, textStart, textEnd);
+		res := _search(text, "@r", FALSE, FALSE, textStart, textEnd)
+	ELSIF label THEN
+		res := _search(text, "@f", FALSE, FALSE, textStart, text.cursor^);
+		IF Label # NIL THEN
+			Search.add(text.foundList, Label.pos + leadingSpaces(Label))
+		END;
+		res := _search(text, "@b", FALSE, FALSE, text.cursor^, textEnd);
+		res := _search(text, "@r", FALSE, FALSE, text.cursor^, textEnd)
+	END
+END fasm_anon;
 
 
 PROCEDURE modify (text: tText);
@@ -2034,6 +2163,9 @@ BEGIN
 	    END;
 	    IF search(text, str, Lang.isCS(text.lang), TRUE) THEN END;
 	    text.wordSel := FALSE
+    END;
+    IF (text.lang = Lang.langFasm) & ~selected(text) THEN
+    	fasm_anon(text)
     END
 END wordSel;
 
