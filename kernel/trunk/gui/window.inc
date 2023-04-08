@@ -284,10 +284,10 @@ dd  .setSkinUnicode
 ; out: eax = pack[left, right], ebx = pack[top, bottom]
         mov     eax, [screen_workarea.left - 2]
         mov     ax, word[screen_workarea.right]
-        mov     [esp + 32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         mov     eax, [screen_workarea.top - 2]
         mov     ax, word[screen_workarea.bottom]
-        mov     [esp + 20], eax
+        mov     [esp + SYSCALL_STACK.ebx], eax
         ret
 
 .setScreenWorkingArea:
@@ -346,16 +346,16 @@ dd  .setSkinUnicode
 .getSkinMargins:
 ; out: eax = pack[left, right], ebx = pack[top, bottom]
         mov     eax, [_skinmargins + 0]
-        mov     [esp + 32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         mov     eax, [_skinmargins + 4]
-        mov     [esp + 20], eax
+        mov     [esp + SYSCALL_STACK.ebx], eax
         ret
 
 .setSkin:
 ; in: ecx -> file path string
         mov     ebx, ecx
         call    read_skin_file
-        mov     [esp + 32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         test    eax, eax
         jnz     .ret
         call    .calculateScreen
@@ -364,7 +364,7 @@ dd  .setSkinUnicode
 .getFontSmoothing:
         xor     eax, eax
         mov     al, [fontSmoothing]
-        mov     [esp + 32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .setFontSmoothing:
@@ -374,7 +374,7 @@ dd  .setSkinUnicode
 .getFontSize:
         xor     eax, eax
         mov     al, [fontSize]
-        mov     [esp + 32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .setFontSize:
@@ -393,7 +393,7 @@ dd  .setSkinUnicode
         jz      @f
         mov     ebx, [esp]
         call    read_skin_file
-        mov     [esp + 32 + 4], eax
+        mov     [esp + SYSCALL_STACK.eax + 4], eax
 @@:
         call    kernel_free
         call    .calculateScreen
@@ -505,7 +505,7 @@ syscall_window_settings:
 
 align 4
 set_window_defaults:
-        mov     byte [window_data + 0x20 + WDATA.cl_titlebar + 3], 1 ; desktop is not movable
+        mov     byte [window_data + sizeof.WDATA + WDATA.cl_titlebar + 3], 1 ; desktop is not movable
         push    eax ecx
         xor     eax, eax
         mov     ecx, WIN_STACK
@@ -1090,10 +1090,10 @@ align 4
         movzx   edi, word[WIN_POS + eax * 2]
         shl     edi, BSF sizeof.WDATA
 ; it is a unused slot?
-        cmp     byte [edi*8 + SLOT_BASE + APPDATA.state], TSTATE_FREE
+        cmp     byte [SLOT_BASE + edi*8 + APPDATA.state], TSTATE_FREE
         je      @f
 ; it is a hidden thread?
-        lea     esi, [edi*8+SLOT_BASE+APPDATA.app_name]
+        lea     esi, [SLOT_BASE + edi*8 + APPDATA.app_name]
         cmp     [esi], byte '@'
         je      @f
 ; is it already minimized?
@@ -2548,6 +2548,3 @@ align 4
 
         add     esp, 4   ;dword for 0/1 - set_screen/fl_redraw
         ret
-
-
-

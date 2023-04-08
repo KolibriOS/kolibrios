@@ -936,7 +936,7 @@ sys_IPC:
         jb      .touch
 
         popf
-        mov     [esp+32], ebx   ;ebx=0
+        mov     [esp + SYSCALL_STACK.eax], ebx   ;ebx=0
         ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -946,11 +946,11 @@ sys_IPC:
         jnz     @f
 
         stdcall sys_ipc_send, ecx, edx, esi
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 @@:
         or      eax, -1
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
@@ -1079,22 +1079,22 @@ sysfn_meminfo:
         mov     eax, [pg_data.pages_count]
         mov     [ecx], eax
         shl     eax, 12
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         mov     eax, [pg_data.pages_free]
-        mov     [ecx+4], eax
+        mov     [ecx + 4], eax
         mov     eax, [pg_data.pages_faults]
-        mov     [ecx+8], eax
+        mov     [ecx + 8], eax
         mov     eax, [heap_size]
-        mov     [ecx+12], eax
+        mov     [ecx + 12], eax
         mov     eax, [heap_free]
-        mov     [ecx+16], eax
+        mov     [ecx + 16], eax
         mov     eax, [heap_blocks]
-        mov     [ecx+20], eax
+        mov     [ecx + 20], eax
         mov     eax, [free_blocks]
-        mov     [ecx+24], eax
+        mov     [ecx + 24], eax
         ret
 .fail:
-        or      dword [esp+32], -1
+        or      dword [esp + SYSCALL_STACK.eax], -1
         ret
 
 align 4

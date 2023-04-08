@@ -57,7 +57,6 @@ endg
 align 4
 
 pci_api:
-
 ;cross
         mov     eax, ebx
         mov     ebx, ecx
@@ -76,8 +75,8 @@ else
         ja      pci_service_not_supported
 end if
 
-        call    dword [f62call+edx*4]
-        mov     dword [esp+32], eax
+        call    dword [f62call + edx*4]
+        mov     dword [esp + SYSCALL_STACK.eax], eax
         ret
 
 
@@ -90,7 +89,7 @@ pci_api_drv:
         cmp     eax, 2
         ja      .fail
 
-        jmp     dword [f62call+eax*4]
+        jmp     dword [f62call + eax*4]
 
 .fail:
         or      eax, -1
@@ -116,7 +115,7 @@ pci_fn_2:
 
 pci_service_not_supported:
         or      eax, -1
-        mov     dword [esp+32], eax
+        mov     dword [esp + SYSCALL_STACK.eax], eax
         ret
 
 ;***************************************************************************
@@ -157,7 +156,7 @@ align 4
 pci_read_reg:
         push    ebx esi
         cmp     [BOOT.pci_data.access_mechanism], 2; what mechanism will we use?
-        je      pci_read_reg_2
+        je      .pci_read_reg_2
 
                 ; mechanism 1
         mov     esi, eax ; save register size into ESI
@@ -176,28 +175,29 @@ pci_read_reg:
         or      dl, bl   ; add to port address first 2 bits of register address
 
         or      esi, esi
-        jz      pci_read_byte1
+        jz      .byte1
         cmp     esi, 1
-        jz      pci_read_word1
+        jz      .word1
         cmp     esi, 2
-        jz      pci_read_dword1
-        jmp     pci_fin_read1
+        jz      .dword1
+        jmp     .fin_read1
 
-pci_read_byte1:
+.byte1:
         in      al, dx
-        jmp     pci_fin_read1
-pci_read_word1:
+        jmp     .fin_read1
+.word1:
         in      ax, dx
-        jmp     pci_fin_read1
-pci_read_dword1:
+        jmp     .fin_read1
+.dword1:
         in      eax, dx
-pci_fin_read1:
+.fin_read1:
         pop     esi ebx
         ret
-pci_read_reg_2:
+
+.pci_read_reg_2:
 
         test    bh, 128 ;mech#2 only supports 16 devices per bus
-        jnz     pci_read_reg_err
+        jnz     .pci_read_reg_err
 
         mov     esi, eax ; save register size into ESI
         and     esi, 3
@@ -217,27 +217,27 @@ pci_read_reg_2:
         mov     dx, bx
 
         or      esi, esi
-        jz      pci_read_byte2
+        jz      .byte2
         cmp     esi, 1
-        jz      pci_read_word2
+        jz      .word2
         cmp     esi, 2
-        jz      pci_read_dword2
-        jmp     pci_fin_read2
+        jz      .dword2
+        jmp     .fin_read2
 
-pci_read_byte2:
+.byte2:
         in      al, dx
-        jmp     pci_fin_read2
-pci_read_word2:
+        jmp     .fin_read2
+.word2:
         in      ax, dx
-        jmp     pci_fin_read2
-pci_read_dword2:
+        jmp     .fin_read2
+.dword2:
         in      eax, dx
-pci_fin_read2:
+.fin_read2:
 
         pop     esi ebx
         ret
 
-pci_read_reg_err:
+.pci_read_reg_err:
         xor     eax, eax
         dec     eax
         pop     esi ebx
@@ -281,22 +281,22 @@ pci_write_reg:
         mov     eax, ecx
 
         or      esi, esi
-        jz      pci_write_byte1
+        jz      .byte1
         cmp     esi, 1
-        jz      pci_write_word1
+        jz      .word1
         cmp     esi, 2
-        jz      pci_write_dword1
-        jmp     pci_fin_write1
+        jz      .dword1
+        jmp     .fin_write1
 
-pci_write_byte1:
+.byte1:
         out     dx, al
-        jmp     pci_fin_write1
-pci_write_word1:
+        jmp     .fin_write1
+.word1:
         out     dx, ax
-        jmp     pci_fin_write1
-pci_write_dword1:
+        jmp     .fin_write1
+.dword1:
         out     dx, eax
-pci_fin_write1:
+.fin_write1:
 
         xor     eax, eax
         pop     ebx esi
@@ -305,7 +305,7 @@ pci_fin_write1:
 pci_write_reg_2:
 
         test    bh, 128 ;mech#2 only supports 16 devices per bus
-        jnz     pci_write_reg_err
+        jnz     .pci_write_reg_err
 
 
         mov     esi, eax ; save register size into ESI
@@ -327,28 +327,28 @@ pci_write_reg_2:
         mov     eax, ecx
 
         or      esi, esi
-        jz      pci_write_byte2
+        jz      .byte2
         cmp     esi, 1
-        jz      pci_write_word2
+        jz      .word2
         cmp     esi, 2
-        jz      pci_write_dword2
-        jmp     pci_fin_write2
+        jz      .dword2
+        jmp     .fin_write2
 
-pci_write_byte2:
+.byte2:
         out     dx, al
-        jmp     pci_fin_write2
-pci_write_word2:
+        jmp     .fin_write2
+.word2:
         out     dx, ax
-        jmp     pci_fin_write2
-pci_write_dword2:
+        jmp     .fin_write2
+.dword2:
         out     dx, eax
-pci_fin_write2:
+.fin_write2:
 
         xor     eax, eax
         pop     ebx esi
         ret
 
-pci_write_reg_err:
+.pci_write_reg_err:
         xor     eax, eax
         dec     eax
         pop     ebx esi
@@ -432,12 +432,12 @@ pci_mmio_map:
         or      eax, eax
         jnz     @f
         mov     eax, -3 ; empty I/O space
-        jmp     mmio_ret_fail
+        jmp     .mmio_ret_fail
 @@:
         test    eax, 1
         jz      @f
         mov     eax, -4 ; damned ports (not MMIO space)
-        jmp     mmio_ret_fail
+        jmp     .mmio_ret_fail
 @@:
         pop     ecx     ; ecx = block size, bytes (expanded to whole page)
         mov     ebx, ecx; user_alloc destroys eax, ecx, edx, but saves ebx
@@ -445,15 +445,15 @@ pci_mmio_map:
         push    eax           ; store MMIO physical address + keep 2DWords in the stack
         stdcall user_alloc, ecx
         or      eax, eax
-        jnz     mmio_map_over
+        jnz     .mmio_map_over
         mov     eax, -5 ; problem with page allocation
 
-mmio_ret_fail:
+.mmio_ret_fail:
         pop     ecx
         pop     edx
         ret
 
-mmio_map_over:
+.mmio_map_over:
         mov     ecx, ebx; ecx = size (bytes, expanded to whole page)
         shr     ecx, 12 ; ecx = number of pages
         mov     ebx, eax; ebx = linear address
@@ -596,16 +596,16 @@ sys_pcibios:
 .unsupported_func:
         mov     ah, 0x81                ; FUNC_NOT_SUPPORTED
 .return:
-        mov     dword[esp + 4 ], edi
-        mov     dword[esp + 8], esi
+        mov     dword[esp + SYSCALL_STACK.edi], edi
+        mov     dword[esp + SYSCALL_STACK.esi], esi
 .return_abcd:
-        mov     dword[esp + 24], edx
+        mov     dword[esp + SYSCALL_STACK.edx], edx
 .return_abc:
-        mov     dword[esp + 28], ecx
+        mov     dword[esp + SYSCALL_STACK.ecx], ecx
 .return_ab:
-        mov     dword[esp + 20], ebx
+        mov     dword[esp + SYSCALL_STACK.ebx], ebx
 .return_a:
-        mov     dword[esp + 32], eax
+        mov     dword[esp + SYSCALL_STACK.eax], eax
         ret
 
 proc pci_enum

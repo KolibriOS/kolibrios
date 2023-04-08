@@ -76,6 +76,7 @@ update_counters:
         sub     eax, [esi - sizeof.APPDATA + APPDATA.counter_add] ; time stamp counter add
         add     [esi - sizeof.APPDATA + APPDATA.counter_sum], eax ; counter sum
         ret
+
 align 4
 updatecputimes:
         mov     ecx, [thread_count]

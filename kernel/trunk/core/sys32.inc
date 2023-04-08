@@ -525,18 +525,18 @@ destroy_thread:
         jb      .loop2
 
         mov     ecx, esi          ; remove buttons
-  bnewba2:
+  .bnewba2:
         mov     edi, [BTN_ADDR]
         mov     eax, edi
         cld
         movzx   ebx, word [edi]
         inc     bx
-  bnewba:
+  .bnewba:
         dec     bx
-        jz      bnmba
+        jz      .bnmba
         add     eax, 0x10
         cmp     cx, [eax]
-        jnz     bnewba
+        jnz     .bnewba
         pusha
         mov     ecx, ebx
         inc     ecx
@@ -546,8 +546,8 @@ destroy_thread:
         call    memmove
         dec     dword [edi]
         popa
-        jmp     bnewba2
-  bnmba:
+        jmp     .bnewba2
+  .bnmba:
 
         pusha   ; save window coordinates for window restoring
         cld
@@ -662,27 +662,27 @@ destroy_thread:
         shl     edx, BSF sizeof.APPDATA
         mov     edx, [SLOT_BASE + edx + APPDATA.tid]
 
-  rmpr0:
+  .rmpr0:
         mov     esi, [RESERVED_PORTS]
 
         test    esi, esi
-        jz      rmpr9
+        jz      .rmpr9
 
-  rmpr3:
+  .rmpr3:
 
         mov     edi, esi
         shl     edi, 4
         add     edi, RESERVED_PORTS
 
         cmp     edx, [edi]
-        je      rmpr4
+        je      .rmpr4
 
         dec     esi
-        jnz     rmpr3
+        jnz     .rmpr3
 
-        jmp     rmpr9
+        jmp     .rmpr9
 
-  rmpr4:
+  .rmpr4:
 
         mov     ecx, 256
         sub     ecx, esi
@@ -695,9 +695,9 @@ destroy_thread:
 
         dec     dword [RESERVED_PORTS]
 
-        jmp     rmpr0
+        jmp     .rmpr0
 
-  rmpr9:
+  .rmpr9:
         popa
 
 ; clearing APPDATA structure this thread

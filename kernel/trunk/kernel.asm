@@ -1363,7 +1363,14 @@ display_number:
 ; add check pointers
         test    bl, bl
         jz      @f
-        stdcall is_region_userspace, ecx, 1
+        bt      ebx, 30  ; check 30 bit
+        jb      @f
+        stdcall is_region_userspace, ecx, 4
+        jz      @f
+        ret
+@@:
+        jz      @f
+        stdcall is_region_userspace, ecx, 8
         jz      @f
         ret
 @@:
@@ -1882,16 +1889,6 @@ sm10:
         smn2:
         ret
 
-detect_devices:
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-;include 'detect/commouse.inc'
-;include 'detect/ps2mouse.inc'
-;include 'detect/dev_fd.inc'
-;include 'detect/dev_hdcd.inc'
-;include 'detect/sear_par.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        ret
-
 sys_end:
 ;--------------------------------------
         cmp     [_display.select_cursor], 0
@@ -2024,27 +2021,27 @@ is_kernel_thread:
 sysfn_terminate:        ; 18.2 = TERMINATE
         push    ecx
         cmp     ecx, 2
-        jb      noprocessterminate
+        jb      .noprocessterminate
         mov     edx, [thread_count]
         cmp     ecx, edx
-        ja      noprocessterminate
+        ja      .noprocessterminate
         mov     eax, [thread_count]
         shl     ecx, BSF sizeof.APPDATA
         add     ecx, SLOT_BASE
         mov     edx, [ecx + APPDATA.tid]
         cmp     byte [ecx + APPDATA.state], TSTATE_FREE
-        jz      noprocessterminate
+        jz      .noprocessterminate
         push    eax
         mov     eax, ecx
         call    is_kernel_thread
         pop     eax
-        jz      noprocessterminate
+        jz      .noprocessterminate
         push    ecx edx
         mov     edx, ecx
         call    request_terminate
         pop     edx ecx
         test    eax, eax
-        jz      noprocessterminate
+        jz      .noprocessterminate
 ;--------------------------------------
 ; terminate all network sockets it used
         pusha
@@ -2073,10 +2070,10 @@ sysfn_terminate:        ; 18.2 = TERMINATE
      ;call MEM_Heap_UnLock
 
         cmp     edx, [application_table_owner]; clear app table stat
-        jne     noatsc
+        jne     .noatsc
         call    unlock_application_table
-noatsc:
-noprocessterminate:
+.noatsc:
+.noprocessterminate:
         add     esp, 4
         ret
 ;------------------------------------------------------------------------------
@@ -2496,7 +2493,7 @@ sys_cachetodiskette:
 
 align 4
 sys_getkey:
-        mov     [esp + 32], dword 1
+        mov     [esp + SYSCALL_STACK.eax], dword 1
         ; test main buffer
         mov     ebx, [current_slot_idx]                          ; TOP OF WINDOW STACK
         movzx   ecx, word [WIN_STACK + ebx * 2]
@@ -2688,23 +2685,23 @@ sys_cpuusage:
 align 4
 sys_redrawstat:
         cmp     ebx, 1
-        jne     no_widgets_away
+        jne     .no_widgets_away
         ; buttons away
         mov     ecx, [current_slot_idx]
-  sys_newba2:
+.sys_newba2:
         mov     edi, [BTN_ADDR]
         cmp     [edi], dword 0  ; empty button list ?
-        je      end_of_buttons_away
+        je      .end_of_buttons_away
         movzx   ebx, word [edi]
         inc     ebx
         mov     eax, edi
-  sys_newba:
+.sys_newba:
         dec     ebx
-        jz      end_of_buttons_away
+        jz      .end_of_buttons_away
 
         add     eax, 0x10
         cmp     cx, [eax]
-        jnz     sys_newba
+        jnz     .sys_newba
 
         push    eax ebx ecx
         mov     ecx, ebx
@@ -2716,16 +2713,15 @@ sys_redrawstat:
         dec     dword [edi]
         pop     ecx ebx eax
 
-        jmp     sys_newba2
+        jmp     .sys_newba2
 
-  end_of_buttons_away:
-
+.end_of_buttons_away:
         ret
 
-  no_widgets_away:
+.no_widgets_away:
 
         cmp     ebx, 2
-        jnz     srl1
+        jnz     .srl1
 
         mov     edx, [current_slot_idx]      ; return whole screen draw area for this app
         shl     edx, 5     ;?
@@ -2739,7 +2735,7 @@ sys_redrawstat:
         dec     eax
         mov     [edx + RECT.bottom], eax
 
-  srl1:
+.srl1:
         ret
 
 ;ok - 100% work
@@ -2878,7 +2874,7 @@ endg
 align 4
 checkmisc:
         cmp     [ctrl_alt_del], 1
-        jne     nocpustart
+        jne     .nocpustart
 
         mov     ebp, cpustring
         call    fs_execute_from_sysdir
@@ -2886,9 +2882,9 @@ checkmisc:
         mov     [ctrl_alt_del], 0
 ;--------------------------------------
 align 4
-nocpustart:
+.nocpustart:
         cmp     [mouse_active], 1
-        jne     mouse_not_active
+        jne     .mouse_not_active
         mov     [mouse_active], 0
 
         xor     edi, edi
@@ -2942,7 +2938,7 @@ align 4
         pop     eax
 ;--------------------------------------
 align 4
-mouse_not_active:
+.mouse_not_active:
         cmp     [REDRAW_BACKGROUND], 0  ; background update ?
         jz      nobackgr
 
@@ -3425,18 +3421,18 @@ delay_hs:     ; delay in 1/100 secs
         mov     edx, [timer_ticks]
 ;--------------------------------------
 align 4
-newtic:
+.newtic:
         mov     ecx, [timer_ticks]
         sub     ecx, edx
         cmp     ecx, ebx
-        jae     zerodelay
+        jae     .zerodelay
 
         call    change_task
 
-        jmp     newtic
+        jmp     .newtic
 ;--------------------------------------
 align 4
-zerodelay:
+.zerodelay:
         pop     edx
         pop     ecx
         ret
@@ -3527,46 +3523,46 @@ syscall_reserveportarea:        ; ReservePortArea and FreePortArea
 r_f_port_area:
 
         test    ebx, ebx
-        jnz     free_port_area
+        jnz     .free_port_area
 
         cmp     ecx, edx      ; beginning > end ?
-        ja      rpal1
+        ja      .rpal1
         cmp     edx, 65536    ;test ebx, not 0xffff
-        jae     rpal1
+        jae     .rpal1
         mov     eax, [RESERVED_PORTS]
         test    eax, eax      ; no reserved areas ?
-        je      rpal2
+        je      .rpal2
         cmp     eax, 255      ; max reserved
-        jae     rpal1
- rpal3:
+        jae     .rpal1
+ .rpal3:
         mov     ebx, eax
         shl     ebx, 4   ;16 byte is sizeof item in RESERVED_PORTS table
         add     ebx, RESERVED_PORTS
         cmp     ecx, [ebx+8]
-        ja      rpal4
+        ja      .rpal4
         cmp     edx, [ebx+4]
-        jae     rpal1
- rpal4:
+        jae     .rpal1
+ .rpal4:
         dec     eax
-        jnz     rpal3
-        jmp     rpal2
-   rpal1:
+        jnz     .rpal3
+        jmp     .rpal2
+   .rpal1:
         xor     eax, eax
         inc     eax
         ret
-   rpal2:
+   .rpal2:
      ; enable port access at port IO map
         pushad                        ; start enable io map
         mov     eax, ecx
         xor     ebp, ebp               ; enable - eax = port
         cli
-new_port_access:
+.new_port_access:
         call    set_io_access_rights
 
         inc     eax
         cmp     eax, edx
-        jbe     new_port_access
-no_unmask_io:
+        jbe     .new_port_access
+;no_unmask_io:
         sti
         popad                         ; end enable io map
 
@@ -3584,31 +3580,31 @@ no_unmask_io:
         xor     eax, eax
         ret
 
-free_port_area:
+.free_port_area:
 
         mov     eax, [RESERVED_PORTS]; no reserved areas ?
         test    eax, eax
-        jz      frpal2
+        jz      .frpal2
         mov     ebx, [current_slot]
         mov     ebx, [ebx + APPDATA.tid]
-   frpal3:
+   .frpal3:
         mov     edi, eax
         shl     edi, 4
         add     edi, RESERVED_PORTS
         cmp     ebx, [edi]
-        jne     frpal4
+        jne     .frpal4
         cmp     ecx, [edi+4]
-        jne     frpal4
+        jne     .frpal4
         cmp     edx, [edi+8]
-        jne     frpal4
-        jmp     frpal1
-   frpal4:
+        jne     .frpal4
+        jmp     .frpal1
+   .frpal4:
         dec     eax
-        jnz     frpal3
-   frpal2:
+        jnz     .frpal3
+   .frpal2:
         inc     eax
         ret
-   frpal1:
+   .frpal1:
         push    ecx
         mov     ecx, 256
         sub     ecx, eax
@@ -3627,28 +3623,27 @@ free_port_area:
 
         xor     ebp, ebp
         inc     ebp
-new_port_access_disable:           ; disable - eax = port
+.new_port_access_disable:           ; disable - eax = port
         call    set_io_access_rights
 
         inc     eax
         cmp     eax, edx
-        jbe     new_port_access_disable
-no_mask_io:                         ; end disable io map
+        jbe     .new_port_access_disable
+;no_mask_io:                         ; end disable io map
         xor     eax, eax
         ret
 ;-----------------------------------------------------------------------------
 align 4
 drawbackground:
-dbrv20:
         cmp     [BgrDrawMode], dword 1
-        jne     bgrstr
+        jne     .bgrstr
         call    vesa20_drawbackground_tiled
 ;        call    [draw_pointer]
         call    __sys_draw_pointer
         ret
 ;--------------------------------------
 align 4
-bgrstr:
+.bgrstr:
         call    vesa20_drawbackground_stretch
 ;        call    [draw_pointer]
         call    __sys_draw_pointer
@@ -3708,12 +3703,14 @@ sys_putimage_palette:
 ; edi = pointer to palette
 ; ebp = row delta
 ; check pointer
-        push    ecx
+        push    ecx esi
         mov     ax, cx
         shr     ecx, 16
         imul    eax, ecx
+;        imul    eax, esi ; eax*count bit in 1 pixel
+;        shr     eax, 3
         stdcall is_region_userspace, ebx, eax
-        pop     ecx
+        pop     esi ecx
         jnz     sys_putimage.exit
 
         mov     eax, [current_slot]
@@ -4078,10 +4075,10 @@ kb_write_wait_ack:
 if used _rdtsc
 _rdtsc:
         bt      [cpu_caps], CAPS_TSC
-        jnc     ret_rdtsc
+        jnc     .ret_rdtsc
         rdtsc
         ret
-   ret_rdtsc:
+   .ret_rdtsc:
         mov     edx, 0xffffffff
         mov     eax, 0xffffffff
         ret

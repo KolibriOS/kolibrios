@@ -480,7 +480,7 @@ sys_getevent:                                      ;; f11
         cli     ; the right to hope to disable interrupts, as when called from shed
         call    get_event_for_app
         popfd
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -492,7 +492,7 @@ sys_wait_event_timeout:                            ;; f23
         call    unprotect_from_terminate
         mov     edx, get_event_for_app; wait_test
         call    Wait_events_ex        ; ebx - timeout
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         call    protect_from_terminate
         ret
 ;-----------------------------------------------------------------------------

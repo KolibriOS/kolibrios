@@ -17,19 +17,18 @@ $Revision$
 ; ebx =3 - set alarm-clock ecx - 00SSMMHH
 ; out: 0 -Ok 1 -wrong format 2 -battery low
 sys_settime:
-      
         cli
         mov     al, 0x0d
         out     0x70, al
         in      al, 0x71
         bt      ax, 7
-        jnc     bat_low
-        cmp     ebx, 2;day of week
-        jne     nosetweek
+        jnc     .bat_low
+        cmp     ebx, 2  ;day of week
+        jne     .nosetweek
         test    ecx, ecx   ;test day of week
-        je      wrongtime
+        je      .wrongtime
         cmp     ecx, 7
-        ja      wrongtime
+        ja      .wrongtime
         mov     edx, 0x70
         call    startstopclk
         dec     edx
@@ -38,52 +37,52 @@ sys_settime:
         inc     edx
         mov     al, cl
         out     dx, al
-        jmp     endsettime
-  nosetweek:           ;set date
+        jmp     .endsettime
+  .nosetweek:           ;set date
         cmp     ebx, 1
-        jne     nosetdate
+        jne     .nosetdate
         cmp     cl, 0x99;test year
-        ja      wrongtime
+        ja      .wrongtime
         shl     ecx, 4
         cmp     cl, 0x90
-        ja      wrongtime
+        ja      .wrongtime
         cmp     ch, 0x99;test month
-        ja      wrongtime
+        ja      .wrongtime
         shr     ecx, 4
         test    ch, ch
-        je      wrongtime
+        je      .wrongtime
         cmp     ch, 0x12
-        ja      wrongtime
+        ja      .wrongtime
         shl     ecx, 8
         bswap   ecx   ;ebx=00YYMMDD
         test    cl, cl ;test day
-        je      wrongtime
+        je      .wrongtime
         shl     ecx, 4
         cmp     cl, 0x90
-        ja      wrongtime
+        ja      .wrongtime
         shr     ecx, 4
         cmp     ch, 2 ;February
-        jne     testday
+        jne     .testday
         cmp     cl, 0x29
-        ja      wrongtime
-        jmp     setdate
-    testday:
+        ja      .wrongtime
+        jmp     .setdate
+    .testday:
         cmp     ch, 8
-        jb      testday1;Aug-Dec
+        jb      .testday1 ;Aug-Dec
         bt      cx, 8
-        jnc     days31
-        jmp     days30
-    testday1:
+        jnc     .days31
+        jmp     .days30
+    .testday1:
         bt      cx, 8 ;Jan-Jul ex.Feb
-        jnc     days30
-    days31:
+        jnc     .days30
+    .days31:
         cmp     cl, 0x31
-        ja      wrongtime
-        jmp     setdate
-    days30:
+        ja      .wrongtime
+        jmp     .setdate
+    .days30:
         cmp     cl, 0x30
-        ja      wrongtime
-    setdate:
+        ja      .wrongtime
+    .setdate:
         mov     edx, 0x70
         call    startstopclk
         dec     edx
@@ -105,26 +104,26 @@ sys_settime:
         shr     ecx, 8
         mov     al, ch
         out     dx, al
-        jmp     endsettime
-    nosetdate:       ;set time or alarm-clock
+        jmp     .endsettime
+    .nosetdate:       ;set time or alarm-clock
         cmp     ebx, 3
-        ja      wrongtime
+        ja      .wrongtime
         cmp     cl, 0x23
-        ja      wrongtime
+        ja      .wrongtime
         cmp     ch, 0x59
-        ja      wrongtime
+        ja      .wrongtime
         shl     ecx, 4
         cmp     cl, 0x90
-        ja      wrongtime
+        ja      .wrongtime
         cmp     ch, 0x92
-        ja      wrongtime
+        ja      .wrongtime
         shl     ecx, 4
         bswap   ecx    ;00HHMMSS
         cmp     cl, 0x59
-        ja      wrongtime
+        ja      .wrongtime
         shl     ecx, 4
         cmp     cl, 0x90
-        ja      wrongtime
+        ja      .wrongtime
         shr     ecx, 4
 
         mov     edx, 0x70
@@ -132,7 +131,7 @@ sys_settime:
         dec     edx
         cmp     ebx, 3
       
-        je      setalarm
+        je      .setalarm
         xor     eax, eax;al=0-set seconds
         out     dx, al
         inc     edx
@@ -151,8 +150,8 @@ sys_settime:
         shr     ecx, 8
         mov     al, ch
         out     dx, al
-        jmp     endsettime
-   setalarm:
+        jmp     .endsettime
+   .setalarm:
         mov     al, 1;set seconds for al.
         out     dx, al
         inc     edx
@@ -178,19 +177,19 @@ sys_settime:
         in      al, dx
         bts     ax, 5;set bit 5
         out     dx, al
-    endsettime:
+    .endsettime:
         dec     edx
         call    startstopclk
         sti
-        and     [esp+36-4], dword 0
+        and     [esp + SYSCALL_STACK.eax], dword 0
         ret
-   bat_low:
+   .bat_low:
         sti
-        mov     [esp+36-4], dword 2
+        mov     [esp + SYSCALL_STACK.eax], dword 2
         ret
-   wrongtime:
+   .wrongtime:
         sti
-        mov     [esp+36-4], dword 1
+        mov     [esp + SYSCALL_STACK.eax], dword 1
         ret
 
 startstopclk:
@@ -235,14 +234,11 @@ sys_clock:
         movzx   edx, al
         add     ecx, edx
         sti
-        mov     [esp + 32], ecx
+        mov     [esp + SYSCALL_STACK.eax], ecx
         ret
 
-
 align 4
-
 sys_date:
-
         cli
   @@:
         mov     al, 10
@@ -254,7 +250,6 @@ sys_date:
         call    delay_ms
         jmp     @b
   @@:
-
         mov     ch, 0
         mov     al, 7           ; date
         out     0x70, al
@@ -270,5 +265,5 @@ sys_date:
         in      al, 0x71
         mov     cl, al
         sti
-        mov     [esp+32], ecx
+        mov     [esp + SYSCALL_STACK.eax], ecx
         ret

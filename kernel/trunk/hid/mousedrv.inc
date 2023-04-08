@@ -61,7 +61,7 @@ draw_mouse_under:
         xor     ecx, ecx
         xor     edx, edx
 
-  mres:
+  .mres:
         movzx   eax, word [X_UNDER]
         movzx   ebx, word [Y_UNDER]
         add     eax, ecx
@@ -86,11 +86,13 @@ draw_mouse_under:
         pop     ecx
         inc     ecx
         cmp     ecx, 16
-        jnz     mres
+        jnz     .mres
+
         xor     ecx, ecx
         inc     edx
         cmp     edx, 24
-        jnz     mres
+        jnz     .mres
+
         popad
         ret
 
@@ -186,7 +188,7 @@ align 4
         mov     edx, 0
 ;--------------------------------------
 align 4
-drm:
+.drm:
         push    eax
         push    ebx
         push    ecx
@@ -243,11 +245,13 @@ drm:
         mov     eax, [esp+4]    ; and x
         inc     ecx             ; +1 cycle
         cmp     ecx, 16         ; if more than 16
-        jnz     drm
+        jnz     .drm
+
         xor     ecx, ecx
         inc     edx
         cmp     edx, 24
-        jnz     drm
+        jnz     .drm
+
         add     esp, 8
         popad
         ret

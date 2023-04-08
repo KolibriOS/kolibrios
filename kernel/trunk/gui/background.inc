@@ -20,12 +20,12 @@ endg
 align 4
 sys_background:
         cmp     ebx, 1                     ; BACKGROUND SIZE
-        jnz     nosb1
+        jnz     .nosb1
         test    ecx, ecx
-        jz      sbgrr
+        jz      .sbgrr
 
         test    edx, edx
-        jz      sbgrr
+        jz      .sbgrr
 ;--------------------------------------
 align 4
 @@:
@@ -98,13 +98,13 @@ align 4
         mov     [bgrlock], 0
 ;--------------------------------------
 align 4
-sbgrr:
+.sbgrr:
         ret
 ;--------------------------------------
 align 4
-nosb1:
+.nosb1:
         cmp     ebx, 2                     ; SET PIXEL
-        jnz     nosb2
+        jnz     .nosb2
 
         mov     eax, [img_background]
         test    ecx, ecx
@@ -115,8 +115,8 @@ nosb1:
 align 4
 @@:
         mov     ebx, [mem_BACKGROUND]
-        add     ebx, 4095
-        and     ebx, -4096
+        add     ebx, PAGE_SIZE-1
+        and     ebx, -PAGE_SIZE
         sub     ebx, 4
         cmp     ecx, ebx
         ja      .ret
@@ -132,7 +132,7 @@ align 4
         ret
 ;--------------------------------------
 align 4
-nosb2:
+.nosb2:
         cmp     ebx, 3                     ; DRAW BACKGROUND
         jnz     nosb3
 ;--------------------------------------
@@ -206,7 +206,7 @@ align 4
         cmp     [img_background], static_background_data
         jz      .nomem
         stdcall user_alloc, [mem_BACKGROUND]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         test    eax, eax
         jz      .nomem
         mov     ebx, eax
@@ -276,14 +276,14 @@ align 4
         pop     eax
         and     dword [page_tabs+(eax-1)*4], not MEM_BLOCK_DONT_FREE
         stdcall user_free, ebx
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         and     [bgrlockpid], 0
         mov     [bgrlock], 0
         ret
 ;--------------------------------------
 align 4
 .err:
-        and     dword [esp+32], 0
+        and     dword [esp + SYSCALL_STACK.eax], 0
         ret
 ;-------------------------------------
 align 4
@@ -293,17 +293,17 @@ nosb7:
 
         mov     ecx, [current_slot]
         xor     eax, eax
-        xchg    eax, [ecx+APPDATA.draw_bgr_x]
-        mov     [esp + 32], eax ; eax = [left]*65536 + [right]
+        xchg    eax, [ecx + APPDATA.draw_bgr_x]
+        mov     [esp + SYSCALL_STACK.eax], eax ; eax = [left]*65536 + [right]
         xor     eax, eax
-        xchg    eax, [ecx+APPDATA.draw_bgr_y]
-        mov     [esp + 20], eax ; ebx = [top]*65536 + [bottom]
+        xchg    eax, [ecx + APPDATA.draw_bgr_y]
+        mov     [esp + SYSCALL_STACK.ebx], eax ; ebx = [top]*65536 + [bottom]
         ret
 ;---------------------------------------
 align 4
 nosb8:
         cmp     ebx, 9
-        jnz     nosb9
+        jnz     .exit
 ; ecx = [left]*65536 + [right]
 ; edx = [top]*65536 + [bottom]
         mov     eax, [_display.width]
@@ -343,10 +343,6 @@ nosb8:
 align 4
 .exit:
         ret
-;--------------------------------------
-align 4
-nosb9:
-        ret
 ;------------------------------------------------------------------------------
 
 
@@ -384,7 +380,7 @@ sys_getbackground: ; sysfn 39
         mov     eax, [BgrDataWidth]
         shl     eax, 16
         mov     ax, word [BgrDataHeight]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;---------------------------------------
 align 4
@@ -400,8 +396,8 @@ align 4
 align 4
 @@:
         mov     ebx, [mem_BACKGROUND]
-        add     ebx, 4095
-        and     ebx, -4096
+        add     ebx, PAGE_SIZE-1
+        and     ebx, -PAGE_SIZE
         sub     ebx, 4
         cmp     ecx, ebx
         ja      .ret
@@ -409,7 +405,7 @@ align 4
         mov     eax, [ecx+eax]
 
         and     eax, 0xFFFFFF
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
 align 4
 .ret:
         ret
@@ -456,8 +452,8 @@ align 4
 
         ; check bounds
         mov     ebx, [mem_BACKGROUND]
-        add     ebx, 4095
-        and     ebx, -4096
+        add     ebx, PAGE_SIZE-1
+        and     ebx, -PAGE_SIZE
         sub     ebx, 4
         add     eax, [.subrect_startptr]
         cmp     eax, ebx
@@ -495,7 +491,7 @@ align 4
         jmp     .copy_rect
 .end_copy_rect:
         xor     eax, eax
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
 ;--------------------------------------
 align 4
 .fail_39_3:
@@ -513,7 +509,7 @@ align 4
 ;--------------------------------------
 align 4
 .nogb4:
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;-----------------------------------------------------------------------------
 
