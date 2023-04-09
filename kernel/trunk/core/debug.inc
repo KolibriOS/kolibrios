@@ -44,12 +44,14 @@ get_debuggee_slot:
         cli
         mov     eax, ecx
         call    pid_to_slot
+        ;call     pid_to_appdata
         test    eax, eax
         jz      .ret_bad
         shl     eax, BSF sizeof.APPDATA
         push    ebx
         mov     ebx, [current_slot_idx]
         cmp     [SLOT_BASE + eax + APPDATA.debugger_slot], ebx
+        ;cmp     [eax + APPDATA.debugger_slot], ebx
         pop     ebx
         jnz     .ret_bad
 ;       clc     ; automatically
@@ -64,6 +66,7 @@ debug_detach:
         call    get_debuggee_slot
         jc      .ret
         and     dword [eax + SLOT_BASE + APPDATA.debugger_slot], 0
+        ;and     dword [eax + APPDATA.debugger_slot], 0
         call    do_resume
 .ret:
         sti
@@ -74,10 +77,13 @@ debug_terminate:
         call    get_debuggee_slot
         jc      debug_detach.ret
         mov     ecx, eax
+
         shr     ecx, BSF sizeof.APPDATA
+        ;movzx   ecx, ch ; del when sysfn_term... will using APPDATA
+
 ;        push    2
 ;        pop     ebx
-        mov     edx, esi
+        mov     edx, esi ; what?
         jmp     sysfn_terminate
 
 debug_suspend:
@@ -93,13 +99,15 @@ debug_suspend:
         jc      .ret
 ; } End patch
         mov     cl, [SLOT_BASE + eax + APPDATA.state] ; process state
+        ;mov     cl, [eax + APPDATA.state] ; process state
         test    cl, cl
         jz      .1
-        cmp     cl, 5
+        cmp     cl, TSTATE_WAITING
         jnz     .ret
-        mov     cl, 2
+        mov     cl, TSTATE_WAIT_SUSPENDED
 .2:
         mov     [SLOT_BASE + eax + APPDATA.state], cl
+        ;mov     [eax + APPDATA.state], cl
 .ret:
         sti
         ret
@@ -109,13 +117,15 @@ debug_suspend:
 
 do_resume:
         mov     cl, [SLOT_BASE + eax + APPDATA.state]
-        cmp     cl, 1
+        ;mov     cl, [eax + APPDATA.state]
+        cmp     cl, TSTATE_RUN_SUSPENDED
         jz      .1
-        cmp     cl, 2
+        cmp     cl, TSTATE_WAIT_SUSPENDED
         jnz     .ret
-        mov     cl, 5
+        mov     cl, TSTATE_WAITING
 .2:
         mov     [SLOT_BASE + eax + APPDATA.state], cl
+        ;mov     [eax + APPDATA.state], cl
 .ret:
         ret
 .1:
@@ -140,7 +150,7 @@ debug_getcontext:
 ; ecx=pid
 ; edx=sizeof(CONTEXT)
 ; esi->CONTEXT
-; destroys eax,ebx,ecx,edx,esi,edi
+; destroys eax,ebx,ecx,edx,esi,edi, ebp
 
         xor     ebx, ebx            ; 0 - get only gp regs
         cmp     edx, 40
@@ -156,13 +166,17 @@ debug_getcontext:
         jc      .ret
 
         shr     eax, BSF sizeof.APPDATA
+        ;movzx   ebp, ah
+
         cmp     eax, [fpu_owner]
+        ;cmp     ebp, [fpu_owner]
         jne     @f
         inc     bh                ; set swap context flag
 @@:
         shl     eax, BSF sizeof.APPDATA
         mov     edi, esi
         mov     eax, [SLOT_BASE + eax + APPDATA.pl0_stack]
+        ;mov     eax, [eax + APPDATA.pl0_stack]
         lea     esi, [eax + RING0_STACK_SIZE]
 
 .ring0:
@@ -232,6 +246,7 @@ debug_setcontext:
         jc      .stiret
 ;        mov     esi, edx
         mov     eax, [eax + SLOT_BASE+APPDATA.pl0_stack]
+        ;mov     eax, [eax + APPDATA.pl0_stack]
         lea     edi, [eax + RING0_STACK_SIZE]
 
 .ring0:
@@ -268,6 +283,7 @@ debug_set_drx:
         jc      .errret
         mov     ebp, eax
         lea     eax, [eax + SLOT_BASE + APPDATA.dbg_regs]
+        ;lea     eax, [eax + APPDATA.dbg_regs]
 ; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
 ; [eax+10]=dr7
         cmp     esi, OS_BASE
@@ -295,17 +311,18 @@ debug_set_drx:
 ;        imul    eax, ebp, tss_step/32
 ;        and     byte [eax + tss_data + TSS._trap], not 1
         and     [SLOT_BASE + ebp + APPDATA.dbg_state], not 1
+        ;and     [ebp + APPDATA.dbg_state], not 1
 .okret:
-        and     dword [esp+32], 0
+        and     dword [esp + SYSCALL_STACK.eax], 0
         sti
         ret
 .errret:
         sti
-        mov     dword [esp+32], 1
+        mov     dword [esp + SYSCALL_STACK.eax], 1
         ret
 .errret2:
         sti
-        mov     dword [esp+32], 2
+        mov     dword [esp + SYSCALL_STACK.eax], 2
         ret
 .new:
 ; add new breakpoint
@@ -342,6 +359,7 @@ debug_set_drx:
 ;        imul    eax, ebp, tss_step/32
 ;        or      byte [eax + tss_data + TSS._trap], 1
         or      [SLOT_BASE + ebp + APPDATA.dbg_state], 1
+        ;or      [ebp + APPDATA.dbg_state], 1
         jmp     .okret
 
 debug_read_process_memory:
@@ -355,13 +373,14 @@ debug_read_process_memory:
         call    get_debuggee_slot
         jc      .err
         shr     eax, BSF sizeof.APPDATA
+        ;movzx   eax,ah
         mov     ecx, edi
         call    read_process_memory
         sti
-        mov     dword [esp+32], eax
+        mov     dword [esp + SYSCALL_STACK.eax], eax
         ret
 .err:
-        or      dword [esp+32], -1
+        or      dword [esp + SYSCALL_STACK.eax], -1
         ret
 
 debug_write_process_memory:
@@ -375,10 +394,11 @@ debug_write_process_memory:
         call    get_debuggee_slot
         jc      debug_read_process_memory.err
         shr     eax, BSF sizeof.APPDATA
+        ;movzx   eax,ah
         mov     ecx, edi
         call    write_process_memory
         sti
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 debugger_notify:

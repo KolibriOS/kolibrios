@@ -392,7 +392,7 @@ proc create_trampoline_pgmap
         stdcall kernel_alloc, PAGE_SIZE
         mov     edi, eax
         mov     esi, master_tab
-        mov     ecx, 1024
+        mov     ecx, PAGE_SIZE/4
         rep movsd
         mov     ecx, [master_tab + (OS_BASE shr 20)]
         mov     [eax], ecx
@@ -419,12 +419,12 @@ proc new_mem_resize stdcall, new_size:dword
 
         mov     edi, [new_size]
         add     edi, PAGE_SIZE-1
-        and     edi, not 4095
+        and     edi, -PAGE_SIZE
         mov     [new_size], edi
 
         mov     esi, [ebx + PROC.mem_used]
         add     esi, PAGE_SIZE-1
-        and     esi, not 4095
+        and     esi, -PAGE_SIZE
 
         cmp     edi, esi
         ja      .expand

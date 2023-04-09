@@ -20,9 +20,45 @@ struct  SYS_BUTTON
         id_hi           dw ?
                         dw ?
 ends
-
 ;---------------------------------------------------------------
-syscall_button: ;////////////// system function 8 //////////////
+align 4
+; @brief system function 17 - Get the identifier of the pressed button
+; @param eax 17 - number function
+; @return  eax = 1 - buffer empty,
+;          eax = high 24 bits contain button identifier,
+;          al = 0 - the button was pressed with left mouse button,
+;          al = bit corresponding to used mouse button otherwise
+sys_getbutton:
+        mov     ebx, [current_slot_idx]    ; TOP OF WINDOW STACK
+        mov     [esp + SYSCALL_STACK.eax], dword 1
+        movzx   ecx, word [WIN_STACK + ebx * 2]
+        mov     edx, [thread_count] ; less than 256 processes
+        cmp     ecx, edx
+        jne     .exit
+        movzx   eax, byte [BTN_COUNT]
+        test    eax, eax
+        jz      .exit
+        mov     eax, [BTN_BUFF]
+        and     al, 0xFE                ; delete left button bit
+        mov     [BTN_COUNT], byte 0
+        mov     [esp + SYSCALL_STACK.eax], eax
+;--------------------------------------
+align 4
+.exit:
+        ret
+;---------------------------------------------------------------
+; @brief system function 8 - define/delete the button
+; @param eax = 8 - number function
+; @param ebx = [offset_x]*65536 + [width]
+; @param ecx = [offset_y]*65536 + [height]
+; @param edx = 0xXYnnnnnn, where:
+;        nnnnnn = identifier of the button
+;        31 bit - delete button
+;        30 bit - don't draw button
+;        29 bit - don't draw button frame when pressed
+; @param esi = 0x00RRGGBB - button color
+; @return  function does not return value
+syscall_button:
 ;---------------------------------------------------------------
 ;? Define/undefine GUI button object
 ;---------------------------------------------------------------

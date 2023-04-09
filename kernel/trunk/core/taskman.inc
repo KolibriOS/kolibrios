@@ -1071,4 +1071,35 @@ get_curr_slot:
         mov     eax, [current_slot]
         ret
 
+pid_to_appdata:
+;Input:
+;  eax - pid of process
+;Output:
+;  eax - 0 - not found or pointer on APPDATA
+        push    ebx
+        push    ecx
+        mov     ebx, [thread_count]
+        shl     ebx, BSF sizeof.APPDATA ; multiply by size
+        ; skip first process in the task table
+.loop:
+        add     ecx, sizeof.APPDATA
+        cmp     [SLOT_BASE + ecx + APPDATA.state], TSTATE_FREE
+        jz      .loop  ;skip empty slots
+        cmp     [SLOT_BASE + ecx + APPDATA.tid], eax
+        jz      .pid_found
+        ;ecx = offset of current process info entry
+        ;ebx = maximum permitted offset
+        cmp     ecx, ebx
+        jb      .loop
+
+        pop     ecx
+        pop     ebx
+        xor     eax, eax
+        ret
+.pid_found:
+        mov     eax, ecx
+        pop     ecx
+        pop     ebx
+        ret
+
 include "debug.inc"

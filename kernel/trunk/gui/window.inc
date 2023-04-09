@@ -277,7 +277,7 @@ dd  .setSkinUnicode
 
 .getCaptionHeight:
         mov     eax, [_skinh]
-        mov     [esp + 32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 .getScreenWorkingArea:

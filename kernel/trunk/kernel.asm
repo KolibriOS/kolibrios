@@ -1073,14 +1073,11 @@ if preboot_blogesc
 end if
 
         mov     [timer_ticks_enable], 1         ; for cd driver
-
         sti
 
         call    mtrr_validate
 
         jmp     osloop
-
-
         ; Fly :)
 
 uglobal
@@ -1266,13 +1263,13 @@ idle_thread:
 ; Beware. Don't do anything here. Anything at all.
 idle_loop:
         cmp     [use_mwait_for_idle], 0
-        jnz     idle_loop_mwait
+        jnz     .mwait
 
-idle_loop_hlt:
+.hlt:
         hlt
-        jmp     idle_loop_hlt
+        jmp     .hlt
 
-idle_loop_mwait:
+.mwait:
         mov     eax, idle_addr
         xor     ecx, ecx
         xor     edx, edx
@@ -1280,7 +1277,7 @@ idle_loop_mwait:
         xor     ecx, ecx
         mov     eax, 20h        ; or 10h
         mwait
-        jmp     idle_loop_mwait
+        jmp     .mwait
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1334,9 +1331,9 @@ endg
 set_variables:
 
         mov     ecx, 0x16                    ; flush port 0x60
-.fl60:
+@@:
         in      al, 0x60
-        loop    .fl60
+        loop    @b
         push    eax
 
         mov     ax, [BOOT.y_res]
@@ -1403,30 +1400,31 @@ display_number_force:
         and     eax, 0x3fffffff
         cmp     eax, 0xffff     ; length > 0 ?
         pop     eax
-        jge     cont_displ
+        jge     .cont_displ
         ret
-   cont_displ:
+   .cont_displ:
         push    eax
         and     eax, 0x3fffffff
         cmp     eax, 61*0x10000  ; length <= 60 ?
         pop     eax
-        jb      cont_displ2
+        jb      .cont_displ2
         ret
-   cont_displ2:
+   .cont_displ2:
 
         pushad
 
         cmp     al, 1            ; ecx is a pointer ?
-        jne     displnl1
+        jne     @f
         mov     ebp, ebx
         add     ebp, 4
-        mov     ebp, [ebp + std_application_base_address]
-        mov     ebx, [ebx + std_application_base_address]
- displnl1:
+        mov     ebp, [ebp] ;[ebp + std_application_base_address]
+        mov     ebx, [ebx] ;[ebx + std_application_base_address]
+@@:
         sub     esp, 64
 
         test    ah, ah            ; DECIMAL
-        jnz     no_display_desnum
+        jnz     .no_display_desnum
+
         shr     eax, 16
         and     eax, 0xC03f
 ;     and   eax,0x3f
@@ -1437,24 +1435,26 @@ display_number_force:
         mov     ecx, eax
         mov     eax, ebx
         mov     ebx, 10
- d_desnum:
+@@:
         xor     edx, edx
         call    division_64_bits
         div     ebx
         add     dl, 48
         mov     [edi], dl
         dec     edi
-        loop    d_desnum
+        loop    @b
+
         pop     eax
         call    normalize_number
         call    draw_num_text
         add     esp, 64
         popad
         ret
-   no_display_desnum:
+.no_display_desnum:
 
         cmp     ah, 0x01         ; HEXADECIMAL
-        jne     no_display_hexnum
+        jne     .no_display_hexnum
+
         shr     eax, 16
         and     eax, 0xC03f
 ;     and   eax,0x3f
@@ -1465,26 +1465,28 @@ display_number_force:
         mov     ecx, eax
         mov     eax, ebx
         mov     ebx, 16
-   d_hexnum:
+@@:
         xor     edx, edx
         call    division_64_bits
         div     ebx
-   hexletters = __fdo_hexdigits
-        add     edx, hexletters
+   ;hexletters = __fdo_hexdigits
+        add     edx, __fdo_hexdigits ;hexletters
         mov     dl, [edx]
         mov     [edi], dl
         dec     edi
-        loop    d_hexnum
+        loop    @b
+
         pop     eax
         call    normalize_number
         call    draw_num_text
         add     esp, 64
         popad
         ret
-   no_display_hexnum:
+.no_display_hexnum:
 
         cmp     ah, 0x02         ; BINARY
-        jne     no_display_binnum
+        jne     .no_display_binnum
+
         shr     eax, 16
         and     eax, 0xC03f
 ;     and   eax,0x3f
@@ -1495,21 +1497,22 @@ display_number_force:
         mov     ecx, eax
         mov     eax, ebx
         mov     ebx, 2
-   d_binnum:
+@@:
         xor     edx, edx
         call    division_64_bits
         div     ebx
         add     dl, 48
         mov     [edi], dl
         dec     edi
-        loop    d_binnum
+        loop    @b
+
         pop     eax
         call    normalize_number
         call    draw_num_text
         add     esp, 64
         popad
         ret
-   no_display_binnum:
+.no_display_binnum:
 
         add     esp, 64
         popad
@@ -1571,10 +1574,6 @@ draw_num_text:
         mov     edi, eax
 @@:
         jmp     dtext
-;-----------------------------------------------------------------------------
-iglobal
-midi_base dw 0
-endg
 ;-----------------------------------------------------------------------------
 align 4
 sys_setup:
@@ -1809,8 +1808,60 @@ get_timer_ticks:
         mov     eax, [timer_ticks]
         ret
 ;-----------------------------------------------------------------------------
+iglobal
+midi_base dw 0
+endg
 
-is_input:
+align 4
+sys_midi:
+        cmp     word [mididp], 0
+        jnz     @f
+        mov     [esp + SYSCALL_STACK.eax], 1
+        ret
+@@:
+        and     [esp + SYSCALL_STACK.eax], 0
+        dec     ebx
+        jnz     .smn1
+ ;    call setuart
+@@:
+        call    .is_output
+        test    al, al
+        jnz     @b
+        mov     dx, word [midisp]
+        mov     al, 0xff
+        out     dx, al
+@@:
+        mov     dx, word [midisp]
+        mov     al, 0xff
+        out     dx, al
+        call    .is_input
+        test    al, al
+        jnz     @b
+        call    .get_mpu_in
+        cmp     al, 0xfe
+        jnz     @b
+@@:
+        call    .is_output
+        test    al, al
+        jnz     @b
+        mov     dx, word [midisp]
+        mov     al, 0x3f
+        out     dx, al
+        ret
+.smn1:
+        dec     ebx
+        jnz     .ret
+@@:
+        call    .get_mpu_in
+        call    .is_output
+        test    al, al
+        jnz     @b
+        mov     al, bl
+        call    .put_mpu_out
+.ret:
+        ret
+
+.is_input:
         push    edx
         mov     dx, word [midisp]
         in      al, dx
@@ -1818,7 +1869,7 @@ is_input:
         pop     edx
         ret
 
-is_output:
+.is_output:
         push    edx
         mov     dx, word [midisp]
         in      al, dx
@@ -1826,71 +1877,22 @@ is_output:
         pop     edx
         ret
 
-get_mpu_in:
+.get_mpu_in:
         push    edx
         mov     dx, word [mididp]
         in      al, dx
         pop     edx
         ret
 
-put_mpu_out:
+.put_mpu_out:
         push    edx
         mov     dx, word [mididp]
         out     dx, al
         pop     edx
         ret
 
-align 4
-sys_midi:
-        cmp     [mididp], 0
-        jnz     sm0
-        mov     [esp+36], dword 1
-        ret
-sm0:
-        and     [esp+36], dword 0
-        dec     ebx
-        jnz     smn1
- ;    call setuart
-su1:
-        call    is_output
-        test    al, al
-        jnz     su1
-        mov     dx, word [midisp]
-        mov     al, 0xff
-        out     dx, al
-su2:
-        mov     dx, word [midisp]
-        mov     al, 0xff
-        out     dx, al
-        call    is_input
-        test    al, al
-        jnz     su2
-        call    get_mpu_in
-        cmp     al, 0xfe
-        jnz     su2
-su3:
-        call    is_output
-        test    al, al
-        jnz     su3
-        mov     dx, word [midisp]
-        mov     al, 0x3f
-        out     dx, al
-        ret
-smn1:
-        dec     ebx
-        jnz     smn2
-sm10:
-        call    get_mpu_in
-        call    is_output
-        test    al, al
-        jnz     sm10
-        mov     al, bl
-        call    put_mpu_out
-        smn2:
-        ret
-
+;-----------------------------------------------------------------------------
 sys_end:
-;--------------------------------------
         cmp     [_display.select_cursor], 0
         je      @f
 ; restore default cursor before killing
@@ -2028,6 +2030,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         mov     eax, [thread_count]
         shl     ecx, BSF sizeof.APPDATA
         add     ecx, SLOT_BASE
+
         mov     edx, [ecx + APPDATA.tid]
         cmp     byte [ecx + APPDATA.state], TSTATE_FREE
         jz      .noprocessterminate
@@ -2054,7 +2057,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 ; restore default cursor before killing
         pusha
         mov     ecx, [esp+32]
-        shl     ecx, 8
+        shl     ecx, BSF sizeof.APPDATA
         add     ecx, SLOT_BASE
         mov     eax, [def_cursor]
         cmp     [ecx + APPDATA.cursor], eax
@@ -2078,8 +2081,6 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         ret
 ;------------------------------------------------------------------------------
 sysfn_terminate2:
-;lock application_table_status mutex
-.table_status:
         call    lock_application_table
         mov     eax, ecx
         call    pid_to_slot
@@ -2247,16 +2248,16 @@ sysfn_getactive:        ; 18.7 = get active window
 sysfn_sound_flag:       ; 18.8 = get/set sound_flag
 ;     cmp  ecx,1
         dec     ecx
-        jnz     nogetsoundflag
+        jnz     .set_flag
         movzx   eax, byte [sound_flag]; get sound_flag
         mov     [esp + SYSCALL_STACK.eax], eax
         ret
- nogetsoundflag:
+.set_flag:
 ;     cmp  ecx,2
         dec     ecx
-        jnz     nosoundflag
+        jnz     .err
         xor     byte [sound_flag], 1
- nosoundflag:
+.err:
         ret
 ;------------------------------------------------------------------------------
 sysfn_minimize:         ; 18.10 = minimize window
@@ -2294,13 +2295,12 @@ sysfn_getversion:       ; 18.13 = get kernel ID and version
         ret   
 ;------------------------------------------------------------------------------
 sysfn_waitretrace:     ; 18.14 = sys wait retrace
-     ;wait retrace functions
- sys_wait_retrace:
+        ;wait retrace functions
         mov     edx, 0x3da
- WaitRetrace_loop:
+.loop:
         in      al, dx
         test    al, 1000b
-        jz      WaitRetrace_loop
+        jz      .loop
         and     [esp + SYSCALL_STACK.eax], dword 0
         ret
 ;------------------------------------------------------------------------------
@@ -2488,84 +2488,6 @@ sys_cachetodiskette:
         ret
 .no_floppy_save:
         mov     [esp + SYSCALL_STACK.eax], dword 1
-        ret
-;------------------------------------------------------------------------------
-
-align 4
-sys_getkey:
-        mov     [esp + SYSCALL_STACK.eax], dword 1
-        ; test main buffer
-        mov     ebx, [current_slot_idx]                          ; TOP OF WINDOW STACK
-        movzx   ecx, word [WIN_STACK + ebx * 2]
-        mov     edx, [thread_count]
-        cmp     ecx, edx
-        jne     .finish
-        cmp     [KEY_COUNT], byte 0
-        je      .finish
-        movzx   ax, byte [KEY_BUFF + 120 + 2]
-        shl     eax, 8
-        mov     al, byte [KEY_BUFF]
-        shl     eax, 8
-        push    eax
-        dec     byte [KEY_COUNT]
-        and     byte [KEY_COUNT], 127
-        movzx   ecx, byte [KEY_COUNT]
-        add     ecx, 2
-        mov     eax, KEY_BUFF + 1
-        mov     ebx, KEY_BUFF
-        call    memmove
-        add     eax, 120 + 2
-        add     ebx, 120 + 2
-        call    memmove
-        pop     eax
-;--------------------------------------
-align 4
-.ret_eax:
-        mov     [esp + SYSCALL_STACK.eax], eax
-        ret
-;--------------------------------------
-align 4
-.finish:
-; test hotkeys buffer
-        mov     ecx, hotkey_buffer
-;--------------------------------------
-align 4
-@@:
-        cmp     [ecx], ebx
-        jz      .found
-        add     ecx, 8
-        cmp     ecx, hotkey_buffer + 120 * 8
-        jb      @b
-        ret
-;--------------------------------------
-align 4
-.found:
-        mov     ax, [ecx + 6]
-        shl     eax, 16
-        mov     ah, [ecx + 4]
-        mov     al, 2
-        and     dword [ecx + 4], 0
-        and     dword [ecx], 0
-        jmp     .ret_eax
-;------------------------------------------------------------------------------
-align 4
-sys_getbutton:
-        mov     ebx, [current_slot_idx]                         ; TOP OF WINDOW STACK
-        mov     [esp + SYSCALL_STACK.eax], dword 1
-        movzx   ecx, word [WIN_STACK + ebx * 2]
-        mov     edx, [thread_count] ; less than 256 processes
-        cmp     ecx, edx
-        jne     .exit
-        movzx   eax, byte [BTN_COUNT]
-        test    eax, eax
-        jz      .exit
-        mov     eax, [BTN_BUFF]
-        and     al, 0xFE                                    ; delete left button bit
-        mov     [BTN_COUNT], byte 0
-        mov     [esp + SYSCALL_STACK.eax], eax
-;--------------------------------------
-align 4
-.exit:
         ret
 ;------------------------------------------------------------------------------
 align 4
@@ -3308,7 +3230,7 @@ calculatebackground:   ; background
         mov     ecx, [_display.win_map_size]
         shr     ecx, 2
         rep stosd
-        mov     byte[window_data + 32 + WDATA.z_modif], ZPOS_DESKTOP
+        mov     byte[window_data + sizeof.WDATA + WDATA.z_modif], ZPOS_DESKTOP
         mov     [REDRAW_BACKGROUND], 0
         ret
 ;-----------------------------------------------------------------------------
@@ -4037,41 +3959,6 @@ putimage_get16bpp:
 ;        call    [draw_pointer]
 ;        ret
 ;-----------------------------------------------------------------------------
-align 4
-kb_write_wait_ack:
-
-        push    ecx edx
-
-        mov     dl, al
-        mov     ecx, 0x1ffff; last 0xffff, new value in view of fast CPU's
-.wait_output_ready:
-        in      al, 0x64
-        test    al, 2
-        jz      @f
-        loop    .wait_output_ready
-        mov     ah, 1
-        jmp     .nothing
-@@:
-        mov     al, dl
-        out     0x60, al
-        mov     ecx, 0xfffff; last 0xffff, new value in view of fast CPU's
-.wait_ack:
-        in      al, 0x64
-        test    al, 1
-        jnz     @f
-        loop    .wait_ack
-        mov     ah, 1
-        jmp     .nothing
-@@:
-        in      al, 0x60
-        xor     ah, ah
-
-.nothing:
-        pop     edx ecx
-
-        ret
-;-----------------------------------------------------------------------------
-
 if used _rdtsc
 _rdtsc:
         bt      [cpu_caps], CAPS_TSC
@@ -4241,153 +4128,6 @@ end if
         mov     [esp + SYSCALL_STACK.ebx], 1
         ret
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 66 sys function.                                                ;;
-;; in eax=66,ebx in [0..5],ecx,edx                                 ;;
-;; out eax                                                         ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-iglobal
-align 4
-f66call:
-           dd sys_process_def.1   ; 1 = set keyboard mode
-           dd sys_process_def.2   ; 2 = get keyboard mode
-           dd sys_process_def.3   ; 3 = get keyboard ctrl, alt, shift
-           dd sys_process_def.4   ; 4 = set system-wide hotkey
-           dd sys_process_def.5   ; 5 = delete installed hotkey
-           dd sys_process_def.6   ; 6 = disable input, work only hotkeys
-           dd sys_process_def.7   ; 7 = enable input, opposition to f.66.6
-endg
-;-----------------------------------------------------------------------------
-align 4
-sys_process_def:
-        dec     ebx
-        cmp     ebx, 7
-        jae     .not_support    ;if >=8 then or eax,-1
-
-        mov     edi, [current_slot]
-        jmp     dword [f66call + ebx*4]
-
-.not_support:
-        or      [esp + SYSCALL_STACK.eax], -1
-        ret
-;-----------------------------------------------------------------------------
-align 4
-.1:
-        mov     [edi + APPDATA.keyboard_mode], cl
-        ret
-;-----------------------------------------------------------------------------
-align 4
-.2:                             ; 2 = get keyboard mode
-        movzx   eax, byte [edi + APPDATA.keyboard_mode]
-        mov     [esp + SYSCALL_STACK.eax], eax
-        ret
-;-----------------------------------------------------------------------------
-align 4
-.3:                             ;3 = get keyboard ctrl, alt, shift
-        mov     eax, [kb_state]
-        mov     [esp + SYSCALL_STACK.eax], eax
-        ret
-;-----------------------------------------------------------------------------
-align 4
-.4:
-        mov     edi, [current_slot_idx]
-        mov     eax, hotkey_list
-@@:
-        cmp     dword [eax + 8], 0
-        jz      .found_free
-        add     eax, 16
-        cmp     eax, hotkey_list+16*256
-        jb      @b
-        mov     dword [esp + SYSCALL_STACK.eax], 1
-        ret
-.found_free:
-        mov     [eax + 8], edi
-        mov     [eax + 4], edx
-        movzx   ecx, cl
-        lea     ecx, [hotkey_scancodes+ecx*4]
-        mov     edx, [ecx]
-        mov     [eax], edx
-        mov     [ecx], eax
-        mov     [eax + 12], ecx
-        test    edx, edx
-        jz      @f
-        mov     [edx + 12], eax
-@@:
-        and     dword [esp + SYSCALL_STACK.eax], 0
-        ret
-;-----------------------------------------------------------------------------
-align 4
-.5:
-        mov     edi, [current_slot_idx]
-        movzx   ebx, cl
-        lea     ebx, [hotkey_scancodes+ebx*4]
-        mov     eax, [ebx]
-.scan:
-        test    eax, eax
-        jz      .notfound
-        cmp     [eax + 8], edi
-        jnz     .next
-        cmp     [eax + 4], edx
-        jz      .found
-.next:
-        mov     eax, [eax]
-        jmp     .scan
-.notfound:
-        mov     dword [esp + SYSCALL_STACK.eax], 1
-        ret
-.found:
-        mov     ecx, [eax]
-        jecxz   @f
-        mov     edx, [eax + 12]
-        mov     [ecx + 12], edx
-@@:
-        mov     ecx, [eax + 12]
-        mov     edx, [eax]
-        mov     [ecx], edx
-        xor     edx, edx
-        mov     [eax + 4], edx
-        mov     [eax + 8], edx
-        mov     [eax + 12], edx
-        mov     [eax], edx
-        mov     [esp + SYSCALL_STACK.eax], edx
-        ret
-;-----------------------------------------------------------------------------
-align 4
-.6:
-        pushfd
-        cli
-        mov     eax, [PID_lock_input]
-        test    eax, eax
-        jnz     @f
-; get current PID
-        mov     eax, [current_slot]
-        mov     eax, [eax + APPDATA.tid]
-; set current PID for lock input
-        mov     [PID_lock_input], eax
-@@:
-        popfd
-        ret
-;-----------------------------------------------------------------------------
-align 4
-.7:
-        mov     eax, [PID_lock_input]
-        test    eax, eax
-        jz      @f
-; get current PID
-        mov     ebx, [current_slot]
-        mov     ebx, [ebx + APPDATA.tid]
-; compare current lock input with current PID
-        cmp     ebx, eax
-        jne     @f
-
-        xor     eax, eax
-        mov     [PID_lock_input], eax
-@@:
-        ret
-;-----------------------------------------------------------------------------
-uglobal
-  PID_lock_input dd 0x0
-endg
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 61 sys function.                                                ;;
 ;; in eax=61,ebx in [1..3]                                         ;;
@@ -4737,7 +4477,7 @@ sys_apm:
         inc     eax
         or      dword [esp + 44], eax   ; error
         add     eax, 7
-        mov     dword [esp + 32], eax   ; 32-bit protected-mode interface not supported
+        mov     dword [esp + SYSCALL_STACK.eax], eax   ; 32-bit protected-mode interface not supported
         ret
 
 @@:
@@ -4748,9 +4488,9 @@ sys_apm:
         ja      @f
         and     [esp + 44], byte 0xfe    ; emulate func 0..3 as func 0
         mov     eax, [apm_vf]
-        mov     [esp + 32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         shr     eax, 16
-        mov     [esp + 28], eax
+        mov     [esp + SYSCALL_STACK.ecx], eax
         ret
 
 @@:
@@ -4769,12 +4509,12 @@ sys_apm:
         mov     cr3, eax
         pop     eax
 
-        mov     [esp + 4 ], edi
-        mov     [esp + 8], esi
-        mov     [esp + 20], ebx
-        mov     [esp + 24], edx
-        mov     [esp + 28], ecx
-        mov     [esp + 32], eax
+        mov     [esp + SYSCALL_STACK.edi], edi
+        mov     [esp + SYSCALL_STACK.esi], esi
+        mov     [esp + SYSCALL_STACK.ebx], ebx
+        mov     [esp + SYSCALL_STACK.edx], edx
+        mov     [esp + SYSCALL_STACK.ecx], ecx
+        mov     [esp + SYSCALL_STACK.eax], eax
         setc    al
         and     [esp + 44], byte 0xfe
         or      [esp + 44], al

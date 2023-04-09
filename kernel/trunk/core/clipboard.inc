@@ -152,7 +152,7 @@ align 4
         xor     eax, eax
         inc     eax     ; error
 .exit_1:
-        mov     [esp + 32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
 .exit:
         ret
 ;------------------------------------------------------------------------------
