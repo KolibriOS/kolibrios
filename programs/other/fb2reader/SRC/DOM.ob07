@@ -119,6 +119,7 @@ VAR
   sb: box_lib.scrollbar;
   urlstr* : S.STRING;
   DrawStatus, DrawToolbar: PROCEDURE;
+  win_size_x, win_size_y: INTEGER;
 
 
 PROCEDURE PushRef(ref: XML.TAG);
@@ -1543,7 +1544,7 @@ END CleanHistory;
 
 
 PROCEDURE Save;
-VAR history: File.FS; win_size_x, win_size_y, size, pos: INTEGER;
+VAR history: File.FS; size, pos: INTEGER;
 
   PROCEDURE WriteInt(history: File.FS; x: INTEGER);
   BEGIN
@@ -1578,7 +1579,6 @@ BEGIN
   IF File.WriteChar(history, 0X) THEN END;
   WriteInt(history, fsize2);
   WriteInt(history, chksum);
-  SU.GetWindowSize(win_size_x, win_size_y);
   WriteInt(history, win_size_x);
   WriteInt(history, win_size_y);
   WriteInt(history, Settings.PADDING.LRpc);
@@ -1790,6 +1790,13 @@ PROCEDURE Set_b_pict*(b_pict: BOOLEAN);
 BEGIN
   Settings.b_pict := b_pict
 END Set_b_pict;
+
+
+PROCEDURE SetWinSize* (x, y: INTEGER);
+BEGIN
+	win_size_x := x;
+	win_size_y := y
+END SetWinSize;
 
 
 BEGIN

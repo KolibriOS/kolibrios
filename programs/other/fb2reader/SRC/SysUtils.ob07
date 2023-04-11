@@ -377,4 +377,13 @@ BEGIN
 END GetSystemColors;
 
 
+PROCEDURE RolledUp* (): BOOLEAN;
+VAR
+	buffer: ARRAY 1024 OF BYTE;
+BEGIN
+	K.sysfunc3(9, sys.ADR(buffer[0]), -1)
+	RETURN ODD(LSR(buffer[70], 2))
+END RolledUp;
+
+
 END SysUtils.

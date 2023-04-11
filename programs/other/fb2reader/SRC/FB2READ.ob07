@@ -121,25 +121,30 @@ END DrawStatus;
 
 PROCEDURE DrawWindow;
 BEGIN
-  SU.GetSystemColors;
-  SU.WindowRedrawStatus(1);
-  IF Window.created THEN
-    Resize
-  ELSE
-    Window.created := TRUE
-  END;
-  SU.DefineAndDrawWindow(Window.left, Window.top, Window.width, Window.height,
-        SU.winColor, LSL(ORD({0, 1, 2}), 4) + 4 - ORD(DOM.loaded), Window.caption);
-  SU.DrawRect(0, 0, Window.width - 2 * WINDOW_BEVEL - 1, CANVAS_TOP, SU.winColor);
-  SU.DrawRect(0, Window.height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 1, Window.width - 2 * WINDOW_BEVEL - 1, STATUSBAR_HEIGHT, SU.winColor);
-  SU.DrawRect(0, 0, CANVAS_LEFT, Window.height - SkinHeight - WINDOW_BEVEL, SU.winColor);
-  SU.DrawRect(Window.width - 2 * WINDOW_BEVEL - CANVAS_LEFT - 1 - SCROLLBAR_WIDTH - 2, 0, CANVAS_LEFT + SCROLLBAR_WIDTH + 2, Window.height - SkinHeight - WINDOW_BEVEL, SU.winColor);
-  IF DOM.loaded THEN
-    ToolBar;
-    DOM.Draw;
-    DrawStatus
-  END;
-  SU.WindowRedrawStatus(2)
+	SU.GetSystemColors;
+	SU.WindowRedrawStatus(1);
+	IF Window.created THEN
+		IF ~SU.RolledUp() THEN
+			Resize;
+			DOM.SetWinSize(Window.width, Window.height)
+		END
+	ELSE
+		Window.created := TRUE
+	END;
+	SU.DefineAndDrawWindow(Window.left, Window.top, Window.width, Window.height,
+	SU.winColor, LSL(ORD({0, 1, 2}), 4) + 4 - ORD(DOM.loaded), Window.caption);
+	IF ~SU.RolledUp() THEN
+		SU.DrawRect(0, 0, Window.width - 2 * WINDOW_BEVEL - 1, CANVAS_TOP, SU.winColor);
+		SU.DrawRect(0, Window.height - SkinHeight - WINDOW_BEVEL - STATUSBAR_HEIGHT + 1, Window.width - 2 * WINDOW_BEVEL - 1, STATUSBAR_HEIGHT, SU.winColor);
+		SU.DrawRect(0, 0, CANVAS_LEFT, Window.height - SkinHeight - WINDOW_BEVEL, SU.winColor);
+		SU.DrawRect(Window.width - 2 * WINDOW_BEVEL - CANVAS_LEFT - 1 - SCROLLBAR_WIDTH - 2, 0, CANVAS_LEFT + SCROLLBAR_WIDTH + 2, Window.height - SkinHeight - WINDOW_BEVEL, SU.winColor);
+		IF DOM.loaded THEN
+			ToolBar;
+			DOM.Draw;
+			DrawStatus
+		END
+	END;
+	SU.WindowRedrawStatus(2)
 END DrawWindow;
 
 
@@ -270,7 +275,10 @@ END IsFB2;
 
 
 PROCEDURE main(title: ARRAY OF CHAR);
-VAR WinW, X1, Y1, X2, Y2, scr_pos: INTEGER; Win2: W.tWindow; resize: BOOLEAN; FilePath: S.STRING; defpath: BOOLEAN;
+VAR
+	WinW, X1, Y1, X2, Y2, scr_pos, ignore: INTEGER;
+	Win2: W.tWindow; resize: BOOLEAN;
+	FilePath: S.STRING; defpath: BOOLEAN;
 BEGIN
   SkinHeight := SU.SkinHeight();
   sb := box_lib.kolibri_new_scrollbar(10 * 65536 + 200, 10 * 65536 + 30, 25, 15, 10, 0, 0, 0, 0, 0);
@@ -302,7 +310,8 @@ BEGIN
   SU.SetEventsMask({0, 1, 2, 5, 31});
   SU.GetScreenArea(X1, Y1, X2, Y2);
   WinW := (X2 - X1) DIV 2;
-  W.init(Window, WinW DIV 2, Y1, WinW, Y2 - Y1, title);
+  SU.MinMax(WinW, 640, 65535);
+  W.init(Window, (X2 - X1 - WinW) DIV 2, Y1, WinW, Y2 - Y1, title);
   Settings.Default;
   DOM.GetWinSize(FileName, Window.width, Window.height);
 
@@ -329,41 +338,52 @@ BEGIN
   S.Append(Window.caption, FileName);
 
 	Toolbar.create(toolbar, TOOLBAR_LEFT, TOOLBAR_TOP);
-    Toolbar.add(toolbar, BACK,      30, "");
-    Toolbar.add(toolbar, FORWARD,   31, "");
-    Toolbar.delimiter(toolbar);
-    Toolbar.add(toolbar, CONTENTS,   3, "");
-    Toolbar.delimiter(toolbar);
-    Toolbar.add(toolbar, SEARCH,    49, "");
-    Toolbar.delimiter(toolbar);
-    Toolbar.add(toolbar, DESCR,     66, "");
-    Toolbar.delimiter(toolbar);
-    Toolbar.add(toolbar, SETTINGS,  60, "");
+	Toolbar.add(toolbar, BACK,      30, "");
+	Toolbar.add(toolbar, FORWARD,   31, "");
+	Toolbar.delimiter(toolbar);
+	Toolbar.add(toolbar, CONTENTS,   3, "");
+	Toolbar.delimiter(toolbar);
+	Toolbar.add(toolbar, SEARCH,    49, "");
+	Toolbar.delimiter(toolbar);
+	Toolbar.add(toolbar, DESCR,     66, "");
+	Toolbar.delimiter(toolbar);
+	Toolbar.add(toolbar, SETTINGS,  60, "");
 
-  DOM.Open(FileName, DrawWindow, DrawStatus, DrawToolbar);
-  IF resize THEN
-    DOM.Resize(Window.width - 2 * CANVAS_LEFT - 2 * WINDOW_BEVEL - 1 - SCROLLBAR_WIDTH, Window.height - SkinHeight - CANVAS_TOP - WINDOW_BEVEL + 1 - STATUSBAR_HEIGHT)
-  END;
+	DOM.Open(FileName, DrawWindow, DrawStatus, DrawToolbar);
+	IF resize THEN
+		DOM.Resize(Window.width - 2 * CANVAS_LEFT - 2 * WINDOW_BEVEL - 1 - SCROLLBAR_WIDTH,
+			Window.height - SkinHeight - CANVAS_TOP - WINDOW_BEVEL + 1 - STATUSBAR_HEIGHT)
+	END;
 
-  DrawWindow;
-  scr_pos := sb.position;
-  WHILE TRUE DO
-    CASE SU.WaitForEvent() OF
-    |1 : DrawWindow
-    |2 : KeyDown
-    |3 : ButtonClick
-    |6 : box_lib.scrollbar_v_mouse(sb);
-         IF sb.position # scr_pos THEN
-           DOM.ScrollBar;
-           DOM.Draw;
-           scr_pos := sb.position;
-         END;
-         MouseEvent
-    END
-  END
+	DrawWindow;
+	scr_pos := sb.position;
+	WHILE TRUE DO
+		CASE SU.WaitForEvent() OF
+		|1 : DrawWindow
+		|2 :
+			IF ~SU.RolledUp() THEN
+				KeyDown
+			ELSE
+				ignore := SU.GetKey()
+			END
+		|3 : ButtonClick
+		|6 :
+			IF ~SU.RolledUp() THEN
+				box_lib.scrollbar_v_mouse(sb);
+				IF sb.position # scr_pos THEN
+					DOM.ScrollBar;
+					DOM.Draw;
+					scr_pos := sb.position;
+				END;
+				MouseEvent
+			ELSE
+				ignore := SU.MouseVScroll()
+			END
+		END
+	END
 END main;
 
 
 BEGIN
-  main("FB2 Reader v0.97a")
+	main("FB2 Reader v0.97c")
 END FB2READ.
