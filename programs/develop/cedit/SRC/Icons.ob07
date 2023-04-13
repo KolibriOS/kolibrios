@@ -24,6 +24,8 @@ IMPORT
 
 CONST
 	fileName = "/sys/Icons16.png";
+	libName = "libimg.obj";
+
 	SIZE* = 18;
 
 	icoNew    *=  0;
@@ -38,9 +40,9 @@ CONST
 	NumberOfIcons = 8;
 
 
-PROCEDURE [stdcall, "libimg.obj", ""] img_decode (data, size, options: INTEGER): INTEGER; END;
-PROCEDURE [stdcall, "Libimg.obj", ""] img_convert (src, dst, dst_type, flags, param: INTEGER): INTEGER; END;
-PROCEDURE [stdcall, "Libimg.obj", ""] img_destroy (img: INTEGER); END;
+PROCEDURE [stdcall, libName, ""] img_decode (data, size, options: INTEGER): INTEGER; END;
+PROCEDURE [stdcall, libName, ""] img_convert (src, dst, dst_type, flags, param: INTEGER): INTEGER; END;
+PROCEDURE [stdcall, libName, ""] img_destroy (img: INTEGER); END;
 
 
 PROCEDURE GetImg (ptr, size: INTEGER): INTEGER;

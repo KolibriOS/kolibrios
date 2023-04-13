@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2017, 2020-2022 Anton Krotov
+    Copyright 2016, 2017, 2020-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -24,6 +24,7 @@ IMPORT SYSTEM, KOSAPI, Encodings;
 CONST
 
 	MAX_LENGTH = 1024;
+	libName = "box_lib.obj";
 
 
 TYPE
@@ -49,10 +50,10 @@ TYPE
 	END;
 
 
-PROCEDURE [stdcall, "box_lib.obj", "edit_box_draw"]     draw* (eb: tEditBox); END;
-PROCEDURE [stdcall, "box_lib.obj", "edit_box_mouse"]    mouse* (eb: tEditBox); END;
-PROCEDURE [stdcall, "box_lib.obj", "edit_box_set_text"] set_text (eb: tEditBox; text: INTEGER); END;
-PROCEDURE [stdcall, "box_lib.obj", "edit_box_key_safe"] key* (eb: tEditBox; key: INTEGER); END;
+PROCEDURE [stdcall, libName, "edit_box_draw"]     draw* (eb: tEditBox); END;
+PROCEDURE [stdcall, libName, "edit_box_mouse"]    mouse* (eb: tEditBox); END;
+PROCEDURE [stdcall, libName, "edit_box_set_text"] set_text (eb: tEditBox; text: INTEGER); END;
+PROCEDURE [stdcall, libName, "edit_box_key_safe"] key* (eb: tEditBox; key: INTEGER); END;
 
 PROCEDURE get* (text: tEditBox; VAR str: ARRAY OF CHAR);
 VAR

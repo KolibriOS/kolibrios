@@ -27,6 +27,7 @@ IMPORT
 CONST
 
     fileName = "cedit.ini";
+    libName = "libini.obj";
 
     MAX_LEN = 32;
     MAX_SECTIONS* = 10;
@@ -57,11 +58,11 @@ VAR
     lineNumbers*, autoIndents*, autoBrackets*, trimSpace*: BOOLEAN;
 
 
-PROCEDURE [stdcall,  "libini.obj", "ini_get_color"]     get_color (f_name: RW.tFileName; sec_name: tASCIISectionName; key_name: tString; def_val: INTEGER): INTEGER; END;
-PROCEDURE [stdcall,  "libini.obj", "ini_get_int"]       get_int (f_name: RW.tFileName; sec_name: tASCIISectionName; key_name: tString; def_val: INTEGER): INTEGER; END;
-PROCEDURE [stdcall,  "libini.obj", "ini_get_str"]       get_str (f_name, sec_name, key_name, buffer, buf_len, def_val: INTEGER): INTEGER; END;
-PROCEDURE [stdcall,  "libini.obj", "ini_enum_sections"] enum_sections (f_name: RW.tFileName; callback: INTEGER); END;
-PROCEDURE [stdcall-, "libini.obj", "ini_set_int"]       set_int (f_name, sec_name, key_name, val: INTEGER): INTEGER; END;
+PROCEDURE [stdcall,  libName, "ini_get_color"]     get_color (f_name: RW.tFileName; sec_name: tASCIISectionName; key_name: tString; def_val: INTEGER): INTEGER; END;
+PROCEDURE [stdcall,  libName, "ini_get_int"]       get_int (f_name: RW.tFileName; sec_name: tASCIISectionName; key_name: tString; def_val: INTEGER): INTEGER; END;
+PROCEDURE [stdcall,  libName, "ini_get_str"]       get_str (f_name, sec_name, key_name, buffer, buf_len, def_val: INTEGER): INTEGER; END;
+PROCEDURE [stdcall,  libName, "ini_enum_sections"] enum_sections (f_name: RW.tFileName; callback: INTEGER); END;
+PROCEDURE [stdcall-, libName, "ini_set_int"]       set_int (f_name, sec_name, key_name, val: INTEGER): INTEGER; END;
 
 PROCEDURE getColor (key: tString; def: INTEGER): INTEGER;
     RETURN get_color(IniFileName, curSection, key, def)

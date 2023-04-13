@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2016, 2018, 2020-2022 Anton Krotov
+    Copyright 2016, 2018, 2020-2023 Anton Krotov
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -23,6 +23,8 @@ CONST
   topen* = 0;
   tsave* = 1;
   tdir* = 2;
+
+  libName = "proc_lib.obj";
 
 TYPE
 
@@ -62,8 +64,8 @@ VAR
   filter_area: tFilterArea;
 
 
-PROCEDURE [stdcall, "proc_lib.obj", ""] OpenDialog_init (od: Dialog); END;
-PROCEDURE [stdcall, "proc_lib.obj", ""] OpenDialog_start (od: Dialog); END;
+PROCEDURE [stdcall, libName, ""] OpenDialog_init (od: Dialog); END;
+PROCEDURE [stdcall, libName, ""] OpenDialog_start (od: Dialog); END;
 
 PROCEDURE Show*(od: Dialog; Width, Height: INTEGER);
 BEGIN

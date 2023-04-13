@@ -2957,7 +2957,8 @@ BEGIN
     text.enc := E.CP866;
     text.eol := E.EOL_CRLF;
     SetPos(text, 0, 0);
-    resetSelect(text)
+    resetSelect(text);
+    Comments(text)
     RETURN text
 END New;
 
