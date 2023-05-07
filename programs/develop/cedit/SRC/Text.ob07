@@ -40,7 +40,7 @@ CONST
     mark_width = 2;
     pad_left = mark_width + 3;
     pad_top = 1;
-    inter = 2;
+    LineSpacing* = 2;
 
 
 TYPE
@@ -74,7 +74,7 @@ TYPE
         lang*: INTEGER;
         enc, eol: INTEGER;
         foundList: List.tList;
-        foundSel: INTEGER;
+        foundSel*, foundCur*, foundCnt*: INTEGER;
         searchText: tString;
         LinesVector: Lines.tVector;
         chLog*: ChangeLog.tLog;
@@ -2389,8 +2389,8 @@ BEGIN
 	    IF ~((scrollY > cursor.Y) OR (scrollY + textsize.Y + 1 <= cursor.Y) OR
 	       (scrollX > cursor.X) OR (scrollX + textsize.X <= cursor.X)) THEN
 	        x := (cursor.X - scrollX)*charWidth + padding.left;
-	        y1 := (cursor.Y - scrollY)*charHeight + padding.top + (inter DIV 2 + 1);
-	        y2 := y1 + charHeight - (inter + 2);
+	        y1 := (cursor.Y - scrollY)*charHeight + padding.top + (LineSpacing DIV 2 + 1);
+	        y2 := y1 + charHeight - (LineSpacing + 2);
 	        G.notVLine(canvas, x, y1, y2);
 	        G.notVLine(canvas, x - 1, y1, y2)
 	    END
@@ -2400,17 +2400,18 @@ END cursor;
 
 PROCEDURE drawSelect (text: tText; line: tLine; selBeg, selEnd, y: INTEGER);
 VAR
-    Len, pos, x, firstCharIdx: INTEGER;
+	Len, pos, x, firstCharIdx: INTEGER;
 BEGIN
-    firstCharIdx := MAX(text.scroll.X, selBeg);
-    Len := MAX(MIN(line.length - firstCharIdx, selEnd - firstCharIdx), 0);
-    Len := MIN(Len, textsize.X - pos + 1);
-    SetColor(colors.seltext, colors.selback);
-    pos := MAX((selBeg - text.scroll.X), 0);
-    x := pos*charWidth + padding.left;
-    G.SetColor(canvas, colors.selback);
-    G.FillRect(canvas, x - 1, y - inter DIV 2, x + Len*charWidth, y - inter DIV 2 + charHeight);
-    G.TextOut(canvas, pos*charWidth + padding.left, y, Lines.getPChar(line, firstCharIdx), Len, colors.seltext)
+	firstCharIdx := MAX(text.scroll.X, selBeg);
+	Len := MAX(MIN(line.length - firstCharIdx, selEnd - firstCharIdx), 0);
+	Len := MIN(Len, textsize.X - pos + 1);
+	SetColor(colors.seltext, colors.selback);
+	pos := MAX((selBeg - text.scroll.X), 0);
+	x := pos*charWidth + padding.left;
+	G.SetColor(canvas, colors.selback);
+	G.FillRect(canvas, x - 1, y - LineSpacing DIV 2,
+		x + Len*charWidth, y - LineSpacing DIV 2 + charHeight);
+	G.TextOut(canvas, pos*charWidth + padding.left, y, Lines.getPChar(line, firstCharIdx), Len, colors.seltext)
 END drawSelect;
 
 
@@ -2485,7 +2486,7 @@ BEGIN
         setPadding(pad_left + wNum*2, padding.top)
     END;
     getSelect(text, selBeg, selEnd);
-    y := padding.top + inter DIV 2;
+    y := padding.top + LineSpacing DIV 2;
     n := text.scroll.Y;
     firstLine := getLine2(text, n);
 
@@ -2494,7 +2495,8 @@ BEGIN
     	cnt := textsize.Y;
     	y := y + charHeight*(text.cursor.Y - text.scroll.Y);
     	G.SetColor(canvas, colors.back);
-    	G.FillRect(canvas, padding.left - 2, y - inter DIV 2, size.X - 1, y - inter DIV 2 + charHeight);
+    	G.FillRect(canvas, padding.left - 2, y - LineSpacing DIV 2,
+    		size.X - 1, y - LineSpacing DIV 2 + charHeight);
     	n := text.cursor.Y
     ELSE
 	    line := firstLine;
@@ -2505,7 +2507,8 @@ BEGIN
         backColor := colors.back;
         IF (line = text.curLine) & ~selected(text) THEN
             G.SetColor(canvas, colors.curline);
-            G.FillRect(canvas, padding.left - 2, y - inter DIV 2, size.X - 1, y - inter DIV 2 + charHeight);
+            G.FillRect(canvas, padding.left - 2, y - LineSpacing DIV 2,
+            	size.X - 1, y - LineSpacing DIV 2 + charHeight);
             backColor := colors.curline
         END;
         SetColor(colors.text, backColor);
@@ -2524,7 +2527,7 @@ BEGIN
         ELSIF (selBeg.Y # n) & (selEnd.Y = n) THEN
             drawSelect(text, line, 0, selEnd.X, y)
         END;
-        mark(line, y - inter DIV 2);
+        mark(line, y - LineSpacing DIV 2);
         NextLine(line);
         INC(y, charHeight);
         INC(n);
@@ -2535,7 +2538,7 @@ BEGIN
     G.FillRect(canvas, 0, 0, padding.left - pad_left (*+ 1*), size.Y - 1);
     line := firstLine;
     SetColor(colors.numtext, colors.numback);
-    y := padding.top + inter DIV 2;
+    y := padding.top + LineSpacing DIV 2;
     n := MIN(text.scroll.Y + textsize.Y + 1, text.count);
     FOR i := text.scroll.Y + 1 TO n DO
         IF lineNumbers THEN
@@ -2544,13 +2547,14 @@ BEGIN
                 G.TextOut2(canvas, (numWidth - U.lg10(i) - 1)*wNum - wNum DIV 2, y, s, LENGTH(s))
             ELSE
                 G.SetColor(canvas, colors.numtext);
-                G.HLine(canvas, y - inter DIV 2 + charHeight DIV 2, xNum - wNum DIV (1 + ORD(i MOD 5 # 0)), xNum)
+                G.HLine(canvas, y - LineSpacing DIV 2 + charHeight DIV 2,
+                	xNum - wNum DIV (1 + ORD(i MOD 5 # 0)), xNum)
             END
         END;
         IF line.label THEN
             FOR x := wNum DIV 2 TO (padding.left - pad_left) - wNum DIV 2 DO
-                G.notVLine(canvas, x, y, y + charHeight - (inter + 1));
-                G.xorVLine(canvas, x, y, y + charHeight - (inter + 1))
+                G.notVLine(canvas, x, y, y + charHeight - (LineSpacing + 1));
+                G.xorVLine(canvas, x, y, y + charHeight - (LineSpacing + 1))
             END
         END;
         NextLine(line);
@@ -2569,7 +2573,7 @@ BEGIN
         p := text.foundList.first(Search.tPos);
         pos := Search.next(p, i);
         WHILE pos # -1 DO
-        	y := padding.top + inter DIV 2;
+        	y := padding.top + LineSpacing DIV 2;
         	IF text.smallMove THEN
         		y := y + charHeight*(text.cursor.Y - text.scroll.Y)
             END;
@@ -2587,7 +2591,7 @@ BEGIN
                 n := LENGTH(text.searchText)*charWidth;
                 WHILE n > 0 DO
                     IF x >= padding.left THEN
-                        G.notVLine(canvas, x, y, y + charHeight - inter)
+                        G.notVLine(canvas, x, y, y + charHeight - LineSpacing)
                     END;
                     INC(x);
                     DEC(n)
@@ -2601,11 +2605,11 @@ BEGIN
 
     IF text.foundSel > 0 THEN
         x := (text.cursor.X - text.scroll.X)*charWidth + padding.left;
-        y := (text.cursor.Y - text.scroll.Y)*charHeight + padding.top + inter DIV 2;
+        y := (text.cursor.Y - text.scroll.Y)*charHeight + padding.top + LineSpacing DIV 2;
         n := text.foundSel*charWidth;
         WHILE n > 0 DO
             IF x >= padding.left THEN
-                G.xorVLine(canvas, x, y, y + charHeight - inter)
+                G.xorVLine(canvas, x, y, y + charHeight - LineSpacing)
             END;
             INC(x);
             DEC(n)
@@ -2689,7 +2693,7 @@ PROCEDURE setCanvas* (_canvas: G.tCanvas);
 BEGIN
     canvas := _canvas;
     charWidth := _canvas.font.width;
-    charHeight := _canvas.font.height + inter
+    charHeight := _canvas.font.height + LineSpacing
 END setCanvas;
 
 
@@ -2763,54 +2767,87 @@ END open;
 
 PROCEDURE findNext* (text: tText; prev: BOOLEAN): BOOLEAN;
 VAR
-    cursorPos, x, y, X, Y, Len: INTEGER;
-    line: tLine;
-    res: BOOLEAN;
-    pos, i, pos0: INTEGER;
-    p: Search.tPos;
+	cursorPos, x, y, X, Y, Len: INTEGER;
+	line: tLine;
+	res: BOOLEAN;
+	pos, i, pos0, first, last, num, cnt: INTEGER;
+	p: Search.tPos;
 BEGIN
-    X := text.cursor.X;
-    Y := text.cursor.Y;
-    text.cursor.X := MIN(text.cursor.X, text.curLine.length);
-    cursorPos := text.curLine.pos + text.cursor.X - ORD(prev) - ORD(~prev & (text.foundSel = 0));
-    pos0 := -1;
-    i := 0;
-    p := text.foundList.first(Search.tPos);
-    pos := Search.next(p, i);
-    WHILE (pos # -1) & (pos <= cursorPos) DO
-    	pos0 := pos;
-    	pos := Search.next(p, i)
-    END;
-    IF prev THEN
-    	pos := pos0
-    END;
-    res := pos # -1;
-    IF res THEN
-        y := 0;
-        line := text.first(tLine);
-        WHILE (line.pos <= pos) & (line.next # NIL) DO
-            NextLine(line);
-            INC(y)
-        END;
-        IF (line.next # NIL) OR (line.pos > pos) THEN
-            PrevLine(line);
-            DEC(y)
-        END;
-        resetSelect(text);
-        searchScroll(text, y);
-        x := pos - line.pos;
-        Len := LENGTH(text.searchText);
-        IF x + Len > text.scroll.X + textsize.X THEN
-            text.scroll.X := MAX(x + Len - textsize.X + 3, 0)
-        ELSIF x < text.scroll.X THEN
-            text.scroll.X := MAX(x - 3, 0)
-        END;
-        SetPos(text, x, y);
-        text.foundSel := Len
-    ELSE
-        SetPos(text, X, Y)
-    END
-    RETURN res
+	X := text.cursor.X;
+	Y := text.cursor.Y;
+	text.cursor.X := MIN(text.cursor.X, text.curLine.length);
+	cursorPos := text.curLine.pos + text.cursor.X - ORD(prev) - ORD(~prev & (text.foundSel = 0));
+	pos0 := -1;
+
+	cnt := 0;
+	IF text.foundList.count # 0 THEN
+		p := text.foundList.first(Search.tPos);
+		first := p.pos[0];
+		WHILE p # NIL DO
+			INC(cnt, p.cnt);
+			p := p.next(Search.tPos)
+		END;
+		p := text.foundList.last(Search.tPos);
+		last := p.pos[p.cnt - 1]
+	ELSE
+		first := -1;
+		last := -1
+	END;
+	text.foundCnt := cnt;
+
+	num := 1;
+	i := 0;
+	p := text.foundList.first(Search.tPos);
+	pos := Search.next(p, i);
+	WHILE (pos # -1) & (pos <= cursorPos) DO
+		pos0 := pos;
+		pos := Search.next(p, i);
+		INC(num)
+	END;
+	IF prev THEN
+		pos := pos0;
+		DEC(num)
+	END;
+
+	IF pos = -1 THEN
+		IF prev THEN
+			pos := last;
+			num := cnt
+		ELSE
+			pos := first;
+			num := 1
+		END
+	END;
+
+	res := pos # -1;
+	IF res THEN
+		y := 0;
+		line := text.first(tLine);
+		WHILE (line.pos <= pos) & (line.next # NIL) DO
+			NextLine(line);
+			INC(y)
+		END;
+		IF (line.next # NIL) OR (line.pos > pos) THEN
+			PrevLine(line);
+			DEC(y)
+		END;
+		resetSelect(text);
+		searchScroll(text, y);
+		x := pos - line.pos;
+		Len := LENGTH(text.searchText);
+		IF x + Len > text.scroll.X + textsize.X THEN
+			text.scroll.X := MAX(x + Len - textsize.X + 3, 0)
+		ELSIF x < text.scroll.X THEN
+			text.scroll.X := MAX(x - 3, 0)
+		END;
+		SetPos(text, x, y);
+		text.foundSel := Len;
+		text.foundCur := num
+	ELSE
+		SetPos(text, X, Y);
+		text.foundCur := 0
+	END
+	RETURN res
 END findNext;
 
 

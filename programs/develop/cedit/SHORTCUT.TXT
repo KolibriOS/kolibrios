@@ -42,6 +42,8 @@
   F9          выполнить
   ctrl+F8     отладка
 
+  shift+wheel горизонтальная прокрутка
+
   перемещение по тексту:
   (ctrl+)Home, (ctrl+)End, (ctrl+)PageUp, (ctrl+)PageDown
   ctrl+Left, ctrl+Right

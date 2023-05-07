@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (13-apr-2023)";
+    HEADER = "CEdit (07-may-2023)";
 
     ShellFilter = "";
     EditFilter = "sh|inc|txt|asm|ob07|c|cpp|h|pas|pp|lua|ini|json";
@@ -169,7 +169,7 @@ CONST
 	SHIFT = Menu.SHIFT;
 	CTRL  = Menu.CTRL;
 
-	ClippingArea = 50;
+	ClippingArea = 32 + T.LineSpacing;
 
 
 VAR
@@ -354,7 +354,11 @@ BEGIN
 	T.getSelCnt(text, chars, lines);
 	SB.setWidth(canvas.width + scrollWidth);
 	SB.setPos(line, col);
-	SB.setSel(chars, lines);
+	IF text.foundSel # 0 THEN
+		SB.setSel("", text.foundCur, text.foundCnt, " / ")
+	ELSE
+		SB.setSel("sel: ", chars, lines, " | ")
+	END;
 	SB.setEnc(E.eolNames[T.getEol(text)], E.names[T.getEnc(text)]);
 	SB.draw(LEFT, height - BOTTOM + scrollWidth - 1);
 	Tabs.modify(tabs, getIdx(text), text.modified)
@@ -1591,75 +1595,75 @@ END CreateMenuBookmark;
 
 PROCEDURE Shortcuts;
 BEGIN
-    Menu.AddShortcut(17 + CTRL,  menuClose);
-    Menu.AddShortcut(21 + CTRL,  menuRedo);
-    Menu.AddShortcut(30 + CTRL,  menuSelectAll);
-    Menu.AddShortcut(32 + CTRL,  menuDuplicate);
-    Menu.AddShortcut(33 + CTRL,  menuFind);
-    Menu.AddShortcut(35 + CTRL,  menuFind);
-    Menu.AddShortcut(34 + CTRL,  menuGoto);
-    Menu.AddShortcut(44 + CTRL,  menuUndo);
-    Menu.AddShortcut(45 + CTRL,  menuCut);
-    Menu.AddShortcut(46 + CTRL,  menuCopy);
-    Menu.AddShortcut(47 + CTRL,  menuPaste);
-    Menu.AddShortcut(24 + CTRL,  menuOpen);
-    Menu.AddShortcut(31 + CTRL,  menuSave);
-    Menu.AddShortcut(49 + CTRL,  menuNew);
-    Menu.AddShortcut(67 + CTRL,  menuBuild);
-    Menu.AddShortcut(66 + CTRL,  menuDebug);
-    Menu.AddShortcut(83 + CTRL,  menuRemove);
-    Menu.AddShortcut(22 + CTRL,  menuUpper);
-    Menu.AddShortcut(38 + CTRL,  menuLower);
-    Menu.AddShortcut(60 + CTRL,  menuToggleBookmark);
-    Menu.AddShortcut(72 + CTRL,  menuMoveUp);
-    Menu.AddShortcut(80 + CTRL,  menuMoveDown);
-    Menu.AddShortcut(83,         menuDelete);
-    Menu.AddShortcut(67,         menuRun);
-    Menu.AddShortcut(15,         menuIncInd);
-    Menu.AddShortcut(14 + SHIFT, menuDecInd);
-    Menu.AddShortcut(60 + SHIFT, menuPrevBookmark);
-    Menu.AddShortcut(60,         menuNextBookmark);
-    Menu.AddShortcut(61 + SHIFT, menuFindPrev);
-    Menu.AddShortcut(61,         menuFindNext);
+	Menu.AddShortcut(17 + CTRL,  menuClose);
+	Menu.AddShortcut(21 + CTRL,  menuRedo);
+	Menu.AddShortcut(30 + CTRL,  menuSelectAll);
+	Menu.AddShortcut(32 + CTRL,  menuDuplicate);
+	Menu.AddShortcut(33 + CTRL,  menuFind);
+	Menu.AddShortcut(35 + CTRL,  menuFind);
+	Menu.AddShortcut(34 + CTRL,  menuGoto);
+	Menu.AddShortcut(44 + CTRL,  menuUndo);
+	Menu.AddShortcut(45 + CTRL,  menuCut);
+	Menu.AddShortcut(46 + CTRL,  menuCopy);
+	Menu.AddShortcut(47 + CTRL,  menuPaste);
+	Menu.AddShortcut(24 + CTRL,  menuOpen);
+	Menu.AddShortcut(31 + CTRL,  menuSave);
+	Menu.AddShortcut(49 + CTRL,  menuNew);
+	Menu.AddShortcut(67 + CTRL,  menuBuild);
+	Menu.AddShortcut(66 + CTRL,  menuDebug);
+	Menu.AddShortcut(83 + CTRL,  menuRemove);
+	Menu.AddShortcut(22 + CTRL,  menuUpper);
+	Menu.AddShortcut(38 + CTRL,  menuLower);
+	Menu.AddShortcut(60 + CTRL,  menuToggleBookmark);
+	Menu.AddShortcut(72 + CTRL,  menuMoveUp);
+	Menu.AddShortcut(80 + CTRL,  menuMoveDown);
+	Menu.AddShortcut(83,         menuDelete);
+	Menu.AddShortcut(67,         menuRun);
+	Menu.AddShortcut(15,         menuIncInd);
+	Menu.AddShortcut(14 + SHIFT, menuDecInd);
+	Menu.AddShortcut(60 + SHIFT, menuPrevBookmark);
+	Menu.AddShortcut(60,         menuNextBookmark);
+	Menu.AddShortcut(61 + SHIFT, menuFindPrev);
+	Menu.AddShortcut(61,         menuFindNext);
 END Shortcuts;
 
 
 PROCEDURE HideSearch;
 BEGIN
-    SetFocus(FindEdit, FALSE);
-    searchOpened := FALSE;
-    LEFT := LEFT_PADDING;
-    resize;
-    draw_window
+	SetFocus(FindEdit, FALSE);
+	searchOpened := FALSE;
+	LEFT := LEFT_PADDING;
+	resize;
+	draw_window
 END HideSearch;
 
 
 PROCEDURE KeyDown (key: INTEGER);
 VAR
-    keyCode, ah: INTEGER;
-    shift, ctrl, rep: BOOLEAN;
+	keyCode, ah: INTEGER;
+	shift, ctrl, rep: BOOLEAN;
 BEGIN
 	K.getKBState(shift, ctrl);
 	rep := FALSE;
-    keyCode := key DIV 65536;
+	keyCode := key DIV 65536;
 
-    (* Numpad *)
-    ah := (key DIV 256) MOD 256;
-    CASE keyCode OF
-    |83: IF ah = 46 THEN keyCode := 52 END (* . / Del  *)
-    |82: IF ah = 48 THEN keyCode := 11 END (* 0 / Ins  *)
-    |79: IF ah = 49 THEN keyCode :=  2 END (* 1 / End  *)
-    |80: IF ah = 50 THEN keyCode :=  3 END (* 2 / Down *)
-    |81: IF ah = 51 THEN keyCode :=  4 END (* 3 / PgDn *)
-    |75: IF ah = 52 THEN keyCode :=  5 END (* 4 / <-   *)
-    |76: IF ah = 55 THEN keyCode := -1 END (* 5 / --- *)
-    |77: IF ah = 54 THEN keyCode :=  7 END (* 6 / ->   *)
-    |71: IF ah = 55 THEN keyCode :=  8 END (* 7 / Home *)
-    |72: IF ah = 56 THEN keyCode :=  9 END (* 8 / Up   *)
-    |73: IF ah = 57 THEN keyCode := 10 END (* 9 / PgUp *)
-    ELSE
-    	(* nothing to do *)
-    END;
+	(* Numpad *)
+	ah := (key DIV 256) MOD 256;
+	CASE keyCode OF
+	|83: IF ah = 46 THEN keyCode := 52 END (* . / Del  *)
+	|82: IF ah = 48 THEN keyCode := 11 END (* 0 / Ins  *)
+	|79: IF ah = 49 THEN keyCode :=  2 END (* 1 / End  *)
+	|80: IF ah = 50 THEN keyCode :=  3 END (* 2 / Down *)
+	|81: IF ah = 51 THEN keyCode :=  4 END (* 3 / PgDn *)
+	|75: IF ah = 52 THEN keyCode :=  5 END (* 4 / <-   *)
+	|76: IF ah = 55 THEN keyCode := -1 END (* 5 / --- *)
+	|77: IF ah = 54 THEN keyCode :=  7 END (* 6 / ->   *)
+	|71: IF ah = 55 THEN keyCode :=  8 END (* 7 / Home *)
+	|72: IF ah = 56 THEN keyCode :=  9 END (* 8 / Up   *)
+	|73: IF ah = 57 THEN keyCode := 10 END (* 9 / PgUp *)
+	ELSE
+		(* nothing to do *)
+	END;
 
     IF confirm THEN
         IF keyCode = 28 THEN (* Enter *)
@@ -1928,7 +1932,7 @@ BEGIN
         goto
     END;
 
-    IF ~middle THEN
+	IF ~middle THEN
 		IF exit THEN
 			Close
 		ELSE
@@ -1940,24 +1944,25 @@ END BtnClick;
 
 PROCEDURE MouseEvent (VAR resized: BOOLEAN; VAR firstClickX, firstClickY, time: INTEGER);
 CONST
-    DELAY = 10;
+	DELAY = 10;
 VAR
-    msState: SET;
-    scroll, x, y, scrollX, scrollY: INTEGER;
-    pos1, pos2: T.tPoint;
+	msState: SET;
+	scroll, x, y, scrollX, scrollY: INTEGER;
+	pos1, pos2: T.tPoint;
+	shift, ctrl: BOOLEAN;
 
 
-    PROCEDURE EditBox (VAR eb: EB.tEditBox);
-    VAR
-        focus: BOOLEAN;
-    BEGIN
-        focus := EditBox_Focus(eb);
-        EB.mouse(eb);
-        IF focus # EditBox_Focus(eb) THEN
-            SetFocus(eb, TRUE);
-            repaint
-        END
-    END EditBox;
+	PROCEDURE EditBox (VAR eb: EB.tEditBox);
+	VAR
+		focus: BOOLEAN;
+	BEGIN
+		focus := EditBox_Focus(eb);
+		EB.mouse(eb);
+		IF focus # EditBox_Focus(eb) THEN
+			SetFocus(eb, TRUE);
+			repaint
+		END
+	END EditBox;
 
 
 BEGIN
@@ -1969,7 +1974,12 @@ BEGIN
         END;
         scroll := K.Scroll();
         IF scroll # 0 THEN
-            T.scroll(text, 0, scroll*3);
+        	K.getKBState(shift, ctrl);
+        	IF shift THEN
+        		T.scroll(text, scroll*3, 0)
+        	ELSE
+            	T.scroll(text, 0, scroll*3)
+            END;
             repaint
         END;
         IF leftButton THEN
@@ -1987,11 +1997,11 @@ BEGIN
 		Scroll.mouse(hScroll);
 		Scroll.mouse(vScroll);
 		msState := K.MouseState();
-        T.getScroll(text, scrollX, scrollY);
-        IF (hScroll.value # scrollX) OR (vScroll.value # scrollY) THEN
+		T.getScroll(text, scrollX, scrollY);
+		IF (hScroll.value # scrollX) OR (vScroll.value # scrollY) THEN
 			T.scroll(text, hScroll.value - scrollX, vScroll.value - scrollY);
-        	repaint
-        END;
+			repaint
+		END;
 
         IF (8 IN msState) & ~(24 IN msState) THEN
             mouse(firstClickX, firstClickY);
@@ -2100,110 +2110,110 @@ END receiveIPC;
 
 PROCEDURE main;
 VAR
-    fileName, filePath: RW.tFileName;
-    width, height, cliWidth, cliHeight: INTEGER;
-    resized: BOOLEAN;
-    firstClickX, firstClickY, time, blink, i: INTEGER;
-    key, scr: INTEGER;
-    text_ptr, text_size, errno: INTEGER;
+	fileName, filePath: RW.tFileName;
+	width, height, cliWidth, cliHeight: INTEGER;
+	resized: BOOLEAN;
+	firstClickX, firstClickY, time, blink, i: INTEGER;
+	key, scr: INTEGER;
+	text_ptr, text_size, errno: INTEGER;
 BEGIN
 	mainTID := K.ThreadID();
 	header := "";
-    K.GetSystemColors;
-    switch := FALSE;
-    closing := FALSE;
-    textsCount := 0;
-    curText := 0;
-    Args.GetArg(0, AppPath);
-    Ini.load(AppPath);
-    Ini.getSettings;
-    runScript := Ini.runScript;
-    buildScript := Ini.buildScript;
-    debugScript := Ini.debugScript;
-    leftButton := FALSE;
-    resized := FALSE;
-    newtab := FALSE;
-    K.ScreenSize(winWidth, winHeight);
-    scrollWidth := winHeight DIV 35;
-    winWidth := (winWidth*80) DIV 100 - (128 + 30);
-    winHeight := winHeight - (128 + 30);
-    winWidth := MAX(winWidth, minWinWidth);
-    winHeight := MAX(winHeight, minWinHeight);
-    cliWidth := winWidth;
-    cliHeight := winHeight;
+	K.GetSystemColors;
+	switch := FALSE;
+	closing := FALSE;
+	textsCount := 0;
+	curText := 0;
+	Args.GetArg(0, AppPath);
+	Ini.load(AppPath);
+	Ini.getSettings;
+	runScript := Ini.runScript;
+	buildScript := Ini.buildScript;
+	debugScript := Ini.debugScript;
+	leftButton := FALSE;
+	resized := FALSE;
+	newtab := FALSE;
+	K.ScreenSize(winWidth, winHeight);
+	scrollWidth := winHeight DIV 35;
+	winWidth := (winWidth*80) DIV 100 - (128 + 30);
+	winHeight := winHeight - (128 + 30);
+	winWidth := MAX(winWidth, minWinWidth);
+	winHeight := MAX(winHeight, minWinHeight);
+	cliWidth := winWidth;
+	cliHeight := winHeight;
 
-    LEFT := LEFT_PADDING;
-    RIGHT := scrollWidth - 2;
-    BOTTOM := SB.height() + scrollWidth - 1;
-    SkinHeight := K.SkinHeight();
-    canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 11 + RIGHT_PADDING), winHeight - (TOP + BOTTOM + 5 - ClippingArea) - SkinHeight);
-    DEC(canvas.height, ClippingArea);
-    tabs := Tabs.create();
-    Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, canvas.width, Tabs.tabHeight);
-    font := G.fonts[Ini.font];
-    G.SetFont(canvas, font);
-    T.init(resetTimer, Ini.lineNumbers, Ini.autoIndents, Ini.autoBrackets, Ini.trimSpace);
-    Ini.selectSection(Ini.theme);
-    T.setCanvas(canvas);
+	LEFT := LEFT_PADDING;
+	RIGHT := scrollWidth - 2;
+	BOTTOM := SB.height() + scrollWidth - 1;
+	SkinHeight := K.SkinHeight();
+	canvas := G.CreateCanvas(winWidth - (LEFT + RIGHT + 11 + RIGHT_PADDING), winHeight - (TOP + BOTTOM + 5 - ClippingArea) - SkinHeight);
+	DEC(canvas.height, ClippingArea);
+	tabs := Tabs.create();
+	Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, canvas.width, Tabs.tabHeight);
+	font := G.fonts[Ini.font];
+	G.SetFont(canvas, font);
+	T.init(resetTimer, Ini.lineNumbers, Ini.autoIndents, Ini.autoBrackets, Ini.trimSpace);
+	Ini.selectSection(Ini.theme);
+	T.setCanvas(canvas);
 
-    mainMenu := Menu.CreateMain(mainMenuBtn);
+	mainMenu := Menu.CreateMain(mainMenuBtn);
 
-    Menu.init(resetTimer);
-    context := CreateContextMenu();
-    menuFile := CreateMenuFile();
-    subCurLine := CreateMenuCurLine();
-    subIndent := CreateMenuIndent();
-    subCase := CreateMenuCase();
-    menuEdit := CreateMenuEdit();
-    subCurLine.parent := menuEdit;
-    subIndent.parent := menuEdit;
-    subCase.parent := menuEdit;
-    subBookmark := CreateMenuBookmark();
-    menuSearch := CreateMenuSearch();
-    subBookmark.parent := menuSearch;
-    subEOL := CreateMenuEOL();
-    menuEncoding := CreateMenuEncoding();
-    subEOL.parent := menuEncoding;
-    menuView := CreateMenuView();
-    menuLanguage := CreateMenuLanguage();
-    menuProgram := CreateMenuProgram();
-    menuTools := CreateMenuTools();
-    menuOptions := CreateMenuOptions();
+	Menu.init(resetTimer);
+	context := CreateContextMenu();
+	menuFile := CreateMenuFile();
+	subCurLine := CreateMenuCurLine();
+	subIndent := CreateMenuIndent();
+	subCase := CreateMenuCase();
+	menuEdit := CreateMenuEdit();
+	subCurLine.parent := menuEdit;
+	subIndent.parent := menuEdit;
+	subCase.parent := menuEdit;
+	subBookmark := CreateMenuBookmark();
+	menuSearch := CreateMenuSearch();
+	subBookmark.parent := menuSearch;
+	subEOL := CreateMenuEOL();
+	menuEncoding := CreateMenuEncoding();
+	subEOL.parent := menuEncoding;
+	menuView := CreateMenuView();
+	menuLanguage := CreateMenuLanguage();
+	menuProgram := CreateMenuProgram();
+	menuTools := CreateMenuTools();
+	menuOptions := CreateMenuOptions();
 
 
-    Menu.AddMainItem(mainMenu, "file", menuFile);
-    Menu.AddMainItem(mainMenu, "edit", menuEdit);
-    Menu.AddMainItem(mainMenu, "search", menuSearch);
-    Menu.AddMainItem(mainMenu, "encoding", menuEncoding);
-    Menu.AddMainItem(mainMenu, "view", menuView);
-    Menu.AddMainItem(mainMenu, "language", menuLanguage);
-    Menu.AddMainItem(mainMenu, "program", menuProgram);
-    Menu.AddMainItem(mainMenu, "tools", menuTools);
-    Menu.AddMainItem(mainMenu, "options", menuOptions);
-    Shortcuts;
+	Menu.AddMainItem(mainMenu, "file", menuFile);
+	Menu.AddMainItem(mainMenu, "edit", menuEdit);
+	Menu.AddMainItem(mainMenu, "search", menuSearch);
+	Menu.AddMainItem(mainMenu, "encoding", menuEncoding);
+	Menu.AddMainItem(mainMenu, "view", menuView);
+	Menu.AddMainItem(mainMenu, "language", menuLanguage);
+	Menu.AddMainItem(mainMenu, "program", menuProgram);
+	Menu.AddMainItem(mainMenu, "tools", menuTools);
+	Menu.AddMainItem(mainMenu, "options", menuOptions);
+	Shortcuts;
 
-    Toolbar.create(toolbar, LEFT_PADDING + 5, toolbarTop);
-    Toolbar.add(toolbar, btnNew,    Icons.icoNew, "");
-    Toolbar.add(toolbar, btnOpen,   Icons.icoOpen, "");
-    Toolbar.add(toolbar, btnSave,   Icons.icoSave, "");
-    Toolbar.delimiter(toolbar);
-    Toolbar.add(toolbar, btnSearch, Icons.icoSearch, "");
-    Toolbar.delimiter(toolbar);
-    Toolbar.add(toolbar, btnUndo,   Icons.icoUndo, "");
-    Toolbar.add(toolbar, btnRedo,   Icons.icoRedo, "");
-    Toolbar.delimiter(toolbar);
-    Toolbar.add(toolbar, btnUpper,  -1, "AB");
-    Toolbar.add(toolbar, btnLower,  -1, "ab");
-    Toolbar.delimiter(toolbar);
-    Toolbar.add(toolbar, btnBuild,  Icons.icoBuild, "");
-    Toolbar.add(toolbar, btnRun,    Icons.icoRun, "");
+	Toolbar.create(toolbar, LEFT_PADDING + 5, toolbarTop);
+	Toolbar.add(toolbar, btnNew,    Icons.icoNew, "");
+	Toolbar.add(toolbar, btnOpen,   Icons.icoOpen, "");
+	Toolbar.add(toolbar, btnSave,   Icons.icoSave, "");
+	Toolbar.delimiter(toolbar);
+	Toolbar.add(toolbar, btnSearch, Icons.icoSearch, "");
+	Toolbar.delimiter(toolbar);
+	Toolbar.add(toolbar, btnUndo,   Icons.icoUndo, "");
+	Toolbar.add(toolbar, btnRedo,   Icons.icoRedo, "");
+	Toolbar.delimiter(toolbar);
+	Toolbar.add(toolbar, btnUpper,  -1, "AB");
+	Toolbar.add(toolbar, btnLower,  -1, "ab");
+	Toolbar.delimiter(toolbar);
+	Toolbar.add(toolbar, btnBuild,  Icons.icoBuild, "");
+	Toolbar.add(toolbar, btnRun,    Icons.icoRun, "");
 
-    filePath := "/sys";
-    IF Args.argc = 1 THEN
-        text := T.New();
-        insert(0, text);
-        T.SetPos(text, 0, 0)
-    END;
+	filePath := "/sys";
+	IF Args.argc = 1 THEN
+		text := T.New();
+		insert(0, text);
+		T.SetPos(text, 0, 0)
+	END;
 	FOR i := 1 TO Args.argc - 1 DO
 		Args.GetArg(i, fileName);
 		IF fileName[0] # "*" THEN
@@ -2226,71 +2236,71 @@ BEGIN
 	END;
 	SwitchTab(textsCount - 1);
 
-    Scroll.create(FALSE, canvas.width + 1, scrollWidth, scrollWidth, scrollWidth*3 DIV 2, ScrollChange, hScroll);
-    Scroll.create(TRUE, scrollWidth, canvas.height + 2, scrollWidth, scrollWidth*3 DIV 2, ScrollChange, vScroll);
-    T.resize(canvas.width, canvas.height);
-    confirm := FALSE;
-    notFound := FALSE;
-    menuFindClicked := FALSE;
-    menuActive := FALSE;
-    search := FALSE;
-    searchOpened := FALSE;
-    createSearchForm;
-    new_searchText := "";
-    searchText := "";
-    cs := FALSE;
-    whole := FALSE;
-    replaced := 0;
+	Scroll.create(FALSE, canvas.width + 1, scrollWidth, scrollWidth, scrollWidth*3 DIV 2, ScrollChange, hScroll);
+	Scroll.create(TRUE, scrollWidth, canvas.height + 2, scrollWidth, scrollWidth*3 DIV 2, ScrollChange, vScroll);
+	T.resize(canvas.width, canvas.height);
+	confirm := FALSE;
+	notFound := FALSE;
+	menuFindClicked := FALSE;
+	menuActive := FALSE;
+	search := FALSE;
+	searchOpened := FALSE;
+	createSearchForm;
+	new_searchText := "";
+	searchText := "";
+	cs := FALSE;
+	whole := FALSE;
+	replaced := 0;
 
 	OD := OpenDlg.Create(draw_window, OpenDlg.topen, filePath, "");
 
 	IPC[1] := 0;
 	IPC[0] := 0;
 	K.SetIPC(IPC);
-    K.SetEventsMask({0, 1, 2, 5, 6, 31});
-    draw_window;
-    blink := Ini.blink;
+	K.SetEventsMask({0, 1, 2, 5, 6, 31});
+	draw_window;
+	blink := Ini.blink;
 	IF blink <= 0 THEN
 		blink := 0
 	ELSIF blink < 30 THEN
 		blink := 30
 	END;
-    timerEnabled := TRUE;
-    CursorTime := K.GetTickCount();
-    WHILE TRUE DO
+	timerEnabled := TRUE;
+	CursorTime := K.GetTickCount();
+	WHILE TRUE DO
 
-    	CurrentTime := K.GetTickCount();
-    	IF (CurrentTime - CursorTime > blink) & (blink > 0) & timerEnabled & ~K.RolledUp() THEN
-    		CursorTime := CurrentTime;
-    		T.cursor(text);
-    		drawText
-    	END;
+		CurrentTime := K.GetTickCount();
+		IF (CurrentTime - CursorTime > blink) & (blink > 0) & timerEnabled & ~K.RolledUp() THEN
+			CursorTime := CurrentTime;
+			T.cursor(text);
+			drawText
+		END;
 
-        CASE K.EventTimeout(10) OF
-        |0:
-        |1:	Redraw(resized, width, height, cliWidth, cliHeight)
-        |2:
-        	key := K.GetKey();
-        	IF ~K.RolledUp() THEN
-        		KeyDown(key)
-        	END
-        |3: BtnClick
-        |6:
-        	IF ~K.RolledUp() THEN
-        		MouseEvent(resized, firstClickX, firstClickY, time)
-        	ELSE
-        		scr := K.Scroll()
-        	END
-        |7: receiveIPC
-        END;
-        IF newtab THEN
-        	Redraw(resized, width, height, cliWidth, cliHeight);
-        	newtab := FALSE
-        END
-    END
+		CASE K.EventTimeout(10) OF
+		|0:
+		|1:	Redraw(resized, width, height, cliWidth, cliHeight)
+		|2:
+			key := K.GetKey();
+			IF ~K.RolledUp() THEN
+				KeyDown(key)
+			END
+		|3: BtnClick
+		|6:
+			IF ~K.RolledUp() THEN
+				MouseEvent(resized, firstClickX, firstClickY, time)
+			ELSE
+				scr := K.Scroll()
+			END
+		|7: receiveIPC
+		END;
+		IF newtab THEN
+			Redraw(resized, width, height, cliWidth, cliHeight);
+			newtab := FALSE
+		END
+	END
 END main;
 
 
 BEGIN
-    main
+	main
 END CEdit.

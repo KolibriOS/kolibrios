@@ -1,5 +1,5 @@
 ﻿(*
-    Copyright 2021, 2022 Anton Krotov
+    Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
 
@@ -50,16 +50,16 @@ BEGIN
 END setPos;
 
 
-PROCEDURE setSel* (chars, lines: INTEGER);
+PROCEDURE setSel* (text: ARRAY OF WCHAR; first, second: INTEGER; delimiter: ARRAY OF WCHAR);
 VAR
 	s1, s2: tString;
 BEGIN
-	IF chars # 0 THEN
-		s1 := "sel: ";
-		U.int2str(chars, s2);
+	IF first # 0 THEN
+		s1 := text;
+		U.int2str(first, s2);
 		U.append(s1, s2);
-		U.append(s1, " | ");
-		U.int2str(lines, s2);
+		U.append(s1, delimiter);
+		U.int2str(second, s2);
 		U.append(s1, s2);
 		SB.sel := s1
 	ELSE
