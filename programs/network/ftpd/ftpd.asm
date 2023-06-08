@@ -238,7 +238,7 @@ end if
         mov     [ebp + thread_data.buffer_ptr], eax
         mov     [ebp + thread_data.passivesocknum], -1
 
-        sendFTP "220 Welcome to KolibriOS FTP daemon"
+        sendFTP " 220 Welcome to KolibriOS FTP daemon"  ; fix output code
 
         diff16  "threadloop", 0, $
 threadloop:
@@ -433,6 +433,7 @@ import  libio,\
         file.size,              'file_size',\
         file.open,              'file_open',\
         file.read,              'file_read',\
+        file.write,             'file_write',\
         file.close,             'file_close',\
         file.find.first,        'file_find_first',\
         file.find.next,         'file_find_next',\

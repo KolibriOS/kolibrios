@@ -440,6 +440,9 @@ cmdCWD:
        @@:
         mov     byte [edi], 0
 
+; TODO: Check directory on disk
+
+
 ; Print the new working dir on the console
         lea     eax, [ebp + thread_data.work_dir]
         invoke  con_write_asciiz, eax
@@ -464,6 +467,53 @@ cmdDELE:
         test    [ebp + thread_data.permissions], PERMISSION_DELETE
         jz      permission_denied
 
+        ; Create path
+        cmp     ecx, 1024 + 5
+        jae     .err
+
+        sub     ecx, 5
+        jb      .err
+
+        call    create_path
+        dec     edi
+        lea     esi, [ebp + thread_data.buffer + 5]
+        mov     ecx, 1024
+        cmp     byte [esi], '/'
+        jne     .loop
+        inc     esi
+  .loop:
+        lodsb
+        cmp     al, 0x20
+        jl      .done
+        stosb
+        loop    .loop
+  .done:
+        xor     al, al
+        stosb
+
+        lea     ebx, [ebp + thread_data.fpath]
+        invoke  con_write_asciiz, ebx
+        invoke  con_write_asciiz, str_newline
+        ; called fs function
+        push    ebx
+        dec     esp
+        mov     byte[esp], 0
+        push    dword 0
+        push    dword 0
+        push    dword 0
+        push    dword 0
+        push    dword 8
+        mov     ebx, esp
+        mcall   70
+        add     esp, 6*4 + 1
+
+        test    eax, eax
+        jnz     .err
+
+        sendFTP "250 Command succesful"
+        ret
+.err:
+        sendFTP "550 No such file"
         ret
 
 ;------------------------------------------------
@@ -998,18 +1048,104 @@ cmdSTOR:
         test    [ebp + thread_data.permissions], PERMISSION_WRITE
         jz      permission_denied
 
-        sendFTP " Ready to receive"
+        ;sendFTP " Ready to receive"
+        ; open datasocket
+        cmp     ecx, 1024 + 5
+        jae     .cannot_open
 
+        sub     ecx, 5
+        jb      .cannot_open
 
-;;;;    TODO
+        call    open_datasock
 
+        ; creat path
+        call    create_path
+        dec     edi
+        lea     esi, [ebp + thread_data.buffer + 5]
+        mov     ecx, 1024
+        cmp     byte [esi], '/'
+        jne     .loop
+        inc     esi
+  .loop:
+        lodsb
+        cmp     al, 0x20
+        jl      .done
+        stosb
+        loop    .loop
+  .done:
+        xor     al, al
+        stosb
+
+        lea     ebx, [ebp + thread_data.fpath]
+        invoke  con_write_asciiz, ebx
+        invoke  con_write_asciiz, str_newline
+
+        ; open file
+        invoke  file.open, ebx, O_CREATE + O_WRITE
+        test    eax, eax
+        jz      .cannot_open
+
+        push    eax
+        sendFTP "150 Here it comes.."
+        pop     ebx
+
+  .write_more:
         test    [ebp + thread_data.permissions], ABORT
         jnz     abort_transfer
 
+        push    eax ebx
+        mov     esi, BUFFERSIZE ; eax
+        mov     ecx, [ebp + thread_data.datasocketnum]
+        lea     edx, [ebp + thread_data.buffer]
+        xor     edi, edi
+        mcall   recv
+        pop     ebx ecx
+        cmp     eax, -1
+        je      socketerror                                     ; FIXME: not the correct error
+
+        test    eax, eax
+        jz      @f
+
+        push    edx
+        mov     edx, eax
+        lea     eax, [ebp + thread_data.buffer]                 ; FIXME: use another buffer!! if we receive something on control connection now, we screw up!
+        invoke  file.write, ebx, eax, edx
+        pop     edx
+
+        cmp     eax, -1
+        je      .cannot_open                                    ; FIXME: this is not the correct error
+
+        invoke  con_write_asciiz, str2
+
+;        cmp     eax, ecx
+;        jne     not_all_byes_sent                               ; TODO
+
+        ;cmp     ecx, BUFFERSIZE
+        ;je      .write_more
+        jmp      .write_more
+@@:
+
+        invoke  file.close, ebx
+
+        invoke  con_write_asciiz, str2b
+
+        mov     [ebp + thread_data.mode], MODE_NOTREADY
+        mcall   close, [ebp + thread_data.datasocketnum]
+
+
+
+;;;;    TODO
+;
+;        test    [ebp + thread_data.permissions], ABORT
+;        jnz     abort_transfer
+;
 ;;;;
 
         sendFTP "226 Transfer OK"
+        ret
 
+.cannot_open:
+        sendFTP "550 No create file"
         ret
 
 ;------------------------------------------------
