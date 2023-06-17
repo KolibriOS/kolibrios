@@ -779,7 +779,7 @@ sys_network:
         jne     @f
 
         mov     eax, [net_device_count]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
    @@:
@@ -824,7 +824,7 @@ sys_network:
 
   .get_type:
         mov     eax, [eax + NET_DEVICE.device_type]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .get_dev_name:
@@ -837,93 +837,93 @@ sys_network:
         rep movsd
 
         xor     eax, eax
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .reset:
         call    [eax + NET_DEVICE.reset]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .stop:
         call    [eax + NET_DEVICE.unload]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 
   .get_ptr:
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 
   .get_drv_name:
         xor     eax, eax
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .packets_tx:
         mov     eax, [eax + NET_DEVICE.packets_tx]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .packets_rx:
         mov     eax, [eax + NET_DEVICE.packets_rx]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .bytes_tx:
         mov     ebx, dword[eax + NET_DEVICE.bytes_tx + 4]
-        mov     [esp+20], ebx
+        mov     [esp + SYSCALL_STACK.ebx], ebx
         mov     eax, dword[eax + NET_DEVICE.bytes_tx]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .bytes_rx:
         mov     ebx, dword[eax + NET_DEVICE.bytes_rx + 4]
-        mov     [esp+20], ebx
+        mov     [esp + SYSCALL_STACK.ebx], ebx
         mov     eax, dword[eax + NET_DEVICE.bytes_rx]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .packets_tx_err:
         mov     eax, [eax + NET_DEVICE.packets_tx_err]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .packets_tx_drop:
         mov     eax, [eax + NET_DEVICE.packets_tx_drop]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .packets_tx_ovr:
         mov     eax, [eax + NET_DEVICE.packets_tx_ovr]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .packets_rx_err:
         mov     eax, [eax + NET_DEVICE.packets_rx_err]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .packets_rx_drop:
         mov     eax, [eax + NET_DEVICE.packets_rx_drop]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .packets_rx_ovr:
         mov     eax, [eax + NET_DEVICE.packets_rx_ovr]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
   .state:
         mov     eax, [eax + NET_DEVICE.link_state]
-        mov     [esp+32], eax
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 
   .doesnt_exist:
   .bad_buffer: ; Sanity check failed, exit
-        mov     dword[esp+32], -1
+        mov     dword[esp + SYSCALL_STACK.eax], -1
         ret
 
 
@@ -979,5 +979,5 @@ sys_protocols:
         mov     eax, -1
 
   .return:
-        mov     [esp+28+4], eax                 ; return eax value to the program
+        mov     [esp + SYSCALL_STACK.eax], eax   ; return eax value to the program
         ret

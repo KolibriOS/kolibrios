@@ -331,11 +331,11 @@ nosb8:
 
         mov     [background_defined], 1
 
-        mov     [draw_data+32 + RECT.left], eax
-        mov     [draw_data+32 + RECT.top], ebx
+        mov     [draw_data + sizeof.RECT + RECT.left], eax
+        mov     [draw_data + sizeof.RECT + RECT.top], ebx
 
-        mov     [draw_data+32 + RECT.right], ecx
-        mov     [draw_data+32 + RECT.bottom], edx
+        mov     [draw_data + sizeof.RECT + RECT.right], ecx
+        mov     [draw_data + sizeof.RECT + RECT.bottom], edx
 
         inc     [REDRAW_BACKGROUND]
         call    wakeup_osloop
@@ -356,15 +356,15 @@ endg
 
 align 4
 force_redraw_background:
-        and     [draw_data+32 + RECT.left], 0
-        and     [draw_data+32 + RECT.top], 0
+        and     [draw_data + sizeof.RECT + RECT.left], 0
+        and     [draw_data + sizeof.RECT + RECT.top], 0
         push    eax ebx
         mov     eax, [_display.width]
         mov     ebx, [_display.height]
         dec     eax
         dec     ebx
-        mov     [draw_data+32 + RECT.right], eax
-        mov     [draw_data+32 + RECT.bottom], ebx
+        mov     [draw_data + sizeof.RECT + RECT.right], eax
+        mov     [draw_data + sizeof.RECT + RECT.bottom], ebx
         pop     ebx eax
         inc     [REDRAW_BACKGROUND]
         call    wakeup_osloop

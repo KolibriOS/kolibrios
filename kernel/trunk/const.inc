@@ -278,10 +278,7 @@ master_tab          = page_tabs + (page_tabs shr 10) ;0xFDFF70000
 
 LFB_BASE            = 0xFE000000
 
-
-new_app_base        = 0;
-
-std_application_base_address   = new_app_base
+std_application_base_address   = 0
 RING0_STACK_SIZE    = 0x2000
 
 REG_SS              = RING0_STACK_SIZE -  4
@@ -349,6 +346,9 @@ EVENT_NETWORK      = 0x00000080
 EVENT_DEBUG        = 0x00000100
 EVENT_NETWORK2     = 0x00000200
 EVENT_EXTENDED     = 0x00000400
+
+EVM_MOUSE_FILTER  = 0x80000000  ; see in macros.inc for apps
+EVM_CURSOR_FILTER = 0x40000000
 
 EV_INTR            = 1
 

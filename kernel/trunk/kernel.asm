@@ -2282,12 +2282,12 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
 ;------------------------------------------------------------------------------
 sysfn_getversion:       ; 18.13 = get kernel ID and version
         ; if given memory address belongs to kernel then error
-        stdcall is_region_userspace, ecx, version_end-version_inf
+        stdcall is_region_userspace, ecx, version_inf.size
         jnz     .addr_error
 
         mov     edi, ecx
         mov     esi, version_inf
-        mov     ecx, version_end-version_inf
+        mov     ecx, version_inf.size
         rep movsb
         ret
 .addr_error:    ; if given memory address is illegal
@@ -2466,15 +2466,12 @@ sound_flag      db 0
 
 endg
 
-;UID_NONE=0
-;UID_KOLIBRI=2    ;russian
-
 iglobal
 version_inf:
         db 0,7,7,0  ; version 0.7.7.0
         db 0
 .rev    dd __REV__
-version_end:
+.size = $ - version_inf
 endg
 ;------------------------------------------------------------------------------
 align 4
@@ -2646,7 +2643,7 @@ sys_redrawstat:
         jnz     .srl1
 
         mov     edx, [current_slot_idx]      ; return whole screen draw area for this app
-        shl     edx, 5     ;?
+        shl     edx, BSF sizeof.RECT
         add     edx, draw_data
         mov     [edx + RECT.left], 0
         mov     [edx + RECT.top], 0
@@ -2814,7 +2811,7 @@ align 4
 
         mov     ecx, [thread_count]
         movzx   eax, word [WIN_POS + ecx*2]     ; active window
-        shl     eax, 8
+        shl     eax, BSF sizeof.APPDATA ;8
         push    eax
 
         movzx   eax, word [MOUSE_X]
@@ -2824,7 +2821,7 @@ align 4
 .set_mouse_event:
         add     edi, sizeof.APPDATA
         add     ebx, sizeof.WDATA
-        test    [SLOT_BASE + edi + APPDATA.event_mask], 0x80000000
+        test    [SLOT_BASE + edi + APPDATA.event_mask], EVM_MOUSE_FILTER
         jz      .pos_filter
 
         cmp     edi, [esp]                      ; skip if filtration active
@@ -2832,7 +2829,7 @@ align 4
 ;--------------------------------------
 align 4
 .pos_filter:
-        test    [SLOT_BASE + edi + APPDATA.event_mask], 0x40000000
+        test    [SLOT_BASE + edi + APPDATA.event_mask], EVM_CURSOR_FILTER
         jz      .set
 
         mov     esi, [ebx + WDATA.box.left]
@@ -2869,14 +2866,14 @@ align 4
 ;--------------------------------------
 align 4
 backgr:
-        mov     eax, [draw_data + 32 + RECT.left]
+        mov     eax, [draw_data + sizeof.RECT + RECT.left]
         shl     eax, 16
-        add     eax, [draw_data + 32 + RECT.right]
+        add     eax, [draw_data + sizeof.RECT + RECT.right]
         mov     [BG_Rect_X_left_right], eax ; [left]*65536 + [right]
 
-        mov     eax, [draw_data + 32 + RECT.top]
+        mov     eax, [draw_data + sizeof.RECT + RECT.top]
         shl     eax, 16
-        add     eax, [draw_data + 32 + RECT.bottom]
+        add     eax, [draw_data + sizeof.RECT + RECT.bottom]
         mov     [BG_Rect_Y_top_bottom], eax ; [top]*65536 + [bottom]
 
         call    drawbackground
@@ -2927,10 +2924,10 @@ set_bgr_event:
         jnz     backgr
 
         xor     eax, eax
-        mov     [draw_data + 32 + RECT.left], eax
-        mov     [draw_data + 32 + RECT.top], eax
-        mov     [draw_data + 32 + RECT.right], eax
-        mov     [draw_data + 32 + RECT.bottom], eax
+        mov     [draw_data + sizeof.RECT + RECT.left], eax
+        mov     [draw_data + sizeof.RECT + RECT.top], eax
+        mov     [draw_data + sizeof.RECT + RECT.right], eax
+        mov     [draw_data + sizeof.RECT + RECT.bottom], eax
 ;--------------------------------------
 align 4
 nobackgr:
@@ -3448,14 +3445,14 @@ r_f_port_area:
         jnz     .free_port_area
 
         cmp     ecx, edx      ; beginning > end ?
-        ja      .rpal1
+        ja      .err
         cmp     edx, 65536    ;test ebx, not 0xffff
-        jae     .rpal1
+        jae     .err
         mov     eax, [RESERVED_PORTS]
         test    eax, eax      ; no reserved areas ?
         je      .rpal2
         cmp     eax, 255      ; max reserved
-        jae     .rpal1
+        jae     .err
  .rpal3:
         mov     ebx, eax
         shl     ebx, 4   ;16 byte is sizeof item in RESERVED_PORTS table
@@ -3463,15 +3460,16 @@ r_f_port_area:
         cmp     ecx, [ebx+8]
         ja      .rpal4
         cmp     edx, [ebx+4]
-        jae     .rpal1
+        jae     .err
  .rpal4:
         dec     eax
         jnz     .rpal3
         jmp     .rpal2
-   .rpal1:
+.err:
         xor     eax, eax
         inc     eax
         ret
+
    .rpal2:
      ; enable port access at port IO map
         pushad                        ; start enable io map
@@ -3484,7 +3482,7 @@ r_f_port_area:
         inc     eax
         cmp     eax, edx
         jbe     .new_port_access
-;no_unmask_io:
+
         sti
         popad                         ; end enable io map
 
@@ -3551,7 +3549,7 @@ r_f_port_area:
         inc     eax
         cmp     eax, edx
         jbe     .new_port_access_disable
-;no_mask_io:                         ; end disable io map
+                                    ; end disable io map
         xor     eax, eax
         ret
 ;-----------------------------------------------------------------------------

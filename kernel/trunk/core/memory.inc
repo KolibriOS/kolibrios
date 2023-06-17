@@ -1016,7 +1016,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         mov     [edi+4], ecx
         add     edi, 8
         mov     esi, [msg_addr]
-       ;    add esi, new_app_base
+       ;    add esi, std_application_base_address
         cld
         rep movsb
 
