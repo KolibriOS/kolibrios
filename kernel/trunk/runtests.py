@@ -114,14 +114,7 @@ def prepare_test_img():
     # Get test kernel
     if not os.path.exists("kernel.mnt.pretest"):
         if len(sys.argv) == 1:
-            with open("lang.inc", "w") as lang_inc:
-                lang_inc.write("lang fix en\n")
-            execute("fasm bootbios.asm bootbios.bin.pretest -dpretest_build=1")
-            command = "fasm "
-            command += "-dpretest_build=1 -ddebug_com_base=0xe9 "
-            command += "-m 65536 "
-            command += "kernel.asm kernel.mnt.pretest"
-            execute(command)
+            execute("tup kernel.mnt.pretest")
         else:
             builds_eng = sys.argv[1]
             kernel_mnt_pretest_subpath = "data/kernel/trunk/kernel.mnt.pretest"
