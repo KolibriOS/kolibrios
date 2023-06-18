@@ -13,6 +13,7 @@ import subprocess
 from threading import Thread
 import filecmp
 import traceback
+import shlex
 
 sys.path.append('test')
 import common
@@ -22,6 +23,11 @@ use_umka = False
 
 def log(s, end="\n"):
     print(s, end=end, flush=True)
+
+
+def check_retcode(command):
+    popen = subprocess.Popen(shlex.split(command))
+    return popen.wait()
 
 
 def execute(s, mute=False):
@@ -115,6 +121,8 @@ def prepare_test_img():
     # Get test kernel
     if not os.path.exists("kernel.mnt.pretest"):
         if len(sys.argv) == 1:
+            if check_retcode("tup dbconfig") != 0:
+                execute("tup init")
             execute("tup kernel.mnt.pretest")
         else:
             builds_eng = sys.argv[1]
