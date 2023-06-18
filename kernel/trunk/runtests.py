@@ -12,6 +12,7 @@ import urllib.request
 import subprocess
 from threading import Thread
 import filecmp
+import traceback
 
 sys.path.append('test')
 import common
@@ -145,6 +146,7 @@ def collect_tests():
 
 
 def run_tests_serially_thread(test, root_dir):
+    errors = []
     test_number = 1
     for test in tests:
         test_dir = f"{root_dir}/{test}"
@@ -154,17 +156,22 @@ def run_tests_serially_thread(test, root_dir):
         try:
             loader = SourceFileLoader("test", f"{test_dir}/test.py")
             loader.load_module().run(root_dir, test_dir)
-        except common.TestTimeoutException:
-            result = "TIMEOUT"
-        except common.TestFailureException:
-            result = "FAILURE"
+        except common.TestException as exception:
+            result = exception.kind()
+            errors.append((test, exception))
         else:
             result = "SUCCESS"
         finish = timeit.default_timer()
         print(f"{result} ({finish - start:.2f} seconds)")
 
         test_number += 1
-
+    if len(errors) != 0:
+        print("Some tests failed:")
+        for error in errors:
+            test, exception = error
+            print(f"\n{test}: {str(exception)}\n\nTraceback:")
+            traceback.print_tb(exception.__traceback__)
+            print(f"\nQemu command:\n  {exception.cmd()}\n")
 
 def run_tests_serially(tests, root_dir):
     thread = Thread(target=run_tests_serially_thread, args=(tests, root_dir))
