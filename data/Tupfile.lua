@@ -555,6 +555,7 @@ tup.append_table(img_files, {
  {"DRIVERS/FM801.SYS", "../drivers/audio/fm801.sys"},
  {"DRIVERS/VT823X.SYS", "../drivers/audio/vt823x.sys"},
  {"DRIVERS/SIS.SYS", "../drivers/audio/sis.sys"},
+ {"DRIVERS/SDHCI.SYS", "../drivers/sdhci/sdhci.sys"},
 })
 tup.append_table(extra_files, {
  {"HD_Load/9x2klbr/", PROGS .. "/hd_load/9x2klbr/9x2klbr.exe"},

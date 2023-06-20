@@ -64,6 +64,20 @@ import core,\
               ReservePortArea,\
               Boot_Log,\
 \
+              FsRead32Sys,\
+              FsRead32App,\
+              FsRead64Sys,\
+              FsRead64App,\
+\
+              FsWrite32Sys,\
+              FsWrite32App,\
+              FsWrite64Sys,\
+              FsWrite64App,\
+\
+              FsAdd,\
+\
+              DiskSync,\
+\
               MutexInit,\
               MutexLock,\
               MutexUnlock,\
