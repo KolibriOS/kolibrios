@@ -2643,16 +2643,15 @@ sys_redrawstat:
         jnz     .srl1
 
         mov     edx, [current_slot_idx]      ; return whole screen draw area for this app
-        shl     edx, BSF sizeof.RECT
-        add     edx, draw_data
-        mov     [edx + RECT.left], 0
-        mov     [edx + RECT.top], 0
+        shl     edx, BSF sizeof.WDATA
+        mov     [draw_data + edx + RECT.left], 0
+        mov     [draw_data + edx + RECT.top], 0
         mov     eax, [_display.width]
         dec     eax
-        mov     [edx + RECT.right], eax
+        mov     [draw_data + edx + RECT.right], eax
         mov     eax, [_display.height]
         dec     eax
-        mov     [edx + RECT.bottom], eax
+        mov     [draw_data + edx + RECT.bottom], eax
 
 .srl1:
         ret
@@ -2811,7 +2810,7 @@ align 4
 
         mov     ecx, [thread_count]
         movzx   eax, word [WIN_POS + ecx*2]     ; active window
-        shl     eax, BSF sizeof.APPDATA ;8
+        shl     eax, BSF sizeof.APPDATA
         push    eax
 
         movzx   eax, word [MOUSE_X]
@@ -2866,14 +2865,14 @@ align 4
 ;--------------------------------------
 align 4
 backgr:
-        mov     eax, [draw_data + sizeof.RECT + RECT.left]
+        mov     eax, [draw_data + sizeof.WDATA + RECT.left]
         shl     eax, 16
-        add     eax, [draw_data + sizeof.RECT + RECT.right]
+        add     eax, [draw_data + sizeof.WDATA + RECT.right]
         mov     [BG_Rect_X_left_right], eax ; [left]*65536 + [right]
 
-        mov     eax, [draw_data + sizeof.RECT + RECT.top]
+        mov     eax, [draw_data + sizeof.WDATA + RECT.top]
         shl     eax, 16
-        add     eax, [draw_data + sizeof.RECT + RECT.bottom]
+        add     eax, [draw_data + sizeof.WDATA + RECT.bottom]
         mov     [BG_Rect_Y_top_bottom], eax ; [top]*65536 + [bottom]
 
         call    drawbackground
@@ -2924,10 +2923,10 @@ set_bgr_event:
         jnz     backgr
 
         xor     eax, eax
-        mov     [draw_data + sizeof.RECT + RECT.left], eax
-        mov     [draw_data + sizeof.RECT + RECT.top], eax
-        mov     [draw_data + sizeof.RECT + RECT.right], eax
-        mov     [draw_data + sizeof.RECT + RECT.bottom], eax
+        mov     [draw_data + sizeof.WDATA + RECT.left], eax
+        mov     [draw_data + sizeof.WDATA + RECT.top], eax
+        mov     [draw_data + sizeof.WDATA + RECT.right], eax
+        mov     [draw_data + sizeof.WDATA + RECT.bottom], eax
 ;--------------------------------------
 align 4
 nobackgr:

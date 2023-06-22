@@ -977,7 +977,7 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     [SLOT_BASE + ebx + APPDATA.saved_esp0], eax
 
         push    ebx
-        stdcall kernel_alloc, maxPathLength
+        stdcall kernel_alloc, maxPathLength             ;TODO
         pop     ebx
         mov     esi, [current_slot]
         mov     esi, [esi + APPDATA.cur_dir]
@@ -1003,12 +1003,12 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 
 ;set draw data to full screen
         xor     eax, eax
-        mov     [ecx+0], dword eax
-        mov     [ecx+4], dword eax
+        mov     [ecx + RECT.left], eax
+        mov     [ecx + RECT.top], eax
         mov     eax, [screen_workarea.right]
-        mov     [ecx+8], eax
+        mov     [ecx + RECT.right], eax
         mov     eax, [screen_workarea.bottom]
-        mov     [ecx+12], eax
+        mov     [ecx + RECT.bottom], eax
 
         mov     ebx, [pl0_stack]
         mov     esi, [params]
@@ -1084,11 +1084,12 @@ pid_to_appdata:
 .loop:
         add     ecx, sizeof.APPDATA
         cmp     [SLOT_BASE + ecx + APPDATA.state], TSTATE_FREE
-        jz      .loop  ;skip empty slots
+        jz      @f  ;skip empty slots
         cmp     [SLOT_BASE + ecx + APPDATA.tid], eax
         jz      .pid_found
         ;ecx = offset of current process info entry
         ;ebx = maximum permitted offset
+@@:
         cmp     ecx, ebx
         jb      .loop
 

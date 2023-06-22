@@ -351,7 +351,7 @@ fpu_data:
         rb  0xa80       ; bochs avx512
 fpu_data_size = $ - fpu_data
 draw_data:
-        rb  32*256
+        rb  sizeof.WDATA*256
 BPSLine_calc_area   rd  MAX_SCREEN_HEIGHT
 d_width_calc_area   rd  MAX_SCREEN_HEIGHT
 mouseunder          rd  16*24

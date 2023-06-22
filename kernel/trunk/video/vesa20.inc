@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  VESA20.INC                                                  ;;
@@ -2013,9 +2013,9 @@ vesa20_drawbackground_tiled:
 
         pushad
 ; External loop for all y from start to end
-        mov     ebx, [draw_data + 32 + RECT.top]    ; y start
+        mov     ebx, [draw_data + sizeof.WDATA + RECT.top]    ; y start
   dp2:
-        mov     ebp, [draw_data + 32 + RECT.left]   ; x start
+        mov     ebp, [draw_data + sizeof.WDATA + RECT.left]   ; x start
 ; 1) Calculate pointers in WinMapAddress (does pixel belong to OS thread?) [ebp]
 ;    and LFB data (output for our function) [edi]
 ;        mov     eax, [BytesPerScanLine]
@@ -2113,7 +2113,7 @@ vesa20_drawbackground_tiled:
 
         add     ebp, edx
         add     eax, edx
-        cmp     eax, [draw_data + 32 + RECT.right]
+        cmp     eax, [draw_data + sizeof.WDATA + RECT.right]
         ja      dp4
         sub     ecx, edx
         jnz     dp3
@@ -2128,7 +2128,7 @@ vesa20_drawbackground_tiled:
   dp4:
 ; next scan line
         inc     ebx
-        cmp     ebx, [draw_data + 32 + RECT.bottom]
+        cmp     ebx, [draw_data + sizeof.WDATA + RECT.bottom]
         jbe     dp2
         popad
         mov     [EGA_counter], 1
@@ -2166,8 +2166,8 @@ vesa20_drawbackground_stretch:
         push    eax     ; low
 
 ; External loop for all y from start to end
-        mov     ebx, [draw_data + 32 + RECT.top]    ; y start
-        mov     ebp, [draw_data + 32 + RECT.left]   ; x start
+        mov     ebx, [draw_data + sizeof.WDATA + RECT.top]    ; y start
+        mov     ebp, [draw_data + sizeof.WDATA + RECT.left]   ; x start
 ; 1) Calculate pointers in WinMapAddress (does pixel belong to OS thread?) [ebp]
 ;                       and LFB data (output for our function) [edi]
 ;        mov     eax, [BytesPerScanLine]
@@ -2309,7 +2309,7 @@ vesa20_drawbackground_stretch:
         add     eax, 1
         mov     [esp+20], eax
         add     esi, 4
-        cmp     eax, [draw_data+32+RECT.right]
+        cmp     eax, [draw_data + sizeof.WDATA + RECT.right]
         jbe     sdp3a
 
   sdp4:
@@ -2317,11 +2317,11 @@ vesa20_drawbackground_stretch:
         mov     ebx, [esp+24]
         add     ebx, 1
         mov     [esp+24], ebx
-        cmp     ebx, [draw_data + 32 + RECT.bottom]
+        cmp     ebx, [draw_data + sizeof.WDATA + RECT.bottom]
         ja      sdpdone
 
 ; advance edi, ebp to next scan line
-        sub     eax, [draw_data + 32 + RECT.left]
+        sub     eax, [draw_data + sizeof.WDATA + RECT.left]
         sub     ebp, eax
         add     ebp, [_display.width]
         sub     edi, eax
@@ -2346,7 +2346,7 @@ vesa20_drawbackground_stretch:
         lea     eax, [eax*3]
         imul    eax, [BgrDataWidth]
         sub     [esp], eax
-        mov     eax, [draw_data + 32 + RECT.left]
+        mov     eax, [draw_data + sizeof.WDATA + RECT.left]
         mov     [esp+20], eax
         test    ebx, ebx
         jz      sdp3
@@ -2386,7 +2386,7 @@ smooth_line:
         mov     eax, [esp+20+8]
         add     eax, 1
         mov     [esp+20+8], eax
-        cmp     eax, [draw_data + 32 + RECT.right]
+        cmp     eax, [draw_data + sizeof.WDATA + RECT.right]
         ja      @f
         add     ecx, [esp+36+8]
         mov     eax, edx
@@ -2396,7 +2396,7 @@ smooth_line:
         sub     esi, eax
         jmp     smooth_line
   @@:
-        mov     eax, [draw_data + 32 + RECT.left]
+        mov     eax, [draw_data + sizeof.WDATA + RECT.left]
         mov     [esp+20+8], eax
         ret
 

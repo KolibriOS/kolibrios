@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
@@ -331,11 +331,11 @@ nosb8:
 
         mov     [background_defined], 1
 
-        mov     [draw_data + sizeof.RECT + RECT.left], eax
-        mov     [draw_data + sizeof.RECT + RECT.top], ebx
+        mov     [draw_data + sizeof.WDATA + RECT.left], eax
+        mov     [draw_data + sizeof.WDATA + RECT.top], ebx
 
-        mov     [draw_data + sizeof.RECT + RECT.right], ecx
-        mov     [draw_data + sizeof.RECT + RECT.bottom], edx
+        mov     [draw_data + sizeof.WDATA + RECT.right], ecx
+        mov     [draw_data + sizeof.WDATA + RECT.bottom], edx
 
         inc     [REDRAW_BACKGROUND]
         call    wakeup_osloop
@@ -356,15 +356,15 @@ endg
 
 align 4
 force_redraw_background:
-        and     [draw_data + sizeof.RECT + RECT.left], 0
-        and     [draw_data + sizeof.RECT + RECT.top], 0
+        and     [draw_data + sizeof.WDATA + RECT.left], 0
+        and     [draw_data + sizeof.WDATA + RECT.top], 0
         push    eax ebx
         mov     eax, [_display.width]
         mov     ebx, [_display.height]
         dec     eax
         dec     ebx
-        mov     [draw_data + sizeof.RECT + RECT.right], eax
-        mov     [draw_data + sizeof.RECT + RECT.bottom], ebx
+        mov     [draw_data + sizeof.WDATA + RECT.right], eax
+        mov     [draw_data + sizeof.WDATA + RECT.bottom], ebx
         pop     ebx eax
         inc     [REDRAW_BACKGROUND]
         call    wakeup_osloop
@@ -603,6 +603,3 @@ align 4
 .exit:
         popad
         ret
-
-
-
