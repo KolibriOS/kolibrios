@@ -140,9 +140,6 @@ align 4
 draw_background_temp:
         mov     [background_defined], 1
         call    force_redraw_background
-;--------------------------------------
-align 4
-nosb31:
         ret
 ;--------------------------------------
 align 4

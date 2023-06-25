@@ -294,7 +294,7 @@ mouse._.left_button_release_handler:
         jz      .exit
 
         mov     eax, esi
-        shl     eax, 5
+        shl     eax, BSF sizeof.WDATA
         add     eax, window_data + WDATA.box
         mov     ebx, mouse.active_sys_window.old_box
         mov     ecx, sizeof.BOX
@@ -515,7 +515,7 @@ mouse._.move_handler:
 
         push    eax
         mov     edi, esi
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, window_data
         call    window._.get_rolledup_height
         mov     ecx, eax
@@ -582,7 +582,7 @@ mouse._.move_handler:
         mov     [fl_moving], 1
         push    edi
         mov     edi, esi
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, WDATA.box + window_data
         call    window._.draw_negative_box
         pop     edi
@@ -609,7 +609,7 @@ mouse._.find_sys_window_under_cursor:
         add     esi, [mouse.state.pos.x]
         movzx   esi, byte[esi]
         mov     edi, esi
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, window_data
         ret
 
@@ -821,14 +821,13 @@ dd  .loadCursorUni
         mov     ax, [MOUSE_Y]
         mov     esi, [current_slot_idx]
         shl     esi, BSF sizeof.WDATA
-        mov     bx, word [esi + window_data + WDATA.box.left]
+        mov     bx, word[window_data + esi + WDATA.box.left]
         shl     ebx, 16
-        mov     bx, word [esi + window_data + WDATA.box.top]
+        mov     bx, word[window_data + esi + WDATA.box.top]
         sub     eax, ebx
-        mov     edi, [current_slot]
-        sub     ax, word[edi + APPDATA.wnd_clientbox.top]
+        sub     ax, word[window_data + esi + WDATA.clientbox.top]
         rol     eax, 16
-        sub     ax, word[edi + APPDATA.wnd_clientbox.left]
+        sub     ax, word[window_data + esi + WDATA.clientbox.left]
         rol     eax, 16
         mov     [esp + SYSCALL_STACK.eax], eax
         ret

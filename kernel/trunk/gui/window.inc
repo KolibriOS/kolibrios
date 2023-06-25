@@ -80,11 +80,10 @@ syscall_setpixel:
         mov     ecx, edx
         mov     edx, [current_slot_idx]
         shl     edx, BSF sizeof.WDATA
-        add     eax, [edx + window_data + WDATA.box.left]
-        add     ebx, [edx + window_data + WDATA.box.top]
-        mov     edi, [current_slot]
-        add     eax, [edi+APPDATA.wnd_clientbox.left]
-        add     ebx, [edi+APPDATA.wnd_clientbox.top]
+        add     eax, [window_data + edx + WDATA.box.left]
+        add     ebx, [window_data + edx + WDATA.box.top]
+        add     eax, [window_data + edx + WDATA.clientbox.left]
+        add     ebx, [window_data + edx + WDATA.clientbox.top]
         xor     edi, edi ; no force
         and     ecx, 0xFBFFFFFF  ;negate 0x04000000 save to mouseunder area
         jmp     __sys_putpixel
@@ -106,14 +105,11 @@ syscall_writetext:
 
         mov     eax, [current_slot_idx]
         shl     eax, BSF sizeof.WDATA
-        mov     ebp, [eax + window_data + WDATA.box.left]
-        push    esi
-        mov     esi, [current_slot]
-        add     ebp, [esi+APPDATA.wnd_clientbox.left]
+        mov     ebp, [window_data + eax + WDATA.box.left]
+        add     ebp, [window_data + eax + WDATA.clientbox.left]
         shl     ebp, 16
-        add     ebp, [eax + window_data + WDATA.box.top]
-        add     bp, word[esi+APPDATA.wnd_clientbox.top]
-        pop     esi
+        add     ebp, [window_data + eax + WDATA.box.top]
+        add     bp, word[window_data + eax + WDATA.clientbox.top]
         test    ecx, 0x08000000  ; redirect the output to the user area
         jnz     @f
         add     ebx, ebp
@@ -151,10 +147,10 @@ syscall_drawrect:
         shr     eax, 16 ; eax - x.coord
         movzx   edx, bx ; edx - y.size
         shr     ebx, 16 ; ebx - y.coord
-        mov     esi, [current_slot]
-
-        add     eax, [esi + APPDATA.wnd_clientbox.left]
-        add     ebx, [esi + APPDATA.wnd_clientbox.top]
+        mov     esi, [current_slot_idx]
+        shl     esi, BSF sizeof.WDATA
+        add     eax, [window_data + esi + WDATA.clientbox.left]
+        add     ebx, [window_data + esi + WDATA.clientbox.top]
         add     ecx, eax
         add     edx, ebx
         jmp     vesa20_drawbar
@@ -167,18 +163,17 @@ align 4
 syscall_drawline:
         mov     edi, [current_slot_idx]
         shl     edi, BSF sizeof.WDATA
-        movzx   eax, word[edi + window_data + WDATA.box.left]
+        movzx   eax, word[window_data + edi + WDATA.box.left]
         mov     ebp, eax
-        mov     esi, [current_slot]
-        add     ebp, [esi+APPDATA.wnd_clientbox.left]
-        add     ax, word[esi+APPDATA.wnd_clientbox.left]
+        add     ebp, [window_data + edi + WDATA.clientbox.left]
+        add     ax, word[window_data + edi + WDATA.clientbox.left]
         add     ebp, ebx
         shl     eax, 16
-        movzx   ebx, word[edi + window_data + WDATA.box.top]
+        movzx   ebx, word[window_data + edi + WDATA.box.top]
         add     eax, ebp
         mov     ebp, ebx
-        add     ebp, [esi+APPDATA.wnd_clientbox.top]
-        add     bx, word[esi+APPDATA.wnd_clientbox.top]
+        add     ebp, [window_data + edi + WDATA.clientbox.top]
+        add     bx, word[window_data + edi + WDATA.clientbox.top]
         add     ebp, ecx
         shl     ebx, 16
         xor     edi, edi
@@ -411,17 +406,18 @@ align 4
 ;> ebx = 1
 ;> ecx = scale power (resulting scale is 2^ebx)
 syscall_set_window_shape: 
-        mov     edi, [current_slot]
+        mov     edi, [current_slot_idx]
+        shl     edi, BSF sizeof.WDATA
 
         test    ebx, ebx
         jne     .shape_scale
-        mov     [edi + APPDATA.wnd_shape], ecx
+        mov     [window_data + edi + WDATA.shape], ecx
 ;--------------------------------------
 align 4
 .shape_scale:
         dec     ebx
         jnz     .exit
-        mov     [edi + APPDATA.wnd_shape_scale], ecx
+        mov     [window_data + edi + WDATA.shape_scale], ecx
 ;--------------------------------------
 align 4
 .exit:
@@ -498,8 +494,8 @@ syscall_window_settings:
         jc      @f
         xor     edx, edx
 @@:
-        mov     [edi*8 + SLOT_BASE + APPDATA.wnd_caption], ecx
-        mov     [edi*8 + SLOT_BASE + APPDATA.captionEncoding], dl
+        mov     [window_data + edi + WDATA.caption], ecx
+        mov     [window_data + edi + WDATA.captionEncoding], dl
         jmp     window._.draw_window_caption
 ;------------------------------------------------------------------------------
 
@@ -561,7 +557,7 @@ align 4
         movzx   edi, word[WIN_POS + esi * 2]
         shl     edi, BSF sizeof.WDATA        ;size of TASKDATA and WDATA = 32 bytes
 
-        cmp     byte [SLOT_BASE + edi*8 + APPDATA.state], TSTATE_FREE
+        cmp     byte [SLOT_BASE + edi*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.state], TSTATE_FREE
         je      .skip_window
 
         add     edi, window_data
@@ -1090,10 +1086,10 @@ align 4
         movzx   edi, word[WIN_POS + eax * 2]
         shl     edi, BSF sizeof.WDATA
 ; it is a unused slot?
-        cmp     byte [SLOT_BASE + edi*8 + APPDATA.state], TSTATE_FREE
+        cmp     byte [SLOT_BASE + edi*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.state], TSTATE_FREE
         je      @f
 ; it is a hidden thread?
-        lea     esi, [SLOT_BASE + edi*8 + APPDATA.app_name]
+        lea     esi, [SLOT_BASE + edi*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.app_name]
         cmp     [esi], byte '@'
         je      @f
 ; is it already minimized?
@@ -1549,7 +1545,7 @@ end if
 
         mov     eax, edi
         sub     eax, window_data
-        shl     eax, 3
+        shl     eax, (BSF sizeof.APPDATA - BSF sizeof.WDATA)
         add     eax, SLOT_BASE
 
         lea     ebx, [edi + WDATA.box]
@@ -1584,43 +1580,41 @@ window._.set_window_clientbox:
         mov     [window_topleft + 8 * 4 + 4], eax
 
         mov     ecx, edi
-        sub     edi, window_data
-        shl     edi, 3
         test    [ecx + WDATA.fl_wstyle], WSTYLE_CLIENTRELATIVE
         jz      .whole_window
 
         movzx   eax, [ecx + WDATA.fl_wstyle]
         and     eax, 0x0F
         mov     eax, [eax * 8 + window_topleft + 0]
-        mov     [edi + SLOT_BASE + APPDATA.wnd_clientbox.left], eax
+        mov     [ecx + WDATA.clientbox.left], eax
         shl     eax, 1
         neg     eax
         add     eax, [ecx + WDATA.box.width]
         inc     eax  ;Leency: as window is created width+1 so client the same
-        mov     [edi + SLOT_BASE + APPDATA.wnd_clientbox.width], eax
+        mov     [ecx + WDATA.clientbox.width], eax
 
         movzx   eax, [ecx + WDATA.fl_wstyle]
         and     eax, 0x0F
         push    [eax * 8 + window_topleft + 0]
         mov     eax, [eax * 8 + window_topleft + 4]
-        mov     [edi + SLOT_BASE + APPDATA.wnd_clientbox.top], eax
+        mov     [ecx + WDATA.clientbox.top], eax
         neg     eax
         sub     eax, [esp]
         add     eax, [ecx + WDATA.box.height]
         inc     eax  ;Leency: as window is created height+1 so client the same
-        mov     [edi + SLOT_BASE + APPDATA.wnd_clientbox.height], eax
+        mov     [ecx + WDATA.clientbox.height], eax
         add     esp, 4
         jmp     .exit
 ;--------------------------------------
 align 4
 .whole_window:
         xor     eax, eax
-        mov     [edi + SLOT_BASE + APPDATA.wnd_clientbox.left], eax
-        mov     [edi + SLOT_BASE + APPDATA.wnd_clientbox.top], eax
+        mov     [ecx + WDATA.clientbox.left], eax
+        mov     [ecx + WDATA.clientbox.top], eax
         mov     eax, [ecx + WDATA.box.width]
-        mov     [edi + SLOT_BASE + APPDATA.wnd_clientbox.width], eax
+        mov     [ecx + WDATA.clientbox.width], eax
         mov     eax, [ecx + WDATA.box.height]
-        mov     [edi + SLOT_BASE + APPDATA.wnd_clientbox.height], eax
+        mov     [ecx + WDATA.clientbox.height], eax
 ;--------------------------------------
 align 4
 .exit:
@@ -1666,9 +1660,9 @@ window._.sys_set_window:
         mov     cl, [edi + WDATA.fl_wstyle]
         mov     eax, [edi + WDATA.cl_frames]
 
+        mov     esi, [esp]
         sub     edi, window_data
-        shl     edi, 3
-        add     edi, SLOT_BASE
+        shl     edi, (BSF sizeof.APPDATA - BSF sizeof.WDATA)
 
         and     cl, 0x0F
         cmp     cl, 3
@@ -1680,10 +1674,9 @@ window._.sys_set_window:
 ;--------------------------------------
 align 4
 @@:
-        mov     [edi + APPDATA.wnd_caption], eax
+        mov     [esi + WDATA.caption], eax
 
-        mov     esi, [esp]
-        add     edi, APPDATA.saved_box
+        add     edi, SLOT_BASE + APPDATA.saved_box
         movsd
         movsd
         movsd
@@ -1866,10 +1859,12 @@ end virtual
 
         pushad
 
-        cmp     esi, 1
-        jz      .check_for_shaped_window
         mov     edi, esi
         shl     edi, BSF sizeof.WDATA
+
+        cmp     esi, 1
+        jz      .check_for_shaped_window
+
         cmp     [window_data + edi + WDATA.box.width], 0
         jnz     .check_for_shaped_window
         cmp     [window_data + edi + WDATA.box.height], 0
@@ -1877,10 +1872,7 @@ end virtual
 ;--------------------------------------
 align 4
 .check_for_shaped_window:
-        mov     edi, esi
-        shl     edi, BSF sizeof.APPDATA
-        add     edi, SLOT_BASE
-        cmp     [edi + APPDATA.wnd_shape], 0
+        cmp     [window_data + edi + WDATA.shape], 0
         jne     .shaped_window
 
         ; get x&y size
@@ -1930,7 +1922,7 @@ align 4
         inc     ecx
         inc     edx
 
-        push    [edi + APPDATA.wnd_shape_scale]  ; push scale first -> for loop
+        push    [window_data + edi + WDATA.shape_scale]  ; push scale first -> for loop
 
         ; get WinMap start  -> ebp
         push    eax
@@ -1940,7 +1932,7 @@ align 4
         add     eax, [_display.win_map]
         mov     ebp, eax
 
-        mov     edi, [edi + APPDATA.wnd_shape]
+        mov     edi, [window_data + edi + WDATA.shape]
         pop     eax
 
         ; eax = x_start
@@ -2178,7 +2170,7 @@ window._.check_window_draw:
 
         mov     eax, edi
         sub     eax, window_data
-        shr     eax, 5
+        shr     eax, BSF sizeof.WDATA
 
         movzx   eax, word[WIN_STACK + eax * 2]  ; get value of the curr process
         lea     esi, [WIN_POS + eax * 2]        ; get address of this process at 0xC400
@@ -2195,7 +2187,7 @@ align 4
 
         movzx   edx, word[esi]
         shl     edx, BSF sizeof.WDATA ; size of TASKDATA and WDATA is 32 bytes
-        cmp     byte [SLOT_BASE + edx*8 - sizeof.APPDATA + APPDATA.state], TSTATE_FREE
+        cmp     byte [SLOT_BASE + edx*(sizeof.APPDATA/sizeof.WDATA) - sizeof.APPDATA + APPDATA.state], TSTATE_FREE
         je      .next_window
 
         mov     eax, [edi + WDATA.box.top]
@@ -2250,7 +2242,7 @@ window._.draw_window_caption:
 align 4
 @@:
         mov     edx, [current_slot_idx]
-        shl     edx, 5
+        shl     edx, BSF sizeof.WDATA
         add     edx, window_data
         movzx   ebx, [edx + WDATA.fl_wstyle]
         and     bl, 0x0F
@@ -2287,9 +2279,9 @@ align 4
 .2:
         mov     edi, [current_slot_idx]
         shl     edi, BSF sizeof.WDATA
-        test    [edi + window_data + WDATA.fl_wstyle], WSTYLE_HASCAPTION
+        test    [window_data + edi + WDATA.fl_wstyle], WSTYLE_HASCAPTION
         jz      .exit
-        mov     edx, [edi * 8 + SLOT_BASE + APPDATA.wnd_caption]
+        mov     edx, [window_data + edi + WDATA.caption]
         or      edx, edx
         jz      .exit
 
@@ -2332,7 +2324,7 @@ align 4
         mov     esi, eax
         add     ebx, ebp
         mov     ecx, [common_colours + 16]
-        mov     al, [edi*8 + SLOT_BASE + APPDATA.captionEncoding]
+        mov     al, [window_data + edi + WDATA.captionEncoding]
         test    al, al
         jnz     @f
         mov     al, 1
@@ -2463,7 +2455,7 @@ align 4
         movzx   edi, word[WIN_POS + esi * 2]
         shl     edi, BSF sizeof.WDATA         ;size of TASKDATA and WDATA = 32 bytes
 
-        cmp     byte [SLOT_BASE + edi*8 + APPDATA.state], TSTATE_FREE
+        cmp     byte [SLOT_BASE + edi*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.state], TSTATE_FREE
         je      .skip_window
 
         add     edi, window_data

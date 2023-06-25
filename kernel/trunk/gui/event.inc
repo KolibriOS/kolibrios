@@ -67,9 +67,8 @@ create_event:                                      ;; EXPORT use
 ;   edx - uid
 ;scratched: ebx,ecx,esi,edi
         mov     ebx, [current_slot]
+        mov     edx, [ebx+APPDATA.tid]
         add     ebx, APP_OBJ_OFFSET
-        mov     edx, [current_slot]
-        mov     edx, [edx+APPDATA.tid]
         pushfd
         cli
 ;--------------------------------------
@@ -463,7 +462,7 @@ align 4
 ;--------------------------------------
 align 4
 .result:
-        setae   byte[esp+32+4] ;we consider that initially was: dword[esp+32+4]==72
+        setae   byte[esp + SYSCALL_STACK.eax + 4] ;we consider that initially was: dword[esp+32+4]==72
 ;--------------------------------------
 align 4
 .retf:
@@ -510,7 +509,7 @@ get_event_for_app:                                 ;; used from f10,f11,f23
 ;   eax - event number (=0 => no events)
         movzx   edi, bh               ; bh  is assumed as [current_slot_idx]
         mov     ecx, [ebx+APPDATA.event_mask]
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, window_data
         and     ecx, 0x7FFFFFFF
 ;--------------------------------------
@@ -553,7 +552,7 @@ align 4
         push    eax
         mov     eax, [current_slot]
         mov     eax, [eax + APPDATA.event_mask]
-        test    eax, 0x80000000 ; bit 31: active/inactive filter f.40
+        test    eax, EVM_MOUSE_FILTER ; bit 31: active/inactive filter f.40
         jz      @f
         pop     eax
         jmp     .FlagAutoReset

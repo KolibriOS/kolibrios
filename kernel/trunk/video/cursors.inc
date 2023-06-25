@@ -338,7 +338,7 @@ create_cursor:
         mov     [eax + CURSOR.hot_x], ebx
         mov     [eax + CURSOR.hot_y], ebx
 
-        stdcall kernel_alloc, 0x1000
+        stdcall kernel_alloc, PAGE_SIZE
         test    eax, eax
         jz      .fail
 
@@ -392,7 +392,7 @@ align 4
         mov     [edi + CURSOR.hot_y], edx
 
         xchg    edi, eax
-        mov     ecx, 1024
+        mov     ecx, PAGE_SIZE/4
         cld
         rep movsd
         jmp     .add_cursor

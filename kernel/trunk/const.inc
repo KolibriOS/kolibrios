@@ -494,7 +494,7 @@ struct  APPDATA
         exc_handler     dd ?            ;+32
         except_mask     dd ?            ;+36
         pl0_stack       dd ?            ;+40
-        cursor          dd ?            ;+44
+        cursor          dd ?            ;+44    ; WDATA
         fd_ev           dd ?            ;+48
         bk_ev           dd ?            ;+52
         fd_obj          dd ?            ;+56
@@ -511,29 +511,28 @@ struct  APPDATA
         tls_base        dd ?            ;+104
         event_mask      dd ?            ;+108   stores event types allowed for task
         tid             dd ?            ;+112   thread id
-        draw_bgr_x      dd ?            ;+116
-        draw_bgr_y      dd ?            ;+120
+        draw_bgr_x      dd ?            ;+116   ; WDATA
+        draw_bgr_y      dd ?            ;+120   ; WDATA
         state           db ?            ;+124   thread state
         wnd_number      db ?            ;+125
                         dw ?            ;+126
-        wnd_shape       dd ?            ;+128
-        wnd_shape_scale dd ?            ;+132
+                        dd ?            ;+128
+                        dd ?            ;+132
                         dd ?            ;+136
         counter_sum     dd ?            ;+140  ; R
-        saved_box       BOX             ;+144
+        saved_box       BOX             ;+144  ; WDATA
         ipc_start       dd ?            ;+160
         ipc_size        dd ?            ;+164
         occurred_events dd ?            ;+168  ; mask which accumulates occurred events
         debugger_slot   dd ?            ;+172
         terminate_protection dd ?       ;+176
         keyboard_mode   db ?            ;+180
-        captionEncoding db ?
-                        rb 2
+                        rb 3
         exec_params     dd ?            ;+184
         dbg_event_mem   dd ?            ;+188
         dbg_regs        DBG_REGS        ;+192
-        wnd_caption     dd ?            ;+212
-        wnd_clientbox   BOX             ;+216
+                        dd ?            ;+212
+                        rd 4            ;+216
         priority        dd ?            ;+232
         in_schedule     LHEAD           ;+236
         counter_add     dd ?            ;+244  ; R
@@ -598,11 +597,17 @@ struct  WDATA
         fl_wstate       db ?
         fl_wdrawn       db ?
         fl_redraw       db ?
+        clientbox       BOX
+        shape           dd ?
+        shape_scale     dd ?
+        caption         dd ?
+        captionEncoding db ?
+                        rb 3
 ends
 
 label WDATA.fl_wstyle byte at WDATA.cl_workarea + 3
 
-assert sizeof.WDATA = 32
+assert sizeof.WDATA = 64
 
 struct  SYS_VARS
         bpp             dd ?

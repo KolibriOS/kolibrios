@@ -59,6 +59,6 @@ skin_udata:
 
 align 4
 
-skin_udata.end:
+skin_udata.size = $ - skin_udata
 
 endg

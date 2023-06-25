@@ -271,9 +271,8 @@ end virtual
         test    [esp + .flags], BLIT_CLIENT_RELATIVE
         jz      .no_client_relative        
 
-        mov     eax, [current_slot]
-        add     ebx, [eax + APPDATA.wnd_clientbox.left]
-        add     ebp, [eax + APPDATA.wnd_clientbox.top]
+        add     ebx, [window_data + eax + WDATA.clientbox.left]
+        add     ebp, [window_data + eax + WDATA.clientbox.top]
 .no_client_relative:
 
         mov     ecx, ebx

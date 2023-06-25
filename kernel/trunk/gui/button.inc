@@ -95,12 +95,13 @@ syscall_button:
 
         ; make coordinates clientbox-relative
         push    eax
-        mov     eax, [current_slot]
+        mov     eax, [current_slot_idx]
+        shl     eax, BSF sizeof.WDATA
         rol     ebx, 16
-        add     bx, word[eax + APPDATA.wnd_clientbox.left]
+        add     bx, word[window_data + eax + WDATA.clientbox.left]
         rol     ebx, 16
         rol     ecx, 16
-        add     cx, word[eax + APPDATA.wnd_clientbox.top]
+        add     cx, word[window_data + eax + WDATA.clientbox.top]
         rol     ecx, 16
         pop     eax
 
@@ -339,12 +340,11 @@ sys_button_deactivate_handler:
         mov     esi, eax
         mov     edi, ebx
         movzx   ecx, [esi + SYS_BUTTON.pslot]
-        shl     ecx, 5
-        add     ecx, window_data
+        shl     ecx, BSF sizeof.WDATA
         mov     eax, dword[esi + SYS_BUTTON.left]
         mov     ebx, dword[esi + SYS_BUTTON.top]
-        add     eax, [ecx + WDATA.box.left]
-        add     ebx, [ecx + WDATA.box.top]
+        add     eax, [window_data + ecx + WDATA.box.left]
+        add     ebx, [window_data + ecx + WDATA.box.top]
         mov     ecx, eax
         mov     edx, ebx
         bt      edi, 30

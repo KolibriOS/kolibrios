@@ -156,7 +156,7 @@ init_video:
         or      esi, PG_GLOBAL + PAT_WC + PG_UWR
         and     esi, [pte_valid_mask]
 
-        stdcall alloc_kernel_space, 0x1000
+        stdcall alloc_kernel_space, PAGE_SIZE
         mov     edi, eax
         mov     ebx, 4
 
@@ -168,15 +168,15 @@ init_video:
         stdcall map_page, edi, eax, PG_SWR
 
         mov     eax, esi
-        mov     ecx, 1024
+        mov     ecx, PAGE_SIZE/4
 @@:
         stosd
-        add     eax, 0x1000
+        add     eax, PAGE_SIZE
         loop    @B
 
         add     esi, 0x400000
         add     ebp, 4
-        sub     edi, 4096
+        sub     edi, PAGE_SIZE
         dec     ebx
         jnz     .new_pd
         stdcall free_kernel_space, edi
@@ -185,7 +185,7 @@ init_video:
 .fake:
         mov     [BOOT.mtrr], byte 2
 
-        stdcall alloc_kernel_space, 0x1000
+        stdcall alloc_kernel_space, PAGE_SIZE
         push    eax                            ;store in stack for subsequent
         mov     edi, eax                       ;free_kernel_space call
 
@@ -197,13 +197,13 @@ init_video:
 
 ; max VGA=640*480*4=1228800 bytes
 ; + 32*640*4=81920 bytes for mouse pointer
-        stdcall alloc_pages, ((1228800+81920)/4096)
+        stdcall alloc_pages, ((1228800+81920)/PAGE_SIZE)
         or      eax, PG_GLOBAL+PG_UWR
         and     eax, [pte_valid_mask]
-        mov     ecx, (1228800+81920)/4096
+        mov     ecx, (1228800+81920)/PAGE_SIZE
 @@:
         stosd
-        add     eax, 0x1000
+        add     eax, PAGE_SIZE
         loop    @B
 
         call    free_kernel_space
@@ -221,7 +221,7 @@ set_framebuffer:
         cli
         mov     [_display.current_lfb], ecx
 .patch_pde:
-        lea     edi, [eax + PROC.pdt_0+4096-32]   ;last 8 pd entries up to 32Mb framebuffer
+        lea     edi, [eax + PROC.pdt_0 + PAGE_SIZE -32] ;last 8 pd entries up to 32Mb framebuffer
         mov     ecx, 4
         rep movsd                               ;patch pde
         sub     esi, 16

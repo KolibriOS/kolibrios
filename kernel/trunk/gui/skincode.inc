@@ -97,7 +97,7 @@ parse_skin_data:
         jne     .exit
 
         mov     edi, skin_udata
-        mov     ecx, (skin_udata.end-skin_udata)/4
+        mov     ecx, (skin_udata.size)/4
         xor     eax, eax
         cld
         rep stosd

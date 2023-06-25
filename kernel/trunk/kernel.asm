@@ -551,7 +551,7 @@ high_code:
         xor     eax, eax
         mov     [clipboard_slots], eax
         mov     [clipboard_write_lock], eax
-        stdcall kernel_alloc, 4096
+        stdcall kernel_alloc, PAGE_SIZE
         test    eax, eax
         jnz     @f
 
@@ -1554,16 +1554,14 @@ draw_num_text:
         mov     ebx, [esp+64+32-8+4]
 ; add window start x & y
 
-        mov     edi, [current_slot_idx]
-        mov     ecx, edi
-        shl     edi, BSF sizeof.APPDATA
+        mov     ecx, [current_slot_idx]
         shl     ecx, BSF sizeof.WDATA
 
         mov     eax, [window_data + ecx + WDATA.box.left]
-        add     eax, [SLOT_BASE + edi + APPDATA.wnd_clientbox.left]
+        add     eax, [window_data + ecx + WDATA.clientbox.left]
         shl     eax, 16
         add     eax, [window_data + ecx + WDATA.box.top]
-        add     eax, [SLOT_BASE + edi + APPDATA.wnd_clientbox.top]
+        add     eax, [window_data + ecx + WDATA.clientbox.top]
         add     ebx, eax
         mov     ecx, [esp+64+32-12+4]
         mov     eax, [esp+64+8]         ; background color (if given)
@@ -2109,7 +2107,7 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
         je      .nowindowdeactivate ; already deactive
 
         mov     edi, ecx
-        shl     edi, 5
+        shl     edi, BSF sizeof.WDATA
         add     edi, window_data
         movzx   esi, word [WIN_STACK + ecx * 2]
         lea     esi, [WIN_POS + esi * 2]
@@ -2174,7 +2172,7 @@ sysfn_zmodif:
         mov     eax, edx
         shl     edx, BSF sizeof.WDATA
 
-        cmp     [edx*8 + SLOT_BASE + APPDATA.state], TSTATE_FREE
+        cmp     [edx*(sizeof.APPDATA/sizeof.WDATA) + SLOT_BASE + APPDATA.state], TSTATE_FREE
         je      .fail
 
         cmp     ecx, 1
@@ -2533,16 +2531,16 @@ sys_cpuusage:
         call    memmove
         pop     ecx
 
-        shr     ecx, 3
+        shr     ecx, (BSF sizeof.APPDATA - BSF sizeof.WDATA)
 ; +22: address of the process in memory
 ; +26: size of used memory - 1
         push    edi
         lea     edi, [ebx+12]
         xor     eax, eax
         mov     edx, 0x100000*16
-        cmp     ecx, 1 shl 5
+        cmp     ecx, 1 shl BSF sizeof.WDATA
         je      .os_mem
-        mov     edx, [SLOT_BASE + ecx*8 + APPDATA.process]
+        mov     edx, [SLOT_BASE + ecx*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.process]
         mov     edx, [edx + PROC.mem_used]
         mov     eax, std_application_base_address
 .os_mem:
@@ -2551,7 +2549,7 @@ sys_cpuusage:
         stosd
 
 ; +30: PID/TID
-        mov     eax, [SLOT_BASE + ecx*8 + APPDATA.tid]
+        mov     eax, [SLOT_BASE + ecx*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.tid]
         stosd
 
     ; window position and size
@@ -2563,11 +2561,11 @@ sys_cpuusage:
         movsd
 
     ; Process state (+50)
-        movzx   eax, byte [SLOT_BASE + ecx*8 + APPDATA.state]
+        movzx   eax, byte [SLOT_BASE + ecx*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.state]
         stosd
 
     ; Window client area box
-        lea     esi, [SLOT_BASE + ecx*8 + APPDATA.wnd_clientbox]
+        lea     esi, [window_data + ecx + WDATA.clientbox]
         movsd
         movsd
         movsd
@@ -2578,11 +2576,11 @@ sys_cpuusage:
         stosb
 
     ; Event mask (+71)
-        mov     EAX, dword [SLOT_BASE + ecx*8 + APPDATA.event_mask]
+        mov     EAX, dword [SLOT_BASE + ecx*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.event_mask]
         stosd
 
     ; Keyboard mode (+75)
-        mov     al, byte [SLOT_BASE + ecx*8 + APPDATA.keyboard_mode]
+        mov     al, byte [SLOT_BASE + ecx*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.keyboard_mode]
         stosb
 
         pop     esi
@@ -3086,7 +3084,7 @@ bgli:
         cmp     ebx, [eax + RECT.left]
         jae     @f
 
-        mov     [eax+RECT.left], ebx
+        mov     [eax + RECT.left], ebx
         mov     dl, 1
 ;--------------------------------------
 align 4
@@ -3104,7 +3102,7 @@ align 4
         cmp     ebx, [eax + RECT.right]
         jbe     @f
 
-        mov     [eax+RECT.right], ebx
+        mov     [eax + RECT.right], ebx
         mov     dl, 1
 ;--------------------------------------
 align 4
@@ -3594,10 +3592,11 @@ align 4
 ;--------------------------------------
 align 4
 @@:
-        mov     edi, [current_slot]
-        add     dx, word[edi + APPDATA.wnd_clientbox.top]
+        mov     edi, [current_slot_idx]
+        shl     edi, BSF sizeof.WDATA
+        add     dx, word[window_data + edi + WDATA.clientbox.top]
         rol     edx, 16
-        add     dx, word[edi + APPDATA.wnd_clientbox.left]
+        add     dx, word[window_data + edi + WDATA.clientbox.left]
         rol     edx, 16
 ;--------------------------------------
 align 4
@@ -3632,10 +3631,11 @@ sys_putimage_palette:
         pop     esi ecx
         jnz     sys_putimage.exit
 
-        mov     eax, [current_slot]
-        add     dx, word [eax + APPDATA.wnd_clientbox.top]
+        mov     eax, [current_slot_idx]
+        shl     eax, BSF sizeof.WDATA
+        add     dx, word [window_data + eax + WDATA.clientbox.top]
         rol     edx, 16
-        add     dx, word [eax + APPDATA.wnd_clientbox.left]
+        add     dx, word [window_data + eax + WDATA.clientbox.left]
         rol     edx, 16
 ;--------------------------------------
 align 4
@@ -3944,11 +3944,12 @@ putimage_get16bpp:
         ; edx y end
 ; edi color
 ;__sys_drawbar:
-;        mov     esi, [current_slot]
-;        add     eax, [esi+APPDATA.wnd_clientbox.left]
-;        add     ecx, [esi+APPDATA.wnd_clientbox.left]
-;        add     ebx, [esi+APPDATA.wnd_clientbox.top]
-;        add     edx, [esi+APPDATA.wnd_clientbox.top]
+;        mov     esi, [current_slot_idx]
+;        shl     esi, BSF sizeof.WDATA
+;        add     eax, [window_data+esi+WDATA.clientbox.left]
+;        add     ecx, [window_data+esi+WDATA.clientbox.left]
+;        add     ebx, [window_data+esi+WDATA.clientbox.top]
+;        add     edx, [window_data+esi+WDATA.clientbox.top]
 ;--------------------------------------
 ;align 4
 ;.forced:

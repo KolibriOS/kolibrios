@@ -630,7 +630,7 @@ destroy_thread:
         shl     edi, BSF sizeof.APPDATA
         cmp     [SLOT_BASE + edi + APPDATA.state], TSTATE_FREE ; skip free slots
         je      .check_next_window
-        shr     edi, 3
+        shr     edi, (BSF sizeof.APPDATA - BSF sizeof.WDATA)
         add     edi, window_data
 ; \begin{diamond}[19.09.2006]
 ; skip minimized windows
