@@ -28,7 +28,6 @@ def run_qemu(start_dir = "workspace"):
     flags += f"-drive format=raw,file={start_dir}/kolibri.img,index=0,if=floppy -boot a "
     flags += "-vga vmware "
     flags += "-net nic,model=rtl8139 -net user "
-    flags += "-soundhw ac97 "
     if is_win32():
         qemu_full_path = shutil.which(qemu_command)
         qemu_directory = os.path.dirname(qemu_full_path)
