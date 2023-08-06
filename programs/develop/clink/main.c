@@ -43,7 +43,11 @@ const char *epep_errors[] = {
 	"EPEP_ERR_INVALID_BASE_RELOCATION_BLOCK_BASE_RELOCATION_OFFSET",
 	"EPEP_ERR_INVALID_SECTION_RELOCATION_OFFSET",
 	"EPEP_ERR_INVALID_LINENUMBER_OFFSET",
+	"EPEP_ERR_INVALID_NUMBER_OF_RELOCATIONS_FOR_EXTENDED",
 };
+
+static_assert(sizeof(epep_errors) / sizeof(epep_errors[0]) == EPEP_ERR_END,
+              "Each EPEP error should be stringified.");
 
 typedef char *pchar;
 
@@ -63,6 +67,8 @@ typedef struct {
 	uint32_t characteristics;
 	size_t size;
 	size_t number_of_relocations;
+	// Number of relocations is greater than 2^16 - 1
+	int number_of_relocations_is_extended;
 } SectionInfo;
 
 typedef struct {
@@ -240,7 +246,12 @@ static void build(ObjectIr *ir, const char *outname) {
 		fwrite32(out, offset_to_next_relocation); // PointerToRelocations
 		offset_to_next_relocation += si.number_of_relocations * 10;
 		fwrite32(out, 0);                         // PointerToLinenumbers
-		fwrite16(out, si.number_of_relocations);  // NumberOfRelocations
+		// NumberOfRelocations
+		if (si.number_of_relocations_is_extended) {
+			fwrite16(out, 0xffff);
+		} else {
+			fwrite16(out, si.number_of_relocations);
+		}
 		fwrite16(out, 0);                         // NumberOfLinenumbers
 		fwrite32(out, si.characteristics);        // Characteristics
 		log_info("Done.\n");
@@ -294,6 +305,11 @@ static void build(ObjectIr *ir, const char *outname) {
 		SectionInfo si = cdict_CStr_SectionInfo_get_v(&ir->info_per_section, name);
 
 		log_info(" Writing relocations of %s {\n", name);
+		if (si.number_of_relocations_is_extended) {
+			EpepCoffRelocation rel = { 0 };
+			rel.VirtualAddress = si.number_of_relocations;
+			fwrite(&rel, 1, 10, out);
+		}
 		for (size_t i = 0; i < cvec_ObjIdSecId_size(&si.source); i++) {
 			ObjIdSecId id = cvec_ObjIdSecId_at(&si.source, i);
 			CoffObject *object = &ir->objects[id.obj_id];
@@ -313,10 +329,15 @@ static void build(ObjectIr *ir, const char *outname) {
 			if (!epep_get_section_header_by_index(epep, &sh, id.sec_id)) {
 				ERROR_EPEP(epep);
 			}
-			for (size_t rel_i = 0; rel_i < sh.NumberOfRelocations; rel_i++) {
+			size_t number_of_relocations = 0;
+			int extended = 0;
+			if (!epep_get_section_number_of_relocations_x(epep, &sh, &number_of_relocations, &extended)) {
+				ERROR_EPEP(epep);
+			}
+			for (size_t rel_i = 0; rel_i < number_of_relocations; rel_i++) {
 				EpepCoffRelocation rel = { 0 };
 
-				if (!epep_get_section_relocation_by_index(epep, &sh, &rel, rel_i)) {
+				if (!epep_get_section_relocation_by_index_x(epep, &sh, &rel, rel_i, extended)) {
 					ERROR_EPEP(epep);
 				}
 				log_info("  { %02x, %02x, %02x }", rel.VirtualAddress, rel.SymbolTableIndex, rel.Type);
@@ -604,9 +625,22 @@ static ObjectIr parse_objects(int argc, char **argv) {
 			size_t sec_offset = si.size;
 			cvec_size_t_push_back(&objects[i].section_offsets, sec_offset);
 
+			size_t number_of_relocations = 0;
+			int unused = 0;
+			if (!epep_get_section_number_of_relocations_x(epep, &sh, &number_of_relocations, &unused)) {
+				ERROR_EPEP(epep);
+			}
+
 			si.size += sh.SizeOfRawData;
 			si.characteristics |= sh.Characteristics;
-			si.number_of_relocations += sh.NumberOfRelocations;
+			si.number_of_relocations += number_of_relocations;
+			if (si.number_of_relocations > 0xffff && !si.number_of_relocations_is_extended) {
+				// One more relocation to store the actual relocation number
+				si.number_of_relocations++;
+				si.number_of_relocations_is_extended = 1;
+				const uint32_t flag_IMAGE_SCN_LNK_NRELOC_OVFL = 0x01000000;
+				si.characteristics |= flag_IMAGE_SCN_LNK_NRELOC_OVFL;
+			}
 			cvec_ObjIdSecId_push_back(&si.source, (ObjIdSecId){ i, sec_i });
 			cdict_CStr_SectionInfo_add_vv(&info_per_section, strdup(name), si, CDICT_REPLACE_EXIST);
 

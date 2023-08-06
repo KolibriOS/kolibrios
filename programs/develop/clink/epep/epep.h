@@ -61,6 +61,8 @@ typedef enum {
 	EPEP_ERR_INVALID_BASE_RELOCATION_BLOCK_BASE_RELOCATION_OFFSET,
 	EPEP_ERR_INVALID_SECTION_RELOCATION_OFFSET,
 	EPEP_ERR_INVALID_LINENUMBER_OFFSET,
+	EPEP_ERR_INVALID_NUMBER_OF_RELOCATIONS_FOR_EXTENDED,
+	EPEP_ERR_END
 } EpepError;
 
 //
@@ -285,10 +287,10 @@ typedef union {
 /// Returns non-zero if export table exists in the file
 int epep_has_export_table(Epep *epep);
 
-/// Palces offset of export table into epep structrue
+/// Palces offset of export table into epep structure
 int epep_read_export_table_offset(Epep *epep);
 
-/// Palces export table into epep structrue
+/// Palces export table into epep structure
 //! Needs to be called before next export functions
 int epep_read_export_directory(Epep *epep);
 
@@ -360,7 +362,22 @@ typedef struct {
 	uint16_t Type;
 } EpepCoffRelocation;
 
+/// Gives a COFF Relocation by its index
 int epep_get_section_relocation_by_index(Epep *epep, EpepSectionHeader *sh, EpepCoffRelocation *rel, size_t index);
+
+/// Checks if the section contains more than 2^16 - 1 relocations
+int epep_section_contains_extended_relocations(Epep *epep, EpepSectionHeader *sh, int *result);
+
+/// Gives the section relocation count if the section contains more than 2^16 - 1 relocations
+int epep_get_section_extended_number_of_relocations(Epep *epep, EpepSectionHeader *sh, size_t *result);
+
+/// Gives the meaningful COFF Relocation count
+//! Returns the value to pass to the following _x functions in the last parameter
+int epep_get_section_number_of_relocations_x(Epep *epep, EpepSectionHeader *sh, size_t *result, int *extended);
+
+/// Gives a meaningful COFF Relocation by its index
+//! Requires the value returned by epep_get_section_number_of_relocations_x as the last argument
+int epep_get_section_relocation_by_index_x(Epep *epep, EpepSectionHeader *sh, EpepCoffRelocation *rel, size_t index, int extended);
 
 //
 // COFF Line Numbers
@@ -1002,6 +1019,49 @@ int epep_get_section_relocation_by_index(Epep *epep, EpepSectionHeader *sh, Epep
 	epep_seek(epep, offset);
 	epep_read_block(epep, 10, rel);
 	return 1;
+}
+
+int epep_section_contains_extended_relocations(Epep *epep, EpepSectionHeader *sh, int *result) {
+	const uint32_t flag_IMAGE_SCN_LNK_NRELOC_OVFL = 0x01000000;
+	if (sh->Characteristics & flag_IMAGE_SCN_LNK_NRELOC_OVFL) {
+                if (sh->NumberOfRelocations != 0xffff) {
+                        epep->error_code = EPEP_ERR_INVALID_NUMBER_OF_RELOCATIONS_FOR_EXTENDED;
+                        return 0;
+                }
+		*result = 1;
+	} else {
+		*result = 0;
+	}
+	return 1;
+}
+
+int epep_get_section_extended_number_of_relocations(Epep *epep, EpepSectionHeader *sh, size_t *result) {
+	EpepCoffRelocation first_relocation;
+	if (!epep_get_section_relocation_by_index(epep, sh, &first_relocation, 0)) {
+		return 0;
+	}
+	*result = first_relocation.VirtualAddress;
+	return 1;
+}
+
+int epep_get_section_number_of_relocations_x(Epep *epep, EpepSectionHeader *sh, size_t *result, int *extended) {
+	if (!epep_section_contains_extended_relocations(epep, sh, extended)) {
+		return 0;
+	}
+	if (*extended) {
+		size_t real_number_of_relocations;
+		if (!epep_get_section_extended_number_of_relocations(epep, sh, &real_number_of_relocations)) {
+			return 0;
+		}
+		*result = real_number_of_relocations - 1;
+	} else {
+		*result = sh->NumberOfRelocations;
+	}
+	return 1;
+}
+
+int epep_get_section_relocation_by_index_x(Epep *epep, EpepSectionHeader *sh, EpepCoffRelocation *rel, size_t index, int extended) {
+	return epep_get_section_relocation_by_index(epep, sh, rel, index + extended);
 }
 
 //
