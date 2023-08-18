@@ -350,8 +350,7 @@ align 64
 fpu_data:
         rb  0xa80       ; bochs avx512
 fpu_data_size = $ - fpu_data
-draw_data:
-        rb  sizeof.WDATA*256
+
 BPSLine_calc_area   rd  MAX_SCREEN_HEIGHT
 d_width_calc_area   rd  MAX_SCREEN_HEIGHT
 mouseunder          rd  16*24
@@ -437,8 +436,8 @@ thread_count        dd  ?
 mididp  dd  ?
 midisp  dd  ?
 
-cdbase  dd  ?
-cdid    dd  ?
+;cdbase  dd  ?
+;cdid    dd  ?
 
 hdbase  dd  ?   ; for boot 0x1f0
 hdid    dd  ?
@@ -548,3 +547,6 @@ RESERVED_PORTS:
         rb  64*1024
 sys_pgmap:
         rb  1024*1024/8
+
+
+CDDataBuf: rb 0x1000

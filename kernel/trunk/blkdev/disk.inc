@@ -1241,7 +1241,6 @@ end virtual
         add     ebp, 8       ; ebp points to part of PARTITION structure
         xor     eax, eax     ; first sector of the partition
         call    fs_read32_sys
-        ;push    eax
 ; 2. Run tests for all supported filesystems. If at least one test succeeded,
 ; go to 4.
 ; For tests:
@@ -1249,6 +1248,9 @@ end virtual
 ; [esp] = error code after bootsector read: 0 = ok, otherwise = failed,
 ; ebx points to the buffer for bootsector,
 ; ebx+[esi+DISK.MediaInfo.SectorSize] points to sector-sized buffer that can be used for anything.
+
+        ; lock fs list
+
         mov     ecx, [fs_list]
 @@:
         cmp     ecx, fs_list
@@ -1260,7 +1262,8 @@ end virtual
         test    eax, eax
         jnz     .success
 
-        pop     eax
+        mov     eax, ecx
+        pop     ecx
         mov     ecx, [ecx]
         jmp     @b
 @@:
@@ -1301,6 +1304,8 @@ end virtual
         sub     ebp, 8 ; restore ebp
 ; 4. Return with eax = pointer to PARTITION or NULL.
         pop     ecx
+
+        ; unlock fs list
         ret
 
 iglobal

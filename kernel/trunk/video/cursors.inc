@@ -294,14 +294,16 @@ proc set_cursor stdcall, hcursor:dword
 ;           cmp [eax+CURSOR.size], CURSOR_SIZE
 ;           jne .fail
         mov     ebx, [current_slot]
-        xchg    eax, [ebx + APPDATA.cursor]
+        mov     ebx, [ebx + APPDATA.window]
+        xchg    eax, [ebx + WDATA.cursor]
         jmp     .end
 ;--------------------------------------
 align 4
 .fail:
         mov     eax, [def_cursor]
         mov     ebx, [current_slot]
-        xchg    eax, [ebx + APPDATA.cursor]
+        mov     ebx, [ebx + APPDATA.window]
+        xchg    eax, [ebx + WDATA.cursor]
 align 4
 .end:
         mov     [redrawmouse_unconditional], 1
@@ -464,10 +466,11 @@ proc delete_cursor stdcall, hcursor:dword
         jne     .fail
 
         mov     ebx, [current_slot]
-        cmp     esi, [ebx + APPDATA.cursor]
+        mov     ebx, [ebx + APPDATA.window]
+        cmp     esi, [ebx + WDATA.cursor]
         jne     @F
         mov     eax, [def_cursor]
-        mov     [ebx + APPDATA.cursor], eax
+        mov     [ebx + WDATA.cursor], eax
 ;--------------------------------------
 align 4
 @@:

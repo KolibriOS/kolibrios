@@ -566,10 +566,6 @@ destroy_thread:
         mov     edi, esi
         mov     ecx, sizeof.WDATA/4
         rep stosd
-
-        lea     edi, [esi - window_data + draw_data]
-        mov     ecx, sizeof.WDATA/4
-        rep stosd
         popa
 
 ; debuggee test

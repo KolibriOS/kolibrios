@@ -41,7 +41,7 @@
 ; 0x80000000 -> 0FFF  physical page zero - do not write
 ;                     (used by int 13h in some configurations)
 ;
-; 0x80001000 -> 2FFF   window_data   - 256 entries
+; 0x80001000 -> 8FFF   window_data   - 256 entries
 ;
 ;         0000 dword  x start
 ;         0004 dword  y start
@@ -51,15 +51,6 @@
 ;         0014 dword  color of grab bar
 ;         0018 dword  color of frames
 ;         001C dword  window flags, +30 = window drawn, +31 redraw flag
-;
-;   3000  ->   4FFF   free
-;
-;   5000  ->   68FF   free (6k6)
-;   6900  ->   6EFF   saved picture under mouse pointer (1k5)
-;
-;   6F00  ->   6FFF   free (256)
-;
-;   7000  ->   7FFF   used CD driver
 ;
 ;   8000  ->   A3FF   used FLOPPY driver
 ;

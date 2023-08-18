@@ -289,11 +289,12 @@ nosb7:
         jnz     nosb8
 
         mov     ecx, [current_slot]
+        mov     ecx, [ecx + APPDATA.window]
         xor     eax, eax
-        xchg    eax, [ecx + APPDATA.draw_bgr_x]
+        xchg    eax, [ecx + WDATA.draw_bgr_x]
         mov     [esp + SYSCALL_STACK.eax], eax ; eax = [left]*65536 + [right]
         xor     eax, eax
-        xchg    eax, [ecx + APPDATA.draw_bgr_y]
+        xchg    eax, [ecx + WDATA.draw_bgr_y]
         mov     [esp + SYSCALL_STACK.ebx], eax ; ebx = [top]*65536 + [bottom]
         ret
 ;---------------------------------------
@@ -328,11 +329,11 @@ nosb8:
 
         mov     [background_defined], 1
 
-        mov     [draw_data + sizeof.WDATA + RECT.left], eax
-        mov     [draw_data + sizeof.WDATA + RECT.top], ebx
+        mov     [background_window + WDATA.draw_data.left], eax
+        mov     [background_window + WDATA.draw_data.top], ebx
 
-        mov     [draw_data + sizeof.WDATA + RECT.right], ecx
-        mov     [draw_data + sizeof.WDATA + RECT.bottom], edx
+        mov     [background_window + WDATA.draw_data.right], ecx
+        mov     [background_window + WDATA.draw_data.bottom], edx
 
         inc     [REDRAW_BACKGROUND]
         call    wakeup_osloop
@@ -353,15 +354,15 @@ endg
 
 align 4
 force_redraw_background:
-        and     [draw_data + sizeof.WDATA + RECT.left], 0
-        and     [draw_data + sizeof.WDATA + RECT.top], 0
+        and     [background_window + WDATA.draw_data.left], 0
+        and     [background_window + WDATA.draw_data.top], 0
         push    eax ebx
         mov     eax, [_display.width]
         mov     ebx, [_display.height]
         dec     eax
         dec     ebx
-        mov     [draw_data + sizeof.WDATA + RECT.right], eax
-        mov     [draw_data + sizeof.WDATA + RECT.bottom], ebx
+        mov     [background_window + WDATA.draw_data.right], eax
+        mov     [background_window + WDATA.draw_data.bottom], ebx
         pop     ebx eax
         inc     [REDRAW_BACKGROUND]
         call    wakeup_osloop
@@ -424,7 +425,7 @@ align 4
         ; esi - buffer of 0x00RRGGBB
         mov     eax, [img_background]
         cmp     eax, static_background_data
-        jz      .ret_39_3
+        jz      .fail_39_3
 align 4
 @@:
         movzx   eax, cx ; store y in eax
@@ -489,12 +490,13 @@ align 4
 .end_copy_rect:
         xor     eax, eax
         mov     [esp + SYSCALL_STACK.eax], eax
+align 4
+.ret_39_3:
+        ret
 ;--------------------------------------
 align 4
 .fail_39_3:
-        mov     eax, -1
-align 4
-.ret_39_3:
+        mov     [esp + SYSCALL_STACK.eax], -1
         ret
 ;--------------------------------------
 align 4

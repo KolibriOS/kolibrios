@@ -897,10 +897,17 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         call    boot_log
         call    reserve_irqs_ports
 
+        mov     [SLOT_BASE + APPDATA.window], window_data
+        mov     [SLOT_BASE + sizeof.APPDATA + APPDATA.window], window_data + sizeof.WDATA
+        mov     [SLOT_BASE + sizeof.APPDATA*2 + APPDATA.window], window_data + sizeof.WDATA*2
+        mov     [window_data + WDATA.thread], SLOT_BASE
+        mov     [window_data + sizeof.WDATA + WDATA.thread], SLOT_BASE + sizeof.APPDATA
+        mov     [window_data + sizeof.WDATA*2 + WDATA.thread], SLOT_BASE + sizeof.APPDATA*2
+
         call    init_display
         mov     eax, [def_cursor]
-        mov     [SLOT_BASE + APPDATA.cursor + sizeof.APPDATA], eax
-        mov     [SLOT_BASE + APPDATA.cursor + sizeof.APPDATA*2], eax
+        mov     [window_data + sizeof.WDATA + WDATA.cursor], eax
+        mov     [window_data + sizeof.WDATA*2 + WDATA.cursor], eax
 
 ; PRINT CPU FREQUENCY
 
@@ -1179,6 +1186,10 @@ proc setup_os_slot
 
         mov     [edx + APPDATA.wnd_number], dh
         mov     byte [edx + APPDATA.tid], dh
+        movzx   eax, dh
+        shl     eax, BSF sizeof.WDATA
+        add     eax, window_data
+        mov     [edx + APPDATA.window], eax
 
         ret
 endp
@@ -1349,7 +1360,6 @@ set_variables:
 
         mov     byte [KEY_COUNT], al              ; keyboard buffer
         mov     byte [BTN_COUNT], al              ; button buffer
-;        mov   [MOUSE_X],dword 100*65536+100    ; mouse x/y
 
         pop     eax
         ret
@@ -1554,14 +1564,14 @@ draw_num_text:
         mov     ebx, [esp+64+32-8+4]
 ; add window start x & y
 
-        mov     ecx, [current_slot_idx]
-        shl     ecx, BSF sizeof.WDATA
+        mov     ecx, [current_slot]
+        mov     ecx, [ecx + APPDATA.window]
 
-        mov     eax, [window_data + ecx + WDATA.box.left]
-        add     eax, [window_data + ecx + WDATA.clientbox.left]
+        mov     eax, [ecx + WDATA.box.left]
+        add     eax, [ecx + WDATA.clientbox.left]
         shl     eax, 16
-        add     eax, [window_data + ecx + WDATA.box.top]
-        add     eax, [window_data + ecx + WDATA.clientbox.top]
+        add     eax, [ecx + WDATA.box.top]
+        add     eax, [ecx + WDATA.clientbox.top]
         add     ebx, eax
         mov     ecx, [esp+64+32-12+4]
         mov     eax, [esp+64+8]         ; background color (if given)
@@ -1896,6 +1906,7 @@ sys_end:
 ; restore default cursor before killing
         pusha
         mov     ecx, [current_slot]
+        mov     ecx, [ecx + APPDATA.window]
         call    restore_default_cursor_before_killing
         popa
 @@:
@@ -1924,11 +1935,12 @@ sys_end:
         jmp     .waitterm
 ;------------------------------------------------------------------------------
 align 4
+; ecx - ptr WDATA
 restore_default_cursor_before_killing:
         pushfd
         cli
         mov     eax, [def_cursor]
-        mov     [ecx + APPDATA.cursor], eax
+        mov     [ecx + WDATA.cursor], eax
 
         movzx   eax, word [MOUSE_Y]
         movzx   ebx, word [MOUSE_X]
@@ -1936,8 +1948,8 @@ restore_default_cursor_before_killing:
 
         add     eax, [_display.win_map]
         movzx   edx, byte [ebx + eax]
-        shl     edx, BSF sizeof.APPDATA
-        mov     esi, [SLOT_BASE + edx + APPDATA.cursor]
+        shl     edx, BSF sizeof.WDATA
+        mov     esi, [window_data + edx + WDATA.cursor]
 
         cmp     esi, [current_cursor]
         je      @f
@@ -1994,9 +2006,9 @@ sys_system:
 ;------------------------------------------------------------------------------
 sysfn_shutdown:          ; 18.9 = system shutdown
         cmp     ecx, SYSTEM_SHUTDOWN
-        jl      exit_for_anyone
+        jl      .exit_for_anyone
         cmp     ecx, SYSTEM_RESTART
-        jg      exit_for_anyone
+        jg      .exit_for_anyone
         mov     [BOOT.shutdown_type], cl
 
         mov     eax, [thread_count]
@@ -2004,7 +2016,7 @@ sysfn_shutdown:          ; 18.9 = system shutdown
         mov     [shutdown_processes], eax
         call    wakeup_osloop
         and     dword [esp + SYSCALL_STACK.eax], 0
- exit_for_anyone:
+.exit_for_anyone:
         ret
   uglobal
    shutdown_processes:
@@ -2055,10 +2067,10 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 ; restore default cursor before killing
         pusha
         mov     ecx, [esp+32]
-        shl     ecx, BSF sizeof.APPDATA
-        add     ecx, SLOT_BASE
+        shl     ecx, BSF sizeof.WDATA
+        add     ecx, window_data
         mov     eax, [def_cursor]
-        cmp     [ecx + APPDATA.cursor], eax
+        cmp     [ecx + WDATA.cursor], eax
         je      @f
         call    restore_default_cursor_before_killing
 @@:
@@ -2172,8 +2184,8 @@ sysfn_zmodif:
         mov     eax, edx
         shl     edx, BSF sizeof.WDATA
 
-        cmp     [edx*(sizeof.APPDATA/sizeof.WDATA) + SLOT_BASE + APPDATA.state], TSTATE_FREE
-        je      .fail
+        test    [window_data + edx + WDATA.fl_wstate], WSTATE_USED
+        jz      .fail
 
         cmp     ecx, 1
         jnz     .set_zmod
@@ -2204,7 +2216,7 @@ sysfn_zmodif:
         call    window._.redraw_top_wnd
 
         shl     esi, BSF sizeof.WDATA
-        mov     [esi + window_data + WDATA.fl_redraw], 1
+        mov     [esi + window_data + WDATA.fl_redraw], WSTATE_REDRAW
 
 
         mov     eax, 1
@@ -2640,16 +2652,16 @@ sys_redrawstat:
         cmp     ebx, 2
         jnz     .srl1
 
-        mov     edx, [current_slot_idx]      ; return whole screen draw area for this app
-        shl     edx, BSF sizeof.WDATA
-        mov     [draw_data + edx + RECT.left], 0
-        mov     [draw_data + edx + RECT.top], 0
+        mov     edx, [current_slot]      ; return whole screen draw area for this app
+        mov     edx, [edx + APPDATA.window]
+        mov     [edx + WDATA.draw_data.left], 0
+        mov     [edx + WDATA.draw_data.top], 0
         mov     eax, [_display.width]
         dec     eax
-        mov     [draw_data + edx + RECT.right], eax
+        mov     [edx + WDATA.draw_data.right], eax
         mov     eax, [_display.height]
         dec     eax
-        mov     [draw_data + edx + RECT.bottom], eax
+        mov     [edx + WDATA.draw_data.bottom], eax
 
 .srl1:
         ret
@@ -2863,14 +2875,14 @@ align 4
 ;--------------------------------------
 align 4
 backgr:
-        mov     eax, [draw_data + sizeof.WDATA + RECT.left]
+        mov     eax, [background_window + WDATA.draw_data.left]
         shl     eax, 16
-        add     eax, [draw_data + sizeof.WDATA + RECT.right]
+        add     eax, [background_window + WDATA.draw_data.right]
         mov     [BG_Rect_X_left_right], eax ; [left]*65536 + [right]
 
-        mov     eax, [draw_data + sizeof.WDATA + RECT.top]
+        mov     eax, [background_window + WDATA.draw_data.top]
         shl     eax, 16
-        add     eax, [draw_data + sizeof.WDATA + RECT.bottom]
+        add     eax, [background_window + WDATA.draw_data.bottom]
         mov     [BG_Rect_Y_top_bottom], eax ; [top]*65536 + [bottom]
 
         call    drawbackground
@@ -2884,47 +2896,53 @@ backgr:
 ;--------------------------------------
 align 4
 set_bgr_event:
-        add     edi, sizeof.APPDATA
+        add     edi, sizeof.WDATA
         mov     eax, [BG_Rect_X_left_right]
         mov     edx, [BG_Rect_Y_top_bottom]
-        cmp     [SLOT_BASE + edi + APPDATA.draw_bgr_x], 0
+        cmp     [window_data + edi + WDATA.draw_bgr_x], 0
         jz      .set
 .join:
-        cmp     word [SLOT_BASE + edi + APPDATA.draw_bgr_x], ax
+        cmp     word [window_data + edi + WDATA.draw_bgr_x], ax
         jae     @f
-        mov     word [SLOT_BASE + edi + APPDATA.draw_bgr_x], ax
+        mov     word [window_data + edi + WDATA.draw_bgr_x], ax
 @@:
         shr     eax, 16
-        cmp     word [SLOT_BASE + edi + APPDATA.draw_bgr_x + 2], ax
+        cmp     word [window_data + edi + WDATA.draw_bgr_x + 2], ax
         jbe     @f
-        mov     word [SLOT_BASE + edi + APPDATA.draw_bgr_x + 2], ax
+        mov     word [window_data + edi + WDATA.draw_bgr_x + 2], ax
 @@:
-        cmp     word [SLOT_BASE + edi + APPDATA.draw_bgr_y], dx
+        cmp     word [window_data + edi + WDATA.draw_bgr_y], dx
         jae     @f
-        mov     word [SLOT_BASE + edi + APPDATA.draw_bgr_y], dx
+        mov     word [window_data + edi + WDATA.draw_bgr_y], dx
 @@:
         shr     edx, 16
-        cmp     word [SLOT_BASE + edi + APPDATA.draw_bgr_y+2], dx
+        cmp     word [window_data + edi + WDATA.draw_bgr_y+2], dx
         jbe     @f
-        mov     word [SLOT_BASE + edi + APPDATA.draw_bgr_y+2], dx
+        mov     word [window_data + edi + WDATA.draw_bgr_y+2], dx
 @@:
         jmp     .common
 .set:
-        mov     [SLOT_BASE + edi + APPDATA.draw_bgr_x], eax
-        mov     [SLOT_BASE + edi + APPDATA.draw_bgr_y], edx
+        mov     [window_data + edi + WDATA.draw_bgr_x], eax
+        mov     [window_data + edi + WDATA.draw_bgr_y], edx
 .common:
-        or      [SLOT_BASE + edi + APPDATA.occurred_events], EVENT_BACKGROUND
-        loop    set_bgr_event
+        mov     eax, [window_data + edi + WDATA.thread]
+        test    eax, eax
+        jz      @f
+        or      [eax + APPDATA.occurred_events], EVENT_BACKGROUND
+@@:
+        sub     ecx, 1
+        jnz     set_bgr_event
+        ;loop    set_bgr_event
         pop     edi ecx
 ;--------- set event 5 stop -----------
         dec     [REDRAW_BACKGROUND]     ; got new update request?
         jnz     backgr
 
         xor     eax, eax
-        mov     [draw_data + sizeof.WDATA + RECT.left], eax
-        mov     [draw_data + sizeof.WDATA + RECT.top], eax
-        mov     [draw_data + sizeof.WDATA + RECT.right], eax
-        mov     [draw_data + sizeof.WDATA + RECT.bottom], eax
+        mov     [background_window + WDATA.draw_data.left], eax
+        mov     [background_window + WDATA.draw_data.top], eax
+        mov     [background_window + WDATA.draw_data.right], eax
+        mov     [background_window + WDATA.draw_data.bottom], eax
 ;--------------------------------------
 align 4
 nobackgr:
@@ -2986,8 +3004,8 @@ newct:
 .terminate:
         pushad
         mov     ecx, eax
-        shl     ecx, BSF sizeof.APPDATA
-        add     ecx, SLOT_BASE
+        shl     ecx, BSF sizeof.WDATA
+        add     ecx, window_data
         call    restore_default_cursor_before_killing
         popad
 
@@ -3079,39 +3097,38 @@ bgli:
         jz      .az
 
         mov     dl, 0
-        lea     eax, [edi + draw_data - window_data]
         mov     ebx, [draw_limits.left]
-        cmp     ebx, [eax + RECT.left]
+        cmp     ebx, [edi + WDATA.draw_data.left]
         jae     @f
 
-        mov     [eax + RECT.left], ebx
+        mov     [edi + WDATA.draw_data.left], ebx
         mov     dl, 1
 ;--------------------------------------
 align 4
 @@:
         mov     ebx, [draw_limits.top]
-        cmp     ebx, [eax + RECT.top]
+        cmp     ebx, [edi + WDATA.draw_data.top]
         jae     @f
 
-        mov     [eax + RECT.top], ebx
+        mov     [edi + WDATA.draw_data.top], ebx
         mov     dl, 1
 ;--------------------------------------
 align 4
 @@:
         mov     ebx, [draw_limits.right]
-        cmp     ebx, [eax + RECT.right]
+        cmp     ebx, [edi + WDATA.draw_data.right]
         jbe     @f
 
-        mov     [eax + RECT.right], ebx
+        mov     [edi + WDATA.draw_data.right], ebx
         mov     dl, 1
 ;--------------------------------------
 align 4
 @@:
         mov     ebx, [draw_limits.bottom]
-        cmp     ebx, [eax + RECT.bottom]
+        cmp     ebx, [edi + WDATA.draw_data.bottom]
         jbe     @f
 
-        mov     [eax + RECT.bottom], ebx
+        mov     [edi + WDATA.draw_data.bottom], ebx
         mov     dl, 1
 ;--------------------------------------
 align 4
@@ -3123,18 +3140,15 @@ align 4
 align 4
 .az:
         mov     eax, edi
-        add     eax, draw_data-window_data
 
         mov     ebx, [draw_limits.left]        ; set limits
-        mov     [eax + RECT.left], ebx
+        mov     [eax + WDATA.draw_data.left], ebx
         mov     ebx, [draw_limits.top]
-        mov     [eax + RECT.top], ebx
+        mov     [eax + WDATA.draw_data.top], ebx
         mov     ebx, [draw_limits.right]
-        mov     [eax + RECT.right], ebx
+        mov     [eax + WDATA.draw_data.right], ebx
         mov     ebx, [draw_limits.bottom]
-        mov     [eax + RECT.bottom], ebx
-
-        sub     eax, draw_data-window_data
+        mov     [eax + WDATA.draw_data.bottom], ebx
 
         cmp     dword [esp], 1
         jne     nobgrd
@@ -3203,7 +3217,7 @@ align 4
 .found:
         pop     ebp edi eax
 
-        mov     [eax + WDATA.fl_redraw], byte 1  ; mark as redraw
+        mov     [eax + WDATA.fl_redraw], WSTATE_REDRAW  ; mark as redraw
 ;--------------------------------------
 align 4
 ricino:
@@ -3224,7 +3238,7 @@ calculatebackground:   ; background
         mov     ecx, [_display.win_map_size]
         shr     ecx, 2
         rep stosd
-        mov     byte[window_data + sizeof.WDATA + WDATA.z_modif], ZPOS_DESKTOP
+        mov     byte[background_window + WDATA.z_modif], ZPOS_DESKTOP
         mov     [REDRAW_BACKGROUND], 0
         ret
 ;-----------------------------------------------------------------------------

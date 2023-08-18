@@ -969,8 +969,6 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
         mov     [SLOT_BASE + ebx + APPDATA.fd_obj], edx
         mov     [SLOT_BASE + ebx + APPDATA.bk_obj], edx
 
-        mov     ecx, [def_cursor]
-        mov     [SLOT_BASE + ebx + APPDATA.cursor], ecx
         mov     eax, [pl0_stack]
         mov     [SLOT_BASE + ebx + APPDATA.pl0_stack], eax
         add     eax, RING0_STACK_SIZE
@@ -993,22 +991,29 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 
         mov     eax, [slot]
         mov     [SLOT_BASE + ebx + APPDATA.wnd_number], al
-        mov     ebx, eax
-        shl     ebx, BSF sizeof.WDATA
-        lea     ecx, [draw_data + ebx];ecx - pointer to draw data
+        ;mov     ebx, eax
+        shl     eax, BSF sizeof.WDATA
+        add     eax, window_data
+        mov     ecx, eax
+        mov     [SLOT_BASE + ebx + APPDATA.window], eax
+        mov     [eax + WDATA.thread], ebx
+        add     [eax + WDATA.thread], SLOT_BASE
 
 ; set window state to 'normal' (non-minimized/maximized/rolled-up) state
-        mov     [window_data + ebx + WDATA.fl_wstate], WSTATE_NORMAL
-        mov     [window_data + ebx + WDATA.fl_redraw], 1
+        mov     [eax + WDATA.fl_wstate], WSTATE_NORMAL + WSTATE_USED
+        mov     [eax + WDATA.fl_redraw], WSTATE_REDRAW
+
+        mov     edx, [def_cursor]
+        mov     [eax + WDATA.cursor], edx
 
 ;set draw data to full screen
         xor     eax, eax
-        mov     [ecx + RECT.left], eax
-        mov     [ecx + RECT.top], eax
+        mov     [ecx + WDATA.draw_data.left], eax
+        mov     [ecx + WDATA.draw_data.top], eax
         mov     eax, [screen_workarea.right]
-        mov     [ecx + RECT.right], eax
+        mov     [ecx + WDATA.draw_data.right], eax
         mov     eax, [screen_workarea.bottom]
-        mov     [ecx + RECT.bottom], eax
+        mov     [ecx + WDATA.draw_data.bottom], eax
 
         mov     ebx, [pl0_stack]
         mov     esi, [params]

@@ -390,15 +390,15 @@ mouse._.move_handler:
 .set_resizing_cursor:
         ; DEBUGF  1, ".set_resizing_cursor eax = %x\n", eax
         ; change cursor to resizing cursor
-        shl     esi, BSF sizeof.APPDATA
-        add     esi, SLOT_BASE
+        shl     esi, BSF sizeof.WDATA
+        add     esi, window_data
         
         ; if resizing cursor we need (eax) isnt set already, set it
-        cmp     eax, [esi + APPDATA.cursor]
+        cmp     eax, [esi + WDATA.cursor]
         je      @f
         
         ; DEBUGF  1, "changing cursor to resizing\n"
-        xchg    eax, [esi + APPDATA.cursor] ; set resizing cursor, prev cursor goes to eax
+        xchg    eax, [esi + WDATA.cursor] ; set resizing cursor, prev cursor goes to eax
         ; save previous cursor (will be restored when we'll get out of the resizing area)
         ; if we change resizing cursor to resizing cursor then dont update previous cursor
         cmp     eax, [def_cursor_hresize]
@@ -410,23 +410,23 @@ mouse._.move_handler:
         cmp     eax, [def_cursor_dresize2]
         je      @f
 
-        mov     [esi + APPDATA.temp_cursor], eax ; save prev cursor
+        mov     [esi + WDATA.temp_cursor], eax ; save prev cursor
 
 @@:
         jmp     .end1
 .not_in_resize_area:
         ; DEBUGF  1, ".not_in_resize_area\n"
 
-        shl     esi, BSF sizeof.APPDATA
-        add     esi, SLOT_BASE
-        mov     eax, [esi + APPDATA.temp_cursor]
+        shl     esi, BSF sizeof.WDATA
+        add     esi, window_data
+        mov     eax, [esi + WDATA.temp_cursor]
 
         test    eax, eax
         jz      .end1
         
         ; restore prev cursor
-        mov     [esi + APPDATA.temp_cursor], 0
-        mov     [esi + APPDATA.cursor], eax
+        mov     [esi + WDATA.temp_cursor], 0
+        mov     [esi + WDATA.cursor], eax
 
 .end1:
         pop     ebx eax
@@ -819,15 +819,15 @@ dd  .loadCursorUni
         mov     eax, [MOUSE_X]
         shl     eax, 16
         mov     ax, [MOUSE_Y]
-        mov     esi, [current_slot_idx]
-        shl     esi, BSF sizeof.WDATA
-        mov     bx, word[window_data + esi + WDATA.box.left]
+        mov     esi, [current_slot]
+        mov     esi, [esi + APPDATA.window]
+        mov     bx, word[esi + WDATA.box.left]
         shl     ebx, 16
-        mov     bx, word[window_data + esi + WDATA.box.top]
+        mov     bx, word[esi + WDATA.box.top]
         sub     eax, ebx
-        sub     ax, word[window_data + esi + WDATA.clientbox.top]
+        sub     ax, word[esi + WDATA.clientbox.top]
         rol     eax, 16
-        sub     ax, word[window_data + esi + WDATA.clientbox.left]
+        sub     ax, word[esi + WDATA.clientbox.left]
         rol     eax, 16
         mov     [esp + SYSCALL_STACK.eax], eax
         ret

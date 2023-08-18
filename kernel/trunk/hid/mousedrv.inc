@@ -115,9 +115,9 @@ save_draw_mouse:
 
         add     eax, [_display.win_map]
         movzx   edx, byte [ebx + eax]
-        shl     edx, BSF sizeof.APPDATA
+        shl     edx, BSF sizeof.WDATA
         ; edx - thread slot of window under cursor
-        mov     esi, [SLOT_BASE + edx + APPDATA.cursor] ; cursor of window under cursor
+        mov     esi, [window_data + edx + WDATA.cursor] ; cursor of window under cursor
 
         ; if cursor of window under cursor already equal to the
         ; current_cursor then just draw it
@@ -127,7 +127,7 @@ save_draw_mouse:
         ; eax = thread slot of current active window
         mov     eax, [thread_count]
         movzx   eax, word [WIN_POS + eax*2]
-        shl     eax, BSF sizeof.APPDATA
+        shl     eax, BSF sizeof.WDATA
 
         ; window under cursor == active window ?
         cmp     eax, edx
@@ -138,7 +138,7 @@ save_draw_mouse:
         and     bl, mouse.WINDOW_RESIZE_S_FLAG or mouse.WINDOW_RESIZE_W_FLAG or mouse.WINDOW_RESIZE_E_FLAG
         test    bl, bl
         jz      .active_isnt_resizing
-        mov     esi, [SLOT_BASE + eax + APPDATA.cursor] ; esi = cursor of active window, it is resizing cursor
+        mov     esi, [window_data + eax + WDATA.cursor] ; esi = cursor of active window, it is resizing cursor
         jmp     @f
         .active_isnt_resizing:
 
@@ -153,7 +153,7 @@ save_draw_mouse:
         je      @f
 
         ; set cursor of window under cursor
-        mov     esi, [SLOT_BASE + edx + APPDATA.cursor]
+        mov     esi, [window_data + edx + WDATA.cursor]
         cmp     esi, [current_cursor]
         je      .draw
 
@@ -171,7 +171,7 @@ align 4
 ;align 4
 ;.fail:
 ;        mov     ecx, [def_cursor]
-;        mov     [edx+SLOT_BASE+APPDATA.cursor], ecx
+;        mov     [window_data + edx + WDATA.cursor], ecx
 ;        stdcall [_display.move_cursor], ecx        ; stdcall: [esp]=ebx,eax
 ;        popad
 ;        ret

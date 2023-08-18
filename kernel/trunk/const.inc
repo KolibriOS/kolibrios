@@ -223,6 +223,7 @@ DRIVE_DATA_SIZE     = 16
 OS_BASE             = 0x80000000
 
 window_data         = OS_BASE + 0x0001000
+background_window   = window_data + sizeof.WDATA
 
 ;TASK_TABLE          = OS_BASE + 0x0003000
 ;CURRENT_TASK        = OS_BASE + 0x0003000
@@ -231,7 +232,7 @@ window_data         = OS_BASE + 0x0001000
 ;TASK_DATA           = OS_BASE + 0x0003020
 ;TASK_EVENT          = OS_BASE + 0x0003020
 
-CDDataBuf           = OS_BASE + 0x0005000
+;CDDataBuf           = OS_BASE + 0x0005000
 
 ;unused                 0x6000 - 0x8fff
 
@@ -494,7 +495,7 @@ struct  APPDATA
         exc_handler     dd ?            ;+32
         except_mask     dd ?            ;+36
         pl0_stack       dd ?            ;+40
-        cursor          dd ?            ;+44    ; WDATA
+                        dd ?            ;+44
         fd_ev           dd ?            ;+48
         bk_ev           dd ?            ;+52
         fd_obj          dd ?            ;+56
@@ -502,7 +503,7 @@ struct  APPDATA
         saved_esp       dd ?            ;+64
         io_map          rd 2            ;+68
         dbg_state       dd ?            ;+76
-        cur_dir         dd ?            ;+80
+        cur_dir         dd ?            ;+80   ; directory this thread
         wait_timeout    dd ?            ;+84
         saved_esp0      dd ?            ;+88
         wait_begin      dd ?            ;+92   +++
@@ -511,20 +512,20 @@ struct  APPDATA
         tls_base        dd ?            ;+104
         event_mask      dd ?            ;+108   stores event types allowed for task
         tid             dd ?            ;+112   thread id
-        draw_bgr_x      dd ?            ;+116   ; WDATA
-        draw_bgr_y      dd ?            ;+120   ; WDATA
+                        dd ?            ;+116
+                        dd ?            ;+120
         state           db ?            ;+124   thread state
         wnd_number      db ?            ;+125
                         dw ?            ;+126
-                        dd ?            ;+128
+        window          dd ?            ;+128   ptr WDATA
                         dd ?            ;+132
                         dd ?            ;+136
         counter_sum     dd ?            ;+140  ; R
-        saved_box       BOX             ;+144  ; WDATA
+                        rd 4            ;+144
         ipc_start       dd ?            ;+160
         ipc_size        dd ?            ;+164
         occurred_events dd ?            ;+168  ; mask which accumulates occurred events
-        debugger_slot   dd ?            ;+172
+        debugger_slot   dd ?            ;+172  ; index in SLOT_BASE array
         terminate_protection dd ?       ;+176
         keyboard_mode   db ?            ;+180
                         rb 3
@@ -537,7 +538,7 @@ struct  APPDATA
         in_schedule     LHEAD           ;+236
         counter_add     dd ?            ;+244  ; R
         cpu_usage       dd ?            ;+248  ; R
-        temp_cursor     dd 0            ;+252  ; temporary place to save cursor
+                        dd ?            ;+252  ; temporary place to save cursor
 ends
 
 assert sizeof.APPDATA = 256
@@ -575,7 +576,9 @@ WSTATE_NORMAL    = 00000000b
 WSTATE_MAXIMIZED = 00000001b
 WSTATE_MINIMIZED = 00000010b
 WSTATE_ROLLEDUP  = 00000100b
+WSTATE_USED      = 10000000b
 
+; fl_redraw
 WSTATE_REDRAW    = 00000001b
 WSTATE_WNDDRAWN  = 00000010b
 
@@ -603,11 +606,19 @@ struct  WDATA
         caption         dd ?
         captionEncoding db ?
                         rb 3
+        saved_box       BOX
+        cursor          dd ?
+        temp_cursor     dd ?
+        draw_bgr_x      dd ?
+        draw_bgr_y      dd ?
+        draw_data       RECT
+        thread          dd ? ; prt APPDATA
+                        rb 64 - 16 - 4*2 - 4*2 - 4 - 16
 ends
 
 label WDATA.fl_wstyle byte at WDATA.cl_workarea + 3
 
-assert sizeof.WDATA = 64
+assert sizeof.WDATA = 128
 
 struct  SYS_VARS
         bpp             dd ?
