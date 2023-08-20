@@ -2173,8 +2173,8 @@ align 4
 
         movzx   edx, word[esi]
         shl     edx, BSF sizeof.WDATA
-        cmp     byte [SLOT_BASE + edx*(sizeof.APPDATA/sizeof.WDATA) - sizeof.APPDATA + APPDATA.state], TSTATE_FREE
-        je      .next_window
+        test    byte [window_data + edx + WDATA.fl_wstate], WSTATE_USED
+        jz      .next_window
 
         mov     eax, [edi + WDATA.box.top]
         mov     ebx, [edi + WDATA.box.height]

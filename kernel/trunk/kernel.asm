@@ -2229,8 +2229,7 @@ sysfn_zmodif:
 
 ;------------------------------------------------------------------------------
 sysfn_getidletime:              ; 18.4 = GET IDLETIME
-        ;mov     eax, [TASK_TABLE+32+TASKDATA.cpu_usage]
-        mov     eax, [SLOT_BASE + APPDATA.cpu_usage]
+        mov     eax, [SLOT_BASE + sizeof.APPDATA + APPDATA.cpu_usage]
         mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;------------------------------------------------------------------------------
@@ -2532,8 +2531,7 @@ sys_cpuusage:
         shl     ecx, BSF sizeof.APPDATA
 
 ; +0: dword: memory usage
-        ;mov     eax, [ecx+TASK_TABLE+TASKDATA.cpu_usage]
-        mov     eax, [SLOT_BASE + ecx - sizeof.APPDATA + APPDATA.cpu_usage]
+        mov     eax, [SLOT_BASE + ecx + APPDATA.cpu_usage]
         mov     [ebx], eax
 ; +10: 11 bytes: name of the process
         push    ecx
@@ -2543,16 +2541,15 @@ sys_cpuusage:
         call    memmove
         pop     ecx
 
-        shr     ecx, (BSF sizeof.APPDATA - BSF sizeof.WDATA)
 ; +22: address of the process in memory
 ; +26: size of used memory - 1
         push    edi
         lea     edi, [ebx+12]
         xor     eax, eax
         mov     edx, 0x100000*16
-        cmp     ecx, 1 shl BSF sizeof.WDATA
+        cmp     ecx, 1 shl BSF sizeof.APPDATA
         je      .os_mem
-        mov     edx, [SLOT_BASE + ecx*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.process]
+        mov     edx, [SLOT_BASE + ecx + APPDATA.process]
         mov     edx, [edx + PROC.mem_used]
         mov     eax, std_application_base_address
 .os_mem:
@@ -2560,39 +2557,42 @@ sys_cpuusage:
         lea     eax, [edx-1]
         stosd
 
+        mov     edx, ecx
+        shr     edx, (BSF sizeof.APPDATA - BSF sizeof.WDATA)
+
 ; +30: PID/TID
-        mov     eax, [SLOT_BASE + ecx*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.tid]
+        mov     eax, [SLOT_BASE + ecx + APPDATA.tid]
         stosd
 
     ; window position and size
         push    esi
-        lea     esi, [window_data + ecx + WDATA.box]
+        lea     esi, [window_data + edx + WDATA.box]
         movsd
         movsd
         movsd
         movsd
 
     ; Process state (+50)
-        movzx   eax, byte [SLOT_BASE + ecx*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.state]
+        movzx   eax, byte [SLOT_BASE + ecx + APPDATA.state]
         stosd
 
     ; Window client area box
-        lea     esi, [window_data + ecx + WDATA.clientbox]
+        lea     esi, [window_data + edx + WDATA.clientbox]
         movsd
         movsd
         movsd
         movsd
 
     ; Window state
-        mov     al, [window_data + ecx + WDATA.fl_wstate]
+        mov     al, [window_data + edx + WDATA.fl_wstate]
         stosb
 
     ; Event mask (+71)
-        mov     EAX, dword [SLOT_BASE + ecx*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.event_mask]
+        mov     eax, dword [SLOT_BASE + ecx + APPDATA.event_mask]
         stosd
 
     ; Keyboard mode (+75)
-        mov     al, byte [SLOT_BASE + ecx*(sizeof.APPDATA/sizeof.WDATA) + APPDATA.keyboard_mode]
+        mov     al, byte [SLOT_BASE + ecx + APPDATA.keyboard_mode]
         stosb
 
         pop     esi

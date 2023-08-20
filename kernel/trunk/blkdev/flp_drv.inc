@@ -14,10 +14,6 @@ $Revision$
 ; Source code author -  Kulakov Vladimir Gennadievich.
 ; Adaptation and improvement -  Mario79.
 
-;give_back_application_data:  ; give back to application
-;     mov edi,[TASK_BASE]
-;     mov edi,[edi+TASKDATA.mem_start]
-;     add edi,ecx
 give_back_application_data_1:
         mov     esi, FDD_BUFF;FDD_DataBuffer  ;0x40000
         mov     ecx, 128
@@ -25,10 +21,6 @@ give_back_application_data_1:
         rep movsd
         ret
 
-;take_data_from_application:   ; take from application
-;     mov esi,[TASK_BASE]
-;     mov esi,[esi+TASKDATA.mem_start]
-;     add esi,ecx
 take_data_from_application_1:
         mov     edi, FDD_BUFF;FDD_DataBuffer  ;0x40000
         mov     ecx, 128

@@ -398,7 +398,7 @@ proc create_process stdcall, app_size:dword
 
         mov     edi, [tmp_task_ptab]
         stdcall map_page, edi, eax, PG_SWR
-        mov     ecx, 1024
+        mov     ecx, PAGE_SIZE/4
         xor     eax, eax
         rep stosd
 
@@ -1086,14 +1086,14 @@ pid_to_appdata:
         mov     ebx, [thread_count]
         shl     ebx, BSF sizeof.APPDATA ; multiply by size
         ; skip first process in the task table
+        mov     ecx, SLOT_BASE
+        add     ebx, ecx
 .loop:
         add     ecx, sizeof.APPDATA
-        cmp     [SLOT_BASE + ecx + APPDATA.state], TSTATE_FREE
+        cmp     [ecx + APPDATA.state], TSTATE_FREE
         jz      @f  ;skip empty slots
-        cmp     [SLOT_BASE + ecx + APPDATA.tid], eax
+        cmp     [ecx + APPDATA.tid], eax
         jz      .pid_found
-        ;ecx = offset of current process info entry
-        ;ebx = maximum permitted offset
 @@:
         cmp     ecx, ebx
         jb      .loop

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,33 +68,26 @@ endg
 
 align 4
 update_counters:
-        ;mov     edi, [TASK_BASE]
         mov     esi, [current_slot]
         rdtsc
-        ;sub     eax, [edi+TASKDATA.counter_add] ; time stamp counter add
-        ;add     [edi+TASKDATA.counter_sum], eax ; counter sum
-        sub     eax, [esi - sizeof.APPDATA + APPDATA.counter_add] ; time stamp counter add
-        add     [esi - sizeof.APPDATA + APPDATA.counter_sum], eax ; counter sum
+        sub     eax, [esi + APPDATA.counter_add] ; time stamp counter add
+        add     [esi + APPDATA.counter_sum], eax ; counter sum
         ret
 
 align 4
 updatecputimes:
         mov     ecx, [thread_count]
-        ;mov     edi, TASK_DATA
         mov     esi, SLOT_BASE
   .newupdate:
         xor     eax, eax
-        ;xchg    eax, [edi+TASKDATA.counter_sum]
-        ;mov     [edi+TASKDATA.cpu_usage], eax
-        xchg    eax, [esi + APPDATA.counter_sum]
-        ;add     edi, 0x20
-        mov     [esi + APPDATA.cpu_usage], eax
         add     esi, sizeof.APPDATA
+        xchg    eax, [esi + APPDATA.counter_sum]
+        mov     [esi + APPDATA.cpu_usage], eax
         loop    .newupdate
         ret
 
 ;TODO: Надо бы убрать использование do_change_task из V86...
-; и после этого перенести обработку TASKDATA.counter_add/sum в do_change_task
+; и после этого перенести обработку APPDATA.counter_add/sum в do_change_task
 
 align 4
 do_change_task:
@@ -266,10 +259,9 @@ SCHEDULE_HIGHER_PRIORITY = 1
 ;        keep running the current thread if other ready threads have the same or lower priority
 ;retval:
 ;   ebx = address of the APPDATA for the selected task (slot-base)
-;   edi = address of the TASKDATA for the selected task
 ;   ZF  = 1  if the task is the same
 ;warning:
-;   [current_slot_idx] = bh , [TASK_BASE] = edi -- as result
+;   [current_slot_idx] = bh -- as result
 ;   [current_slot] is not set to new value (ebx)!!!
 ;scratched: eax,ecx
 proc find_next_task
@@ -296,7 +288,7 @@ proc find_next_task
         mov     al, [ebx + APPDATA.state]
         test    al, al
         jz      .task_found     ; state == 0
-        cmp     al, 5
+        cmp     al, TSTATE_WAITING
         jne     .task_next      ; state == 1,2,3,4,9
       ; state == 5
         pushad  ; more freedom for [APPDATA.wait_test]
@@ -335,8 +327,7 @@ proc find_next_task
         mov     byte [current_slot_idx], bh
 
         rdtsc   ;call  _rdtsc
-        mov     [ebx - sizeof.APPDATA + APPDATA.counter_add], eax; for next using update_counters
-        ;mov     [edi+TASKDATA.counter_add], eax; for next using update_counters
+        mov     [ebx + APPDATA.counter_add], eax; for next using update_counters
         cmp     ebx, [current_slot]
         ret
 .task_next:
