@@ -88,6 +88,10 @@ def check_tools(tools):
         for name, package in not_exists:
             draw_row(name, package)
         draw_line()
+        install_command = 'sudo apt install'
+        for _, package in not_exists:
+            install_command += f' {package}'
+        log(f"Try to install with:\n  {install_command}\n")
         exit()
 
 
@@ -148,6 +152,7 @@ def collect_tests():
 
 
 def run_tests_serially_thread(test, root_dir):
+    print("\nRunning QEMU tests.")
     errors = []
     test_number = 1
     for test in tests:
@@ -182,15 +187,135 @@ def run_tests_serially(tests, root_dir):
     return thread
 
 
+def test_umka():
+    class Test:
+        def __init__(self, path, deps):
+            self.path = os.path.realpath(path)
+            self.name = os.path.basename(path)
+            self.deps = deps
+            filename_no_ext = os.path.splitext(self.path)[0]
+            self.ref_log = f"{filename_no_ext}.ref.log"
+            self.out_log = f"{filename_no_ext}.out.log"
+            self.ref_png = f"{filename_no_ext}.ref.png"
+            self.out_png = f"{filename_no_ext}.out.png"
+            self.log_diff = f"{filename_no_ext}.log.diff"
+            self.check_png = os.path.exists(self.ref_png)
+
+    def find_tests():
+        def find_test_dependencies(umka_shell_command_file):
+            # TODO: Cache the result to not parse tests on each run.
+            deps = set()
+            with open(umka_shell_command_file) as f:
+                test_dir = os.path.dirname(umka_shell_command_file)
+                for line in f:
+                    parts = line.split()
+                    for dependant in ("disk_add", "ramdisk_init"):
+                       try:
+                            idx = parts.index(dependant)
+                            relative_img_path = parts[idx + 1]
+                            dep_path = f"{test_dir}/{relative_img_path}"
+                            deps.add(os.path.realpath(dep_path))
+                       except:
+                          pass
+            return tuple(deps)
+
+        tests = []
+        for umka_shell_command_file in os.listdir("umka/test"):
+            umka_shell_command_file = f"umka/test/{umka_shell_command_file}"
+            if not umka_shell_command_file.endswith(".t"):
+                continue
+            if not os.path.isfile(umka_shell_command_file):
+                continue
+            deps = find_test_dependencies(umka_shell_command_file)
+            tests.append(Test(umka_shell_command_file, deps))
+
+        return tests
+
+    print("\nCollecting UMKa tests.", flush = True)
+    tests = find_tests()
+    # Excluded: #acpi_.
+    tags_to_tests = ("#xfs_", "#xfsv5_", "#exfat_", "#fat_", "#ext_", "#s05k_",
+                     "#s4k_", "#f30_", "#f70_", "#f70s0_", "#f70s1_", "#f70s5_",
+                     "#lookup_", "#bug_", "#xattr_", "#unicode_", "#draw_",
+                     "#coverage_", "#i40_", "#net_", "#arp_", "#input_",
+                     "#gpt_", "#uevent_")
+    tests_to_run = []
+    for test in tests:
+        # If none of required tags are in the test name - skip it.
+        for tag in tags_to_tests:
+            if tag in test.name:
+                break
+        else:
+            continue
+
+        # Check test dependencies.
+        unmet_deps = []
+        for dep in test.deps:
+            if not os.path.exists(dep):
+                unmet_deps.append(dep)
+
+        if len(unmet_deps) > 0:
+            print(f"*** WARNING: Test {test.name} has been skipped, unmet dependencies:")
+            for dep in unmet_deps:
+                print(f"- {os.path.basename(dep)}")
+            continue
+
+        tests_to_run.append(test)
+
+    failed_tests = []
+    test_count = len(tests_to_run)
+    test_i = 1
+    print("\nRunning UMKa tests.")
+    for test in tests_to_run:
+        print(f"[{test_i}/{test_count}] Running test {test.name}... ", end = "", flush = True)
+        if os.system(f"(cd umka/test && ../umka_shell -ri {test.path} -o {test.out_log})") != 0:
+            print("ABORT")
+        else:
+            fail_reasons = []
+            if not filecmp.cmp(test.out_log, test.ref_log):
+                fail_reasons.append("log")
+            if test.check_png and not filecmp.cmp(test.out_png, test.ref_png):
+                fail_reasons.append("png")
+            if fail_reasons:
+                failed_tests.append((test, fail_reasons))
+                print("FAILURE")
+            else:
+                print("SUCCESS")
+        test_i += 1
+
+    if len(failed_tests) != 0:
+        print("\nFailed UMKa tests:")
+        for failed_test in failed_tests:
+            test = failed_test[0]
+            reasons = failed_test[1]
+            message = f"- {test.name}"
+            if "log" in reasons:
+                os.system(f"git --no-pager diff --no-index {test.ref_log} {test.out_log} > {test.log_diff}")
+                message += f"\n  - logs differ: {test.log_diff}"
+            if "png" in reasons:
+                message += f"\n  - pngs are different:\n"
+                message += f"    - {test.ref_png}\n"
+                message += f"    - {test.out_png}"
+            print(message)
+
+
 def build_umka():
-    kolibrios_dir = os.path.abspath("../../")
+    print("\nBuilding UMKa... ", end = "", flush = True)
     env = os.environ
-    env["KOLIBRIOS"] = kolibrios_dir
+    env["KOLIBRIOS"] = os.path.abspath("../../")
     env["HOST"] = "linux"
     env["CC"] = "clang"
-    popen = subprocess.Popen(shlex.split("make -C umka umka_shell"), env = env)
+    popen = subprocess.Popen(shlex.split("make --silent -C umka umka_shell default.skn"), env = env)
     if popen.wait() != 0:
-        subprocess.Popen(shlex.split("make -C umka clean"), env = env)
+        subprocess.Popen(shlex.split("make --no-print-directory -C umka clean umka_shell default.skn"), env = env)
+    if os.system("make --silent -C umka/apps board_cycle") != 0:
+        os.system("make --no-print-directory -C umka/apps clean board_cycle")
+    if os.system("make --silent -C umka/tools all") != 0:
+        os.system("make --no-print-directory -C umka/tools clean all")
+    print("Done.")
+
+    print("\nGenerating images for UMKa tests.", flush = True)
+    os.system("(cd umka/img && sudo ./gen.sh)")
 
 
 def download_umka():
@@ -199,29 +324,6 @@ def download_umka():
 			print("Couldn't clone UMKa repo")
 			exit()
 
-
-def download_umka_imgs():
-	imgs = [
-		"fat32_test0.img",
-		"jfs.img",
-		"kolibri.img",
-		"xfs_borg_bit.img",
-		"xfs_v4_btrees_l2.img",
-		"xfs_v4_files_s05k_b4k_n8k.img",
-		"xfs_v4_ftype0_s05k_b2k_n8k_xattr.img",
-		"xfs_v4_ftype0_s05k_b2k_n8k.img",
-		"xfs_v4_ftype0_s4k_b4k_n8k.img",
-		"xfs_v4_ftype1_s05k_b2k_n8k.img",
-		"xfs_v4_unicode.img",
-		"xfs_v4_xattr.img",
-		"xfs_v5_files_s05k_b4k_n8k.img",
-		"xfs_v5_ftype1_s05k_b2k_n8k.img",
-	]
-
-	for img in imgs:
-		if not os.path.exists(f"umka/img/{img}"):
-			download(f"http://ftp.kolibrios.org/users/Boppan/img/{img}",
-					 f"umka/img/{img}")
 
 if __name__ == "__main__":
     root_dir = os.getcwd()
@@ -241,6 +343,7 @@ if __name__ == "__main__":
     if use_umka:
         download_umka()
         build_umka()
+        test_umka()
     tests = collect_tests()
     serial_executor_thread = run_tests_serially(tests, root_dir)
     serial_executor_thread.join()
