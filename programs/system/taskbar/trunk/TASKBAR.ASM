@@ -152,10 +152,16 @@ end if
 	cmp	al, 92	; LWin DOWN
 	jz	set_win_key_flag
 
+	cmp	al, 1	; LCtrl+Esc DOWN
+	jz	set_win_key_flag
+
 	cmp	al, 219 ; RWin UP
 	jz	cut_win_key_flag	;start_menu_application
 
 	cmp	al, 220 ; LWin UP
+	jz	cut_win_key_flag	;start_menu_application
+
+	cmp	al, 129 ; LCtrl+Esc UP
 	jz	cut_win_key_flag	;start_menu_application
 
 	cmp	al, 62	; Alt+F4
@@ -595,6 +601,8 @@ load_libraries l_libs_start,end_l_libs
 	mcall	66,,19,0h	; Win+R DOWN
 	mcall	66,,32,0h	; Win+D DOWN
 	mcall	66,,55,10h	; Ctrl+PrintScreen DOWN
+	mcall	66,,1,30h	; LCtrl+Esc DOWN
+	mcall	66,,129		; LCtrl+Esc UP
 	mcall	66,,62,300h	; Alt+F4
 	mcall	66,,2		; Alt+1
 	mcall	66,,3		; Alt+2
