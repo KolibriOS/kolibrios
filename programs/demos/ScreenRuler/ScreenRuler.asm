@@ -72,11 +72,7 @@ draw_window:
         mov     edi, labelt             ; header
         xor     eax, eax                ; function 0 : define and draw window
         mcall
-
-        mov     eax, 71
-        mov     ebx, 1
-        mov     ecx, labelt
-
+        mcall   71, 1, labelt
         mcall   12,2
         ret
 ;------------------------- Magnify draw
