@@ -34,9 +34,9 @@ bdev      db      "Load ramdisk from [1-floppy; 2-kolibri.img; 3-don't load]: ",
 else
 bdev      db      "Load ramdisk from [1-floppy; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
-          db      "3-use preloaded ram-image from kernel restart;"
+          db      "3-preloaded ram-image (flash-disk, dualboot, "
           db      13,10,186,"                    "
-          db      "4-create blank image]: ",0
+          db      "kernel restart, etc.)]: ",0
 end if
 
 prnotfnd  db      "Fatal - Videomode not found.",0
@@ -90,7 +90,9 @@ end if
 loading_msg db    "Loading KolibriOS...",0
 
 if ~ defined extended_primary_loader
-save_quest db     "Remember current settings? [y/n]: ",0
+save_quest db     "New settings have been applied.",13,10,13,10,186
+           db     " Do you want to record them for the future boots?",13,10,186
+           db     " Answer 'yes' only if your booting device is writable. [y/n]: ",0
 loader_block_error db "Bootloader data invalid, I cannot continue. Stopped.",0
 end if
 
