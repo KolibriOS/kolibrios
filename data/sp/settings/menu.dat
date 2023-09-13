@@ -38,7 +38,7 @@
 15 3D-waved area         |3d/3dwav
 #3   **** GRµFICOS
 16 Image viewer KIV      |media/kiv
-16 Image viewer zSea     |/kolibrios/media/zsea/zsea
+16 Image viewer zSea  *  |/kolibrios/media/zsea/zsea
 16 Animage               |media/animage
 16 Efectos de im genes   |media/imgf/imgf
 16 Palitra               |media/palitra
@@ -134,8 +134,9 @@
 #18    **** EMULATORS
 24 DOSBox             *  |/kolibrios/emul/DosBox/dosbox
 16 e80 (ZX Spectrum)  *  |/kolibrios/emul/e80/e80
-23 Gameboy Color      *  |/kolibrios/emul/gameboy
 23 FCE Ultra (NES)    *  |/kolibrios/emul/fceu/fceu
+23 DGEN (Sega)        *  |/kolibrios/emul/dgen/dgen
+23 Gameboy Color      *  |/kolibrios/emul/gameboy
 23 ZSNES              *  |/kolibrios/emul/zsnes/zsnes
 16 ScummVM            *  |/kolibrios/emul/scummvm
 ##
