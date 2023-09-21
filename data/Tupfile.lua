@@ -191,9 +191,6 @@ extra_files = {
  {"kolibrios/emul/fceu/fceu", PROGS .. "/emulator/fceu/fceu"},
  {"kolibrios/emul/fceu/FCEU ReadMe.txt", PROGS .. "/emulator/fceu/FCEU ReadMe.txt"},
  {"kolibrios/emul/chip8/chip8", PROGS .. "/emulator/chip8/chip8"},
- {"kolibrios/emul/dgen/dgen", PROGS .. "/emulator/dgen-sdl-1.33/dgen"},
- {"kolibrios/emul/dgen/dgen.man", PROGS .. "/emulator/dgen-sdl-1.33/dgen.man"},
- {"kolibrios/emul/dgen/dgenrc.man", PROGS .. "/emulator/dgen-sdl-1.33/dgenrc.man"},
  {"kolibrios/emul/chip8/readme.txt", PROGS .. "/emulator/chip8/readme.txt"},
  {"kolibrios/emul/chip8/roms/", PROGS .. "/emulator/chip8/roms/*"},
  {"kolibrios/emul/kwine/kwine", PROGS .. "/emulator/kwine/bin/kwine"},
@@ -777,6 +774,9 @@ if tup.getconfig('NO_NASM') ~= 'full' then
    {"kolibrios/games/quake/", "../contrib/other/sdlquake-1.0.9/sdlquake"},
    {"kolibrios/games/wolf3d/", "../contrib/games/wolf3d/wolf3d"},
    {"kolibrios/games/wolf3d/", "common/games/wolf3d/*"},
+   {"kolibrios/emul/dgen/dgen", PROGS .. "/emulator/dgen-sdl-1.33/dgen"},
+   {"kolibrios/emul/dgen/dgen.man", PROGS .. "/emulator/dgen-sdl-1.33/dgen.man"},
+   {"kolibrios/emul/dgen/dgenrc.man", PROGS .. "/emulator/dgen-sdl-1.33/dgenrc.man"},
   })
 end
 -- For russian build, add russian-only programs.
