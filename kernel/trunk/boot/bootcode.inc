@@ -93,6 +93,14 @@ macro _ask_question question,range,variable_to_set
         mov     [variable_to_set], al
 }
 
+clear_status_field:
+        mov     si, space_msg
+        mov     byte [si+80], 0
+        _setcursor 16,0
+        call    printplain
+        _setcursor 16,0
+        ret
+
 boot_read_floppy:
         push    si
         xor     si, si
@@ -276,7 +284,6 @@ else
         cld
         push    0
         pop     es
-; \begin{diamond}[02.12.2005]
 ; if bootloader sets ax = 'KL', then ds:si points to loader block
         cmp     ax, 'KL'
         jnz     @f
@@ -284,8 +291,6 @@ else
         mov     word [cs:cfgmanager.loader_block+2], ds
         mov     word [es:BOOT_LO.kernel_restart], kernel_restart_bootblock
 @@:
-; \end{diamond}[02.12.2005]
-
 ; if bootloader sets cx = 'HA' and dx = 'RD', then bx contains identifier of source disk
 ; (see comment to BOOT_LO.sys_disk and loader_doc.txt)
         mov     word [es:BOOT_LO.sys_disk], 'r1'  ; default value: /rd/1
@@ -420,7 +425,6 @@ sayerr:
         loopz   @b
         in      al, 0x60
 
-;;;/diamond today   5.02.2008
 ; set keyboard typematic rate & delay
         mov     al, 0xf3
         out     0x60, al
@@ -494,7 +498,6 @@ noloaderblock:
         call    calc_vmodes_table
         call    check_first_parm   ;check and enable cursor_pos
 
-; \begin{diamond}[30.11.2005]
 cfgmanager:
 ; settings:
 ; a) preboot_graph = graphical mode
@@ -931,20 +934,30 @@ if ~ defined extended_primary_loader
         push    cs
         push    .cont
         push    eax
-        retf                          ;call back
+        retf                            ;call back
 .loadc:
         pop     eax
 .cont:
         push    cs
         pop     ds
-        mov     si, space_msg
-        mov     byte [si+80], 0
-        _setcursor 16,0
-        call    printplain
-        _setcursor 16,0
+
+        push    es
+        les     bx, [.loader_block]
+        cmp     byte [es:bx+7], 0      ; get write error flag
+        pop     es
+        jz      .load
+        call    clear_status_field
+        mov     si, write_err_msg
+        call    print
+.wait_any_key:
+        xor     ax, ax
+        int     16h
+        test    ax, ax
+        jz      .wait_any_key
+
 .load:
+        call    clear_status_field
 end if
-; \end{diamond}[02.12.2005]
 
 ; ASK GRAPHICS MODE
 
@@ -998,37 +1011,38 @@ include '../detect/biosmem.inc'
         jne     no_sys_on_floppy
         mov     si, diskload
         call    print
-        xor     ax, ax            ; reset drive
-        xor     dx, dx
+        xor     ax, ax          ; reset drive
+        xor     dx, dx          ; 1st floppy disk (0)
         int     0x13
 ; do we boot from CD-ROM?
-        mov     ah, 41h
-        mov     bx, 55AAh
-        xor     dx, dx
+        mov     ah, 41h         ; check extended mode
+        mov     bx, 55AAh       ; test 2 bytes to check that this function is supported
+        xor     dx, dx          ; 1st floppy disk (0)
         int     0x13
-        jc      .nocd
+        jc      .nocd           ; extended mode not supported
         cmp     bx, 0AA55h
-        jnz     .nocd
-        mov     ah, 48h
+        jnz     .nocd           ; extended mode not supported
+        mov     ah, 48h         ; extended read drive parameters
         push    ds
         push    es
         pop     ds
         mov     si, 0xa000
-        mov     word [si], 30
+        mov     word [si], 30   ; size of result buffer
         int     0x13
         pop     ds
-        jc      .nocd
+        jc      .nocd           ; error getting parameters
         push    ds
-        lds     si, [es:si+26]
-        test    byte [ds:si+10], 40h
+        lds     si, [es:si+26]  ; pointer to Enhanced Disk Drive (EDD) configuration parameters
+        test    byte [ds:si+10], 40h ; check ATAPI device
         pop     ds
         jz      .nocd
+
 ; yes - read all floppy by 18 sectors
 
 ; TODO: !!!! read only first sector and set variables !!!!!
 ; ...
 ; TODO: !!! then read flippy image track by track
-        
+
         mov     cx, 0x0001      ; startcyl,startsector
 .a1:
         push    cx dx

@@ -91,8 +91,9 @@ end if
 loading_msg cp850 "Cargando KolibriOS...",0
 
 if ~ defined extended_primary_loader
-save_quest cp850  "¿Recordar configuración actual? [s/n]: ",0
-loader_block_error cp850 "Bootloader inválido, no puedo continuar. Detenido.",0
+save_quest         cp850  "¿Recordar configuración actual? [s/n]: ",0
+loader_block_error cp850  "Bootloader inválido, no puedo continuar. Detenido.",0
+write_err_msg      cp850  "La grabación ha fallado. Presione cualquier tecla para continuar...",0
 end if
 
 _st cp850 '║                   ┌───────────────────────────────┬─┐',13,10,0

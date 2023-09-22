@@ -94,6 +94,7 @@ save_quest db     "New settings have been applied.",13,10,13,10,186
            db     " Do you want to record them for the future boots?",13,10,186
            db     " Answer 'yes' only if your booting device is writable. [y/n]: ",0
 loader_block_error db "Bootloader data invalid, I cannot continue. Stopped.",0
+write_err_msg db "Recording the configuration has failed. Press any key to resume booting...",0
 end if
 
 _st latin1 '║                   ┌───────────────────────────────┬─┐',13,10,0

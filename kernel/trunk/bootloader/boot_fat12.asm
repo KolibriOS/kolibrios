@@ -129,9 +129,7 @@ freeze_pc:
 
 found_kernel_file:
         mov     bp, [si+01ah]                   ; first cluster of kernel file
-        ; <diamond>
         mov     [cluster1st+boot_program], bp   ; starting cluster of kernel file
-        ; <\diamond>
 
         ; reading first FAT table
         mov     ax, word [BPB_RsvdSecCnt+boot_program]  ; begin first FAT abs sector number
@@ -184,12 +182,10 @@ verify_end_sector:
         jmp     loop_obtains_kernel_data
 
 execute_kernel:
-        ; <diamond>
         mov     ax, 'KL'
         push    0
         pop     ds
         mov     si, loader_block+boot_program
-        ; </diamond>
         push    word seg_read_kernel
         push    word 0
         retf                                    ; jmp far 1000:0000
@@ -230,16 +226,23 @@ patchhere:
         ; read sector from disk
 read_sector:
         push    bp
-        mov     bp, 20                          ; try 20 times
+        mov     bp, 20                                  ; try 20 times
 newread:
         dec     bp
+        jnz     .next
+        cmp     ah, 02h                                 ; if read sectors
         jz      file_error_message
+        mov     byte[write_err+boot_program], 1         ; if write sectors
+        jmp     .ret
+.next:
         push    ax bx cx dx
         int     13h
         pop     dx cx bx ax
         jc      newread
+.ret:
         pop     bp
         retn
+
 ;------------------------------------------
         ; convert abs. sector number (AX) to BIOS T:H:S
         ; sector number = (abs.sector%BPB_SecPerTrk)+1
@@ -279,7 +282,6 @@ FirstRootDirSecNum      dw      ?
 RootDirSecs     dw      ?
 data_start      dw      ?
 
-; <diamond>
 write1st:
         push    cs
         pop     ds
@@ -293,11 +295,11 @@ write1st:
         retf
 cluster1st      dw      ?
 loader_block:
-                db      1
-                dw      0
-                dw      write1st+boot_program
-                dw      0
-; <\diamond>
+                db      1                       ; +0
+                dw      0                       ; +1
+                dw      write1st+boot_program   ; +3
+                dw      0                       ; +5
+write_err:      db      0                       ; +7
 
 times   0x1fe-$ db 00h
 
