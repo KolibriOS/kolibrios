@@ -1901,15 +1901,12 @@ sys_midi:
 
 ;-----------------------------------------------------------------------------
 sys_end:
-        cmp     [_display.select_cursor], 0
-        je      @f
 ; restore default cursor before killing
         pusha
         mov     ecx, [current_slot]
         mov     ecx, [ecx + APPDATA.window]
         call    restore_default_cursor_before_killing
         popa
-@@:
 ;--------------------------------------
 ; kill all sockets this process owns
         pusha
@@ -1954,8 +1951,10 @@ restore_default_cursor_before_killing:
         cmp     esi, [current_cursor]
         je      @f
 
-        push    esi
-        call    [_display.select_cursor]
+        cmp     [_display.select_cursor], 0
+        jz      @f
+
+        stdcall [_display.select_cursor], esi
         mov     [current_cursor], esi
 @@:
         mov     [redrawmouse_unconditional], 1
@@ -2062,8 +2061,6 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         call    socket_process_end
         popa
 ;--------------------------------------
-        cmp     [_display.select_cursor], 0
-        je      .restore_end
 ; restore default cursor before killing
         pusha
         mov     ecx, [esp+32]
@@ -2075,7 +2072,6 @@ sysfn_terminate:        ; 18.2 = TERMINATE
         call    restore_default_cursor_before_killing
 @@:
         popa
-.restore_end:
 ;--------------------------------------
      ;call MEM_Heap_Lock      ;guarantee that process isn't working with heap
         mov     [ecx + APPDATA.state], TSTATE_ZOMBIE; clear possible i40's
@@ -2557,8 +2553,7 @@ sys_cpuusage:
         lea     eax, [edx-1]
         stosd
 
-        mov     edx, ecx
-        shr     edx, (BSF sizeof.APPDATA - BSF sizeof.WDATA)
+        mov     edx, [SLOT_BASE + ecx + APPDATA.window]
 
 ; +30: PID/TID
         mov     eax, [SLOT_BASE + ecx + APPDATA.tid]
@@ -2566,7 +2561,7 @@ sys_cpuusage:
 
     ; window position and size
         push    esi
-        lea     esi, [window_data + edx + WDATA.box]
+        lea     esi, [edx + WDATA.box]
         movsd
         movsd
         movsd
@@ -2577,14 +2572,14 @@ sys_cpuusage:
         stosd
 
     ; Window client area box
-        lea     esi, [window_data + edx + WDATA.clientbox]
+        lea     esi, [edx + WDATA.clientbox]
         movsd
         movsd
         movsd
         movsd
 
     ; Window state
-        mov     al, [window_data + edx + WDATA.fl_wstate]
+        mov     al, [edx + WDATA.fl_wstate]
         stosb
 
     ; Event mask (+71)
@@ -2771,12 +2766,8 @@ cache_enable:
 
 is_cache_enabled:
         mov     eax, cr0
-        mov     ebx, eax
         and     eax, 01100000_00000000_00000000_00000000b
-        jz      cache_disabled
-        mov     [esp + SYSCALL_STACK.eax], ebx
-cache_disabled:
-        mov     dword [esp + SYSCALL_STACK.eax], eax;0
+        mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
 modify_pce:
@@ -2891,7 +2882,7 @@ backgr:
 ;        DEBUGF  1, "K : backg y %x\n",[BG_Rect_Y_top_bottom]
 ;--------- set event 5 start ----------
         push    ecx edi
-        xor     edi, edi
+        mov     edi, window_data
         mov     ecx, [thread_count]
 ;--------------------------------------
 align 4
@@ -2899,40 +2890,38 @@ set_bgr_event:
         add     edi, sizeof.WDATA
         mov     eax, [BG_Rect_X_left_right]
         mov     edx, [BG_Rect_Y_top_bottom]
-        cmp     [window_data + edi + WDATA.draw_bgr_x], 0
+        cmp     [edi + WDATA.draw_bgr_x], 0
         jz      .set
 .join:
-        cmp     word [window_data + edi + WDATA.draw_bgr_x], ax
+        cmp     word [edi + WDATA.draw_bgr_x], ax
         jae     @f
-        mov     word [window_data + edi + WDATA.draw_bgr_x], ax
+        mov     word [edi + WDATA.draw_bgr_x], ax
 @@:
         shr     eax, 16
-        cmp     word [window_data + edi + WDATA.draw_bgr_x + 2], ax
+        cmp     word [edi + WDATA.draw_bgr_x + 2], ax
         jbe     @f
-        mov     word [window_data + edi + WDATA.draw_bgr_x + 2], ax
+        mov     word [edi + WDATA.draw_bgr_x + 2], ax
 @@:
-        cmp     word [window_data + edi + WDATA.draw_bgr_y], dx
+        cmp     word [edi + WDATA.draw_bgr_y], dx
         jae     @f
-        mov     word [window_data + edi + WDATA.draw_bgr_y], dx
+        mov     word [edi + WDATA.draw_bgr_y], dx
 @@:
         shr     edx, 16
-        cmp     word [window_data + edi + WDATA.draw_bgr_y+2], dx
+        cmp     word [edi + WDATA.draw_bgr_y+2], dx
         jbe     @f
-        mov     word [window_data + edi + WDATA.draw_bgr_y+2], dx
+        mov     word [edi + WDATA.draw_bgr_y+2], dx
 @@:
         jmp     .common
 .set:
-        mov     [window_data + edi + WDATA.draw_bgr_x], eax
-        mov     [window_data + edi + WDATA.draw_bgr_y], edx
+        mov     [edi + WDATA.draw_bgr_x], eax
+        mov     [edi + WDATA.draw_bgr_y], edx
 .common:
-        mov     eax, [window_data + edi + WDATA.thread]
+        mov     eax, [edi + WDATA.thread]
         test    eax, eax
         jz      @f
         or      [eax + APPDATA.occurred_events], EVENT_BACKGROUND
 @@:
-        sub     ecx, 1
-        jnz     set_bgr_event
-        ;loop    set_bgr_event
+        loop    set_bgr_event
         pop     edi ecx
 ;--------- set event 5 stop -----------
         dec     [REDRAW_BACKGROUND]     ; got new update request?
@@ -2956,7 +2945,7 @@ nobackgr:
         jne     noshutdown
 
         lea     ecx, [edx-1]
-        mov     edx, SLOT_BASE + sizeof.APPDATA ;OS_BASE+0x3040
+        mov     edx, SLOT_BASE + sizeof.APPDATA*2 ;OS_BASE+0x3040
         jecxz   no_mark_system_shutdown
 ;--------------------------------------
 align 4
@@ -3003,13 +2992,11 @@ newct:
         jnz     .noterminate
 .terminate:
         pushad
-        mov     ecx, eax
-        shl     ecx, BSF sizeof.WDATA
-        add     ecx, window_data
+        push    esi
+        mov     ecx, dword[ebx - APPDATA.state + APPDATA.window]
         call    restore_default_cursor_before_killing
-        popad
 
-        pushad
+        pop     esi
         call    terminate
         popad
         cmp     byte [SYS_SHUTDOWN], 0
@@ -3025,6 +3012,7 @@ newct:
         ret
 ;-----------------------------------------------------------------------------
 align 4
+; eax - ptr to WDATA
 redrawscreen:
 ; eax , if process window_data base is eax, do not set flag/limits
 
@@ -3065,13 +3053,11 @@ newdw2:
         mov     eax, [edi + WDATA.box.left]
         mov     ebx, [edi + WDATA.box.top]
 
-        mov     ecx, [draw_limits.bottom] ; ecx = area y end     ebx = window y start
-        cmp     ecx, ebx
-        jb      ricino
+        cmp     ebx, [draw_limits.bottom] ; ecx = area y end     ebx = window y start
+        jae     ricino
 
-        mov     ecx, [draw_limits.right] ; ecx = area x end     eax = window x start
-        cmp     ecx, eax
-        jb      ricino
+        cmp     eax, [draw_limits.right] ; ecx = area x end     eax = window x start
+        jae     ricino
 
         mov     eax, [edi + WDATA.box.left]
         mov     ebx, [edi + WDATA.box.top]
@@ -3090,7 +3076,7 @@ newdw2:
 ;--------------------------------------
 align 4
 bgli:
-        cmp     dword[esp], 1
+        cmp     dword[esp], 1  ; check index in window_data array, 1 - idle
         jnz     .az
 
         cmp     [REDRAW_BACKGROUND], 0
@@ -3139,18 +3125,16 @@ align 4
 ;--------------------------------------
 align 4
 .az:
-        mov     eax, edi
-
         mov     ebx, [draw_limits.left]        ; set limits
-        mov     [eax + WDATA.draw_data.left], ebx
+        mov     [edi + WDATA.draw_data.left], ebx
         mov     ebx, [draw_limits.top]
-        mov     [eax + WDATA.draw_data.top], ebx
+        mov     [edi + WDATA.draw_data.top], ebx
         mov     ebx, [draw_limits.right]
-        mov     [eax + WDATA.draw_data.right], ebx
+        mov     [edi + WDATA.draw_data.right], ebx
         mov     ebx, [draw_limits.bottom]
-        mov     [eax + WDATA.draw_data.bottom], ebx
+        mov     [edi + WDATA.draw_data.bottom], ebx
 
-        cmp     dword [esp], 1
+        cmp     dword [esp], 1  ; check idle thread
         jne     nobgrd
         inc     [REDRAW_BACKGROUND]
         call    wakeup_osloop
@@ -3159,8 +3143,8 @@ align 4
 newdw8:
 nobgrd:
 ;--------------------------------------
-        push    eax  edi ebp
-        mov     edi, [esp+12]
+        push    edi ebp
+        mov     edi, [esp+8]
         cmp     edi, 1
         je      .found
 
@@ -3210,14 +3194,14 @@ align 4
 ;--------------------------------------
 align 4
 .not_found:
-        pop     ebp edi eax
+        pop     ebp edi
         jmp     ricino
 ;--------------------------------------
 align 4
 .found:
-        pop     ebp edi eax
+        pop     ebp edi
 
-        mov     [eax + WDATA.fl_redraw], WSTATE_REDRAW  ; mark as redraw
+        mov     [edi + WDATA.fl_redraw], WSTATE_REDRAW  ; mark as redraw
 ;--------------------------------------
 align 4
 ricino:

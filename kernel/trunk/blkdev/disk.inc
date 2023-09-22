@@ -731,7 +731,7 @@ disk_scan_partitions:
 ; [ecx+0x40] is shorter than [ebx+0x1fe]: one-byte offset vs 4-bytes offset.
         lea     ecx, [ebx+0x1be]        ; ecx -> partition table
         cmp     word [ecx+0x40], 0xaa55
-        jnz     .mbr_failed
+        jnz     .notmbr
 ; 8. The MBR is treated differently from EBRs. For MBR we additionally need to
 ; execute step 10 and possibly step 11.
         test    ebp, ebp

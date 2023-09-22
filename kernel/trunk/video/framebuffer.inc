@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;; Synhronization for MenuetOS.                                 ;;
@@ -99,26 +99,25 @@ init_video:
         jmp     .finish
 
 .16bpp:
-        mov     [PUTPIXEL], Vesa20_putpixel16
+        mov     [PUTPIXEL], Vesa20_putpixel16_new
         mov     [GETPIXEL], Vesa20_getpixel16
         mov     [_display.bytes_per_pixel], 2
         jmp     .finish
 
 .24bpp:
-        mov     [PUTPIXEL], Vesa20_putpixel24
+        mov     [PUTPIXEL], Vesa20_putpixel24_new
         mov     [GETPIXEL], Vesa20_getpixel24
         mov     [_display.bytes_per_pixel], 3
         jmp     .finish
 
 .32bpp:
-        mov     [PUTPIXEL], Vesa20_putpixel32
+        mov     [PUTPIXEL], Vesa20_putpixel32_new
         mov     [GETPIXEL], Vesa20_getpixel32
         mov     [_display.bytes_per_pixel], 4
 
 .finish:
-        mov     [MOUSE_PICTURE], mousepointer
-        mov     [_display.check_mouse], check_mouse_area_for_putpixel
-        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel
+        mov     [_display.check_mouse], check_mouse_area_for_putpixel_new
+        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel_new
 
         mov     ax, word [SCR_MODE]
         cmp     ax, 0x0012

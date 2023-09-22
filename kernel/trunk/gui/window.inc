@@ -186,7 +186,7 @@ syscall_drawline:
 align 4
 ; system function 48 
 syscall_display_settings: 
-        cmp     ebx, 13
+        cmp     ebx, .ftable.size-1
         ja      .ret
         jmp     dword[.ftable + ebx*4]
 
@@ -206,6 +206,7 @@ dd  .setFontSmoothing
 dd  .getFontSize
 dd  .setFontSize
 dd  .setSkinUnicode
+.ftable.size = ($ - .ftable)/4
 
 .redrawWholeScreen:
         xor     eax, eax
@@ -223,7 +224,7 @@ dd  .setSkinUnicode
         mov     eax, [_display.height]
         dec     eax
         mov     [draw_limits.bottom], eax
-        mov     eax, window_data
+        mov     eax, window_data  ; TODO: check pointer
         jmp     redrawscreen
 
 .setButtonStyle:
@@ -406,18 +407,18 @@ align 4
 ;> ebx = 1
 ;> ecx = scale power (resulting scale is 2^ebx)
 syscall_set_window_shape: 
-        mov     edi, [current_slot_idx]
-        shl     edi, BSF sizeof.WDATA
+        mov     edi, [current_slot]
+        mov     edi, [edi + APPDATA.window]
 
         test    ebx, ebx
         jne     .shape_scale
-        mov     [window_data + edi + WDATA.shape], ecx
+        mov     [edi + WDATA.shape], ecx
 ;--------------------------------------
 align 4
 .shape_scale:
         dec     ebx
         jnz     .exit
-        mov     [window_data + edi + WDATA.shape_scale], ecx
+        mov     [edi + WDATA.shape_scale], ecx
 ;--------------------------------------
 align 4
 .exit:
@@ -427,9 +428,8 @@ align 4
 align 4
 ;     system function 67 
 syscall_move_window: 
-        mov     edi, [current_slot_idx]
-        shl     edi, BSF sizeof.WDATA
-        add     edi, window_data
+        mov     edi, [current_slot]
+        mov     edi, [edi + APPDATA.window]
 
         test    [edi + WDATA.fl_wdrawn], 1
         jz      .exit
@@ -556,11 +556,11 @@ align 4
 .next_window:
         movzx   edi, word[WIN_POS + esi * 2]
         shl     edi, BSF sizeof.WDATA
+        add     edi, window_data
 
-        test    byte [window_data + edi + WDATA.fl_wstate], WSTATE_USED
+        test    byte [edi + WDATA.fl_wstate], WSTATE_USED
         jz      .skip_window
 
-        add     edi, window_data
         test    [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
         jnz     .skip_window
 
@@ -1245,7 +1245,7 @@ window_check_events:
         dec     bl
         jnz     @f
         call    minimize_window
-        jmp     .exit
+        ret
 ;--------------------------------------
 align 4
 @@:
@@ -1614,9 +1614,8 @@ align 4
 align 4
 ;< edx = pointer to WDATA struct
 window._.sys_set_window:
-        mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.WDATA
-        add     eax, window_data
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.window]
 ; save window colors
         mov     [eax + WDATA.cl_workarea], edx
         mov     [eax + WDATA.cl_titlebar], esi
@@ -1847,18 +1846,20 @@ end virtual
 
         mov     edi, esi
         shl     edi, BSF sizeof.WDATA
+        add     edi, window_data
 
         cmp     esi, 1
         jz      .check_for_shaped_window
 
-        cmp     [window_data + edi + WDATA.box.width], 0
+        cmp     [edi + WDATA.box.width], 0
         jnz     .check_for_shaped_window
-        cmp     [window_data + edi + WDATA.box.height], 0
+
+        cmp     [edi + WDATA.box.height], 0
         jz      .exit
 ;--------------------------------------
 align 4
 .check_for_shaped_window:
-        cmp     [window_data + edi + WDATA.shape], 0
+        cmp     [edi + WDATA.shape], 0
         jne     .shaped_window
 
         ; get x&y size
@@ -1908,7 +1909,7 @@ align 4
         inc     ecx
         inc     edx
 
-        push    [window_data + edi + WDATA.shape_scale]  ; push scale first -> for loop
+        push    [edi + WDATA.shape_scale]  ; push scale first -> for loop
 
         ; get WinMap start  -> ebp
         push    eax
@@ -1918,7 +1919,7 @@ align 4
         add     eax, [_display.win_map]
         mov     ebp, eax
 
-        mov     edi, [window_data + edi + WDATA.shape]
+        mov     edi, [edi + WDATA.shape]
         pop     eax
 
         ; eax = x_start
@@ -2227,9 +2228,8 @@ window._.draw_window_caption:
 ;--------------------------------------
 align 4
 @@:
-        mov     edx, [current_slot_idx]
-        shl     edx, BSF sizeof.WDATA
-        add     edx, window_data
+        mov     edx, [current_slot]
+        mov     edx, [edx + APPDATA.window]
         movzx   ebx, [edx + WDATA.fl_wstyle]
         and     bl, 0x0F
         cmp     bl, 3
@@ -2263,17 +2263,17 @@ align 4
 ;--------------------------------------
 align 4
 .2:
-        mov     edi, [current_slot_idx]
-        shl     edi, BSF sizeof.WDATA
-        test    [window_data + edi + WDATA.fl_wstyle], WSTYLE_HASCAPTION
+        mov     edi, [current_slot]
+        mov     edi, [edi + APPDATA.window]
+        test    [edi + WDATA.fl_wstyle], WSTYLE_HASCAPTION
         jz      .exit
-        mov     edx, [window_data + edi + WDATA.caption]
+        mov     edx, [edi + WDATA.caption]
         or      edx, edx
         jz      .exit
 
-        mov     ebp, [edi + window_data + WDATA.box.left - 2]
-        mov     bp, word[edi + window_data + WDATA.box.top]
-        movzx   eax, [edi + window_data + WDATA.fl_wstyle]
+        mov     ebp, [edi + WDATA.box.left - 2]
+        mov     bp, word[edi + WDATA.box.top]
+        movzx   eax, [edi + WDATA.fl_wstyle]
         and     al, 0x0F
         cmp     al, 3
         je      .skinned
@@ -2284,7 +2284,7 @@ align 4
 ;--------------------------------------
 align 4
 .skinned:
-        movzx   eax, word[edi + window_data + WDATA.box.width]
+        movzx   eax, word[edi + WDATA.box.width]
         sub     ax, [_skinmargins.left]
         sub     ax, [_skinmargins.right]
         js      .exit
@@ -2301,7 +2301,7 @@ align 4
 .not_skinned:
         cmp     al, 1
         je      .exit
-        movzx   eax, word[edi + window_data + WDATA.box.width]
+        movzx   eax, word[edi + WDATA.box.width]
         sub     eax, 16
         js      .exit
         mov     ebx, 80002h
@@ -2310,7 +2310,7 @@ align 4
         mov     esi, eax
         add     ebx, ebp
         mov     ecx, [common_colours + 16]
-        mov     al, [window_data + edi + WDATA.captionEncoding]
+        mov     al, [edi + WDATA.captionEncoding]
         test    al, al
         jnz     @f
         mov     al, 1
@@ -2368,19 +2368,19 @@ align 4
 ; void __fastcall get_window_rect(struct RECT* rc);
 ; ecx = pointer to RECT
 window._.get_rect:
-        mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.WDATA
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.window]
 
-        mov     edx, [eax + window_data + WDATA.box.left]
+        mov     edx, [eax + WDATA.box.left]
         mov     [ecx+RECT.left], edx
 
-        add     edx, [eax + window_data + WDATA.box.width]
+        add     edx, [eax + WDATA.box.width]
         mov     [ecx+RECT.right], edx
 
-        mov     edx, [eax +window_data + WDATA.box.top]
+        mov     edx, [eax + WDATA.box.top]
         mov     [ecx+RECT.top], edx
 
-        add     edx, [eax + window_data + WDATA.box.height]
+        add     edx, [eax + WDATA.box.height]
         mov     [ecx+RECT.bottom], edx
         ret
 ;------------------------------------------------------------------------------

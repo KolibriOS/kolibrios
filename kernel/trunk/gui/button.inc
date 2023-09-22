@@ -95,13 +95,13 @@ syscall_button:
 
         ; make coordinates clientbox-relative
         push    eax
-        mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.WDATA
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.window]
         rol     ebx, 16
-        add     bx, word[window_data + eax + WDATA.clientbox.left]
+        add     bx, word[eax + WDATA.clientbox.left]
         rol     ebx, 16
         rol     ecx, 16
-        add     cx, word[window_data + eax + WDATA.clientbox.top]
+        add     cx, word[eax + WDATA.clientbox.top]
         rol     ecx, 16
         pop     eax
 
@@ -173,10 +173,10 @@ syscall_button:
         dec     ebp
         shr     ebx, 16
         shr     ecx, 16
-        mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.WDATA
-        add     ebx, [eax + window_data + WDATA.box.left]
-        add     ecx, [eax + window_data + WDATA.box.top]
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.window]
+        add     ebx, [eax + WDATA.box.left]
+        add     ecx, [eax + WDATA.box.top]
         mov     eax, ebx
         inc     eax
         mov     edx, ebx

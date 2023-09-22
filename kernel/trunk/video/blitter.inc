@@ -213,10 +213,10 @@ end virtual
         
         mov     [esp + .flags], ebx
 
-        mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.WDATA
-        mov     ebx, [window_data + eax + WDATA.box.width]
-        mov     edx, [window_data + eax + WDATA.box.height]
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.window]
+        mov     ebx, [eax + WDATA.box.width]
+        mov     edx, [eax + WDATA.box.height]
         inc     ebx
         inc     edx
 
@@ -260,19 +260,19 @@ end virtual
         call    blit_clip
         jc      .L57
 
-        mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.WDATA
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.window]
 
         mov     ebx, [esp + BLITTER.dst_x]
         mov     ebp, [esp + BLITTER.dst_y]
-        add     ebx, [window_data + eax + WDATA.box.left]
-        add     ebp, [window_data + eax + WDATA.box.top]
+        add     ebx, [eax + WDATA.box.left]
+        add     ebp, [eax + WDATA.box.top]
         
         test    [esp + .flags], BLIT_CLIENT_RELATIVE
         jz      .no_client_relative        
 
-        add     ebx, [window_data + eax + WDATA.clientbox.left]
-        add     ebp, [window_data + eax + WDATA.clientbox.top]
+        add     ebx, [eax + WDATA.clientbox.left]
+        add     ebp, [eax + WDATA.clientbox.top]
 .no_client_relative:
 
         mov     ecx, ebx
@@ -320,8 +320,6 @@ end virtual
         mov     ebx, [current_slot_idx]
 ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
-        je      .core_32.software_cursor
-        cmp     [_display.select_cursor], 0
         jne     .core_32.hardware_cursor
 ;--------------------------------------
 .core_32.software_cursor:
@@ -430,12 +428,9 @@ align 4
 
 ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
-        je      @f
-        cmp     [_display.select_cursor], 0
         jne     .no_mouseunder_1
 ;--------------------------------------
 align 4
-@@:
         push    ecx
 
         mov     ecx, [esp+4]
@@ -491,11 +486,8 @@ align 4
 
 ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
-        je      @f
-        cmp     [_display.select_cursor], 0
         jne     .no_mouseunder_2
 ;--------------------------------------
-  @@:
         push    ecx
 
         mov     ecx, [esp+4]

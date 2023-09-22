@@ -709,16 +709,16 @@ proc new_sys_threads
         mov     [slot], eax
 
         mov     esi, [current_slot]
-        mov     ebx, esi      ;ebx=esi - pointer to extended information about current thread
+        mov     ebx, esi      ;ebx=esi - pointer to information about current thread
 
         mov     edi, eax
         shl     edi, BSF sizeof.APPDATA
         add     edi, SLOT_BASE
-        mov     edx, edi      ;edx=edi - pointer to extended infomation about new thread
+        mov     edx, edi      ;edx=edi - pointer to infomation about new thread
         mov     ecx, sizeof.APPDATA/4
         xor     eax, eax
         cld
-        rep stosd             ;clean extended information about new thread
+        rep stosd             ;clean information about new thread
         mov     esi, ebx
         mov     edi, edx
         mov     ecx, 11

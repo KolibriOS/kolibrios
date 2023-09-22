@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -617,6 +617,74 @@ align 4
 endp
 ;------------------------------------------------------------------------------
 align 4
+proc VGA_restore_32 stdcall, x:dword, y:dword
+
+        push    ebx
+
+        mov     ebx, [cur_saved_base]
+        mov     edx, [cur.h]
+        test    edx, edx
+        jz      .ret
+
+        push    esi
+        push    edi
+
+        mov     esi, cur_saved_data
+        mov     edi, ebx
+        push    [cur.w]
+        push    [cur.top];[y]
+        push    [cur.left];[x]
+        ;mov     eax, [cur.top]
+        ;add     [esp + 4], eax
+        ;mov     eax, [cur.left]
+        ;add     [esp], eax
+;--------------------------------------
+align 4
+@@:
+        mov     ecx, [esi]
+        add     esi, 4
+
+        ;mov     eax, [esp]
+        ;sub     eax, [x]
+        ;shl     eax, 2 ; *4
+        ;mov     [edi + eax], ecx
+
+        mov     eax, [esp]
+        mov     ebx, [esp + 4]
+
+        push    edx  edi
+        mov     edi, 1
+        or      ecx, 0x04000000
+        call    __sys_putpixel
+        pop     edi edx
+        add     dword[esp], 1
+        dec     dword[esp + 8]
+        jnz     @b
+
+        mov     eax, [cur.w]
+        mov     ecx, [cur.left];[x]
+        ;add     ecx, [cur.left]
+        mov     [esp + 8], eax
+
+        mov     dword[esp], ecx
+
+        inc     dword[esp + 4]
+        ;add     edi, [_display.lfb_pitch]
+        dec     edx
+        jnz     @b
+
+        add     esp, 4*3
+
+        pop     edi
+        pop     esi
+;--------------------------------------
+align 4
+.ret:
+        pop     ebx
+        ret
+endp
+;------------------------------------------------------------------------------
+align 4
 proc move_cursor_24 stdcall, hcursor:dword, x:dword, y:dword
            locals
              h      dd ?
@@ -959,6 +1027,161 @@ align 4
         jnz     .row
         ret
 endp
+
+;------------------------------------------------------------------------------
+align 4
+proc VGA_move_cursor_32 stdcall, hcursor:dword, x:dword, y:dword
+           locals
+             h      dd ?
+             _dx     dd ?
+             _dy     dd ?
+             bg_ptr dd ?
+             tmp_x  dd ?
+             tmp_y  dd ?
+           endl
+
+        mov     esi, [hcursor]
+        mov     ecx, [x]
+        mov     eax, [y]
+
+        xor     edx, edx
+        sub     ecx, [esi + CURSOR.hot_x]
+        lea     ebx, [ecx+32-1]
+        mov     [x], ecx
+        sets    dl
+        dec     edx
+        and     ecx, edx      ;clip x to 0<=x
+        mov     [cur.left], ecx
+        mov     edi, ecx
+        sub     edi, [x]
+        mov     [_dx], edi
+
+        xor     edx, edx
+        sub     eax, [esi + CURSOR.hot_y]
+        lea     edi, [eax+32-1]
+        mov     [y], eax
+        sets    dl
+        dec     edx
+        and     eax, edx      ;clip y to 0<=y
+        mov     [cur.top], eax
+        mov     edx, eax
+        sub     edx, [y]
+        mov     [_dy], edx
+
+        mov     [tmp_x], ecx
+        mov     [tmp_y], eax
+        mov     eax, [BPSLine_calc_area+eax*4]
+        lea     edx, [LFB_BASE + eax + ecx*4]
+        mov     [cur_saved_base], edx
+
+        cmp     ebx, [_display.width]
+        jb      @F
+        mov     ebx, [_display.width]
+;--------------------------------------
+align 4
+@@:
+        cmp     edi, [_display.height]
+        jb      @F
+        mov     edi, [_display.height]
+;--------------------------------------
+align 4
+@@:
+        sub     ebx, [x]
+        sub     edi, [y]
+        sub     ebx, [_dx]
+        sub     edi, [_dy]
+
+        mov     [cur.w], ebx
+        mov     [cur.h], edi
+        mov     [h], edi
+
+        mov     eax, edi
+        mov     edi, cur_saved_data
+
+        xor     ecx, ecx
+        mov     eax, ecx
+;--------------------------------------
+align 4
+@@:
+        ; get and save pixel background
+        push    eax ecx ebx edx
+        add     eax, [tmp_x]
+        mov     ebx, ecx
+        add     ebx, [tmp_y]
+        push    edi
+
+        or      ecx, 0x04000000
+        call    [GETPIXEL]
+
+        pop     edi
+        ;and     ecx, 0x00ffffff
+        mov     [edi], ecx
+        add     edi, 4
+
+        pop     edx ebx ecx eax
+        inc     eax
+        cmp     eax, [cur.w]
+        jb      @b
+        xor     eax, eax
+        inc     ecx
+        cmp     ecx, [h]
+        jb      @B
+
+;draw cursor
+        mov     ebx, [cur_saved_base]
+        mov     eax, [_dy]
+        shl     eax, 5
+        add     eax, [_dx]
+
+        mov     esi, [hcursor]
+        mov     esi, [esi + CURSOR.base]
+        lea     edx, [esi+eax*4]
+        mov     [bg_ptr], cur_saved_data
+
+        mov     [_dy], 0
+;--------------------------------------
+align 4
+.row:
+        mov     [_dx], 0
+        mov     ecx, [cur.w]
+        mov     esi, edx  ; cursor image base
+        mov     edi, ebx
+        add     edx, 32*4
+        add     ebx, [_display.lfb_pitch]
+;--------------------------------------
+align 4
+.pix:
+        ; get pixel cursor
+        lodsd
+        test    eax, 0xFF000000
+        jz      @F
+        mov     [edi], eax
+
+        pusha
+        mov     edi, 1 ; force
+        mov     ecx, eax ; color
+        and     ecx, 0x00ffffff
+        or      ecx, 0x04000000
+        mov     eax, [x]
+        mov     ebx, [y]
+        add     eax, [_dx]
+        add     ebx, [_dy]
+        call    __sys_putpixel
+        popa
+;--------------------------------------
+align 4
+@@:
+        inc     [_dx]
+        add     edi, 4
+        dec     ecx
+        jnz     .pix
+
+        inc     [_dy]
+        dec     [h]
+        jnz     .row
+        ret
+endp
+
 ;------------------------------------------------------------------------------
 align 4
 check_mouse_area_for_getpixel_new:
@@ -1167,16 +1390,31 @@ init_display:
         mov     [edi + display_t.cr_list.prev], ecx
 
 if ~defined UEFI
-        cmp     [SCR_MODE], word 0x13
-        jbe     .fail
+        cmp     [SCR_MODE], word 0x12
+        jne     .not_vga
+        ; TODO
+        mov     ebx, VGA_restore_32
+        mov     ecx, VGA_move_cursor_32
+        mov     edx, VGA_putpixel
+        jmp     .set
 
+.not_vga:
         test    word [SCR_MODE], 0x4000
-        jz      .fail
+        jnz     .not_ega
+
+        mov     ebx, restore_32
+        mov     ecx, move_cursor_32
+        mov     edx, Vesa20_putpixel32_new
+        mov     eax, [_display.bits_per_pixel]
+        jmp     .set
+
+.not_ega:
 end if
         mov     ebx, restore_32
         mov     ecx, move_cursor_32
         mov     edx, Vesa20_putpixel32_new
         mov     eax, [_display.bits_per_pixel]
+
         cmp     al, 32
         jne     .not_32bpp
 
@@ -1184,13 +1422,11 @@ end if
         mov     [_display.select_cursor], select_cursor
         mov     [_display.move_cursor], ecx
         mov     [_display.restore_cursor], ebx
-        mov     [_display.check_mouse], check_mouse_area_for_putpixel_new
-        mov     [_display.check_m_pixel], check_mouse_area_for_getpixel_new
+        ;mov     [_display.check_mouse], check_mouse_area_for_putpixel_new
+        ;mov     [_display.check_m_pixel], check_mouse_area_for_getpixel_new
 
-        cmp     [PUTPIXEL], dword VGA_putpixel
-        je      @f
         mov     [PUTPIXEL], edx
-@@:
+
         stdcall load_cursor, def_hresize, dword LOAD_FROM_MEM
         mov     [def_cursor_hresize], eax
         stdcall load_cursor, def_vresize, dword LOAD_FROM_MEM
@@ -1230,11 +1466,10 @@ end if
 ;        mov     ecx, move_cursor_15
 ;        mov     edx, Vesa20_putpixel15_new
 ;        jmp     .set
-
 .fail:
-        xor     eax, eax
-        mov     [_display.select_cursor], eax
-        mov     [_display.move_cursor], eax
+        ;xor     eax, eax
+        ;mov     [_display.select_cursor], eax
+        ;mov     [_display.move_cursor], eax
         ret
 ;------------------------------------------------------------------------------
 align 4

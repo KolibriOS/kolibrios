@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -789,6 +789,15 @@ struct  display_t
         check_m_pixel   dd ?
 
         bytes_per_pixel dd ?
+
+        put_pixel       dd ?
+        put_rect        dd ?
+        put_image       dd ?
+        put_line        dd ?
+        get_pixel       dd ?
+        get_rect        dd ?
+        get_image       dd ?
+        get_line        dd ?
 ends
 
 struct  DISPMODE

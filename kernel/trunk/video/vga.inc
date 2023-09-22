@@ -382,18 +382,16 @@ VGA_putpixel:
 ;--------------------------------------
 ; check for hardware cursor
         cmp     [_display.select_cursor], select_cursor
-        je      @f
-        cmp     [_display.select_cursor], 0
         jne     .no_mouseunder
 ;--------------------------------------
 align 4
-@@:
         push    ecx
         shl     ecx, 16
         mov     cx, bx
 ; check mouse area for putpixel
         test    eax, 0x04000000
         jnz     @f
+
         call    [_display.check_mouse]
 ;--------------------------------------
 align 4
@@ -495,10 +493,10 @@ VGA_draw_bar:
 align 4
 VGA_draw_bar_1:
         mov     [temp.cx], eax
-        mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.WDATA
-        add     ebx, [window_data + eax + WDATA.box.top]
-        mov     eax, [window_data + eax + WDATA.box.left]
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.window]
+        add     ebx, [eax + WDATA.box.top]
+        mov     eax, [eax + WDATA.box.left]
         add     eax, [temp.cx]
         and     eax, 0xfff8
         shl     ebx, 9

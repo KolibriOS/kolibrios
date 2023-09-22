@@ -353,7 +353,6 @@ fpu_data_size = $ - fpu_data
 
 BPSLine_calc_area   rd  MAX_SCREEN_HEIGHT
 d_width_calc_area   rd  MAX_SCREEN_HEIGHT
-mouseunder          rd  16*24
 
 mem_block_list      rd  64*2
 mem_used_list       rd  64*2
@@ -395,8 +394,6 @@ BANK_SWITCH         dd  ?   ; reserved for vesa 1.2
 BANK_RW             dd  ?
 end if
 
-MOUSE_PICTURE       dd  ?
-
 def_cursor          dd  ?
 def_cursor_clock    dd  ?
 def_cursor_hresize  dd  ?
@@ -404,7 +401,6 @@ def_cursor_vresize  dd  ?
 def_cursor_dresize1 dd  ?
 def_cursor_dresize2 dd  ?
 current_cursor      dd  ?
-hw_cursor           dd  ?
 cur_saved_base      dd  ?
 
 cur.lock            dd  ?   ; 1 - lock update, 2- hide
