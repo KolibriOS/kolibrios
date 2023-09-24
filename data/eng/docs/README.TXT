@@ -1,9 +1,9 @@
---------------
+
 KolibriOS TEAM
 --------------
 
-This list acknowledges those who have helped to create and develop KolibriOS,
-ordered with the most recent contributors first.
+We gratefully acknowledge those who have helped to create and develop KolibriOS,
+many of whom are listed below, with the most recent contributors first.
 
 System Programming (loaders, kernel, etc.) :
 - Trans
@@ -86,11 +86,12 @@ Application Programming (new creations, porting or revisions) :
 - Artemonische
 - dunkaist
 
-Documentation :
+Documentation and Translation :
+- Andrew Dent (ace_dent)
 - Hex
 - Diamond
 
-Infrastructure (forum, site and svn) :
+Infrastructure (forum, site and SVN hosting) :
 - CodeWorld
 - mike.dld
 
@@ -99,7 +100,7 @@ Design (logo, background, icons) :
 - goglus
 - Kirill Lipatov (Leency)
 
-Testing and support :
+Testing and Support :
 - Pavel Rymovski (Heavyiron)
 - Vitaly Bendik (mistifi(ator)
 - vectoroc
