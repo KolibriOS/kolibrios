@@ -2,7 +2,7 @@
 KolibriOS TEAM
 --------------
 
-We gratefully acknowledge those who have helped to create and develop KolibriOS,
+We thank everyone who helped to create and develop KolibriOS,
 many of whom are listed below, with the most recent contributors first.
 
 System Programming (loaders, kernel, etc.) :
@@ -75,6 +75,7 @@ Application Programming (new creations, porting or revisions) :
 - Kirill Lipatov (Leency)
 - Vasiliy Kosenko (vkos)
 - IgorA
+- barsuk
 - staper
 - chaykin
 - Alexander Meshcheryakov (Self-Perfection)
