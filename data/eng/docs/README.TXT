@@ -1,96 +1,104 @@
 
-KolibriOS TEAM
+KolibriOS team
 --------------
 
 We thank everyone who helped to create and develop KolibriOS,
-many of whom are listed below, with the most recent contributors first.
+many of whom are listed below ~
 
 System Programming (loaders, kernel, etc.) :
-- Trans
-- VaStaNi
-- Ivan Poddubny
-- Marat Zakiyanov (Mario79)
-- Mihail Semenyako (mike.dld)
-- Sergey Kuzmin (Wildwest)
-- Andrey Halyavin (halyavin)
-- Mihail Lisovin (Mihasik)
-- Andrey Ignatiev (andrew_programmer)
-- NoName
+- Alver
+- art_zh
+- Asper
+- Boppan
+- CleverMouse
+- Coldy
+- Doczom
+- dunkaist
+- Galkov
 - Evgeny Grechnikov (Diamond)
-- Iliya Mihailov (Ghost)
-- Sergey Semyonov (Serge)
+- Andrey Halyavin (halyavin)
+- hidnplayr
+- Andrey Ignatiev (andrew_programmer)
 - Johnny_B
 - kasTIgar
-- SPraid
-- Rus
-- Alver
+- Sergey Kuzmin (Wildwest)
+- Mihail Lisovin (Mihasik)
 - Maxis
-- Galkov
-- CleverMouse
+- Iliya Mihailov (Ghost)
+- Nable
+- NoName
+- Ivan Poddubny
+- rgimad
+- Rus
+- Mihail Semenyako (mike.dld)
+- Sergey Semyonov (Serge)
+- shurf
+- SPraid
+- Alexey Teplov (<Lrz>)
+- Trans
 - tsdima
 - turbanoff
-- Asper
-- art_zh
-- hidnplayr
+- VaStaNi
+- Marat Zakiyanov (Mario79)
 
 Application Programming (new creations, porting or revisions) :
-- Mihail Lisovin (Mihasik)
-- Andrey Ivushkin (Willow)
-- Mihail Semenyako (mike.dld)
+- Alver
+- art_zh
+- Artemonische
+- Asper
+- barsuk
+- Vitaly Bendik (mistifi(ator)
+- Mario Birkner (cYfleXX)
+- Aleksandr Bogomaz (Albom)
+- chaykin
+- CleverMouse
+- DedOk
+- Dron2004
+- dunkaist
+- ealex
 - Pavlushin Evgeny (Exis)
-- Ivan Poddubny
-- Marat Zakiyanov (Mario79)
-- Sergey Kuzmin (Wildwest)
+- Maxim Evtihov (Maxxxx32)
+- Gluk
+- Evgeny Grechnikov (Diamond)
+- Maciej Guba (macgub)
 - Andrey Halyavin (halyavin)
 - Hex
-- Andrey Ignatiev (andrew_programmer)
-- ealex
-- Olaf
-- Evgeny Grechnikov (Diamond)
-- Navanax
-- Johnny_B
-- Pavel Rymovski (Heavyiron)
-- Vitaly Bendik (mistifi(ator)
-- Iliya Mihailov (Ghost)
-- Maxim Evtihov (Maxxxx32)
-- Vladimir Zaitsev (Rabid Rabbit)
-- vectoroc
-- Alexey Teplov (<Lrz>)
-- Sergey Semyonov (Serge)
-- YELLOW
 - iadn
-- Maciej Guba (macgub)
-- Mario Birkner (cYfleXX)
-- hidden player (hidnplayr)
-- trolly
-- nilgui
-- kaitz
-- DedOk
-- SPraid
-- Rus
-- Alver
-- Dron2004
-- Gluk
-- Aleksandr Bogomaz (Albom)
-- Kirill Lipatov (Leency)
-- Vasiliy Kosenko (vkos)
+- Andrey Ignatiev (andrew_programmer)
 - IgorA
-- barsuk
-- staper
-- chaykin
+- Andrey Ivushkin (Willow)
+- Johnny_B
+- kaitz
+- Vasiliy Kosenko (vkos)
+- Sergey Kuzmin (Wildwest)
+- Kirill Lipatov (Leency)
+- Mihail Lisovin (Mihasik)
 - Alexander Meshcheryakov (Self-Perfection)
-- CleverMouse
-- tsdima
-- art_zh
-- Asper
+- Iliya Mihailov (Ghost)
+- Navanax
+- nilgui
+- Olaf
+- hidden player (hidnplayr)
+- Ivan Poddubny
 - Pterox
-- Artemonische
-- dunkaist
+- Rus
+- Pavel Rymovski (Heavyiron)
+- Mihail Semenyako (mike.dld)
+- Sergey Semyonov (Serge)
+- SPraid
+- staper
+- Alexey Teplov (<Lrz>)
+- trolly
+- tsdima
+- vectoroc
+- YELLOW
+- Vladimir Zaitsev (Rabid Rabbit)
+- Marat Zakiyanov (Mario79)
 
 Documentation and Translation :
 - Andrew Dent (ace_dent)
+- Evgeny Grechnikov (Diamond)
 - Hex
-- Diamond
 
 Infrastructure (forum, site and SVN hosting) :
 - CodeWorld
@@ -102,18 +110,18 @@ Design (logo, background, icons) :
 - Kirill Lipatov (Leency)
 
 Testing and Support :
-- Pavel Rymovski (Heavyiron)
+- AqwAS
+- Ataualpa
 - Vitaly Bendik (mistifi(ator)
+- camper
+- ChE
+- Dmitry the Sorcerer
+- Galkov
+- Maxis
+- Mike
+- Pavel Rymovski (Heavyiron)
 - vectoroc
 - Veliant
-- AqwAS
-- Mike
-- camper
-- Dmitry the Sorcerer
-- Ataualpa
-- Maxis
-- Galkov
-- ChE
 
 and many others...
 
