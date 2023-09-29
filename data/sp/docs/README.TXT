@@ -1,115 +1,128 @@
-/----------------\
-* KolibriOS TEAM *
-\----------------/
 
-This list contains all, who has actively helped to creation and development
-of KolibriOS, whoever possible.
- (people are enumerated in the order by time of participation in the project,
-  from bottom to top - from past to future, through present)
+KolibriOS team
+--------------
 
-* Trans                                \
-* VaStaNi                              |
-* Ivan Poddubny                        |
-* Marat Zakiyanov (Mario79)            |
-* Mihail Semenyako (mike.dld)          |  system programming
-* Sergey Kuzmin (Wildwest)             |
-* Andrey Halyavin (halyavin)           |  loaders,
-* Mihail Lisovin (Mihasik)             |  kernel improvements and so on
-* Andrey Ignatiev (andrew_programmer)  |
-* NoName                               |
-* Evgeny Grechnikov (Diamond)          |
-* Iliya Mihailov (Ghost)               |
-* Sergey Semyonov (Serge)              |
-* Johnny_B                             |
-* kasTIgar                             |
-* SPraid                               |
-* Rus                                  |
-* Alver                                |
-* Maxis                                |
-* Galkov                               |
-* CleverMouse                          |
-* tsdima                               |
-* turbanoff                            |
-* Asper                                |
-* art_zh                               |
-* hidnplayr                            /
+Agradecemos a todos los que ayudaron a crear y desarrollar KolibriOS.
+Enumeramos muchos de los contribuyentes en la siguiente lista ~
 
-* Mihail Lisovin (Mihasik)             \
-* Andrey Ivushkin (Willow)             |
-* Mihail Semenyako (mike.dld)          |
-* Pavlushin Evgeny (Exis)              |
-* Ivan Poddubny                        |  application programming
-* Marat Zakiyanov (Mario79)            |
-* Sergey Kuzmin (Wildwest)             |
-* Andrey Halyavin (halyavin)           |  creation of new,
-* Hex                                  |  port of existing
-* Andrey Ignatiev (andrew_programmer)  |  or revisions of old
-* ealex                                |  applications for Kolibri
-* Olaf                                 |
-* Evgeny Grechnikov (Diamond)          |
-* Navanax                              |
-* Johnny_B                             |
-* Pavel Rymovski (Heavyiron)           |
-* Vitaly Bendik (mistifi(ator)         |
-* Iliya Mihailov (Ghost)               |
-* Maxim Evtihov (Maxxxx32)             |
-* Vladimir Zaitsev (Rabid Rabbit)      |
-* vectoroc                             |
-* Alexey Teplov (<Lrz>)                |
-* Sergey Semyonov (Serge)              |
-* YELLOW                               |
-* iadn                                 |
-* Maciej Guba (macgub)                 |
-* Mario Birkner (cYfleXX)              |
-* hidden player (hidnplayr)            |
-* trolly                               |
-* nilgui                               |
-* kaitz                                |
-* DedOk                                |
-* SPraid                               |
-* Rus                                  |
-* Alver                                |
-* Dron2004                             |
-* Gluk                                 |
-* Aleksandr Bogomaz (Albom)            |
-* Kirill Lipatov (Leency)              |
-* Vasiliy Kosenko (vkos)               |
-* IgorA                                |
-* staper                               |
-* chaykin                              |
-* Alexander Meshcheryakov              |
-    (Self-Perfection)                  |
-* CleverMouse                          |
-* tsdima                               |
-* art_zh                               |
-* Asper                                |
-* Pterox                               |
-* Artemonische                         |
-* dunkaist                             /
+System Programming (loaders, kernel, etc.) :
+- Alver
+- art_zh
+- Asper
+- Boppan
+- CleverMouse
+- Coldy
+- Doczom
+- dunkaist
+- Galkov
+- Evgeny Grechnikov 'Diamond'
+- Andrey Halyavin 'halyavin'
+- hidnplayr
+- Andrey Ignatiev 'andrew_programmer'
+- Johnny_B
+- kasTIgar
+- Sergey Kuzmin 'Wildwest'
+- Mihail Lisovin 'Mihasik'
+- Maxis
+- Iliya Mihailov 'Ghost'
+- Nable
+- NoName
+- Ivan Poddubny
+- rgimad
+- Rus
+- Mihail Semenyako 'mike.dld'
+- Sergey Semyonov 'Serge'
+- shurf
+- SPraid
+- Alexey Teplov '<Lrz>'
+- Trans
+- tsdima
+- turbanoff
+- VaStaNi
+- Marat Zakiyanov 'Mario79'
 
-* Hex                                  \
-* Diamond                              /  documentation
+Application Programming (new creations, porting or revisions) :
+- Alver
+- art_zh
+- Artemonische
+- Asper
+- barsuk
+- Vitaly Bendik 'mistifi(ator'
+- Mario Birkner 'cYfleXX'
+- Aleksandr Bogomaz 'Albom'
+- chaykin
+- CleverMouse
+- DedOk
+- Dron2004
+- dunkaist
+- ealex
+- Pavlushin Evgeny 'Exis'
+- Maxim Evtihov 'Maxxxx32'
+- Gluk
+- Evgeny Grechnikov 'Diamond'
+- Maciej Guba 'macgub'
+- Andrey Halyavin 'halyavin'
+- Hex
+- iadn
+- Andrey Ignatiev 'andrew_programmer'
+- IgorA
+- Andrey Ivushkin 'Willow'
+- Johnny_B
+- kaitz
+- Vasiliy Kosenko 'vkos'
+- Sergey Kuzmin 'Wildwest'
+- Kirill Lipatov 'Leency'
+- Mihail Lisovin 'Mihasik'
+- Alexander Meshcheryakov 'Self-Perfection'
+- Iliya Mihailov 'Ghost'
+- Navanax
+- nilgui
+- Olaf
+- hidden player 'hidnplayr'
+- Ivan Poddubny
+- Pterox
+- Rus
+- Pavel Rymovski 'Heavyiron'
+- Mihail Semenyako 'mike.dld'
+- Sergey Semyonov 'Serge'
+- SPraid
+- staper
+- Alexey Teplov '<Lrz>'
+- trolly
+- tsdima
+- vectoroc
+- YELLOW
+- Vladimir Zaitsev 'Rabid Rabbit'
+- Marat Zakiyanov 'Mario79'
 
-* CodeWorld                            \  forum http://meos.sysbin.com
-* mike.dld                             /  site http://kolibrios.org; svn-server
+Documentation and Translation :
+- Andrew Dent 'ace_dent'
+- Evgeny Grechnikov 'Diamond'
+- Hex
 
-* Alexey Teplov (<Lrz>)                \          (KolibriOS logo)
-* goglus                               |  design  (KolibriOS background)
-* Kirill Lipatov (Leency)              /          (KolibriOS icons)
+Infrastructure (forum, site and SVN hosting) :
+- CodeWorld
+- mike.dld
 
-* Pavel Rymovski (Heavyiron)           \
-* Vitaly Bendik (mistifi(ator)         |
-* vectoroc                             |
-* Veliant                              |  testing,
-* AqwAS                                |  countenance
-* Mike                                 |
-* camper                               |
-* Dmitry the Sorcerer                  |
-* Ataualpa                             |
-* Maxis                                |
-* Galkov                               |
-* ChE                                  /
+Design (logo, background, icons) :
+- goglus
+- Kirill Lipatov 'Leency'
+- Alexey Teplov '<Lrz>'
 
-and others...
+Testing and Support :
+- AqwAS
+- Ataualpa
+- Vitaly Bendik 'mistifi(ator'
+- camper
+- ChE
+- Dmitry the Sorcerer
+- Galkov
+- Maxis
+- Mike
+- Pavel Rymovski 'Heavyiron'
+- vectoroc
+- Veliant
+
+and many others...
 
 KolibriOS team
