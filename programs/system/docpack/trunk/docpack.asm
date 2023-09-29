@@ -105,7 +105,7 @@ red:
   mcall 12,1
 
 BTN_H equ 21
-  
+
   mov  edx,[sc.work]
   or   edx,0x34000000
   mcall 0, <220,141>, <30,FILECOUNT*(BTN_H+3)+37>, , ,title
@@ -191,7 +191,7 @@ embedded:
 ; Please use only filenames w/o path!
 
 ; -- Start of embedding area ------
-  embed_docdir_file 'README.TXT'       ;a
+  embed_docdir_file 'CREDITS.TXT'       ;a
 if lang eq ru
   embed_docdir_file 'GNU.TXT'          ;b
 else
