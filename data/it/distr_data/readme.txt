@@ -1,4 +1,4 @@
-﻿Kolibri OS 0.7.7.0+ night build, LiveCD-version.
+KolibriOS 0.7.7.0+ nightly build, Live CD version.
 
 Questo è un CD bootabile. Per eseguire il contenuto, riavvia il computer e
 imposta nel BIOS l'avvio da CD.

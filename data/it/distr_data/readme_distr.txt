@@ -1,4 +1,4 @@
-Kolibri OS 0.7.7.0+ night build.
+KolibriOS 0.7.7.0+ nightly build.
 
 Le istruzioni per installare il sistema su diversi dispositivi e i
 requisiti minimi si possono trovare nel file install.txt, mentre le

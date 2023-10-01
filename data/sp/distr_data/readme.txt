@@ -1,8 +1,8 @@
-Kolibri OS 0.7.7.0+ night build, LiveCD-version.
+KolibriOS 0.7.7.0+ nightly build, Live CD version.
 
-This is a bootable CD-Rom. To see the system in action, reboot and point to
-BIOS either in boot menu (if it can be called) or in settings booting from CD.
+This is a bootable CD-ROM. To run, reboot your computer and select the
+correct drive from the system settings or BIOS if required.
 
-Instructions for install to other information mediums and minimal system
-requirements can be found in file install.txt.
-Instructions for configuring can be found in file config.txt.
+The minimum system requirements and installation instructions can be found
+in 'install.txt'. Further details for configuring and customizing KolibriOS
+are given in 'config.txt'.
