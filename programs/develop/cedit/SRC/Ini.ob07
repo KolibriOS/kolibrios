@@ -53,7 +53,7 @@ VAR
     curSection*: tASCIISectionName;
     curSectionNum*: INTEGER;
 
-    blink*, font*, theme*: INTEGER;
+    blink*, font*, theme*, lineSpacing*: INTEGER;
     buildScript*, runScript*, debugScript*: RW.tFileName;
     lineNumbers*, autoIndents*, autoBrackets*, trimSpace*: BOOLEAN;
 
@@ -170,6 +170,10 @@ BEGIN
 	font := get_int(IniFileName, "settings", "font", 1);
 	IF (font < 0) OR (font > 2) THEN
 		font := 1
+	END;
+	lineSpacing := get_int(IniFileName, "settings", "line_spacing", 2);
+	IF (lineSpacing < 0) OR (lineSpacing > Text.MaxLineSpacing) THEN
+		lineSpacing := 2
 	END;
 	theme := get_int(IniFileName, "settings", "theme", 0);
 	IF (theme < 0) OR (theme >= sections.count) THEN

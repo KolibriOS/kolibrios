@@ -40,7 +40,7 @@ CONST
     mark_width = 2;
     pad_left = mark_width + 3;
     pad_top = 1;
-    LineSpacing* = 2;
+    MaxLineSpacing* = 8;
 
 
 TYPE
@@ -98,7 +98,7 @@ VAR
     drawCursor: BOOLEAN;
     padding: RECORD left, top: INTEGER END;
     size, textsize: tPoint;
-    charWidth, charHeight: INTEGER;
+    charWidth, charHeight, LineSpacing*: INTEGER;
     autoIndents*, lineNumbers*, autoBrackets*, trimSpace*: BOOLEAN;
 
 
@@ -2164,9 +2164,9 @@ BEGIN
 	    IF search(text, str, Lang.isCS(text.lang), TRUE) THEN END;
 	    text.wordSel := FALSE
     END;
-    IF (text.lang = Lang.langFasm) & ~selected(text) THEN
+    (*IF (text.lang = Lang.langFasm) & ~selected(text) THEN
     	fasm_anon(text)
-    END
+    END*)
 END wordSel;
 
 
@@ -3005,7 +3005,17 @@ PROCEDURE empty* (text: tText): BOOLEAN;
 END empty;
 
 
-PROCEDURE init* (pShowCursor: tProcedure; _lineNumbers, _autoIndents, _autoBrackets, _trimSpace: BOOLEAN);
+PROCEDURE setLineSpacing* (canvas: G.tCanvas; value: INTEGER);
+BEGIN
+	IF (0 <= value) & (value <= MaxLineSpacing) THEN
+		LineSpacing := value;
+		setCanvas(canvas)
+	END
+END setLineSpacing;
+
+
+PROCEDURE init* (pShowCursor: tProcedure;
+		_lineNumbers, _autoIndents, _autoBrackets, _trimSpace: BOOLEAN; _lineSpacing: INTEGER);
 BEGIN
     ShowCursor := pShowCursor;
     pdelete := delete;
@@ -3016,6 +3026,7 @@ BEGIN
     trimSpace := _trimSpace;
     padding.left := pad_left;
     padding.top := pad_top;
+    LineSpacing := _lineSpacing
 END init;
 
 

@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (07-may-2023)";
+    HEADER = "CEdit (01-oct-2023)";
 
     ShellFilter = "";
     EditFilter = "sh|inc|txt|asm|ob07|c|cpp|h|pas|pp|lua|ini|json";
@@ -101,6 +101,8 @@ CONST
     menuFontSmall = 20;
     menuFontMedium = menuFontSmall + 1;
     menuFontLarge = menuFontMedium + 1;
+    menuIncLS = menuFontLarge + 1;
+    menuDecLS = menuIncLS + 1;
     menuColors = 1000;
     menuMaxColors = menuColors + Ini.MAX_SECTIONS - 1;
 
@@ -169,7 +171,7 @@ CONST
 	SHIFT = Menu.SHIFT;
 	CTRL  = Menu.CTRL;
 
-	ClippingArea = 32 + T.LineSpacing;
+	ClippingArea = 32 + T.MaxLineSpacing;
 
 
 VAR
@@ -1073,6 +1075,8 @@ BEGIN
         Menu.option(menu, menuFontSmall,  font = G.fonts[0]);
         Menu.option(menu, menuFontMedium, font = G.fonts[1]);
         Menu.option(menu, menuFontLarge,  font = G.fonts[2]);
+        Menu.setEnabled(menu, menuIncLS, T.LineSpacing < T.MaxLineSpacing);
+        Menu.setEnabled(menu, menuDecLS, T.LineSpacing > 0);
         FOR i := 0 TO Ini.sections.count - 1 DO
             Menu.option(menu, menuColors + i, Ini.curSectionNum = i)
         END
@@ -1258,6 +1262,9 @@ BEGIN
     	font := G.fonts[Menu.MenuItem - menuFontSmall];
     	Ini.setInt("settings", "font", Menu.MenuItem - menuFontSmall);
     	resize
+    |menuIncLS, menuDecLS:
+    	T.setLineSpacing(canvas, T.LineSpacing + ORD(Menu.MenuItem = menuIncLS)*2 - 1);
+    	Ini.setInt("settings", "line_spacing", T.LineSpacing)
     |menuText:
         T.setLang(text, Languages.langText)
     |menuC:
@@ -1469,6 +1476,9 @@ BEGIN
     Menu.AddMenuItem(menu, menuFontSmall,  "small");
     Menu.AddMenuItem(menu, menuFontMedium, "medium");
     Menu.AddMenuItem(menu, menuFontLarge,  "large");
+    Menu.delimiter(menu);
+    Menu.AddMenuItem(menu, menuIncLS, "line spacing ++");
+    Menu.AddMenuItem(menu, menuDecLS, "line spacing --");
     Menu.delimiter(menu);
 
     colors := Ini.sections.first(Ini.tSection);
@@ -2152,7 +2162,7 @@ BEGIN
 	Tabs.setArea(tabs, LEFT, TOP - Tabs.tabHeight, canvas.width, Tabs.tabHeight);
 	font := G.fonts[Ini.font];
 	G.SetFont(canvas, font);
-	T.init(resetTimer, Ini.lineNumbers, Ini.autoIndents, Ini.autoBrackets, Ini.trimSpace);
+	T.init(resetTimer, Ini.lineNumbers, Ini.autoIndents, Ini.autoBrackets, Ini.trimSpace, Ini.lineSpacing);
 	Ini.selectSection(Ini.theme);
 	T.setCanvas(canvas);
 
