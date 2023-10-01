@@ -1,61 +1,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; Copyright (C) KolibriOS team 2004-2022. All rights reserved.
-;; PROGRAMMING:
-;; Ivan Poddubny
-;; Marat Zakiyanov (Mario79)
-;; VaStaNi
-;; Trans
-;; Mihail Semenyako (mike.dld)
-;; Sergey Kuzmin (Wildwest)
-;; Andrey Halyavin (halyavin)
-;; Mihail Lisovin (Mihasik)
-;; Andrey Ignatiev (andrew_programmer)
-;; NoName
-;; Evgeny Grechnikov (Diamond)
-;; Iliya Mihailov (Ghost)
-;; Sergey Semyonov (Serge)
-;; Johnny_B
-;; SPraid (simba)
-;; Hidnplayr
-;; Alexey Teplov (<Lrz>)
-;; Rus
-;; Nable
-;; shurf
-;; Alver
-;; Maxis
-;; Galkov
-;; CleverMouse
-;; tsdima
-;; turbanoff
-;; Asper
-;; art_zh
-;; dunkaist
-;; Coldy
-;; rgimad
-;; Boppan
-;; Doczom
-;; and others
+;; Kernel programmers are acknowledged in CREDITS.TXT
 ;;
 ;; Data in this file was originally part of MenuetOS project which is
 ;; distributed under the terms of GNU GPL. It is modified and redistributed as
 ;; part of KolibriOS project under the terms of GNU GPL.
 ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa
-;; PROGRAMMING:
-;;
-;; Ville Mikael Turjanmaa, villemt@itu.jyu.fi
-;; - main os coding/design
-;; Jan-Michael Brummer, BUZZ2@gmx.de
-;; Felix Kaiser, info@felix-kaiser.de
-;; Paolo Minazzi, paolo.minazzi@inwind.it
-;; quickcode@mail.ru
-;; Alexey, kgaz@crosswinds.net
-;; Juan M. Caravaca, bitrider@wanadoo.es
-;; kristol@nic.fi
-;; Mike Hibbett, mikeh@oceanfree.net
-;; Lasse Kuusijarvi, kuusijar@lut.fi
-;; Jarek Pelczar, jarekp3@wp.pl
 ;;
 ;; KolibriOS is distributed in the hope that it will be useful, but WITHOUT ANY
 ;; WARRANTY. No author or distributor accepts responsibility to anyone for the
@@ -1760,7 +1712,7 @@ sys_getsetup:
 
 .addr_error:    ; if given memory address is illegal
         or      dword [esp + SYSCALL_STACK.eax], -1
-        ret        
+        ret
 ;--------------------------------------
 @@:
 ; F.26.5 - get system language
@@ -2297,7 +2249,7 @@ sysfn_getversion:       ; 18.13 = get kernel ID and version
         ret
 .addr_error:    ; if given memory address is illegal
         mov     dword [esp + SYSCALL_STACK.eax], -1
-        ret   
+        ret
 ;------------------------------------------------------------------------------
 sysfn_waitretrace:     ; 18.14 = sys wait retrace
         ;wait retrace functions
@@ -2602,7 +2554,7 @@ sys_cpuusage:
 
 .addr_error:    ; if given memory address is illegal
         mov     dword [esp + SYSCALL_STACK.eax], -1
-        ret   
+        ret
 
 
 ; redraw status
@@ -4345,7 +4297,7 @@ align 4
         dec     ebx
         dec     edx
         jnz     .start_y
-        
+
 .exit:
         popad
         ret
@@ -4543,7 +4495,7 @@ proc is_region_userspace stdcall, base:dword, len:dword
         cmp     eax, eax        ; ZF
 @@:
         pop     eax
-        ret 
+        ret
 endp
 
 align 4
