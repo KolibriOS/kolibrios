@@ -3505,14 +3505,12 @@ drawbackground:
         cmp     [BgrDrawMode], dword 1
         jne     .bgrstr
         call    vesa20_drawbackground_tiled
-;        call    [draw_pointer]
         call    __sys_draw_pointer
         ret
 ;--------------------------------------
 align 4
 .bgrstr:
         call    vesa20_drawbackground_stretch
-;        call    [draw_pointer]
         call    __sys_draw_pointer
         ret
 ;-----------------------------------------------------------------------------
@@ -3542,11 +3540,11 @@ align 4
 ;--------------------------------------
 align 4
 @@:
-        mov     edi, [current_slot_idx]
-        shl     edi, BSF sizeof.WDATA
-        add     dx, word[window_data + edi + WDATA.clientbox.top]
+        mov     edi, [current_slot]
+        mov     edi, APPDATA.window
+        add     dx, word[edi + WDATA.clientbox.top]
         rol     edx, 16
-        add     dx, word[window_data + edi + WDATA.clientbox.left]
+        add     dx, word[edi + WDATA.clientbox.left]
         rol     edx, 16
 ;--------------------------------------
 align 4
@@ -4199,15 +4197,13 @@ syscall_cdaudio:
 ;-----------------------------------------------------------------------------
 align 4
 syscall_getpixel_WinMap:                       ; GetPixel WinMap
-        cmp     ebx, [_display.width]
-        jb      @f
-        cmp     ecx, [_display.height]
-        jb      @f
         xor     eax, eax
-        jmp     .store
+
+        cmp     ebx, [_display.width]
+        jae     .store
+        cmp     ecx, [_display.height]
+        jae     .store
 ;--------------------------------------
-align 4
-@@:
         mov     eax, [d_width_calc_area + ecx*4]
         add     eax, [_display.win_map]
         movzx   eax, byte[eax+ebx]        ; get value for current point

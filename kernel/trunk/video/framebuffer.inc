@@ -220,7 +220,7 @@ set_framebuffer:
         cli
         mov     [_display.current_lfb], ecx
 .patch_pde:
-        lea     edi, [eax + PROC.pdt_0 + PAGE_SIZE -32] ;last 8 pd entries up to 32Mb framebuffer
+        lea     edi, [eax + PROC.pdt_0 + (LFB_BASE shr 20)] ;last 8 pd entries up to 32Mb framebuffer
         mov     ecx, 4
         rep movsd                               ;patch pde
         sub     esi, 16

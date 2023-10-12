@@ -146,12 +146,8 @@ align 4
 nosb3:
         cmp     ebx, 4                     ; TILED / STRETCHED
         jnz     nosb4
-        cmp     ecx, [BgrDrawMode]
-        je      nosb41
+
         mov     [BgrDrawMode], ecx
-;--------------------------------------
-align 4
-nosb41:
         ret
 ;--------------------------------------
 align 4
@@ -409,13 +405,6 @@ align 4
         ret
 ;------------------------------------------------------------------------------
 align 4
-        .x      dd ?
-        .y      dd ?
-        .w      dd ?
-        .h      dd ?
-        .subrect_startptr dd ?
-        .subrect_bytes dd ?
-align 4
 .nogb2:
         dec     ebx
         jnz     .nogb3
@@ -425,77 +414,81 @@ align 4
         ; esi - buffer of 0x00RRGGBB
         mov     eax, [img_background]
         cmp     eax, static_background_data
-        jz      .fail_39_3
-align 4
-@@:
+        jz      .exit_39_3
+
+        sub     esp, 4*3 ; local values
+        ; get start offset
         movzx   eax, cx ; store y in eax
-        mov     [.y], eax
+        cmp     eax, [BgrDataHeight]
+        jae     .fail_39_3
+        mov     [esp], eax ; save y
 
         shr     ecx, 16 ; ecx = x
-        mov     [.x], ecx
+        cmp     ecx, [BgrDataWidth]
+        jae     .fail_39_3
 
         imul    eax, [BgrDataWidth]
         add     eax, ecx
         imul    eax, 3
-        mov     [.subrect_startptr], eax
+        mov     [esp + 4*2], eax  ; offset first poixel for copy
+        ; get count pixels
+        movzx   eax, dx   ; h
+        shr     edx, 16   ; w
+        add     ecx, edx  ; get RECT.right
+        cmp     ecx, [BgrDataWidth]
+        jae     .fail_39_3
+        ; check area
+        mov     ecx, [esp]
+        add     ecx, eax
+        cmp     ecx, [BgrDataHeight]
+        jae     .fail_39_3
 
-        movzx   eax, dx ; store h in eax
-        mov     [.h], eax
+        mov     [esp + 4], eax ; save H
+        mov     [esp], edx     ; save W
+        ; check buffer
+        add     eax, edx
+        lea     eax, [eax*3]
+        stdcall is_region_userspace, esi, eax
+        jnz     .fail_39_3
 
-        shr     edx, 16 ; edx = w
-        mov     [.w], edx
+        ; loop copy lines
+        mov     edi, esi
+        mov     esi, [img_background]
+        add     esi, [esp + 4*2] ; add offset start copy
+        xor     ecx, ecx         ; index in line
+        cmp     ecx, [esp + 4]   ; check H == zerro
+        jz      .exit_39_3
+        xor     edx, edx         ; offset in line
+        cld
+.loop:
+        cmp     ecx, [esp]       ; check ecx < W
+        jae     @f
 
-        imul    eax, edx
-        mov     [.subrect_bytes], eax
-
-        ; check bounds
-        mov     ebx, [mem_BACKGROUND]
-        add     ebx, PAGE_SIZE-1
-        and     ebx, -PAGE_SIZE
-        sub     ebx, 4
-        add     eax, [.subrect_startptr]
-        cmp     eax, ebx
-        ja      .fail_39_3
-
-        ; copy contents
-        mov     edi, [img_background]
-        xor     ecx, ecx ; ecx - row index
-.copy_rect:
-        cmp     ecx, [.h]
-        jae     .end_copy_rect
-        
-        xor     edx, edx ; edx - column index
-.copy_row:
-        cmp     edx, [.w]
-        jae     .end_copy_row
-
-        mov     ebx, ecx
-        imul    ebx, [BgrDataWidth]
-        add     ebx, edx
-        imul    ebx, 3
-        add     ebx, [.subrect_startptr]
-        mov     eax, [edi + ebx]
-        mov     ebx, ecx
-        imul    ebx, [.w]
-        add     ebx, edx
+        mov     eax, [esi + edx]
         and     eax, 0xFFFFFF
-        mov     [esi + ebx*4], eax       
-
-        inc     edx
-        jmp     .copy_row
-.end_copy_row:        
-
+        stosd   ; [edi] = eax ; edi+=4;
         inc     ecx
-        jmp     .copy_rect
-.end_copy_rect:
+        add     edx, 3
+
+        jmp     .loop
+@@:
+        xor     edx, edx
+        mov     eax, [BgrDataWidth]
+        lea     esi, [esi + eax*2]
+        add     esi, eax
+        mov     ecx, edx
+        dec     dword[esp + 4] ; h--
+        jnz     .loop
+        ; free stack
+.exit_39_3:
+        add     esp, 4*3
         xor     eax, eax
         mov     [esp + SYSCALL_STACK.eax], eax
-align 4
-.ret_39_3:
         ret
 ;--------------------------------------
 align 4
 .fail_39_3:
+        add     esp, 4*3
         mov     [esp + SYSCALL_STACK.eax], -1
         ret
 ;--------------------------------------

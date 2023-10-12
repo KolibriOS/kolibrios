@@ -1601,7 +1601,7 @@ vesa20_drawbackground_tiled:
         pushad
 ; External loop for all y from start to end
         mov     ebx, [background_window + WDATA.draw_data.top]    ; y start
-  dp2:
+  .dp2:
         mov     ebp, [background_window + WDATA.draw_data.left]   ; x start
 ; 1) Calculate pointers in WinMapAddress (does pixel belong to OS thread?) [ebp]
 ;    and LFB data (output for our function) [edi]
@@ -1651,7 +1651,7 @@ vesa20_drawbackground_tiled:
 ; edx = 1
 ; esi -> bgr memory, edi -> output
 ; ebp = offset in WinMapAddress
-  dp3:
+  .dp3:
         cmp     [ebp], dl
         jnz     .next_pix
 
@@ -1699,22 +1699,22 @@ vesa20_drawbackground_tiled:
         add     ebp, edx
         add     eax, edx
         cmp     eax, [background_window + WDATA.draw_data.right]
-        ja      dp4
+        ja      .dp4
         sub     ecx, edx
-        jnz     dp3
+        jnz     .dp3
 
 ; next tile block on x-axis
         mov     ecx, [BgrDataWidth]
         sub     esi, ecx
         sub     esi, ecx
         sub     esi, ecx
-        jmp     dp3
+        jmp     .dp3
 
-  dp4:
+  .dp4:
 ; next scan line
         inc     ebx
         cmp     ebx, [background_window + WDATA.draw_data.bottom]
-        jbe     dp2
+        jbe     .dp2
         popad
         mov     [EGA_counter], 1
         cmp     [SCR_MODE], 0x12
