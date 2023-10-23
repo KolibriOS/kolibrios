@@ -387,7 +387,7 @@ get_event_queue:
 ;info:
 ;   client testing function for get_event_ex
 ;warning:
-;  -don't use [TASK_BASE],[current_slot],[current_slot_idx] - it is not for your slot
+;  -don't use [current_slot],[current_slot_idx] - it is not for your slot
 ;  -may be assumed, that interrupt are disabled
 ;  -it is not restriction for scratched registers
 ;param:
@@ -408,7 +408,7 @@ get_event_alone:
 ;info:
 ;   client testing function for wait_event
 ;warning:
-;  -don't use [TASK_BASE],[current_slot],[current_slot_idx] - it is not for your slot
+;  -don't use [current_slot],[current_slot_idx] - it is not for your slot
 ;  -may be assumed, that interrupt are disabled
 ;  -it is not restriction for scratched registers
 ;param:
@@ -500,7 +500,7 @@ get_event_for_app:                                 ;; used from f10,f11,f23
 ;info:
 ;   client testing function for applications (f10,f23)
 ;warning:
-;  -don't use [TASK_BASE],[current_slot],[current_slot_idx] - it is not for your slot
+;  -don't use [current_slot],[current_slot_idx] - it is not for your slot
 ;  -may be assumed, that interrupt are disabled
 ;  -it is not restriction for scratched registers
 ;param:

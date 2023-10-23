@@ -2131,14 +2131,15 @@ sysfn_zmodif:
 
         mov     eax, edx
         shl     edx, BSF sizeof.WDATA
+        add     edx, window_data
 
-        test    [window_data + edx + WDATA.fl_wstate], WSTATE_USED
+        test    [edx + WDATA.fl_wstate], WSTATE_USED
         jz      .fail
 
         cmp     ecx, 1
         jnz     .set_zmod
 
-        mov     al, [window_data + edx + WDATA.z_modif]
+        movzx   eax, [edx + WDATA.z_modif]
         jmp     .exit
 
 .set_zmod:
@@ -2151,12 +2152,12 @@ sysfn_zmodif:
         cmp     bl, ZPOS_ALWAYS_TOP
         jg      .fail
 
-        mov     [window_data + edx + WDATA.z_modif], bl
+        mov     [edx + WDATA.z_modif], bl
 
-        mov     eax, [window_data + edx + WDATA.box.left]
-        mov     ebx, [window_data + edx + WDATA.box.top]
-        mov     ecx, [window_data + edx + WDATA.box.width]
-        mov     edx, [window_data + edx + WDATA.box.height]
+        mov     eax, [edx + WDATA.box.left]
+        mov     ebx, [edx + WDATA.box.top]
+        mov     ecx, [edx + WDATA.box.width]
+        mov     edx, [edx + WDATA.box.height]
         add     ecx, eax
         add     edx, ebx
         call    window._.set_screen
@@ -3541,7 +3542,7 @@ align 4
 align 4
 @@:
         mov     edi, [current_slot]
-        mov     edi, APPDATA.window
+        mov     edi, [edi + APPDATA.window]
         add     dx, word[edi + WDATA.clientbox.top]
         rol     edx, 16
         add     dx, word[edi + WDATA.clientbox.left]
@@ -3579,11 +3580,11 @@ sys_putimage_palette:
         pop     esi ecx
         jnz     sys_putimage.exit
 
-        mov     eax, [current_slot_idx]
-        shl     eax, BSF sizeof.WDATA
-        add     dx, word [window_data + eax + WDATA.clientbox.top]
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.window]
+        add     dx, word [eax + WDATA.clientbox.top]
         rol     edx, 16
-        add     dx, word [window_data + eax + WDATA.clientbox.left]
+        add     dx, word [eax + WDATA.clientbox.left]
         rol     edx, 16
 ;--------------------------------------
 align 4
@@ -3892,12 +3893,12 @@ putimage_get16bpp:
         ; edx y end
 ; edi color
 ;__sys_drawbar:
-;        mov     esi, [current_slot_idx]
-;        shl     esi, BSF sizeof.WDATA
-;        add     eax, [window_data+esi+WDATA.clientbox.left]
-;        add     ecx, [window_data+esi+WDATA.clientbox.left]
-;        add     ebx, [window_data+esi+WDATA.clientbox.top]
-;        add     edx, [window_data+esi+WDATA.clientbox.top]
+;        mov     esi, [current_slot]
+;        mov     esi, [esi + APPDATA.window]
+;        add     eax, [esi + WDATA.clientbox.left]
+;        add     ecx, [esi + WDATA.clientbox.left]
+;        add     ebx, [esi + WDATA.clientbox.top]
+;        add     edx, [esi + WDATA.clientbox.top]
 ;--------------------------------------
 ;align 4
 ;.forced:

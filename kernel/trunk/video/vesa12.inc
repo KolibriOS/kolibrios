@@ -256,8 +256,8 @@ vesa12_drawbackground:
         mov     ebx, 3
         mul     ebx
         mov     [imax], eax
-        mov     eax, [draw_data+32+RECT.left]
-        mov     ebx, [draw_data+32+RECT.top]
+        mov     eax, [background_window + WDATA.draw_data.left]
+        mov     ebx, [background_window + WDATA.draw_data.top]
         xor     edi, edi;no force
 
       v12dp3:
