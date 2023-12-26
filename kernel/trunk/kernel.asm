@@ -436,7 +436,7 @@ high_code:
         list_init eax
 
         call    init_video
-        call    init_mtrr
+        call    init_pat_mtrr
         mov     [LFBAddress], LFB_BASE
         mov     ecx, bios_fb
         call    set_framebuffer

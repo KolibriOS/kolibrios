@@ -7,12 +7,22 @@
 
 $Revision$
 
-; Initializes MTRRs.
-proc init_mtrr
-
+; Initializes PAT (Page Attribute Table) and MTRRs.
+proc init_pat_mtrr
         cmp     [BOOT.mtrr], byte 2
         je      .exit
 
+        bt      [cpu_caps], CAPS_PAT    ; if PAT is not supported, use MTRR
+        jnc     .use_mtrr
+
+; Change PAT_MSR for write combining memory.
+        mov     ecx, MSR_CR_PAT
+        mov     eax, PAT_VALUE          ; UC UCM WC WB
+        mov     edx, eax
+        wrmsr
+        ret
+
+.use_mtrr:
         bt      [cpu_caps], CAPS_MTRR
         jnc     .exit
 
@@ -739,17 +749,7 @@ end virtual
         jmp     @b
 @@:
 
-; 9i. Check PAT support and reprogram PAT_MASR for write combining memory
-        bt      [cpu_caps], CAPS_PAT
-        jnc     @F
-
-        mov     ecx, MSR_CR_PAT
-        mov     eax, PAT_VALUE  ;UC UCM WC WB
-        mov     edx, eax
-        wrmsr
-@@:
-
-; 9j. Changes are done.
+; 9i. Changes are done.
         call    mtrr_end_change
 
 .abort:

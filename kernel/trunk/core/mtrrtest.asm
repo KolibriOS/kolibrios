@@ -18,12 +18,12 @@ entry start
 MAX_VARIABLE_MTRR = 10
 
 start:
-; Copy test inputs, run init_mtrr, compare with test outputs. Repeat.
+; Copy test inputs, run init_pat_mtrr, compare with test outputs. Repeat.
         mov     esi, test1_in_data
         mov     edi, mtrrdata
         mov     ecx, mtrrdata_size / 4
         rep movsd
-        call    init_mtrr
+        call    init_pat_mtrr
         mov     esi, test1_out_data
         mov     edi, mtrrdata
         mov     ecx, mtrrdata_size / 4
@@ -33,7 +33,7 @@ start:
         mov     edi, mtrrdata
         mov     ecx, mtrrdata_size / 4
         rep movsd
-        call    init_mtrr
+        call    init_pat_mtrr
         mov     esi, test2_out_data
         mov     edi, mtrrdata
         mov     ecx, mtrrdata_size / 4
