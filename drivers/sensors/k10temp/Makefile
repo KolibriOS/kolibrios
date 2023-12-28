@@ -5,10 +5,10 @@ KPACK = kpack
 DDK_TOPDIR      = ../../ddk
 DRV_INCLUDES    = ../../include
 
-INCLUDES =	   -I$(DRV_INCLUDES)	    \
-		   -I$(DRV_INCLUDES)/asm 	\
-		   -I$(DRV_INCLUDES)/uapi	\
-		   -I$(DRV_INCLUDES)/drm
+INCLUDES=   -I$(DRV_INCLUDES)		\
+            -I$(DRV_INCLUDES)/asm 	\
+            -I$(DRV_INCLUDES)/uapi	\
+            -I$(DRV_INCLUDES)/drm
 
 NAME=k10temp
 
@@ -22,13 +22,13 @@ CFLAGS+= -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boun
 LIBPATH = -L $(DDK_TOPDIR)
 LIBPATH+= -L ../../../contrib/sdk/lib -L
 
-LIBS:=    -lddk -lcore -lgcc
+LIBS:= -lddk -lcore -lgcc
 
 LDFLAGS = -nostdlib -shared -s --major-os-version 0 --minor-os-version 7 \
-	--major-subsystem-version 0 --minor-subsystem-version 5 --subsystem native \
-	--image-base 0 --file-alignment 512 --section-alignment 4096
+          --major-subsystem-version 0 --minor-subsystem-version 5 --subsystem native \
+          --image-base 0 --file-alignment 512 --section-alignment 4096
 
-OBJS = k10temp.o ../pci.o ../amd_nb.o ../cpu_detect.o ../e_msr.o
+OBJS = k10temp.o ../pci.o ../amd_nb.o ../cpu_detect.o 
 
 all: $(OBJS) $(NAME).sys 
 

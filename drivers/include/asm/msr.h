@@ -93,19 +93,9 @@ static inline unsigned long long native_read_msr(unsigned int msr)
 static inline unsigned long long native_read_msr_safe(unsigned int msr,
 						      int *err)
 {
-	DECLARE_ARGS(val, low, high);
-
-	asm volatile("2: rdmsr ; xor %[err],%[err]\n"
-		     "1:\n\t"
-		     ".section .fixup,\"ax\"\n\t"
-		     "3:  mov %[fault],%[err] ; jmp 1b\n\t"
-		     ".previous\n\t"
-		     _ASM_EXTABLE(2b, 3b)
-		     : [err] "=r" (*err), EAX_EDX_RET(val, low, high)
-		     : "c" (msr), [fault] "i" (-EIO));
-	if (msr_tracepoint_active(__tracepoint_read_msr))
-		do_trace_read_msr(msr, EAX_EDX_VAL(val, low, high), *err);
-	return EAX_EDX_VAL(val, low, high);
+#warning "FIXME: native_read_msr_safe always return err = 0!"
+	*err = 0;
+	return native_read_msr(msr);
 }
 
 static inline void native_write_msr(unsigned int msr,
@@ -120,20 +110,9 @@ static inline void native_write_msr(unsigned int msr,
 notrace static inline int native_write_msr_safe(unsigned int msr,
 					unsigned low, unsigned high)
 {
-	int err;
-	asm volatile("2: wrmsr ; xor %[err],%[err]\n"
-		     "1:\n\t"
-		     ".section .fixup,\"ax\"\n\t"
-		     "3:  mov %[fault],%[err] ; jmp 1b\n\t"
-		     ".previous\n\t"
-		     _ASM_EXTABLE(2b, 3b)
-		     : [err] "=a" (err)
-		     : "c" (msr), "0" (low), "d" (high),
-		       [fault] "i" (-EIO)
-		     : "memory");
-	if (msr_tracepoint_active(__tracepoint_write_msr))
-		do_trace_write_msr(msr, ((u64)high << 32 | low), err);
-	return err;
+#warning "FIXME: native_write_msr_safe always return 0!"
+	native_write_msr(msr, low, high);
+	return 0;
 }
 
 extern int rdmsr_safe_regs(u32 regs[8]);

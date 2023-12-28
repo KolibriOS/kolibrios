@@ -535,8 +535,8 @@ EXPORT_SYMBOL_GPL(amd_flush_garts);
 static void __fix_erratum_688(void *info)
 {
 #define MSR_AMD64_IC_CFG 0xC0011021
-    e_msr_set_bit(MSR_AMD64_IC_CFG, 3);
-    e_msr_set_bit(MSR_AMD64_IC_CFG, 14);
+	msr_set_bit(MSR_AMD64_IC_CFG, 3);
+	msr_set_bit(MSR_AMD64_IC_CFG, 14);
 }
 
 /* Apply erratum 688 fix so machines without a BIOS fix work. */

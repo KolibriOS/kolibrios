@@ -54,6 +54,7 @@ NAME_SRCS:=  				\
 		linux/string.c		\
 		linux/time.c		\
 		linux/workqueue.c	\
+		linux/msr.c		\
 		malloc/malloc.c		\
 		stdio/vsprintf.c	\
 		string/strstr.c		\
