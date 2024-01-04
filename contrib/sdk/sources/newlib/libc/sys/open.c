@@ -15,12 +15,19 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/kos_io.h>
+#include <sys/ksys.h>
+
 #include "glue.h"
 #include "io.h"
 
-#undef erro
+#undef errno
 extern int errno;
+
+extern int write_file(const char *path,const void *buff,
+                      size_t offset, size_t count, size_t *writes);
+
+extern int read_file(const char *path, void *buff,
+               size_t offset, size_t count, size_t *reads);
 
 static inline int is_slash(char c)
 {
@@ -49,7 +56,7 @@ void fix_slashes(char * in,char * out)
         }
     }
     *out='\0';
-};
+}
 
 
 void buildpath(char *buf, const char* file)
@@ -89,26 +96,14 @@ __do_until_slash:
             *ptr++ = *file++;
     }
     *ptr = 0;
-};
-
-static char *getccwd(char *buf, size_t size)
-{
-    int bsize;
-    __asm__ __volatile__(
-    "int $0x40"
-    :"=a"(bsize)
-    :"a"(30),"b"(2),"c"(buf), "d"(size)
-    :"memory");
-
-    return buf;
-};
+}
 
 int open (const char * filename, int flags, ...)
 {
     char buf[1024];
 
     __io_handle *ioh;
-    fileinfo_t   info;
+    ksys_file_info_t info;
     int iomode, rwmode, offset;
     int hid;
     int err;
@@ -127,28 +122,28 @@ int open (const char * filename, int flags, ...)
     }
     else
     {
-        getccwd(buf, 1024);
+        _ksys_getcwd(buf, 1024);
         buildpath(buf, filename);
     }
 
-    err = get_fileinfo(buf, &info);
+    err = _ksys_file_info(buf, &info);
 
-    if( flags & O_EXCL &&
+    if (flags & O_EXCL &&
         flags & O_CREAT )
     {
-        if( !err )
+        if (!err)
         {
             errno = EEXIST;
             __io_free(hid);
             return (-1);
-        };
+        }
     }
 
-    if( err )
+    if (err)
     {
         if(flags & O_CREAT)
-            err=create_file(buf);
-        if( err )
+            err = _ksys_file_create(buf).status;
+        if(err)
         {
             errno = EACCES;
             __io_free(hid);
@@ -156,8 +151,8 @@ int open (const char * filename, int flags, ...)
         };
     };
 
-    if( flags & O_TRUNC )
-        set_file_size(buf, 0);
+    if (flags & O_TRUNC)
+        _ksys_file_set_size(buf, 0);
 
     ioh = &__io_tab[hid];
 
@@ -166,25 +161,28 @@ int open (const char * filename, int flags, ...)
     iomode = 0;
     offset = 0;
 
-    if( rwmode == O_RDWR )
+    if (rwmode == O_RDWR)
         iomode |= _READ | _WRITE;
-    else if( rwmode == O_RDONLY)
+    else if (rwmode == O_RDONLY)
         iomode |= _READ;
-    else if( rwmode == O_WRONLY)
+    else if (rwmode == O_WRONLY)
         iomode |= _WRITE;
 
-    if( flags & O_APPEND )
+    if (flags & O_APPEND)
     {
         iomode |= _APPEND;
         offset = info.size;
-    };
+    }
 
-    if( flags & (O_BINARY|O_TEXT) )
+    if (flags & (O_BINARY|O_TEXT))
     {
-        if( flags & O_BINARY )
+        if (flags & O_BINARY)
             iomode |= _BINARY;
-    } else
+    }
+    else
+    {
         iomode |= _BINARY;
+    }
 
     ioh->name   = strdup(buf);
     ioh->offset = offset;
@@ -193,6 +191,4 @@ int open (const char * filename, int flags, ...)
     ioh->write  = write_file;
 
     return hid;
-};
-
-
+}

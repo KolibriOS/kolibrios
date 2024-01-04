@@ -6,13 +6,14 @@
  * See (LICENSE)
  * -----------------------------------------------------------------------------
  */
-#include <sys/kos_LoadConsole.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include "udis86.h"
 #include "config.h"
+
+#include <conio.h>
 
 #if defined(__amd64__) || defined(__x86_64__)
 #  define FMT "l"
@@ -71,8 +72,8 @@ int input_hook_file(ud_t* u);
 
 int main(int argc, char **argv)
 {
-  load_console();
   con_set_title("udi disassembler");
+
   FILE *stream;
   stream = fopen( "disasm.out", "w" );
 

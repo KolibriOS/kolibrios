@@ -15,7 +15,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <sys/unistd.h>
-#include <sys/kos_io.h>
+#include <sys/ksys.h>
 #include "glue.h"
 #include "io.h"
 

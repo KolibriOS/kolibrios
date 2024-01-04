@@ -29,7 +29,7 @@ ssize_t read(int fd, void *buf, size_t cnt)
     char     *buffer = buf;
     int       rc;
     int       h;
-    unsigned amount_read;
+    size_t amount_read;
     int err;
 
     __io_handle *ioh;

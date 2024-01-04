@@ -223,7 +223,7 @@ static inline void kos_ScreenShot(char* image, int x, int y, int w, int h) {
 // Get skin height
 static inline uint32_t kos_SkinHeight(void) {
 	uint32_t height;
- 
+
 	__asm__ __volatile__(
 	"int $0x40 \n\t"
 	:"=a"(height)
@@ -247,7 +247,7 @@ static inline pos_t kos_GetMousePos(int origin) {
 
 static inline uint32_t kos_GetMouseButtons(void) {
 	uint32_t val;
-	
+
 	__asm__ __volatile__(
 	"int $0x40"
 	:"=a"(val)
@@ -257,7 +257,7 @@ static inline uint32_t kos_GetMouseButtons(void) {
 
 static inline uint32_t kos_GetMouseWheels(void) {
 	uint32_t val;
- 
+
 	__asm__ __volatile__(
 	"int $0x40 \n\t"
 	:"=a"(val)
@@ -312,7 +312,7 @@ static inline uint32_t kos_WaitForEventTimeout(uint32_t time) {
 	:"a"(23), "b"(time));
 	return val;
 };
- 
+
 static inline uint32_t kos_CheckForEvent(void) {
 	uint32_t val;
 	__asm__ __volatile__(
@@ -321,7 +321,7 @@ static inline uint32_t kos_CheckForEvent(void) {
 	:"a"(11));
 	return val;
 };
- 
+
 static inline uint32_t kos_WaitForEvent(void) {
 	uint32_t val;
 	__asm__ __volatile__(
@@ -344,7 +344,7 @@ static inline uint32_t kos_WaitForEvent(void) {
 #define EVM_STACK2        512
 #define EVM_MOUSE_FILTER  0x80000000
 #define EVM_CURSOR_FILTER 0x40000000
- 
+
 static inline uint32_t kos_SetMaskForEvents(uint32_t event_mask) {
 	uint32_t  old_event_mask;
 	__asm__ __volatile__(
@@ -415,3 +415,4 @@ static inline void kos_RunApp(char* app, char* param) {
 	r.p21 = app;
 	__asm__ __volatile__ ("int $0x40"::"a"(70), "b"(&r));
 }
+

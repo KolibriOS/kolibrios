@@ -21,6 +21,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,43 +83,48 @@ typedef struct {
 } ksys_ufile_t;
 
 typedef struct {
-    uint32_t p00;
+    uint32_t func_num;
     union {
-        uint64_t p04;
+        uint64_t offset64;
         struct {
-            uint32_t p04dw;
-            uint32_t p08dw;
+            union {
+                uint32_t debug;
+                uint32_t offset;
+            };
+            union {
+                uint32_t flags;
+                char* args;
+            };
         };
     };
-    uint32_t p12;
+    uint32_t data_size;
+    void*    data;
     union {
-        uint32_t p16;
-        const char* new_name;
-        void* bdfe;
-        void* buf16;
-        const void* cbuf16;
+        struct {
+            uint8_t zero;
+            char*   path_ptr;
+        };
+        char path[0];
     };
-    char p20;
-    const char* p21;
-} ksys70_t;
+} ksys_file_t;
 
 typedef struct {
     uint32_t status;
     uint32_t rw_bytes;
-} ksys70_status_t;
+} ksys_file_status_t;
 
 typedef struct {
-    uint32_t attributes;
-    uint32_t name_cp;
-    ksys_time_t creation_time;
-    ksys_date_t creation_date;
-    ksys_time_t last_access_time;
-    ksys_date_t last_access_date;
-    ksys_time_t last_modification_time;
-    ksys_date_t last_modification_date;
+    uint32_t attr;
+    uint32_t name_enc;
+    ksys_time_t ctime;
+    ksys_date_t cdate;
+    ksys_time_t atime;
+    ksys_date_t adate;
+    ksys_time_t mtime;
+    ksys_date_t mdate;
     uint64_t size;
     char name[0];
-} ksys_bdfe_t;
+} ksys_file_info_t;
 
 #define KSYS_THREAD_INFO_SIZE 1024
 
@@ -1483,125 +1489,166 @@ KOSAPI ksys_ufile_t _ksys_load_file_enc(const char* path, unsigned file_encoding
 
 /*==== Function 70 - work with file system with long names support. ====*/
 
-KOSAPI ksys70_status_t _ksys70(const ksys70_t* k)
+enum KSYS_FILE_FUNC {
+    KSYS_FILE_READ = 0,
+    KSYS_FILE_READ_DIR,
+    KSYS_FILE_CREATE,
+    KSYS_FILE_WRITE,
+    KSYS_FILE_SET_SIZE,
+    KSYS_FILE_GET_INFO,
+    KSYS_FILE_SET_ATTR,
+    KSYS_FILE_EXEC,
+    KSYS_FILE_REMOVE,
+    KSYS_FILE_CREATE_DIR,
+    KSYS_FILE_RENAME,
+};
+
+KOSAPI ksys_file_status_t _ksys_file(const ksys_file_t* info)
 {
-    ksys70_status_t status;
+    ksys_file_status_t st;
     asm_inline(
         "int $0x40"
-        : "=a"(status.status), "=b"(status.rw_bytes)
-        : "a"(70), "b"(k)
+        : "=a"(st.status), "=b"(st.rw_bytes)
+        : "a"(70), "b"(info)
         : "memory");
-    return status;
+    return st;
 }
 
 /*====== Function 70, subfunction 0 - read file with long names support. ======*/
 
-KOSAPI ksys70_status_t _ksys_file_read(const char* name, uint64_t offset, uint32_t size, void* buf)
+KOSAPI ksys_file_status_t _ksys_file_read(const char* name, uint64_t offset, uint32_t size, void* buf)
 {
-    ksys70_t k;
-    k.p00 = 0;
-    k.p04 = offset;
-    k.p12 = size;
-    k.buf16 = buf;
-    k.p20 = 0;
-    k.p21 = name;
-    return _ksys70(&k);
+    ksys_file_t f;
+    f.func_num = KSYS_FILE_READ;
+    f.offset64 = offset;
+    f.data_size = size;
+    f.data = buf;
+    f.zero = 0;
+    f.path_ptr = (char*)name;
+    return _ksys_file(&f);
 }
 
 /*===================== Function 70, subfunction 2 =====================*/
 /*============ Create/rewrite file with long names support. ============*/
 
-KOSAPI int _ksys_file_create(const char* name)
+KOSAPI ksys_file_status_t _ksys_file_create(const char* name)
 {
-    ksys70_t k;
-    k.p00 = 2;
-    k.p04dw = 0;
-    k.p08dw = 0;
-    k.p12 = 0;
-    k.p21 = name;
-    return _ksys70(&k).status;
+    ksys_file_t f;
+    f.func_num = KSYS_FILE_CREATE;
+    f.offset64 = 0;
+    f.data_size = 0;
+    f.data = NULL;
+    f.zero = 0;
+    f.path_ptr = (char*)name;
+    return _ksys_file(&f);
 }
 
 /*===================== Function 70, subfunction 3 =====================*/
 /*=========== Write to existing file with long names support. ==========*/
 
-KOSAPI ksys70_status_t _ksys_file_write(const char* name, uint64_t offset, uint32_t size, const void* buf)
+KOSAPI ksys_file_status_t _ksys_file_write(const char* name, uint64_t offset, uint32_t size, const void* buf)
 {
-    ksys70_t k;
-    k.p00 = 3;
-    k.p04 = offset;
-    k.p12 = size;
-    k.cbuf16 = buf;
-    k.p20 = 0;
-    k.p21 = name;
-    return _ksys70(&k);
+    ksys_file_t f;
+    f.func_num = KSYS_FILE_WRITE;
+    f.offset64 = offset;
+    f.data_size = size;
+    f.data = (void*)buf;
+    f.zero = 0;
+    f.path_ptr = (char*)name;
+    return _ksys_file(&f);
+}
+
+/*========== Function 70, subfunction 4 - set file size. =====*/
+
+KOSAPI int _ksys_file_set_size(const char* name, uint64_t size)
+{
+    ksys_file_t f;
+    f.func_num = KSYS_FILE_SET_SIZE;
+    f.offset64 = size;
+    f.data_size = 0;
+    f.data = NULL;
+    f.zero = 0;
+    f.path_ptr = (char*)name;
+    return _ksys_file(&f).status;
 }
 
 /*========== Function 70, subfunction 5 - get information on file/folder. =====*/
 
-KOSAPI int _ksys_file_info(const char* name, ksys_bdfe_t* bdfe)
+KOSAPI int _ksys_file_info(const char* name, ksys_file_info_t* info)
 {
-    ksys70_t k;
-    k.p00 = 5;
-    k.p04dw = 0;
-    k.p08dw = 0;
-    k.p12 = 0;
-    k.bdfe = bdfe;
-    k.p20 = 0;
-    k.p21 = name;
-    return _ksys70(&k).status;
+    ksys_file_t f;
+    f.func_num = KSYS_FILE_GET_INFO;
+    f.offset64 = 0;
+    f.data_size = 0;
+    f.data = (void*)info;
+    f.zero = 0;
+    f.path_ptr = (char*)name;
+    return _ksys_file(&f).status;
+}
+
+#define _ksys_dir_info _ksys_file_info
+
+KOSAPI uint64_t _ksys_file_get_size(const char* name, int* err)
+{
+    ksys_file_info_t info;
+    *err = _ksys_file_info(name, &info);
+    return info.size;
 }
 
 #define _ksys_dir_info _ksys_file_info
 
 /*=========== Function 70, subfunction 7 - start application. ===========*/
 
-KOSAPI int _ksys_exec(const char* app_name, char* args)
+KOSAPI int _ksys_exec(const char* path, char* args, bool debug)
 {
-    ksys70_t file_opt;
-    file_opt.p00 = 7;
-    file_opt.p04dw = 0;
-    file_opt.p08dw = (uint32_t)args;
-
-    file_opt.p12 = 0;
-    file_opt.p16 = 0;
-    file_opt.p20 = 0;
-
-    file_opt.p21 = app_name;
-    return _ksys70(&file_opt).status;
+    ksys_file_t f;
+    f.func_num = KSYS_FILE_EXEC;
+    f.debug = debug;
+    f.args = args;
+    f.zero = 0;
+    f.path_ptr = (char*)path;
+    return _ksys_file(&f).status;
 }
 
 /*========== Function 70, subfunction 8 - delete file/folder. ==========*/
 
-KOSAPI int _ksys_file_delete(const char* name)
+KOSAPI int _ksys_file_delete(const char* path)
 {
-    ksys70_t k;
-    k.p00 = 8;
-    k.p20 = 0;
-    k.p21 = name;
-    return _ksys70(&k).status;
+    ksys_file_t f;
+    f.func_num = KSYS_FILE_REMOVE;
+    f.offset64 = 0;
+    f.data_size = 0;
+    f.data = NULL;
+    f.zero = 0;
+    f.path_ptr = (char*)path;
+    return _ksys_file(&f).status;
 }
 
 /*============= Function 70, subfunction 9 - create folder. =============*/
 
 KOSAPI int _ksys_mkdir(const char* path)
 {
-    ksys70_t dir_opt;
-    dir_opt.p00 = 9;
-    dir_opt.p21 = path;
-    return _ksys70(&dir_opt).status;
+    ksys_file_t f;
+    f.func_num = KSYS_FILE_CREATE_DIR;
+    f.offset64 = 0;
+    f.data_size = 0;
+    f.data = NULL;
+    f.zero = 0;
+    f.path_ptr = (char*)path;
+    return _ksys_file(&f).status;
 }
 
 /*============= Function 70, subfunction 10 - rename/move. =============*/
 
 KOSAPI int _ksys_file_rename(const char* name, const char* new_name)
 {
-    ksys70_t k;
-    k.p00 = 10;
-    k.new_name = new_name;
-    k.p20 = 0;
-    k.p21 = name;
-    return _ksys70(&k).status;
+    ksys_file_t f;
+    f.func_num = KSYS_FILE_REMOVE;
+    f.data = (void*)new_name;
+    f.data_size = 0;
+    f.zero = 0;
+    f.path_ptr = (char*)name;
+    return _ksys_file(&f).status;
 }
 
 #define _ksys_dir_rename _ksys_file_rename
@@ -1705,25 +1752,6 @@ KOSAPI int _ksys_posix_pipe2(int pipefd[2], int flags)
         : "a"(77), "b"(13), "c"(pipefd), "d"(flags)
         : "memory");
     return err;
-}
-
-/* ######### Old names of functions and structures. Do not use again! ##########*/
-
-#define _ksys_get_event     _ksys_wait_event
-#define _ksys_file_get_info _ksys_file_info
-
-static inline int _ksys_file_read_file(const char* name, unsigned long long offset, unsigned size, void* buff, unsigned* bytes_read)
-{
-    ksys70_status_t res = _ksys_file_read(name, offset, size, buff);
-    *bytes_read = res.rw_bytes;
-    return res.status;
-}
-
-static inline int _ksys_file_write_file(const char* name, unsigned long long offset, unsigned size, const void* buff, unsigned* bytes_write)
-{
-    ksys70_status_t res = _ksys_file_write(name, offset, size, buff);
-    *bytes_write = res.rw_bytes;
-    return res.status;
 }
 
 #ifdef __cplusplus

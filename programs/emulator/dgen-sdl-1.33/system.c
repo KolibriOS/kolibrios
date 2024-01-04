@@ -6,7 +6,9 @@
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
+#ifndef _KOLIBRI
 #include <dirent.h>
+#endif
 #include <ctype.h>
 #ifndef __MINGW32__
 #include <sys/types.h>
@@ -658,6 +660,7 @@ static void free_pppc(char ***pppc, size_t skip)
  */
 static char **complete_path_simple(const char *path, size_t len)
 {
+#ifndef _KOLIBRI
 	size_t rlen;
 	const char *cpl;
 	char *root;
@@ -742,10 +745,11 @@ error:
 			free(*(ret++));
 		free(ret);
 	}
+#endif
 	return NULL;
 }
 
-#if defined(HAVE_GLOB_H) && !defined(__MINGW32__) && !defined(_KOLIBRI)
+#if defined(HAVE_GLOB_H) && !defined(__MINGW32__)
 
 #define COMPLETE_USERDIR_TILDE 0x01
 #define COMPLETE_USERDIR_EXACT 0x02

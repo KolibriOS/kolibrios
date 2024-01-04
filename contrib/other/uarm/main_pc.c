@@ -11,7 +11,8 @@
 //#include <sys/select.h>
 #include <signal.h>
 //#include <termios.h>
-#include <sys/kos_LoadConsole.h>
+
+#include <conio.h>
 
 #define getch2 con_getch
 #define cprintf printf
@@ -95,8 +96,6 @@ static int readchar(void){
 		if (ret==0xD) {ret=0xA;}
 		}
 
-
-
 	return ret;
 }
 
@@ -165,8 +164,8 @@ int rootOps(void* userData, UInt32 sector, void* buf, UInt8 op){
 SoC soc;
 
 int main(int argc, char** argv){
-	load_console();
 	con_set_title("uARM");
+
 	//CONSOLE_INIT("CONSOLE");
 
 /*	

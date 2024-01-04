@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <setjmp.h>
-#include <sys/kos_io.h>
 
 struct app_hdr
 {

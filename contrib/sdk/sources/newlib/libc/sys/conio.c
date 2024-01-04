@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) KolibriOS team 2004-2024. All rights reserved.
+ * Distributed under terms of the GNU General Public License
+*/
+
 #include <_ansi.h>
 #include <stdio.h>
 #include <sys/unistd.h>
@@ -16,28 +21,8 @@ static int console_read(const char *path, void *buff,
            size_t offset, size_t count, size_t *done)
 {
     char *p = buff;
-    /*int   cnt = 0;
-    short c;
-    char  ch;*/
     con_gets(p, count+1);
     *done = strlen(p);
-
-//   __asm__ volatile("int3");
-/*
-    do
-    {
-        c = con_getch2();
-        printf("%d\n",(char)c);
-        ch = (char)c;
-        if(ch != 0)
-        {
-            p[cnt] = ch != 0x0D ? ch : 0x0A;
-            con_write_string(p+cnt, 1);
-            cnt++;
-        }
-    }while(ch != 0x0D);
-    *done = cnt;
-*/
     return 0;
 }
 
@@ -48,7 +33,7 @@ static int console_write(const char *path, const void *buff,
 
     *writes = count;
     return 0;
-};
+}
 
 void __init_conio()
 {

@@ -355,7 +355,6 @@ import libc,\
     _cosf,'cosf',\
     _cosh,'cosh',\
     _coshf,'coshf',\
-    _create_file,'create_file',\
     _create_image,'create_image',\
     _create_thread,'create_thread',\
     _ctime,'ctime',\
@@ -429,7 +428,6 @@ import libc,\
     _gammaf,'gammaf',\
     _gammaf_r,'gammaf_r',\
     _get_entry_point,'get_entry_point',\
-    _get_fileinfo,'get_fileinfo',\
     _get_proc_address,'get_proc_address',\
     _getenv,'getenv',\
     _gettimeofday,'gettimeofday',\
@@ -550,7 +548,6 @@ import libc,\
     _rand,'rand',\
     _rand_r,'rand_r',\
     _read,'read',\
-    _read_file,'read_file',\
     _realloc,'realloc',\
     _remainder,'remainder',\
     _remainderf,'remainderf',\
@@ -570,7 +567,6 @@ import libc,\
     _scalbn,'scalbn',\
     _scalbnf,'scalbnf',\
     _seed48,'seed48',\
-    _set_file_size,'set_file_size',\
     _setjmp,'setjmp',\
     _setlocale,'setlocale',\
     _setvbuf,'setvbuf',\
@@ -665,7 +661,6 @@ import libc,\
     _wctrans,'wctrans',\
     _wctype,'wctype',\
     _write,'write',\
-    _write_file,'write_file',\
     _y0,'y0',\
     _y0f,'y0f',\
     _y1,'y1',\

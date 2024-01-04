@@ -13,7 +13,7 @@
  * they apply.
  */
 #include <sys/stat.h>
-#include <sys/kos_io.h>
+#include <sys/ksys.h>
 #include <errno.h>
 #include <time.h>
 #include <string.h>
@@ -28,16 +28,16 @@ _DEFUN (stat, (path, buf),
        struct stat *buf)
 {
 
-    fileinfo_t info;
+    ksys_file_info_t info;
     struct tm time;
 
-    if( get_fileinfo(path, &info))
+    if (_ksys_file_info(path, &info))
     {
         errno = ENOENT;
         return (-1);
-    };
+    }
 
-    memset (buf, 0, sizeof (* buf));
+    memset(buf, 0, sizeof (*buf));
 
     buf->st_size = info.size;
 
@@ -91,4 +91,3 @@ _DEFUN (lstat, (path, buf),
 {
     return stat(path, buf);
 }
-

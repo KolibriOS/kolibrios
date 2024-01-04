@@ -116,10 +116,9 @@ CORE_SRCS:=                   			\
 			sys/clock_gettime.c	\
 			sys/close.c		\
 			sys/conio.c		\
-			sys/create.c         	\
+			sys/chdir.c 	\
+			sys/getcwd.c	\
 			sys/errno.c		\
-			sys/finfo.c          	\
-			sys/fsize.c          	\
 			sys/fstat.c		\
 			sys/gettod.c		\
 			sys/io.c		\
@@ -473,16 +472,6 @@ STDIO_SRCS=					\
 			wscanf.c		\
 			wsetup.c
 
-DIRENT_SRCS=	dir.c \
-		closedir.c \
-		opendir.c \
-		readdir.c \
-		rewinddir.c \
-		seekdir.c \
-		telldir.c \
-		scandir.c \
-		alphasort.c	
-
 MATH_SRCS = 	e_acos.c e_acosh.c e_asin.c e_atan2.c e_atanh.c e_cosh.c e_exp.c e_fmod.c	\
 		e_hypot.c e_j0.c e_j1.c e_jn.c e_log.c e_log10.c e_pow.c e_rem_pio2.c 		\
 		e_remainder.c e_scalb.c e_sinh.c e_sqrt.c ef_acos.c ef_acosh.c ef_asin.c	\
@@ -538,9 +527,6 @@ STRING_OBJS =  $(patsubst %.S, string/%.o, $(patsubst %.asm, string/%.o,\
 
 STDLIB_OBJS =  $(patsubst %.S, stdlib/%.o, $(patsubst %.asm, stdlib/%.o,\
                $(patsubst %.c, stdlib/%.o, $(STDLIB_SRCS))))
-
-DIRENT_OBJS =  $(patsubst %.S, dirent/%.o, $(patsubst %.asm, dirent/%.o,\
-               $(patsubst %.c, dirent/%.o, $(DIRENT_SRCS))))
 
 MATH_OBJS =  $(patsubst %.S, math/%.o, $(patsubst %.asm, math/%.o,\
                $(patsubst %.c, math/%.o, $(MATH_SRCS))))

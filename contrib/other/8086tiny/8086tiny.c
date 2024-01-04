@@ -276,16 +276,14 @@ void audio_callback(void *data, unsigned char *stream, int len)
 }
 #endif
 
-#include <sys/kos_LoadConsole.h>
+#include <conio.h>
 #define kbhit con_kbhit
 #define getch con_getch
 
 // Emulator entry point
 int main(int argc, char **argv)
 {
-    load_console();
     con_set_title("8086tiny");
-    
     //freopen("OUT", "w" ,stdout);
 #ifndef NO_GRAPHICS
 	// Initialise SDL

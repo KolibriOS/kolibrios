@@ -15,7 +15,6 @@
 #include <errno.h>
 #include <unistd.h>
 #include <alloca.h>
-#include <sys/kos_io.h>
 #include "io.h"
 
 #undef erro

@@ -15,7 +15,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/unistd.h>
-#include <sys/kos_io.h>
+#include <sys/ksys.h>
 #include <sys/stat.h>
 #include "glue.h"
 #include "io.h"
@@ -25,7 +25,7 @@ _DEFUN (fstat, (fd, buf),
        int fd _AND
        struct stat *buf)
 {
-    fileinfo_t info;
+    ksys_file_info_t info;
     struct tm time;
 
     __io_handle *ioh;
@@ -33,8 +33,8 @@ _DEFUN (fstat, (fd, buf),
     if( (fd < 0) || (fd >=64) )
     {
         errno = EBADF;
-        return (-1);
-    };
+        return -1;
+    }
 
     memset (buf, 0, sizeof (* buf));
 
@@ -47,7 +47,7 @@ _DEFUN (fstat, (fd, buf),
     {
 
         ioh = &__io_tab[fd];
-        get_fileinfo(ioh->name, &info);
+        _ksys_file_info(ioh->name, &info);
 
         if (info.attr & 0x10)
             buf->st_mode = S_IFDIR;

@@ -200,6 +200,7 @@ public_jmp  con_gets2, 12
 public_jmp  con_cls, 0
 public_jmp  con_getch2, 0
 public_jmp  con_getch, 0
+public_jmp  con_kbhit, 0
 public_jmp  con_set_cursor_pos, 8
 public_jmp  con_get_cursor_pos, 8
 public_jmp  con_write_string, 8
@@ -257,6 +258,7 @@ import  console, \
         con_cls,        'con_cls', \
         con_getch2,     'con_getch2', \
         con_getch,      'con_getch', \
+        con_kbhit,      'con_kbhit', \
         con_set_cursor_pos, 'con_set_cursor_pos',\
         con_get_cursor_pos, 'con_get_cursor_pos', \
         con_write_string, 'con_write_string',\

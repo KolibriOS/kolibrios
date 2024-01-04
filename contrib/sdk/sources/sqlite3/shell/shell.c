@@ -102,7 +102,7 @@ typedef unsigned char u8;
 #  include <pwd.h>
 # endif
 #endif
-#if (!defined(_WIN32) && !defined(WIN32)) || defined(__MINGW32__)
+#if (!defined(_WIN32) && !defined(WIN32) && !defined (_KOLIBRI)) || defined(__MINGW32__)
 # include <unistd.h>
 # include <dirent.h>
 # define GETPID getpid
@@ -2209,7 +2209,9 @@ SQLITE_EXTENSION_INIT1
 #include <fcntl.h>
 #if !defined(_WIN32) && !defined(WIN32)
 #  include <unistd.h>
+#ifndef _KOLIBRI
 #  include <dirent.h>
+#endif
 #  include <utime.h>
 #  include <sys/time.h>
 #else
