@@ -3479,6 +3479,15 @@ ntfs_WriteFile:
         add     eax, [ebx+12]
         adc     edx, 0
         mov     [edi+fileRealSize], eax
+        cmp     edx, [edi+fileRealSize+4]
+        jc      @f
+        jnz     .resize
+        cmp     [edi+fileRealSize], eax
+        jnc     @f
+.resize:
+        mov     [edi+fileRealSize], eax
+        mov     [edi+fileRealSize+4], edx
+@@:
         mov     [edi+fileRealSize+4], edx
         push    edx eax ebx
         call    ntfsGetTime
