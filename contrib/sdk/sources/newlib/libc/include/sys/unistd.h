@@ -10,10 +10,11 @@ extern "C" {
 #define __need_ptrdiff_t
 #include <sys/cdefs.h>
 #include <sys/types.h>
+#include <sys/ksys.h>
 #include <sys/_types.h>
 #include <stddef.h>
 
-extern char **environ;
+//extern char **environ;
 
 void	_EXFUN(_exit, (int __status ) _ATTRIBUTE ((__noreturn__)));
 
@@ -165,7 +166,7 @@ _READ_WRITE_RETURN_TYPE _EXFUN(read, (int __fd, void *__buf, size_t __nbyte ));
 int	_EXFUN(rresvport, (int *__alport));
 int	_EXFUN(revoke, (char *__path));
 #endif
-int     _EXFUN(rmdir, (const char *__path ));
+#define rmdir(__path) _ksys_rmdir(__path)
 #if __BSD_VISIBLE
 int	_EXFUN(ruserok, (const char *rhost, int superuser, const char *ruser, const char *luser));
 #endif
@@ -244,10 +245,11 @@ int     _EXFUN(_execve, (const char *__path, char * const __argv[], char * const
 
 #if defined(__CYGWIN__) || defined(__rtems__) || defined(__aarch64__) || defined (__arm__) || defined(__sh__) || defined(__SPU__)
 #if !defined(__INSIDE_CYGWIN__)
-int     _EXFUN(ftruncate, (int __fd, off_t __length));
 int     _EXFUN(truncate, (const char *, off_t __length));
 #endif
 #endif
+
+int     _EXFUN(ftruncate, (int __fd, off_t __length));
 
 #if defined(__CYGWIN__) || defined(__rtems__)
 int	_EXFUN(getdtablesize, (void));

@@ -48,7 +48,7 @@ typedef union {
         uint8_t sec;
         uint8_t _zero;
     };
-} ksys_time_t;
+} ksys_time_bcd_t;
 
 typedef union {
     uint32_t val;
@@ -58,7 +58,7 @@ typedef union {
         uint8_t day;
         uint8_t _zero;
     };
-} ksys_date_t;
+} ksys_date_bcd_t;
 
 typedef union {
     uint32_t val;
@@ -93,6 +93,7 @@ typedef struct {
             };
             union {
                 uint32_t flags;
+                uint32_t enc_name;
                 char* args;
             };
         };
@@ -113,18 +114,46 @@ typedef struct {
     uint32_t rw_bytes;
 } ksys_file_status_t;
 
+#define KSYS_FNAME_UTF8_SIZE 520
+#define KSYS_FNAME_CP866_SIZE 264
+
+typedef struct {
+    uint8_t sec;
+    uint8_t min;
+    uint8_t hour;
+    uint8_t _zero;
+} ksys_ftime_t;
+
+typedef struct {
+    uint8_t day;
+    uint8_t month;
+    uint16_t year;
+} ksys_fdate_t;
+
 typedef struct {
     uint32_t attr;
     uint32_t name_enc;
-    ksys_time_t ctime;
-    ksys_date_t cdate;
-    ksys_time_t atime;
-    ksys_date_t adate;
-    ksys_time_t mtime;
-    ksys_date_t mdate;
+    ksys_ftime_t ctime;
+    ksys_fdate_t cdate;
+    ksys_ftime_t atime;
+    ksys_fdate_t adate;
+    ksys_ftime_t mtime;
+    ksys_fdate_t mdate;
     uint64_t size;
     char name[0];
 } ksys_file_info_t;
+
+typedef struct  {
+    uint32_t version;
+    uint32_t blocks;
+    uint32_t files;
+    uint8_t  __reserved[20];
+} ksys_dir_entry_header_t;
+
+typedef struct {
+    ksys_dir_entry_header_t header;
+    ksys_file_info_t info;
+} ksys_dir_entry_t;
 
 #define KSYS_THREAD_INFO_SIZE 1024
 
@@ -424,15 +453,15 @@ KOSAPI ksys_oskey_t _ksys_get_key(void)
 
 /*==================== Function 3 - get system time. ===================*/
 
-KOSAPI ksys_time_t _ksys_get_time(void)
+KOSAPI ksys_time_bcd_t _ksys_get_time(void)
 {
-    ksys_time_t c_time;
+    ksys_time_bcd_t bcd_time;
     asm_inline(
         "int $0x40"
-        : "=a"(c_time)
+        : "=a"(bcd_time)
         : "a"(3)
         : "memory");
-    return c_time;
+    return bcd_time;
 }
 
 /*=================== Function 4 - draw text string. ===================*/
@@ -866,14 +895,14 @@ KOSAPI uint64_t _ksys_get_ns_count(void)
 
 /*=================== Function 29 - get system date. ===================*/
 
-KOSAPI ksys_date_t _ksys_get_date(void)
+KOSAPI ksys_date_bcd_t _ksys_get_date(void)
 {
-    ksys_date_t val;
+    ksys_date_bcd_t bcd_date;
     asm_inline(
         "int $0x40"
-        : "=a"(val)
+        : "=a"(bcd_date)
         : "a"(29));
-    return val;
+    return bcd_date;
 }
 
 /*===========+ Function 30 - work with the current folder.==============*/
@@ -1528,6 +1557,20 @@ KOSAPI ksys_file_status_t _ksys_file_read(const char* name, uint64_t offset, uin
     return _ksys_file(&f);
 }
 
+KOSAPI ksys_file_status_t _ksys_file_read_dir(const char* name, uint32_t offset,
+                                              uint32_t enc, uint32_t blocks, void* buff)
+{
+    ksys_file_t f;
+    f.func_num = KSYS_FILE_READ_DIR;
+    f.offset = offset;
+    f.enc_name = enc;
+    f.data_size = blocks;
+    f.data = buff;
+    f.zero = 0;
+    f.path_ptr = (char*)name;
+    return _ksys_file(&f);
+}
+
 /*===================== Function 70, subfunction 2 =====================*/
 /*============ Create/rewrite file with long names support. ============*/
 
@@ -1573,6 +1616,15 @@ KOSAPI int _ksys_file_set_size(const char* name, uint64_t size)
 }
 
 /*========== Function 70, subfunction 5 - get information on file/folder. =====*/
+
+enum KSYS_FILE_ATTR {
+    KSYS_FILE_ATTR_RO = 0x1,
+    KSYS_FILE_ATTR_HIDDEN = 0x2,
+    KSYS_FILE_ATTR_SYS = 0x4,
+    KSYS_FILE_ATTR_VOL_LABEL = 0x8,
+    KSYS_FILE_ATTR_DIR = 0x10,
+    KSYS_FILE_ATTR_ARCHIVE = 0x20
+};
 
 KOSAPI int _ksys_file_info(const char* name, ksys_file_info_t* info)
 {
@@ -1623,6 +1675,8 @@ KOSAPI int _ksys_file_delete(const char* path)
     f.path_ptr = (char*)path;
     return _ksys_file(&f).status;
 }
+
+#define _ksys_rmdir(x) _ksys_file_delete(x)
 
 /*============= Function 70, subfunction 9 - create folder. =============*/
 

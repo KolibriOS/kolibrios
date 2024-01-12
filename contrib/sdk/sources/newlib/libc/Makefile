@@ -133,6 +133,7 @@ CORE_SRCS:=                   			\
 			sys/unlink.c		\
 			sys/write.c          	\
 			sys/io_alloc.S		\
+			sys/ftruncate.c		\
 			time/asctime.c       	\
 			time/asctime_r.c     	\
 			time/clock.c         	\
@@ -508,6 +509,13 @@ MATH_SRCS = 	e_acos.c e_acosh.c e_asin.c e_atan2.c e_atanh.c e_cosh.c e_exp.c e_
 		f_log10.S f_log10f.S f_logf.S f_tan.S f_tanf.S
 
 
+POSIX_SRCS =	opendir.c \
+		closedir.c \
+		readdir.c \
+		seekdir.c \
+		telldir.c \
+		rewinddir.c
+
 STATIC_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(STATIC_SRCS)))
 
 LIBCRT_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(LIBCRT_SRCS)))
@@ -531,6 +539,7 @@ STDLIB_OBJS =  $(patsubst %.S, stdlib/%.o, $(patsubst %.asm, stdlib/%.o,\
 MATH_OBJS =  $(patsubst %.S, math/%.o, $(patsubst %.asm, math/%.o,\
                $(patsubst %.c, math/%.o, $(MATH_SRCS))))
 
+POSIX_OBJS =  $(patsubst %.c, posix/%.o, $(POSIX_SRCS))
 
 PRINTF_OBJS= 	stdio/vfprintf.o	\
 		stdio/vfiprintf.o	\
@@ -563,7 +572,8 @@ LIB_SRCS+=				\
 		$(CORE_SRCS)		\
 		$(STDIO_SRCS) 		\
 		$(STRING_SRCS)		\
-		$(STDLIB_SRCS)
+		$(STDLIB_SRCS)		\
+		$(POSIX_SRCS)
 
 LIB_OBJS+=				\
 		$(CORE_OBJS) 		\
@@ -572,7 +582,7 @@ LIB_OBJS+=				\
 		$(STDIO_OBJS) 		\
 		$(PRINTF_OBJS)		\
 		$(MATH_OBJS)		\
-		$(DIRENT_OBJS)
+		$(POSIX_OBJS)
 
 LIB_OBJS+= time/wcsftime.o
 

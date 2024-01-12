@@ -116,6 +116,7 @@ CORE_SRCS = {
   "sys/unlink.c",
   "sys/write.c",
   "sys/io_alloc.S",
+  "sys/ftruncate.c",
   "time/asctime.c",
   "time/asctime_r.c",
   "time/clock.c",
@@ -453,6 +454,14 @@ STDIO_SRCS = {
   "wscanf.c",
   "wsetup.c"
 }
+POSIX_SRCS = {
+  "opendir.c",
+  "closedir.c",
+  "readdir.c",
+  "seekdir.c",
+  "telldir.c",
+  "rewinddir.c"
+}
 
 MATH_SRCS = {
   "e_acos.c", "e_acosh.c", "e_asin.c", "e_atan2.c", "e_atanh.c", "e_cosh.c", "e_exp.c", "e_fmod.c",
@@ -505,6 +514,7 @@ LIB_SRCS += CORE_SRCS
 LIB_SRCS += prepend("stdio/", STDIO_SRCS)
 LIB_SRCS += prepend("string/", STRING_SRCS)
 LIB_SRCS += prepend("stdlib/", STDLIB_SRCS)
+LIB_SRCS += prepend("posix/", POSIX_SRCS)
 LIB_SRCS += prepend("math/", MATH_SRCS)
 
 ALL_OBJS = {}
