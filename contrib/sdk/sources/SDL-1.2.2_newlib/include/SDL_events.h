@@ -34,7 +34,6 @@ static char rcsid =
 #include "SDL_active.h"
 #include "SDL_keyboard.h"
 #include "SDL_mouse.h"
-#include "SDL_joystick.h"
 #include "SDL_quit.h"
 
 #include "begin_code.h"

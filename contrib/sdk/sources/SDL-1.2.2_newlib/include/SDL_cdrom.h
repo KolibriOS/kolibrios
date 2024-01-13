@@ -30,6 +30,8 @@ static char rcsid =
 #ifndef _SDL_cdrom_h
 #define _SDL_cdrom_h
 
+#include <stddef.h>
+
 #include "SDL_types.h"
 
 #include "begin_code.h"
@@ -42,6 +44,8 @@ extern "C" {
    with the SDL_INIT_CDROM flag.  This causes SDL to scan the system
    for CD-ROM drives, and load appropriate drivers.
 */
+
+#warning "CD-ROM support in SDL is not implemented for KolibriOS. All functions are stubs!"
 
 /* The maximum number of CD-ROM tracks on a disk */
 #define SDL_MAX_TRACKS	99
@@ -99,7 +103,10 @@ typedef struct SDL_CD {
 /* Returns the number of CD-ROM drives on the system, or -1 if
    SDL_Init() has not been called with the SDL_INIT_CDROM flag.
  */
-extern DECLSPEC int SDL_CDNumDrives(void);
+static inline DECLSPEC int SDL_CDNumDrives(void)
+{
+	return -1;
+}
 
 /* Returns a human-readable, system-dependent identifier for the CD-ROM.
    Example:
@@ -107,7 +114,10 @@ extern DECLSPEC int SDL_CDNumDrives(void);
 	"E:"
 	"/dev/disk/ide/1/master"
 */
-extern DECLSPEC const char * SDL_CDName(int drive);
+static inline DECLSPEC const char * SDL_CDName(int drive)
+{
+	return NULL;
+}
 
 /* Opens a CD-ROM drive for access.  It returns a drive handle on success,
    or NULL if the drive was invalid or busy.  This newly opened CD-ROM
@@ -115,13 +125,19 @@ extern DECLSPEC const char * SDL_CDName(int drive);
    CD-ROM handle.
    Drives are numbered starting with 0.  Drive 0 is the system default CD-ROM.
 */
-extern DECLSPEC SDL_CD * SDL_CDOpen(int drive);
+static inline DECLSPEC SDL_CD * SDL_CDOpen(int drive)
+{
+	return NULL;
+}
 
 /* This function returns the current status of the given drive.
    If the drive has a CD in it, the table of contents of the CD and current
    play position of the CD will be stored in the SDL_CD structure.
 */
-extern DECLSPEC CDstatus SDL_CDStatus(SDL_CD *cdrom);
+static inline DECLSPEC CDstatus SDL_CDStatus(SDL_CD *cdrom)
+{
+	return CD_ERROR;
+}
 
 /* Play the given CD starting at 'start_track' and 'start_frame' for 'ntracks'
    tracks and 'nframes' frames.  If both 'ntrack' and 'nframe' are 0, play 
@@ -142,29 +158,49 @@ extern DECLSPEC CDstatus SDL_CDStatus(SDL_CD *cdrom);
 
    This function returns 0, or -1 if there was an error.
 */
-extern DECLSPEC int SDL_CDPlayTracks(SDL_CD *cdrom,
-		int start_track, int start_frame, int ntracks, int nframes);
+static inline DECLSPEC int SDL_CDPlayTracks(SDL_CD *cdrom,
+		int start_track, int start_frame, int ntracks, int nframes)
+{
+	return CD_ERROR;
+}
 
 /* Play the given CD starting at 'start' frame for 'length' frames.
    It returns 0, or -1 if there was an error.
 */
-extern DECLSPEC int SDL_CDPlay(SDL_CD *cdrom, int start, int length);
+static inline DECLSPEC int SDL_CDPlay(SDL_CD *cdrom, int start, int length)
+{
+	return CD_ERROR;
+}
 
 /* Pause play -- returns 0, or -1 on error */
-extern DECLSPEC int SDL_CDPause(SDL_CD *cdrom);
+static inline DECLSPEC int SDL_CDPause(SDL_CD *cdrom)
+{
+	return CD_ERROR;	
+}
 
 /* Resume play -- returns 0, or -1 on error */
-extern DECLSPEC int SDL_CDResume(SDL_CD *cdrom);
+static inline DECLSPEC int SDL_CDResume(SDL_CD *cdrom)
+{
+	return CD_ERROR;
+}
 
 /* Stop play -- returns 0, or -1 on error */
-extern DECLSPEC int SDL_CDStop(SDL_CD *cdrom);
+static inline DECLSPEC int SDL_CDStop(SDL_CD *cdrom)
+{
+	return CD_ERROR;
+}
 
 /* Eject CD-ROM -- returns 0, or -1 on error */
-extern DECLSPEC int SDL_CDEject(SDL_CD *cdrom);
+static inline DECLSPEC int SDL_CDEject(SDL_CD *cdrom)
+{
+	return CD_ERROR;
+}
 
 /* Closes the handle for the CD-ROM drive */
-extern DECLSPEC void SDL_CDClose(SDL_CD *cdrom);
-
+static inline DECLSPEC void SDL_CDClose(SDL_CD *cdrom)
+{
+	/* STUB! */
+}
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus
