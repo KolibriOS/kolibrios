@@ -73,7 +73,7 @@ _DEFUN (_findenv, (name, offset),
 	register _CONST char *name _AND
 	int *offset)
 {
-  return NULL; //_findenv_r (_REENT, name, offset);
+  return _findenv_r (_REENT, name, offset);
 }
 
 /*
@@ -86,8 +86,7 @@ _DEFUN (getenv, (name),
 	_CONST char *name)
 {
   int offset;
-
-  return NULL; //_findenv_r (_REENT, name, &offset);
+  return _findenv_r (_REENT, name, &offset);
 }
 
 #endif /* !_REENT_ONLY */

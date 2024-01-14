@@ -182,6 +182,7 @@ STDLIB_SRCS=                 			\
     		gdtoa-gethex.c      	\
     		gdtoa-hexnan.c       	\
     		getenv.c             	\
+    		envlock.c             	\
 			getenv_r.c		\
 			itoa.c			\
 			ldiv.c			\

@@ -85,6 +85,37 @@ _DEFUN (_findenv_r, (reent_ptr, name, offset),
 	register _CONST char *name _AND
 	int *offset)
 {
+  register int len;
+  register char **p;
+  _CONST char *c;
+
+  ENV_LOCK;
+
+  /* In some embedded systems, this does not get set.  This protects
+     newlib from dereferencing a bad pointer.  */
+  if (!*p_environ)
+    {
+      ENV_UNLOCK;
+      return NULL;
+    }
+
+  c = name;
+  while (*c && *c != '=')  c++;
+ 
+  /* Identifiers may not contain an '=', so cannot match if does */
+  if(*c != '=')
+    {
+    len = c - name;
+    for (p = *p_environ; *p; ++p)
+      if (!strncmp (*p, name, len))
+        if (*(c = *p + len) == '=')
+	{
+	  *offset = p - *p_environ;
+	  ENV_UNLOCK;
+	  return (char *) (++c);
+	}
+    }
+  ENV_UNLOCK;
   return NULL;
 }
 
@@ -100,6 +131,5 @@ _DEFUN (_getenv_r, (reent_ptr, name),
 {
   int offset;
 
-  return NULL;
-//  return _findenv_r (reent_ptr, name, &offset);
+  return _findenv_r (reent_ptr, name, &offset);
 }

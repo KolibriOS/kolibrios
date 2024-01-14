@@ -165,6 +165,7 @@ STDLIB_SRCS = {
   "gdtoa-hexnan.c",
   "getenv.c",
   "getenv_r.c",
+  "envlock.c",
   "itoa.c",
   "ldiv.c",
   "labs.c",

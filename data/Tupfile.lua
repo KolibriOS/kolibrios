@@ -60,6 +60,7 @@ img_files = {
  {"SETTINGS/NETWORK.INI", "common/settings/network.ini"},
  {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
  {"SETTINGS/TASKBAR.INI", "common/settings/taskbar.ini"},
+ {"SETTINGS/SYSTEM.ENV", "common/settings/system.env"},
 }
 
 -- For russian build, add russian-only files.

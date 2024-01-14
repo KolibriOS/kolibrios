@@ -34,6 +34,11 @@ struct app_hdr
     int  (*main)(int argc, char **argv, char **envp);
 };
 
+#define ENV_SIZE 16
+/* TODO: Make it dynamic?* */
+static char* __environ[ENV_SIZE] = {0};
+char **environ = &__environ[0];
+
 extern void _pei386_runtime_relocator (void);
 extern void init_loader(void *libc_image);
 extern void init_global_reent(void);
@@ -46,13 +51,18 @@ extern void* get_entry_point(void *raw);
 
 extern void tls_init(void);
 
-char* __appenv;
-int   __appenv_size;
-
-
-char * __libc_getenv(const char *name)
+void init_environ(void)
 {
-    return NULL;
+    ksys_ufile_t envfile = _ksys_load_file("/sys/settings/system.env");
+    if (!envfile.data || !envfile.size)
+        return;
+
+    char *pch = strtok((char*)envfile.data, " \n\t");
+    for (size_t env_pos = 0; pch != NULL && env_pos < ENV_SIZE-1; env_pos++)
+    {
+        environ[env_pos] = pch;
+        pch = strtok(NULL, " \n\t");
+    }
 }
 
 static int split_cmdline(char *cmdline, char **argv)
@@ -210,7 +220,9 @@ void  libc_crt_startup (void *libc_base)
     }
     argv[argc] = NULL;
 
-    retval = header->main(argc, argv, NULL);
+    init_environ();
+
+    retval = header->main(argc, argv, environ);
 done:
     if(header->__subsystem__ == 3)
         __fini_conio();
