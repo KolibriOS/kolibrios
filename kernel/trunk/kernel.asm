@@ -2432,6 +2432,8 @@ sys_cpuusage:
   .no_who_am_i:
         cmp     ecx, max_processes
         ja      .nofillbuf
+        test    ecx, ecx        ; slot 0 is empty, kernel threads start from 1
+        jz      .nofillbuf
 
 ; +4: word: position of the window of thread in the window stack
         mov     ax, [WIN_STACK + ecx * 2]
