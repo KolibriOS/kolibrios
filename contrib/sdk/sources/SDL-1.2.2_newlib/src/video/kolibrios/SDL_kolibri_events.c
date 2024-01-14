@@ -137,8 +137,6 @@ void kos_PumpEvents(_THIS)
     SDL_keysym key;
     static int ext_code = 0;
     static uint8_t old_mode = 0;
-   // static uint32_t old_mouse_but = 0;
-    static uint32_t mouse_but = 0;
      
     while (1) {
         kos_event = _ksys_check_event();
@@ -189,9 +187,11 @@ void kos_PumpEvents(_THIS)
                 if (_ksys_get_button() == 1) exit(0);
                 break;
             case KSYS_EVENT_MOUSE: {
+                static uint32_t old_mouse_but = 0;
+
                 mouse_pos = _ksys_get_mouse_pos(KSYS_MOUSE_WINDOW_POS);
                 if (mouse_pos.x >= 0 && mouse_pos.x < this->hidden->win_size_x &&
-                    mouse_pos.y >= 0 && mouse_pos.y < this->hidden->win_size_y || 
+                    mouse_pos.y >= 0 && mouse_pos.y < this->hidden->win_size_y ||
                     this->input_grab != SDL_GRAB_OFF) {
      
                     if (this->input_grab != SDL_GRAB_OFF) {
@@ -205,25 +205,32 @@ void kos_PumpEvents(_THIS)
                         SDL_PrivateMouseMotion(0, 0, mouse_pos.x, mouse_pos.y);
                     }
 
-                    mouse_but = _ksys_get_mouse_buttons();
-                    if (mouse_but & KSYS_MOUSE_LBUTTON_PRESSED) {
-                        SDL_PrivateMouseButton(SDL_PRESSED, SDL_BUTTON_LEFT, 0, 0);
-                        return;
-                    } else {
-                        SDL_PrivateMouseButton(SDL_RELEASED, SDL_BUTTON_LEFT, 0, 0);
+                    uint32_t mouse_but = _ksys_get_mouse_buttons();
+                    if ((mouse_but ^ old_mouse_but) & KSYS_MOUSE_LBUTTON_PRESSED) {
+                        if(mouse_but & KSYS_MOUSE_LBUTTON_PRESSED) {
+                            SDL_PrivateMouseButton(SDL_PRESSED,SDL_BUTTON_LEFT,0,0);
+                        } else {
+                            SDL_PrivateMouseButton(SDL_RELEASED,SDL_BUTTON_LEFT,0,0);
+                        }
                     }
-                    if (mouse_but & KSYS_MOUSE_RBUTTON_PRESSED) {
-                        SDL_PrivateMouseButton(SDL_PRESSED, SDL_BUTTON_RIGHT, 0, 0);
-                        return;
-                    } else {
-                        SDL_PrivateMouseButton(SDL_RELEASED, SDL_BUTTON_RIGHT, 0, 0);
+
+                    if ((mouse_but ^ old_mouse_but) & KSYS_MOUSE_RBUTTON_PRESSED) {
+                        if(mouse_but & KSYS_MOUSE_RBUTTON_PRESSED) {
+                            SDL_PrivateMouseButton(SDL_PRESSED,SDL_BUTTON_RIGHT,0,0);
+                        } else {
+                            SDL_PrivateMouseButton(SDL_RELEASED,SDL_BUTTON_RIGHT,0,0);
+                        }
                     }
-                    if (mouse_but & KSYS_MOUSE_MBUTTON_PRESSED) {
-                        SDL_PrivateMouseButton(SDL_PRESSED, SDL_BUTTON_MIDDLE, 0, 0);
-                        return;
-                    } else {
-                        SDL_PrivateMouseButton(SDL_RELEASED, SDL_BUTTON_MIDDLE, 0, 0);
+
+                    if ((mouse_but ^ old_mouse_but) & KSYS_MOUSE_MBUTTON_PRESSED) {
+                        if(mouse_but & KSYS_MOUSE_MBUTTON_PRESSED) {
+                            SDL_PrivateMouseButton(SDL_PRESSED,SDL_BUTTON_MIDDLE,0,0);
+                        } else {
+                            SDL_PrivateMouseButton(SDL_RELEASED,SDL_BUTTON_MIDDLE,0,0);
+                        }
                     }
+
+                    old_mouse_but = mouse_but;
                 }
             }
         }
