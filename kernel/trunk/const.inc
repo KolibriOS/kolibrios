@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -218,6 +218,17 @@ struct  TSS
         _io_map_1   rb 4096
 ends
 
+struct kernel_header
+        jump       rb 3  ; jmp start_of_code
+        signature  rb 10 ; 'KolibriOS '
+        version    rb 19 ; ASCII string
+        b32_offset dd ?  ; offset of the 32-bit entry point in kernel binary
+
+; uefi4kos adds the kernel's load address to the offset above and jumps directly
+; to 32-bit entry point, skipping the real mode code part. This way the same
+; KERNEL.MNT file can be booted on BIOS as well as on UEFI.
+ends
+
 DRIVE_DATA_SIZE     = 16
 
 OS_BASE             = 0x80000000
@@ -225,9 +236,9 @@ OS_BASE             = 0x80000000
 window_data         = OS_BASE + 0x0001000
 background_window   = window_data + sizeof.WDATA
 
-;CDDataBuf           = OS_BASE + 0x0005000
-
 BOOT_VARS           = 0x9000
+KERNEL_BASE         = 0x10000
+RAMDISK_BASE        = 0x100000
 
 idts                = OS_BASE + 0x000B100
 WIN_STACK           = OS_BASE + 0x000C000
@@ -248,11 +259,11 @@ MEM_AMOUNT          = OS_BASE + 0x000FE8C
 SYS_SHUTDOWN        = OS_BASE + 0x000FF00
 
 
-TMP_STACK_TOP       = 0x007CC00
+TMP_STACK_TOP       = 0x008CC00
 
-sys_proc            = OS_BASE + 0x007E000
+sys_proc            = OS_BASE + 0x008E000
 
-SLOT_BASE           = OS_BASE + 0x0080000
+SLOT_BASE           = OS_BASE + 0x0090000
 
 VGABasePtr          = OS_BASE + 0x00A0000
 

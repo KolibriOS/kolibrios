@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.
 ;; Kernel programmers are acknowledged in CREDITS.TXT
 ;;
 ;; Data in this file was originally part of MenuetOS project which is
@@ -36,7 +36,8 @@ USE_COM_IRQ     = 1      ; make irq 3 and irq 4 available for PCI devices
 VESA_1_2_VIDEO  = 0      ; enable vesa 1.2 bank switch functions
 
 ; Enabling the next line will enable serial output console
-;debug_com_base  = 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
+;debug_com_base  = 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3,
+                          ; 0x2e8 is com4, no irq's are used
 
 include "proc32.inc"
 include "kglobals.inc"
@@ -89,49 +90,12 @@ pci_data_sel   =  pci_data_32-gdts
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; In bios boot mode the kernel code below is appended to bootbios.bin file.
 ; That is a loading and initialization code that also draws the blue screen
-; menu with svn revision number near top right corner of the screen. This fasm
-; preprocessor code searches for '****' signature inside bootbios.bin and
-; places revision number there.
-if ~ defined UEFI
-  bootbios:
-  if defined extended_primary_loader
-    file 'bootbios.bin.ext_loader'
-  else if defined pretest_build
-    file 'bootbios.bin.pretest'
-  else
-    file 'bootbios.bin'
-  end if
-  if __REV__ > 0
-    cur_pos = 0
-    cnt = 0
-    repeat $ - bootbios
-      load a byte from %
-      if a = '*'
-        cnt = cnt + 1
-      else
-        cnt = 0
-      end if
-      if cnt = 4
-        cur_pos = % - 1
-        break
-      end if
-    end repeat
-    store byte ' ' at cur_pos + 1
-    rev_var = __REV__
-    while rev_var > 0
-      store byte rev_var mod 10 + '0' at cur_pos
-      cur_pos = cur_pos - 1
-      rev_var = rev_var / 10
-    end while
-      store byte ' ' at cur_pos
-      store dword ' SVN' at cur_pos - 4
-  end if
-end if
+; menu with svn revision number near top right corner of the screen.
+include "bootbios.inc"
 
 use32
-org $+0x10000
+org $+KERNEL_BASE
 
 align 4
 B32:

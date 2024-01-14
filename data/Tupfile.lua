@@ -930,7 +930,7 @@ raw_files = {
  {"EFI/BOOT/BOOTIA32.EFI", "../kernel/trunk/bootloader/uefi4kos/bootia32.efi"},
  {"EFI/KOLIBRIOS/KOLIBRI.IMG", "kolibri.img"},
  {"EFI/KOLIBRIOS/KOLIBRI.INI", "../kernel/trunk/bootloader/uefi4kos/kolibri.ini"},
- {"EFI/KOLIBRIOS/KOLIBRI.KRN", "../kernel/trunk/kolibri.krn"}
+ {"EFI/KOLIBRIOS/KOLIBRI.KRN", "../kernel/trunk/kernel.mnt.ext_loader"}
 }
 
 for i,v in ipairs(img_files) do

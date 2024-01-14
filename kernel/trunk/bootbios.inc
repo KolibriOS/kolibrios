@@ -1,14 +1,16 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
-;;                  16 BIT ENTRY FROM BOOTSECTOR                        ;;
-;;                                                                      ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-include 'macros.inc'
-include 'struct.inc'
-include 'lang.inc'
-include 'encoding.inc'
-include 'const.inc'
+$Revision$
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;;                  16 BIT ENTRY FROM BOOTSECTOR                ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 os_code = code_l - tmp_gdt
 if defined pretest_build
@@ -18,35 +20,31 @@ else
 end if
 
 use16
-                  org   0x0
-        jmp     start_of_code
+org 0
+        ; struct kernel_header
+        jmp     start_of_code   ; jump
+        db      'KolibriOS '    ; signature
+        db      'v0.7.7.0+     ',13,10,13,10,0  ; version
+        dd      B32-KERNEL_BASE ; offset of the kernel's 32-bit entry point
 
-if lang eq sp
-include "kernelsp.inc"  ; spanish kernel messages
-else if lang eq et
-version db    'Kolibri OS  versioon 0.7.7.0+    ',13,10,13,10,0
-else
-version db    'Kolibri OS  version 0.7.7.0+     ',13,10,13,10,0
-end if
-
-include "boot/bootstr.inc"     ; language-independent boot messages
+include "boot/bootstr.inc"      ; language-independent boot messages
 include "boot/preboot.inc"
 
 if lang eq ge
-include "boot/bootge.inc"     ; german system boot messages
+include "boot/bootge.inc"       ; german system boot messages
 else if lang eq sp
-include "boot/bootsp.inc"     ; spanish system boot messages
+include "boot/bootsp.inc"       ; spanish system boot messages
 else if lang eq ru
-include "boot/bootru.inc"      ; russian system boot messages
-include "boot/ru.inc"          ; Russian font
+include "boot/bootru.inc"       ; russian system boot messages
+include "boot/ru.inc"           ; Russian font
 else if lang eq et
-include "boot/bootet.inc"      ; estonian system boot messages
-include "boot/et.inc"          ; Estonian font
+include "boot/bootet.inc"       ; estonian system boot messages
+include "boot/et.inc"           ; Estonian font
 else
-include "boot/booten.inc"      ; english system boot messages
+include "boot/booten.inc"       ; english system boot messages
 end if
 
-include "boot/bootcode.inc"    ; 16 bit system boot code
+include "boot/bootcode.inc"     ; 16 bit system boot code
 include "bus/pci/pci16.inc"
 include "detect/biosdisk.inc"
 
@@ -100,7 +98,7 @@ align 8
 tmp_gdt:
 
         dw     23
-        dd     tmp_gdt+0x10000
+        dd     tmp_gdt+KERNEL_BASE
         dw     0
 code_l:
         dw     0xffff
@@ -118,11 +116,5 @@ code_l:
 include "data16.inc"
 
 if ~ lang eq sp
-diff16 "end of bootcode",0,$+0x10000
+diff16 "end of bootcode",0,$+KERNEL_BASE
 end if
-
-use32
-org $+0x10000
-
-align 4
-B32:

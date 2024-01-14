@@ -55,15 +55,13 @@ APIC_init:
         cmp     [acpi_lapic_base], 0
         jz      .no_apic
 
-; non-UEFI loaders don't load DEVICES.DAT and don't initialize [acpi_dev_size]
-if defined UEFI
+; non-UEFI loaders don't load DEVICES.DAT but they zero out [acpi_dev_size]
         cmp     [acpi_dev_size], 0
         jz      @f
         stdcall map_io_mem, [acpi_dev_data], [acpi_dev_size], PG_SWR
         mov     [acpi_dev_data], eax
         jmp     .loaded
 @@:
-end if
 
         stdcall load_file, dev_data_path
         test    eax, eax

@@ -1389,7 +1389,6 @@ init_display:
         mov     [edi + display_t.cr_list.next], ecx
         mov     [edi + display_t.cr_list.prev], ecx
 
-if ~defined UEFI
         cmp     [SCR_MODE], word 0x12
         jne     .not_vga
         ; TODO
@@ -1409,7 +1408,6 @@ if ~defined UEFI
         jmp     .set
 
 .not_ega:
-end if
         mov     ebx, restore_32
         mov     ecx, move_cursor_32
         mov     edx, Vesa20_putpixel32_new

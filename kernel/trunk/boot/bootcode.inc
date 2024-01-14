@@ -480,6 +480,40 @@ sayerr:
 apm_end:
         _setcursor d80x25_top_num, 0
 
+; --------------- ACPI ---------------------
+ACPI_LO_RSDP_WINDOW_END    = 0x000A0000
+ACPI_HI_RSDP_WINDOW_START  = 0x000E0000
+
+acpi:
+        xor     eax, eax
+        mov     [es:BOOT_LO.devicesdat_data], eax
+        mov     [es:BOOT_LO.devicesdat_size], eax
+        mov     [es:BOOT_LO.acpi_rsdp], eax
+        push    ds
+        mov     ds, ax
+        mov     ax, word [40Eh]
+        add     ax, 64
+.check:
+        mov     ds, ax
+        cmp     [ds:0], dword 'RSD '
+        jne     .next
+        cmp     [ds:4], dword 'PTR '
+        jne     .next
+        shl     eax, 4
+        mov     [es:BOOT_LO.acpi_rsdp], eax
+        jmp     .end
+.next:
+        inc     ax
+        ; skip VRAM and ROM area A0000h to E0000h
+        cmp     ax, (ACPI_LO_RSDP_WINDOW_END shr 4)
+        jne     @f
+        add     ax, ((ACPI_HI_RSDP_WINDOW_START - ACPI_LO_RSDP_WINDOW_END) shr 4)
+@@:     ; end of 1Mb?
+        or      ax, ax
+        jnz     .check
+.end:
+        pop     ds
+
 if ~ defined extended_primary_loader
 ;CHECK current of code
         cmp     [cfgmanager.loader_block], -1

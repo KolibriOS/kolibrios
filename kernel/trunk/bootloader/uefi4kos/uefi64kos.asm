@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2020-2021. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2020-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;; Version 2, or (at your option) any later version.            ;;
 ;;                                                              ;;
@@ -28,8 +28,6 @@ PROTOCOL_HANDLERS_BUFFER_SIZE = 0x100
 FILE_BUFFER_SIZE = 0x1000
 
 KERNEL_TRAMPOLINE = 0x8f80      ; just before BOOT_LO
-KERNEL_BASE  =  0x10000
-RAMDISK_BASE = 0x100000
 MAX_FILE_SIZE = 0x10000000
 
 CODE_32_SELECTOR = 8
@@ -55,7 +53,7 @@ proc load_file _root, _name, _buffer, _size, _fatal
                 r11, EFI_FILE_MODE_READ, 0
         test    eax, eax
         jz      @f
-        mov	[_size], 0
+        mov     [_size], 0
         cmp     [_fatal], 1
         jnz     .done
         mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
@@ -297,7 +295,7 @@ proc read_options_from_config
                 sfsp_interface
         test    eax, eax
         jz      @f
-        mov    rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
+        mov     rcx, [rbx+EFI_SYSTEM_TABLE.ConOut]
         fstcall [rcx+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.OutputString], rcx, \
                 msg_error_lip_dev_sfsp
         jmp     $
@@ -1010,7 +1008,10 @@ org KERNEL_TRAMPOLINE
         and     eax, not CR4_PAE
         mov     cr4, eax
 
-        push    KERNEL_BASE
+        mov     eax, KERNEL_BASE
+        ; add the 32-bit entry point
+        add     eax, [eax+kernel_header.b32_offset]
+        push    eax
         retn
 
 align 16

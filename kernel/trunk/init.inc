@@ -410,8 +410,6 @@ proc test_cpu
         ret
 endp
 
-ACPI_HI_RSDP_WINDOW_START  = 0x000E0000
-ACPI_HI_RSDP_WINDOW_END    = 0x00100000
 ACPI_RSDP_CHECKSUM_LENGTH  = 20
 
 proc acpi_locate_tables uses ebx esi edi
@@ -475,27 +473,11 @@ acpi_locate:
         push    ebx
         push    edi
 
-if defined UEFI
-        ; UEFI loader knows where RSDP is
         mov     ebx, [BOOT_LO.acpi_rsdp]
         test    ebx, ebx
         jz      .done
+        mov     edi, ebx
         call    .check
-else
-        movzx   ebx, word [0x40E]
-        shl     ebx, 4
-        lea     ecx, [ebx+1024]
-        call    .check
-
-        test    ebx, ebx
-        jz      @F
-        jmp     .done
-
-@@:
-        mov     ebx, ACPI_HI_RSDP_WINDOW_START
-        mov     edi, ACPI_HI_RSDP_WINDOW_END
-        call    .check
-end if
 .done:
         mov     [acpi_rsdp_base - OS_BASE], ebx
         test    ebx, ebx
