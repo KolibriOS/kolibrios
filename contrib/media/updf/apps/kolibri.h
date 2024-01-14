@@ -93,11 +93,32 @@ void	*data;
 } kol_struct_import;
 #pragma pack(pop)
 
+#pragma pack(push, 1)
+struct proc_info
+{
+        unsigned long cpu_usage;
+        unsigned short pos_in_stack;
+        unsigned short slot;
+        unsigned short reserved2;
+        char name[12];
+        unsigned long address;
+        unsigned long memory_usage;
+        unsigned long ID;
+        unsigned long left,top;
+        unsigned long width,height;
+        unsigned short thread_state;
+        unsigned short reserved3;
+        unsigned long cleft, ctop, cwidth, cheight;
+        unsigned char window_state;
+        unsigned char reserved4[1024-71];
+};
+#pragma pack(pop)
 
 void kol_exit();
 void kol_sleep(unsigned d);
 void kol_wnd_define(unsigned x, unsigned y, unsigned w, unsigned h, unsigned cs, unsigned b, char *t);
 void kol_wnd_caption(char *s);
+void kol_wnd_change(int new_x, int new_y, int new_w, int new_h);
 void kol_event_mask(unsigned e);
 unsigned kol_event_wait();
 unsigned kol_event_wait_time(unsigned time);

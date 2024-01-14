@@ -12,7 +12,7 @@ LIBPATH = -L $(SDK_DIR)/lib -L /home/autobuild/tools/win32/mingw32/lib -L ../lib
 APPS_SRC := kolibri.c kos_main.c pdfapp.c
 
 default: $(patsubst %.c,%.o,$(APPS_SRC))
-	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem native -o updf kolibri.o pdfapp.o kos_main.o -lmupdf -lfitz -lgcc -lfitz -ldraw -ljpeg -ljbig2dec -lfreetype -lopenjpeg -lz -lc.dll
+	$(LD) $(LDFLAGS) $(LIBPATH) --subsystem native -o updf kolibri.o pdfapp.o kos_main.o -lmupdf -lfitz -lgcc -lfitz -ldraw -ljpeg -ljbig2dec -lfreetype -lopenjpeg -lz.dll -lc.dll
 	objcopy updf -O binary
 
 

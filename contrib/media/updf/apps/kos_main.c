@@ -1,6 +1,5 @@
 /*==== INCLUDES ====*/
 
-#include <kos32sys.h>
 #include "fitz.h"
 #include "mupdf.h"
 #include "pdfapp.h"
@@ -132,10 +131,10 @@ void winblit(pdfapp_t *app)
 
 	gapp.panx = 0;
 	
-	kos_blit(window_center + Form.cleft, 
-		Form.ctop + TOOLBAR_HEIGHT, 
-		Form.cwidth, 
-		Form.cheight - TOOLBAR_HEIGHT, 
+	kos_blit(window_center + Form.cleft,
+		Form.ctop + TOOLBAR_HEIGHT,
+		Form.cwidth,
+		Form.cheight - TOOLBAR_HEIGHT,
 		gapp.panx, 
 		gapp.pany, 
 		gapp.image->w, 
@@ -172,7 +171,7 @@ void DrawPageSides(void)
 	}
 	
 	kol_paint_bar(window_center - 1, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT, draw_w, 1, DOCUMENT_BORDER);
-	kol_paint_bar(window_center - 1, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT + 1, 
+	kol_paint_bar(window_center - 1, gapp.image->h - gapp.pany + TOOLBAR_HEIGHT + 1,
 		draw_w, Form.cheight - gapp.image->h - TOOLBAR_HEIGHT + gapp.pany - 1, DOCUMENT_BG);
 }
 
@@ -201,7 +200,7 @@ void HandleNewPageNumber(unsigned char key)
 		ApplyNewPageNumber();
 		return;
 	}
-	if (key==ASCII_KEY_ESC) 
+	if (key==ASCII_KEY_ESC)
 	{
 		key_mode_enter_page_number = 0;
 		DrawMainWindow();
@@ -234,7 +233,7 @@ void DrawPagination(void)
 void DrawToolbarButton(int x, char image_id)
 {
 	kol_btn_define(x, 5, 26-1, 24-1, 10 + image_id + BT_HIDE, 0);
-	draw_bitmap(image_id * 24 * 26 * 3 + toolbar_image, x, 5, 26, 24);
+	kol_paint_image(x, 5, 26, 24, image_id * 24 * 26 * 3 + toolbar_image);
 }
 
 void DrawMainWindow(void)
@@ -376,22 +375,22 @@ int main (int argc, char* argv[])
 
 	for(;;)
 	{
-		switch(get_os_event())
+		switch(kol_event_wait())
 		{
 			case evReDraw:
 				// gapp.shrinkwrap = 2;
-				BeginDraw();
+				kol_paint_start();
 				kol_wnd_define(screen_max_x / 2 - 350-50+kos_random(50), 
 				screen_max_y / 2 - 300-50+kos_random(50), 
 				700, 600, 0x73000000, 0x800000FF, Title);
-				EndDraw();
-				get_proc_info((char*)&Form);
+				kol_paint_end();
+				kol_process_info(-1, (char*)&Form);
 				
-				if (Form.window_state > 2) continue; // if Rolled-up
+				if (Form.window_state & 4) continue; // if Rolled-up
 				
 				// Minimal size (700x600)
-				if (Form.width < 700) sys_change_window(OLD, OLD, 700, OLD);
-				if (Form.height < 600) sys_change_window(OLD, OLD, OLD, 600);
+				if (Form.width < 700) kol_wnd_change(-1, -1, 700, -1);
+				if (Form.height < 600)  kol_wnd_change(-1, -1, -1, 600);
 				
 				DrawMainWindow();
 				break;
@@ -418,14 +417,14 @@ int main (int argc, char* argv[])
 				break;
 
 			case evButton:
-				butt = get_os_button();
+				butt = kol_btn_get();
 				if(butt==1) exit(0);
 				if(butt==10) RunOpenApp(argv[0]);
 				if(butt==11) PageZoomOut(); //magnify -
 				if(butt==12) PageZoomIn(); //magnify +
 				if(butt==13) //show help
 				{
-					kol_paint_bar(0, TOOLBAR_HEIGHT, Form.cwidth, Form.cheight - TOOLBAR_HEIGHT, 0xF2F2F2);	
+					kol_paint_bar(0, TOOLBAR_HEIGHT, Form.cwidth, Form.cheight - TOOLBAR_HEIGHT, 0xF2F2F2);
 					kos_text(20, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
 					kos_text(21, TOOLBAR_HEIGHT + 20      , 0x90000000, "uPDF for KolibriOS v1.2", 0);
 					for (ii=0; help[ii]!=0; ii++) {

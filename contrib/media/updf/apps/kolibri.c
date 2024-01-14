@@ -27,6 +27,12 @@ void kol_wnd_define(unsigned x, unsigned y, unsigned w, unsigned h, unsigned cs,
 asm volatile ("int $0x40"::"a"(0), "b"(x*65536+w), "c"(y*65536+h), "d"(cs), "D"(t), "S"(b) );
 }
 
+void kol_wnd_change(int new_x, int new_y, int new_w, int new_h)
+{
+    asm volatile("int $0x40" ::"a"(67), "b"(new_x), "c"(new_y), "d"(new_w),"S"(new_h));
+}
+
+
 void kol_event_mask(unsigned e)
 {
 asm volatile ("int $0x40"::"a"(40), "b"(e));
@@ -137,7 +143,12 @@ asm volatile ("int $0x40"::"a"(66), "b"(2));
 
 unsigned kol_btn_get()
 {
-asm volatile ("int $0x40"::"a"(17));
+    unsigned val;
+    asm volatile(
+        "int $0x40"
+        : "=a"(val)
+        : "a"(17));
+    return val >> 8;
 }
 
 
