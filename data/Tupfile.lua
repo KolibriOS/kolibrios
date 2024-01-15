@@ -738,6 +738,7 @@ tup.append_table(img_files, {
 })
 tup.append_table(extra_files, {
 -- {"kolibrios/3D/cubeline", PROGS .. "/demos/cubeline/trunk/cubeline"},
+ {"kolibrios/3D/gears", PROGS .. "/demos/gears/gears"},
  {"kolibrios/emul/e80/e80", PROGS .. "/emulator/e80/trunk/e80"},
  {"kolibrios/emul/uarm/", "../contrib/other/uarm/uARM"},
  {"kolibrios/games/2048", PROGS .. "/games/2048/2048"},
