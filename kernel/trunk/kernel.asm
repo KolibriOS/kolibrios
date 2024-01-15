@@ -2412,18 +2412,10 @@ sys_cachetodiskette:
 align 4
 sys_cpuusage:
 
-;  RETURN:
-;
-;  +00 dword     process cpu usage
-;  +04  word     position in windowing stack
-;  +06  word     windowing stack value at current position (cpu nro)
-;  +10 12 bytes  name
-;  +22 dword     start in mem
-;  +26 dword     used mem
-;  +30 dword     PID , process idenfification number
+;  RETURN: process_information structure
 ;
         ; if given memory address belongs to kernel then error
-        stdcall is_region_userspace, ebx, 0x4C
+        stdcall is_region_userspace, ebx, sizeof.process_information
         jnz     .addr_error
 
         cmp     ecx, -1 ; who am I ?
@@ -2437,21 +2429,21 @@ sys_cpuusage:
 
 ; +4: word: position of the window of thread in the window stack
         mov     ax, [WIN_STACK + ecx * 2]
-        mov     [ebx+4], ax
+        mov     [ebx+process_information.window_stack_position], ax
 ; +6: word: number of the thread slot, which window has in the window stack
 ;           position ecx (has no relation to the specific thread)
         mov     ax, [WIN_POS + ecx * 2]
-        mov     [ebx+6], ax
+        mov     [ebx+process_information.window_stack_value], ax
 
         shl     ecx, BSF sizeof.APPDATA
 
 ; +0: dword: memory usage
         mov     eax, [SLOT_BASE + ecx + APPDATA.cpu_usage]
-        mov     [ebx], eax
+        mov     [ebx+process_information.cpu_usage], eax
 ; +10: 11 bytes: name of the process
         push    ecx
         lea     eax, [SLOT_BASE + ecx + APPDATA.app_name]
-        add     ebx, 10
+        add     ebx, process_information.process_name
         mov     ecx, 11
         call    memmove
         pop     ecx
