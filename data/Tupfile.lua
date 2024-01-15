@@ -879,7 +879,7 @@ for i,v in ipairs(img_files) do
     str = string.gsub(str, "%%", "%%%%") -- escape % as %%
     make_img_command = make_img_command .. " && cp " .. local_file .. " .kernel.mnt"
     make_img_command = make_img_command .. " && str=" .. str
-    make_img_command = make_img_command .. ' && echo -n $str | dd of=.kernel.mnt bs=1 seek=`expr 279 - length "$str"` conv=notrunc 2>/dev/null'
+    make_img_command = make_img_command .. ' && echo -n $str | dd of=.kernel.mnt bs=1 seek=`expr 274 - length "$str"` conv=notrunc 2>/dev/null'
     local_file = ".kernel.mnt"
     table.insert(output_deps, local_file)
   end
