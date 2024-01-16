@@ -115,9 +115,9 @@ B32:
         cld
         rep stosd
 
-; Clear kernel undefined globals and slots
+; Clear kernel undefined globals and some more (what exactly?)
         mov     edi, endofcode - OS_BASE
-        mov     ecx, VGABasePtr - endofcode    ; why uglobals_size isn't enough?
+        mov     ecx, 0x90000    ; why uglobals_size isn't enough?
         sub     ecx, edi
         shr     ecx, 2
         rep stosd
