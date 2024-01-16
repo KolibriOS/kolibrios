@@ -612,7 +612,7 @@ struct  WDATA
         draw_bgr_x      dd ?
         draw_bgr_y      dd ?
         draw_data       RECT
-        thread          dd ? ; prt APPDATA
+        thread          dd ? ; ptr APPDATA
                         rb 12
 ends
 

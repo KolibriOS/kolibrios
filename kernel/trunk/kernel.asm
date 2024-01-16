@@ -115,9 +115,9 @@ B32:
         cld
         rep stosd
 
-; CLEAR KERNEL UNDEFINED GLOBALS
+; Clear kernel undefined globals and slots
         mov     edi, endofcode - OS_BASE
-        mov     ecx, 0x90000
+        mov     ecx, VGABasePtr - endofcode    ; why uglobals_size isn't enough?
         sub     ecx, edi
         shr     ecx, 2
         rep stosd
@@ -219,8 +219,8 @@ high_code:
         mov     [pte_valid_mask], ebx
 
         xor     eax, eax
-        mov     dword [sys_proc + PROC.pdt_0], eax
-        mov     dword [sys_proc + PROC.pdt_0+4], eax
+        mov     [sys_proc + PROC.pdt_0], eax
+        mov     [sys_proc + PROC.pdt_0+4], eax
 
         mov     eax, cr3
         mov     cr3, eax          ; flush TLB
@@ -524,6 +524,16 @@ high_code:
 
         mov     [current_process], sys_proc
 
+        ; set all the threads state to free
+        mov     edi, SLOT_BASE
+        movi    eax, TSTATE_FREE
+        movi    ecx, max_processes
+@@:
+        mov     [edi+APPDATA.state], TSTATE_FREE
+        add     edi, sizeof.APPDATA
+        dec     ecx
+        jns     @b
+
         mov     edx, SLOT_BASE + sizeof.APPDATA*1
         mov     ebx, [os_stack_seg]
         add     ebx, RING0_STACK_SIZE
@@ -543,9 +553,9 @@ high_code:
         xor     ecx, ecx
         call    scheduler_add_thread
 
-        mov     dword [current_slot_idx], 2
+        mov     [current_slot_idx], 2
         mov     [thread_count], 2
-        mov     dword [current_slot], SLOT_BASE + sizeof.APPDATA*2
+        mov     [current_slot], SLOT_BASE + sizeof.APPDATA*2
 
 ; Move other CPUs to deep sleep, if it is useful
 uglobal
@@ -1071,12 +1081,12 @@ proc setup_os_slot
         inc     eax
         mov     [edx + APPDATA.io_map + 4], eax
 
-        mov     dword [edx + APPDATA.pl0_stack], ebx
+        mov     [edx + APPDATA.pl0_stack], ebx
         lea     edi, [ebx + RING0_STACK_SIZE]
-        mov     dword [edx + APPDATA.fpu_state], edi
-        mov     dword [edx + APPDATA.saved_esp0], edi
-        mov     dword [edx + APPDATA.saved_esp], edi
-        mov     dword [edx + APPDATA.terminate_protection], 1 ; make unkillable
+        mov     [edx + APPDATA.fpu_state], edi
+        mov     [edx + APPDATA.saved_esp0], edi
+        mov     [edx + APPDATA.saved_esp], edi
+        mov     [edx + APPDATA.terminate_protection], 1 ; make unkillable
 
         mov     esi, fpu_data
         mov     ecx, [xsave_area_size]
@@ -1085,14 +1095,14 @@ proc setup_os_slot
         rep movsd
 
         lea     eax, [edx + APP_EV_OFFSET]
-        mov     dword [edx + APPDATA.fd_ev], eax
-        mov     dword [edx + APPDATA.bk_ev], eax
+        mov     [edx + APPDATA.fd_ev], eax
+        mov     [edx + APPDATA.bk_ev], eax
 
         lea     eax, [edx + APP_OBJ_OFFSET]
-        mov     dword [edx + APPDATA.fd_obj], eax
-        mov     dword [edx + APPDATA.bk_obj], eax
+        mov     [edx + APPDATA.fd_obj], eax
+        mov     [edx + APPDATA.bk_obj], eax
 
-        mov     dword [edx + APPDATA.cur_dir], sysdir_path-2
+        mov     [edx + APPDATA.cur_dir], sysdir_path-2
 
         mov     [edx + APPDATA.process], sys_proc
 
@@ -1514,7 +1524,7 @@ sys_setup:
 ; 11 = enable lba read
 ; 12 = enable pci access
 ;-----------------------------------------------------------------------------
-        and     [esp + SYSCALL_STACK.eax], dword 0
+        and     [esp + SYSCALL_STACK.eax], 0
 ; F.21.1 - set MPU MIDI base port
         dec     ebx
         jnz     @f
@@ -1601,7 +1611,7 @@ sys_setup:
         ret
 ;--------------------------------------
 .error:
-        or      [esp + SYSCALL_STACK.eax], dword -1
+        or      [esp + SYSCALL_STACK.eax], -1
         ret
 ;-----------------------------------------------------------------------------
 align 4
@@ -1675,7 +1685,7 @@ sys_getsetup:
         ret
 
 .addr_error:    ; if given memory address is illegal
-        or      dword [esp + SYSCALL_STACK.eax], -1
+        or      [esp + SYSCALL_STACK.eax], -1
         ret
 ;--------------------------------------
 @@:
@@ -1725,7 +1735,7 @@ sys_getsetup:
         ret
 ;--------------------------------------
 .error:
-        or      [esp + SYSCALL_STACK.eax], dword -1
+        or      [esp + SYSCALL_STACK.eax], -1
         ret
 ;-----------------------------------------------------------------------------
 get_timer_ticks:
@@ -1930,7 +1940,7 @@ sysfn_shutdown:          ; 18.9 = system shutdown
         mov     [SYS_SHUTDOWN], al
         mov     [shutdown_processes], eax
         call    wakeup_osloop
-        and     dword [esp + SYSCALL_STACK.eax], 0
+        and     [esp + SYSCALL_STACK.eax], 0
 .exit_for_anyone:
         ret
   uglobal
@@ -2013,11 +2023,11 @@ sysfn_terminate2:
         call    sysfn_terminate
         call    unlock_application_table
         sti
-        and     dword [esp + SYSCALL_STACK.eax], 0
+        and     [esp + SYSCALL_STACK.eax], 0
         ret
 .not_found:
         call    unlock_application_table
-        or      dword [esp + SYSCALL_STACK.eax], -1
+        or      [esp + SYSCALL_STACK.eax], -1
         ret
 ;------------------------------------------------------------------------------
 sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
@@ -2213,7 +2223,7 @@ sysfn_getversion:       ; 18.13 = get kernel ID and version
         rep movsb
         ret
 .addr_error:    ; if given memory address is illegal
-        mov     dword [esp + SYSCALL_STACK.eax], -1
+        mov     [esp + SYSCALL_STACK.eax], -1
         ret
 ;------------------------------------------------------------------------------
 sysfn_waitretrace:     ; 18.14 = sys wait retrace
@@ -2223,7 +2233,7 @@ sysfn_waitretrace:     ; 18.14 = sys wait retrace
         in      al, dx
         test    al, 1000b
         jz      .loop
-        and     [esp + SYSCALL_STACK.eax], dword 0
+        and     [esp + SYSCALL_STACK.eax], 0
         ret
 ;------------------------------------------------------------------------------
 align 4
@@ -2406,7 +2416,7 @@ sys_cachetodiskette:
         mov     [esp + SYSCALL_STACK.eax], eax
         ret
 .no_floppy_save:
-        mov     [esp + SYSCALL_STACK.eax], dword 1
+        mov     [esp + SYSCALL_STACK.eax], 1
         ret
 ;------------------------------------------------------------------------------
 align 4
@@ -2421,12 +2431,24 @@ sys_cpuusage:
         cmp     ecx, -1 ; who am I ?
         jne     .no_who_am_i
         mov     ecx, [current_slot_idx]
-  .no_who_am_i:
+.no_who_am_i:
+        jecxz   .empty_slot
         cmp     ecx, max_processes
-        ja      .nofillbuf
-        test    ecx, ecx        ; slot 0 is empty, kernel threads start from 1
-        jz      .nofillbuf
-
+        ja      .empty_slot
+        mov     edx, ecx
+        shl     edx, BSF sizeof.APPDATA
+        cmp     [SLOT_BASE+edx+APPDATA.state], TSTATE_FREE
+        jnz     .thread_found
+.empty_slot:
+        ; zero buffer for an empty slot
+        push    edi
+        xor     eax, eax
+        mov     edi, ebx
+        movi    ecx, sizeof.process_information
+        rep stosb
+        pop     edi
+        jmp     .nofillbuf
+.thread_found:
 ; +4: word: position of the window of thread in the window stack
         mov     ax, [WIN_STACK + ecx * 2]
         mov     [ebx+process_information.window_stack_position], ax
@@ -2494,11 +2516,11 @@ sys_cpuusage:
         stosb
 
     ; Event mask (+71)
-        mov     eax, dword [SLOT_BASE + ecx + APPDATA.event_mask]
+        mov     eax, [SLOT_BASE + ecx + APPDATA.event_mask]
         stosd
 
     ; Keyboard mode (+75)
-        mov     al, byte [SLOT_BASE + ecx + APPDATA.keyboard_mode]
+        mov     al, [SLOT_BASE + ecx + APPDATA.keyboard_mode]
         stosb
 
         pop     esi
@@ -2512,7 +2534,7 @@ sys_cpuusage:
         ret
 
 .addr_error:    ; if given memory address is illegal
-        mov     dword [esp + SYSCALL_STACK.eax], -1
+        mov     [esp + SYSCALL_STACK.eax], -1
         ret
 
 
@@ -3461,7 +3483,7 @@ r_f_port_area:
 ;-----------------------------------------------------------------------------
 align 4
 drawbackground:
-        cmp     [BgrDrawMode], dword 1
+        cmp     [BgrDrawMode], 1
         jne     .bgrstr
         call    vesa20_drawbackground_tiled
         call    __sys_draw_pointer
@@ -4055,7 +4077,7 @@ sys_gs:                         ; direct screen access
         ja      .not_support
         jmp     dword [f61call + ebx*4]
 .not_support:
-        or      [esp + SYSCALL_STACK.eax], dword -1
+        or      [esp + SYSCALL_STACK.eax], -1
         ret
 
 
@@ -4380,7 +4402,8 @@ sys_apm:
         inc     eax
         or      dword [esp + 44], eax   ; error
         add     eax, 7
-        mov     dword [esp + SYSCALL_STACK.eax], eax   ; 32-bit protected-mode interface not supported
+        mov     [esp + SYSCALL_STACK.eax], eax  ; 32-bit protected-mode
+                                                ; interface not supported
         ret
 
 @@:
@@ -4426,7 +4449,7 @@ sys_apm:
 
 align 4
 undefined_syscall:                      ; Undefined system call
-        mov     [esp + SYSCALL_STACK.eax], dword -1
+        mov     [esp + SYSCALL_STACK.eax], -1
         ret
 
 align 4
