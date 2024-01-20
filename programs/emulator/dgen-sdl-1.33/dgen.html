@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    table.head, table.foot { width: 100%; }
+    td.head-rtitle, td.foot-os { text-align: right; }
+    td.head-vol { text-align: center; }
+    .Nd, .Bf, .Op { display: inline; }
+    .Pa, .Ad { font-style: italic; }
+    .Ms { font-weight: bold; }
+    .Bl-diag > dt { font-weight: bold; }
+    code.Nm, .Fl, .Cm, .Ic, code.In, .Fd, .Fn, .Cd { font-weight: bold;
+      font-family: inherit; }
+  </style>
+  <title>DGEN(1)</title>
+</head>
+<body>
+<table class="head">
+  <tr>
+    <td class="head-ltitle">DGEN(1)</td>
+    <td class="head-vol">General Commands Manual</td>
+    <td class="head-rtitle">DGEN(1)</td>
+  </tr>
+</table>
+<div class="manual-text">
+<section class="Sh">
+<h1 class="Sh" id="NAME"><a class="permalink" href="#NAME">NAME</a></h1>
+<p class="Pp"><code class="Nm">dgen</code> &#x2014; <span class="Nd">Sega
+    Genesis/Mega Drive emulator</span></p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SYNOPSIS"><a class="permalink" href="#SYNOPSIS">SYNOPSIS</a></h1>
+<table class="Nm">
+  <tr>
+    <td><code class="Nm">dgen</code></td>
+    <td>[<code class="Fl">-Pfhmv</code>] [<code class="Fl">-R</code>
+      <var class="Ar">(J|U|E)</var>] [<code class="Fl">-H</code>
+      <var class="Ar">HZ</var>] [<code class="Fl">-D</code>
+      <var class="Ar">DEMONAME</var>] [<code class="Fl">-d</code>
+      <var class="Ar">DEMONAME</var>] [<code class="Fl">-n</code>
+      <var class="Ar">USEC</var>] [<code class="Fl">-p</code>
+      <var class="Ar">CODE,CODE...</var>] [<code class="Fl">-r</code>
+      <var class="Ar">RCFILE</var>] [<code class="Fl">-X</code>
+      <var class="Ar">XFACT</var>] [<code class="Fl">-Y</code>
+      <var class="Ar">YFACT</var>] [<code class="Fl">-S</code>
+      <var class="Ar">FACT</var>] [<code class="Fl">-g</code>
+      <var class="Ar">(0|1)</var>] [<code class="Fl">-G</code>
+      <var class="Ar">XxY</var>] [<code class="Fl">-s</code>
+      <var class="Ar">SLOT</var>] <var class="Ar">[romname [...]]</var></td>
+  </tr>
+</table>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="DESCRIPTION"><a class="permalink" href="#DESCRIPTION">DESCRIPTION</a></h1>
+<p class="Pp">The ROM image in the file <var class="Ar">romname</var> is
+    executed, as emulated on a Sega Genesis or Mega Drive running in 60Hz NTSC
+    mode (unless the <code class="Fl">-P</code> option is specified, in which
+    case 50Hz PAL mode is used). <var class="Ar">romname</var> should be in raw
+    binary or SMD format, and may be compressed with <a class="Xr">gzip(1)</a>,
+    <a class="Xr">zip(1)</a>, or <a class="Xr">bzip2(1)</a>.</p>
+<p class="Pp">When <var class="Ar">romname</var> isn't specified, DGen starts
+    without a ROM. It can be loaded later from the prompt. When more than a
+    single <var class="Ar">romname</var> is specified, they are executed
+    sequentially.</p>
+<p class="Pp">The options are as follows:</p>
+<dl class="Bl-tag">
+  <dt id="H"><a class="permalink" href="#H"><code class="Fl">-H</code></a>
+    <var class="Ar">HZ</var></dt>
+  <dd>Use a custom frame rate, can be used to accelerate or slow down
+    emulation.</dd>
+  <dt id="P"><a class="permalink" href="#P"><code class="Fl">-P</code></a></dt>
+  <dd>Emulate 50Hz PAL mode (as used in European models of the Mega Drive).</dd>
+  <dt id="R"><a class="permalink" href="#R"><code class="Fl">-R</code></a>
+    <var class="Ar">(J|U|E)</var></dt>
+  <dd>Emulator region. Without this option, DGen uses the first region mentioned
+      in the ROM header. It should be combined with <code class="Fl">-P</code>
+      for PAL mode. See below.
+    <dl class="Bl-tag">
+      <dt>(none)</dt>
+      <dd>Autodetect (NTSC, 60Hz)</dd>
+      <dt id="P~2"><a class="permalink" href="#P~2"><code class="Fl">-P</code></a></dt>
+      <dd>Autodetect (PAL, 50Hz)</dd>
+      <dt id="R~2"><a class="permalink" href="#R~2"><code class="Fl">-R</code></a>
+        <var class="Ar">J</var></dt>
+      <dd>Japan (NTSC, 60Hz)</dd>
+      <dt id="R~3"><a class="permalink" href="#R~3"><code class="Fl">-R</code></a>
+        <var class="Ar">J</var> <code class="Fl">-P</code></dt>
+      <dd>Japan (PAL, 50Hz)</dd>
+      <dt id="R~4"><a class="permalink" href="#R~4"><code class="Fl">-R</code></a>
+        <var class="Ar">E</var></dt>
+      <dd>Europe (NTSC, 60Hz, music will certainly play too fast)</dd>
+      <dt id="R~5"><a class="permalink" href="#R~5"><code class="Fl">-R</code></a>
+        <var class="Ar">E</var> <code class="Fl">-P</code></dt>
+      <dd>Europe (PAL, 50Hz)</dd>
+      <dt id="R~6"><a class="permalink" href="#R~6"><code class="Fl">-R</code></a>
+        <var class="Ar">U</var></dt>
+      <dd>America (NTSC, 60Hz)</dd>
+      <dt id="R~7"><a class="permalink" href="#R~7"><code class="Fl">-R</code></a>
+        <var class="Ar">U</var> <code class="Fl">-P</code></dt>
+      <dd>Same as <code class="Fl">-R</code> <var class="Ar">E</var>
+          <code class="Fl">-P</code></dd>
+    </dl>
+  </dd>
+  <dt id="f"><a class="permalink" href="#f"><code class="Fl">-f</code></a></dt>
+  <dd>Run fullscreen, if possible.</dd>
+  <dt id="h"><a class="permalink" href="#h"><code class="Fl">-h</code></a></dt>
+  <dd>Show a brief synopsis of all options.</dd>
+  <dt id="m"><a class="permalink" href="#m"><code class="Fl">-m</code></a></dt>
+  <dd>MinGW only. This option prevents DGen from detaching from its control
+      console.</dd>
+  <dt id="v"><a class="permalink" href="#v"><code class="Fl">-v</code></a></dt>
+  <dd>Show the version number, and exit.</dd>
+  <dt id="D"><a class="permalink" href="#D"><code class="Fl">-D</code></a>
+    <var class="Ar">DEMONAME</var></dt>
+  <dd>Play back a demo recorded with the <code class="Fl">-d</code> option.</dd>
+  <dt id="d"><a class="permalink" href="#d"><code class="Fl">-d</code></a>
+    <var class="Ar">DEMONAME</var></dt>
+  <dd>Record a demo of the program running, which can be later replayed with the
+      <code class="Fl">-D</code> switch.</dd>
+  <dt id="n"><a class="permalink" href="#n"><code class="Fl">-n</code></a>
+    <var class="Ar">USEC</var></dt>
+  <dd>Sleep for a number of microseconds after every frame, to give time to
+      other processes.</dd>
+  <dt id="p"><a class="permalink" href="#p"><code class="Fl">-p</code></a>
+    <var class="Ar">CODE,CODE...</var></dt>
+  <dd>Modify the ROM image in memory, using Game Genie or Hex style codes. Game
+      Genie codes are of the form <var class="Ar">ABCD-EFGH</var> and Hex codes
+      are in the form <var class="Ar">123456:ABCD</var>. To specify more than
+      one code, separate them with commas (do <var class="Ar">not</var> use
+      spaces).</dd>
+  <dt id="r"><a class="permalink" href="#r"><code class="Fl">-r</code></a>
+    <var class="Ar">RCFILE</var></dt>
+  <dd>Parse another rc file after $HOME/.dgen/dgenrc. Values in the specified
+      file override those in the preceding files.</dd>
+  <dt id="X"><a class="permalink" href="#X"><code class="Fl">-X</code></a>
+    <var class="Ar">XFACT</var></dt>
+  <dd>Scale the window XFACT times in the X direction. XFACT must be a positive
+      integer.</dd>
+  <dt id="Y"><a class="permalink" href="#Y"><code class="Fl">-Y</code></a>
+    <var class="Ar">YFACT</var></dt>
+  <dd>Scale the window YFACT times in the Y direction. YFACT must be a positive
+      integer.</dd>
+  <dt id="S"><a class="permalink" href="#S"><code class="Fl">-S</code></a>
+    <var class="Ar">FACT</var></dt>
+  <dd>Scale the window FACT times in both directions. FACT must be a positive
+      integer.</dd>
+  <dt id="g"><a class="permalink" href="#g"><code class="Fl">-g</code></a>
+    <var class="Ar">(0|1)</var></dt>
+  <dd>Enable/disable OpenGL (if compiled-in).</dd>
+  <dt id="G"><a class="permalink" href="#G"><code class="Fl">-G</code></a>
+    <var class="Ar">XxY</var></dt>
+  <dd>Desired window size (e.g. 640x480, 800x600, etc.)</dd>
+  <dt id="s"><a class="permalink" href="#s"><code class="Fl">-s</code></a>
+    <var class="Ar">SLOT</var></dt>
+  <dd>Load the saved state from the given slot at startup (0-9)</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="INTERACTIVE_PROMPT"><a class="permalink" href="#INTERACTIVE_PROMPT">INTERACTIVE
+  PROMPT</a></h1>
+<p class="Pp">A minimalist interactive prompt inspired from
+    <a class="Xr">vi(1)</a> can be used to perform various operations described
+    below. It is triggered by pressing colon (:), the default key. Command-line
+    editing, history and completion are supported.</p>
+<section class="Ss">
+<h2 class="Ss" id="Commands"><a class="permalink" href="#Commands">Commands</a></h2>
+<dl class="Bl-tag">
+  <dt>{quit, exit, q}</dt>
+  <dd>Quit, or load the next <var class="Ar">romname</var> from command-line, if
+      any.</dd>
+  <dt>{load, open, plug, o} <var class="Ar">filename</var></dt>
+  <dd>Load a given ROM <var class="Ar">filename</var>.</dd>
+  <dt>{unload, close, unplug}</dt>
+  <dd>Unload the current ROM.</dd>
+  <dt>config_load <var class="Ar">filename</var></dt>
+  <dd>Load configuration from file <var class="Ar">filename</var>.</dd>
+  <dt>config_save <var class="Ar">filename</var></dt>
+  <dd>Save current configuration to file <var class="Ar">filename</var>.</dd>
+  <dt>reset</dt>
+  <dd>Genesis reset.</dd>
+  <dt>{ctv_push, ctv_pop, ctv_none}</dt>
+  <dd>Manage the stack of Crap TV filters (if compiled-in).</dd>
+  <dt>calibrate <var class="Ar">number</var></dt>
+  <dd>Interactive calibration of the specified gamepad (1 or 2). If
+      <var class="Ar">number</var> isn't specified, default to 1.</dd>
+  <dt>unbind <var class="Ar">binding [...]</var></dt>
+  <dd>Remove specified bindings (variables prefixed with &quot;bind_&quot;). See
+      <a class="Xr">dgenrc(5)</a> for more information about them.</dd>
+  <dt>vgmdump start <var class="Ar">filename</var></dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>vgmdump stop</dt>
+  <dd>Manages VGM dumping/logging. If the second argument is
+      <var class="Ar">start</var> VGM dumping will be started at the path
+      specified by the third argument. If the second argument is
+      <var class="Ar">stop</var> VGM dumping will be stopped and the dump
+      finalized.</dd>
+</dl>
+</section>
+<section class="Ss">
+<h2 class="Ss" id="Variables"><a class="permalink" href="#Variables">Variables</a></h2>
+<p class="Pp">All configuration variables from <a class="Xr">dgenrc(5)</a> can
+    be displayed and modified interactively, with immediate effect.</p>
+<dl class="Bl-tag">
+  <dt>{int_name, bool_name, key_name, joy_name, ...} {value}</dt>
+  <dd>Affect <var class="Ar">value</var> to variable
+    <var class="Ar">name</var>.</dd>
+  <dt>{int_name, bool_name, key_name, joy_name, ...}</dt>
+  <dd>Display current value for variable <var class="Ar">name</var>.</dd>
+</dl>
+</section>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="FILES"><a class="permalink" href="#FILES">FILES</a></h1>
+<dl class="Bl-tag Bl-compact">
+  <dt><span class="Pa">$HOME/.dgen/dgenrc</span></dt>
+  <dd>Contains user settings for the emulator.</dd>
+  <dt><span class="Pa">$HOME/.dgen/dgenrc.auto</span></dt>
+  <dd>Generated file containing saved user settings.</dd>
+  <dt><span class="Pa">$HOME/.dgen/saves/*</span></dt>
+  <dd>Save states generated by the emulator.</dd>
+  <dt><span class="Pa">$HOME/.dgen/ram/*</span></dt>
+  <dd>Battery-backup RAM images, generated by the emulator for ROMs with save
+      RAM.</dd>
+  <dt><span class="Pa">$HOME/.dgen/screenshots/*</span></dt>
+  <dd>Screenshots are generated there.</dd>
+  <dt><span class="Pa">$HOME/.dgen/roms/*</span></dt>
+  <dd>ROMs default search path.</dd>
+  <dt><span class="Pa">$HOME/.dgen/demos/*</span></dt>
+  <dd>Demos default search path.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SEE_ALSO"><a class="permalink" href="#SEE_ALSO">SEE
+  ALSO</a></h1>
+<p class="Pp"><a class="Xr">gzip(1)</a>, <a class="Xr">bzip2(1)</a>,
+    <a class="Xr">zip(1)</a>, <a class="Xr">dgenrc(5)</a></p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="AUTHORS"><a class="permalink" href="#AUTHORS">AUTHORS</a></h1>
+<p class="Pp">This manual page was written by <span class="An">Joe Groff</span>
+    &#x27E8;joe@pknet.com&#x27E9;.
+  <br/>
+  <span class="An">Updated by zamaz</span>
+    &#x27E8;zamaz@users.sourceforge.net&#x27E9;.</p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="BUGS"><a class="permalink" href="#BUGS">BUGS</a></h1>
+<p class="Pp">There are known emulation bugs, see BUGS in DGen source
+  package.</p>
+<p class="Pp">
+  <br/>
+  <span class="An">Report bugs to</span>
+    &#x27E8;http://sourceforge.net/projects/dgen/&#x27E9;.</p>
+</section>
+</div>
+<table class="foot">
+  <tr>
+    <td class="foot-date">July 26, 2014</td>
+    <td class="foot-os">Linux 6.6.9-arch1-1</td>
+  </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    table.head, table.foot { width: 100%; }
+    td.head-rtitle, td.foot-os { text-align: right; }
+    td.head-vol { text-align: center; }
+    .Nd, .Bf, .Op { display: inline; }
+    .Pa, .Ad { font-style: italic; }
+    .Ms { font-weight: bold; }
+    .Bl-diag > dt { font-weight: bold; }
+    code.Nm, .Fl, .Cm, .Ic, code.In, .Fd, .Fn, .Cd { font-weight: bold;
+      font-family: inherit; }
+  </style>
+  <title>DGENRC(5)</title>
+</head>
+<body>
+<table class="head">
+  <tr>
+    <td class="head-ltitle">DGENRC(5)</td>
+    <td class="head-vol">File Formats Manual</td>
+    <td class="head-rtitle">DGENRC(5)</td>
+  </tr>
+</table>
+<div class="manual-text">
+<section class="Sh">
+<h1 class="Sh" id="NAME"><a class="permalink" href="#NAME">NAME</a></h1>
+<p class="Pp"><code class="Nm">dgenrc</code> &#x2014; <span class="Nd">file
+    containing settings for <a class="Xr">dgen(1)</a></span></p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SYNOPSIS"><a class="permalink" href="#SYNOPSIS">SYNOPSIS</a></h1>
+<p class="Pp">$HOME/.dgen/dgenrc</p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="DESCRIPTION"><a class="permalink" href="#DESCRIPTION">DESCRIPTION</a></h1>
+<p class="Pp">The file <span class="Pa">$HOME/.dgen/dgenrc</span> is parsed by
+    <a class="Xr">dgen(1)</a> when the emuator is started. It is used to set
+    controller keys, as well as other characteristics of the emulation. The
+    contents of this file may be overriden with the contents of another
+    similarly-formatted file, via the <code class="Fl">-r</code> commandline
+    switch.</p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="FILE_FORMAT"><a class="permalink" href="#FILE_FORMAT">FILE
+  FORMAT</a></h1>
+<p class="Pp">Each rc file consists of an unlimited number of lines, which each
+    have the format 'fieldname = value'. A line may also be a comment, if it
+    begins with the hash mark (#) character.</p>
+<p class="Pp">Each <var class="Ar">fieldname</var> is prepended by a name, which
+    identifies the type of this field:</p>
+<dl class="Bl-tag">
+  <dt><var class="Ar">key_*</var></dt>
+  <dd>A key value. May be set to a key identifier listed in the
+      <a class="Sx" href="#KEY_IDENTIFIERS">KEY IDENTIFIERS</a> section
+    below.</dd>
+  <dt><var class="Ar">joy_*</var></dt>
+  <dd>A joystick/joypad value. May be set to a joystick identifier listed in the
+      <a class="Sx" href="#JOYSTICK_IDENTIFIERS">JOYSTICK IDENTIFIERS</a>
+      section below.</dd>
+  <dt><var class="Ar">mou_*</var></dt>
+  <dd>A mouse action. May be set to a mouse identifier listed in the
+      <a class="Sx" href="#MOUSE_IDENTIFIERS">MOUSE IDENTIFIERS</a> section
+      below.</dd>
+  <dt><var class="Ar">bool_*</var></dt>
+  <dd>A boolean value. &quot;false&quot;, &quot;no&quot;, and &quot;0&quot;
+      values are taken as false, while &quot;true&quot;, &quot;yes&quot;, and
+      any number except 0 are taken as true.</dd>
+  <dt><var class="Ar">int_*</var></dt>
+  <dd>An integer value, greater than or equal to 0.</dd>
+  <dt><var class="Ar">str_*</var></dt>
+  <dd>A string value, can be empty.</dd>
+</dl>
+<p class="Pp">Some fields take special value sets, which are addressed in their
+    respective sections. None of the field names or values are
+  case-sensitive.</p>
+<p class="Pp">The fields fall under a few basic groups. They are listed below,
+    with their default values in brackets ([]):</p>
+<p class="Pp">All of them can be modified interactively from the prompt, as
+    described in <a class="Xr">dgen(1)</a>.</p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="CONTROLLERS"><a class="permalink" href="#CONTROLLERS">CONTROLLERS</a></h1>
+<dl class="Bl-tag">
+  <dt>key_pad1_up [up]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_pad1_down [down]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_pad1_left [left]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_pad1_right [right]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_pad1_a [a]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_pad1_b [s]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_pad1_c [d]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_pad1_x [q]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_pad1_y [w]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_pad1_z [e]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_pad1_mode [backspace]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_pad1_start [return]</dt>
+  <dd>Map keys to the first Genesis controller. Each of these fields has a
+      corresponding &quot;key_pad2&quot; field, to map to the second
+    controller.</dd>
+  <dt>joy_pad1_up [joystick0-axis1-min]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_pad1_down [joystick0-axis1-max]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_pad1_left [joystick0-axis0-min]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_pad1_right [joystick0-axis0-max]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_pad1_a [joystick0-button0]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_pad1_b [joystick0-button3]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_pad1_c [joystick0-button1]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_pad1_x [joystick0-button6]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_pad1_y [joystick0-button4]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_pad1_z [joystick0-button5]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_pad1_mode [joystick0-button9]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_pad1_start [joystick0-button8]</dt>
+  <dd>Map joystick/joypad buttons to the first Genesis controller. Each of these
+      fields has a corresponding &quot;joy_pad2&quot; field, to map to the
+      second controller.</dd>
+  <dt>bool_joystick [true]</dt>
+  <dd>Use joysticks to emulate the controllers. Note that the keyboard keys will
+      still work if this value is set. This field is only available if you have
+      joystick support enabled.</dd>
+  <dt>int_mouse_delay [50]</dt>
+  <dd>Number of milliseconds to wait after the last mouse motion event to
+      release buttons bound to such events.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="USER-DEFINED_BINDINGS"><a class="permalink" href="#USER-DEFINED_BINDINGS">USER-DEFINED
+  BINDINGS</a></h1>
+<dl class="Bl-tag">
+  <dt>bind_{keysym} <var class="Ar">action</var></dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>bind_{joypad} <var class="Ar">action</var></dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>bind_{mouse} <var class="Ar">action</var></dt>
+  <dd>Defines a new keyboard, joystick/joypad or mouse binding to an arbitrary
+      action. These variables use the <var class="Ar">keysym</var> format as
+      defined in <a class="Sx" href="#KEY_IDENTIFIERS">KEY IDENTIFIERS</a>, the
+      <var class="Ar">joypad</var> format as defined in
+      <a class="Sx" href="#JOYSTICK_IDENTIFIERS">JOYSTICK IDENTIFIERS</a>, or
+      the <var class="Ar">mouse</var> format as defined in
+      <a class="Sx" href="#MOUSE_IDENTIFIERS">MOUSE IDENTIFIERS</a>. When
+      <var class="Ar">action</var> is prefixed with &quot;key_&quot;,
+      &quot;joy_&quot; or &quot;mou_&quot;, it becomes an alias to the
+      corresponding variable in
+      <a class="Sx" href="#CONTROLLERS">CONTROLLERS</a>. Otherwise, it is
+      interpreted as if entered at the prompt, and can be used to modify
+      variables or execute commands (see <a class="Xr">dgenrc(5)</a> for more
+      information). No bindings are defined by default.</dd>
+  <dt>bind_&quot;{keysym|joypad|mouse} [{keysym|joypad|mouse} [...]]&quot;
+    <var class="Ar">action</var></dt>
+  <dd>Alternate syntax that supports combining several identifiers to perform
+      <var class="Ar">action</var>. Controller types can be mixed. Identifiers
+      are separated by spaces. To avoid syntax errors, spaces must be properly
+      escaped or quoted.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="AUDIO"><a class="permalink" href="#AUDIO">AUDIO</a></h1>
+<dl class="Bl-tag">
+  <dt>bool_sound [true]</dt>
+  <dd>Enable the sound subsystem.</dd>
+  <dt>int_soundrate [44100]</dt>
+  <dd>Sound frequency to play at, in hertz (Hz).</dd>
+  <dt>int_soundsegs [8]</dt>
+  <dd>Number of sound segments to use for sound buffering. Lower values
+      guarantee low latency. Increment this only if the sound becomes
+    choppy.</dd>
+  <dt>int_soundsamples [0]</dt>
+  <dd>Size of the system sound buffer, in samples (samples are the sound unit,
+      sound rate is how many of them are played every second). Specifying 0
+      automatically choses the safest value. If you experience sound issues
+      int_soundsegs is unable to solve, try to change this. Increasing it will
+      cause noticeable audio lag (it is unfortunately often required on slower
+      machines).</dd>
+  <dt>int_volume [100]</dt>
+  <dd>Volume level, in percent. Values above 100 cause distorsion.</dd>
+  <dt>key_volume_inc [=]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>key_volume_dec [-]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_volume_inc []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_volume_dec []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_volume_inc []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_volume_dec []</dt>
+  <dd>Bindings for volume control.</dd>
+  <dt>bool_mjazz [false]</dt>
+  <dd>MJazz option - puts 2 more FM chips in the Megadrive for a sort of 22
+      channel sound boost. Can sound good. Slows things down a lot.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="VIDEO"><a class="permalink" href="#VIDEO">VIDEO</a></h1>
+<dl class="Bl-tag">
+  <dt>int_depth [0]</dt>
+  <dd>Color depth (bits per pixel). Allowed values are 0 (automatic), 8, 15, 16,
+      24 and 32. Ignored in OpenGL mode.</dd>
+  <dt>int_width [-1]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>int_height [-1]</dt>
+  <dd>Desired window width and height.</dd>
+  <dt>bool_opengl [true]</dt>
+  <dd>Use the OpenGL renderer, if it is available.</dd>
+  <dt>bool_opengl_stretch [true]</dt>
+  <dd>Let OpenGL stretch the screen.</dd>
+  <dt>bool_opengl_linear [true]</dt>
+  <dd>Use GL_LINEAR for textures filtering instead of GL_NEAREST.</dd>
+  <dt>bool_opengl_32bit [true]</dt>
+  <dd>Use 32 bit textures. They require more memory but are usually faster than
+      16 bit textures.</dd>
+  <dt>bool_opengl_square [false]</dt>
+  <dd>Use square textures. Wastes a lot of memory but may solve OpenGL
+      initialization failures.</dd>
+  <dt>bool_fullscreen [false]</dt>
+  <dd>Try to run fullscreen, if possible.</dd>
+  <dt>int_scale [-1]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>int_scale_x [-1]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>int_scale_y [-1]</dt>
+  <dd>Amount by which to scale the rendered screen from the default resolution.
+      See scaling filters.</dd>
+  <dt>bool_aspect [true]</dt>
+  <dd>Retain original aspect ratio when resizing window.</dd>
+  <dt>key_fullscreen_toggle [alt-enter]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_fullscreen_toggle []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_fullscreen_toggle []</dt>
+  <dd>Button to toggle fullscreen mode (this may do nothing if SDL doesn't
+      support fullscreen toggling on your platform.)</dd>
+  <dt>int_info_height [-1]</dt>
+  <dd>Height of the text area at the bottom of the screen, in pixels. This also
+      affects the font size. Values smaller than the minimum font size make DGen
+      redirect text to stdout instead. The default value of -1 makes DGen choose
+      the proper height.</dd>
+  <dt>bool_fps [false]</dt>
+  <dd>Display the current number of frames per second.</dd>
+  <dt>bool_buttons [false]</dt>
+  <dd>Display pressed buttons. Can be used to help configuring them.</dd>
+  <dt>bool_swab [false]</dt>
+  <dd>Swap bytes in the video output. Sometimes useful when video output is
+      located on a different system. This is implemented as a CTV filter which
+      must be compiled-in to work.</dd>
+  <dt>bool_doublebuffer [true]</dt>
+  <dd>Toggle double buffering. Enabling this should prevent screen tearing from
+      happening. Disabling this may improve the number of displayed frames per
+      second on some systems.</dd>
+  <dt>bool_screen_thread [false]</dt>
+  <dd>When enabled, a separate thread is created to offload the displaying of
+      frames. This is only useful on slower machines where flipping video
+      buffers takes time, especially when V-sync is enabled and doing so blocks
+      until the next frame without consuming CPU time (sometimes the case when
+      bool_doublebuffer is enabled). This currently has no effect when OpenGL is
+      enabled and only works if multi-threading support is compiled-in.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SAVE_STATES"><a class="permalink" href="#SAVE_STATES">SAVE
+  STATES</a></h1>
+<dl class="Bl-tag">
+  <dt>key_slot_X [X]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_slot_X []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_slot_X []</dt>
+  <dd>Sets the current save-state slot to number X.</dd>
+  <dt>key_slot_next [f8]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_slot_next []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_slot_next []</dt>
+  <dd>Switch to the next save-slot.</dd>
+  <dt>key_slot_prev [f7]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_slot_prev []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_slot_prev []</dt>
+  <dd>Switch to the previous save-slot.</dd>
+  <dt>key_save [f2]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_save []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_save []</dt>
+  <dd>Saves state to the current slot.</dd>
+  <dt>key_load [f3]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_load []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_load []</dt>
+  <dd>Loads state from the current slot.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="MISCELLANEOUS_KEYS"><a class="permalink" href="#MISCELLANEOUS_KEYS">MISCELLANEOUS
+  KEYS</a></h1>
+<dl class="Bl-tag">
+  <dt>key_fix_checksum [f1]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_fix_checksum []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_fix_checksum []</dt>
+  <dd>Fixes the checksum value. Some older games will freeze with a red screen
+      if the ROM has been hacked or modified with Game Genie codes. If it does,
+      pressing this, and resetting should fix the problem.</dd>
+  <dt>key_quit [escape]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_quit []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_quit []</dt>
+  <dd>Exit DGen or switch to the next ROM on the command-line.</dd>
+  <dt>key_craptv_toggle [f5]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_craptv_toggle []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_craptv_toggle []</dt>
+  <dd>Toggles Crap-TV image filters. These filters aren't available in 8 bpp
+      mode.</dd>
+  <dt>key_scaling_toggle [f6]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_scaling_toggle []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_scaling_toggle []</dt>
+  <dd>Toggles scaling algorithms. See scaling_startup below.</dd>
+  <dt>key_reset [tab]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_reset []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_reset []</dt>
+  <dd>Restart the Genesis emulation.</dd>
+  <dt>key_cpu_toggle [f11]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_cpu_toggle []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_cpu_toggle []</dt>
+  <dd>Switch CPU emulators. The x86 assembly CPU emulator StarScream is fast,
+      but has glitches which affect a few games. Switching to the slower Musashi
+      core will fix these problems, at a speed penalty.</dd>
+  <dt>key_z80_toggle [f10]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_z80_toggle []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_z80_toggle []</dt>
+  <dd>Switch Z80 emulators. MZ80 is a bit faster than CZ80, particularly in its
+      assembly version (only available for x86), but CZ80 works with more games.
+      This key can also disable Z80 emulation.</dd>
+  <dt>key_stop [z]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_stop []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_stop []</dt>
+  <dd>Pause emulation, so you can concentrate on real life for a few seconds.
+    :)</dd>
+  <dt>key_game_genie [f9]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_game_genie []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_game_genie []</dt>
+  <dd>Enter a Game Genie or Hex code. This key also works in stopped mode.</dd>
+  <dt>key_screenshot [f12]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_screenshot []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_screenshot []</dt>
+  <dd>Take a screenshot. Not available in 8 bpp mode.</dd>
+  <dt>key_prompt [:]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_prompt []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_prompt []</dt>
+  <dd>Pause emulation and display interactive prompt. Also works in stopped
+      mode.</dd>
+  <dt>key_debug_enter [`]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>joy_debug_enter []</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>mou_debug_enter []</dt>
+  <dd>Break into the debugger. Only meaningful if debugger support is
+      compiled-in.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="PREFERENCES"><a class="permalink" href="#PREFERENCES">PREFERENCES</a></h1>
+<dl class="Bl-tag">
+  <dt>int_hz [60]</dt>
+  <dd>Video refresh rate. The default is 60 as in NTSC consoles.</dd>
+  <dt>bool_pal [false]</dt>
+  <dd>When true, a PAL console is emulated. This should be used in combination
+      with int_hz above for 50Hz emulation.</dd>
+  <dt>region [' ']</dt>
+  <dd>U for America (NTSC), E for Europe (PAL), J for Japan (NTSC), X for Japan
+      (PAL), or empty space for autodetection (the default). Overrides bool_pal
+      and int_hz.</dd>
+  <dt>str_region_order [JUEX]</dt>
+  <dd>Regions DGen is allowed to emulate when autodetection is enabled, ordered
+      by preference.</dd>
+  <dt>emu_m68k_startup [musa]</dt>
+  <dd>Useful when both Musashi and StarScream are compiled-in. This option
+      selects the default emulator to use (&quot;musa&quot; for Musashi,
+      &quot;star&quot; for StarScream, &quot;none&quot; for neither). See
+      key_cpu_toggle.</dd>
+  <dt>emu_z80_startup [cz80]</dt>
+  <dd>Useful when both CZ80 and MZ80 are compiled-in. This option selects the
+      default emulator to use (&quot;cz80&quot;, &quot;mz80&quot; or
+      &quot;none&quot;, if you want to disable it altogether). See
+      key_z80_toggle.</dd>
+  <dt>bool_autoload [false]</dt>
+  <dd>Automatically load the saved state from slot 0 when DGen starts.</dd>
+  <dt>bool_autosave [false]</dt>
+  <dd>Automatically save the saved state to slot 0 upon exit. Setting both of
+      these fields true, you can exit DGen, and automatically start a game where
+      you left off when you start it again.</dd>
+  <dt>bool_autoconf [true]</dt>
+  <dd>Automatically dump the current configuration to dgenrc.auto before
+      exiting. This file is always loaded before dgenrc at startup.</dd>
+  <dt>bool_frameskip [true]</dt>
+  <dd>Automatically skip frames, when it is necessary to maintain proper
+      emulation speed. You may want to disable sound or set int_nice to a
+      nonzero value when setting this to false.</dd>
+  <dt>int_nice [0]</dt>
+  <dd>If set to a non-zero value, DGen will call <a class="Xr">usleep(3)</a>
+      with the specified parameter after rendering each frame. This will slow
+      the program down (if it is running too fast on your computer), and allow
+      the operating system to reclaim some CPU time.</dd>
+  <dt>ctv_craptv_startup [off]</dt>
+  <dd>CTV filter to use by default. Available filters are &quot;blur&quot;,
+      &quot;scanline&quot;, &quot;interlace&quot; and &quot;swab&quot;.</dd>
+  <dt>scaling_startup [stretch]</dt>
+  <dd>Scaler to use when display resolution is larger than original screen.
+      Available filters are &quot;stretch&quot;, &quot;scale&quot;,
+      &quot;hqx&quot;, &quot;hqx stretch&quot;, &quot;scale2x&quot;,
+      &quot;scale2x stretch&quot; and &quot;none&quot;.</dd>
+  <dt>bool_show_carthead [false]</dt>
+  <dd>Show cartridge header info at startup.</dd>
+  <dt>bool_raw_screenshots [false]</dt>
+  <dd>Generate unfiltered screenshots.</dd>
+  <dt>str_rom_path [&quot;roms&quot;]</dt>
+  <dd>Directory where DGen should look for ROMs by default. It's relative to
+      DGen's home directory, unless an absolute path is provided.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="DEBUGGING"><a class="permalink" href="#DEBUGGING">DEBUGGING</a></h1>
+<dl class="Bl-tag">
+  <dt>bool_vdp_hide_plane_a [false]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>bool_vdp_hide_plane_b [false]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>bool_vdp_hide_plane_w [false]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>bool_vdp_hide_sprites [false]</dt>
+  <dd>Hide various planes during frame rendering. Require VDP debugging to be
+      compiled-in.</dd>
+  <dt>bool_vdp_sprites_boxing [false]</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>int_vdp_sprites_boxing_fg [0xffff00] (yellow)</dt>
+  <dd style="width: auto;">&#x00A0;</dd>
+  <dt>int_vdp_sprites_boxing_bg [0x00ff00] (green)</dt>
+  <dd>Toggle sprites boxing and configure its colors. Require VDP debugging to
+      be compiled-in. &quot;fg&quot; is for sprites with the high priority bit
+      set, &quot;bg&quot; is for the others. Color format is 0xRRGGBB.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="EXAMPLES"><a class="permalink" href="#EXAMPLES">EXAMPLES</a></h1>
+<p class="Pp">See the file &quot;sample.dgenrc&quot; in the DGen/SDL
+    distribution.</p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="KEY_IDENTIFIERS"><a class="permalink" href="#KEY_IDENTIFIERS">KEY
+  IDENTIFIERS</a></h1>
+<p class="Pp">A key identifier can have the prefixes &quot;shift-&quot;,
+    &quot;ctrl-&quot;, &quot;alt-&quot; and &quot;meta-&quot;, or any
+    combination thereof, to require that the specified modifier be pressed in
+    combination with the key. For example, the identifier &quot;alt-enter&quot;
+    would correspond to holding down the Alt key while pressing Enter.</p>
+<p class="Pp">The &quot;shift-&quot; modifier only works with keys that don't
+    generate symbols (such as arrow keys). Otherwise their UTF-8 representation
+    must be used directly.</p>
+<p class="Pp">The numbers &quot;0&quot; through &quot;9&quot; (&quot;kp_0&quot;
+    through &quot;kp_9&quot; for the numeric keypad), letters &quot;A&quot;
+    through &quot;Z&quot;, and function keys &quot;F1&quot; through
+    &quot;F12&quot; map to their key equivalents. In addition, the following
+    identifiers map to their similarly-labeled key counterparts. Identifiers on
+    the same line map to the same key:</p>
+<div class="Bd Pp Bd-indent Li">
+<pre>escape
+backspace
+tab
+capslock	caps_lock
+lshift		shift_l
+rshift		shift_r
+lctrl		ctrl_l
+lmeta		meta_l
+lalt		alt_l
+ralt		alt_r
+rmeta		meta_r
+rctrl		ctrl_r
+return		enter
+space
+
+scrollock	scroll_lock
+numlock		num_lock
+
+insert
+home
+page_up		pageup
+delete
+end
+page_down	pagedown
+left
+right
+up
+down
+
+kp_home
+kp_up
+kp_pageup	kp_page_up
+kp_left
+kp_right
+kp_end
+kp_down
+kp_pagedown	kp_page_down
+kp_insert
+kp_delete	kp_period
+
+kp_enter
+kp_divide
+kp_minus
+kp_multiply
+kp_plus</pre>
+</div>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="JOYSTICK_IDENTIFIERS"><a class="permalink" href="#JOYSTICK_IDENTIFIERS">JOYSTICK
+  IDENTIFIERS</a></h1>
+<p class="Pp">Like key identifiers, joystick (or joypad) identifiers describe a
+    joystick event. Each detected joystick is numbered starting from 0. Three
+    different event types are supported.</p>
+<dl class="Bl-tag">
+  <dt>Buttons: joystickX-buttonY</dt>
+  <dd>For joystick/joypad number X, button number Y. &quot;button&quot; can be
+      abbreviated as &quot;b&quot;.</dd>
+  <dt>Axes: joystickX-axisY-min, joystickX-axisY-max</dt>
+  <dd>For joystick/joypad number X, axis number Y, and its position, which is
+      either &quot;min&quot; (also &quot;n&quot;, &quot;negative&quot;) or
+      &quot;max&quot; (also &quot;p&quot;, &quot;positive&quot;).
+      &quot;axis&quot; can be abbreviated as &quot;a&quot;.</dd>
+  <dt>Hats: joystickX-hatY-{direction}</dt>
+  <dd>For joystick/joypad number X, hat number Y and direction. &quot;hat&quot;
+      can be abbreviated as &quot;h&quot;. Possible directions are
+      &quot;up&quot;, &quot;right&quot;, &quot;down&quot;,
+    &quot;left&quot;.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="MOUSE_IDENTIFIERS"><a class="permalink" href="#MOUSE_IDENTIFIERS">MOUSE
+  IDENTIFIERS</a></h1>
+<p class="Pp">These identifiers describe a mouse event. Each detected mouse is
+    numbered starting from 0. Two different event types are supported.</p>
+<dl class="Bl-tag">
+  <dt>Buttons: mouseX-buttonY</dt>
+  <dd>For mouse number X, button number Y. &quot;button&quot; can be abbreviated
+      as &quot;b&quot;.</dd>
+  <dt>Motions: mouseX-{direction}</dt>
+  <dd>For mouse number X and direction. Possible directions are &quot;up&quot;,
+      &quot;right&quot;, &quot;down&quot;, &quot;left&quot;.</dd>
+</dl>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SEE_ALSO"><a class="permalink" href="#SEE_ALSO">SEE
+  ALSO</a></h1>
+<p class="Pp"><a class="Xr">dgen(1)</a></p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="AUTHORS"><a class="permalink" href="#AUTHORS">AUTHORS</a></h1>
+<p class="Pp">This manual page was written by <span class="An">Joe Groff</span>
+    &#x27E8;joe@pknet.com&#x27E9;.
+  <br/>
+  <span class="An">Updated by zamaz</span>
+    &#x27E8;zamaz@users.sourceforge.net&#x27E9;.</p>
+</section>
+</div>
+<table class="foot">
+  <tr>
+    <td class="foot-date">July 26, 2014</td>
+    <td class="foot-os">Linux 6.6.9-arch1-1</td>
+  </tr>
+</table>
+</body>
+</html>

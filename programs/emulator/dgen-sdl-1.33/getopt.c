@@ -179,12 +179,6 @@ static char *my_index(const char *str, int chr);
 extern char *getenv();
 #endif
 
-#ifdef _KOLIBRI
-char* getenv(const char *name) {
-	return NULL;
-}
-#endif
-
 static int my_strlen(const char *str)
 {
 	int n = 0;

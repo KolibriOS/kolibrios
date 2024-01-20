@@ -6,9 +6,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
-#ifndef _KOLIBRI
 #include <dirent.h>
-#endif
 #include <ctype.h>
 #ifndef __MINGW32__
 #include <sys/types.h>
@@ -39,11 +37,6 @@
 #if MAX_PATH < PATH_MAX
 #error MAX_PATH < PATH_MAX. You should use MAX_PATH.
 #endif
-#endif
-
-#ifdef _KOLIBRI
-char* kos_dgen_userdir = "/tmp0/1";
-
 #endif
 
 static const char *fopen_mode(unsigned int mode)
@@ -161,6 +154,11 @@ char *dgen_userdir(char *buf, size_t *size)
 	if ((pwd == NULL) || (pwd->pw_dir == NULL))
 		return NULL;
 	sz_dir = strlen(pwd->pw_dir);
+#elif defined _KOLIBRI
+	char *kos_home = getenv("HOME");
+	if (!kos_home)
+		return NULL;
+	sz_dir = strlen(kos_home);
 #endif
 	if (buf != NULL) {
 		sz = *size;
@@ -184,7 +182,7 @@ char *dgen_userdir(char *buf, size_t *size)
 	}
 #ifndef __MINGW32__
 	#ifdef _KOLIBRI
-	strncpy(path, kos_dgen_userdir, sz_dir);
+	strncpy(path, kos_home, sz_dir);
 	#else
 	strncpy(path, pwd->pw_dir, sz_dir);
 	#endif
@@ -234,7 +232,10 @@ char *dgen_dir(char *buf, size_t *size, const char *sub)
 		return NULL;
 	sz_dir = strlen(pwd->pw_dir);
 	#else
-	sz_dir = strlen(kos_dgen_userdir);
+	char *kos_home = getenv("HOME");
+	if (!kos_home)
+		return NULL;
+	sz_dir = strlen(kos_home);
 	#endif
 #endif
 
@@ -266,7 +267,7 @@ char *dgen_dir(char *buf, size_t *size, const char *sub)
 	#ifndef _KOLIBRI
 	strncpy(path, pwd->pw_dir, sz_dir);
 	#else
-	strncpy(path, kos_dgen_userdir, sz_dir);
+	strncpy(path, kos_home, sz_dir);
 	#endif
 #else
 	if (SHGetFolderPath(NULL, (CSIDL_APPDATA | CSIDL_FLAG_CREATE),
@@ -355,12 +356,10 @@ FILE *dgen_freopen(const char *relative, const char *file, unsigned int mode,
 			goto error;
 		size = strlen(path);
 	}
-#ifndef KOLIBRI
+
 	if ((mode & (DGEN_WRITE | DGEN_APPEND)) && (path != NULL))
 		mkdir(path, 0777); /* XXX make that recursive */
-#else
-	mkdir(path, 0777);
-#endif
+
 	file_size = strlen(file);
 	if ((tmp = realloc(path, (size + !!size + file_size + 1))) == NULL)
 		goto error;
@@ -660,7 +659,6 @@ static void free_pppc(char ***pppc, size_t skip)
  */
 static char **complete_path_simple(const char *path, size_t len)
 {
-#ifndef _KOLIBRI
 	size_t rlen;
 	const char *cpl;
 	char *root;
@@ -745,7 +743,7 @@ error:
 			free(*(ret++));
 		free(ret);
 	}
-#endif
+
 	return NULL;
 }
 

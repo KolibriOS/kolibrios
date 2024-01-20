@@ -777,8 +777,8 @@ if tup.getconfig('NO_NASM') ~= 'full' then
    {"kolibrios/games/wolf3d/", "../contrib/games/wolf3d/wolf3d"},
    {"kolibrios/games/wolf3d/", "common/games/wolf3d/*"},
    {"kolibrios/emul/dgen/dgen", PROGS .. "/emulator/dgen-sdl-1.33/dgen"},
-   {"kolibrios/emul/dgen/dgen.man", PROGS .. "/emulator/dgen-sdl-1.33/dgen.man"},
-   {"kolibrios/emul/dgen/dgenrc.man", PROGS .. "/emulator/dgen-sdl-1.33/dgenrc.man"},
+   {"kolibrios/emul/dgen/dgen.html", PROGS .. "/emulator/dgen-sdl-1.33/dgen.html"},
+   {"kolibrios/emul/dgen/dgenrc.html", PROGS .. "/emulator/dgen-sdl-1.33/dgenrc.html"},
   })
 end
 -- For russian build, add russian-only programs.

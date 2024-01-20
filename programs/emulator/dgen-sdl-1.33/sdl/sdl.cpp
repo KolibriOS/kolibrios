@@ -54,9 +54,7 @@ extern "C" {
 #endif
 
 #ifdef _KOLIBRI
-extern "C" {
 #include <sys/ksys.h>
-}
 #endif
 
 /// Number of microseconds to sustain messages
