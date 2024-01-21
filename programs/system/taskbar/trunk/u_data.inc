@@ -1,109 +1,106 @@
 ;------------------------------------------------------------------------------
 align 4
-last_active_window	rd 1
-prev_active_window	rd 1
-active_window_changed	rd 1
-app_tab_count		rd 1
+last_active_window      rd 1
+prev_active_window      rd 1
+active_window_changed   rd 1
+app_tab_count           rd 1
 
-alt_tab_list_size	rd 1
+alt_tab_list_size       rd 1
 
-panel_x_pos	rd	1
-panel_y_pos	rd	1
+panel_x_pos     rd      1
+panel_y_pos     rd      1
 
-offset_X	rd 1
-offset_x_tray	rd 1
+offset_X        rd 1
+offset_x_tray   rd 1
 
-pos_x_clock		rd 1
-pos_x_cpu_usage		rd 1
-pos_x_cpu_chlang	rd 1
-pos_x_page_list		rd 1
+pos_x_clock             rd 1
+pos_x_cpu_usage         rd 1
+pos_x_cpu_chlang        rd 1
+pos_x_page_list         rd 1
 
-active_slot_number	rd 1
+active_slot_number      rd 1
 
-my_active_slot		rd 1
-current_active_slot	rd 1
+my_active_slot          rd 1
+current_active_slot     rd 1
 
 screen_size:
-.height	rw 1
-.width	rw 1
+.height rw 1
+.width  rw 1
 
-draw_flag_certainly	rb 1
+draw_flag_certainly     rb 1
 
-start_menu_flag		rb 1
-win_key_flag		rb 1
+start_menu_flag         rb 1
+win_key_flag            rb 1
 
 ;------------------------------------------------------------------------------
 align 4
-system_colours	system_colors ; rd 10
+system_colours  system_colors
 ;------------------------------------------------------------------------------
 align 4
-app_list	rd 50
+app_list        rd 50
 ;------------------------------------------------------------------------------
 align 4
-alt_tab_list	rd 256*2
+alt_tab_list    rd 256*2
 ;------------------------------------------------------------------------------
 align 4
 path:
-	rb 1024
+        rb 1024
 ;-----------------------------------------------------------------------------
 align 4
 library_path:
-process_info_buffer:
-	rb 1024
+process_info_buffer     process_information
 ;------------------------------------------------------------------------------
 align 4
-procinfo_for_detect:
-	rb 1024
+procinfo_for_detect     process_information
 ;------------------------------------------------------------------------------
 align 4
-procinfo_window_tabs:
-	rb 1024
+procinfo_window_tabs    process_information
 ;-----------------------------------------------------------------------------
 align 4
 bootparam:
-	rb 256
+        rb 256
 ;------------------------------------------------------------------------------
 align 4
 tictable:
-	rd 256
+        rd 256
 ;------------------------------------------------------------------------------
 align 4
 end_name:
-	rb 64
+        rb 64
 ;------------------------------------------------------------------------------
 align 4
 menu_name:
-	rb 64
+        rb 64
 ;------------------------------------------------------------------------------
 align 4
 run_name:
-	rb 64
+        rb 64
 ;------------------------------------------------------------------------------
 align 4
 printscreen_name:
-	rb 64
+        rb 64
 ;------------------------------------------------------------------------------
 align 4
 calendar_name:
-	rb 64
+        rb 64
 ;------------------------------------------------------------------------------
 align 4
 sysmeter_name:
-	rb 64
+        rb 64
 ;------------------------------------------------------------------------------
 align 4
 mousemul_name:
-	rb 64
+        rb 64
 ;------------------------------------------------------------------------------
 align 4
-	rb 256
+        rb 256
 detect_stack:
 ;------------------------------------------------------------------------------
 align 4
-	rb 256
+        rb 256
 ctx_menu_stack:
 ;------------------------------------------------------------------------------
 align 4
-	rb 1024
+        rb 1024
 stack_top:
 ;------------------------------------------------------------------------------

@@ -8,19 +8,12 @@
 use32
         org     0x0
 
-        ;db      'MENUET00'      ; 8 byte id
-        ;dd      38              ; required os
-        ;dd      STARTAPP        ; program start
-        ;dd      I_END           ; program image size
-        ;dd      0x100000        ; required amount of memory
-        ;dd      0x00000000      ; reserved=no extended header
-
-        db     'MENUET01'
-        dd     1
-        dd     STARTAPP
-        dd     I_END
-        dd     MEM
-        dd     STACKTOP
+        db     'MENUET01'        ; header
+        dd     1                 ; version
+        dd     STARTAPP          ; program start
+        dd     I_END             ; program image size
+        dd     MEM               ; size memory for program
+        dd     STACKTOP          ; pointer of stack
         dd     0
         dd     0
 

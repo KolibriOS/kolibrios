@@ -465,7 +465,9 @@ struct process_information
                           dw ?  ; +52
   client_box              BOX   ; +54
   wnd_state               db ?  ; +70
-  rb (1024-71)
+  event_mask              dd ?  ; +71
+  keyboard_mode           db ?  ; +75
+  rb (1024-76)
 ends
 
 struct system_colors
