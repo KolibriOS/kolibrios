@@ -4,7 +4,7 @@
 ;                                                           ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-include "..\..\..\macros.inc"
+include "..\..\..\..\macros.inc"
 include "lang.inc"
 
 FALSE  equ 0
@@ -755,10 +755,10 @@ draw_window:
     mcall
                                    ; WINDOW TITLE
     mcall
-	mov eax,71
-	mov ebx,1
-	mov ecx,labelt
-	int 40h
+        mov eax,71
+        mov ebx,1
+        mov ecx,labelt
+        int 40h
 
     mov  eax,13                    ;bar
     mov  ebx,8 shl 16 + 204

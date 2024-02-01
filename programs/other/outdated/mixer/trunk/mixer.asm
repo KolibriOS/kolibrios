@@ -6,18 +6,18 @@
 ;
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include '..\..\..\..\macros.inc'
 
 
 use32
- org	0x0
- db	'MENUET01'    ; header
- dd	0x01	      ; header version
- dd	START	      ; entry point
- dd	I_END	      ; image size
- dd	0x1000        ; required memory
- dd	0x1000        ; esp
- dd	0x0 , 0x0     ; I_Param , I_Path
+ org    0x0
+ db     'MENUET01'    ; header
+ dd     0x01          ; header version
+ dd     START         ; entry point
+ dd     I_END         ; image size
+ dd     0x1000        ; required memory
+ dd     0x1000        ; esp
+ dd     0x0 , 0x0     ; I_Param , I_Path
 
 
 
