@@ -115,7 +115,7 @@ DLLAPI Image* __stdcall img_convert(Image *src, Image *dst, uint32_t dst_type, u
 DLLAPI Image* __stdcall img_resize_data(Image *src, uint32_t width, uint32_t height);
 DLLAPI Image* __stdcall img_scale(Image* src, uint32_t crop_x, uint32_t crop_y, uint32_t crop_width, uint32_t crop_height, Image* dst, uint32_t scale_type, uint32_t inter, uint32_t new_width, uint32_t new_height);
 
-void img_fill_color(Image* img, uint32_t width, uint32_t height, uint32_t color){
+static void img_fill_color(Image* img, uint32_t width, uint32_t height, uint32_t color){
     for (uint32_t i = 0; i < width*height; i++) {
         img->Data[i] = color;
     }

@@ -201,6 +201,19 @@ typedef union {
     };
 } ksys_signal_info_t;
 
+typedef struct {
+    int32_t dst_x;
+    int32_t dst_y;
+    uint32_t dst_w;
+    uint32_t dst_h;
+    int32_t src_x;
+    int32_t src_y;
+    uint32_t src_w;
+    uint32_t src_h;
+    uint32_t depth;
+    uint32_t pitch;
+} ksys_blitter_params_t;
+
 #pragma pack(pop)
 
 typedef rgb_t ksys_bitmap_t;
@@ -1614,6 +1627,19 @@ KOSAPI void _ksys_set_window_title(const char* title)
 }
 
 #define _ksys_clear_window_title() _ksys_set_window_title(NULL)
+
+/*============= Function 73 - blitter =============*/
+
+KOSAPI void _ksys_blitter(uint32_t flags, ksys_blitter_params_t *params)
+{
+    int res;
+    asm_inline(
+        "int $0x40"
+        : "=a"(res)
+        : "a"(73), "b"(flags), "c"(params)
+        : "memory");
+    (void)res;
+}
 
 /*============= Function 77, subfunction 0 - create futex object =============*/
 
