@@ -7,6 +7,14 @@
 
 $Revision$
 
+struct EXCEPT_STACK
+    RegEIP     dd ?
+    ExcCode    dd ? ; only exception 12 overflow stack
+    OldESP     dd ?
+    RegCR2     dd ?
+    LockAccess dd ?
+ends
+
 align 4 ;3A08
 build_interrupt_table:
         mov     edi, idts
