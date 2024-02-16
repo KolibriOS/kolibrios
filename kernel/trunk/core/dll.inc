@@ -511,7 +511,7 @@ proc load_file_umode stdcall, file_name:dword
         jnz     .err_1
 
         mov     eax, [file_size]
-        cmp     eax, 1024*1024*16                ;to be enough for anybody (c)
+        cmp     eax, 1024*1024*1024                ;to be enough for anybody 1Gbt(c)
         ja      .err_1
                                                  ;it is very likely that the file is packed
         stdcall kernel_alloc, [file_size]        ;with kpack, so allocate memory from kernel heap

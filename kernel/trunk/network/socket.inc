@@ -757,22 +757,17 @@ socket_close:
         jne     .free
 
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
-        je      .tcp
-
+        jne     .free
+        test    [eax + SOCKET.state], SS_ISCONNECTED
+        jz      .free
+        test    [eax + SOCKET.state], SS_ISDISCONNECTING
+        jnz     .free
+        call    tcp_disconnect
+        test    eax, eax
+        jz      .end
   .free:
         call    socket_free
-        ret
-
-  .tcp:
-        test    [eax + SOCKET.state], SS_ISCONNECTED
-        jz      @f
-        test    [eax + SOCKET.state], SS_ISDISCONNECTING
-        jnz     @f
-        call    tcp_disconnect
-  @@:
-; TODO:
-; ...
-;       call    socket_free
+  .end:
         ret
 
 

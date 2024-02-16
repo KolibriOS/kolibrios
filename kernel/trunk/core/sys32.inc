@@ -201,11 +201,59 @@ exc_c:                            ; exceptions (all but 7th - #NM)
         iretd
 
 IRetToUserHook:
+        cmp     ebx, 12
+        je      .ex_stack
+        cmp     ebx, 14
+        jne     .nostack
+        mov     ecx, cr2
+        sub     ecx, [reg_esp3]
+        jg      .nostack
+        add     ecx, 1000h
+        jl      .nostack
+.ex_stack:
+        xor     ecx, ecx
+        mov     ecx, [ecx+APP_HEADER_01_.except_stack_top]
+        test    ecx, ecx
+        jle     .nostack
+        xchg    edi, eax
+        sub     ecx, sizeof.EXCEPT_STACK
+        push    ebx
+        push    1
+        pop     ebx
+.lock:
+        lock bts [ecx+EXCEPT_STACK.LockAccess], 0
+        jnc     .lock1
+        call    delay_hs_unprotected
+        jmp     .lock
+.lock1:
+        pop     ebx
+        cmp     ebx, 14
+        jne     .ex12
+        btr     [esi+APPDATA.except_mask], 12
+        jc      .ex_stack1
+        xchg    eax, edi
+        jmp     .nostack
+.ex_stack1:
+        bts     [esi+APPDATA.except_mask], ebx
+        dec     ebx
+        dec     ebx
+.ex12:
+        mov     [ecx+EXCEPT_STACK.ExcCode], ebx
+        mov     eax, ecx
+        xchg    [reg_esp3], eax
+        mov     [ecx+EXCEPT_STACK.OldESP], eax
+        mov     eax, cr2
+        mov     [ecx+EXCEPT_STACK.RegCR2], eax
+        xchg    edi, [reg_eip]
+        mov     [ecx+EXCEPT_STACK.RegEIP], edi
+        jmp     .end
+.nostack:
         xchg    eax, [reg_eip]
         sub     dword[reg_esp3], 8
         mov     edi, [reg_esp3]
         stosd
         mov     [edi], ebx
+.end:
         restore_ring3_context
 ; simply return control to interrupted process
 unknown_interrupt:
