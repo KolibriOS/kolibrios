@@ -28,6 +28,7 @@ struct  APP_HEADER_01_
         stack_top       dd ?    ;+24
         i_param         dd ?    ;+28
         i_icon          dd ?    ;+32
+        except_stack_top dd ?   ;+36
 ends
 
 struct  APP_HDR
