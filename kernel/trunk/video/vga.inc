@@ -168,7 +168,7 @@ align 4
 align 4
 novesal:
         mov     [novesachecksum], ecx
-        xor     ecx, ecx     ;mov     ecx, 0
+        xor     ecx, ecx
         movzx   eax, word [MOUSE_Y]
         cmp     eax, 100
         jge     m13l3

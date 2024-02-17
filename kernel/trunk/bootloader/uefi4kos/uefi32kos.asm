@@ -115,7 +115,7 @@ proc skip_line
 endp
 
 proc dec2bin
-        mov     edx, 0
+        xor     edx, edx
 .next_char:
         movzx   eax, byte[esi]
         test    eax, eax

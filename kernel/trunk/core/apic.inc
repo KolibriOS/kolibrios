@@ -179,7 +179,7 @@ LAPIC_init:
         mov     [esi + APIC_TPR], eax
 
         ; Flush the queue
-        mov     edx, 0
+        xor     edx, edx
 .nxt2:
         mov     ecx, 32
         mov     eax, [esi + APIC_ISR + edx]

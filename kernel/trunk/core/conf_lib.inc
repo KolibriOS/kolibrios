@@ -14,39 +14,39 @@ $Revision$
 
 iglobal
 conf_path_sect:
-                db 'path',0
+           db 'path',0
 
 conf_fname db '/sys/sys.conf',0
 endg
-; set soke kernel configuration
+; set kernel configuration
 proc set_kernel_conf
         locals
           par db 30 dup(?)
         endl
 
         pushad
-;[gui]
-;mouse_speed
+; [gui]
+; mouse_speed
 
         lea     eax, [par]
         push    eax
         invoke  ini.get_str, conf_fname, ugui, ugui_mouse_speed, \
-                eax,30, ugui_mouse_speed_def
+                eax, 30, ugui_mouse_speed_def
         pop     eax
         stdcall strtoint, eax
         mov     [mouse_speed_factor], ax
 
-;mouse_delay
+; mouse_delay
         lea     eax, [par]
         push    eax
         invoke  ini.get_str, conf_fname, ugui, ugui_mouse_delay, \
-                eax,30, ugui_mouse_delay_def
+                eax, 30, ugui_mouse_delay_def
         pop     eax
         stdcall strtoint, eax
         mov     [mouse_delay], eax
 
 
-;midibase
+; midibase
         lea     eax, [par]
         push    eax
         invoke  ini.get_str, conf_fname, udev, udev_midibase, eax, 30, udev_midibase_def
@@ -88,7 +88,7 @@ else
 end if
 unet_def db 0
 endg
-; convert string to DWord
+; convert string to dword
 proc strtoint stdcall,strs
         pushad
 
@@ -113,11 +113,11 @@ proc strtoint stdcall,strs
         ret
 endp
 
-; convert string to DWord for decimal value
+; convert string to dword for decimal value
 proc strtoint_dec stdcall,strs
         pushad
         xor     edx, edx
-  ; поиск конца
+        ; search for the end
         mov     esi, [strs]
 @@:
         lodsb
@@ -133,15 +133,12 @@ proc strtoint_dec stdcall,strs
         dec     ebx
         or      ebx, ebx
         jz      @f
-        imul    ecx, ecx, 10; порядок
+        imul    ecx, ecx, 10 ; order
         jmp     @b
 @@:
-
         xchg    ebx, ecx
 
-
         xor     ecx, ecx
-
 
 @@:
         xor     eax, eax
@@ -166,8 +163,8 @@ proc strtoint_dec stdcall,strs
         ret
 endp
 
-;convert string to DWord for hex value
-proc strtoint_hex stdcall,strs
+; convert string to dword for hex value
+proc strtoint_hex stdcall, strs
         pushad
         xor     edx, edx
 
@@ -221,12 +218,12 @@ proc strtoint_hex stdcall,strs
 endp
 
 
-; convert string to DWord for IP addres
-proc do_inet_adr stdcall,strs
+; convert string to dword for IP address
+proc do_inet_adr stdcall, strs
         pushad
 
         mov     esi, [strs]
-        mov     ebx, 0
+        xor     ebx, ebx
 .next:
         push    esi
 @@:

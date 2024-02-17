@@ -131,7 +131,7 @@ skip_line:
         ret
 
 dec2bin:
-        mov     edx, 0
+        xor     edx, edx
 .next_char:
         movzx   eax, byte[rsi]
         test    eax, eax

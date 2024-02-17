@@ -136,7 +136,7 @@ proc load_k_library stdcall, file_name:dword
 @@:
         mov     edx, [coff]
         movzx   ebx, [edx + CFH.nSections]
-        mov     edi, 0
+        xor     edi, edi
         lea     eax, [edx+20]
 @@:
         add     [eax + CFS.VirtualAddress], edi ;patch user space offset
