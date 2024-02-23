@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -319,6 +319,8 @@ draw_channel_text:
 
         push    eax
   .line:
+        cmp     byte[edx], 0x20
+        jae     .printable
         cmp     byte[edx], 0
         je      .end_of_text
         cmp     byte[edx], 13
@@ -330,22 +332,27 @@ draw_channel_text:
         jne     .no_colors
         inc     edx
         call    dec_to_esi
-        jz      .no_colors
+        jz      .line
         mov     ecx, [irc_colors + 4*esi]
         or      ecx, 0x30000000
 
         cmp     byte[edx], ','                  ; background color?
-        jne     .no_colors
+        jne     .line
         inc     edx
         call    dec_to_esi
-        jz      .no_colors
+        jz      .line
         mov     edi, [irc_colors + 4*esi]
         or      ecx, 0x40000000
   .no_colors:
 
+; Some non-printable, just skip it
+        inc     edx
+        jmp     .line
+
 ;-------------------------------------------
 ; Count characters until 0, 10, 13 or 3 byte
 
+  .printable:
         push    edx
         xor     esi, esi
         dec     esi
@@ -354,8 +361,8 @@ draw_channel_text:
         cmp     esi, [textbox_width]
         je      .cnt_done
         mov     al, byte[edx]
-        cmp     al, 13
-        jbe     .cnt_done
+        cmp     al, 0x20
+        jb      .cnt_done
 
         inc     edx
         test    al, 10000000b
