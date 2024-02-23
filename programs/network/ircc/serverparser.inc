@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -14,6 +14,7 @@
 server_parser:
 
         mov     esi, servercommand
+        mov     ebx, ecx
 
         cmp     byte [esi], ':'
         jne     .parse
@@ -27,7 +28,7 @@ server_parser:
 
   .parse:
         mov     eax, [esi]
-        or      eax, 0x20202020
+        or      eax, 0x20202020         ; convert to lowercase
         mov     edi, server_commands
         mov     ecx, server_commands.number
 
@@ -42,6 +43,7 @@ server_parser:
         ret
 
   .got_cmd:
+        mov     ecx, ebx
         jmp     dword[edi]
 
 
@@ -232,18 +234,12 @@ cmd_ping:
 ; Just change PING to PONG
         mov     dword[esi], 'PONG'
 
-; Find the end of the command
-        lea     edi, [esi + 5]
-        xor     al, al
-        repne   scasb
+; Append \r\n
+        mov     word[esi+ecx], 0x0a0d
 
-; Now send it back
+; And send the response to the server
         mov     edx, esi
-        mov     esi, edi
-        mov     word [esi], 0x0d0a
-        inc     esi
-        inc     esi
-        sub     esi, edx
+        lea     esi, [ecx+2]
         mcall   send, [socketnum], , , 0
 
         ret

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -659,7 +659,7 @@ cmd_usr_send:
         mov     esi, [user_command.size]
         mov     eax, [user_command.size]
         add     eax, user_command+1
-        mov     word[eax], 0x0d0a
+        mov     word[eax], 0x0a0d
         inc     esi
         mcall   send, [socketnum], user_command+1, , 0
 

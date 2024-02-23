@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2018. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -226,26 +226,30 @@ socket_receive:
   .nextcommand:
         mov     edi, servercommand
   .byteloop:
+        test    ecx, ecx
+        jz      .nextpacket
         lodsb
+        dec     ecx
         cmp     al, 10
         je      .got_command
         cmp     al, 13
         je      .got_command
         stosb
-        dec     ecx
-        jnz     .byteloop
-        ;;; FIXME
-        jmp     .nextpacket
+        jmp     .byteloop
 
 ; we have a command, call the serverparser
 
   .got_command:
+        cmp     edi, servercommand + 4
+        jb      .nextcommand
+
         mov     byte[edi], 0                            ; mark the end of the command
         push    esi ecx
+        mov     ecx, edi
+        sub     ecx, servercommand                      ; put length in ecx
         call    server_parser
         pop     ecx esi
-        test    ecx, ecx
-        jnz     .nextcommand
+        jmp     .nextcommand
 
   .done:
         popa
