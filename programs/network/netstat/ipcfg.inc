@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Written by hidnplayr@kolibrios.org                             ;;
@@ -270,6 +270,10 @@ ipcfg:
         cmp     ah, 13
         je      .apply
         cmp     ah, 8
+        je      @f
+        cmp     ah, 0xb0        ; left arrow
+        je      @f
+        cmp     ah, 0xb3        ; right arrow
         je      @f
         cmp     ah, '.'
         je      @f
