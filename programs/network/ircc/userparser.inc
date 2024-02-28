@@ -23,7 +23,7 @@ user_parser:
         mov     esi, input_text
         mov     edi, user_command
         call    recode                                  ; Convert to UTF-8
-        mov     word[edi], 0x0a0d                       ; terminate the line
+        mov     byte[edi], 0x0                          ; Terminate string with \0
         sub     edi, user_command
         mov     [user_command.size], edi
 
@@ -658,9 +658,9 @@ cmd_usr_send:
 
         mov     esi, [user_command.size]
         mov     eax, [user_command.size]
-        add     eax, user_command+1
+        add     eax, user_command
         mov     word[eax], 0x0a0d
-        inc     esi
+        inc     esi                     ; Skip / add \r\n
         mcall   send, [socketnum], user_command+1, , 0
 
         ret
