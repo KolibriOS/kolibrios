@@ -210,10 +210,8 @@ socket_receive:
 
         pusha
 
-; FIXME: make this a proper stream!
-
-  .nextpacket:
-        mcall   recv, [socketnum], packetbuf, PACKETBUF_SIZE, MSG_DONTWAIT    ; read a packet
+  .recv_more:
+        mcall   recv, [socketnum], packetbuf , PACKETBUF_SIZE, MSG_DONTWAIT    ; read a packet
         inc     eax                                                           ; check if we got any data
         jz      .done                                                         ; TODO: handle errors!
         dec     eax
@@ -223,17 +221,19 @@ socket_receive:
 
         mov     ecx, eax
         mov     esi, packetbuf                          ; esi = start pointer
-  .nextcommand:
         mov     edi, servercommand
+        add     edi, [cmd_remaining]
   .byteloop:
         test    ecx, ecx
-        jz      .nextpacket
+        jz      .recv_more
         lodsb
         dec     ecx
         cmp     al, 10
         je      .got_command
         cmp     al, 13
         je      .got_command
+        cmp     edi, servercommand + SERVERCOMMAND_SIZE ; Prevent command buffer overflow
+        jae     .byteloop
         stosb
         jmp     .byteloop
 
@@ -249,7 +249,11 @@ socket_receive:
         sub     ecx, servercommand                      ; put length in ecx
         call    server_parser
         pop     ecx esi
-        jmp     .nextcommand
+
+  .nextcommand:
+        mov     edi, servercommand
+        mov     [cmd_remaining], ecx                    ; remaining bytes since last EOL
+        jmp     .byteloop
 
   .done:
         popa

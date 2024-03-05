@@ -548,6 +548,10 @@ cmd_part:
         cmp     byte [esi+4], ' '
         jne     .fail
         add     esi, 5  ; skip 'PART '
+        cmp     byte[esi], ':'
+        jne     @f
+        inc     esi
+  @@:   
 
 ; Is it me who parted?
         mov     edi, servercommand+1
@@ -610,6 +614,10 @@ cmd_join:
         cmp     byte[esi+4], ' '
         jne     .fail
         add     esi, 5  ; skip 'JOIN '
+        cmp     byte[esi], ':'
+        jne     @f
+        inc     esi
+  @@:   
 
 ; did we join a channel?
         mov     edi, servercommand+1
@@ -982,22 +990,19 @@ cmd_353:                ; channel usernames reply
         ; TODO: remove all users?
 
   .add:
-        push    esi
-        call    user_add
-        pop     esi
-
-  .namesloop:
         lodsb
         test    al, al
         jz      .done
-        cmp     al, ' '                 ; names list is separated with spaces
-        jne     .namesloop
+        cmp     al, ' '
+        je      .add
+        dec     esi
+        call    user_add
         jmp     .add
 
   .done:
         call    draw_user_list
-  .fail:
 
+  .fail:
         ret
 
 

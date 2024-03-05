@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -24,6 +24,7 @@ user_add:
         cmp     [ebx + window.users], MAX_USERS
         jae     .fail
 
+; Check if user is already listed (case insensitive)
         mov     edi, [ebx + window.data_ptr]
         add     edi, window_data.names
         mov     ebp, [ebx + window.users]
@@ -107,6 +108,8 @@ user_add:
         je      .done
         cmp     al, 10
         je      .done
+        cmp     al, 0
+        je      .done
         stosb
         loop    .fill
   .done:
@@ -115,6 +118,7 @@ user_add:
 
         inc     [ebx + window.users]
         or      [ebx + window.flags], FLAG_UPDATED
+        dec     esi
   .fail:
         ret
 

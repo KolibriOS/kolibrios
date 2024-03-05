@@ -13,7 +13,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.35c'
+version equ '0.36'
 
 ; connection status
 STATUS_DISCONNECTED     = 0
@@ -571,6 +571,8 @@ status                  dd STATUS_DISCONNECTED
 
 window_active           dd windows
 window_print            dd windows
+
+cmd_remaining           dd 0
 
 align 4
 @IMPORT:
