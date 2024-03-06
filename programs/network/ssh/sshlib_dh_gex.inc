@@ -34,14 +34,6 @@ locals
         temp_ctx                dd ?
 
         H                       dd ?    ; exchange hash
-
-        rx_iv                   dd ?    ; Rx initialisation vector
-        tx_iv                   dd ?    ; Tx initialisation vector
-        rx_enc_key              dd ?    ; Rx encryption key
-        tx_enc_key              dd ?    ; Tx encryption key
-        rx_int_key              dd ?    ; Rx integrity key
-        tx_int_key              dd ?    ; Tx integrity key
-
         K_length                dd ?
 
         session_id_x            rb SHA2_256_LEN+1
@@ -54,7 +46,7 @@ endl
 
 ; Allocate memory for temp variables
 
-        mov     ecx, 7*(MAX_BITS/8+4) + 7*SHA2_256_LEN + 2*LIBCRASH_CTX_LEN
+        mov     ecx, 7*(MAX_BITS/8+4) + 2*LIBCRASH_CTX_LEN + 1*SHA2_256_LEN
         mcall   68, 12
         test    eax, eax
         jz      .err_nomem
@@ -83,18 +75,6 @@ endl
 
         mov     [H], eax
         add     eax, SHA2_256_LEN
-        mov     [rx_iv], eax
-        add     eax, SHA2_256_LEN
-        mov     [tx_iv], eax
-        add     eax, SHA2_256_LEN
-        mov     [rx_enc_key], eax
-        add     eax, SHA2_256_LEN
-        mov     [tx_enc_key], eax
-        add     eax, SHA2_256_LEN
-        mov     [rx_int_key], eax
-        add     eax, SHA2_256_LEN
-        mov     [tx_int_key], eax
-;        add     eax, SHA2_256_LEN
 
 ; Copy the partial exchange hash to our temporary one
 
@@ -297,6 +277,25 @@ endl
         mov     ecx, SHA2_256_LEN/4
         rep movsd
 
+;-------------------------------------
+; << Parse Diffie-Hellman New Keys MSG
+
+        stdcall sshlib_recv_packet, [con_ptr], 0
+        cmp     eax, 0
+        jl      .err
+
+        mov     ebx, [con_ptr]
+        cmp     [ebx + sshlib_connection.rx_buffer.message_code], SSH_MSG_NEWKEYS
+        jne     .err_proto
+
+        DEBUGF  2, "Received New Keys\n"
+
+;----------------------------------------------------
+; >> Reply with New Keys message (Using the old keys)
+
+        stdcall sshlib_send_packet, [con_ptr], ssh_msg_new_keys, ssh_msg_new_keys.length, 0
+        cmp     eax, 0
+        jl      .err
 
 ;---------------
 ; Calculate keys
@@ -321,13 +320,11 @@ endl
         mov     byte[edx], 'A'
         invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
         invoke  sha2_256_finish, [temp_ctx]
-        mov     edi, [tx_iv]
+        mov     ebx, [con_ptr]
+        lea     edi, [ebx + sshlib_connection.tx_iv]
         mov     esi, [temp_ctx]
         mov     ecx, SHA2_256_LEN/4
         rep movsd
-
-        DEBUGF  1, "Remote IV: "
-        stdcall dump_hex, [tx_iv], SHA2_256_LEN/4
 
 ;---------------------------------------------------------------
 ; Initial IV server to client: HASH(K || H || "B" || session_id)
@@ -340,13 +337,11 @@ endl
         mov     byte[edx], 'B'
         invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
         invoke  sha2_256_finish, [temp_ctx]
-        mov     edi, [rx_iv]
+        mov     ebx, [con_ptr]
+        lea     edi, [ebx + sshlib_connection.rx_iv]
         mov     esi, [temp_ctx]
         mov     ecx, SHA2_256_LEN/4
         rep movsd
-
-        DEBUGF  1, "Local IV: "
-        stdcall dump_hex, [rx_iv], SHA2_256_LEN/4
 
 ;-------------------------------------------------------------------
 ; Encryption key client to server: HASH(K || H || "C" || session_id)
@@ -359,13 +354,27 @@ endl
         mov     byte[edx], 'C'
         invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
         invoke  sha2_256_finish, [temp_ctx]
-        mov     edi, [tx_enc_key]
+
+        mov     ebx, [con_ptr]
+        lea     edi, [ebx+sshlib_connection.tx_enc_key]
         mov     esi, [temp_ctx]
         mov     ecx, SHA2_256_LEN/4
         rep movsd
 
-        DEBUGF  1, "Remote key: "
-        stdcall dump_hex, [tx_enc_key], SHA2_256_LEN/4
+        mov     esi, [k_h_ctx]
+        mov     edi, [temp_ctx]
+        mov     ecx, LIBCRASH_CTX_LEN/4
+        rep movsd
+        mov     ebx, [con_ptr]
+        lea     edi, [ebx+sshlib_connection.tx_enc_key]
+        invoke  sha2_256_update, [temp_ctx], edi, SHA2_256_LEN
+        invoke  sha2_256_finish, [temp_ctx]
+
+        mov     ebx, [con_ptr]
+        add     edi, 256/8
+        mov     esi, [temp_ctx]
+        mov     ecx, SHA2_256_LEN/4
+        rep movsd
 
 ;-------------------------------------------------------------------
 ; Encryption key server to client: HASH(K || H || "D" || session_id)
@@ -378,13 +387,27 @@ endl
         mov     byte[edx], 'D'
         invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
         invoke  sha2_256_finish, [temp_ctx]
-        mov     edi, [rx_enc_key]
+
+        mov     ebx, [con_ptr]
+        lea     edi, [ebx+sshlib_connection.rx_enc_key]
         mov     esi, [temp_ctx]
         mov     ecx, SHA2_256_LEN/4
         rep movsd
 
-        DEBUGF  1, "Local key: "
-        stdcall dump_hex, [rx_enc_key], SHA2_256_LEN/4
+        mov     esi, [k_h_ctx]
+        mov     edi, [temp_ctx]
+        mov     ecx, LIBCRASH_CTX_LEN/4
+        rep movsd
+        mov     ebx, [con_ptr]
+        lea     edi, [ebx+sshlib_connection.rx_enc_key]
+        invoke  sha2_256_update, [temp_ctx], edi, SHA2_256_LEN
+        invoke  sha2_256_finish, [temp_ctx]
+
+        mov     ebx, [con_ptr]
+        add     edi, 256/8
+        mov     esi, [temp_ctx]
+        mov     ecx, SHA2_256_LEN/4
+        rep movsd
 
 ;------------------------------------------------------------------
 ; Integrity key client to server: HASH(K || H || "E" || session_id)
@@ -397,13 +420,11 @@ endl
         mov     byte[edx], 'E'
         invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
         invoke  sha2_256_finish, [temp_ctx]
-        mov     edi, [tx_int_key]
+        mov     ebx, [con_ptr]
+        lea     edi, [ebx + sshlib_connection.tx_int_key]
         mov     esi, [temp_ctx]
         mov     ecx, SHA2_256_LEN/4
         rep movsd
-
-        DEBUGF  1, "Remote Integrity key: "
-        stdcall dump_hex, [tx_int_key], SHA2_256_LEN/4
 
 ;------------------------------------------------------------------
 ; Integrity key server to client: HASH(K || H || "F" || session_id)
@@ -416,76 +437,20 @@ endl
         mov     byte[edx], 'F'
         invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
         invoke  sha2_256_finish, [temp_ctx]
-        mov     edi, [rx_int_key]
+        mov     ebx, [con_ptr]
+        lea     edi, [ebx + sshlib_connection.rx_int_key]
         mov     esi, [temp_ctx]
         mov     ecx, SHA2_256_LEN/4
         rep movsd
 
-        DEBUGF  1, "Local Integrity key: "
-        stdcall dump_hex, [rx_int_key] , SHA2_256_LEN/4
-
-;-------------------------------------
-; << Parse Diffie-Hellman New Keys MSG
-
-        stdcall sshlib_recv_packet, [con_ptr], 0
-        cmp     eax, 0
-        jl      .err
-
         mov     ebx, [con_ptr]
-        cmp     [ebx + sshlib_connection.rx_buffer.message_code], SSH_MSG_NEWKEYS
-        jne     .err_proto
-
-        DEBUGF  2, "Received New Keys\n"
-
-;-------------------------------
-; >> Reply with New Keys message
-
-        stdcall sshlib_send_packet, [con_ptr], ssh_msg_new_keys, ssh_msg_new_keys.length, 0
-        cmp     eax, 0
-        jl      .err
-
-;----------------------------------------------
-; Set keys and initialize transport subroutines
-
-        DEBUGF  2, "SSH: Setting encryption keys\n"
-
-        mov     ebx, [con_ptr]
-        stdcall aes256_ctr_init, [rx_iv]
-        test    eax, eax
-        jz      .err_nomem
-        mov     [ebx + sshlib_connection.rx_crypt_ctx_ptr], eax
-        stdcall aes256_set_encrypt_key, eax, [rx_enc_key]
-        mov     [ebx + sshlib_connection.rx_crypt_proc], aes256_ctr_crypt
-        mov     [ebx + sshlib_connection.rx_crypt_blocksize], AES256_BLOCKSIZE
-
-        stdcall aes256_ctr_init, [tx_iv]
-        test    eax, eax
-        jz      .err_nomem
-        mov     [ebx + sshlib_connection.tx_crypt_ctx_ptr], eax
-        stdcall aes256_set_encrypt_key, eax, [tx_enc_key]
-        mov     [ebx + sshlib_connection.tx_crypt_proc], aes256_ctr_crypt
-        mov     [ebx + sshlib_connection.tx_crypt_blocksize], AES256_BLOCKSIZE
-
-        mov     [ebx + sshlib_connection.tx_pad_size], AES256_BLOCKSIZE
-        mov     [ebx + sshlib_connection.tx_pad_proc], MBRandom
-
-        lea     ecx, [ebx + sshlib_connection.rx_mac_ctx]
-        stdcall hmac_sha256_setkey, ecx, [rx_int_key], SHA2_256_LEN
-        mov     [ebx + sshlib_connection.rx_mac_proc], hmac_sha256
-        mov     [ebx + sshlib_connection.rx_mac_length], SHA2_256_LEN
-
-        lea     ecx, [ebx + sshlib_connection.tx_mac_ctx]
-        stdcall hmac_sha256_setkey, ecx, [tx_int_key], SHA2_256_LEN
-        mov     [ebx + sshlib_connection.tx_mac_proc], hmac_sha256
-        mov     [ebx + sshlib_connection.tx_mac_length], SHA2_256_LEN
-
         mov     [ebx + sshlib_connection.status], SSHLIB_CON_STAT_KEX_DONE
         xor     eax, eax
 
   .err:
         push    eax
         xor     eax, eax
-        mov     ecx, (7*(MAX_BITS/8+4) + 7*SHA2_256_LEN + 2*LIBCRASH_CTX_LEN)/4
+        mov     ecx, (7*(MAX_BITS/8+4) + 2*LIBCRASH_CTX_LEN + 1*SHA2_256_LEN )/4
         mov     edi, [mpint_tmp]
         rep stosd
 

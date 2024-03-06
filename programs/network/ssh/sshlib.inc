@@ -54,19 +54,20 @@ SSHLIB_HOSTKEY_RSA              = 2
 SSHLIB_HOSTKEY_RSA_SHA2_256     = 3
 SSHLIB_HOSTKEY_RSA_SHA2_512     = 4
 
-SSHLIB_CRYPT_BLOWFISH_CTR       = 1
-SSHLIB_CRYPT_BLOWFISH_CBC       = 2
-SSHLIB_CRYPT_AES128_CTR         = 3
-SSHLIB_CRYPT_AES128_CBC         = 4
-SSHLIB_CRYPT_AES192_CTR         = 5
-SSHLIB_CRYPT_AES192_CBC         = 6
-SSHLIB_CRYPT_AES256_CTR         = 7
-SSHLIB_CRYPT_AES256_CBC         = 8
+;SSHLIB_CRYPT_BLOWFISH_CTR       = 1     ; blowfish-ctr
+;SSHLIB_CRYPT_BLOWFISH_CBC       = 2     ; blowfish-cbc
+;SSHLIB_CRYPT_AES128_CTR         = 3     ; aes128-ctr
+;SSHLIB_CRYPT_AES128_CBC         = 4     ; aes128-cbc
+;SSHLIB_CRYPT_AES192_CTR         = 5     ; aes192-cbc
+;SSHLIB_CRYPT_AES192_CBC         = 6     ; aes192-ctr
+SSHLIB_CRYPT_AES256_CTR         = 7     ; aes256-ctr
+SSHLIB_CRYPT_AES256_CBC         = 8     ; aes256-cbc
+SSHLIB_CRYPT_CHACHA20_POLY1305  = 9     ; chacha20-poly1305@openssh.com"
 
-SSHLIB_HMAC_MD5                 = 1
-SSHLIB_HMAC_SHA1                = 2
-SSHLIB_HMAC_SHA1_96             = 3
-SSHLIB_HMAC_SHA2_256            = 4
+;SSHLIB_HMAC_MD5                 = 1     ; hmac-md5
+;SSHLIB_HMAC_SHA1                = 2     ; hmac-sha1
+;SSHLIB_HMAC_SHA1_96             = 3     ; hmac-sha1-96
+SSHLIB_HMAC_SHA2_256            = 4     ; hmac-sha2-256
 
 SSHLIB_COMPR_NONE               = 1
 SSHLIB_COMPR_ZLIB               = 2
@@ -97,31 +98,39 @@ ends
 struct  sshlib_connection
 
         status                  dd ?
-
         socketnum               dd ?
+
+        rx_proc                 dd ?
+        tx_proc                 dd ?
+
+        rx_mac_ctx              rb LIBCRASH_CTX_LEN
+        tx_mac_ctx              rb LIBCRASH_CTX_LEN
+
+        rx_crypt_ctx            rb LIBCRASH_CTX_LEN
+        tx_crypt_ctx            rb LIBCRASH_CTX_LEN
 
         rx_crypt_proc           dd ?
         tx_crypt_proc           dd ?
-        rx_crypt_ctx_ptr        dd ?
-        tx_crypt_ctx_ptr        dd ?
+;        rx_crypt_ctx_ptr        dd ?
+;        tx_crypt_ctx_ptr        dd ?
         rx_crypt_blocksize      dd ?
         tx_crypt_blocksize      dd ?
 
         tx_pad_size             dd ?    ; = Max(8, tx_crypt_blocksize)
-        tx_pad_proc             dd ?
+                                dd ?
 
         rx_mac_proc             dd ?
         tx_mac_proc             dd ?
-        rx_mac_ctx              hmac_sha256_context
-        tx_mac_ctx              hmac_sha256_context
+
         rx_mac_length           dd ?
         tx_mac_length           dd ?
 
-        rx_mac_seqnr            dd ?    ; DO NOT MOVE
+                                rd 3    ; align
+        rx_mac_seqnr            dd ?    ; DO NOT MOVE (specific place for HMAC)
         rx_buffer               ssh_packet_header
                                 rb BUFFERSIZE-sizeof.ssh_packet_header
 
-        tx_mac_seqnr            dd ?    ; DO NOT MOVE
+        tx_mac_seqnr            dd ?    ; DO NOT MOVE (specific place for HMAC)
         tx_buffer               ssh_packet_header
                                 rb PACKETSIZE-sizeof.ssh_packet_header
 
@@ -138,6 +147,13 @@ struct  sshlib_connection
         algo_compr_tx           dd ?
 
         hostname_sz             rb MAX_HOSTNAME_LENGTH
+
+        rx_enc_key              rb 2*256/8
+        tx_enc_key              rb 2*256/8
+        rx_int_key              rb 2*256/8
+        tx_int_key              rb 2*256/8
+        rx_iv                   rb 2*256/8
+        tx_iv                   rb 2*256/8
 
 ends
 

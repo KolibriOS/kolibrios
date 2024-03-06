@@ -1,6 +1,6 @@
 ;    ssh.asm - SSH client for KolibriOS
 ;
-;    Copyright (C) 2015-2021 Jeffrey Amelynck
+;    Copyright (C) 2015-2024 Jeffrey Amelynck
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -104,22 +104,12 @@ include 'mpint.inc'
 include 'seed.inc'
 include 'random.inc'
 
-include 'aes256.inc'
-include 'aes256-ctr.inc'
-include 'aes256-cbc.inc'
-
-include 'blowfish.inc'
-include 'blowfish-ctr.inc'
-include 'blowfish-cbc.inc'
-
-include 'hmac_sha256.inc'
-include 'hmac_sha1.inc'
-include 'hmac_md5.inc'
-
 include 'sshlib.inc'
 
 include 'sshlib_mcodes.inc'
 include 'sshlib_transport.inc'
+include 'sshlib_transport_hmac.inc'
+include 'sshlib_transport_polychacha.inc'
 include 'sshlib_connection.inc'
 include 'sshlib_dh_gex.inc'
 include 'sshlib_host.inc'
@@ -219,7 +209,7 @@ main:
         mcall   18, 7
         push    eax
 ; Create thread
-        mcall   51, 1, con_in_thread, mem - 2048
+        mcall   51, 1, con_in_thread, mem + 2048
 ; Activate window with given ID
         pop     ecx
         mcall   18, 3
@@ -487,7 +477,7 @@ str24b  db 10, 10, "If you trust this host, press A to accept and store the (new
 ssh_ident_ha:
         dd_n (ssh_msg_ident.length-2)
 ssh_msg_ident:
-        db "SSH-2.0-KolibriOS_SSH_0.09",13,10
+        db "SSH-2.0-KolibriOS_SSH_0.10",13,10
   .length = $ - ssh_msg_ident
 
 
@@ -500,9 +490,9 @@ ssh_msg_kex:
   .server_host_key_algorithms:
         str "rsa-sha2-512,rsa-sha2-256,ssh-rsa"                    ;,ssh-dss
   .encryption_algorithms_client_to_server:
-        str "aes256-ctr"                 ;,aes256-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se,aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc,blowfish-ctr,blowfish-cbc,3des-ctr,3des-cbc,arcfour256,arcfour128"
+        str "chacha20-poly1305@openssh.com"                 ;aes256-ctr,aes256-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se,aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc,blowfish-ctr,blowfish-cbc,3des-ctr,3des-cbc,arcfour256,arcfour128"
   .encryption_algorithms_server_to_client:
-        str "aes256-ctr"                 ;,aes256-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se,aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc,blowfish-ctr,blowfish-cbc,3des-ctr,3des-cbc,arcfour256,arcfour128"
+        str "chacha20-poly1305@openssh.com"                 ;aes256-ctr,aes256-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se,aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc,blowfish-ctr,blowfish-cbc,3des-ctr,3des-cbc,arcfour256,arcfour128"
   .mac_algorithms_client_to_server:
         str "hmac-sha2-256"              ;,hmac-sha1,hmac-sha1-96,hmac-md5"
   .mac_algorithms_server_to_client:
@@ -630,9 +620,21 @@ import  libcrash, \
         sha1_init, 'sha1_init', \
         sha1_update, 'sha1_update', \
         sha1_finish, 'sha1_finish', \
-        md5_init, 'md5_init', \
-        md5_update, 'md5_update', \
-        md5_finish, 'md5_finish'
+        chacha20_init, 'chacha20_init' , \
+        chacha20_update, 'chacha20_update', \
+        chacha20_oneshot, 'chacha20_oneshot', \
+        poly1305_init, 'poly1305_init', \
+        poly1305_update, 'poly1305_update', \
+        poly1305_finish, 'poly1305_finish', \
+        poly1305_oneshot, 'poly1305_oneshot', \
+        aes256ctr.init, "aes256ctr_init", \
+        aes256ctr.update, "aes256ctr_update", \
+        aes256ctr.finish, "aes256ctr_finish", \
+        aes256ctr.oneshot, "aes256ctr_oneshot", \
+        hmac_sha2_256.init_, "hmac_sha2_256_init", \
+        hmac_sha2_256.update_, "hmac_sha2_256_update", \
+        hmac_sha2_256.finish_, "hmac_sha2_256_finish", \
+        hmac_sha2_256.oneshot, "hmac_sha2_256_oneshot"
 
 import  libini, \
         ini_get_str, 'ini_get_str', \
@@ -644,9 +646,13 @@ i_end:
 
 IncludeUGlobals
 
+align 16
 params          rb MAX_HOSTNAME_LENGTH
 
+align 16
 ssh_con         sshlib_connection
+
+align 16
 ssh_chan        sshlib_channel
 
 keyb_input      rb MAX_INPUT_LENGTH

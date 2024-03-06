@@ -1,6 +1,6 @@
 ;    sshlib_connection.inc - SSH connection
 ;
-;    Copyright (C) 2016-2021 Jeffrey Amelynck
+;    Copyright (C) 2016-2024 Jeffrey Amelynck
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -14,6 +14,8 @@
 ;
 ;    You should have received a copy of the GNU General Public License
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+; https://www.ietf.org/rfc/rfc4253.txt
 
 proc sshlib_connect con_ptr, hostname_sz
 
@@ -157,14 +159,16 @@ endl
         mov     [eax + sshlib_connection.tx_mac_seqnr], 0
         mov     [eax + sshlib_connection.rx_crypt_blocksize], 4             ; minimum blocksize
         mov     [eax + sshlib_connection.tx_crypt_blocksize], 4
-        mov     [eax + sshlib_connection.rx_crypt_proc], sshlib_crypt_null
-        mov     [eax + sshlib_connection.tx_crypt_proc], sshlib_crypt_null
+        mov     [eax + sshlib_connection.rx_crypt_proc], 0
+        mov     [eax + sshlib_connection.tx_crypt_proc], 0
         mov     [eax + sshlib_connection.rx_mac_proc], 0
         mov     [eax + sshlib_connection.tx_mac_proc], 0
         mov     [eax + sshlib_connection.rx_mac_length], 0
         mov     [eax + sshlib_connection.tx_mac_length], 0
         mov     [eax + sshlib_connection.tx_pad_size], 8
-        mov     [eax + sshlib_connection.tx_pad_proc], sshlib_padd_null
+
+        mov     [eax + sshlib_connection.rx_proc], sshlib_recv_packet_clear
+        mov     [eax + sshlib_connection.tx_proc], sshlib_send_packet_clear
 
         DEBUGF  2, "Sending KEX init\n"
         mov     edi, ssh_msg_kex.cookie
@@ -277,6 +281,45 @@ endl
         test    eax, eax
         jnz     .err
 
+; Set keys and initialize transport subroutines
+
+        DEBUGF  2, "SSH: Setting encryption keys\n"
+
+        mov     ebx, [con_ptr]
+
+;        lea     ecx, [ebx + sshlib_connection.rx_crypt_ctx]
+;        lea     edx, [ebx + sshlib_connection.rx_enc_key]
+;        lea     esi, [ebx + sshlib_connection.rx_iv]
+;        invoke  aes256ctr.init, ecx, edx, esi, 0
+;
+;        push    [aes256ctr.update]
+;        pop     [ebx + sshlib_connection.rx_crypt_proc]
+;        mov     [ebx + sshlib_connection.rx_crypt_blocksize], 16        ; AES_BLOCKSIZE
+;
+;        push    [hmac_sha2_256.oneshot]
+;        pop     [ebx + sshlib_connection.rx_mac_proc]
+;        mov     [ebx + sshlib_connection.rx_mac_length], SHA2_256_LEN
+;
+;        lea     ecx, [ebx + sshlib_connection.tx_crypt_ctx]
+;        lea     edx, [ebx + sshlib_connection.tx_enc_key]
+;        lea     esi, [ebx + sshlib_connection.tx_iv]
+;        invoke  aes256ctr.init, ecx, edx, esi, 0
+;
+;        push    [aes256ctr.update]
+;        pop     [ebx + sshlib_connection.tx_crypt_proc]
+;        mov     [ebx + sshlib_connection.tx_crypt_blocksize], 16        ; AES_BLOCKSIZE
+;        mov     [ebx + sshlib_connection.tx_pad_size], 16               ; AES_BLOCKSIZE
+;
+;        push    [hmac_sha2_256.oneshot]
+;        pop     [ebx + sshlib_connection.tx_mac_proc]
+;        mov     [ebx + sshlib_connection.tx_mac_length], SHA2_256_LEN
+;
+;        mov     [ebx + sshlib_connection.rx_proc], sshlib_recv_packet_hmac
+;        mov     [ebx + sshlib_connection.tx_proc], sshlib_send_packet_hmac
+
+        mov     [ebx + sshlib_connection.rx_proc], sshlib_recv_packet_poly1305chacha20
+        mov     [ebx + sshlib_connection.tx_proc], sshlib_send_packet_poly1305chacha20
+
 ; Re-seed RNG for padding bytes
 
         call    create_seed
@@ -327,7 +370,7 @@ proc sshlib_msg_handler, con_ptr, flags
         mov     esi, [con_ptr]
         lea     esi, [esi + sshlib_connection.rx_buffer]
         mov     al, [esi + ssh_packet_header.message_code]
-        inc     esi
+        add     esi, sizeof.ssh_packet_header
 
         cmp     al, SSH_MSG_DISCONNECT
         je      .disc
@@ -345,6 +388,8 @@ proc sshlib_msg_handler, con_ptr, flags
         je      .chan_eof
         cmp     al, SSH_MSG_CHANNEL_CLOSE
         je      .chan_close
+
+        DEBUGF  3, "SSH: Message type: %u\n", al
 
   .ret:
         ret
@@ -364,7 +409,8 @@ proc sshlib_msg_handler, con_ptr, flags
         jmp     .recv
 
   .glob_req:
-        DEBUGF  3, "SSH: Global MSG received\n"
+        add     esi, 4
+        DEBUGF  3, "SSH: Global MSG received: %s\n", esi
         ;TODO
         jmp     .recv
 

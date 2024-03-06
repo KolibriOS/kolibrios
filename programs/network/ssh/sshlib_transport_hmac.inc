@@ -17,54 +17,53 @@
 
 
 align 16
-sshlib_recv_packet:     ; con_ptr, flags
-
-        mov     eax, [esp+4]
-        jmp     [eax+sshlib_connection.rx_proc]
-
-align 16
-sshlib_send_packet:     ; con_ptr, flags
-
-        mov     eax, [esp+4]
-        jmp     [eax+sshlib_connection.tx_proc]
-
-
-align 16
-proc sshlib_recv_packet_clear con_ptr, flags
+proc sshlib_recv_packet_hmac con_ptr, flags
 
 locals
         data_length     dd ?    ; Total length of packet without MAC
 endl
 
         DEBUGF  3, "> "
-; Receive first block (Read length, padding length, message code)
+; Receive first block
         mov     ebx, [con_ptr]
         mov     ecx, [ebx + sshlib_connection.socketnum]
-        mov     esi, 4
+        mov     esi, [ebx + sshlib_connection.rx_crypt_blocksize]
         lea     edx, [ebx + sshlib_connection.rx_buffer]
         mov     edi, [flags]
         mcall   recv
         cmp     eax, 0
         jle     .sock_fail
         sub     [ssh_chan.rcv_wnd], eax  ;;; FIXME
-        DEBUGF  1, "chunk = %u ", eax
+        DEBUGF  2, "chunk = %u ", eax
+
         mov     ebx, [con_ptr]
-        cmp     eax, 4
+        cmp     eax, [ebx + sshlib_connection.rx_crypt_blocksize]
         jne     .proto_fail     ; TODO: handle receives of 1, 2, and 3 bytes correctly
+
+; Decrypt first block
+        pusha
+        lea     esi, [ebx + sshlib_connection.rx_buffer]
+        lea     ecx, [ebx + sshlib_connection.rx_crypt_ctx]
+        stdcall [ebx + sshlib_connection.rx_crypt_proc], ecx, esi, eax, esi
+        popa
 
 ; Check data length
         mov     esi, [ebx + sshlib_connection.rx_buffer.packet_length]
         bswap   esi                                             ; convert length to little endian
         mov     [ebx + sshlib_connection.rx_buffer.packet_length], esi
-        DEBUGF  1, "packet length=%u ", esi
+        DEBUGF  2, "packet length=%u ", esi
         cmp     esi, BUFFERSIZE
         ja      .proto_fail                                     ; packet is too large
-        test    ecx, ecx
-        jz      .proto_fail
+
+; Calculate amount of remaining data
+        add     esi, 4                                          ; Packet length field itself is not included in the count
+        sub     esi, [ebx + sshlib_connection.rx_crypt_blocksize]    ; Already received this amount of data
+        add     esi, [ebx + sshlib_connection.rx_mac_length]
+        jz      .packet_complete
 
 ; Receive remaining data
         lea     edx, [ebx + sshlib_connection.rx_buffer]
-        add     edx, 4
+        add     edx, [ebx + sshlib_connection.rx_crypt_blocksize]
         mov     ecx, [ebx + sshlib_connection.socketnum]
         mov     edi, [flags]
   .receive_loop:
@@ -79,8 +78,44 @@ endl
         jnz     .receive_loop
   .packet_complete:
 
-; Return useful data length to the caller via eax register
+; Decrypt data
         mov     ebx, [con_ptr]
+        mov     ecx, [ebx + sshlib_connection.rx_buffer.packet_length]
+        add     ecx, 4                                                  ; Packet_length field itself
+        sub     ecx, [ebx + sshlib_connection.rx_crypt_blocksize]       ; Already decrypted this amount of data
+        jz      .decrypt_complete
+
+        lea     esi, [ebx + sshlib_connection.rx_buffer]
+        add     esi, [ebx + sshlib_connection.rx_crypt_blocksize]
+        pusha
+        lea     eax, [ebx + sshlib_connection.rx_crypt_ctx]
+        stdcall [ebx + sshlib_connection.rx_crypt_proc], eax, esi, ecx, esi
+        popa
+  .decrypt_complete:
+
+; Authenticate message
+        lea     esi, [ebx + sshlib_connection.rx_mac_seqnr]
+        mov     ecx, [ebx + sshlib_connection.rx_buffer.packet_length]
+        add     ecx, 8                                          ; packet_length field itself + sequence number
+        lea     eax, [ebx + sshlib_connection.rx_mac_ctx]
+        mov     edx, [ebx + sshlib_connection.rx_buffer.packet_length]
+        bswap   edx                                             ; convert length to big endian
+        mov     [ebx + sshlib_connection.rx_buffer.packet_length], edx
+        lea     edx, [ebx + sshlib_connection.rx_int_key]
+        stdcall [ebx + sshlib_connection.rx_mac_proc], eax, esi, ecx, edx, SHA2_256_LEN
+        mov     edx, [ebx + sshlib_connection.rx_buffer.packet_length]
+        bswap   edx                                             ; convert length to little endian
+        mov     [ebx + sshlib_connection.rx_buffer.packet_length], edx
+
+        lea     esi, [ebx + sshlib_connection.rx_mac_ctx]
+        lea     edi, [ebx + sshlib_connection.rx_buffer+4]
+        add     edi, [ebx + sshlib_connection.rx_buffer.packet_length]
+        mov     ecx, [ebx + sshlib_connection.rx_mac_length]
+        shr     ecx, 2
+        repe cmpsd     ; TODO: constant time
+        jne     .mac_fail
+
+; Return useful data length to the caller via eax register
         mov     eax, [ebx + sshlib_connection.rx_buffer.packet_length]
         movzx   ebx, [ebx + sshlib_connection.rx_buffer.padding_length]
         sub     eax, ebx
@@ -93,11 +128,18 @@ endl
         adc     byte[ebx + sshlib_connection.rx_mac_seqnr+0], 0
 
         DEBUGF  1, "useful data length=%u\n", eax
+
         ret
 
   .sock_fail:
         DEBUGF  3, "ssh_recv_packet failed!\n"
         mov     eax, SSHLIB_ERR_SOCKET
+        ret
+
+  .mac_fail:
+        DEBUGF  3, "ssh_recv_packet message authentication failed!\n"
+        mov     eax, SSHLIB_ERR_MAC_VERIFY_FAIL
+        xor     ebx, ebx
         ret
 
   .proto_fail:
@@ -110,7 +152,7 @@ endp
 
 
 align 16
-proc sshlib_send_packet_clear con_ptr, buf, payload_size, flags
+proc sshlib_send_packet_hmac con_ptr, buf, payload_size, flags
 
 locals
         packet_size    dd ?
@@ -124,6 +166,7 @@ endl
         mov     [packet_size], edx
 
         mov     ecx, [con_ptr]
+;        mov     edx, eax;;;;;;;;;;;;;;;
         mov     ebx, [ecx+sshlib_connection.tx_pad_size]
         dec     ebx
         and     edx, ebx
@@ -157,20 +200,45 @@ endl
         mov     ebx, edx
         and     ebx, 3
         inc     ebx             ; number bytes in first write (1-4)
-        mov     dword[edi], 0
+        call    MBRandom
+        mov     dword[edi], eax
         add     edi, ebx
 ; Then, do as many aligned writes as nescessary
-        xor     eax, eax
   @@:
+        call    MBRandom
         stosd
         dec     esi
         jnz     @r
+
+; Append the packet with Message Authentication Code
+        mov     ebx, [con_ptr]
+        DEBUGF  1, "MAC sequence number: 0x%x\n", [ebx + sshlib_connection.tx_mac_seqnr]
+        lea     esi, [ebx + sshlib_connection.tx_mac_seqnr]
+        mov     ecx, [packet_size]
+        add     ecx, 4                                          ; Sequence number length
+        lea     eax, [ebx + sshlib_connection.tx_mac_ctx]
+        lea     edx, [ebx + sshlib_connection.tx_int_key]
+        stdcall [ebx + sshlib_connection.tx_mac_proc], eax, esi, ecx, edx, SHA2_256_LEN
+
+        mov     ebx, [con_ptr]
+        lea     esi, [ebx + sshlib_connection.tx_mac_ctx]
+        lea     edi, [ebx + sshlib_connection.tx_buffer]
+        add     edi, [packet_size]
+        mov     ecx, [ebx + sshlib_connection.tx_mac_length]
+        shr     ecx, 2
+        rep movsd
+
+; Now, encrypt everything but MAC
+        lea     esi, [ebx + sshlib_connection.tx_buffer]
+        lea     eax, [ebx + sshlib_connection.tx_crypt_ctx]
+        stdcall [ebx + sshlib_connection.tx_crypt_proc], eax, esi, [packet_size], esi
 
 ; Send the packet
         mov     ebx, [con_ptr]
         mov     ecx, [ebx + sshlib_connection.socketnum]
         lea     edx, [ebx + sshlib_connection.tx_buffer]
         mov     esi, [packet_size]
+        add     esi, [ebx + sshlib_connection.tx_mac_length]
         mov     edi, [flags]
         mcall   send
 

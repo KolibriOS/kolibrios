@@ -1,6 +1,6 @@
 ;    sshlib_channel.inc - SSH channel
 ;
-;    Copyright (C) 2016-2021 Jeffrey Amelynck
+;    Copyright (C) 2016-2024 Jeffrey Amelynck
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ proc sshlib_chan_open con_ptr; Channel struct ptr?!
 
 ; >> Open channel
 
-        DEBUGF  2, "SSH: Open channel\n"
+        DEBUGF  2, "SSH: Opening channel\n"
 
         mov     [ssh_chan.rcv_wnd], BUFFERSIZE
         mov     [ssh_chan.snd_wnd], 0
@@ -38,9 +38,11 @@ proc sshlib_chan_open con_ptr; Channel struct ptr?!
         cmp     [esi + sshlib_connection.rx_buffer.message_code], SSH_MSG_CHANNEL_OPEN_CONFIRMATION
         jne     .err_proto
 
+        DEBUGF  2, "SSH: Channel opened successfully\n"
+
 ; >> Channel request: pty
 
-        DEBUGF  2, "SSH: Request pty\n"
+        DEBUGF  2, "SSH: Requesting PTY\n"
 
         stdcall sshlib_send_packet, [con_ptr], ssh_msg_channel_request, ssh_msg_channel_request.length, 0
         cmp     eax, 0
@@ -56,9 +58,11 @@ proc sshlib_chan_open con_ptr; Channel struct ptr?!
         cmp     [esi + sshlib_connection.rx_buffer.message_code], SSH_MSG_CHANNEL_SUCCESS
         jne     .err_proto
 
+        DEBUGF  2, "SSH: PTY opened successfully\n"
+
 ; >> Channel request: shell
 
-        DEBUGF  2, "SSH: Request shell\n"
+        DEBUGF  2, "SSH: Requesting shell\n"
 
         stdcall sshlib_send_packet, [con_ptr], ssh_msg_shell_request, ssh_msg_shell_request.length, 0
         cmp     eax, 0
@@ -75,6 +79,8 @@ proc sshlib_chan_open con_ptr; Channel struct ptr?!
         mov     esi, [con_ptr]
         cmp     [esi + sshlib_connection.rx_buffer.message_code], SSH_MSG_CHANNEL_SUCCESS
         jne     .wait_success
+
+        DEBUGF  2, "SSH: Shell opened successfully\n"
 
         xor     eax, eax
   .err:
