@@ -42,6 +42,7 @@ assert sizeof.ctx_poly1305 <= LIBCRASH_CTX_LEN
 
 proc poly1305.init uses ebx, _ctx, _key, _key_len
         mov     ebx, [_ctx]
+        mov     [ebx+ctx_poly1305.index], 0
         mov     [ebx+ctx_poly1305.block_size], POLY1305_BLOCK_SIZE
         mov     [ebx+ctx_poly1305.hibit], 1 SHL 24
         ; accumulator
@@ -385,8 +386,10 @@ proc poly1305.finish uses ebx esi edi, _ctx
         mov     byte[edi], 0x01
         inc     edi
         dec     ecx
+        jz      @f
         xor     eax, eax
         rep stosb
+@@:
 
         mov     ebx, [_ctx]
         mov     [ebx+ctx_poly1305.hibit], 0
