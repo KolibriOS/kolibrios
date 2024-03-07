@@ -100,7 +100,6 @@ CORE_SRCS = {
   "sys/close.c",
   "sys/conio.c",
   "sys/chdir.c",
-  "sys/getcwd.c",
   "sys/errno.c",
   "sys/fstat.c",
   "sys/gettod.c",
@@ -307,8 +306,7 @@ STRING_SRCS = {
   "wmemcmp.c",
   "wmemcpy.c",
   "wmemmove.c",
-  "wmemset.c",
-  "dirname.c"
+  "wmemset.c"
 }
 
 STDIO_SRCS = {
@@ -455,6 +453,7 @@ STDIO_SRCS = {
   "wscanf.c",
   "wsetup.c"
 }
+
 POSIX_SRCS = {
   "opendir.c",
   "closedir.c",
@@ -462,6 +461,12 @@ POSIX_SRCS = {
   "seekdir.c",
   "telldir.c",
   "rewinddir.c"
+}
+
+UNIX_SRCS = {
+  "getcwd.c",
+  "dirname.c",
+  "basename.c"
 }
 
 MATH_SRCS = {
@@ -516,6 +521,7 @@ LIB_SRCS += prepend("stdio/", STDIO_SRCS)
 LIB_SRCS += prepend("string/", STRING_SRCS)
 LIB_SRCS += prepend("stdlib/", STDLIB_SRCS)
 LIB_SRCS += prepend("posix/", POSIX_SRCS)
+LIB_SRCS += prepend("unix/", UNIX_SRCS)
 LIB_SRCS += prepend("math/", MATH_SRCS)
 
 ALL_OBJS = {}

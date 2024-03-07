@@ -116,8 +116,7 @@ CORE_SRCS:=                   			\
 			sys/clock_gettime.c	\
 			sys/close.c		\
 			sys/conio.c		\
-			sys/chdir.c 	\
-			sys/getcwd.c	\
+			sys/chdir.c 		\
 			sys/errno.c		\
 			sys/fstat.c		\
 			sys/gettod.c		\
@@ -326,8 +325,7 @@ STRING_SRCS= \
 			wmemcmp.c		\
 			wmemcpy.c		\
 			wmemmove.c		\
-			wmemset.c		\
-			dirname.c		
+			wmemset.c
 
 
 STDIO_SRCS=					\
@@ -517,6 +515,10 @@ POSIX_SRCS =	opendir.c \
 		telldir.c \
 		rewinddir.c
 
+UNIX_SRCS =	basename.c \
+		dirname.c \
+		getcwd.c
+
 STATIC_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(STATIC_SRCS)))
 
 LIBCRT_OBJS =  $(patsubst %.S, %.o, $(patsubst %.c, %.o, $(LIBCRT_SRCS)))
@@ -541,6 +543,8 @@ MATH_OBJS =  $(patsubst %.S, math/%.o, $(patsubst %.asm, math/%.o,\
                $(patsubst %.c, math/%.o, $(MATH_SRCS))))
 
 POSIX_OBJS =  $(patsubst %.c, posix/%.o, $(POSIX_SRCS))
+
+UNIX_OBJS = $(patsubst %.c, unix/%.o, $(UNIX_SRCS))
 
 PRINTF_OBJS= 	stdio/vfprintf.o	\
 		stdio/vfiprintf.o	\
@@ -574,7 +578,8 @@ LIB_SRCS+=				\
 		$(STDIO_SRCS) 		\
 		$(STRING_SRCS)		\
 		$(STDLIB_SRCS)		\
-		$(POSIX_SRCS)
+		$(POSIX_SRCS)		\
+		$(UNIX_SRCS)
 
 LIB_OBJS+=				\
 		$(CORE_OBJS) 		\
@@ -583,7 +588,8 @@ LIB_OBJS+=				\
 		$(STDIO_OBJS) 		\
 		$(PRINTF_OBJS)		\
 		$(MATH_OBJS)		\
-		$(POSIX_OBJS)
+		$(POSIX_OBJS)		\
+		$(UNIX_OBJS)
 
 LIB_OBJS+= time/wcsftime.o
 
