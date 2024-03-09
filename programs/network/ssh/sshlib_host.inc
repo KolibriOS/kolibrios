@@ -209,9 +209,9 @@ endl
         push    esi
 
 ; EMSA-PKCS1-v1_5
-        invoke  sha1_init, [h_ctx]
-        invoke  sha1_update, [h_ctx], [M], [message_len]
-        invoke  sha1_finish, [h_ctx]
+        invoke  sha1.init, [h_ctx]
+        invoke  sha1.update, [h_ctx], [M], [message_len]
+        invoke  sha1.finish, [h_ctx]
 
         mov     edi, [EM_accent]
         mov     al, 0x00
@@ -243,9 +243,9 @@ endl
         push    esi
 
 ; EMSA-PKCS1-v1_5
-        invoke  sha2_256_init, [h_ctx]
-        invoke  sha2_256_update, [h_ctx], [M], [message_len]
-        invoke  sha2_256_finish, [h_ctx]
+        invoke  sha2_256.init, [h_ctx]
+        invoke  sha2_256.update, [h_ctx], [M], [message_len]
+        invoke  sha2_256.finish, [h_ctx]
 
         mov     edi, [EM_accent]
         mov     al, 0x00
@@ -277,9 +277,9 @@ endl
         push    esi
 
 ; EMSA-PKCS1-v1_5
-        invoke  sha2_512_init, [h_ctx]
-        invoke  sha2_512_update, [h_ctx], [M], [message_len]
-        invoke  sha2_512_finish, [h_ctx]
+        invoke  sha2_512.init, [h_ctx]
+        invoke  sha2_512.update, [h_ctx], [M], [message_len]
+        invoke  sha2_512.finish, [h_ctx]
 
         mov     edi, [EM_accent]
         mov     al, 0x00

@@ -23,7 +23,7 @@ sshlib_recv_packet:     ; con_ptr, flags
         jmp     [eax+sshlib_connection.rx_proc]
 
 align 16
-sshlib_send_packet:     ; con_ptr, flags
+sshlib_send_packet:     ; con_ptr, buf, payload_size, flags
 
         mov     eax, [esp+4]
         jmp     [eax+sshlib_connection.tx_proc]

@@ -46,31 +46,27 @@ SSHLIB_CON_STAT_KEX_DONE        = 1
 
 SSHLIB_ALGO_NONE                = 0
 
-SSHLIB_KEX_DH_SHA1              = 1
-SSHLIB_KEX_DH_SHA256            = 2
+SSHLIB_KEX_DH_SHA256            = 1     ; diffie-hellman-group-exchange-sha256
 
-SSHLIB_HOSTKEY_DSS              = 1
-SSHLIB_HOSTKEY_RSA              = 2
-SSHLIB_HOSTKEY_RSA_SHA2_256     = 3
-SSHLIB_HOSTKEY_RSA_SHA2_512     = 4
+SSHLIB_HOSTKEY_DSS              = 1     ; ssh-dss
+SSHLIB_HOSTKEY_RSA              = 2     ; ssh-rsa
+SSHLIB_HOSTKEY_RSA_SHA2_256     = 3     ; rsa-sha2-256
+SSHLIB_HOSTKEY_RSA_SHA2_512     = 4     ; rsa-sha2-512
 
-;SSHLIB_CRYPT_BLOWFISH_CTR       = 1     ; blowfish-ctr
-;SSHLIB_CRYPT_BLOWFISH_CBC       = 2     ; blowfish-cbc
-;SSHLIB_CRYPT_AES128_CTR         = 3     ; aes128-ctr
-;SSHLIB_CRYPT_AES128_CBC         = 4     ; aes128-cbc
-;SSHLIB_CRYPT_AES192_CTR         = 5     ; aes192-cbc
-;SSHLIB_CRYPT_AES192_CBC         = 6     ; aes192-ctr
-SSHLIB_CRYPT_AES256_CTR         = 7     ; aes256-ctr
-SSHLIB_CRYPT_AES256_CBC         = 8     ; aes256-cbc
-SSHLIB_CRYPT_CHACHA20_POLY1305  = 9     ; chacha20-poly1305@openssh.com"
+SSHLIB_CRYPT_AES128_CTR         = 1     ; aes128-ctr
+SSHLIB_CRYPT_AES128_CBC         = 2     ; aes128-cbc
+SSHLIB_CRYPT_AES192_CTR         = 3     ; aes192-cbc
+SSHLIB_CRYPT_AES192_CBC         = 4     ; aes192-ctr
+SSHLIB_CRYPT_AES256_CTR         = 5     ; aes256-ctr
+SSHLIB_CRYPT_AES256_CBC         = 6     ; aes256-cbc
+SSHLIB_CRYPT_CHACHA20_POLY1305  = 7     ; chacha20-poly1305@openssh.com
 
-;SSHLIB_HMAC_MD5                 = 1     ; hmac-md5
-;SSHLIB_HMAC_SHA1                = 2     ; hmac-sha1
-;SSHLIB_HMAC_SHA1_96             = 3     ; hmac-sha1-96
-SSHLIB_HMAC_SHA2_256            = 4     ; hmac-sha2-256
+SSHLIB_HMAC_SHA2_256            = 1     ; hmac-sha2-256
+SSHLIB_HMAC_SHA2_512            = 2     ; hmac-sha2-512
+SSHLIB_HMAC_SHA2_256_ETM        = 3     ; hmac-sha2-256-etm@openssh.com
+SSHLIB_HMAC_SHA2_512_ETM        = 4     ; hmac-sha2-512-etm@openssh.com
 
-SSHLIB_COMPR_NONE               = 1
-SSHLIB_COMPR_ZLIB               = 2
+SSHLIB_COMPR_ZLIB               = 1     ; zlib
 
 ; Hostkey
 
@@ -111,8 +107,7 @@ struct  sshlib_connection
 
         rx_crypt_proc           dd ?
         tx_crypt_proc           dd ?
-;        rx_crypt_ctx_ptr        dd ?
-;        tx_crypt_ctx_ptr        dd ?
+
         rx_crypt_blocksize      dd ?
         tx_crypt_blocksize      dd ?
 

@@ -109,6 +109,7 @@ include 'sshlib.inc'
 include 'sshlib_mcodes.inc'
 include 'sshlib_transport.inc'
 include 'sshlib_transport_hmac.inc'
+include 'sshlib_transport_hmac_etm.inc'
 include 'sshlib_transport_polychacha.inc'
 include 'sshlib_connection.inc'
 include 'sshlib_dh_gex.inc'
@@ -477,7 +478,7 @@ str24b  db 10, 10, "If you trust this host, press A to accept and store the (new
 ssh_ident_ha:
         dd_n (ssh_msg_ident.length-2)
 ssh_msg_ident:
-        db "SSH-2.0-KolibriOS_SSH_0.10",13,10
+        db "SSH-2.0-KolibriOS_SSH_0.11",13,10
   .length = $ - ssh_msg_ident
 
 
@@ -486,21 +487,21 @@ ssh_msg_kex:
   .cookie:
         rd 4
   .kex_algorithms:
-        str "diffie-hellman-group-exchange-sha256" ; diffie-hellman-group-exchange-sha1
+        str "diffie-hellman-group-exchange-sha256"
   .server_host_key_algorithms:
-        str "rsa-sha2-512,rsa-sha2-256,ssh-rsa"                    ;,ssh-dss
+        str "rsa-sha2-512,rsa-sha2-256"                                 ;ssh-rsa,ssh-dss
   .encryption_algorithms_client_to_server:
-        str "chacha20-poly1305@openssh.com"                 ;aes256-ctr,aes256-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se,aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc,blowfish-ctr,blowfish-cbc,3des-ctr,3des-cbc,arcfour256,arcfour128"
+        str "aes256-ctr";,aes256-cbc,chacha20-poly1305@openssh.com"       ;aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc ?
   .encryption_algorithms_server_to_client:
-        str "chacha20-poly1305@openssh.com"                 ;aes256-ctr,aes256-cbc,aes256-cbc,rijndael-cbc@lysator.liu.se,aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc,blowfish-ctr,blowfish-cbc,3des-ctr,3des-cbc,arcfour256,arcfour128"
+        str "aes256-ctr";,aes256-cbc,chacha20-poly1305@openssh.com"       ;aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc ?
   .mac_algorithms_client_to_server:
-        str "hmac-sha2-256"              ;,hmac-sha1,hmac-sha1-96,hmac-md5"
+        str "hmac-sha2-256-etm@openssh.com";,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512"
   .mac_algorithms_server_to_client:
-        str "hmac-sha2-256"              ;,hmac-sha1,hmac-sha1-96,hmac-md5"
+        str "hmac-sha2-256-etm@openssh.com";,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512"
   .compression_algorithms_client_to_server:
-        str "none"                       ;,zlib"
+        str "none"                                                      ;zlib ?
   .compression_algorithms_server_to_client:
-        str "none"                       ;,zlib"
+        str "none"                                                      ;zlib ?
   .languages_client_to_server:
         str ""
   .languages_server_to_client:
@@ -611,30 +612,84 @@ import  console, \
         con_get_input, 'con_get_input'
 
 import  libcrash, \
-        sha2_512_init, 'sha2_512_init', \
-        sha2_512_update, 'sha2_512_update', \
-        sha2_512_finish, 'sha2_512_finish',\
-        sha2_256_init, 'sha2_256_init', \
-        sha2_256_update, 'sha2_256_update', \
-        sha2_256_finish, 'sha2_256_finish',\
-        sha1_init, 'sha1_init', \
-        sha1_update, 'sha1_update', \
-        sha1_finish, 'sha1_finish', \
-        chacha20_init, 'chacha20_init' , \
-        chacha20_update, 'chacha20_update', \
-        chacha20_oneshot, 'chacha20_oneshot', \
-        poly1305_init, 'poly1305_init', \
-        poly1305_update, 'poly1305_update', \
-        poly1305_finish, 'poly1305_finish', \
-        poly1305_oneshot, 'poly1305_oneshot', \
+        crash.init, "lib_init", \
+        crash.hash, "crash_hash", \
+        crash.mac, "crash_mac", \
+        crash.crypt, "crash_crypt", \
+        crash.hash_oneshot, "crash_hash_oneshot", \
+        crash.mac_oneshot, "crash_mac_oneshot", \
+        crash.crypt_oneshot, "crash_crypt_oneshot", \
+        \
+        crc32.init, "crc32_init", \
+        crc32.update, "crc32_update", \
+        crc32.finish, "crc32_finish", \
+        crc32.oneshot, "crc32_oneshot", \
+        md5.init, "md5_init", \
+        md5.update, "md5_update", \
+        md5.finish, "md5_finish", \
+        md5.oneshot, "md5_oneshot", \
+        sha1.init, "sha1_init", \
+        sha1.update, "sha1_update", \
+        sha1.finish, "sha1_finish", \
+        sha1.oneshot, "sha1_oneshot", \
+        sha2_224.init, "sha2_224_init", \
+        sha2_224.update, "sha2_224_update", \
+        sha2_224.finish, "sha2_224_finish", \
+        sha2_224.oneshot, "sha2_224_oneshot", \
+        sha2_256.init, "sha2_256_init", \
+        sha2_256.update, "sha2_256_update", \
+        sha2_256.finish, "sha2_256_finish", \
+        sha2_256.oneshot, "sha2_256_oneshot", \
+        sha2_384.init, "sha2_384_init", \
+        sha2_384.update, "sha2_384_update", \
+        sha2_384.finish, "sha2_384_finish", \
+        sha2_384.oneshot, "sha2_384_oneshot", \
+        sha2_512.init, "sha2_512_init", \
+        sha2_512.update, "sha2_512_update", \
+        sha2_512.finish, "sha2_512_finish", \
+        sha2_512.oneshot, "sha2_512_oneshot", \
+        sha3_224.init, "sha3_224_init", \
+        sha3_224.update, "sha3_224_update", \
+        sha3_224.finish, "sha3_224_finish", \
+        sha3_224.oneshot, "sha3_224_oneshot", \
+        sha3_256.init, "sha3_256_init", \
+        sha3_256.update, "sha3_256_update", \
+        sha3_256.finish, "sha3_256_finish", \
+        sha3_256.oneshot, "sha3_256_oneshot", \
+        sha3_384.init, "sha3_384_init", \
+        sha3_384.update, "sha3_384_update", \
+        sha3_384.finish, "sha3_384_finish", \
+        sha3_384.oneshot, "sha3_384_oneshot", \
+        sha3_512.init, "sha3_512_init", \
+        sha3_512.update, "sha3_512_update", \
+        sha3_512.finish, "sha3_512_finish", \
+        sha3_512.oneshot, "sha3_512_oneshot", \
+        \
+        poly1305.init, "poly1305_init", \
+        poly1305.update, "poly1305_update", \
+        poly1305.finish, "poly1305_finish", \
+        poly1305.oneshot, "poly1305_oneshot", \
+        hmac_sha2_256.init, "hmac_sha2_256_init", \
+        hmac_sha2_256.update, "hmac_sha2_256_update", \
+        hmac_sha2_256.finish, "hmac_sha2_256_finish", \
+        hmac_sha2_256.oneshot, "hmac_sha2_256_oneshot", \
+        hmac_sha2_512.init, "hmac_sha2_512_init", \
+        hmac_sha2_512.update, "hmac_sha2_512_update", \
+        hmac_sha2_512.finish, "hmac_sha2_512_finish", \
+        hmac_sha2_512.oneshot, "hmac_sha2_512_oneshot", \
+        \
+        chacha20.init, "chacha20_init", \
+        chacha20.update, "chacha20_update", \
+        chacha20.finish, "chacha20_finish", \
+        chacha20.oneshot, "chacha20_oneshot", \
         aes256ctr.init, "aes256ctr_init", \
         aes256ctr.update, "aes256ctr_update", \
         aes256ctr.finish, "aes256ctr_finish", \
         aes256ctr.oneshot, "aes256ctr_oneshot", \
-        hmac_sha2_256.init_, "hmac_sha2_256_init", \
-        hmac_sha2_256.update_, "hmac_sha2_256_update", \
-        hmac_sha2_256.finish_, "hmac_sha2_256_finish", \
-        hmac_sha2_256.oneshot, "hmac_sha2_256_oneshot"
+        aes256cbc.init, "aes256cbc_init", \
+        aes256cbc.update, "aes256cbc_update", \
+        aes256cbc.finish, "aes256cbc_finish", \
+        aes256cbc.oneshot, "aes256cbc_oneshot"
 
 import  libini, \
         ini_get_str, 'ini_get_str', \

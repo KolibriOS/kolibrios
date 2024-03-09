@@ -181,27 +181,27 @@ endl
         add     edx, 4
         lea     eax, [esi+edx]
         mov     [mpint_f_big], eax
-        invoke  sha2_256_update, [temp_ctx], esi, edx
+        invoke  sha2_256.update, [temp_ctx], esi, edx
 
 ;--------------------------------------------------------------------------
 ; HASH: uint32 min, minimal size in bits of an acceptable group
 ;       uint32 n, preferred size in bits of the group the server will send
 ;       uint32 max, maximal size in bits of an acceptable group
-        invoke  sha2_256_update, [temp_ctx], ssh_msg_gex_req+sizeof.ssh_packet_header-ssh_packet_header.message_code, 12
+        invoke  sha2_256.update, [temp_ctx], ssh_msg_gex_req+sizeof.ssh_packet_header-ssh_packet_header.message_code, 12
 
 ;----------------------------
 ; HASH: mpint p, safe prime
         stdcall mpint_shrink, [mpint_p]
         stdcall mpint_to_big_endian, [mpint_tmp], [mpint_p]
         add     eax, 4
-        invoke  sha2_256_update, [temp_ctx], [mpint_tmp], eax
+        invoke  sha2_256.update, [temp_ctx], [mpint_tmp], eax
 
 ;----------------------------------------
 ; HASH: mpint g, generator for subgroup
         stdcall mpint_shrink, [mpint_g]
         stdcall mpint_to_big_endian, [mpint_tmp], [mpint_g]
         add     eax, 4
-        invoke  sha2_256_update, [temp_ctx], [mpint_tmp], eax
+        invoke  sha2_256.update, [temp_ctx], [mpint_tmp], eax
 
 ;---------------------------------------------------
 ; HASH: mpint e, exchange value sent by the client
@@ -210,7 +210,7 @@ endl
         mov     edx, [esi]
         bswap   edx
         add     edx, 4
-        invoke  sha2_256_update, [temp_ctx], esi, edx
+        invoke  sha2_256.update, [temp_ctx], esi, edx
 
 ;---------------------------------------------------
 ; HASH: mpint f, exchange value sent by the server
@@ -218,7 +218,7 @@ endl
         mov     edx, [esi]
         bswap   edx
         add     edx, 4
-        invoke  sha2_256_update, [temp_ctx], esi, edx
+        invoke  sha2_256.update, [temp_ctx], esi, edx
 
         stdcall mpint_to_little_endian, [mpint_f], [mpint_f_big]
         mov     esi, [mpint_f_big]
@@ -240,11 +240,11 @@ endl
 ;-----------------------------------
 ; HASH: mpint K, the shared secret
         add     eax, 4
-        invoke  sha2_256_update, [temp_ctx], [mpint_K_big], eax
+        invoke  sha2_256.update, [temp_ctx], [mpint_K_big], eax
 
 ;-------------------------------
 ; Finalize the exchange hash (H)
-        invoke  sha2_256_finish, [temp_ctx]
+        invoke  sha2_256.finish, [temp_ctx]
         mov     esi, [temp_ctx]
         mov     edi, [H]
         mov     ecx, SHA2_256_LEN/4
@@ -302,12 +302,12 @@ endl
 
 ; First, calculate partial hash of K and H so we can re-use it for every key.
 
-        invoke  sha2_256_init, [k_h_ctx]
+        invoke  sha2_256.init, [k_h_ctx]
 
         mov     ecx, [K_length]
         add     ecx, 4
-        invoke  sha2_256_update, [k_h_ctx], [mpint_K_big], ecx
-        invoke  sha2_256_update, [k_h_ctx], [H], SHA2_256_LEN
+        invoke  sha2_256.update, [k_h_ctx], [mpint_K_big], ecx
+        invoke  sha2_256.update, [k_h_ctx], [H], SHA2_256_LEN
 
 ;---------------------------------------------------------------
 ; Initial IV client to server: HASH(K || H || "A" || session_id)
@@ -318,8 +318,8 @@ endl
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'A'
-        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
-        invoke  sha2_256_finish, [temp_ctx]
+        invoke  sha2_256.update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256.finish, [temp_ctx]
         mov     ebx, [con_ptr]
         lea     edi, [ebx + sshlib_connection.tx_iv]
         mov     esi, [temp_ctx]
@@ -335,8 +335,8 @@ endl
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'B'
-        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
-        invoke  sha2_256_finish, [temp_ctx]
+        invoke  sha2_256.update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256.finish, [temp_ctx]
         mov     ebx, [con_ptr]
         lea     edi, [ebx + sshlib_connection.rx_iv]
         mov     esi, [temp_ctx]
@@ -352,8 +352,8 @@ endl
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'C'
-        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
-        invoke  sha2_256_finish, [temp_ctx]
+        invoke  sha2_256.update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256.finish, [temp_ctx]
 
         mov     ebx, [con_ptr]
         lea     edi, [ebx+sshlib_connection.tx_enc_key]
@@ -367,8 +367,8 @@ endl
         rep movsd
         mov     ebx, [con_ptr]
         lea     edi, [ebx+sshlib_connection.tx_enc_key]
-        invoke  sha2_256_update, [temp_ctx], edi, SHA2_256_LEN
-        invoke  sha2_256_finish, [temp_ctx]
+        invoke  sha2_256.update, [temp_ctx], edi, SHA2_256_LEN
+        invoke  sha2_256.finish, [temp_ctx]
 
         mov     ebx, [con_ptr]
         add     edi, 256/8
@@ -385,8 +385,8 @@ endl
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'D'
-        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
-        invoke  sha2_256_finish, [temp_ctx]
+        invoke  sha2_256.update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256.finish, [temp_ctx]
 
         mov     ebx, [con_ptr]
         lea     edi, [ebx+sshlib_connection.rx_enc_key]
@@ -400,8 +400,8 @@ endl
         rep movsd
         mov     ebx, [con_ptr]
         lea     edi, [ebx+sshlib_connection.rx_enc_key]
-        invoke  sha2_256_update, [temp_ctx], edi, SHA2_256_LEN
-        invoke  sha2_256_finish, [temp_ctx]
+        invoke  sha2_256.update, [temp_ctx], edi, SHA2_256_LEN
+        invoke  sha2_256.finish, [temp_ctx]
 
         mov     ebx, [con_ptr]
         add     edi, 256/8
@@ -418,8 +418,8 @@ endl
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'E'
-        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
-        invoke  sha2_256_finish, [temp_ctx]
+        invoke  sha2_256.update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256.finish, [temp_ctx]
         mov     ebx, [con_ptr]
         lea     edi, [ebx + sshlib_connection.tx_int_key]
         mov     esi, [temp_ctx]
@@ -435,8 +435,8 @@ endl
         rep movsd
         lea     edx, [session_id_x]
         mov     byte[edx], 'F'
-        invoke  sha2_256_update, [temp_ctx], edx, SHA2_256_LEN+1
-        invoke  sha2_256_finish, [temp_ctx]
+        invoke  sha2_256.update, [temp_ctx], edx, SHA2_256_LEN+1
+        invoke  sha2_256.finish, [temp_ctx]
         mov     ebx, [con_ptr]
         lea     edi, [ebx + sshlib_connection.rx_int_key]
         mov     esi, [temp_ctx]

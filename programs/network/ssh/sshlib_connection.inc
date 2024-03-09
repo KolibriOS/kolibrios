@@ -111,9 +111,9 @@ endl
         jnz     .err_sock
 
 ; Start calculating hash
-        invoke  sha2_256_init, [ctx_ptr]
+        invoke  sha2_256.init, [ctx_ptr]
 ; HASH: string  V_C, the client's version string (CR and NL excluded)
-        invoke  sha2_256_update, [ctx_ptr], ssh_ident_ha, ssh_msg_ident.length+4-2
+        invoke  sha2_256.update, [ctx_ptr], ssh_ident_ha, ssh_msg_ident.length+4-2
 
 ; >> Send our identification string
         DEBUGF  2, "Sending ID string\n"
@@ -140,7 +140,7 @@ endl
         bswap   eax
         sub     edx, 4
         mov     dword[edx], eax
-        invoke  sha2_256_update, [ctx_ptr], edx, ecx
+        invoke  sha2_256.update, [ctx_ptr], edx, ecx
 
 ; >> Key Exchange init
         mov     eax, [con_ptr]
@@ -195,7 +195,7 @@ endl
         bswap   eax
         lea     esi, [esi+sshlib_connection.tx_buffer+1]
         mov     dword[esi], eax
-        invoke  sha2_256_update, [ctx_ptr], esi, edx
+        invoke  sha2_256.update, [ctx_ptr], esi, edx
 
 ; << Check key exchange init of server
         stdcall sshlib_recv_packet, [con_ptr], 0
@@ -257,11 +257,11 @@ endl
         mov     [esi+sshlib_connection.algo_kex], SSHLIB_KEX_DH_SHA256
         mov     [esi+sshlib_connection.algo_hostkey], SSHLIB_HOSTKEY_RSA
         mov     [esi+sshlib_connection.algo_crypt_rx], SSHLIB_CRYPT_AES256_CTR
-        mov     [esi+sshlib_connection.algo_crypt_tx], SSHLIB_CRYPT_AES256_CTR
-        mov     [esi+sshlib_connection.algo_mac_rx], SSHLIB_HMAC_SHA2_256
-        mov     [esi+sshlib_connection.algo_mac_tx], SSHLIB_HMAC_SHA2_256
-        mov     [esi+sshlib_connection.algo_compr_rx], SSHLIB_COMPR_NONE
-        mov     [esi+sshlib_connection.algo_compr_tx], SSHLIB_COMPR_NONE
+        mov     [esi+sshlib_connection.algo_crypt_tx], SSHLIB_CRYPT_AES256_CTR  ; SSHLIB_CRYPT_CHACHA20_POLY1305
+        mov     [esi+sshlib_connection.algo_mac_rx], SSHLIB_HMAC_SHA2_256_ETM
+        mov     [esi+sshlib_connection.algo_mac_tx], SSHLIB_HMAC_SHA2_256_ETM
+        mov     [esi+sshlib_connection.algo_compr_rx], SSHLIB_ALGO_NONE
+        mov     [esi+sshlib_connection.algo_compr_tx], SSHLIB_ALGO_NONE
 
 ; HASH: string I_S, the payload of the servers's SSH_MSG_KEXINIT
         mov     esi, [con_ptr]
@@ -273,7 +273,7 @@ endl
         bswap   eax
         lea     esi, [esi+sshlib_connection.rx_buffer+1]
         mov     dword[esi], eax
-        invoke  sha2_256_update, [ctx_ptr], esi, edx
+        invoke  sha2_256.update, [ctx_ptr], esi, edx
 
 ; Exchange keys with the server
 
@@ -287,38 +287,164 @@ endl
 
         mov     ebx, [con_ptr]
 
-;        lea     ecx, [ebx + sshlib_connection.rx_crypt_ctx]
-;        lea     edx, [ebx + sshlib_connection.rx_enc_key]
-;        lea     esi, [ebx + sshlib_connection.rx_iv]
-;        invoke  aes256ctr.init, ecx, edx, esi, 0
-;
-;        push    [aes256ctr.update]
-;        pop     [ebx + sshlib_connection.rx_crypt_proc]
-;        mov     [ebx + sshlib_connection.rx_crypt_blocksize], 16        ; AES_BLOCKSIZE
-;
-;        push    [hmac_sha2_256.oneshot]
-;        pop     [ebx + sshlib_connection.rx_mac_proc]
-;        mov     [ebx + sshlib_connection.rx_mac_length], SHA2_256_LEN
-;
-;        lea     ecx, [ebx + sshlib_connection.tx_crypt_ctx]
-;        lea     edx, [ebx + sshlib_connection.tx_enc_key]
-;        lea     esi, [ebx + sshlib_connection.tx_iv]
-;        invoke  aes256ctr.init, ecx, edx, esi, 0
-;
-;        push    [aes256ctr.update]
-;        pop     [ebx + sshlib_connection.tx_crypt_proc]
-;        mov     [ebx + sshlib_connection.tx_crypt_blocksize], 16        ; AES_BLOCKSIZE
-;        mov     [ebx + sshlib_connection.tx_pad_size], 16               ; AES_BLOCKSIZE
-;
-;        push    [hmac_sha2_256.oneshot]
-;        pop     [ebx + sshlib_connection.tx_mac_proc]
-;        mov     [ebx + sshlib_connection.tx_mac_length], SHA2_256_LEN
-;
-;        mov     [ebx + sshlib_connection.rx_proc], sshlib_recv_packet_hmac
-;        mov     [ebx + sshlib_connection.tx_proc], sshlib_send_packet_hmac
+        cmp     [ebx + sshlib_connection.algo_crypt_rx], SSHLIB_CRYPT_AES256_CTR
+        je      .rx_crypt_aes256_ctr
+        cmp     [ebx + sshlib_connection.algo_crypt_rx], SSHLIB_CRYPT_AES256_CBC
+        je      .rx_crypt_aes256_cbc
+        cmp     [ebx + sshlib_connection.algo_crypt_rx], SSHLIB_CRYPT_CHACHA20_POLY1305
+        je      .rx_crypt_poly1305_chacha20
 
+        jmp     .err_proto
+
+  .rx_crypt_aes256_ctr:
+        lea     ecx, [ebx + sshlib_connection.rx_crypt_ctx]
+        lea     edx, [ebx + sshlib_connection.rx_enc_key]
+        lea     esi, [ebx + sshlib_connection.rx_iv]
+        invoke  aes256ctr.init, ecx, edx, esi, 0
+        push    [aes256ctr.update]
+        pop     [ebx + sshlib_connection.rx_crypt_proc]
+        mov     [ebx + sshlib_connection.rx_crypt_blocksize], 16        ; AES_BLOCKSIZE
+        jmp     .have_rx_crypt
+
+  .rx_crypt_aes256_cbc:
+        lea     ecx, [ebx + sshlib_connection.rx_crypt_ctx]
+        lea     edx, [ebx + sshlib_connection.rx_enc_key]
+        lea     esi, [ebx + sshlib_connection.rx_iv]
+        invoke  aes256cbc.init, ecx, edx, esi, 0
+        push    [aes256cbc.update]
+        pop     [ebx + sshlib_connection.rx_crypt_proc]
+        mov     [ebx + sshlib_connection.rx_crypt_blocksize], 16        ; AES_BLOCKSIZE
+        jmp     .have_rx_crypt
+
+  .rx_crypt_poly1305_chacha20:
         mov     [ebx + sshlib_connection.rx_proc], sshlib_recv_packet_poly1305chacha20
+        jmp     .have_rx_crypt_and_mac
+
+
+
+  .have_rx_crypt:
+        cmp     [ebx + sshlib_connection.algo_mac_rx], SSHLIB_HMAC_SHA2_256
+        je      .rx_hmac_sha2_256
+        cmp     [ebx + sshlib_connection.algo_mac_rx], SSHLIB_HMAC_SHA2_512
+        je      .rx_hmac_sha2_512
+        cmp     [ebx + sshlib_connection.algo_mac_rx], SSHLIB_HMAC_SHA2_256_ETM
+        je      .rx_hmac_sha2_256_etm
+        cmp     [ebx + sshlib_connection.algo_mac_rx], SSHLIB_HMAC_SHA2_512_ETM
+        je      .rx_hmac_sha2_512_etm
+
+        jmp     .err_proto
+
+  .rx_hmac_sha2_256:
+        push    [hmac_sha2_256.oneshot]
+        pop     [ebx + sshlib_connection.rx_mac_proc]
+        mov     [ebx + sshlib_connection.rx_mac_length], SHA2_256_LEN
+        mov     [ebx + sshlib_connection.rx_proc], sshlib_recv_packet_hmac
+        jmp     .have_rx_crypt_and_mac
+
+  .rx_hmac_sha2_512:
+        push    [hmac_sha2_512.oneshot]
+        pop     [ebx + sshlib_connection.rx_mac_proc]
+        mov     [ebx + sshlib_connection.rx_mac_length], SHA2_512_LEN
+        mov     [ebx + sshlib_connection.rx_proc], sshlib_recv_packet_hmac
+        jmp     .have_rx_crypt_and_mac
+
+  .rx_hmac_sha2_256_etm:
+        push    [hmac_sha2_256.oneshot]
+        pop     [ebx + sshlib_connection.rx_mac_proc]
+        mov     [ebx + sshlib_connection.rx_mac_length], SHA2_256_LEN
+        mov     [ebx + sshlib_connection.rx_proc], sshlib_recv_packet_hmac_etm
+        jmp     .have_rx_crypt_and_mac
+
+  .rx_hmac_sha2_512_etm:
+        push    [hmac_sha2_512.oneshot]
+        pop     [ebx + sshlib_connection.rx_mac_proc]
+        mov     [ebx + sshlib_connection.rx_mac_length], SHA2_512_LEN
+        mov     [ebx + sshlib_connection.rx_proc], sshlib_recv_packet_hmac_etm
+        jmp     .have_rx_crypt_and_mac
+
+
+  .have_rx_crypt_and_mac:
+
+        cmp     [ebx + sshlib_connection.algo_crypt_tx], SSHLIB_CRYPT_AES256_CTR
+        je      .tx_crypt_aes256_ctr
+        cmp     [ebx + sshlib_connection.algo_crypt_tx], SSHLIB_CRYPT_AES256_CBC
+        je      .tx_crypt_aes256_cbc
+        cmp     [ebx + sshlib_connection.algo_crypt_tx], SSHLIB_CRYPT_CHACHA20_POLY1305
+        je      .tx_crypt_poly1305_chacha20
+
+        jmp     .err_proto
+
+  .tx_crypt_aes256_ctr:
+        lea     ecx, [ebx + sshlib_connection.tx_crypt_ctx]
+        lea     edx, [ebx + sshlib_connection.tx_enc_key]
+        lea     esi, [ebx + sshlib_connection.tx_iv]
+        invoke  aes256ctr.init, ecx, edx, esi, 0
+        push    [aes256ctr.update]
+        pop     [ebx + sshlib_connection.tx_crypt_proc]
+        mov     [ebx + sshlib_connection.tx_crypt_blocksize], 16        ; AES_BLOCKSIZE
+        mov     [ebx + sshlib_connection.tx_pad_size], 16               ; AES_BLOCKSIZE
+        jmp     .have_tx_crypt
+
+  .tx_crypt_aes256_cbc:
+        lea     ecx, [ebx + sshlib_connection.tx_crypt_ctx]
+        lea     edx, [ebx + sshlib_connection.tx_enc_key]
+        lea     esi, [ebx + sshlib_connection.tx_iv]
+        invoke  aes256cbc.init, ecx, edx, esi, 0
+        push    [aes256cbc.update]
+        pop     [ebx + sshlib_connection.tx_crypt_proc]
+        mov     [ebx + sshlib_connection.tx_crypt_blocksize], 16        ; AES_BLOCKSIZE
+        mov     [ebx + sshlib_connection.tx_pad_size], 16               ; AES_BLOCKSIZE
+        jmp     .have_tx_crypt
+
+  .tx_crypt_poly1305_chacha20:
         mov     [ebx + sshlib_connection.tx_proc], sshlib_send_packet_poly1305chacha20
+        jmp     .have_tx_crypt_and_mac
+
+
+
+  .have_tx_crypt:
+        cmp     [ebx + sshlib_connection.algo_mac_tx], SSHLIB_HMAC_SHA2_256
+        je      .tx_hmac_sha2_256
+        cmp     [ebx + sshlib_connection.algo_mac_tx], SSHLIB_HMAC_SHA2_512
+        je      .tx_hmac_sha2_512
+        cmp     [ebx + sshlib_connection.algo_mac_tx], SSHLIB_HMAC_SHA2_256_ETM
+        je      .tx_hmac_sha2_256_etm
+        cmp     [ebx + sshlib_connection.algo_mac_tx], SSHLIB_HMAC_SHA2_512_ETM
+        je      .tx_hmac_sha2_512_etm
+
+        jmp     .err_proto
+
+  .tx_hmac_sha2_256:
+        push    [hmac_sha2_256.oneshot]
+        pop     [ebx + sshlib_connection.tx_mac_proc]
+        mov     [ebx + sshlib_connection.tx_mac_length], SHA2_256_LEN
+        mov     [ebx + sshlib_connection.tx_proc], sshlib_send_packet_hmac
+        jmp     .have_tx_crypt_and_mac
+
+  .tx_hmac_sha2_512:
+        push    [hmac_sha2_512.oneshot]
+        pop     [ebx + sshlib_connection.tx_mac_proc]
+        mov     [ebx + sshlib_connection.tx_mac_length], SHA2_512_LEN
+        mov     [ebx + sshlib_connection.tx_proc], sshlib_send_packet_hmac
+        jmp     .have_tx_crypt_and_mac
+
+  .tx_hmac_sha2_256_etm:
+        push    [hmac_sha2_256.oneshot]
+        pop     [ebx + sshlib_connection.tx_mac_proc]
+        mov     [ebx + sshlib_connection.tx_mac_length], SHA2_256_LEN
+        mov     [ebx + sshlib_connection.tx_proc], sshlib_send_packet_hmac_etm
+        jmp     .have_tx_crypt_and_mac
+
+  .tx_hmac_sha2_512_etm:
+        push    [hmac_sha2_512.oneshot]
+        pop     [ebx + sshlib_connection.tx_mac_proc]
+        mov     [ebx + sshlib_connection.tx_mac_length], SHA2_512_LEN
+        mov     [ebx + sshlib_connection.tx_proc], sshlib_send_packet_hmac_etm
+        jmp     .have_tx_crypt_and_mac
+
+
+  .have_tx_crypt_and_mac:
+
 
 ; Re-seed RNG for padding bytes
 
