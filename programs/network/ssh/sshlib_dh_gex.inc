@@ -87,7 +87,7 @@ endl
 ;----------------------------------------------
 ; >> Send Diffie-Hellman Group Exchange Request
 
-        DEBUGF  2, "Sending GEX\n"
+        DEBUGF  2, "Sending DH group exchange request\n"
         stdcall sshlib_send_packet, [con_ptr], ssh_msg_gex_req, ssh_msg_gex_req.length, 0
         cmp     eax, 0
         jl      .err
@@ -102,7 +102,7 @@ endl
         mov     ebx, [con_ptr]
         cmp     [ebx + sshlib_connection.rx_buffer.message_code], SSH_MSG_KEX_DH_GEX_GROUP
         jne     .err_proto
-        DEBUGF  2, "Received GEX group\n"
+        DEBUGF  2, "Received DH group\n"
 
         lea     esi, [ebx + sshlib_connection.rx_buffer + sizeof.ssh_packet_header]
         stdcall mpint_to_little_endian, [mpint_p], esi
@@ -151,7 +151,7 @@ endl
         stdcall mpint_to_big_endian, edi, [mpint_e]
 
         DEBUGF  2, "Sending GEX init\n"
-        mov     ecx, dword[ebx + sshlib_connection.tx_buffer.message_code+1]         ;;;; dword[edi]
+        mov     ecx, dword[ebx + sshlib_connection.tx_buffer.message_code+1]
         bswap   ecx
         add     ecx, 5
         lea     esi, [ebx + sshlib_connection.tx_buffer.message_code]
@@ -263,7 +263,7 @@ endl
 ; If first KEX, verify host public key
         stdcall sshlib_host_verify, [con_ptr], [str_K_S], [str_s_of_H], [H], SHA2_256_LEN
         test    eax, eax
-        jnz     .err
+        jnz     .err_hostkey_verification
 
         mov     eax, [con_ptr]
         mov     esi, [H]
@@ -279,6 +279,8 @@ endl
 
 ;-------------------------------------
 ; << Parse Diffie-Hellman New Keys MSG
+
+        DEBUGF  2, "Expecting New Keys message\n"
 
         stdcall sshlib_recv_packet, [con_ptr], 0
         cmp     eax, 0
@@ -457,6 +459,10 @@ endl
         mcall   68, 13, [mpint_tmp]
         pop     eax
         ret
+
+  .err_hostkey_verification:
+        DEBUGF  3, "Hostkey verification failed!\n"
+        jmp     .err
 
   .err_nomem:
         DEBUGF  3, "Out of memory during key exchange!\n"

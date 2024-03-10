@@ -1,6 +1,6 @@
 ;    sshlib_host.inc - SSH remote host authentication
 ;
-;    Copyright (C) 2021 Jeffrey Amelynck
+;    Copyright (C) 2021-2024 Jeffrey Amelynck
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -30,17 +30,22 @@ locals
         current_hk64_end        dd ?
 endl
 
+        DEBUGF  2, "Verifying host key\n"
+
         mov     eax, [con_ptr]
         lea     ebx, [eax + sshlib_connection.hostname_sz]
         mov     [hostname_sz], ebx
-        cmp     [eax+sshlib_connection.algo_hostkey], SSHLIB_HOSTKEY_RSA
+        cmp     [eax+sshlib_connection.algo_hostkey], SSHLIB_HOSTKEY_RSA_SHA1
         je      .rsa
-        ; ..add more here
+        cmp     [eax+sshlib_connection.algo_hostkey], SSHLIB_HOSTKEY_RSA_SHA2_256
+        je      .rsa
+        cmp     [eax+sshlib_connection.algo_hostkey], SSHLIB_HOSTKEY_RSA_SHA2_512
+        je      .rsa
         mov     eax, SSHLIB_ERR_HKEY_NO_ALGO
         ret
 
   .rsa:
-        stdcall sshlib_host_verify_rsa, [str_host_key], [str_signature], [message], [message_len]
+        stdcall sshlib_host_verify_rsa, [con_ptr], [str_host_key], [str_signature], [message], [message_len]
         test    eax, eax
         jnz     .err
         mov     [key_name_sz], ssh_rsa_sz
@@ -82,7 +87,6 @@ endl
         ret
 
   .mismatch:
-int3
         lea     eax, [current_hkb64]
         stdcall sshlib_callback_hostkey_problem, [con_ptr], SSHLIB_HOSTKEY_PROBLEM_MISMATCH, eax
         cmp     eax, SSHLIB_HOSTKEY_ACCEPT
@@ -112,7 +116,7 @@ endp
 
 ; https://datatracker.ietf.org/doc/html/rfc3447#section-8.2.2
 ; RSASSA-PKCS1-V1_5-VERIFY
-proc sshlib_host_verify_rsa str_host_key, str_signature, M, message_len
+proc sshlib_host_verify_rsa con_ptr, str_host_key, str_signature, M, message_len
 
 locals
         h_ctx                   dd ?
@@ -204,6 +208,10 @@ endl
         jmp     .err_signature
 
   .sha1:
+        mov     eax, [con_ptr]
+        cmp     [eax + sshlib_connection.algo_hostkey], SSHLIB_HOSTKEY_RSA_SHA1
+        jne     .err_signature
+
         DEBUGF  3, "SSH: Using RSA with SHA1 hash\n"
         add     esi, 4+4+7
         push    esi
@@ -238,6 +246,9 @@ endl
         jmp     .rsa
 
   .sha2_256:
+        mov     eax, [con_ptr]
+        cmp     [eax + sshlib_connection.algo_hostkey], SSHLIB_HOSTKEY_RSA_SHA2_256
+        jne     .err_signature
         DEBUGF  3, "SSH: Using RSA with SHA2-256 hash\n"
         add     esi, 4+4+12
         push    esi
@@ -272,6 +283,9 @@ endl
         jmp     .rsa
 
   .sha2_512:
+        mov     eax, [con_ptr]
+        cmp     [eax + sshlib_connection.algo_hostkey], SSHLIB_HOSTKEY_RSA_SHA2_512
+        jne     .err_signature
         DEBUGF  3, "SSH: Using RSA with SHA2-512 hash\n"
         add     esi, 4+4+12
         push    esi

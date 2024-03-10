@@ -478,7 +478,7 @@ str24b  db 10, 10, "If you trust this host, press A to accept and store the (new
 ssh_ident_ha:
         dd_n (ssh_msg_ident.length-2)
 ssh_msg_ident:
-        db "SSH-2.0-KolibriOS_SSH_0.11",13,10
+        db "SSH-2.0-KolibriOS_SSH_0.12",13,10
   .length = $ - ssh_msg_ident
 
 
@@ -491,13 +491,13 @@ ssh_msg_kex:
   .server_host_key_algorithms:
         str "rsa-sha2-512,rsa-sha2-256"                                 ;ssh-rsa,ssh-dss
   .encryption_algorithms_client_to_server:
-        str "aes256-ctr";,aes256-cbc,chacha20-poly1305@openssh.com"       ;aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc ?
+        str "chacha20-poly1305@openssh.com,aes256-ctr,aes256-cbc"       ;aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc ?
   .encryption_algorithms_server_to_client:
-        str "aes256-ctr";,aes256-cbc,chacha20-poly1305@openssh.com"       ;aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc ?
+        str "chacha20-poly1305@openssh.com,aes256-ctr,aes256-cbc"       ;aes192-ctr,aes192-cbc,aes128-ctr,aes128-cbc ?
   .mac_algorithms_client_to_server:
-        str "hmac-sha2-256-etm@openssh.com";,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512"
+        str "hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512"
   .mac_algorithms_server_to_client:
-        str "hmac-sha2-256-etm@openssh.com";,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512"
+        str "hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512"
   .compression_algorithms_client_to_server:
         str "none"                                                      ;zlib ?
   .compression_algorithms_server_to_client:

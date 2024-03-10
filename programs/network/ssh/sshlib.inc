@@ -1,6 +1,6 @@
 ;    sshlib.inc - SSHlib constants
 ;
-;    Copyright (C) 2016-2021 Jeffrey Amelynck
+;    Copyright (C) 2016-2024 Jeffrey Amelynck
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ SSHLIB_ERR_HKEY_NO_ALGO         =  -7
 SSHLIB_ERR_HKEY_VERIFY_FAIL     =  -8
 SSHLIB_ERR_HKEY_SIGNATURE       =  -9
 SSHLIB_ERR_HKEY_PUBLIC_KEY      = -10
+SSHLIB_ERR_NO_ALGO              = -11
 
 ; Channel status codes
 
@@ -44,29 +45,89 @@ SSHLIB_CON_STAT_KEX_DONE        = 1
 
 ; Algorithm identifier codes
 
-SSHLIB_ALGO_NONE                = 0
+SSHLIB_ALGO_FAIL                = 0
+SSHLIB_ALGO_NONE                = 1
 
-SSHLIB_KEX_DH_SHA256            = 1     ; diffie-hellman-group-exchange-sha256
+SSHLIB_KEX_DH_SHA256            = 2
 
-SSHLIB_HOSTKEY_DSS              = 1     ; ssh-dss
-SSHLIB_HOSTKEY_RSA              = 2     ; ssh-rsa
-SSHLIB_HOSTKEY_RSA_SHA2_256     = 3     ; rsa-sha2-256
-SSHLIB_HOSTKEY_RSA_SHA2_512     = 4     ; rsa-sha2-512
+SSHLIB_HOSTKEY_DSS              = 2
+SSHLIB_HOSTKEY_RSA_SHA1         = 3
+SSHLIB_HOSTKEY_RSA_SHA2_256     = 4
+SSHLIB_HOSTKEY_RSA_SHA2_512     = 5
 
-SSHLIB_CRYPT_AES128_CTR         = 1     ; aes128-ctr
-SSHLIB_CRYPT_AES128_CBC         = 2     ; aes128-cbc
-SSHLIB_CRYPT_AES192_CTR         = 3     ; aes192-cbc
-SSHLIB_CRYPT_AES192_CBC         = 4     ; aes192-ctr
-SSHLIB_CRYPT_AES256_CTR         = 5     ; aes256-ctr
-SSHLIB_CRYPT_AES256_CBC         = 6     ; aes256-cbc
-SSHLIB_CRYPT_CHACHA20_POLY1305  = 7     ; chacha20-poly1305@openssh.com
+SSHLIB_CRYPT_AES128_CTR         = 2
+SSHLIB_CRYPT_AES128_CBC         = 3
+SSHLIB_CRYPT_AES192_CTR         = 4
+SSHLIB_CRYPT_AES192_CBC         = 5
+SSHLIB_CRYPT_AES256_CTR         = 6
+SSHLIB_CRYPT_AES256_CBC         = 7
+SSHLIB_CRYPT_CHACHA20_POLY1305  = 8
 
-SSHLIB_HMAC_SHA2_256            = 1     ; hmac-sha2-256
-SSHLIB_HMAC_SHA2_512            = 2     ; hmac-sha2-512
-SSHLIB_HMAC_SHA2_256_ETM        = 3     ; hmac-sha2-256-etm@openssh.com
-SSHLIB_HMAC_SHA2_512_ETM        = 4     ; hmac-sha2-512-etm@openssh.com
+SSHLIB_MAC_HMAC_SHA2_256        = 2
+SSHLIB_MAC_HMAC_SHA2_512        = 3
+SSHLIB_MAC_HMAC_SHA2_256_ETM    = 4
+SSHLIB_MAC_HMAC_SHA2_512_ETM    = 5
 
-SSHLIB_COMPR_ZLIB               = 1     ; zlib
+SSHLIB_COMPR_NONE               = 2
+SSHLIB_COMPR_ZLIB               = 3
+
+iglobal
+algorithms_kex:
+dd SSHLIB_KEX_DH_SHA256
+db "diffie-hellman-group-exchange-sha256", 0
+dd 0
+
+algorithms_hostkey:
+dd SSHLIB_HOSTKEY_DSS
+db "ssh-dss", 0
+dd SSHLIB_HOSTKEY_RSA_SHA1
+db "ssh-rsa ", 0
+dd SSHLIB_HOSTKEY_RSA_SHA2_256
+db "rsa-sha2-256", 0
+dd SSHLIB_HOSTKEY_RSA_SHA2_512
+db "rsa-sha2-512", 0
+dd 0
+
+algorithms_crypt:
+;dd SSHLIB_CRYPT_AES128_CTR
+;db "aes128-ctr", 0
+;dd SSHLIB_CRYPT_AES128_CBC
+;db "aes128-cbc", 0
+;dd SSHLIB_CRYPT_AES192_CTR
+;db "aes192-cbc", 0
+;dd SSHLIB_CRYPT_AES192_CBC
+;db "aes192-ctr", 0
+dd SSHLIB_CRYPT_AES256_CTR
+db "aes256-ctr", 0
+dd SSHLIB_CRYPT_AES256_CBC
+db "aes256-cbc", 0
+dd SSHLIB_CRYPT_CHACHA20_POLY1305
+db "chacha20-poly1305@openssh.com", 0
+dd 0
+
+algorithms_mac:
+dd SSHLIB_MAC_HMAC_SHA2_256
+db "hmac-sha2-256", 0
+dd SSHLIB_MAC_HMAC_SHA2_512
+db "hmac-sha2-512", 0
+dd SSHLIB_MAC_HMAC_SHA2_256_ETM
+db "hmac-sha2-256-etm@openssh.com", 0
+dd SSHLIB_MAC_HMAC_SHA2_512_ETM
+db "hmac-sha2-512-etm@openssh.com", 0
+dd 0
+
+algorithms_compression:
+dd SSHLIB_COMPR_NONE
+db "none"
+;dd SSHLIB_COMPR_ZLIB
+;db "zlib@openssh.com", 0
+dd 0
+
+languages:
+dd 0
+db 0
+
+endg
 
 ; Hostkey
 
