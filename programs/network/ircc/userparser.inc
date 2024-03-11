@@ -223,10 +223,7 @@ cmd_usr_msg:
         call    print_char
 
         pop     esi
-        push    esi
         call    print_asciiz
-        pop     esi
-
 
         lea     esi, [edi - packetbuf]
         mcall   send, [socketnum], packetbuf, , 0
@@ -530,7 +527,7 @@ cmd_usr_ctcp:
         mov     al, 0x01
         stosb
 
-        push edi esi
+        push    esi
 
 ; copy the message itself
   @@:
@@ -550,7 +547,6 @@ cmd_usr_ctcp:
         stosb
         mov     ax, 0x0a0d
         stosw
-        mov     byte[edi], 0
 
 ; now print to the window
         if TIMESTAMP
@@ -560,7 +556,7 @@ cmd_usr_ctcp:
         mov     esi, ctcp_header
         call    print_asciiz
 
-        mov     esi, packetbuf+8
+        mov     esi, user_command+6
         mov     bl, ' '
         call    print_string
 
@@ -572,13 +568,13 @@ cmd_usr_ctcp:
 
         pop     esi
         call    print_asciiz
-        pop     esi
 
+        mov     al, 10
+        call    print_char
 
 ; now send it away
         lea     esi, [edi - packetbuf]                  ; calculate length
         mcall   send, [socketnum], packetbuf, , 0       ; and finally send to server
-
   .fail:
 
         ret
