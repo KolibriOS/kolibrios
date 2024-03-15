@@ -759,12 +759,14 @@ socket_close:
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
         jne     .free
         test    [eax + SOCKET.state], SS_ISCONNECTED
-        jz      .free
+        jz      @f
         test    [eax + SOCKET.state], SS_ISDISCONNECTING
-        jnz     .free
+        jnz     @f
         call    tcp_disconnect
-        test    eax, eax
-        jz      .end
+@@:
+        ret
+;        test    eax, eax
+;        jz      .end
   .free:
         call    socket_free
   .end:
