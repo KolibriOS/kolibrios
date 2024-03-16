@@ -872,6 +872,9 @@ Remarks:
 ======================================================================
  Function 18, subfunction 11 - get information on the disk subsystem.
 ======================================================================
+
+!!! WARNING. This interface is outdated and should not be used !!!
+
 Parameters:
   * eax = 18 - function number
   * ebx = 11 - subfunction number
@@ -1277,6 +1280,8 @@ Constant position of the window relative to other windows:
 ==================== Function 20 - MIDI interface. ===================
 ======================================================================
 
+!!! WARNING. This interface is outdated and should not be used !!!
+
 ----------------------- Subfunction 1 - reset ------------------------
 Parameters:
   * eax = 20 - function number
@@ -1300,6 +1305,9 @@ Remarks:
 ======================================================================
 ======== Function 21, subfunction 1 - set MPU MIDI base port. ========
 ======================================================================
+
+!!! WARNING. This interface is outdated and should not be used !!!
+
 Parameters:
   * eax = 21 - function number
   * ebx = 1 - subfunction number
@@ -1475,6 +1483,9 @@ Remarks:
 ======================================================================
 ======= Function 24, subfunction 4 - eject tray of disk drive. =======
 ======================================================================
+
+!!! WARNING. This interface is outdated and should not be used !!!
+
 Parameters:
   * eax = 24 - function number
   * ebx = 4 - subfunction number
@@ -1498,6 +1509,9 @@ Remarks:
 ======================================================================
 ======== Function 24, subfunction 5 - load tray of disk drive. =======
 ======================================================================
+
+!!! WARNING. This interface is outdated and should not be used !!!
+
 Parameters:
   * eax = 24 - function number
   * ebx = 5 - subfunction number
@@ -1539,6 +1553,9 @@ Remarks:
 ======================================================================
 ======== Function 26, subfunction 1 - get MPU MIDI base port. ========
 ======================================================================
+
+!!! WARNING. This interface is outdated and should not be used !!!
+
 Parameters:
   * eax = 26 - function number
   * ebx = 1 - subfunction number
@@ -2075,41 +2092,10 @@ Remarks:
 ---------------------- Constants for registers: ----------------------
   eax - SF_SET_EVENTS_MASK (40)
 ======================================================================
-================ Function 43 - input/output to a port. ===============
-======================================================================
-
------------------------- Output data to port -------------------------
-Parameters:
-  * eax = 43 - function number
-  * bl = byte for output
-  * ecx = port number 0xnnnn (from 0 to 0xFFFF)
-Returned value:
-  * eax = 0 - success
-  * eax = 1 - the thread has not reserved the selected port
-
------------------------- Input data from port ------------------------
-Parameters:
-  * eax = 43 - function number
-  * ebx is ignored
-  * ecx = 0x8000nnnn, where nnnn = port number (from 0 to 0xFFFF)
-Returned value:
-  * eax = 0 - success, thus ebx = entered byte
-  * eax = 1 - the thread has not reserved the selected port
-Remarks:
-  * Previously the thread must reserve the selected port
-    for itself by function 46.
-  * Instead of call to this function it is better to use
-    processor instructions in/out - this is much
-    faster and a bit shorter and easier.
-
----------------------- Constants for registers: ----------------------
-  eax - SF_PORT_IN_OUT (43)
-======================================================================
 ====== Function 46 - reserve/free a group of input/output ports. =====
 ======================================================================
 To work with reserved ports an application can access directly by
-commands in/out (recommended way) and can use function 43
-(not recommended way).
+commands in/out .
 Parameters:
   * eax = 46 - function number
   * ebx = 0 - reserve, 1 - free
@@ -2987,6 +2973,9 @@ Returned value:
 ======================================================================
 ============== Function 64 - resize application memory. ==============
 ======================================================================
+
+!!! WARNING. This interface is outdated and should not be used !!!
+
 Parameters:
   * eax = 64 - function number
   * ebx = 1 - unique subfunction
