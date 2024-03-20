@@ -15,7 +15,7 @@ skinlist = {
 "ConLenov/Win10/Win10.skn",
 "ConLenov/HotFox/HotFox.skn",
 "ConLenov/Yaru/Yaru.skn",
-"ConLenov/Yaru/Yaru-light.skn",
+"ConLenov/Yaru-light/Yaru-light.skn",
 "dunkaist/mursky/mursky.skn",
 "dunkaist/testtest/testtest.skn",
 "Leency/AreaSq/AreaSq.skn",
