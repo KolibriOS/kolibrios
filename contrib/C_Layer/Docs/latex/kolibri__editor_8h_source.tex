@@ -5,21 +5,21 @@
 \DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ KOLIBRI\_EDITOR\_H}}
 \DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ KOLIBRI\_EDITOR\_H}}
 \DoxyCodeLine{00003\ }
-\DoxyCodeLine{00004\ \textcolor{comment}{//\ (количество\ символов в\ новом документе +\ 2)}}
+\DoxyCodeLine{00004\ \textcolor{comment}{//\ ({\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ +\ 2)}}
 \DoxyCodeLine{00005\ \textcolor{preprocessor}{\#define\ TE\_MAXCHARS\ 100002}}
-\DoxyCodeLine{00006\ \textcolor{comment}{//\ максимальный размер файла\ синтаксиса}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
 \DoxyCodeLine{00007\ \textcolor{preprocessor}{\#define\ TE\_MAX\_SYNTAX\_FILESIZE\ 410000}}
 \DoxyCodeLine{00008\ \textcolor{comment}{//\ buffer\ for\ copy|paste}}
 \DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ TE\_BUF\_SIZE\ \ 4096}}
 \DoxyCodeLine{00010\ \textcolor{keyword}{typedef}\ void\ (*\mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}})(void);}
 \DoxyCodeLine{00011\ }
 \DoxyCodeLine{00012\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}\ ((\_\_packed\_\_))\ editor\_symbol\ \{}
-\DoxyCodeLine{00013\ \ \ \ \ uint8\_t\ \ \ \ \ c;\ \ \ \ \ \ \textcolor{comment}{//\ \ +0\ символ}}
-\DoxyCodeLine{00014\ \ \ \ \ uint8\_t\ \ \ \ \ col;\ \ \ \ \textcolor{comment}{//\ \ +1\ цвет}}
-\DoxyCodeLine{00015\ \ \ \ \ uint32\_t\ \ \ \ prev;\ \ \ \textcolor{comment}{//\ \ +2\ индекс\ предыдущего}}
-\DoxyCodeLine{00016\ \ \ \ \ uint32\_t\ \ \ \ next;\ \ \ \textcolor{comment}{//\ \ +6\ указатели (индекс\ следующего)}}
-\DoxyCodeLine{00017\ \ \ \ \ uint32\_t\ \ \ \ tc;\ \ \ \ \ \textcolor{comment}{//\ \ +10\ врем. создания}}
-\DoxyCodeLine{00018\ \ \ \ \ uint32\_t\ \ \ \ td;\ \ \ \ \ \textcolor{comment}{//\ +14\ врем. удаления}}
+\DoxyCodeLine{00013\ \ \ \ \ uint8\_t\ \ \ \ \ c;\ \ \ \ \ \ \textcolor{comment}{//\ \ +0\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00014\ \ \ \ \ uint8\_t\ \ \ \ \ col;\ \ \ \ \textcolor{comment}{//\ \ +1\ {\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00015\ \ \ \ \ uint32\_t\ \ \ \ prev;\ \ \ \textcolor{comment}{//\ \ +2\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00016\ \ \ \ \ uint32\_t\ \ \ \ next;\ \ \ \textcolor{comment}{//\ \ +6\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ ({\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr})}}
+\DoxyCodeLine{00017\ \ \ \ \ uint32\_t\ \ \ \ tc;\ \ \ \ \ \textcolor{comment}{//\ \ +10\ {\ucr}{\ucr}{\ucr}{\ucr}.\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00018\ \ \ \ \ uint32\_t\ \ \ \ td;\ \ \ \ \ \textcolor{comment}{//\ +14\ {\ucr}{\ucr}{\ucr}{\ucr}.\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
 \DoxyCodeLine{00019\ \};}
 \DoxyCodeLine{00020\ }
 \DoxyCodeLine{00022\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}\ ((\_\_packed\_\_))\ \{}
@@ -27,97 +27,97 @@
 \DoxyCodeLine{00024\ \ \ \ \ uint32\_t\ \ \ \ y\_pos;\ \ \textcolor{comment}{//50}}
 \DoxyCodeLine{00025\ \ \ \ \ uint32\_t\ \ \ \ width;\ \ \textcolor{comment}{//440}}
 \DoxyCodeLine{00026\ \ \ \ \ uint32\_t\ \ \ \ hight;\ \ \textcolor{comment}{//150}}
-\DoxyCodeLine{00027\ \ \ \ \ uint32\_t\ \ \ \ w\_pane;\ \ \ \ \ \ \textcolor{comment}{//30\ ширина панели в окне,\ width\ of\ left\ pane\ with\ line\ numbers}}
-\DoxyCodeLine{00028\ \ \ \ \ uint32\_t\ \ \ \ h\_pane;\ \ \ \ \ \ \textcolor{comment}{//25\ высота\ панели\ в окне,\ hight\ of\ top\ pane\ with\ Rows,\ Cols\ Undo\ info}}
-\DoxyCodeLine{00029\ \ \ \ \ uint32\_t\ \ \ \ width\_sym;\ \ \textcolor{comment}{//9\ ширина символа\ (знакоместа) в окне}}
-\DoxyCodeLine{00030\ \ \ \ \ uint32\_t\ \ \ \ hight\_sym;\ \ \textcolor{comment}{//16\ высота\ символа\ (знакоместа) в окне}}
-\DoxyCodeLine{00031\ \ \ \ \ uint8\_t\ \ \ \ \ drag\_m;\ \ \ \ \ \textcolor{comment}{//\ выделение\ от мыши}}
-\DoxyCodeLine{00032\ \ \ \ \ uint8\_t\ \ \ \ \ drag\_k;\ \ \ \ \ \textcolor{comment}{//\ выделение\ от клавиатуры}}
-\DoxyCodeLine{00033\ \ \ \ \ uint32\_t\ \ \ \ sel\_x0;\ \ \ \ \ \textcolor{comment}{//\ структура выделения}}
+\DoxyCodeLine{00027\ \ \ \ \ uint32\_t\ \ \ \ w\_pane;\ \ \ \ \ \ \textcolor{comment}{//30\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr},\ width\ of\ left\ pane\ with\ line\ numbers}}
+\DoxyCodeLine{00028\ \ \ \ \ uint32\_t\ \ \ \ h\_pane;\ \ \ \ \ \ \textcolor{comment}{//25\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr},\ hight\ of\ top\ pane\ with\ Rows,\ Cols\ Undo\ info}}
+\DoxyCodeLine{00029\ \ \ \ \ uint32\_t\ \ \ \ width\_sym;\ \ \textcolor{comment}{//9\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ ({\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr})\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00030\ \ \ \ \ uint32\_t\ \ \ \ hight\_sym;\ \ \textcolor{comment}{//16\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ ({\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr})\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00031\ \ \ \ \ uint8\_t\ \ \ \ \ drag\_m;\ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00032\ \ \ \ \ uint8\_t\ \ \ \ \ drag\_k;\ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00033\ \ \ \ \ uint32\_t\ \ \ \ sel\_x0;\ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
 \DoxyCodeLine{00034\ \ \ \ \ uint32\_t\ \ \ \ sel\_y0;}
 \DoxyCodeLine{00035\ \ \ \ \ uint32\_t\ \ \ \ sel\_x1;}
 \DoxyCodeLine{00036\ \ \ \ \ uint32\_t\ \ \ \ sel\_y1;}
-\DoxyCodeLine{00037\ \ \ \ \ uint32\_t\ \ \ \ seln\_x0;\ \ \ \ \textcolor{comment}{//дополнительная структура выделения}}
+\DoxyCodeLine{00037\ \ \ \ \ uint32\_t\ \ \ \ seln\_x0;\ \ \ \ \textcolor{comment}{//{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
 \DoxyCodeLine{00038\ \ \ \ \ uint32\_t\ \ \ \ seln\_y0;}
 \DoxyCodeLine{00039\ \ \ \ \ uint32\_t\ \ \ \ seln\_x1;}
 \DoxyCodeLine{00040\ \ \ \ \ uint32\_t\ \ \ \ seln\_y1;}
 \DoxyCodeLine{00041\ \ \ \ \ \textcolor{keyword}{struct\ }editor\_symbol\ \ \ *tex;\ \ \ \ \textcolor{comment}{//\ text\ memory\ pointer}}
-\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keyword}{struct\ }editor\_symbol\ \ \ *tex\_1;\ \ \textcolor{comment}{//\ указатель за последним\ существующим символом (конец файла)}}
-\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keyword}{struct\ }editor\_symbol\ \ \ *tex\_end;\textcolor{comment}{//\ text\ end\ memory\ pointer\ (указатель за концом выделенного буфера\ для\ текста)}}
-\DoxyCodeLine{00044\ \ \ \ \ uint32\_t\ \ \ \ cur\_x;\ \ \ \ \ \ \textcolor{comment}{//координата\ x\ курсора}}
-\DoxyCodeLine{00045\ \ \ \ \ uint32\_t\ \ \ \ cur\_y;\ \ \ \ \ \ \textcolor{comment}{//координата\ y\ курсора}}
-\DoxyCodeLine{00046\ \ \ \ \ uint32\_t\ \ \ \ max\_chars;\ \ \textcolor{comment}{//\ TE\_MAXCHARS\ ;+86\ максимальное число символов в\ одном документе}}
-\DoxyCodeLine{00047\ \ \ \ \ uint32\_t\ \ \ \ count\_colors\_text;\ \textcolor{comment}{//\ 1\ ;+90\ количество\ цветов текста}}
-\DoxyCodeLine{00048\ \ \ \ \ uint32\_t\ \ \ \ count\_key\_words;\ \ \ \textcolor{comment}{//+94\ колличество ключевых слов}}
-\DoxyCodeLine{00049\ \ \ \ \ color\_t\ \ \ \ \ color\_cursor;\ \ \ \textcolor{comment}{//\ 0x808080\ ;+98\ цвет\ курсора}}
-\DoxyCodeLine{00050\ \ \ \ \ color\_t\ \ \ \ \ color\_wnd\_capt;\ \textcolor{comment}{//\ 0x80\ ;+102\ цвет\ полей вокруг окна}}
-\DoxyCodeLine{00051\ \ \ \ \ color\_t\ \ \ \ \ color\_wnd\_work;\ \textcolor{comment}{//\ 0x0\ ;+106\ цвет\ фона\ окна}}
-\DoxyCodeLine{00052\ \ \ \ \ color\_t\ \ \ \ \ color\_wnd\_bord;\ \textcolor{comment}{//0xd0d0d0\ ;+110\ цвет\ текста на полях}}
-\DoxyCodeLine{00053\ \ \ \ \ color\_t\ \ \ \ \ color\_select;\ \ \ \textcolor{comment}{//\ 0x208080\ ;+114\ цвет\ выделения}}
-\DoxyCodeLine{00054\ \ \ \ \ color\_t\ \ \ \ \ color\_cur\_text;\ \textcolor{comment}{//\ 0xff0000\ ;+118\ цвет\ символа\ под\ курсором}}
-\DoxyCodeLine{00055\ \ \ \ \ color\_t\ \ \ \ \ color\_wnd\_text;\ \textcolor{comment}{//\ 0xffff00\ ;+122\ цвет\ текста в\ окне}}
-\DoxyCodeLine{00056\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ *syntax\_file;\ \ \ \ \textcolor{comment}{//\ указатель на начало\ файла синтаксиса}}
-\DoxyCodeLine{00057\ \ \ \ \ uint32\_t\ \ \ \ syntax\_file\_size;\ \ \ \textcolor{comment}{//\ TE\_MAX\_SYNTAX\_FILESIZE\ ;+130\ максимальный размер файла\ синтаксиса}}
-\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ *text\_colors;\ \ \ \ \textcolor{comment}{//\ указатель на массив цветов текста}}
-\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ *help\_text\_f1;\ \ \ \textcolor{comment}{//\ указатель на текст справки (по нажатии F1)}}
-\DoxyCodeLine{00060\ \ \ \ \ \textcolor{keywordtype}{int}\ \ \ \ \ \ \ \ \ help\_id;\ \ \ \ \ \ \ \ \textcolor{comment}{//\ -\/1\ ;+142\ идентификатор для\ справки}}
-\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ *key\_words\_data;\ \textcolor{comment}{//\ указатель на структуры ключевых слов TexColViv}}
-\DoxyCodeLine{00062\ \ \ \ \ uint32\_t\ \ \ \ tim\_ch;\ \ \ \ \ \textcolor{comment}{//\ количество\ изменений\ в файле}}
-\DoxyCodeLine{00063\ \ \ \ \ uint32\_t\ \ \ \ tim\_undo;\ \ \ \textcolor{comment}{//\ количество\ отмененных действий}}
-\DoxyCodeLine{00064\ \ \ \ \ uint32\_t\ \ \ \ tim\_ls;\ \ \ \ \ \textcolor{comment}{//\ время последнего сохранения}}
-\DoxyCodeLine{00065\ \ \ \ \ uint32\_t\ \ \ \ tim\_co;\ \ \ \ \ \textcolor{comment}{//\ время последней\ цветовой разметки}}
-\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ *el\_focus;\ \ \ \textcolor{comment}{//\ указатель на переменную\ элемента в\ фокусе pointer\ to\ pointer**}}
-\DoxyCodeLine{00067\ \ \ \ \ uint8\_t\ \ \ \ \ err\_save;\ \ \ \textcolor{comment}{//\ ошибка\ сохранения\ файла}}
-\DoxyCodeLine{00068\ \ \ \ \ uint8\_t\ \ \ \ \ panel\_id;\ \ \ \textcolor{comment}{//\ номер открытой панели}}
-\DoxyCodeLine{00069\ \ \ \ \ uint8\_t\ \ \ \ \ key\_new;\ \ \ \ \textcolor{comment}{//\ символ,\ который будет\ добавлятся с клавиатуры}}
-\DoxyCodeLine{00070\ \ \ \ \ uint8\_t\ \ \ \ \ symbol\_new\_line;\ \textcolor{comment}{//\ ascii\ 20\ символ завершения\ строки}}
-\DoxyCodeLine{00071\ \ \ \ \ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}\ \ *scr\_w;\ \ \ \ \ \ \textcolor{comment}{//\ вертикальный скроллинг\ !=\ NULL}}
-\DoxyCodeLine{00072\ \ \ \ \ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}\ \ *scr\_h;\ \ \ \ \ \ \textcolor{comment}{//\ горизонтальный скроллинг\ !=\ NULL}}
-\DoxyCodeLine{00073\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ *arr\_key\_pos;\textcolor{comment}{//\ указатель на массив позиций ключевых слов}}
-\DoxyCodeLine{00074\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ *buffer;\ \ \ \ \ \textcolor{comment}{//\ указатель на буфер копирования/вставки !=\ NULL,\ also\ size}}
-\DoxyCodeLine{00075\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ *buffer\_find;\textcolor{comment}{//\ указатель на буфер для\ поиска (sized\ 302)}}
-\DoxyCodeLine{00076\ \ \ \ \ uint8\_t\ \ \ \ \ cur\_ins;\ \ \ \ \textcolor{comment}{//\ 1\ режим работы курсора (обычный\ или\ замена)}}
-\DoxyCodeLine{00077\ \ \ \ \ uint8\_t\ \ \ \ \ mode\_color;\ \textcolor{comment}{//\ 1\ режим выделения\ слов\ цветом (0-\/выкл. 1-\/вкл.)}}
-\DoxyCodeLine{00078\ \ \ \ \ uint8\_t\ \ \ \ \ mode\_invis;\ \textcolor{comment}{//\ 0\ режим показа непечатаемых символов}}
-\DoxyCodeLine{00079\ \ \ \ \ uint8\_t\ \ \ \ \ gp\_opt;\ \ \ \ \ \textcolor{comment}{//\ 0\ опции возвращаемые функцией\ ted\_get\_pos\_by\_cursor}}
-\DoxyCodeLine{00080\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_on\_key\_ctrl\_all;\ \ \textcolor{comment}{//\ указатель на функцию вызываемую при нажатии Ctrl+N,O,S,F,G,H,\ can\ be\ NULL}}
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keyword}{struct\ }editor\_symbol\ \ \ *tex\_1;\ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ ({\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr})}}
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keyword}{struct\ }editor\_symbol\ \ \ *tex\_end;\textcolor{comment}{//\ text\ end\ memory\ pointer\ ({\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr})}}
+\DoxyCodeLine{00044\ \ \ \ \ uint32\_t\ \ \ \ cur\_x;\ \ \ \ \ \ \textcolor{comment}{//{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ x\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00045\ \ \ \ \ uint32\_t\ \ \ \ cur\_y;\ \ \ \ \ \ \textcolor{comment}{//{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ y\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00046\ \ \ \ \ uint32\_t\ \ \ \ max\_chars;\ \ \textcolor{comment}{//\ TE\_MAXCHARS\ ;+86\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00047\ \ \ \ \ uint32\_t\ \ \ \ count\_colors\_text;\ \textcolor{comment}{//\ 1\ ;+90\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00048\ \ \ \ \ uint32\_t\ \ \ \ count\_key\_words;\ \ \ \textcolor{comment}{//+94\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00049\ \ \ \ \ color\_t\ \ \ \ \ color\_cursor;\ \ \ \textcolor{comment}{//\ 0x808080\ ;+98\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00050\ \ \ \ \ color\_t\ \ \ \ \ color\_wnd\_capt;\ \textcolor{comment}{//\ 0x80\ ;+102\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00051\ \ \ \ \ color\_t\ \ \ \ \ color\_wnd\_work;\ \textcolor{comment}{//\ 0x0\ ;+106\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00052\ \ \ \ \ color\_t\ \ \ \ \ color\_wnd\_bord;\ \textcolor{comment}{//0xd0d0d0\ ;+110\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00053\ \ \ \ \ color\_t\ \ \ \ \ color\_select;\ \ \ \textcolor{comment}{//\ 0x208080\ ;+114\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00054\ \ \ \ \ color\_t\ \ \ \ \ color\_cur\_text;\ \textcolor{comment}{//\ 0xff0000\ ;+118\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00055\ \ \ \ \ color\_t\ \ \ \ \ color\_wnd\_text;\ \textcolor{comment}{//\ 0xffff00\ ;+122\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00056\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ *syntax\_file;\ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00057\ \ \ \ \ uint32\_t\ \ \ \ syntax\_file\_size;\ \ \ \textcolor{comment}{//\ TE\_MAX\_SYNTAX\_FILESIZE\ ;+130\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ *text\_colors;\ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ *help\_text\_f1;\ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ ({\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ F1)}}
+\DoxyCodeLine{00060\ \ \ \ \ \textcolor{keywordtype}{int}\ \ \ \ \ \ \ \ \ help\_id;\ \ \ \ \ \ \ \ \textcolor{comment}{//\ -\/1\ ;+142\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ *key\_words\_data;\ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}\ TexColViv}}
+\DoxyCodeLine{00062\ \ \ \ \ uint32\_t\ \ \ \ tim\_ch;\ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00063\ \ \ \ \ uint32\_t\ \ \ \ tim\_undo;\ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00064\ \ \ \ \ uint32\_t\ \ \ \ tim\_ls;\ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00065\ \ \ \ \ uint32\_t\ \ \ \ tim\_co;\ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ *el\_focus;\ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ pointer\ to\ pointer**}}
+\DoxyCodeLine{00067\ \ \ \ \ uint8\_t\ \ \ \ \ err\_save;\ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00068\ \ \ \ \ uint8\_t\ \ \ \ \ panel\_id;\ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00069\ \ \ \ \ uint8\_t\ \ \ \ \ key\_new;\ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr},\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00070\ \ \ \ \ uint8\_t\ \ \ \ \ symbol\_new\_line;\ \textcolor{comment}{//\ ascii\ 20\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00071\ \ \ \ \ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}\ \ *scr\_w;\ \ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ !=\ NULL}}
+\DoxyCodeLine{00072\ \ \ \ \ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}\ \ *scr\_h;\ \ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ !=\ NULL}}
+\DoxyCodeLine{00073\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ *arr\_key\_pos;\textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00074\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ *buffer;\ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}/{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ !=\ NULL,\ also\ size}}
+\DoxyCodeLine{00075\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ *buffer\_find;\textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ (sized\ 302)}}
+\DoxyCodeLine{00076\ \ \ \ \ uint8\_t\ \ \ \ \ cur\_ins;\ \ \ \ \textcolor{comment}{//\ 1\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ ({\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr})}}
+\DoxyCodeLine{00077\ \ \ \ \ uint8\_t\ \ \ \ \ mode\_color;\ \textcolor{comment}{//\ 1\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ (0-\/{\ucr}{\ucr}{\ucr}{\ucr}.\ 1-\/{\ucr}{\ucr}{\ucr}.)}}
+\DoxyCodeLine{00078\ \ \ \ \ uint8\_t\ \ \ \ \ mode\_invis;\ \textcolor{comment}{//\ 0\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00079\ \ \ \ \ uint8\_t\ \ \ \ \ gp\_opt;\ \ \ \ \ \textcolor{comment}{//\ 0\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ ted\_get\_pos\_by\_cursor}}
+\DoxyCodeLine{00080\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_on\_key\_ctrl\_all;\ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ Ctrl+N,O,S,F,G,H,\ can\ be\ NULL}}
 \DoxyCodeLine{00081\ \ \ \ \ uint32\_t\ \ \ \ reserved\_1;\ \ \textcolor{comment}{//\ ...}}
 \DoxyCodeLine{00082\ \ \ \ \ uint32\_t\ \ \ \ reserved\_2;\ \ \textcolor{comment}{//\ ...}}
 \DoxyCodeLine{00083\ \ \ \ \ uint32\_t\ \ \ \ reserved\_3;\ \ \textcolor{comment}{//\ ...}}
-\DoxyCodeLine{00084\ \ \ \ \ uint32\_t\ \ \ \ buffer\_size;\textcolor{comment}{//\ BUF\_SIZE\ размер буфера\ копирования/вставки}}
-\DoxyCodeLine{00085\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_find\_err;\ \ \ \ \ \ \ \textcolor{comment}{//\ указатель на функцию вызываемую если поиск закончился\ неудачно}}
-\DoxyCodeLine{00086\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_init\_synt\_err;\ \ \textcolor{comment}{//\ unused\ указатель на функцию вызываемую при ошибочном\ открытии файла синтаксиса}}
-\DoxyCodeLine{00087\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_draw\_panel\_buttons;\ \textcolor{comment}{//\ указатель на функцию рисования панели\ с кнопками}}
-\DoxyCodeLine{00088\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_draw\_panels;\ \ \ \ \textcolor{comment}{//\ указатель на функцию рисования панели\ поиска|замены|перехода|синтаксиса}}
+\DoxyCodeLine{00084\ \ \ \ \ uint32\_t\ \ \ \ buffer\_size;\textcolor{comment}{//\ BUF\_SIZE\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}/{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00085\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_find\_err;\ \ \ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00086\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_init\_synt\_err;\ \ \textcolor{comment}{//\ unused\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00087\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_draw\_panel\_buttons;\ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00088\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_draw\_panels;\ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}|{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}|{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}|{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
 \DoxyCodeLine{00089\ \ \ \ \ uint32\_t\ \ \ \ reserved\_4;\ \ \textcolor{comment}{//\ ...}}
-\DoxyCodeLine{00090\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_save\_err;\ \ \ \textcolor{comment}{//\ указатель на функцию вызываемую если сохранение\ файла закончилось неудачно}}
-\DoxyCodeLine{00091\ \ \ \ \ uint32\_t\ \ \ \ increase\_size;\ \ \textcolor{comment}{//200\ число символов на которые будет увечиваться\ память при нехватке}}
-\DoxyCodeLine{00092\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ *ptr\_free\_symb;\ \ \textcolor{comment}{//\ используется внутри элемента для ускорения\ вставки текста}}
-\DoxyCodeLine{00093\ \ \ \ \ uint32\_t\ \ \ \ font\_size;\ \ \ \ \ \ \ \textcolor{comment}{//\ ;+250\ множитель\ для\ размера\ шрифта //\ binary\ OR\ mask\ for\ ECX\ SysFn4}}
+\DoxyCodeLine{00090\ \ \ \ \ \mbox{\hyperlink{kolibri__editor_8h_afa456dcf6593dd28ba855cb1778b4f25}{editor\_callback}}\ fun\_save\_err;\ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00091\ \ \ \ \ uint32\_t\ \ \ \ increase\_size;\ \ \textcolor{comment}{//200\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00092\ \ \ \ \ \textcolor{keywordtype}{void}\ \ \ \ \ \ \ *ptr\_free\_symb;\ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00093\ \ \ \ \ uint32\_t\ \ \ \ font\_size;\ \ \ \ \ \ \ \textcolor{comment}{//\ ;+250\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ //\ binary\ OR\ mask\ for\ ECX\ SysFn4}}
 \DoxyCodeLine{00094\ \}\ \mbox{\hyperlink{kolibri__editor_8h_a017f88c6e085eda98f9d3e0f2aebb68e}{editor}};}
 \DoxyCodeLine{00095\ }
 \DoxyCodeLine{00096\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}\ ((\_\_packed\_\_))\ editor\_color\_item}
 \DoxyCodeLine{00097\ \{}
-\DoxyCodeLine{00098\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ \ word[40];\ \ \ \textcolor{comment}{//\ слово для подсветки}}
-\DoxyCodeLine{00099\ \ \ \ \ uint32\_t\ \ \ \ f1\_offset;\ \ \textcolor{comment}{//\ смещение в\ таблице\ F1\ подсказок}}
-\DoxyCodeLine{00100\ \ \ \ \ uint8\_t\ \ \ \ \ flags;\ \ \ \ \ \ \textcolor{comment}{//\ флаги используемые при выделении}}
-\DoxyCodeLine{00101\ \ \ \ \ uint8\_t\ \ \ \ \ endc;\ \ \ \ \ \ \ \textcolor{comment}{//\ символ конца выделения\ (используется при\ flags\&4)}}
-\DoxyCodeLine{00102\ \ \ \ \ uint8\_t\ \ \ \ \ escc;\ \ \ \ \ \ \ \textcolor{comment}{//\ экранирующий символ (используется при\ flags\&4)\ \ ascii(34)\ примеры экранирования\ \(\backslash\)r\ \(\backslash\)n\ \(\backslash\)t}}
-\DoxyCodeLine{00103\ \ \ \ \ uint8\_t\ \ \ \ \ color;\ \ \ \ \ \ \textcolor{comment}{//\ цвет\ по таблице\ цветов}}
+\DoxyCodeLine{00098\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ \ \ \ \ word[40];\ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00099\ \ \ \ \ uint32\_t\ \ \ \ f1\_offset;\ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ F1\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00100\ \ \ \ \ uint8\_t\ \ \ \ \ flags;\ \ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00101\ \ \ \ \ uint8\_t\ \ \ \ \ endc;\ \ \ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ ({\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ flags\&4)}}
+\DoxyCodeLine{00102\ \ \ \ \ uint8\_t\ \ \ \ \ escc;\ \ \ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ ({\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ flags\&4)\ \ ascii(34)\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ \(\backslash\)r\ \(\backslash\)n\ \(\backslash\)t}}
+\DoxyCodeLine{00103\ \ \ \ \ uint8\_t\ \ \ \ \ color;\ \ \ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
 \DoxyCodeLine{00104\ \};}
 \DoxyCodeLine{00105\ }
 \DoxyCodeLine{00106\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structeditor__syntax__file}{editor\_syntax\_file}}}
 \DoxyCodeLine{00107\ \{}
-\DoxyCodeLine{00108\ \ \ \ \ uint32\_t\ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_a719de3144beb58c6bf4c5969309cb86a}{count\_colors\_text}};\ \ \textcolor{comment}{//\ кол-\/во цветов текста dd\ (text-\/color\_wnd\_text)/4}}
-\DoxyCodeLine{00109\ \ \ \ \ uint32\_t\ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_a7b64846909c485cc14ec735090dc5c1d}{count\_key\_words}};\ \ \ \ \textcolor{comment}{//\ кол-\/во ключевых слов dd\ (f1-\/text)/48}}
+\DoxyCodeLine{00108\ \ \ \ \ uint32\_t\ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_a719de3144beb58c6bf4c5969309cb86a}{count\_colors\_text}};\ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}-\/{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ dd\ (text-\/color\_wnd\_text)/4}}
+\DoxyCodeLine{00109\ \ \ \ \ uint32\_t\ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_a7b64846909c485cc14ec735090dc5c1d}{count\_key\_words}};\ \ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}-\/{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}\ dd\ (f1-\/text)/48}}
 \DoxyCodeLine{00110\ \ \ \ \ color\_t\ \ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_aada8e3d5a8438d223515e4bd8b8e0a80}{color\_cursor}};\ \ \ \ \ \ \ \textcolor{comment}{//\ dd\ 0xf1fcd0}}
 \DoxyCodeLine{00111\ \ \ \ \ color\_t\ \ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_a96faa618f85543b0bdd5f11299298c2a}{color\_wnd\_capt}};\ \ \ \ \ \textcolor{comment}{//\ dd\ 0x080808}}
 \DoxyCodeLine{00112\ \ \ \ \ color\_t\ \ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_affe939585a690604b39364f8be937c75}{color\_wnd\_work}};\ \ \ \ \ \textcolor{comment}{//\ dd\ 0x1C1C1C}}
 \DoxyCodeLine{00113\ \ \ \ \ color\_t\ \ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_a227514cf11a8a38374172541883f6bb2}{color\_wnd\_bord}};\ \ \ \ \ \textcolor{comment}{//\ dd\ 0xc0c0c0}}
 \DoxyCodeLine{00114\ \ \ \ \ color\_t\ \ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_a97c47102dc7107aa3ccf96bec99ea33d}{color\_select}};\ \ \ \ \ \ \ \textcolor{comment}{//\ dd\ 0x3E3D32}}
 \DoxyCodeLine{00115\ \ \ \ \ color\_t\ \ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_a6bbc85102e2b7d33516c8cc6578212d2}{color\_cur\_text}};\ \ \ \ \ \textcolor{comment}{//\ dd\ 0x808080}}
-\DoxyCodeLine{00116\ \ \ \ \ color\_t\ \ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_ac9844a7d6e3ca914908d12cffa899830}{color\_wnd\_text}}[];\ \ \ \textcolor{comment}{//\ таблица\ цветов размером count\_colors\_text}}
-\DoxyCodeLine{00117\ \ \ \ \ \textcolor{comment}{//\ editor\_color\_item[];\ \ \ \ \ \ \ \ \ //\ таблица\ ключевых подсвеченных слов размером count\_key\_words}}
+\DoxyCodeLine{00116\ \ \ \ \ color\_t\ \ \ \ \ \mbox{\hyperlink{structeditor__syntax__file_ac9844a7d6e3ca914908d12cffa899830}{color\_wnd\_text}}[];\ \ \ \textcolor{comment}{//\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ count\_colors\_text}}
+\DoxyCodeLine{00117\ \ \ \ \ \textcolor{comment}{//\ editor\_color\_item[];\ \ \ \ \ \ \ \ \ //\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ count\_key\_words}}
 \DoxyCodeLine{00118\ \};}
 \DoxyCodeLine{00119\ }
 \DoxyCodeLine{00120\ }
@@ -146,15 +146,22 @@
 \DoxyCodeLine{00143\ }
 \DoxyCodeLine{00144\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__editor_8h_a041924ab4686a31fd876bf9100bad4d5}{ted\_draw}})(\mbox{\hyperlink{kolibri__editor_8h_a017f88c6e085eda98f9d3e0f2aebb68e}{editor}}\ *)\ \mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
 \DoxyCodeLine{00145\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__editor_8h_a285907cf8b5cb0159c27b562afa9618f}{ted\_init\_scroll\_bars}})(\mbox{\hyperlink{kolibri__editor_8h_a017f88c6e085eda98f9d3e0f2aebb68e}{editor}}\ *,\ \textcolor{keywordtype}{int}\ opt)\ \mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00146\ \textcolor{comment}{//\ \ opt\ bits\ =\ 1\ -\/\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr},\ 2\ -\/\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr},\ 4\ -\/\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
 \DoxyCodeLine{00147\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__editor_8h_aeee2c959edc65d01804623a8c551f5c3}{ted\_init\_syntax\_file}})(\mbox{\hyperlink{kolibri__editor_8h_a017f88c6e085eda98f9d3e0f2aebb68e}{editor}}\ *)\ \mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
 \DoxyCodeLine{00148\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__editor_8h_aad765d1a0ff1cf42093932a8f5d28e6f}{ted\_mouse}})(\mbox{\hyperlink{kolibri__editor_8h_a017f88c6e085eda98f9d3e0f2aebb68e}{editor}}\ *)\ \mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
 \DoxyCodeLine{00149\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__editor_8h_a66193bc1d27d40b501ab30c24483a19a}{ted\_text\_add}})(\mbox{\hyperlink{kolibri__editor_8h_a017f88c6e085eda98f9d3e0f2aebb68e}{editor}}\ *,\ \textcolor{keywordtype}{char}\ *text,\ \textcolor{keywordtype}{int}\ textlen,\ \textcolor{keywordtype}{int}\ opt)\ \mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00150\ \textcolor{comment}{//\ \ add\ text\ to\ cursor\ pos}}
+\DoxyCodeLine{00151\ \textcolor{comment}{//\ \ opt\ ==\ ted\_opt\_ed\_change\_time,\ ted\_opt\_ed\_move\_cursor}}
+\DoxyCodeLine{00152\ \textcolor{comment}{//\ ted\_opt\_ed\_move\_cursor\ equ\ 1\ ;{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00153\ \textcolor{comment}{//\ ted\_opt\_ed\_change\_time\ equ\ 2\ ;{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
 \DoxyCodeLine{00154\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__editor_8h_a0668e8bffe8b953924d85fe50d263a7f}{ted\_but\_select\_word}})(\mbox{\hyperlink{kolibri__editor_8h_a017f88c6e085eda98f9d3e0f2aebb68e}{editor}}\ *)\ \mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00155\ \textcolor{comment}{//\ select\ word\ under\ cursor}}
 \DoxyCodeLine{00156\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__editor_8h_a5a81198d64a32ac931fd836ed4c94ff3}{ted\_but\_copy}})(\mbox{\hyperlink{kolibri__editor_8h_a017f88c6e085eda98f9d3e0f2aebb68e}{editor}}\ *)\ \mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
 \DoxyCodeLine{00157\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__editor_8h_a1a970c5a522582c5e41268b6caa77809}{ted\_but\_paste}})(\mbox{\hyperlink{kolibri__editor_8h_a017f88c6e085eda98f9d3e0f2aebb68e}{editor}}\ *)\ \mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
 \DoxyCodeLine{00158\ }
 \DoxyCodeLine{00159\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__editor_8h_a1180f85f73b2f7a27b3966208b11c3fe}{ted\_but\_find}})(\mbox{\hyperlink{kolibri__editor_8h_a017f88c6e085eda98f9d3e0f2aebb68e}{editor}}\ *)\ \mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
 \DoxyCodeLine{00160\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__editor_8h_ad2a0dbcb698ea3e41167b2fc7b38b51a}{ted\_but\_replace}})(\mbox{\hyperlink{kolibri__editor_8h_a017f88c6e085eda98f9d3e0f2aebb68e}{editor}}\ *)\ \mbox{\hyperlink{kolibri__editor_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00161\ \textcolor{comment}{//\ move\ cursor\ to\ <ed\_buffer\_find>,\ calls\ ted\_fun\_find\_err()\ if\ exist}}
 \DoxyCodeLine{00162\ }
 \DoxyCodeLine{00163\ }
 \DoxyCodeLine{00164\ }

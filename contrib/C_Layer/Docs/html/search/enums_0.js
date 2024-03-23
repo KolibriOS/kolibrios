@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['bpp_0',['BPP',['../kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46',1,'kolibri_libimg.h']]],
-  ['buf2d_5falgoritm_5ffiltr_1',['BUF2D_ALGORITM_FILTR',['../kolibri__buf2d_8h.html#a280f4f234c3e6fd34e254d6408343124',1,'kolibri_buf2d.h']]],
-  ['buf2d_5fopt_5fcrop_2',['BUF2D_OPT_CROP',['../kolibri__buf2d_8h.html#a57382626da202c1deb01f780a6bda808',1,'kolibri_buf2d.h']]]
+  ['addresinfoflags_0',['AddresInfoFlags',['../kolibri__network_8h.html#a4e524e86664980f9097e3f4b3b984313',1,'kolibri_network.h']]]
 ];

@@ -4,16 +4,16 @@
 #include "kolibri_colors.h"
 
 /*  flags meaning
-ed_figure_only= 1000000000000000b   ;одни символы
-ed_always_focus= 100000000000000b   // всегда с курсором (фокусом)
-ed_focus=                     10b   ;фокус ввода приложения, мышится самостоятельно
-ed_pass=                       1b   ;поле с паролем
-ed_shift_on=                1000b   ;если не установлен -значит впервые нажат shift,если был установлен, значит мы уже что - то делали удерживая shift
+ed_figure_only= 1000000000000000b   ;пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+ed_always_focus= 100000000000000b   // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+ed_focus=                     10b   ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+ed_pass=                       1b   ;пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+ed_shift_on=                1000b   ;пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ -пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ shift,пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ - пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ shift
 ed_shift_on_off=1111111111110111b
-ed_shift=                    100b   ;включается при нажатии на shift т.е. если нажимаю
+ed_shift=                    100b   ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ shift пїЅ.пїЅ. пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 ed_shift_off=   1111111111111011b
-ed_shift_bac=              10000b   ;бит для очистки выделеного shift т.е. при установке говорит что есть выделение
-ed_shift_bac_cl=1111111111101111b   ;очистка при удалении выделения
+ed_shift_bac=              10000b   ;пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ shift пїЅ.пїЅ. пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+ed_shift_bac_cl=1111111111101111b   ;пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 ed_shift_cl=    1111111111100011b
 ed_shift_mcl=   1111111111111011b
 ed_left_fl=               100000b
@@ -38,13 +38,15 @@ typedef struct edit_box_t {
     unsigned int left;
     unsigned int top;
     unsigned int color;
-    unsigned int shift_color;   // selected text color
+    /// @brief selected text color
+    unsigned int shift_color;
     unsigned int focus_border_color;
     unsigned int blur_border_color;
     unsigned int text_color;
     unsigned int max;
     char        *text;
-    void        *mouse_variable; // must be pointer edit_box** to save focused editbox
+    /// @note  must be pointer edit_box** to save focused editbox
+    void        *mouse_variable;
     unsigned int flags;
 
     unsigned int size;  // used symbols in buffer without trailing zero
@@ -57,7 +59,7 @@ typedef struct edit_box_t {
     unsigned int shift_old;
     unsigned int height;
     unsigned int char_width;
-}edit_box;
+} edit_box;
 
 /* Initializes an Editbox with sane settings, sufficient for most use.
    This will let you create a box and position it somewhere on the screen.
@@ -106,9 +108,9 @@ extern void (*edit_box_key)(edit_box *) __attribute__((__stdcall__));
 /* because inline assembly in GCC is a PITA and interferes with the EAX (AH) register */
 /* which edit_box_key requires */
 __attribute__((__stdcall__)) void editbox_key(edit_box *e, oskey_t ch)
-/// если flags не содержит ed_focus, игнорирует ввод
-/// если flags содержит ed_mouse_on или ed_disabled, игнорирует ввод
-/// на вводе ожидает ch - код клавиши, только в режиме ASCII
+/// пїЅпїЅпїЅпїЅ flags пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ed_focus, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+/// пїЅпїЅпїЅпїЅ flags пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ed_mouse_on пїЅпїЅпїЅ ed_disabled, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+/// пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ ch - пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ ASCII
 {
     __asm__ __volatile__ (
              "push %2\n\t"
@@ -116,7 +118,7 @@ __attribute__((__stdcall__)) void editbox_key(edit_box *e, oskey_t ch)
 }
 
 extern void (*edit_box_mouse)(edit_box *) __attribute__((__stdcall__));
-/// при щелчке не левой кнопкой, обнуляет *mouse_variable! и сбрасывает флаг ed_mouse_on
+/// пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ *mouse_variable! пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ ed_mouse_on
 
 
 extern void (*edit_box_set_text)(edit_box *, char *) __attribute__((__stdcall__));

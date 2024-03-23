@@ -94,6 +94,7 @@ $(function(){initNavTree('kolibri__network_8h.html',''); initResizable(); });
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">kolibri_network.h File Reference</div></div>
@@ -136,16 +137,23 @@ Macros</h2></td></tr>
 <tr class="separator:ac22bd096438839c946a37c0619c6eabf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01d6798d308152b919a0b9f998bbd336" id="r_a01d6798d308152b919a0b9f998bbd336"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a01d6798d308152b919a0b9f998bbd336">EAI_OVERFLOW</a>&#160;&#160;&#160;14</td></tr>
 <tr class="separator:a01d6798d308152b919a0b9f998bbd336"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aec9e92ed53442d64cbc9b68d92ad970b" id="r_aec9e92ed53442d64cbc9b68d92ad970b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aec9e92ed53442d64cbc9b68d92ad970b">AI_PASSIVE</a>&#160;&#160;&#160;1</td></tr>
-<tr class="separator:aec9e92ed53442d64cbc9b68d92ad970b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab2912e6cffeb2353df550f10bbe64cf4" id="r_ab2912e6cffeb2353df550f10bbe64cf4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab2912e6cffeb2353df550f10bbe64cf4">AI_CANONNAME</a>&#160;&#160;&#160;2</td></tr>
-<tr class="separator:ab2912e6cffeb2353df550f10bbe64cf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a7070b38894743c536630b2ab25dcef" id="r_a2a7070b38894743c536630b2ab25dcef"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2a7070b38894743c536630b2ab25dcef">AI_NUMERICHOST</a>&#160;&#160;&#160;4</td></tr>
-<tr class="separator:a2a7070b38894743c536630b2ab25dcef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8739abe7bcb9470bcdb021e869b2a76f" id="r_a8739abe7bcb9470bcdb021e869b2a76f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8739abe7bcb9470bcdb021e869b2a76f">AI_NUMERICSERV</a>&#160;&#160;&#160;8</td></tr>
-<tr class="separator:a8739abe7bcb9470bcdb021e869b2a76f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe581892df09df05b21fee09e1584659" id="r_abe581892df09df05b21fee09e1584659"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#abe581892df09df05b21fee09e1584659">AI_ADDRCONFIG</a>&#160;&#160;&#160;0x400</td></tr>
-<tr class="separator:abe581892df09df05b21fee09e1584659"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:a4e524e86664980f9097e3f4b3b984313" id="r_a4e524e86664980f9097e3f4b3b984313"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a4e524e86664980f9097e3f4b3b984313">AddresInfoFlags</a> { <br />
+&#160;&#160;<a class="el" href="#a4e524e86664980f9097e3f4b3b984313a639f7226a124591a1bf1f26fa6fc3a07">AI_PASSIVE</a> = 1
+, <br />
+&#160;&#160;<a class="el" href="#a4e524e86664980f9097e3f4b3b984313a168e7e9b09a1d8e0349800efcb75317e">AI_CANONNAME</a> = 2
+, <br />
+&#160;&#160;<a class="el" href="#a4e524e86664980f9097e3f4b3b984313a548292a9e75fdc5562fdf38408330f3a">AI_NUMERICHOST</a> = 4
+, <br />
+&#160;&#160;<a class="el" href="#a4e524e86664980f9097e3f4b3b984313aa9db24a7e3a85063c373a5c04d926f0a">AI_NUMERICSERV</a> = 8
+, <br />
+&#160;&#160;<a class="el" href="#a4e524e86664980f9097e3f4b3b984313aa89468db344e4f5c9592bd6685e28f0f">AI_ADDRCONFIG</a> = 0x400
+<br />
+ }</td></tr>
+<tr class="memdesc:a4e524e86664980f9097e3f4b3b984313"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flags for addrinfo.  <a href="#a4e524e86664980f9097e3f4b3b984313">More...</a><br /></td></tr>
+<tr class="separator:a4e524e86664980f9097e3f4b3b984313"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -164,76 +172,6 @@ Variables</h2></td></tr>
 <tr class="separator:a28bd9ac6d2dc1cf1e64b738a91d60cf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="abe581892df09df05b21fee09e1584659" name="abe581892df09df05b21fee09e1584659"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abe581892df09df05b21fee09e1584659">&#9670;&#160;</a></span>AI_ADDRCONFIG</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define AI_ADDRCONFIG&#160;&#160;&#160;0x400</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ab2912e6cffeb2353df550f10bbe64cf4" name="ab2912e6cffeb2353df550f10bbe64cf4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab2912e6cffeb2353df550f10bbe64cf4">&#9670;&#160;</a></span>AI_CANONNAME</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define AI_CANONNAME&#160;&#160;&#160;2</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a2a7070b38894743c536630b2ab25dcef" name="a2a7070b38894743c536630b2ab25dcef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2a7070b38894743c536630b2ab25dcef">&#9670;&#160;</a></span>AI_NUMERICHOST</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define AI_NUMERICHOST&#160;&#160;&#160;4</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a8739abe7bcb9470bcdb021e869b2a76f" name="a8739abe7bcb9470bcdb021e869b2a76f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8739abe7bcb9470bcdb021e869b2a76f">&#9670;&#160;</a></span>AI_NUMERICSERV</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define AI_NUMERICSERV&#160;&#160;&#160;8</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aec9e92ed53442d64cbc9b68d92ad970b" name="aec9e92ed53442d64cbc9b68d92ad970b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aec9e92ed53442d64cbc9b68d92ad970b">&#9670;&#160;</a></span>AI_PASSIVE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define AI_PASSIVE&#160;&#160;&#160;1</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="aac746f03bb5099da0a427a99ecf1e36a" name="aac746f03bb5099da0a427a99ecf1e36a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aac746f03bb5099da0a427a99ecf1e36a">&#9670;&#160;</a></span>EAI_ADDRFAMILY</h2>
 
@@ -399,6 +337,30 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="a4e524e86664980f9097e3f4b3b984313" name="a4e524e86664980f9097e3f4b3b984313"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e524e86664980f9097e3f4b3b984313">&#9670;&#160;</a></span>AddresInfoFlags</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="#a4e524e86664980f9097e3f4b3b984313">AddresInfoFlags</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Flags for addrinfo. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a4e524e86664980f9097e3f4b3b984313a639f7226a124591a1bf1f26fa6fc3a07" name="a4e524e86664980f9097e3f4b3b984313a639f7226a124591a1bf1f26fa6fc3a07"></a>AI_PASSIVE&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4e524e86664980f9097e3f4b3b984313a168e7e9b09a1d8e0349800efcb75317e" name="a4e524e86664980f9097e3f4b3b984313a168e7e9b09a1d8e0349800efcb75317e"></a>AI_CANONNAME&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4e524e86664980f9097e3f4b3b984313a548292a9e75fdc5562fdf38408330f3a" name="a4e524e86664980f9097e3f4b3b984313a548292a9e75fdc5562fdf38408330f3a"></a>AI_NUMERICHOST&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4e524e86664980f9097e3f4b3b984313aa9db24a7e3a85063c373a5c04d926f0a" name="a4e524e86664980f9097e3f4b3b984313aa9db24a7e3a85063c373a5c04d926f0a"></a>AI_NUMERICSERV&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4e524e86664980f9097e3f4b3b984313aa89468db344e4f5c9592bd6685e28f0f" name="a4e524e86664980f9097e3f4b3b984313aa89468db344e4f5c9592bd6685e28f0f"></a>AI_ADDRCONFIG&#160;</td><td class="fielddoc"></td></tr>
+</table>
 
 </div>
 </div>

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['params_0',['Params',['../kolibri__rasterworks_8h.html#ab126c13bc335f4a996ef88c85aec7a24',1,'kolibri_rasterworks.h']]]
+  ['mode_0',['Mode',['../kolibri__proclib_8h.html#a46c8a310cf4c094f8c80e1cb8dc1f911',1,'kolibri_proclib.h']]]
 ];

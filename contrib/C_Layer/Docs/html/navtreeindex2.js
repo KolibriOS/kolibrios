@@ -1,5 +1,6 @@
 var NAVTREEINDEX2 =
 {
+"kolibri__optionbox_8h.html#a7e56846a517ff7f992a046aad941c346":[1,0,0,21,1],
 "kolibri__optionbox_8h.html#aa491438c706cea2b7fbbf7fb8a4b48ee":[1,0,0,21,5],
 "kolibri__optionbox_8h.html#ab1eeb2284258b522475e14fcabccd71b":[1,0,0,21,0],
 "kolibri__optionbox_8h_source.html":[1,0,0,21],
@@ -10,7 +11,11 @@ var NAVTREEINDEX2 =
 "kolibri__pathshow_8h.html#ae961785e0ac268edf0b2083d6119444c":[1,0,0,22,2],
 "kolibri__pathshow_8h_source.html":[1,0,0,22],
 "kolibri__proclib_8h.html":[1,0,0,23],
-"kolibri__proclib_8h.html#ae4a2c4187ba76d85ad10b32e8f6005ef":[1,0,0,23,0],
+"kolibri__proclib_8h.html#a46c8a310cf4c094f8c80e1cb8dc1f911":[1,0,0,23,0],
+"kolibri__proclib_8h.html#a46c8a310cf4c094f8c80e1cb8dc1f911a087f7fefce5b778e85c49a782fbe693c":[1,0,0,23,0,2],
+"kolibri__proclib_8h.html#a46c8a310cf4c094f8c80e1cb8dc1f911abc3175416a6910665838a521e23a9955":[1,0,0,23,0,0],
+"kolibri__proclib_8h.html#a46c8a310cf4c094f8c80e1cb8dc1f911afa3e1cc67bb9c862e51f3d104b5884fc":[1,0,0,23,0,1],
+"kolibri__proclib_8h.html#a7586db6f8ec8d1e10a21b2897075823e":[1,0,0,23,1],
 "kolibri__proclib_8h_source.html":[1,0,0,23],
 "kolibri__progressbar_8h.html":[1,0,0,24],
 "kolibri__progressbar_8h.html#a5153021fb0e485225a6a12a31786535c":[1,0,0,24,3],
@@ -98,10 +103,10 @@ var NAVTREEINDEX2 =
 "kolibri__treelist_8h.html#afce8e3e0958ed535d9e42a2fe9ba3871":[1,0,0,28,11],
 "kolibri__treelist_8h_source.html":[1,0,0,28],
 "main_8c-example.html":[2,5],
-"option_menu_8c-example.html":[2,3],
+"option_menu_8c-example.html":[2,2],
 "pages.html":[],
 "rasterworks_example_8c-example.html":[2,6],
-"scroll_progress_8c-example.html":[2,4],
+"scroll_progress_8c-example.html":[2,1],
 "struct_a_r_p__entry.html":[0,0,1],
 "struct_a_r_p__entry.html#a0e9cda9c18975739a2712cadfcd2819d":[0,0,1,0],
 "struct_a_r_p__entry.html#a724f8cf1b8ff3d96c3a9cbcd2a6957a6":[0,0,1,2],
@@ -244,10 +249,5 @@ var NAVTREEINDEX2 =
 "structkmenuitem__t.html#abc0f9c220f59db2cf6d5790f6da1c177":[0,0,11,13],
 "structkmenuitem__t.html#ac765329451135abec74c45e1897abf26":[0,0,11,24],
 "structkmenuitem__t.html#ace32aa3d61f8982c5d2935f57431c9b4":[0,0,11,19],
-"structkmenuitem__t.html#ad40445d0ed6eb655f3848a5fb6f64cd8":[0,0,11,9],
-"structkmenuitem__t.html#aea3b4e935746760499bf7c978c872f34":[0,0,11,5],
-"structkmenuitem__t.html#afaac52c9610ffb8fe88c0dae880d722c":[0,0,11,15],
-"structkolibri__button.html":[0,0,12],
-"structkolibri__button.html#a22932c461e56538d1cfb9278b46c43fc":[0,0,12,2],
-"structkolibri__button.html#aa475403c8c34ec92b3606c900beca4de":[0,0,12,4]
+"structkmenuitem__t.html#ad40445d0ed6eb655f3848a5fb6f64cd8":[0,0,11,9]
 };

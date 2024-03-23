@@ -131,7 +131,7 @@ Variables</h2></td></tr>
 <tr class="memitem:aef46f82ebdbadf5618f88a76dc22665c" id="r_aef46f82ebdbadf5618f88a76dc22665c"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aef46f82ebdbadf5618f88a76dc22665c">edit_box_mouse</a> )(<a class="el" href="#a429dca2bb9edc0b6dc42738853f80fef">edit_box</a> *) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__))</td></tr>
 <tr class="separator:aef46f82ebdbadf5618f88a76dc22665c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1d2cae7c0075dfd74c55612f8a5c4e4" id="r_aa1d2cae7c0075dfd74c55612f8a5c4e4"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa1d2cae7c0075dfd74c55612f8a5c4e4">edit_box_set_text</a> )(<a class="el" href="#a429dca2bb9edc0b6dc42738853f80fef">edit_box</a> *, char *) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__))</td></tr>
-<tr class="memdesc:aa1d2cae7c0075dfd74c55612f8a5c4e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">при щелчке не левой кнопкой, обнуляет *mouse_variable! и сбрасывает флаг ed_mouse_on  <br /></td></tr>
+<tr class="memdesc:aa1d2cae7c0075dfd74c55612f8a5c4e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ *mouse_variable! пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ ed_mouse_on  <br /></td></tr>
 <tr class="separator:aa1d2cae7c0075dfd74c55612f8a5c4e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab5b37242fb83f9460dc7944d3ba27767" id="r_ab5b37242fb83f9460dc7944d3ba27767"><td class="memItemLeft" align="right" valign="top">volatile unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab5b37242fb83f9460dc7944d3ba27767">press_key</a></td></tr>
 <tr class="separator:ab5b37242fb83f9460dc7944d3ba27767"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -218,10 +218,10 @@ Variables</h2></td></tr>
 <div class="line">    __asm__ <a class="code hl_function" href="kolibri__editor_8h.html#a6d952a8d068aaf8ee03623416d163a37">__volatile__</a> (</div>
 <div class="line">             <span class="stringliteral">&quot;push %2\n\t&quot;</span></div>
 <div class="line">             <span class="stringliteral">&quot;call *%1 \n\t&quot;</span>::<span class="stringliteral">&quot;a&quot;</span>(<a class="code hl_variable" href="#a17ebe84fe1c5af7f936ae66083cd10ac">ch</a>.val), <span class="stringliteral">&quot;m&quot;</span>(<a class="code hl_variable" href="#a80671d96dab6ff41899f507ad329a833">edit_box_key</a>), <span class="stringliteral">&quot;m&quot;</span>(e):)</div>
-<div class="ttc" id="akolibri__editbox_8h_html_a17ebe84fe1c5af7f936ae66083cd10ac"><div class="ttname"><a href="#a17ebe84fe1c5af7f936ae66083cd10ac">ch</a></div><div class="ttdeci">oskey_t ch</div><div class="ttdef"><b>Definition</b> kolibri_editbox.h:112</div></div>
+<div class="ttc" id="akolibri__editbox_8h_html_a17ebe84fe1c5af7f936ae66083cd10ac"><div class="ttname"><a href="#a17ebe84fe1c5af7f936ae66083cd10ac">ch</a></div><div class="ttdeci">oskey_t ch</div><div class="ttdef"><b>Definition</b> kolibri_editbox.h:114</div></div>
 <div class="ttc" id="akolibri__editbox_8h_html_a80671d96dab6ff41899f507ad329a833"><div class="ttname"><a href="#a80671d96dab6ff41899f507ad329a833">edit_box_key</a></div><div class="ttdeci">void(* edit_box_key)(edit_box *) __attribute__((__stdcall__))</div></div>
 <div class="ttc" id="akolibri__editor_8h_html_a6d952a8d068aaf8ee03623416d163a37"><div class="ttname"><a href="kolibri__editor_8h.html#a6d952a8d068aaf8ee03623416d163a37">__volatile__</a></div><div class="ttdeci">__asm__ __volatile__(&quot;push %4\n\t&quot; &quot;push %3\n\t&quot; &quot;push %2\n\t&quot; &quot;call *%1 \n\t&quot;::&quot;a&quot;(ch), &quot;m&quot;(ted_key_asm), &quot;m&quot;(ed), &quot;m&quot;(table), &quot;m&quot;(control):)</div></div>
-</div><!-- fragment --><p>если flags не содержит ed_focus, игнорирует ввод если flags содержит ed_mouse_on или ed_disabled, игнорирует ввод на вводе ожидает ch - код клавиши, только в режиме ASCII </p>
+</div><!-- fragment --><p>пїЅпїЅпїЅпїЅ flags пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ed_focus, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ flags пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ed_mouse_on пїЅпїЅпїЅ ed_disabled, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ ch - пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ ASCII </p>
 
 </div>
 </div>
@@ -327,7 +327,7 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>при щелчке не левой кнопкой, обнуляет *mouse_variable! и сбрасывает флаг ed_mouse_on </p>
+<p>пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ *mouse_variable! пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ ed_mouse_on </p>
 
 </div>
 </div>

@@ -143,13 +143,5 @@ var menudata={children:[
 {text:"s",url:"globals_eval.html#index_s"},
 {text:"t",url:"globals_eval.html#index_t"},
 {text:"u",url:"globals_eval.html#index_u"}]},
-{text:"Macros",url:"globals_defs.html",children:[
-{text:"_",url:"globals_defs.html#index__5F"},
-{text:"a",url:"globals_defs.html#index_a"},
-{text:"b",url:"globals_defs.html#index_b"},
-{text:"e",url:"globals_defs.html#index_e"},
-{text:"g",url:"globals_defs.html#index_g"},
-{text:"k",url:"globals_defs.html#index_k"},
-{text:"t",url:"globals_defs.html#index_t"},
-{text:"x",url:"globals_defs.html#index_x"}]}]}]},
+{text:"Macros",url:"globals_defs.html"}]}]},
 {text:"Examples",url:"examples.html"}]}

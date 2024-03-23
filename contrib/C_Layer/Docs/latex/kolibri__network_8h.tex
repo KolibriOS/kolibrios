@@ -34,17 +34,22 @@ struct \mbox{\hyperlink{structaddrinfo}{addrinfo}}
 \#define \mbox{\hyperlink{kolibri__network_8h_ac22bd096438839c946a37c0619c6eabf}{EAI\+\_\+\+PROTOCOL}}~13
 \item 
 \#define \mbox{\hyperlink{kolibri__network_8h_a01d6798d308152b919a0b9f998bbd336}{EAI\+\_\+\+OVERFLOW}}~14
-\item 
-\#define \mbox{\hyperlink{kolibri__network_8h_aec9e92ed53442d64cbc9b68d92ad970b}{AI\+\_\+\+PASSIVE}}~1
-\item 
-\#define \mbox{\hyperlink{kolibri__network_8h_ab2912e6cffeb2353df550f10bbe64cf4}{AI\+\_\+\+CANONNAME}}~2
-\item 
-\#define \mbox{\hyperlink{kolibri__network_8h_a2a7070b38894743c536630b2ab25dcef}{AI\+\_\+\+NUMERICHOST}}~4
-\item 
-\#define \mbox{\hyperlink{kolibri__network_8h_a8739abe7bcb9470bcdb021e869b2a76f}{AI\+\_\+\+NUMERICSERV}}~8
-\item 
-\#define \mbox{\hyperlink{kolibri__network_8h_abe581892df09df05b21fee09e1584659}{AI\+\_\+\+ADDRCONFIG}}~0x400
 \end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313}{Addres\+Info\+Flags}} \{ \newline
+\mbox{\hyperlink{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313a639f7226a124591a1bf1f26fa6fc3a07}{AI\+\_\+\+PASSIVE}} = 1
+, \newline
+\mbox{\hyperlink{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313a168e7e9b09a1d8e0349800efcb75317e}{AI\+\_\+\+CANONNAME}} = 2
+, \newline
+\mbox{\hyperlink{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313a548292a9e75fdc5562fdf38408330f3a}{AI\+\_\+\+NUMERICHOST}} = 4
+, \newline
+\mbox{\hyperlink{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313aa9db24a7e3a85063c373a5c04d926f0a}{AI\+\_\+\+NUMERICSERV}} = 8
+, \newline
+\mbox{\hyperlink{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313aa89468db344e4f5c9592bd6685e28f0f}{AI\+\_\+\+ADDRCONFIG}} = 0x400
+ \}
+\begin{DoxyCompactList}\small\item\em Flags for addrinfo. \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsubsection*{Functions}
 \begin{DoxyCompactItemize}
 \item 
@@ -64,36 +69,6 @@ void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__network_8h_a28bd9ac6d2
 
 
 \doxysubsection{Macro Definition Documentation}
-\Hypertarget{kolibri__network_8h_abe581892df09df05b21fee09e1584659}\label{kolibri__network_8h_abe581892df09df05b21fee09e1584659} 
-\index{kolibri\_network.h@{kolibri\_network.h}!AI\_ADDRCONFIG@{AI\_ADDRCONFIG}}
-\index{AI\_ADDRCONFIG@{AI\_ADDRCONFIG}!kolibri\_network.h@{kolibri\_network.h}}
-\doxysubsubsection{\texorpdfstring{AI\_ADDRCONFIG}{AI\_ADDRCONFIG}}
-{\footnotesize\ttfamily \#define AI\+\_\+\+ADDRCONFIG~0x400}
-
-\Hypertarget{kolibri__network_8h_ab2912e6cffeb2353df550f10bbe64cf4}\label{kolibri__network_8h_ab2912e6cffeb2353df550f10bbe64cf4} 
-\index{kolibri\_network.h@{kolibri\_network.h}!AI\_CANONNAME@{AI\_CANONNAME}}
-\index{AI\_CANONNAME@{AI\_CANONNAME}!kolibri\_network.h@{kolibri\_network.h}}
-\doxysubsubsection{\texorpdfstring{AI\_CANONNAME}{AI\_CANONNAME}}
-{\footnotesize\ttfamily \#define AI\+\_\+\+CANONNAME~2}
-
-\Hypertarget{kolibri__network_8h_a2a7070b38894743c536630b2ab25dcef}\label{kolibri__network_8h_a2a7070b38894743c536630b2ab25dcef} 
-\index{kolibri\_network.h@{kolibri\_network.h}!AI\_NUMERICHOST@{AI\_NUMERICHOST}}
-\index{AI\_NUMERICHOST@{AI\_NUMERICHOST}!kolibri\_network.h@{kolibri\_network.h}}
-\doxysubsubsection{\texorpdfstring{AI\_NUMERICHOST}{AI\_NUMERICHOST}}
-{\footnotesize\ttfamily \#define AI\+\_\+\+NUMERICHOST~4}
-
-\Hypertarget{kolibri__network_8h_a8739abe7bcb9470bcdb021e869b2a76f}\label{kolibri__network_8h_a8739abe7bcb9470bcdb021e869b2a76f} 
-\index{kolibri\_network.h@{kolibri\_network.h}!AI\_NUMERICSERV@{AI\_NUMERICSERV}}
-\index{AI\_NUMERICSERV@{AI\_NUMERICSERV}!kolibri\_network.h@{kolibri\_network.h}}
-\doxysubsubsection{\texorpdfstring{AI\_NUMERICSERV}{AI\_NUMERICSERV}}
-{\footnotesize\ttfamily \#define AI\+\_\+\+NUMERICSERV~8}
-
-\Hypertarget{kolibri__network_8h_aec9e92ed53442d64cbc9b68d92ad970b}\label{kolibri__network_8h_aec9e92ed53442d64cbc9b68d92ad970b} 
-\index{kolibri\_network.h@{kolibri\_network.h}!AI\_PASSIVE@{AI\_PASSIVE}}
-\index{AI\_PASSIVE@{AI\_PASSIVE}!kolibri\_network.h@{kolibri\_network.h}}
-\doxysubsubsection{\texorpdfstring{AI\_PASSIVE}{AI\_PASSIVE}}
-{\footnotesize\ttfamily \#define AI\+\_\+\+PASSIVE~1}
-
 \Hypertarget{kolibri__network_8h_aac746f03bb5099da0a427a99ecf1e36a}\label{kolibri__network_8h_aac746f03bb5099da0a427a99ecf1e36a} 
 \index{kolibri\_network.h@{kolibri\_network.h}!EAI\_ADDRFAMILY@{EAI\_ADDRFAMILY}}
 \index{EAI\_ADDRFAMILY@{EAI\_ADDRFAMILY}!kolibri\_network.h@{kolibri\_network.h}}
@@ -166,6 +141,41 @@ void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__network_8h_a28bd9ac6d2
 \doxysubsubsection{\texorpdfstring{EAI\_SOCKTYPE}{EAI\_SOCKTYPE}}
 {\footnotesize\ttfamily \#define EAI\+\_\+\+SOCKTYPE~10}
 
+
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313}\label{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313} 
+\index{kolibri\_network.h@{kolibri\_network.h}!AddresInfoFlags@{AddresInfoFlags}}
+\index{AddresInfoFlags@{AddresInfoFlags}!kolibri\_network.h@{kolibri\_network.h}}
+\doxysubsubsection{\texorpdfstring{AddresInfoFlags}{AddresInfoFlags}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313}{Addres\+Info\+Flags}}}
+
+
+
+Flags for addrinfo. 
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{AI\_PASSIVE@{AI\_PASSIVE}!kolibri\_network.h@{kolibri\_network.h}}\index{kolibri\_network.h@{kolibri\_network.h}!AI\_PASSIVE@{AI\_PASSIVE}}}\Hypertarget{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313a639f7226a124591a1bf1f26fa6fc3a07}\label{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313a639f7226a124591a1bf1f26fa6fc3a07} 
+AI\+\_\+\+PASSIVE&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{AI\_CANONNAME@{AI\_CANONNAME}!kolibri\_network.h@{kolibri\_network.h}}\index{kolibri\_network.h@{kolibri\_network.h}!AI\_CANONNAME@{AI\_CANONNAME}}}\Hypertarget{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313a168e7e9b09a1d8e0349800efcb75317e}\label{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313a168e7e9b09a1d8e0349800efcb75317e} 
+AI\+\_\+\+CANONNAME&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{AI\_NUMERICHOST@{AI\_NUMERICHOST}!kolibri\_network.h@{kolibri\_network.h}}\index{kolibri\_network.h@{kolibri\_network.h}!AI\_NUMERICHOST@{AI\_NUMERICHOST}}}\Hypertarget{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313a548292a9e75fdc5562fdf38408330f3a}\label{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313a548292a9e75fdc5562fdf38408330f3a} 
+AI\+\_\+\+NUMERICHOST&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{AI\_NUMERICSERV@{AI\_NUMERICSERV}!kolibri\_network.h@{kolibri\_network.h}}\index{kolibri\_network.h@{kolibri\_network.h}!AI\_NUMERICSERV@{AI\_NUMERICSERV}}}\Hypertarget{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313aa9db24a7e3a85063c373a5c04d926f0a}\label{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313aa9db24a7e3a85063c373a5c04d926f0a} 
+AI\+\_\+\+NUMERICSERV&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{AI\_ADDRCONFIG@{AI\_ADDRCONFIG}!kolibri\_network.h@{kolibri\_network.h}}\index{kolibri\_network.h@{kolibri\_network.h}!AI\_ADDRCONFIG@{AI\_ADDRCONFIG}}}\Hypertarget{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313aa89468db344e4f5c9592bd6685e28f0f}\label{kolibri__network_8h_a4e524e86664980f9097e3f4b3b984313aa89468db344e4f5c9592bd6685e28f0f} 
+AI\+\_\+\+ADDRCONFIG&\\
+\hline
+
+\end{DoxyEnumFields}
 
 
 \doxysubsection{Function Documentation}

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['scale_0',['Scale',['../kolibri__libimg_8h.html#a8e8d3da3ac3510ba6f5aa1a4c8c82eae',1,'kolibri_libimg.h']]]
+  ['params_0',['Params',['../kolibri__rasterworks_8h.html#ab126c13bc335f4a996ef88c85aec7a24',1,'kolibri_rasterworks.h']]]
 ];

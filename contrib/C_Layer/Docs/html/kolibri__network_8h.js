@@ -2,11 +2,6 @@ var kolibri__network_8h =
 [
     [ "ARP_entry", "struct_a_r_p__entry.html", "struct_a_r_p__entry" ],
     [ "addrinfo", "structaddrinfo.html", "structaddrinfo" ],
-    [ "AI_ADDRCONFIG", "kolibri__network_8h.html#abe581892df09df05b21fee09e1584659", null ],
-    [ "AI_CANONNAME", "kolibri__network_8h.html#ab2912e6cffeb2353df550f10bbe64cf4", null ],
-    [ "AI_NUMERICHOST", "kolibri__network_8h.html#a2a7070b38894743c536630b2ab25dcef", null ],
-    [ "AI_NUMERICSERV", "kolibri__network_8h.html#a8739abe7bcb9470bcdb021e869b2a76f", null ],
-    [ "AI_PASSIVE", "kolibri__network_8h.html#aec9e92ed53442d64cbc9b68d92ad970b", null ],
     [ "EAI_ADDRFAMILY", "kolibri__network_8h.html#aac746f03bb5099da0a427a99ecf1e36a", null ],
     [ "EAI_AGAIN", "kolibri__network_8h.html#a7a0f2f10f8778fe201a68932d18434e5", null ],
     [ "EAI_BADFLAGS", "kolibri__network_8h.html#a3f3b38f2ac6688612a0fd20f3e6210be", null ],
@@ -19,6 +14,13 @@ var kolibri__network_8h =
     [ "EAI_PROTOCOL", "kolibri__network_8h.html#ac22bd096438839c946a37c0619c6eabf", null ],
     [ "EAI_SERVICE", "kolibri__network_8h.html#ac7f08e3ee3c38f7c869beb5a44c9f651", null ],
     [ "EAI_SOCKTYPE", "kolibri__network_8h.html#a110777c2c99dab32101324b3b1dd1df5", null ],
+    [ "AddresInfoFlags", "kolibri__network_8h.html#a4e524e86664980f9097e3f4b3b984313", [
+      [ "AI_PASSIVE", "kolibri__network_8h.html#a4e524e86664980f9097e3f4b3b984313a639f7226a124591a1bf1f26fa6fc3a07", null ],
+      [ "AI_CANONNAME", "kolibri__network_8h.html#a4e524e86664980f9097e3f4b3b984313a168e7e9b09a1d8e0349800efcb75317e", null ],
+      [ "AI_NUMERICHOST", "kolibri__network_8h.html#a4e524e86664980f9097e3f4b3b984313a548292a9e75fdc5562fdf38408330f3a", null ],
+      [ "AI_NUMERICSERV", "kolibri__network_8h.html#a4e524e86664980f9097e3f4b3b984313aa9db24a7e3a85063c373a5c04d926f0a", null ],
+      [ "AI_ADDRCONFIG", "kolibri__network_8h.html#a4e524e86664980f9097e3f4b3b984313aa89468db344e4f5c9592bd6685e28f0f", null ]
+    ] ],
     [ "networklib_init", "kolibri__network_8h.html#a1b3f00e699b6934789568abb4db4ba88", null ],
     [ "freeaddrinfo", "kolibri__network_8h.html#a28bd9ac6d2dc1cf1e64b738a91d60cf0", null ],
     [ "getaddrinfo", "kolibri__network_8h.html#aadfd3232f735831646fb5cfa102bb712", null ],

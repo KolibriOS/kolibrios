@@ -122,10 +122,13 @@ $(function(){initNavTree('kolibri__gui__elements_8h.html',''); initResizable(); 
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structkolibri__window__element.html">kolibri_window_element</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linked list which connects together all the elements drawn inside a GUI window.  <a href="structkolibri__window__element.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structkolibri__element__operations.html">kolibri_element_operations</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generic structure for supporting functions on various elements of Kolibri's GUI.  <a href="structkolibri__element__operations.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structkolibri__window.html">kolibri_window</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure for a GUI Window on Kolibri. It also contains all the elements drawn in window.  <a href="structkolibri__window.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
@@ -188,11 +191,13 @@ Enumerations</h2></td></tr>
 &#160;&#160;<a class="el" href="#a08294bd57296884e31c2cc31f42f3fc5ac01eab0e91f7887f587c730f4b843fe2">KOLIBRI_NUM_GUI_ELEMENTS</a>
 <br />
  }</td></tr>
+<tr class="memdesc:a08294bd57296884e31c2cc31f42f3fc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">List of GUI items.  <a href="#a08294bd57296884e31c2cc31f42f3fc5">More...</a><br /></td></tr>
 <tr class="separator:a08294bd57296884e31c2cc31f42f3fc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ac057f3a16d5ffb0741fcabf191c5855f" id="r_ac057f3a16d5ffb0741fcabf191c5855f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ac057f3a16d5ffb0741fcabf191c5855f">kolibri_window_add_element</a> (<a class="el" href="structkolibri__window.html">kolibri_window</a> *some_window, enum <a class="el" href="#a08294bd57296884e31c2cc31f42f3fc5">KOLIBRI_GUI_ELEMENT_TYPE</a> element_type, void *some_gui_element)</td></tr>
+<tr class="memdesc:ac057f3a16d5ffb0741fcabf191c5855f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an element to an existing window.  <br /></td></tr>
 <tr class="separator:ac057f3a16d5ffb0741fcabf191c5855f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b0059b817bcb245d9e95e95940bc3da" id="r_a0b0059b817bcb245d9e95e95940bc3da"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0b0059b817bcb245d9e95e95940bc3da">kolibri_init_gui_op_table</a> (void)</td></tr>
 <tr class="separator:a0b0059b817bcb245d9e95e95940bc3da"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -202,6 +207,7 @@ Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:ae453ed947e17aec9a26be0a4482bdb6e" id="r_ae453ed947e17aec9a26be0a4482bdb6e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structkolibri__element__operations.html">kolibri_element_operations</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae453ed947e17aec9a26be0a4482bdb6e">kolibri_gui_op_table</a> [<a class="el" href="#a08294bd57296884e31c2cc31f42f3fc5ac01eab0e91f7887f587c730f4b843fe2">KOLIBRI_NUM_GUI_ELEMENTS</a>]</td></tr>
+<tr class="memdesc:ae453ed947e17aec9a26be0a4482bdb6e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Master table containing operations for various GUI elements in one place.  <br /></td></tr>
 <tr class="separator:ae453ed947e17aec9a26be0a4482bdb6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -269,6 +275,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>List of GUI items. </p>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a08294bd57296884e31c2cc31f42f3fc5a18fa6c6bd9fd01cf249458d2802b7f31" name="a08294bd57296884e31c2cc31f42f3fc5a18fa6c6bd9fd01cf249458d2802b7f31"></a>KOLIBRI_EDIT_BOX&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a08294bd57296884e31c2cc31f42f3fc5a26240994d5a3cd27725cd557d0543b2c" name="a08294bd57296884e31c2cc31f42f3fc5a26240994d5a3cd27725cd557d0543b2c"></a>KOLIBRI_CHECK_BOX&#160;</td><td class="fielddoc"></td></tr>
@@ -375,6 +383,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Add an element to an existing window. </p>
 <dl class="section examples"><dt>Examples</dt><dd><a class="el" href="boardmsg_8c-example.html#a17">boardmsg.c</a>, and <a class="el" href="scroll_progress_8c-example.html#a19">scroll_progress.c</a>.</dd>
 </dl>
 
@@ -392,6 +402,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Master table containing operations for various GUI elements in one place. </p>
 
 </div>
 </div>

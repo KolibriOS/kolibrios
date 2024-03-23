@@ -108,7 +108,7 @@ $(function(){initNavTree('kolibri__debug_8h_source.html',''); initResizable(); }
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="preprocessor">#include &lt;stdarg.h&gt;</span></div>
 <div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span> </div>
 <div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="comment">/* Write a printf() like function (variable argument list) for</span></div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="comment">   writing to debug board */</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="comment">     writing to debug board */</span></div>
 <div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span> </div>
 <div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keywordtype">void</span> debug_board_write_byte(<span class="keyword">const</span> <span class="keywordtype">char</span> <a class="code hl_variable" href="kolibri__editbox_8h.html#a17ebe84fe1c5af7f936ae66083cd10ac">ch</a>){</div>
 <div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>    __asm__ <a class="code hl_function" href="kolibri__editor_8h.html#a6d952a8d068aaf8ee03623416d163a37">__volatile__</a>(</div>
@@ -120,8 +120,8 @@ $(function(){initNavTree('kolibri__debug_8h_source.html',''); initResizable(); }
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="comment">//added noninline because incofortabre stepping in in debugger</span></div>
 <div class="foldopen" id="foldopen00020" data-start="{" data-end="}">
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno"><a class="line" href="kolibri__debug_8h.html#a367ec45f8f33f57b79f2b87a954744e5">   20</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="kolibri__debug_8h.html#a367ec45f8f33f57b79f2b87a954744e5">__attribute__</a> ((noinline)) debug_board_write_str(<span class="keyword">const</span> <span class="keywordtype">char</span>* str){</div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>  <span class="keywordflow">while</span>(*str)</div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>    debug_board_write_byte(*str++);</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>    <span class="keywordflow">while</span>(*str)</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>        debug_board_write_byte(*str++);</div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>}</div>
 </div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
@@ -147,7 +147,7 @@ $(function(){initNavTree('kolibri__debug_8h_source.html',''); initResizable(); }
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="preprocessor">#endif </span><span class="comment">/* KOLIBRI_DEBUG_H */</span><span class="preprocessor"></span></div>
 <div class="ttc" id="akolibri__debug_8h_html_a367ec45f8f33f57b79f2b87a954744e5"><div class="ttname"><a href="kolibri__debug_8h.html#a367ec45f8f33f57b79f2b87a954744e5">__attribute__</a></div><div class="ttdeci">void __attribute__((noinline)) debug_board_write_str(const char *str)</div><div class="ttdef"><b>Definition</b> kolibri_debug.h:20</div></div>
-<div class="ttc" id="akolibri__editbox_8h_html_a17ebe84fe1c5af7f936ae66083cd10ac"><div class="ttname"><a href="kolibri__editbox_8h.html#a17ebe84fe1c5af7f936ae66083cd10ac">ch</a></div><div class="ttdeci">oskey_t ch</div><div class="ttdef"><b>Definition</b> kolibri_editbox.h:112</div></div>
+<div class="ttc" id="akolibri__editbox_8h_html_a17ebe84fe1c5af7f936ae66083cd10ac"><div class="ttname"><a href="kolibri__editbox_8h.html#a17ebe84fe1c5af7f936ae66083cd10ac">ch</a></div><div class="ttdeci">oskey_t ch</div><div class="ttdef"><b>Definition</b> kolibri_editbox.h:114</div></div>
 <div class="ttc" id="akolibri__editor_8h_html_a6d952a8d068aaf8ee03623416d163a37"><div class="ttname"><a href="kolibri__editor_8h.html#a6d952a8d068aaf8ee03623416d163a37">__volatile__</a></div><div class="ttdeci">__asm__ __volatile__(&quot;push %4\n\t&quot; &quot;push %3\n\t&quot; &quot;push %2\n\t&quot; &quot;call *%1 \n\t&quot;::&quot;a&quot;(ch), &quot;m&quot;(ted_key_asm), &quot;m&quot;(ed), &quot;m&quot;(table), &quot;m&quot;(control):)</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

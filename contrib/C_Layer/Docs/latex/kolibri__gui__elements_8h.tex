@@ -19,11 +19,11 @@
 \begin{DoxyCompactItemize}
 \item 
 struct \mbox{\hyperlink{structkolibri__window__element}{kolibri\+\_\+window\+\_\+element}}
-\item 
+\begin{DoxyCompactList}\small\item\em Linked list which connects together all the elements drawn inside a GUI window. \end{DoxyCompactList}\item 
 struct \mbox{\hyperlink{structkolibri__element__operations}{kolibri\+\_\+element\+\_\+operations}}
-\item 
+\begin{DoxyCompactList}\small\item\em Generic structure for supporting functions on various elements of Kolibri\textquotesingle{}s GUI. \end{DoxyCompactList}\item 
 struct \mbox{\hyperlink{structkolibri__window}{kolibri\+\_\+window}}
-\end{DoxyCompactItemize}
+\begin{DoxyCompactList}\small\item\em Structure for a GUI Window on Kolibri. It also contains all the elements drawn in window. \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsubsection*{Macros}
 \begin{DoxyCompactItemize}
 \item 
@@ -84,12 +84,12 @@ enum \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc
 , \newline
 \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5ac01eab0e91f7887f587c730f4b843fe2}{KOLIBRI\+\_\+\+NUM\+\_\+\+GUI\+\_\+\+ELEMENTS}}
  \}
-\end{DoxyCompactItemize}
+\begin{DoxyCompactList}\small\item\em List of GUI items. \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsubsection*{Functions}
 \begin{DoxyCompactItemize}
 \item 
 void \mbox{\hyperlink{kolibri__gui__elements_8h_ac057f3a16d5ffb0741fcabf191c5855f}{kolibri\+\_\+window\+\_\+add\+\_\+element}} (\mbox{\hyperlink{structkolibri__window}{kolibri\+\_\+window}} \texorpdfstring{$\ast$}{*}some\+\_\+window, enum \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5}{KOLIBRI\+\_\+\+GUI\+\_\+\+ELEMENT\+\_\+\+TYPE}} element\+\_\+type, void \texorpdfstring{$\ast$}{*}some\+\_\+gui\+\_\+element)
-\item 
+\begin{DoxyCompactList}\small\item\em Add an element to an existing window. \end{DoxyCompactList}\item 
 void \mbox{\hyperlink{kolibri__gui__elements_8h_a0b0059b817bcb245d9e95e95940bc3da}{kolibri\+\_\+init\+\_\+gui\+\_\+op\+\_\+table}} (void)
 \item 
 \mbox{\hyperlink{structkolibri__window}{kolibri\+\_\+window}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__gui__elements_8h_a62aa1b7d35feb27a0a4cc4cd909e8cb2}{kolibri\+\_\+new\+\_\+window}} (int tlx, int tly, int sizex, int sizey, char \texorpdfstring{$\ast$}{*}title)
@@ -98,7 +98,7 @@ void \mbox{\hyperlink{kolibri__gui__elements_8h_a0b0059b817bcb245d9e95e95940bc3d
 \begin{DoxyCompactItemize}
 \item 
 \mbox{\hyperlink{structkolibri__element__operations}{kolibri\+\_\+element\+\_\+operations}} \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\+\_\+gui\+\_\+op\+\_\+table}} \mbox{[}\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5ac01eab0e91f7887f587c730f4b843fe2}{KOLIBRI\+\_\+\+NUM\+\_\+\+GUI\+\_\+\+ELEMENTS}}\mbox{]}
-\end{DoxyCompactItemize}
+\begin{DoxyCompactList}\small\item\em Master table containing operations for various GUI elements in one place. \end{DoxyCompactList}\end{DoxyCompactItemize}
 
 
 \doxysubsection{Macro Definition Documentation}
@@ -134,6 +134,10 @@ void \mbox{\hyperlink{kolibri__gui__elements_8h_a0b0059b817bcb245d9e95e95940bc3d
 \index{KOLIBRI\_GUI\_ELEMENT\_TYPE@{KOLIBRI\_GUI\_ELEMENT\_TYPE}!kolibri\_gui\_elements.h@{kolibri\_gui\_elements.h}}
 \doxysubsubsection{\texorpdfstring{KOLIBRI\_GUI\_ELEMENT\_TYPE}{KOLIBRI\_GUI\_ELEMENT\_TYPE}}
 {\footnotesize\ttfamily enum \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5}{KOLIBRI\+\_\+\+GUI\+\_\+\+ELEMENT\+\_\+\+TYPE}}}
+
+
+
+List of GUI items. 
 
 \begin{DoxyEnumFields}{Enumerator}
 \raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EDIT\_BOX@{KOLIBRI\_EDIT\_BOX}!kolibri\_gui\_elements.h@{kolibri\_gui\_elements.h}}\index{kolibri\_gui\_elements.h@{kolibri\_gui\_elements.h}!KOLIBRI\_EDIT\_BOX@{KOLIBRI\_EDIT\_BOX}}}\Hypertarget{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a18fa6c6bd9fd01cf249458d2802b7f31}\label{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a18fa6c6bd9fd01cf249458d2802b7f31} 
@@ -249,6 +253,10 @@ KOLIBRI\+\_\+\+NUM\+\_\+\+GUI\+\_\+\+ELEMENTS&\\
 \doxysubsubsection{\texorpdfstring{kolibri\_window\_add\_element()}{kolibri\_window\_add\_element()}}
 {\footnotesize\ttfamily void kolibri\+\_\+window\+\_\+add\+\_\+element (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structkolibri__window}{kolibri\+\_\+window}} \texorpdfstring{$\ast$}{*}}]{some\+\_\+window,  }\item[{enum \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5}{KOLIBRI\+\_\+\+GUI\+\_\+\+ELEMENT\+\_\+\+TYPE}}}]{element\+\_\+type,  }\item[{void \texorpdfstring{$\ast$}{*}}]{some\+\_\+gui\+\_\+element }\end{DoxyParamCaption})}
 
+
+
+Add an element to an existing window. 
+
 \begin{Desc}
 \item[Examples]\par
 \mbox{\hyperlink{boardmsg_8c-example}{boardmsg.\+c}}, and \mbox{\hyperlink{scroll_progress_8c-example}{scroll\+\_\+progress.\+c}}.\end{Desc}
@@ -260,4 +268,8 @@ KOLIBRI\+\_\+\+NUM\+\_\+\+GUI\+\_\+\+ELEMENTS&\\
 \index{kolibri\_gui\_op\_table@{kolibri\_gui\_op\_table}!kolibri\_gui\_elements.h@{kolibri\_gui\_elements.h}}
 \doxysubsubsection{\texorpdfstring{kolibri\_gui\_op\_table}{kolibri\_gui\_op\_table}}
 {\footnotesize\ttfamily \mbox{\hyperlink{structkolibri__element__operations}{kolibri\+\_\+element\+\_\+operations}} kolibri\+\_\+gui\+\_\+op\+\_\+table\mbox{[}\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5ac01eab0e91f7887f587c730f4b843fe2}{KOLIBRI\+\_\+\+NUM\+\_\+\+GUI\+\_\+\+ELEMENTS}}\mbox{]}}
+
+
+
+Master table containing operations for various GUI elements in one place. 
 

@@ -18,7 +18,7 @@ typedef struct __attribute__ ((__packed__)) {
     unsigned short y_start;
     unsigned int color_type;
     unsigned int color;
-}color_dialog;
+} color_dialog;
 
 void cd_fake_on_redraw(void) {}
 

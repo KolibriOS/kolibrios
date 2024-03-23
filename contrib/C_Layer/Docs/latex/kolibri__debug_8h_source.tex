@@ -11,7 +11,7 @@
 \DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <stdarg.h>}}
 \DoxyCodeLine{00008\ }
 \DoxyCodeLine{00009\ \textcolor{comment}{/*\ Write\ a\ printf()\ like\ function\ (variable\ argument\ list)\ for}}
-\DoxyCodeLine{00010\ \textcolor{comment}{\ \ \ writing\ to\ debug\ board\ */}}
+\DoxyCodeLine{00010\ \textcolor{comment}{\ \ \ \ \ writing\ to\ debug\ board\ */}}
 \DoxyCodeLine{00011\ }
 \DoxyCodeLine{00012\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ debug\_board\_write\_byte(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ \mbox{\hyperlink{kolibri__editbox_8h_a17ebe84fe1c5af7f936ae66083cd10ac}{ch}})\{}
 \DoxyCodeLine{00013\ \ \ \ \ \_\_asm\_\_\ \mbox{\hyperlink{kolibri__editor_8h_a6d952a8d068aaf8ee03623416d163a37}{\_\_volatile\_\_}}(}
@@ -22,8 +22,8 @@
 \DoxyCodeLine{00018\ }
 \DoxyCodeLine{00019\ \textcolor{comment}{//added\ noninline\ because\ incofortabre\ stepping\ in\ in\ debugger}}
 \DoxyCodeLine{00020\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__debug_8h_a367ec45f8f33f57b79f2b87a954744e5}{\_\_attribute\_\_}}\ ((noinline))\ debug\_board\_write\_str(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ str)\{}
-\DoxyCodeLine{00021\ \ \ \textcolor{keywordflow}{while}(*str)}
-\DoxyCodeLine{00022\ \ \ \ \ debug\_board\_write\_byte(*str++);}
+\DoxyCodeLine{00021\ \ \ \ \ \textcolor{keywordflow}{while}(*str)}
+\DoxyCodeLine{00022\ \ \ \ \ \ \ \ \ debug\_board\_write\_byte(*str++);}
 \DoxyCodeLine{00023\ \}}
 \DoxyCodeLine{00024\ }
 \DoxyCodeLine{00025\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ debug\_board\_printf(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *format,...)}

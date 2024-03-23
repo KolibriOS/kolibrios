@@ -8,10 +8,10 @@
 \DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__colors_8h}{kolibri\_colors.h}}"{}}}
 \DoxyCodeLine{00005\ }
 \DoxyCodeLine{00006\ \textcolor{comment}{/*}}
-\DoxyCodeLine{00007\ \textcolor{comment}{ch\_flag\_en\ -\/\ флаг\ установленного чек бокса}}
-\DoxyCodeLine{00008\ \textcolor{comment}{ch\_flag\_top\ -\/\ флаг\ расположения текста вверху}}
-\DoxyCodeLine{00009\ \textcolor{comment}{ch\_flag\_middle\ -\/\ флаг\ расположения текста в\ центре}}
-\DoxyCodeLine{00010\ \textcolor{comment}{ch\_flag\_bottom\ -\/\ флаг\ расположения текста в\ низу т.е. по умолчанию\ принимается значение внизу}}
+\DoxyCodeLine{00007\ \textcolor{comment}{ch\_flag\_en\ -\/\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00008\ \textcolor{comment}{ch\_flag\_top\ -\/\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00009\ \textcolor{comment}{ch\_flag\_middle\ -\/\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
+\DoxyCodeLine{00010\ \textcolor{comment}{ch\_flag\_bottom\ -\/\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}.{\ucr}.\ {\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}{\ucr}\ {\ucr}{\ucr}{\ucr}{\ucr}{\ucr}}}
 \DoxyCodeLine{00011\ \textcolor{comment}{*/}}
 \DoxyCodeLine{00012\ }
 \DoxyCodeLine{00013\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__checkbox_8h_a8b55ea2892ba576f85a1a061851ca723}{CHECKBOX\_FLAGS}}\ \{}
@@ -31,30 +31,30 @@
 \DoxyCodeLine{00027\ }
 \DoxyCodeLine{00028\ \ \ \ \ \textcolor{comment}{/*\ Users\ can\ use\ members\ above\ this\ */}}
 \DoxyCodeLine{00029\ \ \ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structcheck__box_a874f54aa6c49407aafdd419863522319}{size\_of\_str}};}
-\DoxyCodeLine{00030\ \}\mbox{\hyperlink{structcheck__box}{check\_box}};}
+\DoxyCodeLine{00030\ \}\ \mbox{\hyperlink{structcheck__box}{check\_box}};}
 \DoxyCodeLine{00031\ }
 \DoxyCodeLine{00032\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__checkbox_8h_aeb6a268f36e9189cc25b437dd271c1b7}{check\_box\_draw2}})(\mbox{\hyperlink{structcheck__box}{check\_box}}\ *)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
 \DoxyCodeLine{00033\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__checkbox_8h_a224d41e2fdf9654759808ba4eefd3db0}{check\_box\_mouse2}})(\mbox{\hyperlink{structcheck__box}{check\_box}}\ *)\mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
 \DoxyCodeLine{00034\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__checkbox_8h_aae5cf614e724a972918ac6a9d5a1f27e}{init\_checkbox2}})(\mbox{\hyperlink{structcheck__box}{check\_box}}\ *)\mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
 \DoxyCodeLine{00035\ }
-\DoxyCodeLine{00036\ \mbox{\hyperlink{structcheck__box}{check\_box}}*\ \mbox{\hyperlink{kolibri__checkbox_8h_ad161256539d1685ec2b5592157817a23}{kolibri\_new\_check\_box}}(\textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ tlx,\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ tly,\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ sizex,\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ sizey,\ \textcolor{keywordtype}{char}\ *label\_text)}
-\DoxyCodeLine{00037\ \{}
-\DoxyCodeLine{00038\ \ \ \ \ \ \mbox{\hyperlink{structcheck__box}{check\_box}}*\ new\_checkbox\ =\ (\mbox{\hyperlink{structcheck__box}{check\_box}}\ *)malloc(\textcolor{keyword}{sizeof}(\mbox{\hyperlink{structcheck__box}{check\_box}}));}
-\DoxyCodeLine{00039\ \ \ \ \ \ new\_checkbox\ -\/>\ left\_s\ =\ (tlx\ <<\ 16)\ +\ sizex;}
-\DoxyCodeLine{00040\ \ \ \ \ \ new\_checkbox\ -\/>\ top\_s\ \ =\ (tly\ <<\ 16)\ +\ sizey;}
-\DoxyCodeLine{00041\ \ \ \ \ \ new\_checkbox\ -\/>\ ch\_text\_margin\ =\ 10;}
-\DoxyCodeLine{00042\ \ \ \ \ \ new\_checkbox\ -\/>\ color\ =\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_ab98874ff4cd41197078ed4f2fbd2909a}{color\_work\_area}}\ |\ 0x80000000;\ \textcolor{comment}{//\ 0xFFFFFFFF;\ //\ 0x80AABBCC,\ 31-\/bit\ mus\ be\ set\ asciiz}}
-\DoxyCodeLine{00043\ \ \ \ \ \ new\_checkbox\ -\/>\ border\_color\ =\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a39acec23cc98e07bbeb92f49035c4fc3}{color\_work\_graph}};}
-\DoxyCodeLine{00044\ \ \ \ \ \ new\_checkbox\ -\/>\ text\_color\ =\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a938ae4559485f5f4e099a0e863bbc5bf}{color\_work\_text}};}
-\DoxyCodeLine{00045\ \ \ \ \ \ new\_checkbox\ -\/>\ text\ =\ label\_text;}
-\DoxyCodeLine{00046\ \ \ \ \ \ new\_checkbox\ -\/>\ flags\ =\ 0x00000008;}
-\DoxyCodeLine{00047\ }
-\DoxyCodeLine{00048\ \ \ \ \ \ (*init\_checkbox2)(new\_checkbox);\ \textcolor{comment}{//\ count\ text\ width\ for\ mouse\ action\ and\ set\ flags}}
-\DoxyCodeLine{00049\ }
-\DoxyCodeLine{00050\ \ \ \ \ \ \textcolor{keywordflow}{return}\ new\_checkbox;}
-\DoxyCodeLine{00051\ \}}
-\DoxyCodeLine{00052\ }
-\DoxyCodeLine{00053\ }
-\DoxyCodeLine{00054\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ KOLIBRI\_CHECKBOX\_H\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00043\ \mbox{\hyperlink{structcheck__box}{check\_box}}*\ \mbox{\hyperlink{kolibri__checkbox_8h_ad161256539d1685ec2b5592157817a23}{kolibri\_new\_check\_box}}(\textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ tlx,\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ tly,\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ sizex,\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ sizey,\ \textcolor{keywordtype}{char}\ *label\_text)}
+\DoxyCodeLine{00044\ \{}
+\DoxyCodeLine{00045\ \ \ \ \ \ \mbox{\hyperlink{structcheck__box}{check\_box}}*\ new\_checkbox\ =\ (\mbox{\hyperlink{structcheck__box}{check\_box}}\ *)malloc(\textcolor{keyword}{sizeof}(\mbox{\hyperlink{structcheck__box}{check\_box}}));}
+\DoxyCodeLine{00046\ \ \ \ \ \ new\_checkbox\ -\/>\ left\_s\ =\ (tlx\ <<\ 16)\ +\ sizex;}
+\DoxyCodeLine{00047\ \ \ \ \ \ new\_checkbox\ -\/>\ top\_s\ \ =\ (tly\ <<\ 16)\ +\ sizey;}
+\DoxyCodeLine{00048\ \ \ \ \ \ new\_checkbox\ -\/>\ ch\_text\_margin\ =\ 10;}
+\DoxyCodeLine{00049\ \ \ \ \ \ new\_checkbox\ -\/>\ color\ =\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_ab98874ff4cd41197078ed4f2fbd2909a}{color\_work\_area}}\ |\ 0x80000000;\ \textcolor{comment}{//\ 0xFFFFFFFF;\ //\ 0x80AABBCC,\ 31-\/bit\ mus\ be\ set\ asciiz}}
+\DoxyCodeLine{00050\ \ \ \ \ \ new\_checkbox\ -\/>\ border\_color\ =\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a39acec23cc98e07bbeb92f49035c4fc3}{color\_work\_graph}};}
+\DoxyCodeLine{00051\ \ \ \ \ \ new\_checkbox\ -\/>\ text\_color\ =\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a938ae4559485f5f4e099a0e863bbc5bf}{color\_work\_text}};}
+\DoxyCodeLine{00052\ \ \ \ \ \ new\_checkbox\ -\/>\ text\ =\ label\_text;}
+\DoxyCodeLine{00053\ \ \ \ \ \ new\_checkbox\ -\/>\ flags\ =\ 0x00000008;}
+\DoxyCodeLine{00054\ }
+\DoxyCodeLine{00055\ \ \ \ \ \ (*init\_checkbox2)(new\_checkbox);\ \textcolor{comment}{//\ count\ text\ width\ for\ mouse\ action\ and\ set\ flags}}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00057\ \ \ \ \ \ \textcolor{keywordflow}{return}\ new\_checkbox;}
+\DoxyCodeLine{00058\ \}}
+\DoxyCodeLine{00059\ }
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ KOLIBRI\_CHECKBOX\_H\ */}\textcolor{preprocessor}{}}
 
 \end{DoxyCode}

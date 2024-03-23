@@ -4,10 +4,10 @@
 #include "kolibri_colors.h"
 
 /*
-ch_flag_en - флаг установленного чек бокса
-ch_flag_top - флаг расположения текста вверху
-ch_flag_middle - флаг расположения текста в центре
-ch_flag_bottom - флаг расположения текста в низу т.е. по умолчанию принимается значение внизу
+ch_flag_en - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+ch_flag_top - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+ch_flag_middle - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+ch_flag_bottom - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅ.пїЅ. пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 */
 
 enum CHECKBOX_FLAGS {
@@ -27,12 +27,19 @@ typedef struct {
 
     /* Users can use members above this */
     unsigned int size_of_str;
-}check_box;
+} check_box;
 
 extern void (*check_box_draw2)(check_box *) __attribute__((__stdcall__));
 extern void (*check_box_mouse2)(check_box *)__attribute__((__stdcall__));
 extern void (*init_checkbox2)(check_box *)__attribute__((__stdcall__));
 
+/// @brief Create check_box
+/// @param tlx 
+/// @param tly 
+/// @param sizex 
+/// @param sizey
+/// @param label_text
+/// @return 
 check_box* kolibri_new_check_box(unsigned int tlx, unsigned int tly, unsigned int sizex, unsigned int sizey, char *label_text)
 {
      check_box* new_checkbox = (check_box *)malloc(sizeof(check_box));
