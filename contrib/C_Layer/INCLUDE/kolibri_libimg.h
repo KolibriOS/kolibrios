@@ -35,7 +35,7 @@ typedef struct {
   /// @brief Image, array of colors
   uint32_t* Data;
 
-  /// @breif Used iff Type eq Image.bpp1, Image.bpp2, Image.bpp4 or Image.bpp8i
+  /// @brief Used iff Type eq Image.bpp1, Image.bpp2, Image.bpp4 or Image.bpp8i
   uint32_t Palette;
 
   uint32_t Extended;
@@ -51,14 +51,14 @@ typedef struct {
 
 enum BPP
 {
-	/// @breif indexed
+	/// @brief indexed
 	IMAGE_BPP8i = 1,
 	IMAGE_BPP24 = 2,
 	IMAGE_BPP32 = 3,
 	IMAGE_BPP15 = 4,
 	IMAGE_BPP16 = 5,
 	IMAGE_BPP1 = 6,
-	/// @breif grayscale
+	/// @brief grayscale
 	IMAGE_BPP8g = 7,
 	IMAGE_BPP2i = 8,
 	IMAGE_BPP4i = 9,
@@ -126,7 +126,7 @@ enum Errors
 	LIBIMG_ERROR_INVALID_INPUT = 10
 };
 
-/// @breif encode flags (byte 0x02 of _common option)
+/// @brief encode flags (byte 0x02 of _common option)
 enum Encode
 {
 	LIBIMG_ENCODE_STRICT_SPECIFIC = 0x01,
@@ -151,7 +151,7 @@ enum Rotate
 
 };
 
-/// @breif Initialize library libimg
+/// @brief Initialize library libimg
 /// @return -1 if unsuccessful
 extern int kolibri_libimg_init(void);
 
@@ -175,7 +175,7 @@ extern Image*   (*img_encode)(Image* img, uint32_t length, uint32_t option) _std
 /// @brief Create image
 /// @param width New image width
 /// @param height New image height
-/// @param type value from enum @link Formats
+/// @param type value from enum @link BPP
 /// @return Pointer to image
 extern Image*   (*img_create)(uint32_t width, uint32_t height, uint32_t type) _stdcall;
 
@@ -183,18 +183,27 @@ extern void     (*img_to_rgb2)(Image* img, void *rgb_data) _stdcall;
 
 extern Image*   (*img_to_rgb)(Image* img) _stdcall;
 
+
 extern bool     (*img_flip)(Image* img, uint32_t flip) _stdcall;
 
 extern bool     (*img_flip_layer)(Image *img, uint32_t flip) _stdcall;
+
 
 extern bool     (*img_rotate)(Image *img, uint32_t rotate) _stdcall;
 
 extern bool     (*img_rotate_layer)(Image* data, uint32_t rotate) _stdcall;
 
 /// @brief
+/// @param img
+/// @param x
+/// @param y
+/// @param w
+/// @param h
+/// @param xoof
+/// @param yoof
 extern void     (*img_draw)(Image *img, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t xoff,  uint32_t yoff) _stdcall;
 
-/// @breif 
+/// @brief 
 /// @param img
 /// @return 
 extern int32_t  (*img_count)(Image *img) _stdcall;
@@ -238,7 +247,7 @@ extern Image*   (*img_scale)(Image* src, uint32_t crop_x, uint32_t crop_y, uint3
 #endif
 
 
-/// @breif Fill the image with color
+/// @brief Fill the image with color
 /// @param img - image
 /// @param width width of the filled area
 /// @param height The height of the filled area
@@ -250,7 +259,7 @@ void img_fill_color(Image* img, uint32_t width, uint32_t height, uint32_t color)
         img->Data[i] = color;
     }
 }
-/// @breif Fill the image with color
+/// @brief Fill the image with color
 /// @param img - image
 /// @param width width of the filled area
 /// @param height The height of the filled area
