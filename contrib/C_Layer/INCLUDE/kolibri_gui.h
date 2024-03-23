@@ -9,17 +9,37 @@
 /* All supported GUI elements included */
 #include "kolibri_gui_elements.h"
 
-enum KOLIBRI_GUI_EVENTS {
-    KOLIBRI_EVENT_NONE = 0,     /* Event queue is empty */
-    KOLIBRI_EVENT_REDRAW = 1,   /* Window and window elements should be redrawn */
-    KOLIBRI_EVENT_KEY = 2,      /* A key on the keyboard was pressed */
-    KOLIBRI_EVENT_BUTTON = 3,   /* A button was clicked with the mouse */
-    KOLIBRI_EVENT_DESKTOP = 5,  /* Desktop redraw finished */
-    KOLIBRI_EVENT_MOUSE = 6,    /* Mouse activity (movement, button press) was detected */
-    KOLIBRI_EVENT_IPC = 7,      /* Interprocess communication notify */
-    KOLIBRI_EVENT_NETWORK = 8,  /* Network event */
-    KOLIBRI_EVENT_DEBUG = 9,    /* Debug subsystem event */
-    KOLIBRI_EVENT_IRQBEGIN = 16 /* 16..31 IRQ0..IRQ15 interrupt =IRQBEGIN+IRQn */
+enum KOLIBRI_GUI_EVENTS
+{
+  /// @brief Event queue is empty
+  KOLIBRI_EVENT_NONE = 0,
+
+  /// @brief Window and window elements should be redrawn
+  KOLIBRI_EVENT_REDRAW = 1,
+
+  /// @brief A key on the keyboard was pressed
+  KOLIBRI_EVENT_KEY = 2,
+
+  /// @brief A button was clicked with the mouse
+  KOLIBRI_EVENT_BUTTON = 3,
+
+  /// @brief Desktop redraw finished
+  KOLIBRI_EVENT_DESKTOP = 5,
+
+  /// @brief Mouse activity (movement, button press) was detected
+  KOLIBRI_EVENT_MOUSE = 6,
+
+  /// @brief Interprocess communication notify
+  KOLIBRI_EVENT_IPC = 7,
+
+  /// @brief  Network event
+  KOLIBRI_EVENT_NETWORK = 8,
+
+  /// @brief Debug subsystem event
+  KOLIBRI_EVENT_DEBUG = 9,
+
+  /// @brief 16..31 IRQ0..IRQ15 interrupt =IRQBEGIN+IRQn
+  KOLIBRI_EVENT_IRQBEGIN = 16
 };
 
 #define BUTTON_CLOSE 0x1
@@ -107,6 +127,8 @@ void kolibri_exit(void)
   __asm__ volatile ("int $0x40"::"a"(-1));
 }
 
+/// @brief Inilixate libguic 
+/// @return -1 if ussuccess
 int kolibri_gui_init(void)
 {
   int boxlib_init_status = kolibri_boxlib_init();
@@ -136,5 +158,14 @@ int kolibri_gui_init(void)
 
 /* Note: The current implementation tries to automatically colors
    GUI elements with system theme */
+
+/**
+ * examples:
+ * \example boardmsg.c
+ * \example dbutton_files.c
+ * \example editor_tree_msgbox.c
+ * \example option_menu.c
+ * \example scroll_progress.c
+*/
 
 #endif /* KOLIBRI_GUI_H */

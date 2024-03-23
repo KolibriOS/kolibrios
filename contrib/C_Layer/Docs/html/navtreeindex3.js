@@ -1,5 +1,10 @@
 var NAVTREEINDEX3 =
 {
+"structkolibri__button.html#ac0170d4856f465833fedd3ab74e48216":[0,0,12,3],
+"structkolibri__button.html#aeedc2afa1e522527db2235d0700a3b0d":[0,0,12,0],
+"structkolibri__button.html#af2fe43bfd5d5deecee699f9a1d0292d0":[0,0,12,1],
+"structkolibri__element__operations.html":[0,0,13],
+"structkolibri__element__operations.html#a1c96296fdf1f77640c72ba43c7ad42d2":[0,0,13,1],
 "structkolibri__element__operations.html#a4beaca87019b382f110baec801f403de":[0,0,13,0],
 "structkolibri__element__operations.html#a9e3bd502e61fb8cfb30175e25be243a8":[0,0,13,2],
 "structkolibri__system__colors.html":[0,0,14],

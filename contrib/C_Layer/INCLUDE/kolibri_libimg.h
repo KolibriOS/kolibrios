@@ -282,7 +282,7 @@ void img_fill_color(Image* img, uint32_t color)
 
 /**
  * \author turbocat2001 (Logaev Maxim)
- * \example img_example.c
+ * \example main.c
  * example of using libimg library
  */
 

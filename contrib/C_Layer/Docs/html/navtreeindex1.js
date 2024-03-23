@@ -1,5 +1,7 @@
 var NAVTREEINDEX1 =
 {
+"kolibri__frame_8h.html#a1c411d36bb7c1e632cb2cad7119c3dca":[1,0,0,11,2],
+"kolibri__frame_8h.html#a1c411d36bb7c1e632cb2cad7119c3dcaaedaa44fa32b54e2c67be845d47ce2a07":[1,0,0,11,2,1],
 "kolibri__frame_8h.html#a1c411d36bb7c1e632cb2cad7119c3dcaaf6fa0acd45c9bae8ab26371d5347bbc9":[1,0,0,11,2,0],
 "kolibri__frame_8h.html#a30fbbbad58a7327def95a1c869d31c73":[1,0,0,11,3],
 "kolibri__frame_8h.html#ad135963485684507c6dfee188e0fc8a7":[1,0,0,11,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX1 =
 "kolibri__optionbox_8h.html#a0f7e99c3302519490725a125ecf04e22":[1,0,0,21,3],
 "kolibri__optionbox_8h.html#a58ea5b7220b78684b634cd345150eed6":[1,0,0,21,2],
 "kolibri__optionbox_8h.html#a5b045350199442e5252e797382a4406a":[1,0,0,21,4],
-"kolibri__optionbox_8h.html#a7e56846a517ff7f992a046aad941c346":[1,0,0,21,1],
-"kolibri__optionbox_8h.html#aa491438c706cea2b7fbbf7fb8a4b48ee":[1,0,0,21,5],
-"kolibri__optionbox_8h.html#ab1eeb2284258b522475e14fcabccd71b":[1,0,0,21,0]
+"kolibri__optionbox_8h.html#a7e56846a517ff7f992a046aad941c346":[1,0,0,21,1]
 };

@@ -47,7 +47,7 @@ void \mbox{\hyperlink{kolibri__gui_8h_a5970422747362f11880a68439b7ef870}{kolibri
 void \mbox{\hyperlink{kolibri__gui_8h_a0830b6d7b228582bd73694d2d85b47cc}{kolibri\+\_\+exit}} (void)
 \item 
 int \mbox{\hyperlink{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3}{kolibri\+\_\+gui\+\_\+init}} (void)
-\end{DoxyCompactItemize}
+\begin{DoxyCompactList}\small\item\em Inilixate libguic. \end{DoxyCompactList}\end{DoxyCompactItemize}
 
 
 \doxysubsection{Macro Definition Documentation}
@@ -57,6 +57,9 @@ int \mbox{\hyperlink{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3}{kolibri\
 \doxysubsubsection{\texorpdfstring{BTN\_QUIT}{BTN\_QUIT}}
 {\footnotesize\ttfamily \#define BTN\+\_\+\+QUIT~1}
 
+\begin{Desc}
+\item[Examples]\par
+\mbox{\hyperlink{dbutton_files_8c-example}{dbutton\+\_\+files.\+c}}, \mbox{\hyperlink{editor_tree_msgbox_8c-example}{editor\+\_\+tree\+\_\+msgbox.\+c}}, \mbox{\hyperlink{option_menu_8c-example}{option\+\_\+menu.\+c}}, and \mbox{\hyperlink{scroll_progress_8c-example}{scroll\+\_\+progress.\+c}}.\end{Desc}
 \Hypertarget{kolibri__gui_8h_a198bffa888e7f18fbee8a13b209976c0}\label{kolibri__gui_8h_a198bffa888e7f18fbee8a13b209976c0} 
 \index{kolibri\_gui.h@{kolibri\_gui.h}!BUTTON\_CLOSE@{BUTTON\_CLOSE}}
 \index{BUTTON\_CLOSE@{BUTTON\_CLOSE}!kolibri\_gui.h@{kolibri\_gui.h}}
@@ -65,7 +68,7 @@ int \mbox{\hyperlink{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3}{kolibri\
 
 \begin{Desc}
 \item[Examples]\par
-\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
+\mbox{\hyperlink{boardmsg_8c-example}{boardmsg.\+c}}, and \mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
 
 
 \doxysubsection{Enumeration Type Documentation}
@@ -77,43 +80,43 @@ int \mbox{\hyperlink{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3}{kolibri\
 
 \begin{DoxyEnumFields}{Enumerator}
 \raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_NONE@{KOLIBRI\_EVENT\_NONE}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_NONE@{KOLIBRI\_EVENT\_NONE}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2dbec864e4e963d6bea9954806521df2}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2dbec864e4e963d6bea9954806521df2} 
-KOLIBRI\+\_\+\+EVENT\+\_\+\+NONE&\\
+KOLIBRI\+\_\+\+EVENT\+\_\+\+NONE&Event queue is empty. \\
 \hline
 
 \raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_REDRAW@{KOLIBRI\_EVENT\_REDRAW}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_REDRAW@{KOLIBRI\_EVENT\_REDRAW}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca0a84f1803dcad15708cd5bf208a8118a}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca0a84f1803dcad15708cd5bf208a8118a} 
-KOLIBRI\+\_\+\+EVENT\+\_\+\+REDRAW&\\
+KOLIBRI\+\_\+\+EVENT\+\_\+\+REDRAW&Window and window elements should be redrawn. \\
 \hline
 
 \raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_KEY@{KOLIBRI\_EVENT\_KEY}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_KEY@{KOLIBRI\_EVENT\_KEY}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca563a416dc7f301d71a631da21a3963aa}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca563a416dc7f301d71a631da21a3963aa} 
-KOLIBRI\+\_\+\+EVENT\+\_\+\+KEY&\\
+KOLIBRI\+\_\+\+EVENT\+\_\+\+KEY&A key on the keyboard was pressed. \\
 \hline
 
 \raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_BUTTON@{KOLIBRI\_EVENT\_BUTTON}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_BUTTON@{KOLIBRI\_EVENT\_BUTTON}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e} 
-KOLIBRI\+\_\+\+EVENT\+\_\+\+BUTTON&\\
+KOLIBRI\+\_\+\+EVENT\+\_\+\+BUTTON&A button was clicked with the mouse. \\
 \hline
 
 \raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_DESKTOP@{KOLIBRI\_EVENT\_DESKTOP}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_DESKTOP@{KOLIBRI\_EVENT\_DESKTOP}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcac2423560d14c7f7f51194416009d8ba4}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcac2423560d14c7f7f51194416009d8ba4} 
-KOLIBRI\+\_\+\+EVENT\+\_\+\+DESKTOP&\\
+KOLIBRI\+\_\+\+EVENT\+\_\+\+DESKTOP&Desktop redraw finished. \\
 \hline
 
 \raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_MOUSE@{KOLIBRI\_EVENT\_MOUSE}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_MOUSE@{KOLIBRI\_EVENT\_MOUSE}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3e55219fb3a0deaa00798ad87e12a401}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3e55219fb3a0deaa00798ad87e12a401} 
-KOLIBRI\+\_\+\+EVENT\+\_\+\+MOUSE&\\
+KOLIBRI\+\_\+\+EVENT\+\_\+\+MOUSE&Mouse activity (movement, button press) was detected. \\
 \hline
 
 \raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_IPC@{KOLIBRI\_EVENT\_IPC}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_IPC@{KOLIBRI\_EVENT\_IPC}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca711afd36a87d70794a0c9c0e046d672a}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca711afd36a87d70794a0c9c0e046d672a} 
-KOLIBRI\+\_\+\+EVENT\+\_\+\+IPC&\\
+KOLIBRI\+\_\+\+EVENT\+\_\+\+IPC&Interprocess communication notify. \\
 \hline
 
 \raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_NETWORK@{KOLIBRI\_EVENT\_NETWORK}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_NETWORK@{KOLIBRI\_EVENT\_NETWORK}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3ce4e91272c1db64c44ab5685a79d711}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3ce4e91272c1db64c44ab5685a79d711} 
-KOLIBRI\+\_\+\+EVENT\+\_\+\+NETWORK&\\
+KOLIBRI\+\_\+\+EVENT\+\_\+\+NETWORK&Network event. \\
 \hline
 
 \raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_DEBUG@{KOLIBRI\_EVENT\_DEBUG}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_DEBUG@{KOLIBRI\_EVENT\_DEBUG}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2cd58c949d2f4ce38e49f6b0e275e03f}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2cd58c949d2f4ce38e49f6b0e275e03f} 
-KOLIBRI\+\_\+\+EVENT\+\_\+\+DEBUG&\\
+KOLIBRI\+\_\+\+EVENT\+\_\+\+DEBUG&Debug subsystem event. \\
 \hline
 
 \raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_IRQBEGIN@{KOLIBRI\_EVENT\_IRQBEGIN}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_IRQBEGIN@{KOLIBRI\_EVENT\_IRQBEGIN}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcadf7b8d4b2c15e348db6338e2e82aaf33}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcadf7b8d4b2c15e348db6338e2e82aaf33} 
-KOLIBRI\+\_\+\+EVENT\+\_\+\+IRQBEGIN&\\
+KOLIBRI\+\_\+\+EVENT\+\_\+\+IRQBEGIN&16..31 IRQ0..IRQ15 interrupt =IRQBEGIN+\+IRQn \\
 \hline
 
 \end{DoxyEnumFields}
@@ -128,16 +131,23 @@ KOLIBRI\+\_\+\+EVENT\+\_\+\+IRQBEGIN&\\
 
 \begin{Desc}
 \item[Examples]\par
-\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
+\mbox{\hyperlink{boardmsg_8c-example}{boardmsg.\+c}}, and \mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
 \Hypertarget{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3}\label{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3} 
 \index{kolibri\_gui.h@{kolibri\_gui.h}!kolibri\_gui\_init@{kolibri\_gui\_init}}
 \index{kolibri\_gui\_init@{kolibri\_gui\_init}!kolibri\_gui.h@{kolibri\_gui.h}}
 \doxysubsubsection{\texorpdfstring{kolibri\_gui\_init()}{kolibri\_gui\_init()}}
 {\footnotesize\ttfamily int kolibri\+\_\+gui\+\_\+init (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
 
+
+
+Inilixate libguic. 
+
+\begin{DoxyReturn}{Returns}
+-\/1 if ussuccess 
+\end{DoxyReturn}
 \begin{Desc}
 \item[Examples]\par
-\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
+\mbox{\hyperlink{boardmsg_8c-example}{boardmsg.\+c}}, \mbox{\hyperlink{dbutton_files_8c-example}{dbutton\+\_\+files.\+c}}, \mbox{\hyperlink{editor_tree_msgbox_8c-example}{editor\+\_\+tree\+\_\+msgbox.\+c}}, \mbox{\hyperlink{option_menu_8c-example}{option\+\_\+menu.\+c}}, \mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}, and \mbox{\hyperlink{scroll_progress_8c-example}{scroll\+\_\+progress.\+c}}.\end{Desc}
 \Hypertarget{kolibri__gui_8h_a90720148918d989921c1572058d21a58}\label{kolibri__gui_8h_a90720148918d989921c1572058d21a58} 
 \index{kolibri\_gui.h@{kolibri\_gui.h}!kolibri\_handle\_event\_key@{kolibri\_handle\_event\_key}}
 \index{kolibri\_handle\_event\_key@{kolibri\_handle\_event\_key}!kolibri\_gui.h@{kolibri\_gui.h}}
@@ -146,7 +156,7 @@ KOLIBRI\+\_\+\+EVENT\+\_\+\+IRQBEGIN&\\
 
 \begin{Desc}
 \item[Examples]\par
-\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
+\mbox{\hyperlink{boardmsg_8c-example}{boardmsg.\+c}}, \mbox{\hyperlink{editor_tree_msgbox_8c-example}{editor\+\_\+tree\+\_\+msgbox.\+c}}, \mbox{\hyperlink{option_menu_8c-example}{option\+\_\+menu.\+c}}, \mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}, and \mbox{\hyperlink{scroll_progress_8c-example}{scroll\+\_\+progress.\+c}}.\end{Desc}
 \Hypertarget{kolibri__gui_8h_a5970422747362f11880a68439b7ef870}\label{kolibri__gui_8h_a5970422747362f11880a68439b7ef870} 
 \index{kolibri\_gui.h@{kolibri\_gui.h}!kolibri\_handle\_event\_mouse@{kolibri\_handle\_event\_mouse}}
 \index{kolibri\_handle\_event\_mouse@{kolibri\_handle\_event\_mouse}!kolibri\_gui.h@{kolibri\_gui.h}}
@@ -155,7 +165,7 @@ KOLIBRI\+\_\+\+EVENT\+\_\+\+IRQBEGIN&\\
 
 \begin{Desc}
 \item[Examples]\par
-\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
+\mbox{\hyperlink{boardmsg_8c-example}{boardmsg.\+c}}, \mbox{\hyperlink{dbutton_files_8c-example}{dbutton\+\_\+files.\+c}}, \mbox{\hyperlink{editor_tree_msgbox_8c-example}{editor\+\_\+tree\+\_\+msgbox.\+c}}, \mbox{\hyperlink{option_menu_8c-example}{option\+\_\+menu.\+c}}, \mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}, and \mbox{\hyperlink{scroll_progress_8c-example}{scroll\+\_\+progress.\+c}}.\end{Desc}
 \Hypertarget{kolibri__gui_8h_a81a1ea83d66ffc14350b4b72b078a3ef}\label{kolibri__gui_8h_a81a1ea83d66ffc14350b4b72b078a3ef} 
 \index{kolibri\_gui.h@{kolibri\_gui.h}!kolibri\_handle\_event\_redraw@{kolibri\_handle\_event\_redraw}}
 \index{kolibri\_handle\_event\_redraw@{kolibri\_handle\_event\_redraw}!kolibri\_gui.h@{kolibri\_gui.h}}
@@ -164,4 +174,4 @@ KOLIBRI\+\_\+\+EVENT\+\_\+\+IRQBEGIN&\\
 
 \begin{Desc}
 \item[Examples]\par
-\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
+\mbox{\hyperlink{boardmsg_8c-example}{boardmsg.\+c}}, \mbox{\hyperlink{dbutton_files_8c-example}{dbutton\+\_\+files.\+c}}, \mbox{\hyperlink{editor_tree_msgbox_8c-example}{editor\+\_\+tree\+\_\+msgbox.\+c}}, \mbox{\hyperlink{option_menu_8c-example}{option\+\_\+menu.\+c}}, \mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}, and \mbox{\hyperlink{scroll_progress_8c-example}{scroll\+\_\+progress.\+c}}.\end{Desc}

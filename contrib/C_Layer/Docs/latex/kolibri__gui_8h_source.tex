@@ -13,134 +13,144 @@
 \DoxyCodeLine{00009\ \textcolor{comment}{/*\ All\ supported\ GUI\ elements\ included\ */}}
 \DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__gui__elements_8h}{kolibri\_gui\_elements.h}}"{}}}
 \DoxyCodeLine{00011\ }
-\DoxyCodeLine{00012\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dc}{KOLIBRI\_GUI\_EVENTS}}\ \{}
-\DoxyCodeLine{00013\ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2dbec864e4e963d6bea9954806521df2}{KOLIBRI\_EVENT\_NONE}}\ =\ 0,\ \ \ \ \ \textcolor{comment}{/*\ Event\ queue\ is\ empty\ */}}
-\DoxyCodeLine{00014\ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca0a84f1803dcad15708cd5bf208a8118a}{KOLIBRI\_EVENT\_REDRAW}}\ =\ 1,\ \ \ \textcolor{comment}{/*\ Window\ and\ window\ elements\ should\ be\ redrawn\ */}}
-\DoxyCodeLine{00015\ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca563a416dc7f301d71a631da21a3963aa}{KOLIBRI\_EVENT\_KEY}}\ =\ 2,\ \ \ \ \ \ \textcolor{comment}{/*\ A\ key\ on\ the\ keyboard\ was\ pressed\ */}}
-\DoxyCodeLine{00016\ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e}{KOLIBRI\_EVENT\_BUTTON}}\ =\ 3,\ \ \ \textcolor{comment}{/*\ A\ button\ was\ clicked\ with\ the\ mouse\ */}}
-\DoxyCodeLine{00017\ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcac2423560d14c7f7f51194416009d8ba4}{KOLIBRI\_EVENT\_DESKTOP}}\ =\ 5,\ \ \textcolor{comment}{/*\ Desktop\ redraw\ finished\ */}}
-\DoxyCodeLine{00018\ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3e55219fb3a0deaa00798ad87e12a401}{KOLIBRI\_EVENT\_MOUSE}}\ =\ 6,\ \ \ \ \textcolor{comment}{/*\ Mouse\ activity\ (movement,\ button\ press)\ was\ detected\ */}}
-\DoxyCodeLine{00019\ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca711afd36a87d70794a0c9c0e046d672a}{KOLIBRI\_EVENT\_IPC}}\ =\ 7,\ \ \ \ \ \ \textcolor{comment}{/*\ Interprocess\ communication\ notify\ */}}
-\DoxyCodeLine{00020\ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3ce4e91272c1db64c44ab5685a79d711}{KOLIBRI\_EVENT\_NETWORK}}\ =\ 8,\ \ \textcolor{comment}{/*\ Network\ event\ */}}
-\DoxyCodeLine{00021\ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2cd58c949d2f4ce38e49f6b0e275e03f}{KOLIBRI\_EVENT\_DEBUG}}\ =\ 9,\ \ \ \ \textcolor{comment}{/*\ Debug\ subsystem\ event\ */}}
-\DoxyCodeLine{00022\ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcadf7b8d4b2c15e348db6338e2e82aaf33}{KOLIBRI\_EVENT\_IRQBEGIN}}\ =\ 16\ \textcolor{comment}{/*\ 16..31\ IRQ0..IRQ15\ interrupt\ =IRQBEGIN+IRQn\ */}}
-\DoxyCodeLine{00023\ \};}
-\DoxyCodeLine{00024\ }
-\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#define\ BUTTON\_CLOSE\ 0x1}}
-\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#define\ BTN\_QUIT\ 1}}
-\DoxyCodeLine{00027\ }
-\DoxyCodeLine{00028\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__gui_8h_a81a1ea83d66ffc14350b4b72b078a3ef}{kolibri\_handle\_event\_redraw}}(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}*\ some\_window)}
-\DoxyCodeLine{00029\ \{}
-\DoxyCodeLine{00030\ \ \ \textcolor{comment}{/*\ \ Draw\ windows\ with\ system\ color\ table.\ */}}
+\DoxyCodeLine{00012\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dc}{KOLIBRI\_GUI\_EVENTS}}}
+\DoxyCodeLine{00013\ \{}
+\DoxyCodeLine{00015\ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2dbec864e4e963d6bea9954806521df2}{KOLIBRI\_EVENT\_NONE}}\ =\ 0,}
+\DoxyCodeLine{00016\ }
+\DoxyCodeLine{00018\ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca0a84f1803dcad15708cd5bf208a8118a}{KOLIBRI\_EVENT\_REDRAW}}\ =\ 1,}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00021\ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca563a416dc7f301d71a631da21a3963aa}{KOLIBRI\_EVENT\_KEY}}\ =\ 2,}
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00024\ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e}{KOLIBRI\_EVENT\_BUTTON}}\ =\ 3,}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00027\ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcac2423560d14c7f7f51194416009d8ba4}{KOLIBRI\_EVENT\_DESKTOP}}\ =\ 5,}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00030\ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3e55219fb3a0deaa00798ad87e12a401}{KOLIBRI\_EVENT\_MOUSE}}\ =\ 6,}
 \DoxyCodeLine{00031\ }
-\DoxyCodeLine{00032\ \ \ BeginDraw();}
-\DoxyCodeLine{00033\ }
-\DoxyCodeLine{00034\ \ \ DrawWindow(some\_window-\/>\mbox{\hyperlink{structkolibri__window_a09f29748099efa1a43c0b48ccd633f67}{topleftx}},\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a82fd5946463a99668e50de837a0f4002}{toplefty}},}
-\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a2f3801f19f9312d44748425c86575005}{sizex}},\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a7976587a883e10fbf93343253a09037d}{sizey}},}
-\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \ some\_window-\/>\mbox{\hyperlink{structkolibri__window_afdb7e3e35b999b759be89ee4e6015f97}{window\_title}},}
-\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_ab98874ff4cd41197078ed4f2fbd2909a}{color\_work\_area}},\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_ac0170d4856f465833fedd3ab74e48216}{XY}});}
-\DoxyCodeLine{00038\ }
-\DoxyCodeLine{00039\ \ \ \textcolor{comment}{/*\ Enumerate\ and\ draw\ all\ window\ elements\ here\ */}}
-\DoxyCodeLine{00040\ \ \ \textcolor{keywordflow}{if}(some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}})\ \textcolor{comment}{/*\ Draw\ all\ elements\ added\ to\ window\ */}}
-\DoxyCodeLine{00041\ \ \ \ \ \{}
-\DoxyCodeLine{00042\ \ \ \ \ \ \ \mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}}*\ current\_element\ =\ some\_window\ -\/>\ elements;}
-\DoxyCodeLine{00043\ }
-\DoxyCodeLine{00044\ \ \ \ \ \ \ \textcolor{keywordflow}{do}}
-\DoxyCodeLine{00045\ \ \ \ \ \{}
-\DoxyCodeLine{00046\ \ \ \ \ \ \ \textcolor{comment}{/*\ The\ redraw\_fn\ serves\ as\ draw\_fn\ on\ initial\ draw\ */}}
-\DoxyCodeLine{00047\ \ \ \ \ \ \ \textcolor{keywordflow}{if}((\textcolor{keywordtype}{int})\mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].redraw\_fn\ >\ 0)\ \ \textcolor{comment}{//\ -\/1\ if\ DLL\ link\ fail}}
-\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}(current\_element\ -\/>\ element);}
-\DoxyCodeLine{00049\ }
-\DoxyCodeLine{00050\ \textcolor{comment}{//sie\ after\ fixing\ calling\ conventions\ no\ more\ needed}}
-\DoxyCodeLine{00051\ \textcolor{comment}{/*}}
-\DoxyCodeLine{00052\ \textcolor{comment}{\ \ \ \ \ \ switch(current\_element\ -\/>\ type)}}
-\DoxyCodeLine{00053\ \textcolor{comment}{\ \ \ \ \ \ \ \ \{}}
-\DoxyCodeLine{00054\ \textcolor{comment}{\ \ \ \ \ \ \ \ case\ KOLIBRI\_EDIT\_BOX:}}
-\DoxyCodeLine{00055\ \textcolor{comment}{\ \ \ \ \ \ \ \ case\ KOLIBRI\_CHECK\_BOX:}}
-\DoxyCodeLine{00056\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \_\_asm\_\_\ volatile("{}push\ \$0x13371337"{}::);\ /\ *\ Random\ value\ pushed\ to\ balance\ stack\ *\ /}}
-\DoxyCodeLine{00057\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ /\ *\ otherwise\ edit\_box\_draw\ leaves\ stack\ unbalanced\ *\ /}}
-\DoxyCodeLine{00058\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ /\ *\ and\ GCC\ jumps\ like\ a\ crazy\ motha'\ fucka'\ *\ /}}
-\DoxyCodeLine{00059\ \textcolor{comment}{}}
-\DoxyCodeLine{00060\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ break;}}
-\DoxyCodeLine{00061\ \textcolor{comment}{\ \ \ \ \ \ \ \ \}}}
-\DoxyCodeLine{00062\ \textcolor{comment}{*/}}
-\DoxyCodeLine{00063\ \ \ \ \ \ \ current\_element\ =\ current\_element\ -\/>\ next;}
-\DoxyCodeLine{00064\ }
-\DoxyCodeLine{00065\ \ \ \ \ \}\ \textcolor{keywordflow}{while}(current\_element\ !=\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}});\ \textcolor{comment}{/*\ Have\ we\ covered\ all\ elements?\ */}}
-\DoxyCodeLine{00066\ \ \ \ \ \}}
-\DoxyCodeLine{00067\ \}}
-\DoxyCodeLine{00068\ }
-\DoxyCodeLine{00069\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__gui_8h_a90720148918d989921c1572058d21a58}{kolibri\_handle\_event\_key}}(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}*\ some\_window,\ oskey\_t\ \mbox{\hyperlink{kolibri__editor_8h_a6efc9555d65f172040066b7da1e3d2a0}{key}})}
-\DoxyCodeLine{00070\ \{}
-\DoxyCodeLine{00071\ \ \ \textcolor{comment}{/*\ Enumerate\ and\ trigger\ key\ handling\ functions\ of\ window\ elements\ here\ */}}
-\DoxyCodeLine{00072\ \ \ \textcolor{keywordflow}{if}(some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}})}
-\DoxyCodeLine{00073\ \ \ \ \ \{}
-\DoxyCodeLine{00074\ \ \ \ \ \ \ \mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}}\ *current\_element\ =\ some\_window\ -\/>\ elements;}
-\DoxyCodeLine{00075\ }
-\DoxyCodeLine{00076\ \ \ \ \ \ \ \textcolor{keywordflow}{do}}
-\DoxyCodeLine{00077\ \ \ \ \ \{}
-\DoxyCodeLine{00078\ \ \ \ \ \ \ \textcolor{comment}{/*\ Only\ execute\ if\ the\ function\ pointer\ isn't\ NULL,\ or\ -\/1\ (fail\ to\ find\ in\ export\ table)\ */}}
-\DoxyCodeLine{00079\ \ \ \ \ \ \ \textcolor{keywordflow}{if}((\textcolor{keywordtype}{int})\mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].key\_fn\ >\ 0)}
-\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}(current\_element\ -\/>\ element,\ \mbox{\hyperlink{kolibri__editor_8h_a6efc9555d65f172040066b7da1e3d2a0}{key}});}
-\DoxyCodeLine{00081\ }
-\DoxyCodeLine{00082\ \ \ \ \ \ \ current\_element\ =\ current\_element\ -\/>\ next;}
-\DoxyCodeLine{00083\ \ \ \ \ \}\ \textcolor{keywordflow}{while}(current\_element\ !=\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}});\ \textcolor{comment}{/*\ Have\ we\ covered\ all\ elements?\ */}}
-\DoxyCodeLine{00084\ \ \ \ \ \}}
-\DoxyCodeLine{00085\ \}}
-\DoxyCodeLine{00086\ }
-\DoxyCodeLine{00087\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__gui_8h_a5970422747362f11880a68439b7ef870}{kolibri\_handle\_event\_mouse}}(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}*\ some\_window)}
-\DoxyCodeLine{00088\ \{}
-\DoxyCodeLine{00089\ \ \ \textcolor{comment}{/*\ Enumerate\ and\ trigger\ mouse\ handling\ functions\ of\ window\ elements\ here\ */}}
-\DoxyCodeLine{00090\ \ \ \textcolor{keywordflow}{if}(some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}})}
-\DoxyCodeLine{00091\ \ \ \ \ \{}
-\DoxyCodeLine{00092\ \ \ \ \ \ \ \mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}}\ *current\_element\ =\ some\_window\ -\/>\ elements;}
-\DoxyCodeLine{00093\ }
-\DoxyCodeLine{00094\ \ \ \ \ \ \ \textcolor{keywordflow}{do}}
-\DoxyCodeLine{00095\ \ \ \ \ \{}
-\DoxyCodeLine{00096\ \ \ \ \ \ \ \textcolor{keywordflow}{if}((\textcolor{keywordtype}{int})\mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].mouse\_fn\ >\ 0)}
-\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}(current\_element\ -\/>\ element);}
-\DoxyCodeLine{00098\ }
-\DoxyCodeLine{00099\ \ \ \ \ \ \ current\_element\ =\ current\_element\ -\/>\ next;}
-\DoxyCodeLine{00100\ }
-\DoxyCodeLine{00101\ \ \ \ \ \}\ \textcolor{keywordflow}{while}(current\_element\ !=\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}});\ \textcolor{comment}{/*\ Have\ we\ covered\ all\ elements?\ */}}
-\DoxyCodeLine{00102\ \ \ \ \ \}}
-\DoxyCodeLine{00103\ \}}
-\DoxyCodeLine{00104\ }
-\DoxyCodeLine{00105\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__gui_8h_a0830b6d7b228582bd73694d2d85b47cc}{kolibri\_exit}}(\textcolor{keywordtype}{void})}
-\DoxyCodeLine{00106\ \{}
-\DoxyCodeLine{00107\ \ \ \_\_asm\_\_\ \textcolor{keyword}{volatile}\ (\textcolor{stringliteral}{"{}int\ \$0x40"{}}::\textcolor{stringliteral}{"{}a"{}}(-\/1));}
-\DoxyCodeLine{00108\ \}}
-\DoxyCodeLine{00109\ }
-\DoxyCodeLine{00110\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3}{kolibri\_gui\_init}}(\textcolor{keywordtype}{void})}
-\DoxyCodeLine{00111\ \{}
-\DoxyCodeLine{00112\ \ \ \textcolor{keywordtype}{int}\ boxlib\_init\_status\ =\ \mbox{\hyperlink{kolibri__boxlib_8h_a1cd6d91851a8da5afb7ea28e2b0028ef}{kolibri\_boxlib\_init}}();}
+\DoxyCodeLine{00033\ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca711afd36a87d70794a0c9c0e046d672a}{KOLIBRI\_EVENT\_IPC}}\ =\ 7,}
+\DoxyCodeLine{00034\ }
+\DoxyCodeLine{00036\ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3ce4e91272c1db64c44ab5685a79d711}{KOLIBRI\_EVENT\_NETWORK}}\ =\ 8,}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00039\ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2cd58c949d2f4ce38e49f6b0e275e03f}{KOLIBRI\_EVENT\_DEBUG}}\ =\ 9,}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00042\ \ \ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcadf7b8d4b2c15e348db6338e2e82aaf33}{KOLIBRI\_EVENT\_IRQBEGIN}}\ =\ 16}
+\DoxyCodeLine{00043\ \};}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00045\ \textcolor{preprocessor}{\#define\ BUTTON\_CLOSE\ 0x1}}
+\DoxyCodeLine{00046\ \textcolor{preprocessor}{\#define\ BTN\_QUIT\ 1}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__gui_8h_a81a1ea83d66ffc14350b4b72b078a3ef}{kolibri\_handle\_event\_redraw}}(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}*\ some\_window)}
+\DoxyCodeLine{00049\ \{}
+\DoxyCodeLine{00050\ \ \ \textcolor{comment}{/*\ \ Draw\ windows\ with\ system\ color\ table.\ */}}
+\DoxyCodeLine{00051\ }
+\DoxyCodeLine{00052\ \ \ BeginDraw();}
+\DoxyCodeLine{00053\ }
+\DoxyCodeLine{00054\ \ \ DrawWindow(some\_window-\/>\mbox{\hyperlink{structkolibri__window_a09f29748099efa1a43c0b48ccd633f67}{topleftx}},\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a82fd5946463a99668e50de837a0f4002}{toplefty}},}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a2f3801f19f9312d44748425c86575005}{sizex}},\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a7976587a883e10fbf93343253a09037d}{sizey}},}
+\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ \ some\_window-\/>\mbox{\hyperlink{structkolibri__window_afdb7e3e35b999b759be89ee4e6015f97}{window\_title}},}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_ab98874ff4cd41197078ed4f2fbd2909a}{color\_work\_area}},\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_ac0170d4856f465833fedd3ab74e48216}{XY}});}
+\DoxyCodeLine{00058\ }
+\DoxyCodeLine{00059\ \ \ \textcolor{comment}{/*\ Enumerate\ and\ draw\ all\ window\ elements\ here\ */}}
+\DoxyCodeLine{00060\ \ \ \textcolor{keywordflow}{if}(some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}})\ \textcolor{comment}{/*\ Draw\ all\ elements\ added\ to\ window\ */}}
+\DoxyCodeLine{00061\ \ \ \ \ \{}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}}*\ current\_element\ =\ some\_window\ -\/>\ elements;}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \textcolor{keywordflow}{do}}
+\DoxyCodeLine{00065\ \ \ \ \ \{}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \textcolor{comment}{/*\ The\ redraw\_fn\ serves\ as\ draw\_fn\ on\ initial\ draw\ */}}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \textcolor{keywordflow}{if}((\textcolor{keywordtype}{int})\mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].redraw\_fn\ >\ 0)\ \ \textcolor{comment}{//\ -\/1\ if\ DLL\ link\ fail}}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}(current\_element\ -\/>\ element);}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00070\ \textcolor{comment}{//sie\ after\ fixing\ calling\ conventions\ no\ more\ needed}}
+\DoxyCodeLine{00071\ \textcolor{comment}{/*}}
+\DoxyCodeLine{00072\ \textcolor{comment}{\ \ \ \ \ \ switch(current\_element\ -\/>\ type)}}
+\DoxyCodeLine{00073\ \textcolor{comment}{\ \ \ \ \ \ \ \ \{}}
+\DoxyCodeLine{00074\ \textcolor{comment}{\ \ \ \ \ \ \ \ case\ KOLIBRI\_EDIT\_BOX:}}
+\DoxyCodeLine{00075\ \textcolor{comment}{\ \ \ \ \ \ \ \ case\ KOLIBRI\_CHECK\_BOX:}}
+\DoxyCodeLine{00076\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \_\_asm\_\_\ volatile("{}push\ \$0x13371337"{}::);\ /\ *\ Random\ value\ pushed\ to\ balance\ stack\ *\ /}}
+\DoxyCodeLine{00077\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ /\ *\ otherwise\ edit\_box\_draw\ leaves\ stack\ unbalanced\ *\ /}}
+\DoxyCodeLine{00078\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ /\ *\ and\ GCC\ jumps\ like\ a\ crazy\ motha'\ fucka'\ *\ /}}
+\DoxyCodeLine{00079\ \textcolor{comment}{}}
+\DoxyCodeLine{00080\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ break;}}
+\DoxyCodeLine{00081\ \textcolor{comment}{\ \ \ \ \ \ \ \ \}}}
+\DoxyCodeLine{00082\ \textcolor{comment}{*/}}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ current\_element\ =\ current\_element\ -\/>\ next;}
+\DoxyCodeLine{00084\ }
+\DoxyCodeLine{00085\ \ \ \ \ \}\ \textcolor{keywordflow}{while}(current\_element\ !=\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}});\ \textcolor{comment}{/*\ Have\ we\ covered\ all\ elements?\ */}}
+\DoxyCodeLine{00086\ \ \ \ \ \}}
+\DoxyCodeLine{00087\ \}}
+\DoxyCodeLine{00088\ }
+\DoxyCodeLine{00089\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__gui_8h_a90720148918d989921c1572058d21a58}{kolibri\_handle\_event\_key}}(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}*\ some\_window,\ oskey\_t\ \mbox{\hyperlink{kolibri__editor_8h_a6efc9555d65f172040066b7da1e3d2a0}{key}})}
+\DoxyCodeLine{00090\ \{}
+\DoxyCodeLine{00091\ \ \ \textcolor{comment}{/*\ Enumerate\ and\ trigger\ key\ handling\ functions\ of\ window\ elements\ here\ */}}
+\DoxyCodeLine{00092\ \ \ \textcolor{keywordflow}{if}(some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}})}
+\DoxyCodeLine{00093\ \ \ \ \ \{}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}}\ *current\_element\ =\ some\_window\ -\/>\ elements;}
+\DoxyCodeLine{00095\ }
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \textcolor{keywordflow}{do}}
+\DoxyCodeLine{00097\ \ \ \ \ \{}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \textcolor{comment}{/*\ Only\ execute\ if\ the\ function\ pointer\ isn't\ NULL,\ or\ -\/1\ (fail\ to\ find\ in\ export\ table)\ */}}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \textcolor{keywordflow}{if}((\textcolor{keywordtype}{int})\mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].key\_fn\ >\ 0)}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}(current\_element\ -\/>\ element,\ \mbox{\hyperlink{kolibri__editor_8h_a6efc9555d65f172040066b7da1e3d2a0}{key}});}
+\DoxyCodeLine{00101\ }
+\DoxyCodeLine{00102\ \ \ \ \ \ \ current\_element\ =\ current\_element\ -\/>\ next;}
+\DoxyCodeLine{00103\ \ \ \ \ \}\ \textcolor{keywordflow}{while}(current\_element\ !=\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}});\ \textcolor{comment}{/*\ Have\ we\ covered\ all\ elements?\ */}}
+\DoxyCodeLine{00104\ \ \ \ \ \}}
+\DoxyCodeLine{00105\ \}}
+\DoxyCodeLine{00106\ }
+\DoxyCodeLine{00107\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__gui_8h_a5970422747362f11880a68439b7ef870}{kolibri\_handle\_event\_mouse}}(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}*\ some\_window)}
+\DoxyCodeLine{00108\ \{}
+\DoxyCodeLine{00109\ \ \ \textcolor{comment}{/*\ Enumerate\ and\ trigger\ mouse\ handling\ functions\ of\ window\ elements\ here\ */}}
+\DoxyCodeLine{00110\ \ \ \textcolor{keywordflow}{if}(some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}})}
+\DoxyCodeLine{00111\ \ \ \ \ \{}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}}\ *current\_element\ =\ some\_window\ -\/>\ elements;}
 \DoxyCodeLine{00113\ }
-\DoxyCodeLine{00114\ \ \ \textcolor{keywordflow}{if}(boxlib\_init\_status\ ==\ 0)}
-\DoxyCodeLine{00115\ \ \ \ \ debug\_board\_write\_str(\textcolor{stringliteral}{"{}ashmew2\ is\ happy:\ Kolibri\ GUI\ Successfully\ Initialized.\(\backslash\)n"{}});}
-\DoxyCodeLine{00116\ \ \ \textcolor{keywordflow}{else}}
-\DoxyCodeLine{00117\ \ \ \ \ \{}
-\DoxyCodeLine{00118\ \ \ \ \ \ \ debug\_board\_write\_str(\textcolor{stringliteral}{"{}ashmew2\ is\ sad:\ Kolibri\ GUI\ Failed\ to\ initialize.\(\backslash\)n"{}});}
-\DoxyCodeLine{00119\ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a0830b6d7b228582bd73694d2d85b47cc}{kolibri\_exit}}();}
-\DoxyCodeLine{00120\ \ \ \ \ \}}
-\DoxyCodeLine{00121\ }
-\DoxyCodeLine{00122\ \ \ \textcolor{comment}{/*\ Initialize\ the\ global\ operation\ table\ which\ handles\ event\ functions\ of\ */}}
-\DoxyCodeLine{00123\ \ \ \textcolor{comment}{/*\ each\ individual\ element\ type\ */}}
-\DoxyCodeLine{00124\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a0b0059b817bcb245d9e95e95940bc3da}{kolibri\_init\_gui\_op\_table}}();}
-\DoxyCodeLine{00125\ }
-\DoxyCodeLine{00126\ \ \ \textcolor{comment}{/*\ Get\ the\ current\ color\ table\ for\ Kolibri\ and\ store\ in\ global\ table*/}}
-\DoxyCodeLine{00127\ \ \ \mbox{\hyperlink{kolibri__colors_8h_ab4d26a008b477bf721a60c4c1916c895}{kolibri\_get\_system\_colors}}(\&\mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}});}
-\DoxyCodeLine{00128\ }
-\DoxyCodeLine{00129\ \ \ \textcolor{comment}{/*\ Set\ up\ system\ events\ for\ buttons,\ mouse\ and\ keyboard\ and\ redraw\ */}}
-\DoxyCodeLine{00130\ \ \ \textcolor{comment}{/*\ Also\ set\ filters\ so\ that\ window\ receives\ mouse\ events\ only\ when\ active}}
-\DoxyCodeLine{00131\ \textcolor{comment}{\ \ \ \ \ and\ mouse\ inside\ window\ */}}
-\DoxyCodeLine{00132\ \ \ \_\_asm\_\_\ \textcolor{keyword}{volatile}(\textcolor{stringliteral}{"{}int\ \$0x40"{}}::\textcolor{stringliteral}{"{}a"{}}(40),\ \textcolor{stringliteral}{"{}b"{}}(0xC0000027));}
-\DoxyCodeLine{00133\ }
-\DoxyCodeLine{00134\ \ \ \textcolor{keywordflow}{return}\ boxlib\_init\_status;}
-\DoxyCodeLine{00135\ \}}
-\DoxyCodeLine{00136\ }
-\DoxyCodeLine{00137\ \textcolor{comment}{/*\ Note:\ The\ current\ implementation\ tries\ to\ automatically\ colors}}
-\DoxyCodeLine{00138\ \textcolor{comment}{\ \ \ GUI\ elements\ with\ system\ theme\ */}}
-\DoxyCodeLine{00139\ }
-\DoxyCodeLine{00140\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ KOLIBRI\_GUI\_H\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \textcolor{keywordflow}{do}}
+\DoxyCodeLine{00115\ \ \ \ \ \{}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \textcolor{keywordflow}{if}((\textcolor{keywordtype}{int})\mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].mouse\_fn\ >\ 0)}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[current\_element\ -\/>\ type].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}(current\_element\ -\/>\ element);}
+\DoxyCodeLine{00118\ }
+\DoxyCodeLine{00119\ \ \ \ \ \ \ current\_element\ =\ current\_element\ -\/>\ next;}
+\DoxyCodeLine{00120\ }
+\DoxyCodeLine{00121\ \ \ \ \ \}\ \textcolor{keywordflow}{while}(current\_element\ !=\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}});\ \textcolor{comment}{/*\ Have\ we\ covered\ all\ elements?\ */}}
+\DoxyCodeLine{00122\ \ \ \ \ \}}
+\DoxyCodeLine{00123\ \}}
+\DoxyCodeLine{00124\ }
+\DoxyCodeLine{00125\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__gui_8h_a0830b6d7b228582bd73694d2d85b47cc}{kolibri\_exit}}(\textcolor{keywordtype}{void})}
+\DoxyCodeLine{00126\ \{}
+\DoxyCodeLine{00127\ \ \ \_\_asm\_\_\ \textcolor{keyword}{volatile}\ (\textcolor{stringliteral}{"{}int\ \$0x40"{}}::\textcolor{stringliteral}{"{}a"{}}(-\/1));}
+\DoxyCodeLine{00128\ \}}
+\DoxyCodeLine{00129\ }
+\DoxyCodeLine{00132\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3}{kolibri\_gui\_init}}(\textcolor{keywordtype}{void})}
+\DoxyCodeLine{00133\ \{}
+\DoxyCodeLine{00134\ \ \ \textcolor{keywordtype}{int}\ boxlib\_init\_status\ =\ \mbox{\hyperlink{kolibri__boxlib_8h_a1cd6d91851a8da5afb7ea28e2b0028ef}{kolibri\_boxlib\_init}}();}
+\DoxyCodeLine{00135\ }
+\DoxyCodeLine{00136\ \ \ \textcolor{keywordflow}{if}(boxlib\_init\_status\ ==\ 0)}
+\DoxyCodeLine{00137\ \ \ \ \ debug\_board\_write\_str(\textcolor{stringliteral}{"{}ashmew2\ is\ happy:\ Kolibri\ GUI\ Successfully\ Initialized.\(\backslash\)n"{}});}
+\DoxyCodeLine{00138\ \ \ \textcolor{keywordflow}{else}}
+\DoxyCodeLine{00139\ \ \ \ \ \{}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ debug\_board\_write\_str(\textcolor{stringliteral}{"{}ashmew2\ is\ sad:\ Kolibri\ GUI\ Failed\ to\ initialize.\(\backslash\)n"{}});}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a0830b6d7b228582bd73694d2d85b47cc}{kolibri\_exit}}();}
+\DoxyCodeLine{00142\ \ \ \ \ \}}
+\DoxyCodeLine{00143\ }
+\DoxyCodeLine{00144\ \ \ \textcolor{comment}{/*\ Initialize\ the\ global\ operation\ table\ which\ handles\ event\ functions\ of\ */}}
+\DoxyCodeLine{00145\ \ \ \textcolor{comment}{/*\ each\ individual\ element\ type\ */}}
+\DoxyCodeLine{00146\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a0b0059b817bcb245d9e95e95940bc3da}{kolibri\_init\_gui\_op\_table}}();}
+\DoxyCodeLine{00147\ }
+\DoxyCodeLine{00148\ \ \ \textcolor{comment}{/*\ Get\ the\ current\ color\ table\ for\ Kolibri\ and\ store\ in\ global\ table*/}}
+\DoxyCodeLine{00149\ \ \ \mbox{\hyperlink{kolibri__colors_8h_ab4d26a008b477bf721a60c4c1916c895}{kolibri\_get\_system\_colors}}(\&\mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}});}
+\DoxyCodeLine{00150\ }
+\DoxyCodeLine{00151\ \ \ \textcolor{comment}{/*\ Set\ up\ system\ events\ for\ buttons,\ mouse\ and\ keyboard\ and\ redraw\ */}}
+\DoxyCodeLine{00152\ \ \ \textcolor{comment}{/*\ Also\ set\ filters\ so\ that\ window\ receives\ mouse\ events\ only\ when\ active}}
+\DoxyCodeLine{00153\ \textcolor{comment}{\ \ \ \ \ and\ mouse\ inside\ window\ */}}
+\DoxyCodeLine{00154\ \ \ \_\_asm\_\_\ \textcolor{keyword}{volatile}(\textcolor{stringliteral}{"{}int\ \$0x40"{}}::\textcolor{stringliteral}{"{}a"{}}(40),\ \textcolor{stringliteral}{"{}b"{}}(0xC0000027));}
+\DoxyCodeLine{00155\ }
+\DoxyCodeLine{00156\ \ \ \textcolor{keywordflow}{return}\ boxlib\_init\_status;}
+\DoxyCodeLine{00157\ \}}
+\DoxyCodeLine{00158\ }
+\DoxyCodeLine{00159\ \textcolor{comment}{/*\ Note:\ The\ current\ implementation\ tries\ to\ automatically\ colors}}
+\DoxyCodeLine{00160\ \textcolor{comment}{\ \ \ GUI\ elements\ with\ system\ theme\ */}}
+\DoxyCodeLine{00161\ }
+\DoxyCodeLine{00171\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ KOLIBRI\_GUI\_H\ */}\textcolor{preprocessor}{}}
 
 \end{DoxyCode}

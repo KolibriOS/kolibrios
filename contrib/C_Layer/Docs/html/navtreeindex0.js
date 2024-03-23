@@ -1,8 +1,11 @@
 var NAVTREEINDEX0 =
 {
 "annotated.html":[0,0],
+"boardmsg_8c-example.html":[2,0],
 "classes.html":[0,1],
+"dbutton_files_8c-example.html":[2,1],
 "dir_68f7dbe07457cb7561a1f284d3f33cd5.html":[1,0,0],
+"editor_tree_msgbox_8c-example.html":[2,2],
 "examples.html":[2],
 "files.html":[1,0],
 "functions.html":[0,2,0],
@@ -79,7 +82,6 @@ var NAVTREEINDEX0 =
 "globals_u.html":[1,1,0,19],
 "globals_vars.html":[1,1,2],
 "globals_x.html":[1,1,0,20],
-"img_example_8c-example.html":[2,0],
 "index.html":[],
 "kolibri__boxlib_8h.html":[1,0,0,0],
 "kolibri__boxlib_8h.html#a1cd6d91851a8da5afb7ea28e2b0028ef":[1,0,0,0,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX0 =
 "kolibri__filebrowse_8h.html#af547d73b85f475c4abfafdb76bf0c301aad365b7baa9ccb0ac38f716b27c7c410":[1,0,0,10,3,5],
 "kolibri__filebrowse_8h.html#af547d73b85f475c4abfafdb76bf0c301aeb25bb3add9e003f10948d92a38af5e6":[1,0,0,10,3,1],
 "kolibri__filebrowse_8h_source.html":[1,0,0,10],
-"kolibri__frame_8h.html":[1,0,0,11],
-"kolibri__frame_8h.html#a1c411d36bb7c1e632cb2cad7119c3dca":[1,0,0,11,2],
-"kolibri__frame_8h.html#a1c411d36bb7c1e632cb2cad7119c3dcaaedaa44fa32b54e2c67be845d47ce2a07":[1,0,0,11,2,1]
+"kolibri__frame_8h.html":[1,0,0,11]
 };
