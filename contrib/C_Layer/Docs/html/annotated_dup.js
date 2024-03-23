@@ -1,0 +1,27 @@
+var annotated_dup =
+[
+    [ "addrinfo", "structaddrinfo.html", "structaddrinfo" ],
+    [ "ARP_entry", "struct_a_r_p__entry.html", "struct_a_r_p__entry" ],
+    [ "check_box", "structcheck__box.html", "structcheck__box" ],
+    [ "edit_box_t", "structedit__box__t.html", "structedit__box__t" ],
+    [ "editor_syntax_file", "structeditor__syntax__file.html", "structeditor__syntax__file" ],
+    [ "frame", "structframe.html", "structframe" ],
+    [ "fs_dirheader", "structfs__dirheader.html", "structfs__dirheader" ],
+    [ "fsBDFE", "structfs_b_d_f_e.html", "structfs_b_d_f_e" ],
+    [ "fsBDFE_16", "structfs_b_d_f_e__16.html", "structfs_b_d_f_e__16" ],
+    [ "Image", "struct_image.html", "struct_image" ],
+    [ "kmenu_t", "structkmenu__t.html", "structkmenu__t" ],
+    [ "kmenuitem_t", "structkmenuitem__t.html", "structkmenuitem__t" ],
+    [ "kolibri_button", "structkolibri__button.html", "structkolibri__button" ],
+    [ "kolibri_element_operations", "structkolibri__element__operations.html", "structkolibri__element__operations" ],
+    [ "kolibri_system_colors", "structkolibri__system__colors.html", "structkolibri__system__colors" ],
+    [ "kolibri_window", "structkolibri__window.html", "structkolibri__window" ],
+    [ "kolibri_window_element", "structkolibri__window__element.html", "structkolibri__window__element" ],
+    [ "ksubmenu_t", "structksubmenu__t.html", "structksubmenu__t" ],
+    [ "menubar", "structmenubar.html", "structmenubar" ],
+    [ "pict_button", "structpict__button.html", "structpict__button" ],
+    [ "progressbar", "structprogressbar.html", "structprogressbar" ],
+    [ "staticnum", "structstaticnum.html", "structstaticnum" ],
+    [ "statictext", "structstatictext.html", "structstatictext" ],
+    [ "t_font", "structt__font.html", "structt__font" ]
+];

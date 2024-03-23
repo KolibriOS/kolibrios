@@ -1,0 +1,136 @@
+\doxysection{INCLUDE/kolibri\+\_\+opendialog.h File Reference}
+\hypertarget{kolibri__opendialog_8h}{}\label{kolibri__opendialog_8h}\index{INCLUDE/kolibri\_opendialog.h@{INCLUDE/kolibri\_opendialog.h}}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784}{open\+\_\+dialog\+\_\+mode}} \{ \newline
+\mbox{\hyperlink{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a0e0143636c29971736eab47415868eae}{OPEN}}
+, \newline
+\mbox{\hyperlink{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a793562cbf5bffacba71303cee907ef7d}{SAVE}}
+, \newline
+\mbox{\hyperlink{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a1697a91b22c2369eb2ba427c2d193329}{SELECT}}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{kolibri__opendialog_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}} ((\+\_\+\+\_\+packed\+\_\+\+\_\+))
+\item 
+void \mbox{\hyperlink{kolibri__opendialog_8h_a78a81d49f5c2a7635f0ca1346ae85b2e}{fake\+\_\+on\+\_\+redraw}} (void)
+\item 
+\mbox{\hyperlink{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39}{open\+\_\+dialog}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__opendialog_8h_a47b5958fd77a97221781ac0e98503aa8}{kolibri\+\_\+new\+\_\+open\+\_\+dialog}} (unsigned int mode, unsigned short tlx, unsigned short tly, unsigned short x\+\_\+size, unsigned short y\+\_\+size)
+\item 
+void \mbox{\hyperlink{kolibri__opendialog_8h_ac934b8c55f13e12d90007e69518ee70b}{kolibri\+\_\+proclib\+\_\+init}} ()
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+char \mbox{\hyperlink{kolibri__opendialog_8h_ac6c8c238071b839e21a48c1ace01f7f1}{sz\+\_\+com\+\_\+area\+\_\+name}} \mbox{[}$\,$\mbox{]} = "{}FFFFFFFF\+\_\+open\+\_\+dialog"{}
+\item 
+char \mbox{\hyperlink{kolibri__opendialog_8h_a80fab415d45f81243ae3b5b46fbe2688}{sz\+\_\+dir\+\_\+default\+\_\+path}} \mbox{[}$\,$\mbox{]} = "{}/sys"{}
+\item 
+char \mbox{\hyperlink{kolibri__opendialog_8h_ac21a5b5f81a52e2ab503e45fda51c4f7}{sz\+\_\+start\+\_\+path}} \mbox{[}$\,$\mbox{]} = "{}/sys/File managers/opendial"{}
+\item 
+\mbox{\hyperlink{kolibri__opendialog_8h_aea6429ec91aba47d29c5e600244d4a97}{od\+\_\+filter}}
+\item 
+\mbox{\hyperlink{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39}{open\+\_\+dialog}}
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__opendialog_8h_a8a71395c306689f65c94a3976078967c}{Open\+Dialog\+\_\+init}} )(\mbox{\hyperlink{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39}{open\+\_\+dialog}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__opendialog_8h_a49e2f1549eef361636be7b01a96c3fbb}{Open\+Dialog\+\_\+start}} )(\mbox{\hyperlink{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39}{open\+\_\+dialog}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784}\label{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!open\_dialog\_mode@{open\_dialog\_mode}}
+\index{open\_dialog\_mode@{open\_dialog\_mode}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{open\_dialog\_mode}{open\_dialog\_mode}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784}{open\+\_\+dialog\+\_\+mode}}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{OPEN@{OPEN}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!OPEN@{OPEN}}}\Hypertarget{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a0e0143636c29971736eab47415868eae}\label{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a0e0143636c29971736eab47415868eae} 
+OPEN&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SAVE@{SAVE}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!SAVE@{SAVE}}}\Hypertarget{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a793562cbf5bffacba71303cee907ef7d}\label{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a793562cbf5bffacba71303cee907ef7d} 
+SAVE&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SELECT@{SELECT}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!SELECT@{SELECT}}}\Hypertarget{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a1697a91b22c2369eb2ba427c2d193329}\label{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a1697a91b22c2369eb2ba427c2d193329} 
+SELECT&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{kolibri__opendialog_8h_ad09246453a4dabd919c7541484046a87}\label{kolibri__opendialog_8h_ad09246453a4dabd919c7541484046a87} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!\_\_attribute\_\_@{\_\_attribute\_\_}}
+\index{\_\_attribute\_\_@{\_\_attribute\_\_}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{\_\_attribute\_\_()}{\_\_attribute\_\_()}}
+{\footnotesize\ttfamily struct \+\_\+\+\_\+attribute\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{(\+\_\+\+\_\+packed\+\_\+\+\_\+)}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__opendialog_8h_a78a81d49f5c2a7635f0ca1346ae85b2e}\label{kolibri__opendialog_8h_a78a81d49f5c2a7635f0ca1346ae85b2e} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!fake\_on\_redraw@{fake\_on\_redraw}}
+\index{fake\_on\_redraw@{fake\_on\_redraw}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{fake\_on\_redraw()}{fake\_on\_redraw()}}
+{\footnotesize\ttfamily void fake\+\_\+on\+\_\+redraw (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__opendialog_8h_a47b5958fd77a97221781ac0e98503aa8}\label{kolibri__opendialog_8h_a47b5958fd77a97221781ac0e98503aa8} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!kolibri\_new\_open\_dialog@{kolibri\_new\_open\_dialog}}
+\index{kolibri\_new\_open\_dialog@{kolibri\_new\_open\_dialog}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_new\_open\_dialog()}{kolibri\_new\_open\_dialog()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39}{open\+\_\+dialog}} \texorpdfstring{$\ast$}{*} kolibri\+\_\+new\+\_\+open\+\_\+dialog (\begin{DoxyParamCaption}\item[{unsigned int}]{mode,  }\item[{unsigned short}]{tlx,  }\item[{unsigned short}]{tly,  }\item[{unsigned short}]{x\+\_\+size,  }\item[{unsigned short}]{y\+\_\+size }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__opendialog_8h_ac934b8c55f13e12d90007e69518ee70b}\label{kolibri__opendialog_8h_ac934b8c55f13e12d90007e69518ee70b} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!kolibri\_proclib\_init@{kolibri\_proclib\_init}}
+\index{kolibri\_proclib\_init@{kolibri\_proclib\_init}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_proclib\_init()}{kolibri\_proclib\_init()}}
+{\footnotesize\ttfamily void kolibri\+\_\+proclib\+\_\+init (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{kolibri__opendialog_8h_aea6429ec91aba47d29c5e600244d4a97}\label{kolibri__opendialog_8h_aea6429ec91aba47d29c5e600244d4a97} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!od\_filter@{od\_filter}}
+\index{od\_filter@{od\_filter}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{od\_filter}{od\_filter}}
+{\footnotesize\ttfamily od\+\_\+filter}
+
+\Hypertarget{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39}\label{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!open\_dialog@{open\_dialog}}
+\index{open\_dialog@{open\_dialog}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{open\_dialog}{open\_dialog}}
+{\footnotesize\ttfamily open\+\_\+dialog}
+
+\Hypertarget{kolibri__opendialog_8h_a8a71395c306689f65c94a3976078967c}\label{kolibri__opendialog_8h_a8a71395c306689f65c94a3976078967c} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!OpenDialog\_init@{OpenDialog\_init}}
+\index{OpenDialog\_init@{OpenDialog\_init}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{OpenDialog\_init}{OpenDialog\_init}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} Open\+Dialog\+\_\+init) (\mbox{\hyperlink{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39}{open\+\_\+dialog}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39}{open\+\_\+dialog}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__opendialog_8h_a49e2f1549eef361636be7b01a96c3fbb}\label{kolibri__opendialog_8h_a49e2f1549eef361636be7b01a96c3fbb} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!OpenDialog\_start@{OpenDialog\_start}}
+\index{OpenDialog\_start@{OpenDialog\_start}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{OpenDialog\_start}{OpenDialog\_start}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} Open\+Dialog\+\_\+start) (\mbox{\hyperlink{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39}{open\+\_\+dialog}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39}{open\+\_\+dialog}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__opendialog_8h_ac6c8c238071b839e21a48c1ace01f7f1}\label{kolibri__opendialog_8h_ac6c8c238071b839e21a48c1ace01f7f1} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!sz\_com\_area\_name@{sz\_com\_area\_name}}
+\index{sz\_com\_area\_name@{sz\_com\_area\_name}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{sz\_com\_area\_name}{sz\_com\_area\_name}}
+{\footnotesize\ttfamily char sz\+\_\+com\+\_\+area\+\_\+name\mbox{[}$\,$\mbox{]} = "{}FFFFFFFF\+\_\+open\+\_\+dialog"{}}
+
+\Hypertarget{kolibri__opendialog_8h_a80fab415d45f81243ae3b5b46fbe2688}\label{kolibri__opendialog_8h_a80fab415d45f81243ae3b5b46fbe2688} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!sz\_dir\_default\_path@{sz\_dir\_default\_path}}
+\index{sz\_dir\_default\_path@{sz\_dir\_default\_path}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{sz\_dir\_default\_path}{sz\_dir\_default\_path}}
+{\footnotesize\ttfamily char sz\+\_\+dir\+\_\+default\+\_\+path\mbox{[}$\,$\mbox{]} = "{}/sys"{}}
+
+\Hypertarget{kolibri__opendialog_8h_ac21a5b5f81a52e2ab503e45fda51c4f7}\label{kolibri__opendialog_8h_ac21a5b5f81a52e2ab503e45fda51c4f7} 
+\index{kolibri\_opendialog.h@{kolibri\_opendialog.h}!sz\_start\_path@{sz\_start\_path}}
+\index{sz\_start\_path@{sz\_start\_path}!kolibri\_opendialog.h@{kolibri\_opendialog.h}}
+\doxysubsubsection{\texorpdfstring{sz\_start\_path}{sz\_start\_path}}
+{\footnotesize\ttfamily char sz\+\_\+start\+\_\+path\mbox{[}$\,$\mbox{]} = "{}/sys/File managers/opendial"{}}
+

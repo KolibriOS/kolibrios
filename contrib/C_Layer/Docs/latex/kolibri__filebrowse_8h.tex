@@ -1,0 +1,191 @@
+\doxysection{INCLUDE/kolibri\+\_\+filebrowse.h File Reference}
+\hypertarget{kolibri__filebrowse_8h}{}\label{kolibri__filebrowse_8h}\index{INCLUDE/kolibri\_filebrowse.h@{INCLUDE/kolibri\_filebrowse.h}}
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structfs__dirheader}{fs\+\_\+dirheader}}
+\item 
+struct \mbox{\hyperlink{structfs_b_d_f_e}{fs\+BDFE}}
+\begin{DoxyCompactList}\small\item\em directory entry cp866 \end{DoxyCompactList}\item 
+struct \mbox{\hyperlink{structfs_b_d_f_e__16}{fs\+BDFE\+\_\+16}}
+\begin{DoxyCompactList}\small\item\em directory entry UTF16\+LE \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301}{filetype}} \{ \newline
+\mbox{\hyperlink{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301a9cc1dc73a3f8da676a81a73c5c45d33f}{fs\+\_\+readonly}} = 1
+, \newline
+\mbox{\hyperlink{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301aeb25bb3add9e003f10948d92a38af5e6}{fs\+\_\+hidden}} = 2
+, \newline
+\mbox{\hyperlink{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301aa2624888b783c2d82836241ceda8f2fb}{fs\+\_\+system}} = 4
+, \newline
+\mbox{\hyperlink{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301a53f40a422b04df000a949a4df2fb252d}{fs\+\_\+volumelabel}} = 8
+, \newline
+\mbox{\hyperlink{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301a6e5897e6ea8e0cba90b3a768b72818e0}{fs\+\_\+folder}} = 0x10
+, \newline
+\mbox{\hyperlink{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301aad365b7baa9ccb0ac38f716b27c7c410}{fs\+\_\+nonarchived}} = 0x20
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{kolibri__filebrowse_8h_a0a032ce2b668f5b9fda02c3ec610426a}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}} ((\+\_\+\+\_\+packed\+\_\+\+\_\+)) fs\+\_\+dirinfo
+\item 
+\mbox{\hyperlink{kolibri__filebrowse_8h_a0ddbe540260d5997e22838bee7b40528}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}} ((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) static inline void filebrowser\+\_\+key(\mbox{\hyperlink{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}{filebrowser}} \texorpdfstring{$\ast$}{*}fb
+\item 
+\mbox{\hyperlink{kolibri__filebrowse_8h_a0c0469b3d7b65923266c63e8806d88ac}{if}} (keypress.\+state) return
+\item 
+\mbox{\hyperlink{kolibri__filebrowse_8h_af1b4dc2f33fb0d8d77acb5d59568e9f4}{switch}} (keypress.\+ctrl\+\_\+key)
+\item 
+\mbox{\hyperlink{kolibri__filebrowse_8h_a1b4744db91cbfd68bc9d60d5eaad4124}{if}} (extended\+\_\+key) extended\+\_\+key=0
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}{filebrowser}}
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__filebrowse_8h_ae231b657a54f45c7a4be4561fa088b2f}{filebrowse\+\_\+draw}} )(\mbox{\hyperlink{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}{filebrowser}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__filebrowse_8h_a49ea38ade8a7064e1a13d8ef34190091}{filebrowse\+\_\+key}} )(\mbox{\hyperlink{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}{filebrowser}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__filebrowse_8h_ab11aa9dbc8e6bae895e0aa30cc4daea5}{filebrowse\+\_\+mouse}} )(\mbox{\hyperlink{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}{filebrowser}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+oskey\+\_\+t \mbox{\hyperlink{kolibri__filebrowse_8h_aaa84feee2fd9a558df8015fe2a6cf806}{keypress}}
+\begin{DoxyCompactList}\small\item\em wrapper for key, translate keypress (ASCII mode) to action for browser \end{DoxyCompactList}\item 
+\mbox{\hyperlink{kolibri__filebrowse_8h_a50792e50439c68943a8bc5cb5e478c7b}{act}} = 0
+\item 
+fb \mbox{\hyperlink{kolibri__filebrowse_8h_af001e991345a5be0366a98385ea7e1c4}{key\+\_\+action}} = \mbox{\hyperlink{kolibri__filebrowse_8h_a50792e50439c68943a8bc5cb5e478c7b}{act}}
+\item 
+fb \mbox{\hyperlink{kolibri__filebrowse_8h_a885767436faf9fd45628f1f3ef7872f9}{key\+\_\+action\+\_\+num}} = keypress.\+ctrl\+\_\+key
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301}\label{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!filetype@{filetype}}
+\index{filetype@{filetype}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{filetype}{filetype}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301}{filetype}}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{fs\_readonly@{fs\_readonly}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!fs\_readonly@{fs\_readonly}}}\Hypertarget{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301a9cc1dc73a3f8da676a81a73c5c45d33f}\label{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301a9cc1dc73a3f8da676a81a73c5c45d33f} 
+fs\+\_\+readonly&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{fs\_hidden@{fs\_hidden}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!fs\_hidden@{fs\_hidden}}}\Hypertarget{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301aeb25bb3add9e003f10948d92a38af5e6}\label{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301aeb25bb3add9e003f10948d92a38af5e6} 
+fs\+\_\+hidden&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{fs\_system@{fs\_system}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!fs\_system@{fs\_system}}}\Hypertarget{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301aa2624888b783c2d82836241ceda8f2fb}\label{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301aa2624888b783c2d82836241ceda8f2fb} 
+fs\+\_\+system&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{fs\_volumelabel@{fs\_volumelabel}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!fs\_volumelabel@{fs\_volumelabel}}}\Hypertarget{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301a53f40a422b04df000a949a4df2fb252d}\label{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301a53f40a422b04df000a949a4df2fb252d} 
+fs\+\_\+volumelabel&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{fs\_folder@{fs\_folder}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!fs\_folder@{fs\_folder}}}\Hypertarget{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301a6e5897e6ea8e0cba90b3a768b72818e0}\label{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301a6e5897e6ea8e0cba90b3a768b72818e0} 
+fs\+\_\+folder&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{fs\_nonarchived@{fs\_nonarchived}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!fs\_nonarchived@{fs\_nonarchived}}}\Hypertarget{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301aad365b7baa9ccb0ac38f716b27c7c410}\label{kolibri__filebrowse_8h_af547d73b85f475c4abfafdb76bf0c301aad365b7baa9ccb0ac38f716b27c7c410} 
+fs\+\_\+nonarchived&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{kolibri__filebrowse_8h_a0a032ce2b668f5b9fda02c3ec610426a}\label{kolibri__filebrowse_8h_a0a032ce2b668f5b9fda02c3ec610426a} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!\_\_attribute\_\_@{\_\_attribute\_\_}}
+\index{\_\_attribute\_\_@{\_\_attribute\_\_}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{\_\_attribute\_\_()}{\_\_attribute\_\_()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily struct \+\_\+\+\_\+attribute\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{(\+\_\+\+\_\+packed\+\_\+\+\_\+)}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__filebrowse_8h_a0ddbe540260d5997e22838bee7b40528}\label{kolibri__filebrowse_8h_a0ddbe540260d5997e22838bee7b40528} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!\_\_attribute\_\_@{\_\_attribute\_\_}}
+\index{\_\_attribute\_\_@{\_\_attribute\_\_}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{\_\_attribute\_\_()}{\_\_attribute\_\_()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \+\_\+\+\_\+attribute\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{(\+\_\+\+\_\+stdcall\+\_\+\+\_\+)}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__filebrowse_8h_a1b4744db91cbfd68bc9d60d5eaad4124}\label{kolibri__filebrowse_8h_a1b4744db91cbfd68bc9d60d5eaad4124} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!if@{if}}
+\index{if@{if}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{if()}{if()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily if (\begin{DoxyParamCaption}\item[{extended\+\_\+key}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+\Hypertarget{kolibri__filebrowse_8h_a0c0469b3d7b65923266c63e8806d88ac}\label{kolibri__filebrowse_8h_a0c0469b3d7b65923266c63e8806d88ac} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!if@{if}}
+\index{if@{if}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{if()}{if()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily if (\begin{DoxyParamCaption}\item[{keypress.}]{state = {\ttfamily =~0xE0} }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__filebrowse_8h_af1b4dc2f33fb0d8d77acb5d59568e9f4}\label{kolibri__filebrowse_8h_af1b4dc2f33fb0d8d77acb5d59568e9f4} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!switch@{switch}}
+\index{switch@{switch}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{switch()}{switch()}}
+{\footnotesize\ttfamily switch (\begin{DoxyParamCaption}\item[{keypress.}]{ctrl\+\_\+key }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{kolibri__filebrowse_8h_a50792e50439c68943a8bc5cb5e478c7b}\label{kolibri__filebrowse_8h_a50792e50439c68943a8bc5cb5e478c7b} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!act@{act}}
+\index{act@{act}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{act}{act}}
+{\footnotesize\ttfamily act = 0}
+
+\Hypertarget{kolibri__filebrowse_8h_ae231b657a54f45c7a4be4561fa088b2f}\label{kolibri__filebrowse_8h_ae231b657a54f45c7a4be4561fa088b2f} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!filebrowse\_draw@{filebrowse\_draw}}
+\index{filebrowse\_draw@{filebrowse\_draw}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{filebrowse\_draw}{filebrowse\_draw}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} filebrowse\+\_\+draw) (\mbox{\hyperlink{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}{filebrowser}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}{filebrowser}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__filebrowse_8h_a49ea38ade8a7064e1a13d8ef34190091}\label{kolibri__filebrowse_8h_a49ea38ade8a7064e1a13d8ef34190091} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!filebrowse\_key@{filebrowse\_key}}
+\index{filebrowse\_key@{filebrowse\_key}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{filebrowse\_key}{filebrowse\_key}}
+{\footnotesize\ttfamily (\texorpdfstring{$\ast$}{*} filebrowse\+\_\+key)(fb) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}{filebrowser}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__filebrowse_8h_ab11aa9dbc8e6bae895e0aa30cc4daea5}\label{kolibri__filebrowse_8h_ab11aa9dbc8e6bae895e0aa30cc4daea5} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!filebrowse\_mouse@{filebrowse\_mouse}}
+\index{filebrowse\_mouse@{filebrowse\_mouse}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{filebrowse\_mouse}{filebrowse\_mouse}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} filebrowse\+\_\+mouse) (\mbox{\hyperlink{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}{filebrowser}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}{filebrowser}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}\label{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!filebrowser@{filebrowser}}
+\index{filebrowser@{filebrowser}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{filebrowser}{filebrowser}}
+{\footnotesize\ttfamily filebrowser}
+
+\Hypertarget{kolibri__filebrowse_8h_af001e991345a5be0366a98385ea7e1c4}\label{kolibri__filebrowse_8h_af001e991345a5be0366a98385ea7e1c4} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!key\_action@{key\_action}}
+\index{key\_action@{key\_action}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{key\_action}{key\_action}}
+{\footnotesize\ttfamily fb key\+\_\+action = \mbox{\hyperlink{kolibri__filebrowse_8h_a50792e50439c68943a8bc5cb5e478c7b}{act}}}
+
+\Hypertarget{kolibri__filebrowse_8h_a885767436faf9fd45628f1f3ef7872f9}\label{kolibri__filebrowse_8h_a885767436faf9fd45628f1f3ef7872f9} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!key\_action\_num@{key\_action\_num}}
+\index{key\_action\_num@{key\_action\_num}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{key\_action\_num}{key\_action\_num}}
+{\footnotesize\ttfamily fb key\+\_\+action\+\_\+num = keypress.\+ctrl\+\_\+key}
+
+\Hypertarget{kolibri__filebrowse_8h_aaa84feee2fd9a558df8015fe2a6cf806}\label{kolibri__filebrowse_8h_aaa84feee2fd9a558df8015fe2a6cf806} 
+\index{kolibri\_filebrowse.h@{kolibri\_filebrowse.h}!keypress@{keypress}}
+\index{keypress@{keypress}!kolibri\_filebrowse.h@{kolibri\_filebrowse.h}}
+\doxysubsubsection{\texorpdfstring{keypress}{keypress}}
+{\footnotesize\ttfamily oskey\+\_\+t keypress}
+
+{\bfseries Initial value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{int}\ extended\_key\ =\ 0,\ \mbox{\hyperlink{kolibri__filebrowse_8h_a50792e50439c68943a8bc5cb5e478c7b}{act}}\ =\ 0}
+
+\end{DoxyCode}
+
+
+wrapper for key, translate keypress (ASCII mode) to action for browser 
+

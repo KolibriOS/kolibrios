@@ -1,0 +1,412 @@
+\doxysection{INCLUDE/kolibri\+\_\+treelist.h File Reference}
+\hypertarget{kolibri__treelist_8h}{}\label{kolibri__treelist_8h}\index{INCLUDE/kolibri\_treelist.h@{INCLUDE/kolibri\_treelist.h}}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868}{tl\+\_\+style}} \{ \newline
+\mbox{\hyperlink{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868af66bcfe255a2c44d0cf6b2c51c8d95a1}{TL\+\_\+\+KEY\+\_\+\+NO\+\_\+\+EDIT}} = 1
+, \newline
+\mbox{\hyperlink{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868aace99615ff762edc50c08609006283b5}{TL\+\_\+\+DRAW\+\_\+\+PAR\+\_\+\+LINE}} = 2
+, \newline
+\mbox{\hyperlink{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868ae1718248cd6c22e0fa27d431726f8440}{TL\+\_\+\+LISTBOX\+\_\+\+MODE}} = 4
+ \}
+\begin{DoxyCompactList}\small\item\em константы стиля \end{DoxyCompactList}\item 
+enum \mbox{\hyperlink{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051}{tl\+\_\+err}} \{ \newline
+\mbox{\hyperlink{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051a794c91cf3eea6965df3d7591cf2c660b}{TL\+\_\+\+ERR\+\_\+\+LOAD\+\_\+\+CAPTION}} = 1
+, \newline
+\mbox{\hyperlink{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051a24e5c06c46af10a363f2b78bd149013c}{TL\+\_\+\+ERR\+\_\+\+SAVE\+\_\+\+MEMOTY\+\_\+\+SIZE}} = 2
+, \newline
+\mbox{\hyperlink{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051a302acb543855d6aa6a28e9ba1500b7f3}{TL\+\_\+\+ERR\+\_\+\+LOAD\+\_\+\+INFO\+\_\+\+SIZE}} = 4
+ \}
+\begin{DoxyCompactList}\small\item\em константы для функций \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{kolibri__treelist_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}} ((\+\_\+\+\_\+packed\+\_\+\+\_\+))
+\item 
+\mbox{\hyperlink{kolibri__treelist_8h_a15b951192d6a4f2053c6169e48c3feff}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}} ((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) static inline void treelist\+\_\+key(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}tl
+\begin{DoxyCompactList}\small\item\em реакция на клавиатуру \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}{treelist\+\_\+node}}
+\item 
+\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}}
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_af4c3e1b6ca3ba15d54d7850f3c797fae}{tl\+\_\+mouse}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em реакция на мышь \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a90df3140e0c92e2b61415b2d73de3318}{tl\+\_\+draw}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em вывод списка на экран \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_ad3eb4824944c8a67a1ae8a4fa4667edc}{tl\+\_\+node\+\_\+move\+\_\+up}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em перемещаем узел вверх \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_ad84100f48639aedefd908ea76447ffe3}{tl\+\_\+node\+\_\+move\+\_\+down}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em перемещаем узел вниз \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_afce8e3e0958ed535d9e42a2fe9ba3871}{tl\+\_\+data\+\_\+init}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em выделение памяти для структур списка и основной информации (конструктор) \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_ae144a09d37a552fc1d700956c7d9ff66}{tl\+\_\+data\+\_\+clear}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em очистка памяти элемента (деструктор) \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a657ebd8df6fc552d909ff172b9f17cfa}{tl\+\_\+info\+\_\+clear}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em очистка списка (информации) \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a5376791029f19e71ee3669ec8c5a5ed4}{tl\+\_\+key\+\_\+asm}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+oskey\+\_\+t \mbox{\hyperlink{kolibri__treelist_8h_ae0f76f7576554d94a8d1d76352f32992}{code}}
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a47a2d1337ac748f357ec9ef19ca035c7}{tl\+\_\+info\+\_\+undo}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em отмена действия \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a0e5d8c9026ba10fedee2c3fc26c600e3}{tl\+\_\+info\+\_\+redo}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em повтор действия \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a67cc20b70bf475850261b21117a060df}{tl\+\_\+node\+\_\+add}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, uint32\+\_\+t n\+\_\+opt, void \texorpdfstring{$\ast$}{*}n\+\_\+info) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a05c61d9c0fb0aa735e0456c0d08263f0}{tl\+\_\+node\+\_\+set\+\_\+data}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, void \texorpdfstring{$\ast$}{*}n\+\_\+info) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_ac3447edc4290d41eea5821d8864a58f5}{tl\+\_\+node\+\_\+get\+\_\+data}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em взять указатель на данные узла под курсором \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_aa81706945050eb17168d4b1423e272fd}{tl\+\_\+node\+\_\+delete}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em удалить узел под курсором \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_adca5826d2704952dbc7d44ba6c67cef0}{tl\+\_\+cur\+\_\+beg}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em поставить курсор на первый узел \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_ae19a8185b61f7e52f1b9e1a99829b6b8}{tl\+\_\+cur\+\_\+next}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em перенести курсор на 1 позицию ниже \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_adde796f50333a710bb5263521af5fb08}{tl\+\_\+cur\+\_\+perv}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em перенести курсор на 1 позицию выше \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a4f4c68a30c6d156ce44d5f349f3401ee}{tl\+\_\+node\+\_\+close\+\_\+open}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em открыть/закрыть узел (работает с узлами которые имеют дочерние узлы) \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a665f52875d02857f0df97e2dac064c54}{tl\+\_\+node\+\_\+lev\+\_\+inc}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em увеличить уровень \end{DoxyCompactList}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_ab626b1d2eb80d56d218120689b6d08a3}{tl\+\_\+node\+\_\+lev\+\_\+dec}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em уменьшить уровень \end{DoxyCompactList}\item 
+\mbox{\hyperlink{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}{treelist\+\_\+node}} \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a906cadfe882f0863040fda0939b74ab6}{tl\+\_\+node\+\_\+poi\+\_\+get\+\_\+info}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, int node\+\_\+ind) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+\mbox{\hyperlink{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}{treelist\+\_\+node}} \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a2b99aaf60e4cd1ec9535dcb68f396959}{tl\+\_\+node\+\_\+poi\+\_\+get\+\_\+next\+\_\+info}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, \mbox{\hyperlink{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}{treelist\+\_\+node}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_af1e6a503583bce8804c263bda8f6675b}{\+\_\+tl\+\_\+node\+\_\+poi\+\_\+get\+\_\+data}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, \mbox{\hyperlink{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}{treelist\+\_\+node}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+int(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_a7033b85de7c0cd7e3a4419f0b2d149e5}{tl\+\_\+save\+\_\+mem}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, int opt, void \texorpdfstring{$\ast$}{*}h\+\_\+mem, int mem\+\_\+size) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+int(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_abbb9e9eaa76520ed3af386977445e60f}{\+\_\+tl\+\_\+load\+\_\+mem}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, int opt, void \texorpdfstring{$\ast$}{*}h\+\_\+mem, int mem\+\_\+size) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+int(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__treelist_8h_ac18c66f024616b13595dd0c9fd5bacba}{tl\+\_\+get\+\_\+mem\+\_\+size}} )(\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, void \texorpdfstring{$\ast$}{*}h\+\_\+mem) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051}\label{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_err@{tl\_err}}
+\index{tl\_err@{tl\_err}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_err}{tl\_err}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051}{tl\+\_\+err}}}
+
+
+
+константы для функций 
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TL\_ERR\_LOAD\_CAPTION@{TL\_ERR\_LOAD\_CAPTION}!kolibri\_treelist.h@{kolibri\_treelist.h}}\index{kolibri\_treelist.h@{kolibri\_treelist.h}!TL\_ERR\_LOAD\_CAPTION@{TL\_ERR\_LOAD\_CAPTION}}}\Hypertarget{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051a794c91cf3eea6965df3d7591cf2c660b}\label{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051a794c91cf3eea6965df3d7591cf2c660b} 
+TL\+\_\+\+ERR\+\_\+\+LOAD\+\_\+\+CAPTION&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TL\_ERR\_SAVE\_MEMOTY\_SIZE@{TL\_ERR\_SAVE\_MEMOTY\_SIZE}!kolibri\_treelist.h@{kolibri\_treelist.h}}\index{kolibri\_treelist.h@{kolibri\_treelist.h}!TL\_ERR\_SAVE\_MEMOTY\_SIZE@{TL\_ERR\_SAVE\_MEMOTY\_SIZE}}}\Hypertarget{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051a24e5c06c46af10a363f2b78bd149013c}\label{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051a24e5c06c46af10a363f2b78bd149013c} 
+TL\+\_\+\+ERR\+\_\+\+SAVE\+\_\+\+MEMOTY\+\_\+\+SIZE&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TL\_ERR\_LOAD\_INFO\_SIZE@{TL\_ERR\_LOAD\_INFO\_SIZE}!kolibri\_treelist.h@{kolibri\_treelist.h}}\index{kolibri\_treelist.h@{kolibri\_treelist.h}!TL\_ERR\_LOAD\_INFO\_SIZE@{TL\_ERR\_LOAD\_INFO\_SIZE}}}\Hypertarget{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051a302acb543855d6aa6a28e9ba1500b7f3}\label{kolibri__treelist_8h_adb0c45ab463f7eb05be63cdeb144f051a302acb543855d6aa6a28e9ba1500b7f3} 
+TL\+\_\+\+ERR\+\_\+\+LOAD\+\_\+\+INFO\+\_\+\+SIZE&\\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868}\label{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_style@{tl\_style}}
+\index{tl\_style@{tl\_style}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_style}{tl\_style}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868}{tl\+\_\+style}}}
+
+
+
+константы стиля 
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TL\_KEY\_NO\_EDIT@{TL\_KEY\_NO\_EDIT}!kolibri\_treelist.h@{kolibri\_treelist.h}}\index{kolibri\_treelist.h@{kolibri\_treelist.h}!TL\_KEY\_NO\_EDIT@{TL\_KEY\_NO\_EDIT}}}\Hypertarget{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868af66bcfe255a2c44d0cf6b2c51c8d95a1}\label{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868af66bcfe255a2c44d0cf6b2c51c8d95a1} 
+TL\+\_\+\+KEY\+\_\+\+NO\+\_\+\+EDIT&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TL\_DRAW\_PAR\_LINE@{TL\_DRAW\_PAR\_LINE}!kolibri\_treelist.h@{kolibri\_treelist.h}}\index{kolibri\_treelist.h@{kolibri\_treelist.h}!TL\_DRAW\_PAR\_LINE@{TL\_DRAW\_PAR\_LINE}}}\Hypertarget{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868aace99615ff762edc50c08609006283b5}\label{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868aace99615ff762edc50c08609006283b5} 
+TL\+\_\+\+DRAW\+\_\+\+PAR\+\_\+\+LINE&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TL\_LISTBOX\_MODE@{TL\_LISTBOX\_MODE}!kolibri\_treelist.h@{kolibri\_treelist.h}}\index{kolibri\_treelist.h@{kolibri\_treelist.h}!TL\_LISTBOX\_MODE@{TL\_LISTBOX\_MODE}}}\Hypertarget{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868ae1718248cd6c22e0fa27d431726f8440}\label{kolibri__treelist_8h_a912844fe2bb4ed14b19eaf65a1d30868ae1718248cd6c22e0fa27d431726f8440} 
+TL\+\_\+\+LISTBOX\+\_\+\+MODE&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{kolibri__treelist_8h_ad09246453a4dabd919c7541484046a87}\label{kolibri__treelist_8h_ad09246453a4dabd919c7541484046a87} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!\_\_attribute\_\_@{\_\_attribute\_\_}}
+\index{\_\_attribute\_\_@{\_\_attribute\_\_}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{\_\_attribute\_\_()}{\_\_attribute\_\_()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily struct \+\_\+\+\_\+attribute\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{(\+\_\+\+\_\+packed\+\_\+\+\_\+)}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__treelist_8h_a15b951192d6a4f2053c6169e48c3feff}\label{kolibri__treelist_8h_a15b951192d6a4f2053c6169e48c3feff} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!\_\_attribute\_\_@{\_\_attribute\_\_}}
+\index{\_\_attribute\_\_@{\_\_attribute\_\_}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{\_\_attribute\_\_()}{\_\_attribute\_\_()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \+\_\+\+\_\+attribute\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{(\+\_\+\+\_\+stdcall\+\_\+\+\_\+)}]{ }\end{DoxyParamCaption})}
+
+
+
+реакция на клавиатуру 
+
+
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{kolibri__treelist_8h_abbb9e9eaa76520ed3af386977445e60f}\label{kolibri__treelist_8h_abbb9e9eaa76520ed3af386977445e60f} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!\_tl\_load\_mem@{\_tl\_load\_mem}}
+\index{\_tl\_load\_mem@{\_tl\_load\_mem}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{\_tl\_load\_mem}{\_tl\_load\_mem}}
+{\footnotesize\ttfamily int(\texorpdfstring{$\ast$}{*} \+\_\+tl\+\_\+load\+\_\+mem) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, int opt, void \texorpdfstring{$\ast$}{*}h\+\_\+mem, int mem\+\_\+size) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{int}]{opt,  }\item[{void \texorpdfstring{$\ast$}{*}}]{h\+\_\+mem,  }\item[{int}]{mem\+\_\+size }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+input\+: ; tlist -\/ pointer to \textquotesingle{}Tree\+List\textquotesingle{} struct ; opt -\/ options\+: element index + (2\texorpdfstring{$\ast$}{*}(add mode)+(init mode)) shl 16, tl\+\_\+load\+\_\+mode\+\_\+add equ 0x20000 ;опция считывания в режиме добавления информации ; h\+\_\+mem -\/ pointer to memory ; mem\+\_\+size -\/ memory size ; размер памяти, пока не используется (назначался для контроля) ; для его использования нужно доработать функцию ;output\+: ; eax -\/ error code ;memory header format\+: ; +0 -\/ (4) \textquotesingle{}tree\textquotesingle{} ; +4 -\/ (2) info size ; +6 -\/ (4) count nodes ; +10 -\/ (4) tlist style ; +14 -\/ (4) cursor pos ; +18 -\/ (2) info capt offs ; +20 -\/ (2) info capt len ; +22 -\/ (4) scroll pos ;memory data format\+: ; +26 -\/ (info size + 8) \texorpdfstring{$\ast$}{*} count nodes \Hypertarget{kolibri__treelist_8h_af1e6a503583bce8804c263bda8f6675b}\label{kolibri__treelist_8h_af1e6a503583bce8804c263bda8f6675b} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!\_tl\_node\_poi\_get\_data@{\_tl\_node\_poi\_get\_data}}
+\index{\_tl\_node\_poi\_get\_data@{\_tl\_node\_poi\_get\_data}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{\_tl\_node\_poi\_get\_data}{\_tl\_node\_poi\_get\_data}}
+{\footnotesize\ttfamily void \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} \+\_\+tl\+\_\+node\+\_\+poi\+\_\+get\+\_\+data) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, \mbox{\hyperlink{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}{treelist\+\_\+node}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{\mbox{\hyperlink{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}{treelist\+\_\+node}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+;взять указатель на данные узла input\+: tlist -\/ pointer to \textquotesingle{}Tree\+List\textquotesingle{} struct node\+\_\+p -\/ node param struct output -\/ pointer \Hypertarget{kolibri__treelist_8h_ae0f76f7576554d94a8d1d76352f32992}\label{kolibri__treelist_8h_ae0f76f7576554d94a8d1d76352f32992} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!code@{code}}
+\index{code@{code}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{code}{code}}
+{\footnotesize\ttfamily oskey\+\_\+t code}
+
+{\bfseries Initial value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\ \ \ \ \_\_asm\_\_\ \mbox{\hyperlink{kolibri__editor_8h_a6d952a8d068aaf8ee03623416d163a37}{\_\_volatile\_\_}}\ (}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}push\ \%2\(\backslash\)n\(\backslash\)t"{}}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}call\ *\%1\ \(\backslash\)n\(\backslash\)t"{}}::\textcolor{stringliteral}{"{}a"{}}(\mbox{\hyperlink{kolibri__treelist_8h_ae0f76f7576554d94a8d1d76352f32992}{code}}.val),\ \textcolor{stringliteral}{"{}m"{}}(\mbox{\hyperlink{kolibri__treelist_8h_a5376791029f19e71ee3669ec8c5a5ed4}{tl\_key\_asm}}),\ \textcolor{stringliteral}{"{}m"{}}(tl):)}
+
+\end{DoxyCode}
+\Hypertarget{kolibri__treelist_8h_adca5826d2704952dbc7d44ba6c67cef0}\label{kolibri__treelist_8h_adca5826d2704952dbc7d44ba6c67cef0} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_cur\_beg@{tl\_cur\_beg}}
+\index{tl\_cur\_beg@{tl\_cur\_beg}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_cur\_beg}{tl\_cur\_beg}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+cur\+\_\+beg) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+поставить курсор на первый узел 
+
+\Hypertarget{kolibri__treelist_8h_ae19a8185b61f7e52f1b9e1a99829b6b8}\label{kolibri__treelist_8h_ae19a8185b61f7e52f1b9e1a99829b6b8} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_cur\_next@{tl\_cur\_next}}
+\index{tl\_cur\_next@{tl\_cur\_next}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_cur\_next}{tl\_cur\_next}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+cur\+\_\+next) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+перенести курсор на 1 позицию ниже 
+
+\Hypertarget{kolibri__treelist_8h_adde796f50333a710bb5263521af5fb08}\label{kolibri__treelist_8h_adde796f50333a710bb5263521af5fb08} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_cur\_perv@{tl\_cur\_perv}}
+\index{tl\_cur\_perv@{tl\_cur\_perv}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_cur\_perv}{tl\_cur\_perv}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+cur\+\_\+perv) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+перенести курсор на 1 позицию выше 
+
+\Hypertarget{kolibri__treelist_8h_ae144a09d37a552fc1d700956c7d9ff66}\label{kolibri__treelist_8h_ae144a09d37a552fc1d700956c7d9ff66} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_data\_clear@{tl\_data\_clear}}
+\index{tl\_data\_clear@{tl\_data\_clear}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_data\_clear}{tl\_data\_clear}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+data\+\_\+clear) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+очистка памяти элемента (деструктор) 
+
+\Hypertarget{kolibri__treelist_8h_afce8e3e0958ed535d9e42a2fe9ba3871}\label{kolibri__treelist_8h_afce8e3e0958ed535d9e42a2fe9ba3871} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_data\_init@{tl\_data\_init}}
+\index{tl\_data\_init@{tl\_data\_init}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_data\_init}{tl\_data\_init}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+data\+\_\+init) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+выделение памяти для структур списка и основной информации (конструктор) 
+
+\Hypertarget{kolibri__treelist_8h_a90df3140e0c92e2b61415b2d73de3318}\label{kolibri__treelist_8h_a90df3140e0c92e2b61415b2d73de3318} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_draw@{tl\_draw}}
+\index{tl\_draw@{tl\_draw}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_draw}{tl\_draw}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+draw) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+вывод списка на экран 
+
+\Hypertarget{kolibri__treelist_8h_ac18c66f024616b13595dd0c9fd5bacba}\label{kolibri__treelist_8h_ac18c66f024616b13595dd0c9fd5bacba} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_get\_mem\_size@{tl\_get\_mem\_size}}
+\index{tl\_get\_mem\_size@{tl\_get\_mem\_size}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_get\_mem\_size}{tl\_get\_mem\_size}}
+{\footnotesize\ttfamily int(\texorpdfstring{$\ast$}{*} tl\+\_\+get\+\_\+mem\+\_\+size) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, void \texorpdfstring{$\ast$}{*}h\+\_\+mem) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{void \texorpdfstring{$\ast$}{*}}]{h\+\_\+mem }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+;берет размер памяти занятой функцией tl\+\_\+save\+\_\+mem при сохранении элементов tlist -\/ pointer to \textquotesingle{}Tree\+List\textquotesingle{} struct h\+\_\+mem -\/ pointer to saved memory \Hypertarget{kolibri__treelist_8h_a657ebd8df6fc552d909ff172b9f17cfa}\label{kolibri__treelist_8h_a657ebd8df6fc552d909ff172b9f17cfa} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_info\_clear@{tl\_info\_clear}}
+\index{tl\_info\_clear@{tl\_info\_clear}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_info\_clear}{tl\_info\_clear}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+info\+\_\+clear) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+очистка списка (информации) 
+
+\Hypertarget{kolibri__treelist_8h_a0e5d8c9026ba10fedee2c3fc26c600e3}\label{kolibri__treelist_8h_a0e5d8c9026ba10fedee2c3fc26c600e3} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_info\_redo@{tl\_info\_redo}}
+\index{tl\_info\_redo@{tl\_info\_redo}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_info\_redo}{tl\_info\_redo}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+info\+\_\+redo) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+повтор действия 
+
+\Hypertarget{kolibri__treelist_8h_a47a2d1337ac748f357ec9ef19ca035c7}\label{kolibri__treelist_8h_a47a2d1337ac748f357ec9ef19ca035c7} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_info\_undo@{tl\_info\_undo}}
+\index{tl\_info\_undo@{tl\_info\_undo}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_info\_undo}{tl\_info\_undo}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+info\+\_\+undo) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+отмена действия 
+
+\Hypertarget{kolibri__treelist_8h_a5376791029f19e71ee3669ec8c5a5ed4}\label{kolibri__treelist_8h_a5376791029f19e71ee3669ec8c5a5ed4} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_key\_asm@{tl\_key\_asm}}
+\index{tl\_key\_asm@{tl\_key\_asm}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_key\_asm}{tl\_key\_asm}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+key\+\_\+asm) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__treelist_8h_af4c3e1b6ca3ba15d54d7850f3c797fae}\label{kolibri__treelist_8h_af4c3e1b6ca3ba15d54d7850f3c797fae} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_mouse@{tl\_mouse}}
+\index{tl\_mouse@{tl\_mouse}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_mouse}{tl\_mouse}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+mouse) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+реакция на мышь 
+
+\Hypertarget{kolibri__treelist_8h_a67cc20b70bf475850261b21117a060df}\label{kolibri__treelist_8h_a67cc20b70bf475850261b21117a060df} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_node\_add@{tl\_node\_add}}
+\index{tl\_node\_add@{tl\_node\_add}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_node\_add}{tl\_node\_add}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+node\+\_\+add) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, uint32\+\_\+t n\+\_\+opt, void \texorpdfstring{$\ast$}{*}n\+\_\+info) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{uint32\+\_\+t}]{n\+\_\+opt,  }\item[{void \texorpdfstring{$\ast$}{*}}]{n\+\_\+info }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__treelist_8h_a4f4c68a30c6d156ce44d5f349f3401ee}\label{kolibri__treelist_8h_a4f4c68a30c6d156ce44d5f349f3401ee} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_node\_close\_open@{tl\_node\_close\_open}}
+\index{tl\_node\_close\_open@{tl\_node\_close\_open}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_node\_close\_open}{tl\_node\_close\_open}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+node\+\_\+close\+\_\+open) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+открыть/закрыть узел (работает с узлами которые имеют дочерние узлы) 
+
+\Hypertarget{kolibri__treelist_8h_aa81706945050eb17168d4b1423e272fd}\label{kolibri__treelist_8h_aa81706945050eb17168d4b1423e272fd} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_node\_delete@{tl\_node\_delete}}
+\index{tl\_node\_delete@{tl\_node\_delete}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_node\_delete}{tl\_node\_delete}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+node\+\_\+delete) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+удалить узел под курсором 
+
+\Hypertarget{kolibri__treelist_8h_ac3447edc4290d41eea5821d8864a58f5}\label{kolibri__treelist_8h_ac3447edc4290d41eea5821d8864a58f5} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_node\_get\_data@{tl\_node\_get\_data}}
+\index{tl\_node\_get\_data@{tl\_node\_get\_data}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_node\_get\_data}{tl\_node\_get\_data}}
+{\footnotesize\ttfamily void \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} tl\+\_\+node\+\_\+get\+\_\+data) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+взять указатель на данные узла под курсором 
+
+\Hypertarget{kolibri__treelist_8h_ab626b1d2eb80d56d218120689b6d08a3}\label{kolibri__treelist_8h_ab626b1d2eb80d56d218120689b6d08a3} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_node\_lev\_dec@{tl\_node\_lev\_dec}}
+\index{tl\_node\_lev\_dec@{tl\_node\_lev\_dec}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_node\_lev\_dec}{tl\_node\_lev\_dec}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+node\+\_\+lev\+\_\+dec) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+уменьшить уровень 
+
+\Hypertarget{kolibri__treelist_8h_a665f52875d02857f0df97e2dac064c54}\label{kolibri__treelist_8h_a665f52875d02857f0df97e2dac064c54} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_node\_lev\_inc@{tl\_node\_lev\_inc}}
+\index{tl\_node\_lev\_inc@{tl\_node\_lev\_inc}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_node\_lev\_inc}{tl\_node\_lev\_inc}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+node\+\_\+lev\+\_\+inc) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+увеличить уровень 
+
+\Hypertarget{kolibri__treelist_8h_ad84100f48639aedefd908ea76447ffe3}\label{kolibri__treelist_8h_ad84100f48639aedefd908ea76447ffe3} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_node\_move\_down@{tl\_node\_move\_down}}
+\index{tl\_node\_move\_down@{tl\_node\_move\_down}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_node\_move\_down}{tl\_node\_move\_down}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+node\+\_\+move\+\_\+down) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+перемещаем узел вниз 
+
+\Hypertarget{kolibri__treelist_8h_ad3eb4824944c8a67a1ae8a4fa4667edc}\label{kolibri__treelist_8h_ad3eb4824944c8a67a1ae8a4fa4667edc} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_node\_move\_up@{tl\_node\_move\_up}}
+\index{tl\_node\_move\_up@{tl\_node\_move\_up}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_node\_move\_up}{tl\_node\_move\_up}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+node\+\_\+move\+\_\+up) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+перемещаем узел вверх 
+
+\Hypertarget{kolibri__treelist_8h_a906cadfe882f0863040fda0939b74ab6}\label{kolibri__treelist_8h_a906cadfe882f0863040fda0939b74ab6} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_node\_poi\_get\_info@{tl\_node\_poi\_get\_info}}
+\index{tl\_node\_poi\_get\_info@{tl\_node\_poi\_get\_info}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_node\_poi\_get\_info}{tl\_node\_poi\_get\_info}}
+{\footnotesize\ttfamily \mbox{\hyperlink{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}{treelist\+\_\+node}} \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} tl\+\_\+node\+\_\+poi\+\_\+get\+\_\+info) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, int node\+\_\+ind) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{int}]{node\+\_\+ind }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+взять указатель на структуру узла в указанной позиции input\+: tlist -\/ pointer to \textquotesingle{}Tree\+List\textquotesingle{} struct node\+\_\+ind -\/ node index output -\/ pointer to node info or NULL \Hypertarget{kolibri__treelist_8h_a2b99aaf60e4cd1ec9535dcb68f396959}\label{kolibri__treelist_8h_a2b99aaf60e4cd1ec9535dcb68f396959} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_node\_poi\_get\_next\_info@{tl\_node\_poi\_get\_next\_info}}
+\index{tl\_node\_poi\_get\_next\_info@{tl\_node\_poi\_get\_next\_info}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_node\_poi\_get\_next\_info}{tl\_node\_poi\_get\_next\_info}}
+{\footnotesize\ttfamily \mbox{\hyperlink{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}{treelist\+\_\+node}} \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} tl\+\_\+node\+\_\+poi\+\_\+get\+\_\+next\+\_\+info) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, \mbox{\hyperlink{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}{treelist\+\_\+node}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{\mbox{\hyperlink{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}{treelist\+\_\+node}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+взять указатель на следущую структуру узла input\+: tlist -\/ pointer to \textquotesingle{}Tree\+List\textquotesingle{} struct node\+\_\+p -\/ node param struct output -\/ pointer to next node struct or NULL \Hypertarget{kolibri__treelist_8h_a05c61d9c0fb0aa735e0456c0d08263f0}\label{kolibri__treelist_8h_a05c61d9c0fb0aa735e0456c0d08263f0} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_node\_set\_data@{tl\_node\_set\_data}}
+\index{tl\_node\_set\_data@{tl\_node\_set\_data}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_node\_set\_data}{tl\_node\_set\_data}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} tl\+\_\+node\+\_\+set\+\_\+data) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, void \texorpdfstring{$\ast$}{*}n\+\_\+info) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{void \texorpdfstring{$\ast$}{*}}]{n\+\_\+info }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+записать в текущий узел input\+: tlist -\/ указатель на структуру листа n\+\_\+info -\/ указатель на данные \Hypertarget{kolibri__treelist_8h_a7033b85de7c0cd7e3a4419f0b2d149e5}\label{kolibri__treelist_8h_a7033b85de7c0cd7e3a4419f0b2d149e5} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!tl\_save\_mem@{tl\_save\_mem}}
+\index{tl\_save\_mem@{tl\_save\_mem}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{tl\_save\_mem}{tl\_save\_mem}}
+{\footnotesize\ttfamily int(\texorpdfstring{$\ast$}{*} tl\+\_\+save\+\_\+mem) (\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}, int opt, void \texorpdfstring{$\ast$}{*}h\+\_\+mem, int mem\+\_\+size) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}{treelist}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{int}]{opt,  }\item[{void \texorpdfstring{$\ast$}{*}}]{h\+\_\+mem,  }\item[{int}]{mem\+\_\+size }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+tlist -\/ pointer to \textquotesingle{}Tree\+List\textquotesingle{} struct opt -\/ options\+: 0 -\/ first element, 1 -\/ add next element h\+\_\+mem -\/ pointer to memory mem\+\_\+size -\/ memory size output -\/ error code \Hypertarget{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524}\label{kolibri__treelist_8h_a5622589e29e2a248a53061094e0a3524} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!treelist@{treelist}}
+\index{treelist@{treelist}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{treelist}{treelist}}
+{\footnotesize\ttfamily treelist}
+
+\Hypertarget{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0}\label{kolibri__treelist_8h_a251f2a6066b332b93815be48005836d0} 
+\index{kolibri\_treelist.h@{kolibri\_treelist.h}!treelist\_node@{treelist\_node}}
+\index{treelist\_node@{treelist\_node}!kolibri\_treelist.h@{kolibri\_treelist.h}}
+\doxysubsubsection{\texorpdfstring{treelist\_node}{treelist\_node}}
+{\footnotesize\ttfamily treelist\+\_\+node}
+

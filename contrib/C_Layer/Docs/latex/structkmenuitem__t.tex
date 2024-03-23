@@ -1,0 +1,233 @@
+\doxysection{kmenuitem\+\_\+t Struct Reference}
+\hypertarget{structkmenuitem__t}{}\label{structkmenuitem__t}\index{kmenuitem\_t@{kmenuitem\_t}}
+
+
+{\ttfamily \#include $<$kolibri\+\_\+kmenu.\+h$>$}
+
+\doxysubsubsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{structkmenuitem__t_ac765329451135abec74c45e1897abf26}{type}}
+\item 
+char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structkmenuitem__t_a5633b1433389cec21ade3811bbe9ca5b}{text}}
+\item 
+\begin{tabbing}
+xx\=xx\=xx\=xx\=xx\=xx\=xx\=xx\=xx\=\kill
+union \{\\
+\>void \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structkmenuitem__t_aa83faebd40c6122d10888fd19eee6864}{submenu}}\\
+\>size\_t \mbox{\hyperlink{structkmenuitem__t_a2ccdb219f1d5c07c88d9c89510495e03}{btnid}}\\
+\}; \\
+
+\end{tabbing}\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structkmenuitem__t_a0b369817d1b719dddb600f250b377b5f}{paint}} )(struct \mbox{\hyperlink{structkmenuitem__t}{kmenuitem\+\_\+t}} \texorpdfstring{$\ast$}{*}item, \mbox{\hyperlink{kolibri__kmenu_8h_a9f6bb936a2983c5653e66a6cc34f9996}{t\+\_\+rect}} \texorpdfstring{$\ast$}{*}rc) \mbox{\hyperlink{kolibri__kmenu_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+int \mbox{\hyperlink{structkmenuitem__t_a0dd47f0da9616fac412134d7c720289e}{is\+\_\+focused}}
+\item 
+int \mbox{\hyperlink{structkmenuitem__t_aea3b4e935746760499bf7c978c872f34}{is\+\_\+enabled}}
+\item 
+int \mbox{\hyperlink{structkmenuitem__t_a1b083beaea1066db879ad99644f28cca}{is\+\_\+visible}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_a38644fe8d39815a5c3d82259aa977413}{style}}
+\item 
+int \mbox{\hyperlink{structkmenuitem__t_a82858a60a7e08dbae63df6a62d89e7cc}{font\+\_\+width}}
+\item 
+int \mbox{\hyperlink{structkmenuitem__t_ab6893108626b4ffa1a745a68ce88b376}{font\+\_\+height}}
+\item 
+\mbox{\hyperlink{structt__font}{t\+\_\+font}} \mbox{\hyperlink{structkmenuitem__t_abbf6e4360a8f6d7c30ea1ed1a71188f7}{font}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_a951236a0702535ba18ba51db69428658}{left}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_ab9332a87d0af5aa12cac847eff68b7af}{top}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_a02bed8590a9ddf520e58a060059518ec}{width}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_a02afeaaf8574e7a78d6b466ff2695052}{height}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_ace32aa3d61f8982c5d2935f57431c9b4}{pref\+\_\+width}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_a73da24b7bda2a63c272f544e7e3c8fd5}{pref\+\_\+height}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_aaa3d413dc7a95da41f3eb12015fb437a}{margin\+\_\+left}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_a5239253f4cf65618a8a20edcdaf477a7}{margin\+\_\+right}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_ab59096f9872ba77e30dec74c65c839e7}{margin\+\_\+top}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_ad40445d0ed6eb655f3848a5fb6f64cd8}{margin\+\_\+bottom}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_a58a524cf4396d012c98e531081f6565a}{padding\+\_\+left}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_afaac52c9610ffb8fe88c0dae880d722c}{padding\+\_\+right}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_a83bec0a17c1babad5b439c7a66604408}{padding\+\_\+top}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structkmenuitem__t_abc0f9c220f59db2cf6d5790f6da1c177}{padding\+\_\+bottom}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{structkmenuitem__t_afe2fabd828aaba486590fafe0752a39b}\label{structkmenuitem__t_afe2fabd828aaba486590fafe0752a39b} 
+\doxysubsubsection{\texorpdfstring{[union]}{[union]}}
+{\footnotesize\ttfamily union  \{ ... \} }
+
+\Hypertarget{structkmenuitem__t_a2ccdb219f1d5c07c88d9c89510495e03}\label{structkmenuitem__t_a2ccdb219f1d5c07c88d9c89510495e03} 
+\index{kmenuitem\_t@{kmenuitem\_t}!btnid@{btnid}}
+\index{btnid@{btnid}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{btnid}{btnid}}
+{\footnotesize\ttfamily size\+\_\+t btnid}
+
+\Hypertarget{structkmenuitem__t_abbf6e4360a8f6d7c30ea1ed1a71188f7}\label{structkmenuitem__t_abbf6e4360a8f6d7c30ea1ed1a71188f7} 
+\index{kmenuitem\_t@{kmenuitem\_t}!font@{font}}
+\index{font@{font}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{font}{font}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structt__font}{t\+\_\+font}} font}
+
+\Hypertarget{structkmenuitem__t_ab6893108626b4ffa1a745a68ce88b376}\label{structkmenuitem__t_ab6893108626b4ffa1a745a68ce88b376} 
+\index{kmenuitem\_t@{kmenuitem\_t}!font\_height@{font\_height}}
+\index{font\_height@{font\_height}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{font\_height}{font\_height}}
+{\footnotesize\ttfamily int font\+\_\+height}
+
+\Hypertarget{structkmenuitem__t_a82858a60a7e08dbae63df6a62d89e7cc}\label{structkmenuitem__t_a82858a60a7e08dbae63df6a62d89e7cc} 
+\index{kmenuitem\_t@{kmenuitem\_t}!font\_width@{font\_width}}
+\index{font\_width@{font\_width}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{font\_width}{font\_width}}
+{\footnotesize\ttfamily int font\+\_\+width}
+
+\Hypertarget{structkmenuitem__t_a02afeaaf8574e7a78d6b466ff2695052}\label{structkmenuitem__t_a02afeaaf8574e7a78d6b466ff2695052} 
+\index{kmenuitem\_t@{kmenuitem\_t}!height@{height}}
+\index{height@{height}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{height}{height}}
+{\footnotesize\ttfamily size\+\_\+t height}
+
+\Hypertarget{structkmenuitem__t_aea3b4e935746760499bf7c978c872f34}\label{structkmenuitem__t_aea3b4e935746760499bf7c978c872f34} 
+\index{kmenuitem\_t@{kmenuitem\_t}!is\_enabled@{is\_enabled}}
+\index{is\_enabled@{is\_enabled}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{is\_enabled}{is\_enabled}}
+{\footnotesize\ttfamily int is\+\_\+enabled}
+
+\Hypertarget{structkmenuitem__t_a0dd47f0da9616fac412134d7c720289e}\label{structkmenuitem__t_a0dd47f0da9616fac412134d7c720289e} 
+\index{kmenuitem\_t@{kmenuitem\_t}!is\_focused@{is\_focused}}
+\index{is\_focused@{is\_focused}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{is\_focused}{is\_focused}}
+{\footnotesize\ttfamily int is\+\_\+focused}
+
+\Hypertarget{structkmenuitem__t_a1b083beaea1066db879ad99644f28cca}\label{structkmenuitem__t_a1b083beaea1066db879ad99644f28cca} 
+\index{kmenuitem\_t@{kmenuitem\_t}!is\_visible@{is\_visible}}
+\index{is\_visible@{is\_visible}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{is\_visible}{is\_visible}}
+{\footnotesize\ttfamily int is\+\_\+visible}
+
+\Hypertarget{structkmenuitem__t_a951236a0702535ba18ba51db69428658}\label{structkmenuitem__t_a951236a0702535ba18ba51db69428658} 
+\index{kmenuitem\_t@{kmenuitem\_t}!left@{left}}
+\index{left@{left}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{left}{left}}
+{\footnotesize\ttfamily size\+\_\+t left}
+
+\Hypertarget{structkmenuitem__t_ad40445d0ed6eb655f3848a5fb6f64cd8}\label{structkmenuitem__t_ad40445d0ed6eb655f3848a5fb6f64cd8} 
+\index{kmenuitem\_t@{kmenuitem\_t}!margin\_bottom@{margin\_bottom}}
+\index{margin\_bottom@{margin\_bottom}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{margin\_bottom}{margin\_bottom}}
+{\footnotesize\ttfamily size\+\_\+t margin\+\_\+bottom}
+
+\Hypertarget{structkmenuitem__t_aaa3d413dc7a95da41f3eb12015fb437a}\label{structkmenuitem__t_aaa3d413dc7a95da41f3eb12015fb437a} 
+\index{kmenuitem\_t@{kmenuitem\_t}!margin\_left@{margin\_left}}
+\index{margin\_left@{margin\_left}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{margin\_left}{margin\_left}}
+{\footnotesize\ttfamily size\+\_\+t margin\+\_\+left}
+
+\Hypertarget{structkmenuitem__t_a5239253f4cf65618a8a20edcdaf477a7}\label{structkmenuitem__t_a5239253f4cf65618a8a20edcdaf477a7} 
+\index{kmenuitem\_t@{kmenuitem\_t}!margin\_right@{margin\_right}}
+\index{margin\_right@{margin\_right}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{margin\_right}{margin\_right}}
+{\footnotesize\ttfamily size\+\_\+t margin\+\_\+right}
+
+\Hypertarget{structkmenuitem__t_ab59096f9872ba77e30dec74c65c839e7}\label{structkmenuitem__t_ab59096f9872ba77e30dec74c65c839e7} 
+\index{kmenuitem\_t@{kmenuitem\_t}!margin\_top@{margin\_top}}
+\index{margin\_top@{margin\_top}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{margin\_top}{margin\_top}}
+{\footnotesize\ttfamily size\+\_\+t margin\+\_\+top}
+
+\Hypertarget{structkmenuitem__t_abc0f9c220f59db2cf6d5790f6da1c177}\label{structkmenuitem__t_abc0f9c220f59db2cf6d5790f6da1c177} 
+\index{kmenuitem\_t@{kmenuitem\_t}!padding\_bottom@{padding\_bottom}}
+\index{padding\_bottom@{padding\_bottom}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{padding\_bottom}{padding\_bottom}}
+{\footnotesize\ttfamily size\+\_\+t padding\+\_\+bottom}
+
+\Hypertarget{structkmenuitem__t_a58a524cf4396d012c98e531081f6565a}\label{structkmenuitem__t_a58a524cf4396d012c98e531081f6565a} 
+\index{kmenuitem\_t@{kmenuitem\_t}!padding\_left@{padding\_left}}
+\index{padding\_left@{padding\_left}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{padding\_left}{padding\_left}}
+{\footnotesize\ttfamily size\+\_\+t padding\+\_\+left}
+
+\Hypertarget{structkmenuitem__t_afaac52c9610ffb8fe88c0dae880d722c}\label{structkmenuitem__t_afaac52c9610ffb8fe88c0dae880d722c} 
+\index{kmenuitem\_t@{kmenuitem\_t}!padding\_right@{padding\_right}}
+\index{padding\_right@{padding\_right}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{padding\_right}{padding\_right}}
+{\footnotesize\ttfamily size\+\_\+t padding\+\_\+right}
+
+\Hypertarget{structkmenuitem__t_a83bec0a17c1babad5b439c7a66604408}\label{structkmenuitem__t_a83bec0a17c1babad5b439c7a66604408} 
+\index{kmenuitem\_t@{kmenuitem\_t}!padding\_top@{padding\_top}}
+\index{padding\_top@{padding\_top}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{padding\_top}{padding\_top}}
+{\footnotesize\ttfamily size\+\_\+t padding\+\_\+top}
+
+\Hypertarget{structkmenuitem__t_a0b369817d1b719dddb600f250b377b5f}\label{structkmenuitem__t_a0b369817d1b719dddb600f250b377b5f} 
+\index{kmenuitem\_t@{kmenuitem\_t}!paint@{paint}}
+\index{paint@{paint}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{paint}{paint}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} paint) (struct \mbox{\hyperlink{structkmenuitem__t}{kmenuitem\+\_\+t}} \texorpdfstring{$\ast$}{*}item, \mbox{\hyperlink{kolibri__kmenu_8h_a9f6bb936a2983c5653e66a6cc34f9996}{t\+\_\+rect}} \texorpdfstring{$\ast$}{*}rc) \mbox{\hyperlink{kolibri__kmenu_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))}
+
+\Hypertarget{structkmenuitem__t_a73da24b7bda2a63c272f544e7e3c8fd5}\label{structkmenuitem__t_a73da24b7bda2a63c272f544e7e3c8fd5} 
+\index{kmenuitem\_t@{kmenuitem\_t}!pref\_height@{pref\_height}}
+\index{pref\_height@{pref\_height}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{pref\_height}{pref\_height}}
+{\footnotesize\ttfamily size\+\_\+t pref\+\_\+height}
+
+\Hypertarget{structkmenuitem__t_ace32aa3d61f8982c5d2935f57431c9b4}\label{structkmenuitem__t_ace32aa3d61f8982c5d2935f57431c9b4} 
+\index{kmenuitem\_t@{kmenuitem\_t}!pref\_width@{pref\_width}}
+\index{pref\_width@{pref\_width}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{pref\_width}{pref\_width}}
+{\footnotesize\ttfamily size\+\_\+t pref\+\_\+width}
+
+\Hypertarget{structkmenuitem__t_a38644fe8d39815a5c3d82259aa977413}\label{structkmenuitem__t_a38644fe8d39815a5c3d82259aa977413} 
+\index{kmenuitem\_t@{kmenuitem\_t}!style@{style}}
+\index{style@{style}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{style}{style}}
+{\footnotesize\ttfamily size\+\_\+t style}
+
+\Hypertarget{structkmenuitem__t_aa83faebd40c6122d10888fd19eee6864}\label{structkmenuitem__t_aa83faebd40c6122d10888fd19eee6864} 
+\index{kmenuitem\_t@{kmenuitem\_t}!submenu@{submenu}}
+\index{submenu@{submenu}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{submenu}{submenu}}
+{\footnotesize\ttfamily void\texorpdfstring{$\ast$}{*} submenu}
+
+\Hypertarget{structkmenuitem__t_a5633b1433389cec21ade3811bbe9ca5b}\label{structkmenuitem__t_a5633b1433389cec21ade3811bbe9ca5b} 
+\index{kmenuitem\_t@{kmenuitem\_t}!text@{text}}
+\index{text@{text}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{text}{text}}
+{\footnotesize\ttfamily char\texorpdfstring{$\ast$}{*} text}
+
+\Hypertarget{structkmenuitem__t_ab9332a87d0af5aa12cac847eff68b7af}\label{structkmenuitem__t_ab9332a87d0af5aa12cac847eff68b7af} 
+\index{kmenuitem\_t@{kmenuitem\_t}!top@{top}}
+\index{top@{top}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{top}{top}}
+{\footnotesize\ttfamily size\+\_\+t top}
+
+\Hypertarget{structkmenuitem__t_ac765329451135abec74c45e1897abf26}\label{structkmenuitem__t_ac765329451135abec74c45e1897abf26} 
+\index{kmenuitem\_t@{kmenuitem\_t}!type@{type}}
+\index{type@{type}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{type}{type}}
+{\footnotesize\ttfamily int type}
+
+\Hypertarget{structkmenuitem__t_a02bed8590a9ddf520e58a060059518ec}\label{structkmenuitem__t_a02bed8590a9ddf520e58a060059518ec} 
+\index{kmenuitem\_t@{kmenuitem\_t}!width@{width}}
+\index{width@{width}!kmenuitem\_t@{kmenuitem\_t}}
+\doxysubsubsection{\texorpdfstring{width}{width}}
+{\footnotesize\ttfamily size\+\_\+t width}
+
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+INCLUDE/\mbox{\hyperlink{kolibri__kmenu_8h}{kolibri\+\_\+kmenu.\+h}}\end{DoxyCompactItemize}

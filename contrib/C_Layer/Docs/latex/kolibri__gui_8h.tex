@@ -1,0 +1,167 @@
+\doxysection{INCLUDE/kolibri\+\_\+gui.h File Reference}
+\hypertarget{kolibri__gui_8h}{}\label{kolibri__gui_8h}\index{INCLUDE/kolibri\_gui.h@{INCLUDE/kolibri\_gui.h}}
+{\ttfamily \#include "{}kolibri\+\_\+debug.\+h"{}}\newline
+{\ttfamily \#include "{}kolibri\+\_\+boxlib.\+h"{}}\newline
+{\ttfamily \#include "{}kolibri\+\_\+gui\+\_\+elements.\+h"{}}\newline
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{kolibri__gui_8h_a198bffa888e7f18fbee8a13b209976c0}{BUTTON\+\_\+\+CLOSE}}~0x1
+\item 
+\#define \mbox{\hyperlink{kolibri__gui_8h_a5fb27a09574b3a8473fac0e17075675c}{BTN\+\_\+\+QUIT}}~1
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dc}{KOLIBRI\+\_\+\+GUI\+\_\+\+EVENTS}} \{ \newline
+\mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2dbec864e4e963d6bea9954806521df2}{KOLIBRI\+\_\+\+EVENT\+\_\+\+NONE}} = 0
+, \newline
+\mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca0a84f1803dcad15708cd5bf208a8118a}{KOLIBRI\+\_\+\+EVENT\+\_\+\+REDRAW}} = 1
+, \newline
+\mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca563a416dc7f301d71a631da21a3963aa}{KOLIBRI\+\_\+\+EVENT\+\_\+\+KEY}} = 2
+, \newline
+\mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e}{KOLIBRI\+\_\+\+EVENT\+\_\+\+BUTTON}} = 3
+, \newline
+\mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcac2423560d14c7f7f51194416009d8ba4}{KOLIBRI\+\_\+\+EVENT\+\_\+\+DESKTOP}} = 5
+, \newline
+\mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3e55219fb3a0deaa00798ad87e12a401}{KOLIBRI\+\_\+\+EVENT\+\_\+\+MOUSE}} = 6
+, \newline
+\mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca711afd36a87d70794a0c9c0e046d672a}{KOLIBRI\+\_\+\+EVENT\+\_\+\+IPC}} = 7
+, \newline
+\mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3ce4e91272c1db64c44ab5685a79d711}{KOLIBRI\+\_\+\+EVENT\+\_\+\+NETWORK}} = 8
+, \newline
+\mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2cd58c949d2f4ce38e49f6b0e275e03f}{KOLIBRI\+\_\+\+EVENT\+\_\+\+DEBUG}} = 9
+, \newline
+\mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcadf7b8d4b2c15e348db6338e2e82aaf33}{KOLIBRI\+\_\+\+EVENT\+\_\+\+IRQBEGIN}} = 16
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{kolibri__gui_8h_a81a1ea83d66ffc14350b4b72b078a3ef}{kolibri\+\_\+handle\+\_\+event\+\_\+redraw}} (\mbox{\hyperlink{structkolibri__window}{kolibri\+\_\+window}} \texorpdfstring{$\ast$}{*}some\+\_\+window)
+\item 
+void \mbox{\hyperlink{kolibri__gui_8h_a90720148918d989921c1572058d21a58}{kolibri\+\_\+handle\+\_\+event\+\_\+key}} (\mbox{\hyperlink{structkolibri__window}{kolibri\+\_\+window}} \texorpdfstring{$\ast$}{*}some\+\_\+window, oskey\+\_\+t \mbox{\hyperlink{kolibri__editor_8h_a6efc9555d65f172040066b7da1e3d2a0}{key}})
+\item 
+void \mbox{\hyperlink{kolibri__gui_8h_a5970422747362f11880a68439b7ef870}{kolibri\+\_\+handle\+\_\+event\+\_\+mouse}} (\mbox{\hyperlink{structkolibri__window}{kolibri\+\_\+window}} \texorpdfstring{$\ast$}{*}some\+\_\+window)
+\item 
+void \mbox{\hyperlink{kolibri__gui_8h_a0830b6d7b228582bd73694d2d85b47cc}{kolibri\+\_\+exit}} (void)
+\item 
+int \mbox{\hyperlink{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3}{kolibri\+\_\+gui\+\_\+init}} (void)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{kolibri__gui_8h_a5fb27a09574b3a8473fac0e17075675c}\label{kolibri__gui_8h_a5fb27a09574b3a8473fac0e17075675c} 
+\index{kolibri\_gui.h@{kolibri\_gui.h}!BTN\_QUIT@{BTN\_QUIT}}
+\index{BTN\_QUIT@{BTN\_QUIT}!kolibri\_gui.h@{kolibri\_gui.h}}
+\doxysubsubsection{\texorpdfstring{BTN\_QUIT}{BTN\_QUIT}}
+{\footnotesize\ttfamily \#define BTN\+\_\+\+QUIT~1}
+
+\Hypertarget{kolibri__gui_8h_a198bffa888e7f18fbee8a13b209976c0}\label{kolibri__gui_8h_a198bffa888e7f18fbee8a13b209976c0} 
+\index{kolibri\_gui.h@{kolibri\_gui.h}!BUTTON\_CLOSE@{BUTTON\_CLOSE}}
+\index{BUTTON\_CLOSE@{BUTTON\_CLOSE}!kolibri\_gui.h@{kolibri\_gui.h}}
+\doxysubsubsection{\texorpdfstring{BUTTON\_CLOSE}{BUTTON\_CLOSE}}
+{\footnotesize\ttfamily \#define BUTTON\+\_\+\+CLOSE~0x1}
+
+\begin{Desc}
+\item[Examples]\par
+\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
+
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dc}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dc} 
+\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_GUI\_EVENTS@{KOLIBRI\_GUI\_EVENTS}}
+\index{KOLIBRI\_GUI\_EVENTS@{KOLIBRI\_GUI\_EVENTS}!kolibri\_gui.h@{kolibri\_gui.h}}
+\doxysubsubsection{\texorpdfstring{KOLIBRI\_GUI\_EVENTS}{KOLIBRI\_GUI\_EVENTS}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dc}{KOLIBRI\+\_\+\+GUI\+\_\+\+EVENTS}}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_NONE@{KOLIBRI\_EVENT\_NONE}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_NONE@{KOLIBRI\_EVENT\_NONE}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2dbec864e4e963d6bea9954806521df2}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2dbec864e4e963d6bea9954806521df2} 
+KOLIBRI\+\_\+\+EVENT\+\_\+\+NONE&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_REDRAW@{KOLIBRI\_EVENT\_REDRAW}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_REDRAW@{KOLIBRI\_EVENT\_REDRAW}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca0a84f1803dcad15708cd5bf208a8118a}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca0a84f1803dcad15708cd5bf208a8118a} 
+KOLIBRI\+\_\+\+EVENT\+\_\+\+REDRAW&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_KEY@{KOLIBRI\_EVENT\_KEY}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_KEY@{KOLIBRI\_EVENT\_KEY}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca563a416dc7f301d71a631da21a3963aa}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca563a416dc7f301d71a631da21a3963aa} 
+KOLIBRI\+\_\+\+EVENT\+\_\+\+KEY&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_BUTTON@{KOLIBRI\_EVENT\_BUTTON}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_BUTTON@{KOLIBRI\_EVENT\_BUTTON}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e} 
+KOLIBRI\+\_\+\+EVENT\+\_\+\+BUTTON&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_DESKTOP@{KOLIBRI\_EVENT\_DESKTOP}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_DESKTOP@{KOLIBRI\_EVENT\_DESKTOP}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcac2423560d14c7f7f51194416009d8ba4}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcac2423560d14c7f7f51194416009d8ba4} 
+KOLIBRI\+\_\+\+EVENT\+\_\+\+DESKTOP&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_MOUSE@{KOLIBRI\_EVENT\_MOUSE}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_MOUSE@{KOLIBRI\_EVENT\_MOUSE}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3e55219fb3a0deaa00798ad87e12a401}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3e55219fb3a0deaa00798ad87e12a401} 
+KOLIBRI\+\_\+\+EVENT\+\_\+\+MOUSE&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_IPC@{KOLIBRI\_EVENT\_IPC}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_IPC@{KOLIBRI\_EVENT\_IPC}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca711afd36a87d70794a0c9c0e046d672a}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca711afd36a87d70794a0c9c0e046d672a} 
+KOLIBRI\+\_\+\+EVENT\+\_\+\+IPC&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_NETWORK@{KOLIBRI\_EVENT\_NETWORK}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_NETWORK@{KOLIBRI\_EVENT\_NETWORK}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3ce4e91272c1db64c44ab5685a79d711}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3ce4e91272c1db64c44ab5685a79d711} 
+KOLIBRI\+\_\+\+EVENT\+\_\+\+NETWORK&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_DEBUG@{KOLIBRI\_EVENT\_DEBUG}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_DEBUG@{KOLIBRI\_EVENT\_DEBUG}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2cd58c949d2f4ce38e49f6b0e275e03f}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2cd58c949d2f4ce38e49f6b0e275e03f} 
+KOLIBRI\+\_\+\+EVENT\+\_\+\+DEBUG&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{KOLIBRI\_EVENT\_IRQBEGIN@{KOLIBRI\_EVENT\_IRQBEGIN}!kolibri\_gui.h@{kolibri\_gui.h}}\index{kolibri\_gui.h@{kolibri\_gui.h}!KOLIBRI\_EVENT\_IRQBEGIN@{KOLIBRI\_EVENT\_IRQBEGIN}}}\Hypertarget{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcadf7b8d4b2c15e348db6338e2e82aaf33}\label{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dcadf7b8d4b2c15e348db6338e2e82aaf33} 
+KOLIBRI\+\_\+\+EVENT\+\_\+\+IRQBEGIN&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{kolibri__gui_8h_a0830b6d7b228582bd73694d2d85b47cc}\label{kolibri__gui_8h_a0830b6d7b228582bd73694d2d85b47cc} 
+\index{kolibri\_gui.h@{kolibri\_gui.h}!kolibri\_exit@{kolibri\_exit}}
+\index{kolibri\_exit@{kolibri\_exit}!kolibri\_gui.h@{kolibri\_gui.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_exit()}{kolibri\_exit()}}
+{\footnotesize\ttfamily void kolibri\+\_\+exit (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+\begin{Desc}
+\item[Examples]\par
+\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
+\Hypertarget{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3}\label{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3} 
+\index{kolibri\_gui.h@{kolibri\_gui.h}!kolibri\_gui\_init@{kolibri\_gui\_init}}
+\index{kolibri\_gui\_init@{kolibri\_gui\_init}!kolibri\_gui.h@{kolibri\_gui.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_gui\_init()}{kolibri\_gui\_init()}}
+{\footnotesize\ttfamily int kolibri\+\_\+gui\+\_\+init (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})}
+
+\begin{Desc}
+\item[Examples]\par
+\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
+\Hypertarget{kolibri__gui_8h_a90720148918d989921c1572058d21a58}\label{kolibri__gui_8h_a90720148918d989921c1572058d21a58} 
+\index{kolibri\_gui.h@{kolibri\_gui.h}!kolibri\_handle\_event\_key@{kolibri\_handle\_event\_key}}
+\index{kolibri\_handle\_event\_key@{kolibri\_handle\_event\_key}!kolibri\_gui.h@{kolibri\_gui.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_handle\_event\_key()}{kolibri\_handle\_event\_key()}}
+{\footnotesize\ttfamily void kolibri\+\_\+handle\+\_\+event\+\_\+key (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structkolibri__window}{kolibri\+\_\+window}} \texorpdfstring{$\ast$}{*}}]{some\+\_\+window,  }\item[{oskey\+\_\+t}]{key }\end{DoxyParamCaption})}
+
+\begin{Desc}
+\item[Examples]\par
+\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
+\Hypertarget{kolibri__gui_8h_a5970422747362f11880a68439b7ef870}\label{kolibri__gui_8h_a5970422747362f11880a68439b7ef870} 
+\index{kolibri\_gui.h@{kolibri\_gui.h}!kolibri\_handle\_event\_mouse@{kolibri\_handle\_event\_mouse}}
+\index{kolibri\_handle\_event\_mouse@{kolibri\_handle\_event\_mouse}!kolibri\_gui.h@{kolibri\_gui.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_handle\_event\_mouse()}{kolibri\_handle\_event\_mouse()}}
+{\footnotesize\ttfamily void kolibri\+\_\+handle\+\_\+event\+\_\+mouse (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structkolibri__window}{kolibri\+\_\+window}} \texorpdfstring{$\ast$}{*}}]{some\+\_\+window }\end{DoxyParamCaption})}
+
+\begin{Desc}
+\item[Examples]\par
+\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}
+\Hypertarget{kolibri__gui_8h_a81a1ea83d66ffc14350b4b72b078a3ef}\label{kolibri__gui_8h_a81a1ea83d66ffc14350b4b72b078a3ef} 
+\index{kolibri\_gui.h@{kolibri\_gui.h}!kolibri\_handle\_event\_redraw@{kolibri\_handle\_event\_redraw}}
+\index{kolibri\_handle\_event\_redraw@{kolibri\_handle\_event\_redraw}!kolibri\_gui.h@{kolibri\_gui.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_handle\_event\_redraw()}{kolibri\_handle\_event\_redraw()}}
+{\footnotesize\ttfamily void kolibri\+\_\+handle\+\_\+event\+\_\+redraw (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structkolibri__window}{kolibri\+\_\+window}} \texorpdfstring{$\ast$}{*}}]{some\+\_\+window }\end{DoxyParamCaption})}
+
+\begin{Desc}
+\item[Examples]\par
+\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}

@@ -22,8 +22,8 @@ enum Params
   /// @brief Center alignment
   AlignCenter = 0b00100000,
 
-  /// @breif 32bpp canvas insted of 24bpp
-  Use32bit = 0b0b10000000
+  /// @brief 32bpp canvas insted of 24bpp
+  Use32bit = 0b010000000
 };
 
 /// @brief Initialize the RasterWorks library
@@ -37,19 +37,28 @@ extern int kolibri_rasterworks_init(void);
 /// @param string Pointer to string
 /// @param charQuantity String length
 /// @param fontColor Text color
-/// @param params Parameters from the @link Params list
-/// @param All flags combinable, except align right + align center
+/// @param params Parameters from the Params list
+/// @note All flags combinable, except align right + align center
 /// @note The text is drawn on the image, in order for changes to occur in the window, you need to draw the image after calling this function
 extern void (*drawText)(void *canvas, int x, int y, const char *string, int charQuantity, int fontColor, int params) __attribute__((__stdcall__));
 
 /// @brief Calculate amount of valid chars in UTF-8 string
-/// @breif Supports zero terminated string (set byteQuantity = -1)
+/// @note Supports zero terminated string (set byteQuantity = -1)
+/// @param string
+/// @param byteQuantity
 extern int (*countUTF8Z)(const char *string, int byteQuantity) __attribute__((__stdcall__));
 
 /// @brief Calculate amount of chars that fits given width
 extern int (*charsFit)(int areaWidth, int charHeight) __attribute__((__stdcall__));
 
 /// @brief Calculate string width in pixels
+/// @param charQuantity Characters
+/// @param charHeight character height
 extern int (*strWidth)(int charQuantity, int charHeight) __attribute__((__stdcall__));
+
+/**
+ * \example rasterworks_example.c
+ * example of using rasterworks library
+ */
 
 #endif /* KOLIBRI_RASTERWORKS_H */

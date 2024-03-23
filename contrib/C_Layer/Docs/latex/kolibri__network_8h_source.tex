@@ -1,0 +1,60 @@
+\doxysection{kolibri\+\_\+network.\+h}
+\hypertarget{kolibri__network_8h_source}{}\label{kolibri__network_8h_source}\index{INCLUDE/kolibri\_network.h@{INCLUDE/kolibri\_network.h}}
+\mbox{\hyperlink{kolibri__network_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ \_\_NETWORK\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ \_\_NETWORK\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <sys/socket.h>}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#define\ EAI\_ADDRFAMILY\ 1}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#define\ EAI\_AGAIN\ \ \ \ \ \ 2}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#define\ EAI\_BADFLAGS\ \ \ 3}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#define\ EAI\_FAIL\ \ \ \ \ \ \ 4}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#define\ EAI\_FAMILY\ \ \ \ \ 5}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#define\ EAI\_MEMORY\ \ \ \ \ 6}}
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#define\ EAI\_NONAME\ \ \ \ \ 8}}
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#define\ EAI\_SERVICE\ \ \ \ 9}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#define\ EAI\_SOCKTYPE\ \ \ 10}}
+\DoxyCodeLine{00015\ \textcolor{preprocessor}{\#define\ EAI\_BADHINTS\ \ \ 12}}
+\DoxyCodeLine{00016\ \textcolor{preprocessor}{\#define\ EAI\_PROTOCOL\ \ \ 13}}
+\DoxyCodeLine{00017\ \textcolor{preprocessor}{\#define\ EAI\_OVERFLOW\ \ \ 14}}
+\DoxyCodeLine{00018\ }
+\DoxyCodeLine{00019\ \textcolor{comment}{//\ Flags\ for\ addrinfo}}
+\DoxyCodeLine{00020\ \textcolor{preprocessor}{\#define\ AI\_PASSIVE\ \ \ \ \ 1}}
+\DoxyCodeLine{00021\ \textcolor{preprocessor}{\#define\ AI\_CANONNAME\ \ \ 2}}
+\DoxyCodeLine{00022\ \textcolor{preprocessor}{\#define\ AI\_NUMERICHOST\ 4}}
+\DoxyCodeLine{00023\ \textcolor{preprocessor}{\#define\ AI\_NUMERICSERV\ 8}}
+\DoxyCodeLine{00024\ \textcolor{preprocessor}{\#define\ AI\_ADDRCONFIG\ \ 0x400}}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#pragma\ pack(push,\ 1)}}
+\DoxyCodeLine{00027\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{struct_a_r_p__entry}{ARP\_entry}}\{}
+\DoxyCodeLine{00028\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{struct_a_r_p__entry_a0e9cda9c18975739a2712cadfcd2819d}{IP}};}
+\DoxyCodeLine{00029\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ \mbox{\hyperlink{struct_a_r_p__entry_aecd28168db636c0ebf05efe616164802}{MAC}}[6];}
+\DoxyCodeLine{00030\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{short}\ \mbox{\hyperlink{struct_a_r_p__entry_a724f8cf1b8ff3d96c3a9cbcd2a6957a6}{status}};}
+\DoxyCodeLine{00031\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{short}\ \mbox{\hyperlink{struct_a_r_p__entry_ac7975f7c53324b3282ac7cda04306a76}{TTL}};}
+\DoxyCodeLine{00032\ \};}
+\DoxyCodeLine{00033\ \textcolor{preprocessor}{\#pragma\ pack(pop)}}
+\DoxyCodeLine{00034\ }
+\DoxyCodeLine{00035\ \textcolor{preprocessor}{\#pragma\ pack(push,\ 1)\ \ }}
+\DoxyCodeLine{00036\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structaddrinfo}{addrinfo}}\{}
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keywordtype}{int}\ \ \ \ \ \mbox{\hyperlink{structaddrinfo_a92528a848ebf34ab99687dd06a09cc93}{ai\_flags}};}
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keywordtype}{int}\ \ \ \ \ \mbox{\hyperlink{structaddrinfo_a4dc44d22f13bc5c59bff73e549e96a5c}{ai\_family}};}
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keywordtype}{int}\ \ \ \ \ \mbox{\hyperlink{structaddrinfo_a2109130e73586150c41fed16311e1af6}{ai\_socktype}};}
+\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keywordtype}{int}\ \ \ \ \ \mbox{\hyperlink{structaddrinfo_a6ade486587feaa03d492eb84cfc83451}{ai\_protocol}};}
+\DoxyCodeLine{00041\ \ \ \ \ \textcolor{keywordtype}{int}\ \ \ \ \ \mbox{\hyperlink{structaddrinfo_aaee844d2948f1a512ac6d199e6310073}{ai\_addrlen}};}
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ *\mbox{\hyperlink{structaddrinfo_a9fcbdd64fcb9adcf195a78b10f1fe8f6}{ai\_canonname}};}
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keyword}{struct\ }sockaddr\ *\mbox{\hyperlink{structaddrinfo_a12798d0c9e56159c6e506eee1f7b9946}{ai\_addr}};}
+\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structaddrinfo}{addrinfo}}\ *\mbox{\hyperlink{structaddrinfo_ab14efb2c3cdb16b4f765c1cbc29a5182}{ai\_next}};}
+\DoxyCodeLine{00045\ \};\ \ }
+\DoxyCodeLine{00046\ \textcolor{preprocessor}{\#pragma\ pack(pop)}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{kolibri__network_8h_a1b3f00e699b6934789568abb4db4ba88}{networklib\_init}}\ ();}
+\DoxyCodeLine{00049\ \textcolor{keyword}{extern}\ int\ (*\mbox{\hyperlink{kolibri__network_8h_a3bea66ceb438d6a340fb7c5894841fb1}{inet\_addr}})(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}*\ hostname)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}\ ((stdcall));}
+\DoxyCodeLine{00050\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{char}*\ (*inet\_ntoa)(\textcolor{keywordtype}{int}\ ip\_addr)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}\ ((stdcall));}
+\DoxyCodeLine{00051\ \textcolor{keyword}{extern}\ int\ (*\mbox{\hyperlink{kolibri__network_8h_aadfd3232f735831646fb5cfa102bb712}{getaddrinfo}})(\textcolor{keywordtype}{char}*\ hostname,\ \textcolor{keywordtype}{char}\ *servname,\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structaddrinfo}{addrinfo}}*\ hints,\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structaddrinfo}{addrinfo}}**\ res)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}\ ((stdcall));}
+\DoxyCodeLine{00052\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__network_8h_a28bd9ac6d2dc1cf1e64b738a91d60cf0}{freeaddrinfo}})(\textcolor{keyword}{struct\ }\mbox{\hyperlink{structaddrinfo}{addrinfo}}*\ ai)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}\ ((stdcall));}
+\DoxyCodeLine{00053\ }
+\DoxyCodeLine{00054\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

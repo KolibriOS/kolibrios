@@ -1,0 +1,362 @@
+\doxysection{INCLUDE/kolibri\+\_\+buf2d.h File Reference}
+\hypertarget{kolibri__buf2d_8h}{}\label{kolibri__buf2d_8h}\index{INCLUDE/kolibri\_buf2d.h@{INCLUDE/kolibri\_buf2d.h}}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124}{BUF2\+D\+\_\+\+ALGORITM\+\_\+\+FILTR}} \{ \newline
+\mbox{\hyperlink{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124aa214066e52bfd6cd6beb19cca75a351a}{SIERRA\+\_\+\+LITE}}
+, \newline
+\mbox{\hyperlink{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124ac7b0e583727974d5f15fedb5875378e7}{FLOYD\+\_\+\+STEINBERG}}
+, \newline
+\mbox{\hyperlink{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124a296121fda8f69414490792e0d455a3af}{BURKERS}}
+, \newline
+\mbox{\hyperlink{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124a62a8a5ef87fbff725fefda36fe7048cf}{HEAVYIRON\+\_\+\+MOD}}
+, \newline
+\mbox{\hyperlink{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124ae9506f85d1de7d1ecae83871d435b61e}{ATKINSON}}
+ \}
+\item 
+enum \mbox{\hyperlink{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808}{BUF2\+D\+\_\+\+OPT\+\_\+\+CROP}} \{ \newline
+\mbox{\hyperlink{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808ae80452cbfc9393bfa8a69ff5f5dec7e3}{BUF2\+D\+\_\+\+OPT\+\_\+\+CROP\+\_\+\+TOP}} = 1
+, \newline
+\mbox{\hyperlink{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808aeaba47ec814676f1a1adb3ebe78f42e3}{BUF2\+D\+\_\+\+OPT\+\_\+\+CROP\+\_\+\+LEFT}} = 2
+, \newline
+\mbox{\hyperlink{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808af6f653ba0c57b7e98f501e8cb614cc26}{BUF2\+D\+\_\+\+OPT\+\_\+\+CROP\+\_\+\+BOTTOM}} = 4
+, \newline
+\mbox{\hyperlink{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808a085280a0ca1462f914ad31ba4dc3c757}{BUF2\+D\+\_\+\+OPT\+\_\+\+CROP\+\_\+\+RIGHT}} = 8
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{kolibri__buf2d_8h_aadd4150bc209bf299d4bc4a4e917b4f9}{kolibri\+\_\+buf2d\+\_\+init}} (void)
+\item 
+struct \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}} ((\+\_\+\+\_\+packed\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em структура текстового редактора \end{DoxyCompactList}\item 
+\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a79a2d132cc91f8a9b9cc58e7c76b4be7}{buf2d\+\_\+create}} (uint16\+\_\+t tlx, uint16\+\_\+t tly, unsigned int sizex, unsigned int sizey, unsigned int font\+\_\+bgcolor, uint8\+\_\+t color\+\_\+bit)
+\item 
+void \mbox{\hyperlink{kolibri__buf2d_8h_af29c0d6d7d7d1ba563ab522225c147ae}{buf2d\+\_\+curve\+\_\+bezier}} (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}buf, unsigned int p0\+\_\+x, unsigned int p0\+\_\+y, unsigned int p1\+\_\+x, unsigned int p1\+\_\+y, unsigned int p2\+\_\+x, unsigned int p2\+\_\+y, unsigned int color)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}}
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a12c2181212f784185a09355fbb527f70}{buf2d\+\_\+create\+\_\+asm}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a520cb7419b746678aecae51cb342a589}{buf2d\+\_\+curve\+\_\+bezier\+\_\+asm}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a608e0ebc674d80df7d4f0cb51bb444e3}{buf2d\+\_\+draw}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a0ffc4884c1f016000499642028f0794a}{buf2d\+\_\+clear}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_ac09a4d643344bd19ab39da13b86337af}{buf2d\+\_\+delete}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_ac09d7bd965dabacc5335fa634bbe1de7}{buf2d\+\_\+rotate}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a0ff329c01a433d45647b0b39de41cdd9}{buf2d\+\_\+resize}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_aa19cf3d71b5ee9be4e04bb51b5864da7}{buf2d\+\_\+line}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_abc65c826a3eaf8f116f2fa1f46bf354d}{buf2d\+\_\+line\+\_\+sm}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a19aa368488983b96ab54912ce54703c4}{buf2d\+\_\+rect\+\_\+by\+\_\+size}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_aea4c92e9bcb6b157af4b7255371c7400}{buf2d\+\_\+filled\+\_\+rect\+\_\+by\+\_\+size}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a38f0bb7a1e88961d8ee19a8d35634fb8}{buf2d\+\_\+circle}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a8eb5bbed3a97840212fbbfb93297ae9b}{buf2d\+\_\+img\+\_\+hdiv2}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a4b6cc3d5b45629e999bb5a2ef927ba6d}{buf2d\+\_\+img\+\_\+wdiv2}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_ae58d5ae2b3b8c5ae967f26585a884bf0}{buf2d\+\_\+conv\+\_\+24\+\_\+to\+\_\+8}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a0b70683ef38cd86b203413ffdd96cd43}{buf2d\+\_\+conv\+\_\+24\+\_\+to\+\_\+32}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a6258d6d183f188bea504daccce36f3d0}{buf2d\+\_\+bit\+\_\+blt\+\_\+transp}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, \mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a1c5bc7190949a681333f01c998ebbe2e}{buf2d\+\_\+bit\+\_\+blt\+\_\+alpha}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, \mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a6c22024987ae40a8a0f8e516b43a85e9}{buf2d\+\_\+convert\+\_\+text\+\_\+matrix}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a682b1870693f890d8deb619fc89c1c8f}{buf2d\+\_\+draw\+\_\+text}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, \mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, const char \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a7f4fe2df1e612803b7ea2427da62c63b}{buf2d\+\_\+crop\+\_\+color}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a9b51f17a5384e8a52009548a4fb0586b}{buf2d\+\_\+offset\+\_\+h}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_ae008644989cfe0e68fbc65dbc43a63d8}{buf2d\+\_\+flood\+\_\+fill}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_ace352d84b128175a9b181586ecb7007d}{buf2d\+\_\+set\+\_\+pixel}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+unsigned int(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a8bb1114820b3c1abfb97cb7cf34e5f0b}{buf2d\+\_\+get\+\_\+pixel}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a8727e7a6388cabb8de72e99f5c8f1c7d}{buf2d\+\_\+flip\+\_\+h}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_a8904c26eee1fcbd7fa3807b4d127e2a4}{buf2d\+\_\+flip\+\_\+v}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__buf2d_8h_aa74907a7c09f8ea7532375946bc3a339}{buf2d\+\_\+filter\+\_\+dither}} )(\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124}\label{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!BUF2D\_ALGORITM\_FILTR@{BUF2D\_ALGORITM\_FILTR}}
+\index{BUF2D\_ALGORITM\_FILTR@{BUF2D\_ALGORITM\_FILTR}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{BUF2D\_ALGORITM\_FILTR}{BUF2D\_ALGORITM\_FILTR}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124}{BUF2\+D\+\_\+\+ALGORITM\+\_\+\+FILTR}}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SIERRA\_LITE@{SIERRA\_LITE}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!SIERRA\_LITE@{SIERRA\_LITE}}}\Hypertarget{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124aa214066e52bfd6cd6beb19cca75a351a}\label{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124aa214066e52bfd6cd6beb19cca75a351a} 
+SIERRA\+\_\+\+LITE&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{FLOYD\_STEINBERG@{FLOYD\_STEINBERG}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!FLOYD\_STEINBERG@{FLOYD\_STEINBERG}}}\Hypertarget{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124ac7b0e583727974d5f15fedb5875378e7}\label{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124ac7b0e583727974d5f15fedb5875378e7} 
+FLOYD\+\_\+\+STEINBERG&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{BURKERS@{BURKERS}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!BURKERS@{BURKERS}}}\Hypertarget{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124a296121fda8f69414490792e0d455a3af}\label{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124a296121fda8f69414490792e0d455a3af} 
+BURKERS&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HEAVYIRON\_MOD@{HEAVYIRON\_MOD}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!HEAVYIRON\_MOD@{HEAVYIRON\_MOD}}}\Hypertarget{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124a62a8a5ef87fbff725fefda36fe7048cf}\label{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124a62a8a5ef87fbff725fefda36fe7048cf} 
+HEAVYIRON\+\_\+\+MOD&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ATKINSON@{ATKINSON}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!ATKINSON@{ATKINSON}}}\Hypertarget{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124ae9506f85d1de7d1ecae83871d435b61e}\label{kolibri__buf2d_8h_a280f4f234c3e6fd34e254d6408343124ae9506f85d1de7d1ecae83871d435b61e} 
+ATKINSON&\\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808}\label{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!BUF2D\_OPT\_CROP@{BUF2D\_OPT\_CROP}}
+\index{BUF2D\_OPT\_CROP@{BUF2D\_OPT\_CROP}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{BUF2D\_OPT\_CROP}{BUF2D\_OPT\_CROP}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808}{BUF2\+D\+\_\+\+OPT\+\_\+\+CROP}}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{BUF2D\_OPT\_CROP\_TOP@{BUF2D\_OPT\_CROP\_TOP}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!BUF2D\_OPT\_CROP\_TOP@{BUF2D\_OPT\_CROP\_TOP}}}\Hypertarget{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808ae80452cbfc9393bfa8a69ff5f5dec7e3}\label{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808ae80452cbfc9393bfa8a69ff5f5dec7e3} 
+BUF2\+D\+\_\+\+OPT\+\_\+\+CROP\+\_\+\+TOP&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{BUF2D\_OPT\_CROP\_LEFT@{BUF2D\_OPT\_CROP\_LEFT}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!BUF2D\_OPT\_CROP\_LEFT@{BUF2D\_OPT\_CROP\_LEFT}}}\Hypertarget{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808aeaba47ec814676f1a1adb3ebe78f42e3}\label{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808aeaba47ec814676f1a1adb3ebe78f42e3} 
+BUF2\+D\+\_\+\+OPT\+\_\+\+CROP\+\_\+\+LEFT&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{BUF2D\_OPT\_CROP\_BOTTOM@{BUF2D\_OPT\_CROP\_BOTTOM}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!BUF2D\_OPT\_CROP\_BOTTOM@{BUF2D\_OPT\_CROP\_BOTTOM}}}\Hypertarget{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808af6f653ba0c57b7e98f501e8cb614cc26}\label{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808af6f653ba0c57b7e98f501e8cb614cc26} 
+BUF2\+D\+\_\+\+OPT\+\_\+\+CROP\+\_\+\+BOTTOM&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{BUF2D\_OPT\_CROP\_RIGHT@{BUF2D\_OPT\_CROP\_RIGHT}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!BUF2D\_OPT\_CROP\_RIGHT@{BUF2D\_OPT\_CROP\_RIGHT}}}\Hypertarget{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808a085280a0ca1462f914ad31ba4dc3c757}\label{kolibri__buf2d_8h_a57382626da202c1deb01f780a6bda808a085280a0ca1462f914ad31ba4dc3c757} 
+BUF2\+D\+\_\+\+OPT\+\_\+\+CROP\+\_\+\+RIGHT&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}\label{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!\_\_attribute\_\_@{\_\_attribute\_\_}}
+\index{\_\_attribute\_\_@{\_\_attribute\_\_}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{\_\_attribute\_\_()}{\_\_attribute\_\_()}}
+{\footnotesize\ttfamily struct \+\_\+\+\_\+attribute\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{(\+\_\+\+\_\+packed\+\_\+\+\_\+)}]{ }\end{DoxyParamCaption})}
+
+
+
+структура текстового редактора 
+
+\Hypertarget{kolibri__buf2d_8h_a79a2d132cc91f8a9b9cc58e7c76b4be7}\label{kolibri__buf2d_8h_a79a2d132cc91f8a9b9cc58e7c76b4be7} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_create@{buf2d\_create}}
+\index{buf2d\_create@{buf2d\_create}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_create()}{buf2d\_create()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*} buf2d\+\_\+create (\begin{DoxyParamCaption}\item[{uint16\+\_\+t}]{tlx,  }\item[{uint16\+\_\+t}]{tly,  }\item[{unsigned int}]{sizex,  }\item[{unsigned int}]{sizey,  }\item[{unsigned int}]{font\+\_\+bgcolor,  }\item[{uint8\+\_\+t}]{color\+\_\+bit }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__buf2d_8h_af29c0d6d7d7d1ba563ab522225c147ae}\label{kolibri__buf2d_8h_af29c0d6d7d7d1ba563ab522225c147ae} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_curve\_bezier@{buf2d\_curve\_bezier}}
+\index{buf2d\_curve\_bezier@{buf2d\_curve\_bezier}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_curve\_bezier()}{buf2d\_curve\_bezier()}}
+{\footnotesize\ttfamily void buf2d\+\_\+curve\+\_\+bezier (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{buf,  }\item[{unsigned int}]{p0\+\_\+x,  }\item[{unsigned int}]{p0\+\_\+y,  }\item[{unsigned int}]{p1\+\_\+x,  }\item[{unsigned int}]{p1\+\_\+y,  }\item[{unsigned int}]{p2\+\_\+x,  }\item[{unsigned int}]{p2\+\_\+y,  }\item[{unsigned int}]{color }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__buf2d_8h_aadd4150bc209bf299d4bc4a4e917b4f9}\label{kolibri__buf2d_8h_aadd4150bc209bf299d4bc4a4e917b4f9} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!kolibri\_buf2d\_init@{kolibri\_buf2d\_init}}
+\index{kolibri\_buf2d\_init@{kolibri\_buf2d\_init}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_buf2d\_init()}{kolibri\_buf2d\_init()}}
+{\footnotesize\ttfamily int kolibri\+\_\+buf2d\+\_\+init (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{kolibri__buf2d_8h_a1c5bc7190949a681333f01c998ebbe2e}\label{kolibri__buf2d_8h_a1c5bc7190949a681333f01c998ebbe2e} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_bit\_blt\_alpha@{buf2d\_bit\_blt\_alpha}}
+\index{buf2d\_bit\_blt\_alpha@{buf2d\_bit\_blt\_alpha}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_bit\_blt\_alpha}{buf2d\_bit\_blt\_alpha}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+bit\+\_\+blt\+\_\+alpha) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, \mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a6258d6d183f188bea504daccce36f3d0}\label{kolibri__buf2d_8h_a6258d6d183f188bea504daccce36f3d0} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_bit\_blt\_transp@{buf2d\_bit\_blt\_transp}}
+\index{buf2d\_bit\_blt\_transp@{buf2d\_bit\_blt\_transp}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_bit\_blt\_transp}{buf2d\_bit\_blt\_transp}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+bit\+\_\+blt\+\_\+transp) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, \mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a38f0bb7a1e88961d8ee19a8d35634fb8}\label{kolibri__buf2d_8h_a38f0bb7a1e88961d8ee19a8d35634fb8} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_circle@{buf2d\_circle}}
+\index{buf2d\_circle@{buf2d\_circle}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_circle}{buf2d\_circle}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+circle) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a0ffc4884c1f016000499642028f0794a}\label{kolibri__buf2d_8h_a0ffc4884c1f016000499642028f0794a} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_clear@{buf2d\_clear}}
+\index{buf2d\_clear@{buf2d\_clear}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_clear}{buf2d\_clear}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+clear) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a0b70683ef38cd86b203413ffdd96cd43}\label{kolibri__buf2d_8h_a0b70683ef38cd86b203413ffdd96cd43} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_conv\_24\_to\_32@{buf2d\_conv\_24\_to\_32}}
+\index{buf2d\_conv\_24\_to\_32@{buf2d\_conv\_24\_to\_32}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_conv\_24\_to\_32}{buf2d\_conv\_24\_to\_32}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+conv\+\_\+24\+\_\+to\+\_\+32) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_ae58d5ae2b3b8c5ae967f26585a884bf0}\label{kolibri__buf2d_8h_ae58d5ae2b3b8c5ae967f26585a884bf0} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_conv\_24\_to\_8@{buf2d\_conv\_24\_to\_8}}
+\index{buf2d\_conv\_24\_to\_8@{buf2d\_conv\_24\_to\_8}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_conv\_24\_to\_8}{buf2d\_conv\_24\_to\_8}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+conv\+\_\+24\+\_\+to\+\_\+8) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a6c22024987ae40a8a0f8e516b43a85e9}\label{kolibri__buf2d_8h_a6c22024987ae40a8a0f8e516b43a85e9} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_convert\_text\_matrix@{buf2d\_convert\_text\_matrix}}
+\index{buf2d\_convert\_text\_matrix@{buf2d\_convert\_text\_matrix}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_convert\_text\_matrix}{buf2d\_convert\_text\_matrix}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+convert\+\_\+text\+\_\+matrix) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a12c2181212f784185a09355fbb527f70}\label{kolibri__buf2d_8h_a12c2181212f784185a09355fbb527f70} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_create\_asm@{buf2d\_create\_asm}}
+\index{buf2d\_create\_asm@{buf2d\_create\_asm}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_create\_asm}{buf2d\_create\_asm}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+create\+\_\+asm) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a7f4fe2df1e612803b7ea2427da62c63b}\label{kolibri__buf2d_8h_a7f4fe2df1e612803b7ea2427da62c63b} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_crop\_color@{buf2d\_crop\_color}}
+\index{buf2d\_crop\_color@{buf2d\_crop\_color}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_crop\_color}{buf2d\_crop\_color}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+crop\+\_\+color) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a520cb7419b746678aecae51cb342a589}\label{kolibri__buf2d_8h_a520cb7419b746678aecae51cb342a589} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_curve\_bezier\_asm@{buf2d\_curve\_bezier\_asm}}
+\index{buf2d\_curve\_bezier\_asm@{buf2d\_curve\_bezier\_asm}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_curve\_bezier\_asm}{buf2d\_curve\_bezier\_asm}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+curve\+\_\+bezier\+\_\+asm) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_ac09a4d643344bd19ab39da13b86337af}\label{kolibri__buf2d_8h_ac09a4d643344bd19ab39da13b86337af} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_delete@{buf2d\_delete}}
+\index{buf2d\_delete@{buf2d\_delete}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_delete}{buf2d\_delete}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+delete) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a608e0ebc674d80df7d4f0cb51bb444e3}\label{kolibri__buf2d_8h_a608e0ebc674d80df7d4f0cb51bb444e3} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_draw@{buf2d\_draw}}
+\index{buf2d\_draw@{buf2d\_draw}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_draw}{buf2d\_draw}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+draw) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a682b1870693f890d8deb619fc89c1c8f}\label{kolibri__buf2d_8h_a682b1870693f890d8deb619fc89c1c8f} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_draw\_text@{buf2d\_draw\_text}}
+\index{buf2d\_draw\_text@{buf2d\_draw\_text}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_draw\_text}{buf2d\_draw\_text}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+draw\+\_\+text) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, \mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, const char \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{const char \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_aea4c92e9bcb6b157af4b7255371c7400}\label{kolibri__buf2d_8h_aea4c92e9bcb6b157af4b7255371c7400} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_filled\_rect\_by\_size@{buf2d\_filled\_rect\_by\_size}}
+\index{buf2d\_filled\_rect\_by\_size@{buf2d\_filled\_rect\_by\_size}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_filled\_rect\_by\_size}{buf2d\_filled\_rect\_by\_size}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+filled\+\_\+rect\+\_\+by\+\_\+size) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_aa74907a7c09f8ea7532375946bc3a339}\label{kolibri__buf2d_8h_aa74907a7c09f8ea7532375946bc3a339} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_filter\_dither@{buf2d\_filter\_dither}}
+\index{buf2d\_filter\_dither@{buf2d\_filter\_dither}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_filter\_dither}{buf2d\_filter\_dither}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+filter\+\_\+dither) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a8727e7a6388cabb8de72e99f5c8f1c7d}\label{kolibri__buf2d_8h_a8727e7a6388cabb8de72e99f5c8f1c7d} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_flip\_h@{buf2d\_flip\_h}}
+\index{buf2d\_flip\_h@{buf2d\_flip\_h}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_flip\_h}{buf2d\_flip\_h}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+flip\+\_\+h) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a8904c26eee1fcbd7fa3807b4d127e2a4}\label{kolibri__buf2d_8h_a8904c26eee1fcbd7fa3807b4d127e2a4} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_flip\_v@{buf2d\_flip\_v}}
+\index{buf2d\_flip\_v@{buf2d\_flip\_v}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_flip\_v}{buf2d\_flip\_v}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+flip\+\_\+v) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_ae008644989cfe0e68fbc65dbc43a63d8}\label{kolibri__buf2d_8h_ae008644989cfe0e68fbc65dbc43a63d8} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_flood\_fill@{buf2d\_flood\_fill}}
+\index{buf2d\_flood\_fill@{buf2d\_flood\_fill}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_flood\_fill}{buf2d\_flood\_fill}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+flood\+\_\+fill) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a8bb1114820b3c1abfb97cb7cf34e5f0b}\label{kolibri__buf2d_8h_a8bb1114820b3c1abfb97cb7cf34e5f0b} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_get\_pixel@{buf2d\_get\_pixel}}
+\index{buf2d\_get\_pixel@{buf2d\_get\_pixel}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_get\_pixel}{buf2d\_get\_pixel}}
+{\footnotesize\ttfamily unsigned int(\texorpdfstring{$\ast$}{*} buf2d\+\_\+get\+\_\+pixel) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a8eb5bbed3a97840212fbbfb93297ae9b}\label{kolibri__buf2d_8h_a8eb5bbed3a97840212fbbfb93297ae9b} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_img\_hdiv2@{buf2d\_img\_hdiv2}}
+\index{buf2d\_img\_hdiv2@{buf2d\_img\_hdiv2}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_img\_hdiv2}{buf2d\_img\_hdiv2}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+img\+\_\+hdiv2) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a4b6cc3d5b45629e999bb5a2ef927ba6d}\label{kolibri__buf2d_8h_a4b6cc3d5b45629e999bb5a2ef927ba6d} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_img\_wdiv2@{buf2d\_img\_wdiv2}}
+\index{buf2d\_img\_wdiv2@{buf2d\_img\_wdiv2}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_img\_wdiv2}{buf2d\_img\_wdiv2}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+img\+\_\+wdiv2) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_aa19cf3d71b5ee9be4e04bb51b5864da7}\label{kolibri__buf2d_8h_aa19cf3d71b5ee9be4e04bb51b5864da7} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_line@{buf2d\_line}}
+\index{buf2d\_line@{buf2d\_line}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_line}{buf2d\_line}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+line) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_abc65c826a3eaf8f116f2fa1f46bf354d}\label{kolibri__buf2d_8h_abc65c826a3eaf8f116f2fa1f46bf354d} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_line\_sm@{buf2d\_line\_sm}}
+\index{buf2d\_line\_sm@{buf2d\_line\_sm}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_line\_sm}{buf2d\_line\_sm}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+line\+\_\+sm) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a9b51f17a5384e8a52009548a4fb0586b}\label{kolibri__buf2d_8h_a9b51f17a5384e8a52009548a4fb0586b} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_offset\_h@{buf2d\_offset\_h}}
+\index{buf2d\_offset\_h@{buf2d\_offset\_h}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_offset\_h}{buf2d\_offset\_h}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+offset\+\_\+h) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a19aa368488983b96ab54912ce54703c4}\label{kolibri__buf2d_8h_a19aa368488983b96ab54912ce54703c4} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_rect\_by\_size@{buf2d\_rect\_by\_size}}
+\index{buf2d\_rect\_by\_size@{buf2d\_rect\_by\_size}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_rect\_by\_size}{buf2d\_rect\_by\_size}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+rect\+\_\+by\+\_\+size) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_a0ff329c01a433d45647b0b39de41cdd9}\label{kolibri__buf2d_8h_a0ff329c01a433d45647b0b39de41cdd9} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_resize@{buf2d\_resize}}
+\index{buf2d\_resize@{buf2d\_resize}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_resize}{buf2d\_resize}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+resize) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_ac09d7bd965dabacc5335fa634bbe1de7}\label{kolibri__buf2d_8h_ac09d7bd965dabacc5335fa634bbe1de7} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_rotate@{buf2d\_rotate}}
+\index{buf2d\_rotate@{buf2d\_rotate}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_rotate}{buf2d\_rotate}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+rotate) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_ace352d84b128175a9b181586ecb7007d}\label{kolibri__buf2d_8h_ace352d84b128175a9b181586ecb7007d} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_set\_pixel@{buf2d\_set\_pixel}}
+\index{buf2d\_set\_pixel@{buf2d\_set\_pixel}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_set\_pixel}{buf2d\_set\_pixel}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} buf2d\+\_\+set\+\_\+pixel) (\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}, unsigned int, unsigned int, unsigned int) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}{buf2d\+\_\+struct}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{,  }\item[{unsigned int}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07}\label{kolibri__buf2d_8h_abfa994a7ddf4308aac64ae07e4edaf07} 
+\index{kolibri\_buf2d.h@{kolibri\_buf2d.h}!buf2d\_struct@{buf2d\_struct}}
+\index{buf2d\_struct@{buf2d\_struct}!kolibri\_buf2d.h@{kolibri\_buf2d.h}}
+\doxysubsubsection{\texorpdfstring{buf2d\_struct}{buf2d\_struct}}
+{\footnotesize\ttfamily buf2d\+\_\+struct}
+

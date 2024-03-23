@@ -1,0 +1,113 @@
+\doxysection{INCLUDE/kolibri\+\_\+editbox.h File Reference}
+\hypertarget{kolibri__editbox_8h}{}\label{kolibri__editbox_8h}\index{INCLUDE/kolibri\_editbox.h@{INCLUDE/kolibri\_editbox.h}}
+{\ttfamily \#include "{}kolibri\+\_\+colors.\+h"{}}\newline
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structedit__box__t}{edit\+\_\+box\+\_\+t}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct \mbox{\hyperlink{structedit__box__t}{edit\+\_\+box\+\_\+t}} \mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__editbox_8h_aedc407a16042d8cf4058fe01b198c14c}{kolibri\+\_\+new\+\_\+edit\+\_\+box}} (unsigned int tlx, unsigned int tly, unsigned int max\+\_\+chars, void \texorpdfstring{$\ast$}{*}editbox\+\_\+interlock)
+\item 
+\mbox{\hyperlink{kolibri__editbox_8h_a07c84e54a2bc928e0f092acceb66fa1a}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}} ((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) void editbox\+\_\+key(\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}e
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__editbox_8h_aca4d5e410e207a8b0c7b0f98751ca636}{edit\+\_\+box\+\_\+draw}} )(\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__editbox_8h_a80671d96dab6ff41899f507ad329a833}{edit\+\_\+box\+\_\+key}} )(\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+oskey\+\_\+t \mbox{\hyperlink{kolibri__editbox_8h_a17ebe84fe1c5af7f936ae66083cd10ac}{ch}}
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__editbox_8h_aef46f82ebdbadf5618f88a76dc22665c}{edit\+\_\+box\+\_\+mouse}} )(\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__editbox_8h_aa1d2cae7c0075dfd74c55612f8a5c4e4}{edit\+\_\+box\+\_\+set\+\_\+text}} )(\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}, char \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\begin{DoxyCompactList}\small\item\em при щелчке не левой кнопкой, обнуляет \texorpdfstring{$\ast$}{*}mouse\+\_\+variable! и сбрасывает флаг ed\+\_\+mouse\+\_\+on \end{DoxyCompactList}\item 
+volatile unsigned \mbox{\hyperlink{kolibri__editbox_8h_ab5b37242fb83f9460dc7944d3ba27767}{press\+\_\+key}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Typedef Documentation}
+\Hypertarget{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}\label{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef} 
+\index{kolibri\_editbox.h@{kolibri\_editbox.h}!edit\_box@{edit\_box}}
+\index{edit\_box@{edit\_box}!kolibri\_editbox.h@{kolibri\_editbox.h}}
+\doxysubsubsection{\texorpdfstring{edit\_box}{edit\_box}}
+{\footnotesize\ttfamily typedef struct \mbox{\hyperlink{structedit__box__t}{edit\+\_\+box\+\_\+t}} \mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}}}
+
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{kolibri__editbox_8h_a07c84e54a2bc928e0f092acceb66fa1a}\label{kolibri__editbox_8h_a07c84e54a2bc928e0f092acceb66fa1a} 
+\index{kolibri\_editbox.h@{kolibri\_editbox.h}!\_\_attribute\_\_@{\_\_attribute\_\_}}
+\index{\_\_attribute\_\_@{\_\_attribute\_\_}!kolibri\_editbox.h@{kolibri\_editbox.h}}
+\doxysubsubsection{\texorpdfstring{\_\_attribute\_\_()}{\_\_attribute\_\_()}}
+{\footnotesize\ttfamily \+\_\+\+\_\+attribute\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{(\+\_\+\+\_\+stdcall\+\_\+\+\_\+)}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__editbox_8h_aedc407a16042d8cf4058fe01b198c14c}\label{kolibri__editbox_8h_aedc407a16042d8cf4058fe01b198c14c} 
+\index{kolibri\_editbox.h@{kolibri\_editbox.h}!kolibri\_new\_edit\_box@{kolibri\_new\_edit\_box}}
+\index{kolibri\_new\_edit\_box@{kolibri\_new\_edit\_box}!kolibri\_editbox.h@{kolibri\_editbox.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_new\_edit\_box()}{kolibri\_new\_edit\_box()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*} kolibri\+\_\+new\+\_\+edit\+\_\+box (\begin{DoxyParamCaption}\item[{unsigned int}]{tlx,  }\item[{unsigned int}]{tly,  }\item[{unsigned int}]{max\+\_\+chars,  }\item[{void \texorpdfstring{$\ast$}{*}}]{editbox\+\_\+interlock }\end{DoxyParamCaption})}
+
+
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{kolibri__editbox_8h_a17ebe84fe1c5af7f936ae66083cd10ac}\label{kolibri__editbox_8h_a17ebe84fe1c5af7f936ae66083cd10ac} 
+\index{kolibri\_editbox.h@{kolibri\_editbox.h}!ch@{ch}}
+\index{ch@{ch}!kolibri\_editbox.h@{kolibri\_editbox.h}}
+\doxysubsubsection{\texorpdfstring{ch}{ch}}
+{\footnotesize\ttfamily oskey\+\_\+t ch}
+
+{\bfseries Initial value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\ \ \ \ \_\_asm\_\_\ \mbox{\hyperlink{kolibri__editor_8h_a6d952a8d068aaf8ee03623416d163a37}{\_\_volatile\_\_}}\ (}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}push\ \%2\(\backslash\)n\(\backslash\)t"{}}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}call\ *\%1\ \(\backslash\)n\(\backslash\)t"{}}::\textcolor{stringliteral}{"{}a"{}}(\mbox{\hyperlink{kolibri__editbox_8h_a17ebe84fe1c5af7f936ae66083cd10ac}{ch}}.val),\ \textcolor{stringliteral}{"{}m"{}}(\mbox{\hyperlink{kolibri__editbox_8h_a80671d96dab6ff41899f507ad329a833}{edit\_box\_key}}),\ \textcolor{stringliteral}{"{}m"{}}(e):)}
+
+\end{DoxyCode}
+если flags не содержит ed\+\_\+focus, игнорирует ввод если flags содержит ed\+\_\+mouse\+\_\+on или ed\+\_\+disabled, игнорирует ввод на вводе ожидает ch -\/ код клавиши, только в режиме ASCII \Hypertarget{kolibri__editbox_8h_aca4d5e410e207a8b0c7b0f98751ca636}\label{kolibri__editbox_8h_aca4d5e410e207a8b0c7b0f98751ca636} 
+\index{kolibri\_editbox.h@{kolibri\_editbox.h}!edit\_box\_draw@{edit\_box\_draw}}
+\index{edit\_box\_draw@{edit\_box\_draw}!kolibri\_editbox.h@{kolibri\_editbox.h}}
+\doxysubsubsection{\texorpdfstring{edit\_box\_draw}{edit\_box\_draw}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} edit\+\_\+box\+\_\+draw) (\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__editbox_8h_a80671d96dab6ff41899f507ad329a833}\label{kolibri__editbox_8h_a80671d96dab6ff41899f507ad329a833} 
+\index{kolibri\_editbox.h@{kolibri\_editbox.h}!edit\_box\_key@{edit\_box\_key}}
+\index{edit\_box\_key@{edit\_box\_key}!kolibri\_editbox.h@{kolibri\_editbox.h}}
+\doxysubsubsection{\texorpdfstring{edit\_box\_key}{edit\_box\_key}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} edit\+\_\+box\+\_\+key) (\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__editbox_8h_aef46f82ebdbadf5618f88a76dc22665c}\label{kolibri__editbox_8h_aef46f82ebdbadf5618f88a76dc22665c} 
+\index{kolibri\_editbox.h@{kolibri\_editbox.h}!edit\_box\_mouse@{edit\_box\_mouse}}
+\index{edit\_box\_mouse@{edit\_box\_mouse}!kolibri\_editbox.h@{kolibri\_editbox.h}}
+\doxysubsubsection{\texorpdfstring{edit\_box\_mouse}{edit\_box\_mouse}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} edit\+\_\+box\+\_\+mouse) (\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__editbox_8h_aa1d2cae7c0075dfd74c55612f8a5c4e4}\label{kolibri__editbox_8h_aa1d2cae7c0075dfd74c55612f8a5c4e4} 
+\index{kolibri\_editbox.h@{kolibri\_editbox.h}!edit\_box\_set\_text@{edit\_box\_set\_text}}
+\index{edit\_box\_set\_text@{edit\_box\_set\_text}!kolibri\_editbox.h@{kolibri\_editbox.h}}
+\doxysubsubsection{\texorpdfstring{edit\_box\_set\_text}{edit\_box\_set\_text}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} edit\+\_\+box\+\_\+set\+\_\+text) (\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}, char \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{kolibri__editbox_8h_a429dca2bb9edc0b6dc42738853f80fef}{edit\+\_\+box}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{char \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+при щелчке не левой кнопкой, обнуляет \texorpdfstring{$\ast$}{*}mouse\+\_\+variable! и сбрасывает флаг ed\+\_\+mouse\+\_\+on 
+
+\Hypertarget{kolibri__editbox_8h_ab5b37242fb83f9460dc7944d3ba27767}\label{kolibri__editbox_8h_ab5b37242fb83f9460dc7944d3ba27767} 
+\index{kolibri\_editbox.h@{kolibri\_editbox.h}!press\_key@{press\_key}}
+\index{press\_key@{press\_key}!kolibri\_editbox.h@{kolibri\_editbox.h}}
+\doxysubsubsection{\texorpdfstring{press\_key}{press\_key}}
+{\footnotesize\ttfamily volatile unsigned press\+\_\+key\hspace{0.3cm}{\ttfamily [extern]}}
+
+\begin{Desc}
+\item[Examples]\par
+\mbox{\hyperlink{rasterworks_example_8c-example}{rasterworks\+\_\+example.\+c}}.\end{Desc}

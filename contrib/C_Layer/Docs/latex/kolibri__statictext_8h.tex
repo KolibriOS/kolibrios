@@ -1,0 +1,127 @@
+\doxysection{INCLUDE/kolibri\+\_\+statictext.h File Reference}
+\hypertarget{kolibri__statictext_8h}{}\label{kolibri__statictext_8h}\index{INCLUDE/kolibri\_statictext.h@{INCLUDE/kolibri\_statictext.h}}
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structstatictext}{statictext}}
+\item 
+struct \mbox{\hyperlink{structstaticnum}{staticnum}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\+\_\+t}} \{ \newline
+\mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932ad1fa5891b16c9dbf4559a3d20b7251c3}{cp866}}
+, \newline
+\mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932a6f8aaa3ff0dfe6c60c1a557f827ec6f8}{CP866}}
+, \newline
+\mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932a09f95aafce7d0add220c0491dc5cb9fd}{UTF16}}
+, \newline
+\mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932ac4aa8bf4aaf220c87545078d3c43baaa}{UTF8}}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__statictext_8h_a14f46bf4bfd9a0e95eff76335c108ac5}{kolibri\+\_\+statictext}} (\mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*}st, uint32\+\_\+t xy, char \texorpdfstring{$\ast$}{*}text, \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\+\_\+t}} enc, int size, color\+\_\+t font, color\+\_\+t bg)
+\item 
+\mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__statictext_8h_a59bb849195a8854bb0a23f39cecdab13}{kolibri\+\_\+statictext\+\_\+def}} (\mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*}st, uint32\+\_\+t xy, char \texorpdfstring{$\ast$}{*}text)
+\item 
+\mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__statictext_8h_ab7af400bfe4ed1fbf6aba85cac4d8e46}{kolibri\+\_\+new\+\_\+statictext}} (uint32\+\_\+t xy, char \texorpdfstring{$\ast$}{*}text, \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\+\_\+t}} enc, int size, color\+\_\+t font, color\+\_\+t bg)
+\item 
+\mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__statictext_8h_a86038909c684b0a2a8f3b761c395c48c}{kolibri\+\_\+new\+\_\+statictext\+\_\+def}} (uint32\+\_\+t xy, char \texorpdfstring{$\ast$}{*}text)
+\item 
+\mbox{\hyperlink{kolibri__statictext_8h_a9899840cca7c567899ef7bddbffe6fc1}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}} ((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) void statictext\+\_\+draw(\mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*}st)
+\item 
+\mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__statictext_8h_a909a3a0e6b910924b6e0933ed293a91b}{kolibri\+\_\+staticnum}} (\mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*}st, uint32\+\_\+t xy, int32\+\_\+t width, int16\+\_\+t number, \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\+\_\+t}} enc, int size, color\+\_\+t font, color\+\_\+t bg)
+\item 
+\mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__statictext_8h_a37a728bda419f1a338351ea652b58484}{kolibri\+\_\+staticnum\+\_\+def}} (\mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*}st, uint32\+\_\+t xy, int16\+\_\+t width, int32\+\_\+t number)
+\item 
+\mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__statictext_8h_a3f3a0a7f763ae30a84a062fe79846de4}{kolibri\+\_\+new\+\_\+staticnum}} (uint32\+\_\+t xy, int32\+\_\+t width, int32\+\_\+t number, \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\+\_\+t}} enc, int size, color\+\_\+t font, color\+\_\+t bg)
+\item 
+\mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__statictext_8h_a57fec9fda3b6915e3fc30bc9496a0c6e}{kolibri\+\_\+new\+\_\+staticnum\+\_\+def}} (uint32\+\_\+t xy, int32\+\_\+t width, int32\+\_\+t number)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}\label{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932} 
+\index{kolibri\_statictext.h@{kolibri\_statictext.h}!encoding\_t@{encoding\_t}}
+\index{encoding\_t@{encoding\_t}!kolibri\_statictext.h@{kolibri\_statictext.h}}
+\doxysubsubsection{\texorpdfstring{encoding\_t}{encoding\_t}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\+\_\+t}}}
+
+\begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{cp866@{cp866}!kolibri\_statictext.h@{kolibri\_statictext.h}}\index{kolibri\_statictext.h@{kolibri\_statictext.h}!cp866@{cp866}}}\Hypertarget{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932ad1fa5891b16c9dbf4559a3d20b7251c3}\label{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932ad1fa5891b16c9dbf4559a3d20b7251c3} 
+cp866&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{CP866@{CP866}!kolibri\_statictext.h@{kolibri\_statictext.h}}\index{kolibri\_statictext.h@{kolibri\_statictext.h}!CP866@{CP866}}}\Hypertarget{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932a6f8aaa3ff0dfe6c60c1a557f827ec6f8}\label{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932a6f8aaa3ff0dfe6c60c1a557f827ec6f8} 
+CP866&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{UTF16@{UTF16}!kolibri\_statictext.h@{kolibri\_statictext.h}}\index{kolibri\_statictext.h@{kolibri\_statictext.h}!UTF16@{UTF16}}}\Hypertarget{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932a09f95aafce7d0add220c0491dc5cb9fd}\label{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932a09f95aafce7d0add220c0491dc5cb9fd} 
+UTF16&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{UTF8@{UTF8}!kolibri\_statictext.h@{kolibri\_statictext.h}}\index{kolibri\_statictext.h@{kolibri\_statictext.h}!UTF8@{UTF8}}}\Hypertarget{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932ac4aa8bf4aaf220c87545078d3c43baaa}\label{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932ac4aa8bf4aaf220c87545078d3c43baaa} 
+UTF8&\\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{kolibri__statictext_8h_a9899840cca7c567899ef7bddbffe6fc1}\label{kolibri__statictext_8h_a9899840cca7c567899ef7bddbffe6fc1} 
+\index{kolibri\_statictext.h@{kolibri\_statictext.h}!\_\_attribute\_\_@{\_\_attribute\_\_}}
+\index{\_\_attribute\_\_@{\_\_attribute\_\_}!kolibri\_statictext.h@{kolibri\_statictext.h}}
+\doxysubsubsection{\texorpdfstring{\_\_attribute\_\_()}{\_\_attribute\_\_()}}
+{\footnotesize\ttfamily \+\_\+\+\_\+attribute\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{(\+\_\+\+\_\+stdcall\+\_\+\+\_\+)}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__statictext_8h_a3f3a0a7f763ae30a84a062fe79846de4}\label{kolibri__statictext_8h_a3f3a0a7f763ae30a84a062fe79846de4} 
+\index{kolibri\_statictext.h@{kolibri\_statictext.h}!kolibri\_new\_staticnum@{kolibri\_new\_staticnum}}
+\index{kolibri\_new\_staticnum@{kolibri\_new\_staticnum}!kolibri\_statictext.h@{kolibri\_statictext.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_new\_staticnum()}{kolibri\_new\_staticnum()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*} kolibri\+\_\+new\+\_\+staticnum (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{xy,  }\item[{int32\+\_\+t}]{width,  }\item[{int32\+\_\+t}]{number,  }\item[{\mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\+\_\+t}}}]{enc,  }\item[{int}]{size,  }\item[{color\+\_\+t}]{font,  }\item[{color\+\_\+t}]{bg }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__statictext_8h_a57fec9fda3b6915e3fc30bc9496a0c6e}\label{kolibri__statictext_8h_a57fec9fda3b6915e3fc30bc9496a0c6e} 
+\index{kolibri\_statictext.h@{kolibri\_statictext.h}!kolibri\_new\_staticnum\_def@{kolibri\_new\_staticnum\_def}}
+\index{kolibri\_new\_staticnum\_def@{kolibri\_new\_staticnum\_def}!kolibri\_statictext.h@{kolibri\_statictext.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_new\_staticnum\_def()}{kolibri\_new\_staticnum\_def()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*} kolibri\+\_\+new\+\_\+staticnum\+\_\+def (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{xy,  }\item[{int32\+\_\+t}]{width,  }\item[{int32\+\_\+t}]{number }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__statictext_8h_ab7af400bfe4ed1fbf6aba85cac4d8e46}\label{kolibri__statictext_8h_ab7af400bfe4ed1fbf6aba85cac4d8e46} 
+\index{kolibri\_statictext.h@{kolibri\_statictext.h}!kolibri\_new\_statictext@{kolibri\_new\_statictext}}
+\index{kolibri\_new\_statictext@{kolibri\_new\_statictext}!kolibri\_statictext.h@{kolibri\_statictext.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_new\_statictext()}{kolibri\_new\_statictext()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*} kolibri\+\_\+new\+\_\+statictext (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{xy,  }\item[{char \texorpdfstring{$\ast$}{*}}]{text,  }\item[{\mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\+\_\+t}}}]{enc,  }\item[{int}]{size,  }\item[{color\+\_\+t}]{font,  }\item[{color\+\_\+t}]{bg }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__statictext_8h_a86038909c684b0a2a8f3b761c395c48c}\label{kolibri__statictext_8h_a86038909c684b0a2a8f3b761c395c48c} 
+\index{kolibri\_statictext.h@{kolibri\_statictext.h}!kolibri\_new\_statictext\_def@{kolibri\_new\_statictext\_def}}
+\index{kolibri\_new\_statictext\_def@{kolibri\_new\_statictext\_def}!kolibri\_statictext.h@{kolibri\_statictext.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_new\_statictext\_def()}{kolibri\_new\_statictext\_def()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*} kolibri\+\_\+new\+\_\+statictext\+\_\+def (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{xy,  }\item[{char \texorpdfstring{$\ast$}{*}}]{text }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__statictext_8h_a909a3a0e6b910924b6e0933ed293a91b}\label{kolibri__statictext_8h_a909a3a0e6b910924b6e0933ed293a91b} 
+\index{kolibri\_statictext.h@{kolibri\_statictext.h}!kolibri\_staticnum@{kolibri\_staticnum}}
+\index{kolibri\_staticnum@{kolibri\_staticnum}!kolibri\_statictext.h@{kolibri\_statictext.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_staticnum()}{kolibri\_staticnum()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*} kolibri\+\_\+staticnum (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*}}]{st,  }\item[{uint32\+\_\+t}]{xy,  }\item[{int32\+\_\+t}]{width,  }\item[{int16\+\_\+t}]{number,  }\item[{\mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\+\_\+t}}}]{enc,  }\item[{int}]{size,  }\item[{color\+\_\+t}]{font,  }\item[{color\+\_\+t}]{bg }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__statictext_8h_a37a728bda419f1a338351ea652b58484}\label{kolibri__statictext_8h_a37a728bda419f1a338351ea652b58484} 
+\index{kolibri\_statictext.h@{kolibri\_statictext.h}!kolibri\_staticnum\_def@{kolibri\_staticnum\_def}}
+\index{kolibri\_staticnum\_def@{kolibri\_staticnum\_def}!kolibri\_statictext.h@{kolibri\_statictext.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_staticnum\_def()}{kolibri\_staticnum\_def()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*} kolibri\+\_\+staticnum\+\_\+def (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structstaticnum}{staticnum}} \texorpdfstring{$\ast$}{*}}]{st,  }\item[{uint32\+\_\+t}]{xy,  }\item[{int16\+\_\+t}]{width,  }\item[{int32\+\_\+t}]{number }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__statictext_8h_a14f46bf4bfd9a0e95eff76335c108ac5}\label{kolibri__statictext_8h_a14f46bf4bfd9a0e95eff76335c108ac5} 
+\index{kolibri\_statictext.h@{kolibri\_statictext.h}!kolibri\_statictext@{kolibri\_statictext}}
+\index{kolibri\_statictext@{kolibri\_statictext}!kolibri\_statictext.h@{kolibri\_statictext.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_statictext()}{kolibri\_statictext()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*} kolibri\+\_\+statictext (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*}}]{st,  }\item[{uint32\+\_\+t}]{xy,  }\item[{char \texorpdfstring{$\ast$}{*}}]{text,  }\item[{\mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\+\_\+t}}}]{enc,  }\item[{int}]{size,  }\item[{color\+\_\+t}]{font,  }\item[{color\+\_\+t}]{bg }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__statictext_8h_a59bb849195a8854bb0a23f39cecdab13}\label{kolibri__statictext_8h_a59bb849195a8854bb0a23f39cecdab13} 
+\index{kolibri\_statictext.h@{kolibri\_statictext.h}!kolibri\_statictext\_def@{kolibri\_statictext\_def}}
+\index{kolibri\_statictext\_def@{kolibri\_statictext\_def}!kolibri\_statictext.h@{kolibri\_statictext.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_statictext\_def()}{kolibri\_statictext\_def()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*} kolibri\+\_\+statictext\+\_\+def (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structstatictext}{statictext}} \texorpdfstring{$\ast$}{*}}]{st,  }\item[{uint32\+\_\+t}]{xy,  }\item[{char \texorpdfstring{$\ast$}{*}}]{text }\end{DoxyParamCaption})}
+

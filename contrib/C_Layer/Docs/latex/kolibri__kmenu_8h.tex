@@ -1,0 +1,197 @@
+\doxysection{INCLUDE/kolibri\+\_\+kmenu.h File Reference}
+\hypertarget{kolibri__kmenu_8h}{}\label{kolibri__kmenu_8h}\index{INCLUDE/kolibri\_kmenu.h@{INCLUDE/kolibri\_kmenu.h}}
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structt__font}{t\+\_\+font}}
+\item 
+struct \mbox{\hyperlink{structkmenuitem__t}{kmenuitem\+\_\+t}}
+\item 
+struct \mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}}
+\item 
+struct \mbox{\hyperlink{structkmenu__t}{kmenu\+\_\+t}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{kolibri__kmenu_8h_a8b985d09495078165c55dae230ea68c3}{KMENUITEM\+\_\+\+NORMAL}}~0
+\item 
+\#define \mbox{\hyperlink{kolibri__kmenu_8h_afe745f0f08e5566ee3ce48ce4b2bde8d}{KMENUITEM\+\_\+\+SUBMENU}}~1
+\item 
+\#define \mbox{\hyperlink{kolibri__kmenu_8h_a471f37fbca6c6b389c4aee48579bf23e}{KMENUITEM\+\_\+\+SEPARATOR}}~2
+\item 
+\#define \mbox{\hyperlink{kolibri__kmenu_8h_a3b0967eaf573a06b90acbcfd865e5a95}{KMENUITEM\+\_\+\+MAINMENU}}~0x80000000
+\item 
+\#define \mbox{\hyperlink{kolibri__kmenu_8h_a445a7f15df1d351e13e72130c2c8fba6}{KMENUITEM\+\_\+\+SEPARATOR\+\_\+\+WIDTH}}~10
+\item 
+\#define \mbox{\hyperlink{kolibri__kmenu_8h_ae9f244cf53ca577abb55c66dd65c059d}{KMENUITEM\+\_\+\+SEPARATOR\+\_\+\+HEIGHT}}~2
+\item 
+\#define \mbox{\hyperlink{kolibri__kmenu_8h_ac17233ea9ce737697c3ded911e2ae2d8}{KMENU\+\_\+\+LBORDER\+\_\+\+SIZE}}~2
+\item 
+\#define \mbox{\hyperlink{kolibri__kmenu_8h_a9651f6aedf4406d90ebb4b1c44dbcbbc}{KMENU\+\_\+\+DBORDER\+\_\+\+SIZE}}~1
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct kmenuitem\+\_\+t \mbox{\hyperlink{kolibri__kmenu_8h_a749a2b13cbb37c02b293e8ef0a83c8c4}{kmenuitem\+\_\+t}}
+\item 
+typedef struct ksubmenu\+\_\+t \mbox{\hyperlink{kolibri__kmenu_8h_a6ebd13f2931b2f7f88e62f3546918507}{ksubmenu\+\_\+t}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{kolibri__kmenu_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}} ((\+\_\+\+\_\+packed\+\_\+\+\_\+))
+\item 
+int \mbox{\hyperlink{kolibri__kmenu_8h_a71f52b593f325d7d9d93d0d0c5d09637}{kolibri\+\_\+kmenu\+\_\+init}} (void)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{kolibri__kmenu_8h_a9f6bb936a2983c5653e66a6cc34f9996}{t\+\_\+rect}}
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__kmenu_8h_a8275b0f70567f9b619bb183cc0bcd86e}{kmainmenu\+\_\+draw}} )(\mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__kmenu_8h_a079d4368a5a5e458f99aaca1e562d9cc}{kmainmenu\+\_\+dispatch\+\_\+cursorevent}} )(\mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__kmenu_8h_aa5b97e4f5e892129910ec719ce9e5acc}{kmenu\+\_\+init}} )(void \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+\mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__kmenu_8h_a17bee15c111166768fbded481610e6cb}{ksubmenu\+\_\+new}} )() \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__kmenu_8h_a6641db24d1be1f77d93ecae43dc3ae25}{ksubmenu\+\_\+add}} )(\mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}, \mbox{\hyperlink{structkmenuitem__t}{kmenuitem\+\_\+t}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+\mbox{\hyperlink{structkmenuitem__t}{kmenuitem\+\_\+t}} \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__kmenu_8h_aeddfa257a9c9db5a1133c966e8ee59e8}{kmenuitem\+\_\+new}} )(uint32\+\_\+t, const char \texorpdfstring{$\ast$}{*}, uint32\+\_\+t) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\item 
+\mbox{\hyperlink{structkmenuitem__t}{kmenuitem\+\_\+t}} \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{kolibri__kmenu_8h_a38134b71f87e8f502647f4cb50fc663e}{kmenuitem\+\_\+\+\_\+submenu\+\_\+new}} )(uint32\+\_\+t, const char \texorpdfstring{$\ast$}{*}, \mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+))
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{kolibri__kmenu_8h_a9651f6aedf4406d90ebb4b1c44dbcbbc}\label{kolibri__kmenu_8h_a9651f6aedf4406d90ebb4b1c44dbcbbc} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!KMENU\_DBORDER\_SIZE@{KMENU\_DBORDER\_SIZE}}
+\index{KMENU\_DBORDER\_SIZE@{KMENU\_DBORDER\_SIZE}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{KMENU\_DBORDER\_SIZE}{KMENU\_DBORDER\_SIZE}}
+{\footnotesize\ttfamily \#define KMENU\+\_\+\+DBORDER\+\_\+\+SIZE~1}
+
+\Hypertarget{kolibri__kmenu_8h_ac17233ea9ce737697c3ded911e2ae2d8}\label{kolibri__kmenu_8h_ac17233ea9ce737697c3ded911e2ae2d8} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!KMENU\_LBORDER\_SIZE@{KMENU\_LBORDER\_SIZE}}
+\index{KMENU\_LBORDER\_SIZE@{KMENU\_LBORDER\_SIZE}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{KMENU\_LBORDER\_SIZE}{KMENU\_LBORDER\_SIZE}}
+{\footnotesize\ttfamily \#define KMENU\+\_\+\+LBORDER\+\_\+\+SIZE~2}
+
+\Hypertarget{kolibri__kmenu_8h_a3b0967eaf573a06b90acbcfd865e5a95}\label{kolibri__kmenu_8h_a3b0967eaf573a06b90acbcfd865e5a95} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!KMENUITEM\_MAINMENU@{KMENUITEM\_MAINMENU}}
+\index{KMENUITEM\_MAINMENU@{KMENUITEM\_MAINMENU}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{KMENUITEM\_MAINMENU}{KMENUITEM\_MAINMENU}}
+{\footnotesize\ttfamily \#define KMENUITEM\+\_\+\+MAINMENU~0x80000000}
+
+\Hypertarget{kolibri__kmenu_8h_a8b985d09495078165c55dae230ea68c3}\label{kolibri__kmenu_8h_a8b985d09495078165c55dae230ea68c3} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!KMENUITEM\_NORMAL@{KMENUITEM\_NORMAL}}
+\index{KMENUITEM\_NORMAL@{KMENUITEM\_NORMAL}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{KMENUITEM\_NORMAL}{KMENUITEM\_NORMAL}}
+{\footnotesize\ttfamily \#define KMENUITEM\+\_\+\+NORMAL~0}
+
+\Hypertarget{kolibri__kmenu_8h_a471f37fbca6c6b389c4aee48579bf23e}\label{kolibri__kmenu_8h_a471f37fbca6c6b389c4aee48579bf23e} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!KMENUITEM\_SEPARATOR@{KMENUITEM\_SEPARATOR}}
+\index{KMENUITEM\_SEPARATOR@{KMENUITEM\_SEPARATOR}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{KMENUITEM\_SEPARATOR}{KMENUITEM\_SEPARATOR}}
+{\footnotesize\ttfamily \#define KMENUITEM\+\_\+\+SEPARATOR~2}
+
+\Hypertarget{kolibri__kmenu_8h_ae9f244cf53ca577abb55c66dd65c059d}\label{kolibri__kmenu_8h_ae9f244cf53ca577abb55c66dd65c059d} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!KMENUITEM\_SEPARATOR\_HEIGHT@{KMENUITEM\_SEPARATOR\_HEIGHT}}
+\index{KMENUITEM\_SEPARATOR\_HEIGHT@{KMENUITEM\_SEPARATOR\_HEIGHT}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{KMENUITEM\_SEPARATOR\_HEIGHT}{KMENUITEM\_SEPARATOR\_HEIGHT}}
+{\footnotesize\ttfamily \#define KMENUITEM\+\_\+\+SEPARATOR\+\_\+\+HEIGHT~2}
+
+\Hypertarget{kolibri__kmenu_8h_a445a7f15df1d351e13e72130c2c8fba6}\label{kolibri__kmenu_8h_a445a7f15df1d351e13e72130c2c8fba6} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!KMENUITEM\_SEPARATOR\_WIDTH@{KMENUITEM\_SEPARATOR\_WIDTH}}
+\index{KMENUITEM\_SEPARATOR\_WIDTH@{KMENUITEM\_SEPARATOR\_WIDTH}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{KMENUITEM\_SEPARATOR\_WIDTH}{KMENUITEM\_SEPARATOR\_WIDTH}}
+{\footnotesize\ttfamily \#define KMENUITEM\+\_\+\+SEPARATOR\+\_\+\+WIDTH~10}
+
+\Hypertarget{kolibri__kmenu_8h_afe745f0f08e5566ee3ce48ce4b2bde8d}\label{kolibri__kmenu_8h_afe745f0f08e5566ee3ce48ce4b2bde8d} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!KMENUITEM\_SUBMENU@{KMENUITEM\_SUBMENU}}
+\index{KMENUITEM\_SUBMENU@{KMENUITEM\_SUBMENU}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{KMENUITEM\_SUBMENU}{KMENUITEM\_SUBMENU}}
+{\footnotesize\ttfamily \#define KMENUITEM\+\_\+\+SUBMENU~1}
+
+
+
+\doxysubsection{Typedef Documentation}
+\Hypertarget{kolibri__kmenu_8h_a749a2b13cbb37c02b293e8ef0a83c8c4}\label{kolibri__kmenu_8h_a749a2b13cbb37c02b293e8ef0a83c8c4} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!kmenuitem\_t@{kmenuitem\_t}}
+\index{kmenuitem\_t@{kmenuitem\_t}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{kmenuitem\_t}{kmenuitem\_t}}
+{\footnotesize\ttfamily typedef struct kmenuitem\+\_\+t kmenuitem\+\_\+t}
+
+\Hypertarget{kolibri__kmenu_8h_a6ebd13f2931b2f7f88e62f3546918507}\label{kolibri__kmenu_8h_a6ebd13f2931b2f7f88e62f3546918507} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!ksubmenu\_t@{ksubmenu\_t}}
+\index{ksubmenu\_t@{ksubmenu\_t}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{ksubmenu\_t}{ksubmenu\_t}}
+{\footnotesize\ttfamily typedef struct ksubmenu\+\_\+t ksubmenu\+\_\+t}
+
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{kolibri__kmenu_8h_ad09246453a4dabd919c7541484046a87}\label{kolibri__kmenu_8h_ad09246453a4dabd919c7541484046a87} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!\_\_attribute\_\_@{\_\_attribute\_\_}}
+\index{\_\_attribute\_\_@{\_\_attribute\_\_}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{\_\_attribute\_\_()}{\_\_attribute\_\_()}}
+{\footnotesize\ttfamily struct \+\_\+\+\_\+attribute\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{(\+\_\+\+\_\+packed\+\_\+\+\_\+)}]{ }\end{DoxyParamCaption})}
+
+\Hypertarget{kolibri__kmenu_8h_a71f52b593f325d7d9d93d0d0c5d09637}\label{kolibri__kmenu_8h_a71f52b593f325d7d9d93d0d0c5d09637} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!kolibri\_kmenu\_init@{kolibri\_kmenu\_init}}
+\index{kolibri\_kmenu\_init@{kolibri\_kmenu\_init}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{kolibri\_kmenu\_init()}{kolibri\_kmenu\_init()}}
+{\footnotesize\ttfamily int kolibri\+\_\+kmenu\+\_\+init (\begin{DoxyParamCaption}\item[{void}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{kolibri__kmenu_8h_a079d4368a5a5e458f99aaca1e562d9cc}\label{kolibri__kmenu_8h_a079d4368a5a5e458f99aaca1e562d9cc} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!kmainmenu\_dispatch\_cursorevent@{kmainmenu\_dispatch\_cursorevent}}
+\index{kmainmenu\_dispatch\_cursorevent@{kmainmenu\_dispatch\_cursorevent}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{kmainmenu\_dispatch\_cursorevent}{kmainmenu\_dispatch\_cursorevent}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} kmainmenu\+\_\+dispatch\+\_\+cursorevent) (\mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__kmenu_8h_a8275b0f70567f9b619bb183cc0bcd86e}\label{kolibri__kmenu_8h_a8275b0f70567f9b619bb183cc0bcd86e} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!kmainmenu\_draw@{kmainmenu\_draw}}
+\index{kmainmenu\_draw@{kmainmenu\_draw}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{kmainmenu\_draw}{kmainmenu\_draw}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} kmainmenu\+\_\+draw) (\mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__kmenu_8h_aa5b97e4f5e892129910ec719ce9e5acc}\label{kolibri__kmenu_8h_aa5b97e4f5e892129910ec719ce9e5acc} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!kmenu\_init@{kmenu\_init}}
+\index{kmenu\_init@{kmenu\_init}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{kmenu\_init}{kmenu\_init}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} kmenu\+\_\+init) (void \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{void \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__kmenu_8h_a38134b71f87e8f502647f4cb50fc663e}\label{kolibri__kmenu_8h_a38134b71f87e8f502647f4cb50fc663e} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!kmenuitem\_\_submenu\_new@{kmenuitem\_\_submenu\_new}}
+\index{kmenuitem\_\_submenu\_new@{kmenuitem\_\_submenu\_new}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{kmenuitem\_\_submenu\_new}{kmenuitem\_\_submenu\_new}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structkmenuitem__t}{kmenuitem\+\_\+t}} \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} kmenuitem\+\_\+\+\_\+submenu\+\_\+new) (uint32\+\_\+t, const char \texorpdfstring{$\ast$}{*}, \mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{,  }\item[{const char \texorpdfstring{$\ast$}{*}}]{,  }\item[{\mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__kmenu_8h_aeddfa257a9c9db5a1133c966e8ee59e8}\label{kolibri__kmenu_8h_aeddfa257a9c9db5a1133c966e8ee59e8} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!kmenuitem\_new@{kmenuitem\_new}}
+\index{kmenuitem\_new@{kmenuitem\_new}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{kmenuitem\_new}{kmenuitem\_new}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structkmenuitem__t}{kmenuitem\+\_\+t}} \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} kmenuitem\+\_\+new) (uint32\+\_\+t, const char \texorpdfstring{$\ast$}{*}, uint32\+\_\+t) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{,  }\item[{const char \texorpdfstring{$\ast$}{*}}]{,  }\item[{uint32\+\_\+t}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__kmenu_8h_a6641db24d1be1f77d93ecae43dc3ae25}\label{kolibri__kmenu_8h_a6641db24d1be1f77d93ecae43dc3ae25} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!ksubmenu\_add@{ksubmenu\_add}}
+\index{ksubmenu\_add@{ksubmenu\_add}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{ksubmenu\_add}{ksubmenu\_add}}
+{\footnotesize\ttfamily void(\texorpdfstring{$\ast$}{*} ksubmenu\+\_\+add) (\mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}, \mbox{\hyperlink{structkmenuitem__t}{kmenuitem\+\_\+t}} \texorpdfstring{$\ast$}{*}) \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}}]{,  }\item[{\mbox{\hyperlink{structkmenuitem__t}{kmenuitem\+\_\+t}} \texorpdfstring{$\ast$}{*}}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__kmenu_8h_a17bee15c111166768fbded481610e6cb}\label{kolibri__kmenu_8h_a17bee15c111166768fbded481610e6cb} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!ksubmenu\_new@{ksubmenu\_new}}
+\index{ksubmenu\_new@{ksubmenu\_new}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{ksubmenu\_new}{ksubmenu\_new}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structksubmenu__t}{ksubmenu\+\_\+t}} \texorpdfstring{$\ast$}{*}(\texorpdfstring{$\ast$}{*} ksubmenu\+\_\+new) () \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\+\_\+\+\_\+attribute\+\_\+\+\_\+}}((\+\_\+\+\_\+stdcall\+\_\+\+\_\+)) (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+\Hypertarget{kolibri__kmenu_8h_a9f6bb936a2983c5653e66a6cc34f9996}\label{kolibri__kmenu_8h_a9f6bb936a2983c5653e66a6cc34f9996} 
+\index{kolibri\_kmenu.h@{kolibri\_kmenu.h}!t\_rect@{t\_rect}}
+\index{t\_rect@{t\_rect}!kolibri\_kmenu.h@{kolibri\_kmenu.h}}
+\doxysubsubsection{\texorpdfstring{t\_rect}{t\_rect}}
+{\footnotesize\ttfamily t\+\_\+rect}
+

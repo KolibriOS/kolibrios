@@ -1,0 +1,217 @@
+\doxysection{kolibri\+\_\+gui\+\_\+elements.\+h}
+\hypertarget{kolibri__gui__elements_8h_source}{}\label{kolibri__gui__elements_8h_source}\index{INCLUDE/kolibri\_gui\_elements.h@{INCLUDE/kolibri\_gui\_elements.h}}
+\mbox{\hyperlink{kolibri__gui__elements_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ KOLIBRI\_GUI\_ELEMENTS\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ KOLIBRI\_GUI\_ELEMENTS\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__colors_8h}{kolibri\_colors.h}}"{}}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{comment}{/*\ enum\ KOLIBRI\_GUI\_ELEMENT\_TYPE\ contains\ all\ available\ GUI\ items\ from\ box\_lib\ */}}
+\DoxyCodeLine{00007\ \textcolor{comment}{/*\ More\ elements\ can\ be\ added\ from\ other\ libraries\ as\ required\ */}}
+\DoxyCodeLine{00008\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5}{KOLIBRI\_GUI\_ELEMENT\_TYPE}}\ \{}
+\DoxyCodeLine{00009\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a18fa6c6bd9fd01cf249458d2802b7f31}{KOLIBRI\_EDIT\_BOX}},}
+\DoxyCodeLine{00010\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a26240994d5a3cd27725cd557d0543b2c}{KOLIBRI\_CHECK\_BOX}},}
+\DoxyCodeLine{00011\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5af67558440a15c25fb4e63867cb0bcf1e}{KOLIBRI\_OPTIONGROUP}},}
+\DoxyCodeLine{00012\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a8a2562c9821ac4a1757e7c63ec1ef413}{KOLIBRI\_SCROLL\_BAR\_H}},}
+\DoxyCodeLine{00013\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a39d88d3fbe68eee96b306b4bf94ae388}{KOLIBRI\_SCROLL\_BAR\_V}},}
+\DoxyCodeLine{00014\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a7fdc3754d16491bf74207b7420aca063}{KOLIBRI\_DYNAMIC\_BUTTON}},}
+\DoxyCodeLine{00015\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a31a058d4789da91b7b7691561e1546f7}{KOLIBRI\_MENU\_BAR}},}
+\DoxyCodeLine{00016\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5af96e6758954e99068de4f9210c511718}{KOLIBRI\_FILE\_BROWSER}},}
+\DoxyCodeLine{00017\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a40bdd7ec455caec40f2e6f753a8337fe}{KOLIBRI\_TREE\_LIST}},}
+\DoxyCodeLine{00018\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5ac8dfbee49d3aea90b168ed0f14b75057}{KOLIBRI\_PATH\_SHOW}},}
+\DoxyCodeLine{00019\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5ac53c2f509b2d57ccae147293e863a4df}{KOLIBRI\_TEXT\_EDITOR}},}
+\DoxyCodeLine{00020\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a9acc422b37d67946ad653c565729d46e}{KOLIBRI\_FRAME}},}
+\DoxyCodeLine{00021\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a0cdda8797ebc3aced72ed1e7f1bf3c22}{KOLIBRI\_PROGRESS\_BAR}},}
+\DoxyCodeLine{00022\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a252728208cf60a7719c2e27d517ce729}{KOLIBRI\_STATICTEXT}},}
+\DoxyCodeLine{00023\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a5eb32d93d5e550c02a5aee7b8bf9f940}{KOLIBRI\_STATICNUM}},}
+\DoxyCodeLine{00024\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a6972a81a1614e91c25980e88fecd3e4f}{KOLIBRI\_BUTTON}},}
+\DoxyCodeLine{00025\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a6b7491e9aa634c638d69ae07cb407181}{KOLIBRI\_D\_BUTTON}},}
+\DoxyCodeLine{00026\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a4d04513df03b9d1685f915adf5339dd4}{KOLIBRI\_PATHSHOW}},}
+\DoxyCodeLine{00027\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5ac83acaf14179742c09d7f9955d972e09}{KOLIBRI\_FILEBROWSE}},}
+\DoxyCodeLine{00028\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a4a59811c9678773838d90deea8bd731d}{KOLIBRI\_EDITOR}},}
+\DoxyCodeLine{00029\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5aebeed34291087ab0cc3ae0f13455c670}{KOLIBRI\_TREELIST}},}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00031\ \ \ \textcolor{comment}{/*\ Add\ elements\ above\ this\ element\ in\ order\ to\ let\ KOLIBRI\_NUM\_GUI\_ELEMENTS\ */}}
+\DoxyCodeLine{00032\ \ \ \textcolor{comment}{/*\ stay\ at\ correct\ value\ */}}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00034\ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5ac01eab0e91f7887f587c730f4b843fe2}{KOLIBRI\_NUM\_GUI\_ELEMENTS}}}
+\DoxyCodeLine{00035\ \};}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00037\ \textcolor{preprocessor}{\#define\ X\_Y(x,y)\ (((x)<<16)|(y))}}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \textcolor{comment}{/*\ Linked\ list\ which\ connects\ together\ all\ the\ elements\ drawn\ inside\ a\ GUI\ window\ */}}
+\DoxyCodeLine{00040\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct}\{}
+\DoxyCodeLine{00041\ \ \ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5}{KOLIBRI\_GUI\_ELEMENT\_TYPE}}\ \mbox{\hyperlink{structkolibri__window__element_ad7d74ca4b200b043fbcc2870ba74c487}{type}};}
+\DoxyCodeLine{00042\ \ \ \textcolor{keywordtype}{void}\ *\mbox{\hyperlink{structkolibri__window__element_ac5d37d2bd259acaf98a8d169904966d0}{element}};}
+\DoxyCodeLine{00043\ \ \ \textcolor{keywordtype}{void}\ *\mbox{\hyperlink{structkolibri__window__element_a75b19ffcca77bfc647ff02695958fd95}{next}},\ *prev;}
+\DoxyCodeLine{00044\ \}\mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}};}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00046\ \textcolor{keyword}{typedef}\ void\ (*\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})(\textcolor{keywordtype}{void}\ *)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00047\ \textcolor{keyword}{typedef}\ void\ (*\mbox{\hyperlink{kolibri__gui__elements_8h_a9d0349f6b2a3fcfd98c1baa9f744d69e}{cbkey\_elem\_boxlib}})(\textcolor{keywordtype}{void}\ *,\ oskey\_t)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00048\ }
+\DoxyCodeLine{00049\ \textcolor{comment}{/*\ Generic\ structure\ for\ supporting\ functions\ on\ various\ elements\ of\ Kolibri's\ GUI\ */}}
+\DoxyCodeLine{00050\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\{}
+\DoxyCodeLine{00051\ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}}\ \ \ \ \mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}};}
+\DoxyCodeLine{00052\ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}}\ \ \ \ \mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}};}
+\DoxyCodeLine{00053\ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_a9d0349f6b2a3fcfd98c1baa9f744d69e}{cbkey\_elem\_boxlib}}\ \ \mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}};}
+\DoxyCodeLine{00054\ \}\mbox{\hyperlink{structkolibri__element__operations}{kolibri\_element\_operations}};}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00056\ \textcolor{comment}{/*\ Structure\ for\ a\ GUI\ Window\ on\ Kolibri.\ It\ also\ contains\ all\ the\ elements\ drawn\ in\ window\ */}}
+\DoxyCodeLine{00057\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct}\{}
+\DoxyCodeLine{00058\ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structkolibri__window_a09f29748099efa1a43c0b48ccd633f67}{topleftx}},\ toplefty;}
+\DoxyCodeLine{00059\ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structkolibri__window_a2f3801f19f9312d44748425c86575005}{sizex}},\ sizey;}
+\DoxyCodeLine{00060\ \ \ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{structkolibri__window_afdb7e3e35b999b759be89ee4e6015f97}{window\_title}};}
+\DoxyCodeLine{00061\ }
+\DoxyCodeLine{00062\ \ \ \textcolor{comment}{/*\ Refer\ to\ sysfuncs,\ value\ to\ be\ stored\ in\ EDX\ (Function\ 0)\ */}}
+\DoxyCodeLine{00063\ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structkolibri__window_ac0170d4856f465833fedd3ab74e48216}{XY}};}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ \ \ \mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}}\ *\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}};}
+\DoxyCodeLine{00066\ \}\mbox{\hyperlink{structkolibri__window}{kolibri\_window}};}
+\DoxyCodeLine{00067\ }
+\DoxyCodeLine{00068\ \textcolor{comment}{/*-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/End\ of\ Structure\ and\ enum\ definitions-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/*/}}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00070\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__gui__elements_8h_ac057f3a16d5ffb0741fcabf191c5855f}{kolibri\_window\_add\_element}}(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}\ *some\_window,\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5}{KOLIBRI\_GUI\_ELEMENT\_TYPE}}\ element\_type,\ \textcolor{keywordtype}{void}\ *some\_gui\_element);\ \textcolor{comment}{//\ forward\ declaration}}
+\DoxyCodeLine{00071\ }
+\DoxyCodeLine{00072\ \textcolor{comment}{/*\ GUI\ Elements\ being\ used\ */}}
+\DoxyCodeLine{00073\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__button_8h}{kolibri\_button.h}}"{}}}
+\DoxyCodeLine{00074\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__checkbox_8h}{kolibri\_checkbox.h}}"{}}}
+\DoxyCodeLine{00075\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__d__button_8h}{kolibri\_d\_button.h}}"{}}}
+\DoxyCodeLine{00076\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__editbox_8h}{kolibri\_editbox.h}}"{}}}
+\DoxyCodeLine{00077\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__frame_8h}{kolibri\_frame.h}}"{}}}
+\DoxyCodeLine{00078\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__menubar_8h}{kolibri\_menubar.h}}"{}}}
+\DoxyCodeLine{00079\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__optionbox_8h}{kolibri\_optionbox.h}}"{}}}
+\DoxyCodeLine{00080\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__pathshow_8h}{kolibri\_pathshow.h}}"{}}}
+\DoxyCodeLine{00081\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__progressbar_8h}{kolibri\_progressbar.h}}"{}}}
+\DoxyCodeLine{00082\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__scrollbar_8h}{kolibri\_scrollbar.h}}"{}}}
+\DoxyCodeLine{00083\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__statictext_8h}{kolibri\_statictext.h}}"{}}}
+\DoxyCodeLine{00084\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__filebrowse_8h}{kolibri\_filebrowse.h}}"{}}}
+\DoxyCodeLine{00085\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__editor_8h}{kolibri\_editor.h}}"{}}}
+\DoxyCodeLine{00086\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__treelist_8h}{kolibri\_treelist.h}}"{}}}
+\DoxyCodeLine{00087\ }
+\DoxyCodeLine{00088\ }
+\DoxyCodeLine{00089\ \textcolor{comment}{/*-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/Define\ various\ functions\ for\ initializing\ GUI-\/-\/-\/-\/-\/-\/-\/*/}}
+\DoxyCodeLine{00090\ }
+\DoxyCodeLine{00091\ \textcolor{comment}{/*\ Master\ table\ containing\ operations\ for\ various\ GUI\ elements\ in\ one\ place\ */}}
+\DoxyCodeLine{00092\ \mbox{\hyperlink{structkolibri__element__operations}{kolibri\_element\_operations}}\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5ac01eab0e91f7887f587c730f4b843fe2}{KOLIBRI\_NUM\_GUI\_ELEMENTS}}];}
+\DoxyCodeLine{00093\ }
+\DoxyCodeLine{00094\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__gui__elements_8h_a0b0059b817bcb245d9e95e95940bc3da}{kolibri\_init\_gui\_op\_table}}(\textcolor{keywordtype}{void})}
+\DoxyCodeLine{00095\ \{}
+\DoxyCodeLine{00096\ \textcolor{comment}{/*\ Setting\ up\ functions\ for\ edit\ box\ GUI\ elements*/}}
+\DoxyCodeLine{00097\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a18fa6c6bd9fd01cf249458d2802b7f31}{KOLIBRI\_EDIT\_BOX}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__editbox_8h_aca4d5e410e207a8b0c7b0f98751ca636}{edit\_box\_draw}};}
+\DoxyCodeLine{00098\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a18fa6c6bd9fd01cf249458d2802b7f31}{KOLIBRI\_EDIT\_BOX}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__editbox_8h_aef46f82ebdbadf5618f88a76dc22665c}{edit\_box\_mouse}};}
+\DoxyCodeLine{00099\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a18fa6c6bd9fd01cf249458d2802b7f31}{KOLIBRI\_EDIT\_BOX}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a9d0349f6b2a3fcfd98c1baa9f744d69e}{cbkey\_elem\_boxlib}})editbox\_key;}
+\DoxyCodeLine{00100\ }
+\DoxyCodeLine{00101\ \textcolor{comment}{/*\ Setting\ up\ functions\ for\ check\ box\ GUI\ elements*/}}
+\DoxyCodeLine{00102\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a26240994d5a3cd27725cd557d0543b2c}{KOLIBRI\_CHECK\_BOX}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__checkbox_8h_aeb6a268f36e9189cc25b437dd271c1b7}{check\_box\_draw2}};}
+\DoxyCodeLine{00103\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a26240994d5a3cd27725cd557d0543b2c}{KOLIBRI\_CHECK\_BOX}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__checkbox_8h_a224d41e2fdf9654759808ba4eefd3db0}{check\_box\_mouse2}};}
+\DoxyCodeLine{00104\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a26240994d5a3cd27725cd557d0543b2c}{KOLIBRI\_CHECK\_BOX}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00105\ }
+\DoxyCodeLine{00106\ \textcolor{comment}{/*\ Setting\ up\ functions\ for\ Kolibri\ Buttons\ (\ SysFunc\ 8\ )*/}}
+\DoxyCodeLine{00107\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a6972a81a1614e91c25980e88fecd3e4f}{KOLIBRI\_BUTTON}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})draw\_button;}
+\DoxyCodeLine{00108\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a6972a81a1614e91c25980e88fecd3e4f}{KOLIBRI\_BUTTON}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00109\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a6972a81a1614e91c25980e88fecd3e4f}{KOLIBRI\_BUTTON}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00110\ }
+\DoxyCodeLine{00111\ \textcolor{comment}{/*\ Setting\ up\ functions\ for\ progress\ bar\ GUI\ elements*/}}
+\DoxyCodeLine{00112\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a0cdda8797ebc3aced72ed1e7f1bf3c22}{KOLIBRI\_PROGRESS\_BAR}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__progressbar_8h_a9053e33d997fd8ed7b3c55fcddac9cd7}{progressbar\_draw}};}
+\DoxyCodeLine{00113\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a0cdda8797ebc3aced72ed1e7f1bf3c22}{KOLIBRI\_PROGRESS\_BAR}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00114\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a0cdda8797ebc3aced72ed1e7f1bf3c22}{KOLIBRI\_PROGRESS\_BAR}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00115\ }
+\DoxyCodeLine{00116\ \textcolor{comment}{/*\ Setting\ up\ functions\ for\ frame\ GUI\ elements*/}}
+\DoxyCodeLine{00117\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a9acc422b37d67946ad653c565729d46e}{KOLIBRI\_FRAME}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__frame_8h_a30fbbbad58a7327def95a1c869d31c73}{frame\_draw}};}
+\DoxyCodeLine{00118\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a9acc422b37d67946ad653c565729d46e}{KOLIBRI\_FRAME}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00119\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a9acc422b37d67946ad653c565729d46e}{KOLIBRI\_FRAME}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00120\ }
+\DoxyCodeLine{00121\ \textcolor{comment}{/*\ scrollbars\ */}}
+\DoxyCodeLine{00122\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a8a2562c9821ac4a1757e7c63ec1ef413}{KOLIBRI\_SCROLL\_BAR\_H}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__scrollbar_8h_a0c58c073880933b87a48366a4f1c4095}{scrollbar\_h\_draw}};}
+\DoxyCodeLine{00123\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a8a2562c9821ac4a1757e7c63ec1ef413}{KOLIBRI\_SCROLL\_BAR\_H}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__scrollbar_8h_a5b739cb4a8d2cc2851956e42fee43c3d}{scrollbar\_h\_mouse}};}
+\DoxyCodeLine{00124\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a8a2562c9821ac4a1757e7c63ec1ef413}{KOLIBRI\_SCROLL\_BAR\_H}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00125\ }
+\DoxyCodeLine{00126\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a39d88d3fbe68eee96b306b4bf94ae388}{KOLIBRI\_SCROLL\_BAR\_V}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__scrollbar_8h_a2461e9a7ae750151ee8318b33188ba08}{scrollbar\_v\_draw}};}
+\DoxyCodeLine{00127\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a39d88d3fbe68eee96b306b4bf94ae388}{KOLIBRI\_SCROLL\_BAR\_V}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__scrollbar_8h_a100feaf81334473a8ff291088d94571f}{scrollbar\_v\_mouse}};}
+\DoxyCodeLine{00128\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a39d88d3fbe68eee96b306b4bf94ae388}{KOLIBRI\_SCROLL\_BAR\_V}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00129\ }
+\DoxyCodeLine{00130\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a252728208cf60a7719c2e27d517ce729}{KOLIBRI\_STATICTEXT}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})statictext\_draw;}
+\DoxyCodeLine{00131\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a252728208cf60a7719c2e27d517ce729}{KOLIBRI\_STATICTEXT}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00132\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a252728208cf60a7719c2e27d517ce729}{KOLIBRI\_STATICTEXT}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00133\ }
+\DoxyCodeLine{00134\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a5eb32d93d5e550c02a5aee7b8bf9f940}{KOLIBRI\_STATICNUM}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})staticnum\_draw;}
+\DoxyCodeLine{00135\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a5eb32d93d5e550c02a5aee7b8bf9f940}{KOLIBRI\_STATICNUM}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00136\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a5eb32d93d5e550c02a5aee7b8bf9f940}{KOLIBRI\_STATICNUM}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00137\ }
+\DoxyCodeLine{00138\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5af67558440a15c25fb4e63867cb0bcf1e}{KOLIBRI\_OPTIONGROUP}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__optionbox_8h_a5b045350199442e5252e797382a4406a}{option\_box\_draw}};}
+\DoxyCodeLine{00139\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5af67558440a15c25fb4e63867cb0bcf1e}{KOLIBRI\_OPTIONGROUP}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__optionbox_8h_aa491438c706cea2b7fbbf7fb8a4b48ee}{option\_box\_mouse}};}
+\DoxyCodeLine{00140\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5af67558440a15c25fb4e63867cb0bcf1e}{KOLIBRI\_OPTIONGROUP}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00141\ }
+\DoxyCodeLine{00142\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a31a058d4789da91b7b7691561e1546f7}{KOLIBRI\_MENU\_BAR}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__menubar_8h_ae02cc8f979dde5a1f3f0469713cb9f9f}{menu\_bar\_draw}};}
+\DoxyCodeLine{00143\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a31a058d4789da91b7b7691561e1546f7}{KOLIBRI\_MENU\_BAR}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__menubar_8h_af576986ad2e0c1521fdc1119741c9d29}{menu\_bar\_mouse}};}
+\DoxyCodeLine{00144\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a31a058d4789da91b7b7691561e1546f7}{KOLIBRI\_MENU\_BAR}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00145\ }
+\DoxyCodeLine{00146\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a6b7491e9aa634c638d69ae07cb407181}{KOLIBRI\_D\_BUTTON}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__d__button_8h_aceb0a7718b060a42468a159adc5b82b0}{dynamic\_button\_draw}};}
+\DoxyCodeLine{00147\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a6b7491e9aa634c638d69ae07cb407181}{KOLIBRI\_D\_BUTTON}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__d__button_8h_afb214d4e529e8f26a90d92262517b1ff}{dynamic\_button\_mouse}};}
+\DoxyCodeLine{00148\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a6b7491e9aa634c638d69ae07cb407181}{KOLIBRI\_D\_BUTTON}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00149\ }
+\DoxyCodeLine{00150\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a4d04513df03b9d1685f915adf5339dd4}{KOLIBRI\_PATHSHOW}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__pathshow_8h_ad714a376d103da9d261c8e9934908ce5}{path\_show\_draw}};}
+\DoxyCodeLine{00151\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a4d04513df03b9d1685f915adf5339dd4}{KOLIBRI\_PATHSHOW}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00152\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a4d04513df03b9d1685f915adf5339dd4}{KOLIBRI\_PATHSHOW}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ NULL;}
+\DoxyCodeLine{00153\ }
+\DoxyCodeLine{00154\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5ac83acaf14179742c09d7f9955d972e09}{KOLIBRI\_FILEBROWSE}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__filebrowse_8h_ae231b657a54f45c7a4be4561fa088b2f}{filebrowse\_draw}};}
+\DoxyCodeLine{00155\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5ac83acaf14179742c09d7f9955d972e09}{KOLIBRI\_FILEBROWSE}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__filebrowse_8h_ab11aa9dbc8e6bae895e0aa30cc4daea5}{filebrowse\_mouse}};}
+\DoxyCodeLine{00156\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5ac83acaf14179742c09d7f9955d972e09}{KOLIBRI\_FILEBROWSE}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a9d0349f6b2a3fcfd98c1baa9f744d69e}{cbkey\_elem\_boxlib}})filebrowser\_key;}
+\DoxyCodeLine{00157\ }
+\DoxyCodeLine{00158\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a4a59811c9678773838d90deea8bd731d}{KOLIBRI\_EDITOR}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__editor_8h_a041924ab4686a31fd876bf9100bad4d5}{ted\_draw}};}
+\DoxyCodeLine{00159\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a4a59811c9678773838d90deea8bd731d}{KOLIBRI\_EDITOR}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__editor_8h_aad765d1a0ff1cf42093932a8f5d28e6f}{ted\_mouse}};}
+\DoxyCodeLine{00160\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a4a59811c9678773838d90deea8bd731d}{KOLIBRI\_EDITOR}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a9d0349f6b2a3fcfd98c1baa9f744d69e}{cbkey\_elem\_boxlib}})editor\_key;}
+\DoxyCodeLine{00161\ }
+\DoxyCodeLine{00162\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5aebeed34291087ab0cc3ae0f13455c670}{KOLIBRI\_TREELIST}}].\mbox{\hyperlink{structkolibri__element__operations_a9e3bd502e61fb8cfb30175e25be243a8}{redraw\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})treelist\_draw;}
+\DoxyCodeLine{00163\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5aebeed34291087ab0cc3ae0f13455c670}{KOLIBRI\_TREELIST}}].\mbox{\hyperlink{structkolibri__element__operations_a1c96296fdf1f77640c72ba43c7ad42d2}{mouse\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a37ee5f6fb501b114c377379223fee4fd}{cb\_elem\_boxlib}})\mbox{\hyperlink{kolibri__treelist_8h_af4c3e1b6ca3ba15d54d7850f3c797fae}{tl\_mouse}};}
+\DoxyCodeLine{00164\ \mbox{\hyperlink{kolibri__gui__elements_8h_ae453ed947e17aec9a26be0a4482bdb6e}{kolibri\_gui\_op\_table}}[\mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5aebeed34291087ab0cc3ae0f13455c670}{KOLIBRI\_TREELIST}}].\mbox{\hyperlink{structkolibri__element__operations_a4beaca87019b382f110baec801f403de}{key\_fn}}\ =\ (\mbox{\hyperlink{kolibri__gui__elements_8h_a9d0349f6b2a3fcfd98c1baa9f744d69e}{cbkey\_elem\_boxlib}})treelist\_key;}
+\DoxyCodeLine{00165\ debug\_board\_printf(\textcolor{stringliteral}{"{}KOLIBRI\_TREELIST\ (\%x,\%x,\%x)\(\backslash\)n"{}},\ treelist\_draw,\ \mbox{\hyperlink{kolibri__treelist_8h_af4c3e1b6ca3ba15d54d7850f3c797fae}{tl\_mouse}},\ treelist\_key);}
+\DoxyCodeLine{00166\ \}}
+\DoxyCodeLine{00167\ }
+\DoxyCodeLine{00168\ \textcolor{comment}{/*\ Create\ a\ new\ main\ GUI\ window\ for\ KolibriOS\ */}}
+\DoxyCodeLine{00169\ \textcolor{comment}{/*\ tl\ stands\ for\ TOP\ LEFT.\ x\ and\ y\ are\ coordinates.\ */}}
+\DoxyCodeLine{00170\ }
+\DoxyCodeLine{00171\ \mbox{\hyperlink{structkolibri__window}{kolibri\_window}}\ *\ \mbox{\hyperlink{kolibri__gui__elements_8h_a62aa1b7d35feb27a0a4cc4cd909e8cb2}{kolibri\_new\_window}}(\textcolor{keywordtype}{int}\ tlx,\ \textcolor{keywordtype}{int}\ tly,\ \textcolor{keywordtype}{int}\ sizex,\ \textcolor{keywordtype}{int}\ sizey,\ \textcolor{keywordtype}{char}\ *title)}
+\DoxyCodeLine{00172\ \{}
+\DoxyCodeLine{00173\ \ \ \mbox{\hyperlink{structkolibri__window}{kolibri\_window}}\ *new\_win\ =\ (\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}\ *)malloc(\textcolor{keyword}{sizeof}(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}));}
+\DoxyCodeLine{00174\ }
+\DoxyCodeLine{00175\ \ \ new\_win-\/>\mbox{\hyperlink{structkolibri__window_a09f29748099efa1a43c0b48ccd633f67}{topleftx}}\ =\ tlx;}
+\DoxyCodeLine{00176\ \ \ new\_win-\/>\mbox{\hyperlink{structkolibri__window_a82fd5946463a99668e50de837a0f4002}{toplefty}}\ =\ tly;}
+\DoxyCodeLine{00177\ \ \ new\_win-\/>\mbox{\hyperlink{structkolibri__window_a2f3801f19f9312d44748425c86575005}{sizex}}\ =\ sizex;}
+\DoxyCodeLine{00178\ \ \ new\_win-\/>\mbox{\hyperlink{structkolibri__window_a7976587a883e10fbf93343253a09037d}{sizey}}\ =\ sizey;}
+\DoxyCodeLine{00179\ \ \ new\_win-\/>\mbox{\hyperlink{structkolibri__window_afdb7e3e35b999b759be89ee4e6015f97}{window\_title}}\ =\ title;}
+\DoxyCodeLine{00180\ \ \ new\_win-\/>\mbox{\hyperlink{structkolibri__window_ac0170d4856f465833fedd3ab74e48216}{XY}}\ =\ 0x33;}
+\DoxyCodeLine{00181\ \ \ new\_win-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}}\ =\ NULL;}
+\DoxyCodeLine{00182\ }
+\DoxyCodeLine{00183\ \ \ \textcolor{keywordflow}{return}\ new\_win;}
+\DoxyCodeLine{00184\ \}}
+\DoxyCodeLine{00185\ }
+\DoxyCodeLine{00186\ \textcolor{comment}{/*\ Add\ an\ element\ to\ an\ existing\ window\ */}}
+\DoxyCodeLine{00187\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__gui__elements_8h_ac057f3a16d5ffb0741fcabf191c5855f}{kolibri\_window\_add\_element}}(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}\ *some\_window,\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5}{KOLIBRI\_GUI\_ELEMENT\_TYPE}}\ element\_type,\ \textcolor{keywordtype}{void}\ *some\_gui\_element)}
+\DoxyCodeLine{00188\ \{}
+\DoxyCodeLine{00189\ \ \ \mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}}\ *new\_element\ =\ (\mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}}\ *)malloc(\textcolor{keyword}{sizeof}(\mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}}));}
+\DoxyCodeLine{00190\ }
+\DoxyCodeLine{00191\ \ \ new\_element\ -\/>\ type\ =\ element\_type;}
+\DoxyCodeLine{00192\ \ \ new\_element\ -\/>\ element\ =\ some\_gui\_element;}
+\DoxyCodeLine{00193\ }
+\DoxyCodeLine{00194\ \ \ \textcolor{keywordflow}{if}(!(some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}}))\ \textcolor{comment}{/*\ No\ elements\ in\ window\ yet\ */}}
+\DoxyCodeLine{00195\ \ \ \ \ \{}
+\DoxyCodeLine{00196\ \ \ \ \ \ \ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}}\ =\ new\_element;}
+\DoxyCodeLine{00197\ \ \ \ \ \ \ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}}\ -\/>\ prev\ =\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}};}
+\DoxyCodeLine{00198\ \ \ \ \ \ \ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}}\ -\/>\ next\ =\ some\_window-\/>\mbox{\hyperlink{structkolibri__window_a565499b912781b0b3fac87b5163a8ea2}{elements}};}
+\DoxyCodeLine{00199\ \ \ \ \ \}}
+\DoxyCodeLine{00200\ \ \ \textcolor{keywordflow}{else}}
+\DoxyCodeLine{00201\ \ \ \ \ \{}
+\DoxyCodeLine{00202\ \ \ \ \ \ \ \mbox{\hyperlink{structkolibri__window__element}{kolibri\_window\_element}}\ *last\_element\ =\ some\_window\ -\/>\ elements\ -\/>\ prev;}
+\DoxyCodeLine{00203\ }
+\DoxyCodeLine{00204\ \ \ \ \ \ \ last\_element\ -\/>\ next\ =\ new\_element;}
+\DoxyCodeLine{00205\ \ \ \ \ \ \ new\_element\ -\/>\ next\ =\ some\_window\ -\/>\ elements;\ \textcolor{comment}{/*\ start\ of\ linked\ list\ \ */}}
+\DoxyCodeLine{00206\ \ \ \ \ \ \ some\_window\ -\/>\ elements\ -\/>\ prev\ =\ new\_element;}
+\DoxyCodeLine{00207\ \ \ \ \ \ \ new\_element\ -\/>\ prev\ =\ last\_element;}
+\DoxyCodeLine{00208\ \ \ \ \ \}}
+\DoxyCodeLine{00209\ \}}
+\DoxyCodeLine{00210\ }
+\DoxyCodeLine{00211\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ KOLIBRI\_GUI\_ELEMENTS\_H\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

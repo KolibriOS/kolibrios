@@ -1,0 +1,201 @@
+\doxysection{kolibri\+\_\+libimg.\+h}
+\hypertarget{kolibri__libimg_8h_source}{}\label{kolibri__libimg_8h_source}\index{INCLUDE/kolibri\_libimg.h@{INCLUDE/kolibri\_libimg.h}}
+\mbox{\hyperlink{kolibri__libimg_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ KOLIBRI\_LIBIMG\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ KOLIBRI\_LIBIMG\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <stddef.h>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <stdbool.h>}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#ifdef\ \_\_cplusplus}}
+\DoxyCodeLine{00008\ \ \ \ \ \textcolor{keyword}{extern}\ \textcolor{stringliteral}{"{}C"{}}\ \{}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00010\ }
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#pragma\ pack(push,\ 1)}}
+\DoxyCodeLine{00013\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\{}
+\DoxyCodeLine{00016\ \ \ uint32\_t\ \mbox{\hyperlink{struct_image_accaadc9242598c4c1e7568d191e1f09b}{Checksum}};}
+\DoxyCodeLine{00017\ }
+\DoxyCodeLine{00019\ \ \ uint32\_t\ \mbox{\hyperlink{struct_image_ad672690f555bb08866a491753109e551}{Width}};}
+\DoxyCodeLine{00020\ }
+\DoxyCodeLine{00022\ \ \ uint32\_t\ \mbox{\hyperlink{struct_image_a3bdc883455d9732f65c9d4cb1aebe28b}{Height}};}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \ \ uint32\_t\ \mbox{\hyperlink{struct_image_a41eac2a7f4c28580bf1bf3db0dcdf0ce}{Next}};}
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00026\ \ \ uint32\_t\ \mbox{\hyperlink{struct_image_a876c6d060a74a6673fc4074d24d43467}{Previous}};}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00029\ \ \ uint32\_t\ \mbox{\hyperlink{struct_image_a140acdd7ac30628e97d1851104f05c03}{Type}};}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00032\ \ \ uint32\_t*\ \mbox{\hyperlink{struct_image_a647b9352989979cb02110987cbe81664}{Data}};}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00035\ \ \ uint32\_t\ \mbox{\hyperlink{struct_image_a5d183196e17089ea0d6906ef1b7dc78d}{Palette}};}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00037\ \ \ uint32\_t\ \mbox{\hyperlink{struct_image_acc458f18e9f9e07a5ede1b6c997d7a1d}{Extended}};}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00040\ \ \ uint32\_t\ \mbox{\hyperlink{struct_image_ae91751449932fe1a8fe52092a2851b9e}{Flags}};}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00043\ \ \ uint32\_t\ \mbox{\hyperlink{struct_image_aac038719c7fefb2012f3b38dc7a456ab}{Delay}};}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00045\ \}\ \mbox{\hyperlink{struct_image}{Image}};}
+\DoxyCodeLine{00046\ \textcolor{preprocessor}{\#pragma\ pack(pop)}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00049\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__libimg_8h_ae932abe1baf2fc58d0433104a97afa46}{BPP}}}
+\DoxyCodeLine{00050\ \{}
+\DoxyCodeLine{00052\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_ae932abe1baf2fc58d0433104a97afa46abfde050d0f623912f4104bb9b9bd031c}{IMAGE\_BPP8i}}\ =\ 1,}
+\DoxyCodeLine{00053\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_ae932abe1baf2fc58d0433104a97afa46a5a7cc115f5c798015bb49e582b4a1aa4}{IMAGE\_BPP24}}\ =\ 2,}
+\DoxyCodeLine{00054\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_ae932abe1baf2fc58d0433104a97afa46afc1f7da9bb85078e43dad49072b4effe}{IMAGE\_BPP32}}\ =\ 3,}
+\DoxyCodeLine{00055\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_ae932abe1baf2fc58d0433104a97afa46ae664ce6a4b7f05e8506e0e921ee3ade5}{IMAGE\_BPP15}}\ =\ 4,}
+\DoxyCodeLine{00056\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_ae932abe1baf2fc58d0433104a97afa46a255d9625d4f4167fd23003c22b752b72}{IMAGE\_BPP16}}\ =\ 5,}
+\DoxyCodeLine{00057\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_ae932abe1baf2fc58d0433104a97afa46a2491ff267248b2a7eebfeffcbcd0d617}{IMAGE\_BPP1}}\ =\ 6,}
+\DoxyCodeLine{00059\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_ae932abe1baf2fc58d0433104a97afa46a1c1897b0acdf20ebe4a1b1a6480e3761}{IMAGE\_BPP8g}}\ =\ 7,}
+\DoxyCodeLine{00060\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_ae932abe1baf2fc58d0433104a97afa46a4fe09d4a387979c9de5c2da61d9c8311}{IMAGE\_BPP2i}}\ =\ 8,}
+\DoxyCodeLine{00061\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_ae932abe1baf2fc58d0433104a97afa46adc0155a14e4f44cf7a8a238a88999b6c}{IMAGE\_BPP4i}}\ =\ 9,}
+\DoxyCodeLine{00062\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_ae932abe1baf2fc58d0433104a97afa46ab48d3c4bf928e17b49b02452552f0ffc}{IMAGE\_BPP8a}}\ =\ 10}
+\DoxyCodeLine{00063\ \};}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00066\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4}{Formats}}}
+\DoxyCodeLine{00067\ \{}
+\DoxyCodeLine{00068\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4aaeea81c6731815dfea013dc23b17cf69}{LIBIMG\_FORMAT\_BMP}}\ =\ 1,}
+\DoxyCodeLine{00069\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4af5c5549c847eb837c62b96c118ebd22b}{LIBIMG\_FORMAT\_ICO}}\ =\ 2,}
+\DoxyCodeLine{00070\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4a2aeb4df9f20ea9983bd48753420dd2e7}{LIBIMG\_FORMAT\_CUR}}\ =\ 3,}
+\DoxyCodeLine{00071\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4a0ca775641df7e4e08b472b03f7b39be1}{LIBIMG\_FORMAT\_GIF}}\ =\ 4,}
+\DoxyCodeLine{00072\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4a769a08b6b77196581ca75ab165ce67ef}{LIBIMG\_FORMAT\_PNG}}\ =\ 5,}
+\DoxyCodeLine{00073\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4a30bec63b25899b8c4df45277a936282d}{LIBIMG\_FORMAT\_JPEG}}\ =\ 6,}
+\DoxyCodeLine{00074\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4a9677e0a08dc65133745e34badcb53a36}{LIBIMG\_FORMAT\_TGA}}\ =\ 7,}
+\DoxyCodeLine{00075\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4a87dd2b39162649135a30ccb964c728d5}{LIBIMG\_FORMAT\_PCX}}\ =\ 8,}
+\DoxyCodeLine{00076\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4a16315d2cb26f6113b876c522accdbe92}{LIBIMG\_FORMAT\_XCF}}\ =\ 9,}
+\DoxyCodeLine{00077\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4ab5989a7a3967b41e97ebb18dd708356e}{LIBIMG\_FORMAT\_TIFF}}\ =\ 10,}
+\DoxyCodeLine{00078\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4a0a8fb8f1b2ce08d4aa605f93d6445faf}{LIBIMG\_FORMAT\_PNM}}\ =\ 11,}
+\DoxyCodeLine{00079\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4a0c146677fc4d31505d10d30386d9876c}{LIBIMG\_FORMAT\_WBMP}}\ =\ 12,}
+\DoxyCodeLine{00080\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4a057d50c7bc8feee0a37d5afd3766315f}{LIBIMG\_FORMAT\_XBM}}\ =\ 13,}
+\DoxyCodeLine{00081\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a20f606f0ef9377a0de98c641cc7375d4adb6557b6bc2960b1fe2e6522d6017104}{LIBIMG\_FORMAT\_Z80}}\ =\ 14}
+\DoxyCodeLine{00082\ \};}
+\DoxyCodeLine{00083\ }
+\DoxyCodeLine{00085\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eae}{Scale}}}
+\DoxyCodeLine{00086\ \{}
+\DoxyCodeLine{00087\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaea7ba64db7075c4295ed00c79a86f37951}{LIBIMG\_SCALE\_NONE}}\ =\ 0,}
+\DoxyCodeLine{00088\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaea32e4903d84eb4e5dd67a916b570c1ad9}{LIBIMG\_SCALE\_INTEGER}}\ =\ 1,}
+\DoxyCodeLine{00089\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaeab3cb62121258ac4478d1dd9b0caf7f64}{LIBIMG\_SCALE\_TILE}}\ =\ 2,}
+\DoxyCodeLine{00090\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaea7ae43e08fdacda6ab9a9efafa37f92d4}{LIBIMG\_SCALE\_STRETCH}}\ =\ 3,}
+\DoxyCodeLine{00091\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaea2597c852a6e41d4fee75f0736d9ac39e}{LIBIMG\_SCALE\_FIT\_BOTH}}\ =\ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaea7ae43e08fdacda6ab9a9efafa37f92d4}{LIBIMG\_SCALE\_STRETCH}},}
+\DoxyCodeLine{00092\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaea4993cf86d87d4debf481bed042f76716}{LIBIMG\_SCALE\_FIT\_MIN}}\ =\ 4,}
+\DoxyCodeLine{00093\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaea59585404a7a4a0c4e565d4f2681362d2}{LIBIMG\_SCALE\_FIT\_RECT}}\ =\ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaea4993cf86d87d4debf481bed042f76716}{LIBIMG\_SCALE\_FIT\_MIN}},}
+\DoxyCodeLine{00094\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaeae7f4c372de9c4c22423e1bec7d72285f}{LIBIMG\_SCALE\_FIT\_WIDTH}}\ =\ 5,}
+\DoxyCodeLine{00095\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaeab616ffbfe7f488f41518a31894456e12}{LIBIMG\_SCALE\_FIT\_HEIGHT}}\ =\ 6,}
+\DoxyCodeLine{00096\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8e8d3da3ac3510ba6f5aa1a4c8c82eaeae2fe5bb8736226aee456547ca0c310db}{LIBIMG\_SCALE\_FIT\_MAX}}\ =\ 7}
+\DoxyCodeLine{00097\ \};\ \ \ }
+\DoxyCodeLine{00098\ }
+\DoxyCodeLine{00100\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__libimg_8h_a100905ea9409684ebb4c0fd0422ab79b}{Inter}}}
+\DoxyCodeLine{00101\ \{}
+\DoxyCodeLine{00103\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a100905ea9409684ebb4c0fd0422ab79ba2d6d0d4cd1081ce37cef0fc3ec129efc}{LIBIMG\_INTER\_NONE}}\ =\ 0,}
+\DoxyCodeLine{00105\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a100905ea9409684ebb4c0fd0422ab79bae12cfeb29047350fa07610f232743b3f}{LIBIMG\_INTER\_BILINEAR}}\ =\ 1,}
+\DoxyCodeLine{00107\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a100905ea9409684ebb4c0fd0422ab79bab5145291915a25f01332692aa50f9723}{LIBIMG\_INTER\_BICUBIC}}\ =\ 2,}
+\DoxyCodeLine{00108\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a100905ea9409684ebb4c0fd0422ab79ba4a774dcbad2ea0745688d51b74ad5876}{LIBIMG\_INTER\_LANCZOS}}\ =\ 3,}
+\DoxyCodeLine{00110\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a100905ea9409684ebb4c0fd0422ab79ba11d07fcb870c435216b393ca7f94596b}{LIBIMG\_INTER\_DEFAULT}}\ =\ \mbox{\hyperlink{kolibri__libimg_8h_a100905ea9409684ebb4c0fd0422ab79bae12cfeb29047350fa07610f232743b3f}{LIBIMG\_INTER\_BILINEAR}}}
+\DoxyCodeLine{00111\ \};}
+\DoxyCodeLine{00112\ }
+\DoxyCodeLine{00113\ }
+\DoxyCodeLine{00115\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__libimg_8h_a8fb872c72e116bbd3eba31f48d78e76b}{Errors}}}
+\DoxyCodeLine{00116\ \{}
+\DoxyCodeLine{00117\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8fb872c72e116bbd3eba31f48d78e76baa56da0eb1c541574e37524446f112184}{LIBIMG\_ERROR\_OUT\_OF\_MEMORY}}\ =\ 1,}
+\DoxyCodeLine{00118\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8fb872c72e116bbd3eba31f48d78e76ba0408c1d376cba129d290abb3124d9a70}{LIBIMG\_ERROR\_FORMAT}}\ =\ 2,}
+\DoxyCodeLine{00119\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8fb872c72e116bbd3eba31f48d78e76ba2e6db7bcaaa5a0fc2448027974ee07f5}{LIBIMG\_ERROR\_CONDITIONS}}\ =\ 3,}
+\DoxyCodeLine{00120\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8fb872c72e116bbd3eba31f48d78e76ba42c7184ee0ba286d636ecc4c6741e2ac}{LIBIMG\_ERROR\_BIT\_DEPTH}}\ =\ 4,}
+\DoxyCodeLine{00121\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8fb872c72e116bbd3eba31f48d78e76ba633b2b2143a39bcd441bbc8a2de467b7}{LIBIMG\_ERROR\_ENCODER}}\ =\ 5,}
+\DoxyCodeLine{00122\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8fb872c72e116bbd3eba31f48d78e76baa766236df43e4200437f41f6cd81e0b8}{LIBIMG\_ERROR\_SRC\_TYPE}}\ =\ 6,}
+\DoxyCodeLine{00123\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8fb872c72e116bbd3eba31f48d78e76ba0ddffaaabcd8b3ec5e2d56033732a3d1}{LIBIMG\_ERROR\_SCALE}}\ =\ 7,}
+\DoxyCodeLine{00124\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8fb872c72e116bbd3eba31f48d78e76ba1362a0c53c194c8ecd39fb8e70a3fdcd}{LIBIMG\_ERROR\_INTER}}\ =\ 8,}
+\DoxyCodeLine{00125\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8fb872c72e116bbd3eba31f48d78e76ba11751a5af418288b5c9e47327cb95939}{LIBIMG\_ERROR\_NOT\_INPLEMENTED}}\ =\ 9,}
+\DoxyCodeLine{00126\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a8fb872c72e116bbd3eba31f48d78e76ba005cb5a8f0dc06589b77ae35f5a314f0}{LIBIMG\_ERROR\_INVALID\_INPUT}}\ =\ 10}
+\DoxyCodeLine{00127\ \};}
+\DoxyCodeLine{00128\ }
+\DoxyCodeLine{00130\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__libimg_8h_a21c09c92fac30e859a06c55cba5a1801}{Encode}}}
+\DoxyCodeLine{00131\ \{}
+\DoxyCodeLine{00132\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a21c09c92fac30e859a06c55cba5a1801ae3e337f17ff474ea0d2f750f309ba53a}{LIBIMG\_ENCODE\_STRICT\_SPECIFIC}}\ =\ 0x01,}
+\DoxyCodeLine{00133\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a21c09c92fac30e859a06c55cba5a1801a96d67a8c79972804e17c2fb402c7c902}{LIBIMG\_ENCODE\_STRICT\_BIT\_DEPTH}}\ =\ 0x02,}
+\DoxyCodeLine{00134\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a21c09c92fac30e859a06c55cba5a1801af23e9ed06e914312332e8c0d86e558a3}{LIBIMG\_ENCODE\_DELETE\_ALPHA}}\ =\ 0x08,}
+\DoxyCodeLine{00135\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a21c09c92fac30e859a06c55cba5a1801a8af035969c74c3f3422c921a18ae6b39}{LIBIMG\_ENCODE\_FLUSH\_ALPHA}}\ =\ 0x10}
+\DoxyCodeLine{00136\ \};}
+\DoxyCodeLine{00137\ }
+\DoxyCodeLine{00138\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__libimg_8h_aeec074415633aaca7db1ea5b150cd2fa}{Flip}}}
+\DoxyCodeLine{00139\ \{}
+\DoxyCodeLine{00140\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_aeec074415633aaca7db1ea5b150cd2faab9463eeeb8c3a955fd8e453082e9e3c4}{FLIP\_VERTICAL}}\ =\ 0x01,}
+\DoxyCodeLine{00141\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_aeec074415633aaca7db1ea5b150cd2faa608fab443d799216e7b3ea896d8cea76}{FLIP\_HORIZONTAL}}\ =\ 0x02}
+\DoxyCodeLine{00142\ \};}
+\DoxyCodeLine{00143\ }
+\DoxyCodeLine{00144\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__libimg_8h_aabe6019d3de9522cbe8bdcbe111bd11f}{Rotate}}}
+\DoxyCodeLine{00145\ \{}
+\DoxyCodeLine{00146\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_aabe6019d3de9522cbe8bdcbe111bd11fa784258fef84e19cb22449963d5086cb3}{ROTATE\_90\_CW}}\ =\ 0x01,}
+\DoxyCodeLine{00147\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_aabe6019d3de9522cbe8bdcbe111bd11fa186263164422bb8f0eb5f7b7d195a3d1}{ROTATE\_180}}\ =\ 0x03,}
+\DoxyCodeLine{00148\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_aabe6019d3de9522cbe8bdcbe111bd11fa50ad5d3572df812fdbf82db67a96c769}{ROTATE\_270\_CW}}\ =\ 0x03,}
+\DoxyCodeLine{00149\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_aabe6019d3de9522cbe8bdcbe111bd11fa8798f4467d63dc90750fc0bc948777ea}{ROTATE\_90\_CCW}}\ =\ \mbox{\hyperlink{kolibri__libimg_8h_aabe6019d3de9522cbe8bdcbe111bd11fa50ad5d3572df812fdbf82db67a96c769}{ROTATE\_270\_CW}},}
+\DoxyCodeLine{00150\ \ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_aabe6019d3de9522cbe8bdcbe111bd11fad06908a79729bd1b5c8572a0c7a22fcb}{ROTATE\_270\_CCW}}\ =\ \mbox{\hyperlink{kolibri__libimg_8h_aabe6019d3de9522cbe8bdcbe111bd11fa784258fef84e19cb22449963d5086cb3}{ROTATE\_90\_CW}}}
+\DoxyCodeLine{00151\ }
+\DoxyCodeLine{00152\ \};}
+\DoxyCodeLine{00153\ }
+\DoxyCodeLine{00156\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{kolibri__libimg_8h_a48d1fa50e5dd5ae820b4a05b4a59b939}{kolibri\_libimg\_init}}(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{00157\ }
+\DoxyCodeLine{00158\ \textcolor{preprocessor}{\#define\ \_stdcall\ \_\_attribute\_\_((\_\_stdcall\_\_))}}
+\DoxyCodeLine{00159\ }
+\DoxyCodeLine{00165\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_decode)(\textcolor{keywordtype}{void}*\ file\_data,\ uint32\_t\ size,\ uint32\_t\ b\_color)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00166\ }
+\DoxyCodeLine{00167\ }
+\DoxyCodeLine{00173\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_encode)(\mbox{\hyperlink{struct_image}{Image}}*\ img,\ uint32\_t\ length,\ uint32\_t\ option)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00174\ }
+\DoxyCodeLine{00175\ }
+\DoxyCodeLine{00182\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_create)(uint32\_t\ width,\ uint32\_t\ height,\ uint32\_t\ type)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00183\ }
+\DoxyCodeLine{00184\ \textcolor{keyword}{extern}\ void\ \ \ \ \ (*\mbox{\hyperlink{kolibri__libimg_8h_af50840297230106db6d3bd1e3cf9b24d}{img\_to\_rgb2}})(\mbox{\hyperlink{struct_image}{Image}}*\ img,\ \textcolor{keywordtype}{void}\ *rgb\_data)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00185\ }
+\DoxyCodeLine{00186\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_to\_rgb)(\mbox{\hyperlink{struct_image}{Image}}*\ img)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00187\ }
+\DoxyCodeLine{00188\ }
+\DoxyCodeLine{00189\ \textcolor{keyword}{extern}\ bool\ \ \ \ \ (*\mbox{\hyperlink{kolibri__libimg_8h_ac737af4331e4100e56a06f68fcee4e3a}{img\_flip}})(\mbox{\hyperlink{struct_image}{Image}}*\ img,\ uint32\_t\ flip)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00190\ }
+\DoxyCodeLine{00191\ \textcolor{keyword}{extern}\ bool\ \ \ \ \ (*\mbox{\hyperlink{kolibri__libimg_8h_ab0c53865051e03097d65161313985b5c}{img\_flip\_layer}})(\mbox{\hyperlink{struct_image}{Image}}\ *img,\ uint32\_t\ flip)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00192\ }
+\DoxyCodeLine{00193\ }
+\DoxyCodeLine{00194\ \textcolor{keyword}{extern}\ bool\ \ \ \ \ (*\mbox{\hyperlink{kolibri__libimg_8h_a5f83beb6985198cae3195f0ceafbdaa4}{img\_rotate}})(\mbox{\hyperlink{struct_image}{Image}}\ *img,\ uint32\_t\ rotate)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00195\ }
+\DoxyCodeLine{00196\ \textcolor{keyword}{extern}\ bool\ \ \ \ \ (*\mbox{\hyperlink{kolibri__libimg_8h_a030f14f4fb445bf07ea6cf18ad870a0f}{img\_rotate\_layer}})(\mbox{\hyperlink{struct_image}{Image}}*\ data,\ uint32\_t\ rotate)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00197\ }
+\DoxyCodeLine{00206\ \textcolor{keyword}{extern}\ void\ \ \ \ \ (*\mbox{\hyperlink{kolibri__libimg_8h_acff45b1986af0d6ce7af0949c8457932}{img\_draw}})(\mbox{\hyperlink{struct_image}{Image}}\ *img,\ uint32\_t\ x,\ uint32\_t\ y,\ uint32\_t\ w,\ uint32\_t\ h,\ uint32\_t\ xoff,\ \ uint32\_t\ yoff)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00207\ }
+\DoxyCodeLine{00211\ \textcolor{keyword}{extern}\ int32\_t\ \ (*\mbox{\hyperlink{kolibri__libimg_8h_a10a7f13228ea72b2c4dfdbc4b674787b}{img\_count}})(\mbox{\hyperlink{struct_image}{Image}}\ *img)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00212\ }
+\DoxyCodeLine{00215\ \textcolor{keyword}{extern}\ bool\ \ \ \ \ (*\mbox{\hyperlink{kolibri__libimg_8h_af80726e7628ffa475a5bf80bf97d3a07}{img\_destroy}})(\mbox{\hyperlink{struct_image}{Image}}\ *img)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00216\ }
+\DoxyCodeLine{00217\ \textcolor{keyword}{extern}\ bool\ \ \ \ \ (*\mbox{\hyperlink{kolibri__libimg_8h_a630cc6121840eb620fd2a31e8ab9d3ee}{img\_destroy\_layer}})(\mbox{\hyperlink{struct_image}{Image}}*\ img)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00218\ }
+\DoxyCodeLine{00230\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_blend)(\mbox{\hyperlink{struct_image}{Image}}*\ dst,\ \mbox{\hyperlink{struct_image}{Image}}*\ src,\ uint32\_t\ out\_x,\ uint32\_t\ out\_y,\ uint32\_t\ in\_x,\ uint32\_t\ in\_y,\ uint32\_t\ width,\ uint32\_t\ height)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00231\ }
+\DoxyCodeLine{00237\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_convert)(\mbox{\hyperlink{struct_image}{Image}}\ *src,\ \mbox{\hyperlink{struct_image}{Image}}\ *dst,\ uint32\_t\ dst\_type,\ uint32\_t,\ uint32\_t)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};\ }
+\DoxyCodeLine{00238\ }
+\DoxyCodeLine{00239\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_resize\_data)(\mbox{\hyperlink{struct_image}{Image}}\ *src,\ uint32\_t\ width,\ uint32\_t\ height)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00240\ }
+\DoxyCodeLine{00253\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_scale)(\mbox{\hyperlink{struct_image}{Image}}*\ src,\ uint32\_t\ crop\_x,\ uint32\_t\ crop\_y,\ uint32\_t\ crop\_width,\ uint32\_t\ crop\_height,\ \mbox{\hyperlink{struct_image}{Image}}*\ dst,\ uint32\_t\ scale\_type,\ uint32\_t\ inter,\ uint32\_t\ new\_width,\ uint32\_t\ new\_height)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00254\ }
+\DoxyCodeLine{00255\ }
+\DoxyCodeLine{00256\ \textcolor{preprocessor}{\#ifdef\ \_\_cplusplus}}
+\DoxyCodeLine{00257\ \}}
+\DoxyCodeLine{00258\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00259\ }
+\DoxyCodeLine{00265\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__libimg_8h_abc2e9231ec42609656c796eb8baa9683}{img\_fill\_color}}(\mbox{\hyperlink{struct_image}{Image}}*\ img,\ uint32\_t\ width,\ uint32\_t\ height,\ uint32\_t\ color)\ }
+\DoxyCodeLine{00266\ \{}
+\DoxyCodeLine{00267\ \ \ \ \ uint32\_t\ i;}
+\DoxyCodeLine{00268\ \ \ \ \ \textcolor{keywordflow}{for}\ (i\ =\ 0;\ i\ <\ width*height;\ i++)\ \{}
+\DoxyCodeLine{00269\ \ \ \ \ \ \ \ \ img-\/>\mbox{\hyperlink{struct_image_a647b9352989979cb02110987cbe81664}{Data}}[i]\ =\ color;}
+\DoxyCodeLine{00270\ \ \ \ \ \}}
+\DoxyCodeLine{00271\ \}}
+\DoxyCodeLine{00272\ }
+\DoxyCodeLine{00276\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__libimg_8h_abc2e9231ec42609656c796eb8baa9683}{img\_fill\_color}}(\mbox{\hyperlink{struct_image}{Image}}*\ img,\ uint32\_t\ color)\ }
+\DoxyCodeLine{00277\ \{}
+\DoxyCodeLine{00278\ \ \ \ \ \textcolor{keywordflow}{for}\ (uint32\_t\ i\ =\ 0;\ i\ <\ img-\/>\mbox{\hyperlink{struct_image_ad672690f555bb08866a491753109e551}{Width}}\ *\ img-\/>\mbox{\hyperlink{struct_image_a3bdc883455d9732f65c9d4cb1aebe28b}{Height}};\ i++)\ \{}
+\DoxyCodeLine{00279\ \ \ \ \ \ \ \ \ img-\/>\mbox{\hyperlink{struct_image_a647b9352989979cb02110987cbe81664}{Data}}[i]\ =\ color;}
+\DoxyCodeLine{00280\ \ \ \ \ \}}
+\DoxyCodeLine{00281\ \}}
+\DoxyCodeLine{00282\ }
+\DoxyCodeLine{00289\ \textcolor{preprocessor}{\#undef\ \_stdcall}}
+\DoxyCodeLine{00290\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ KOLIBRI\_LIBIMG\_H\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

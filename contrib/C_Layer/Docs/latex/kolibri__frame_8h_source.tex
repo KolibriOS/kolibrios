@@ -1,0 +1,92 @@
+\doxysection{kolibri\+\_\+frame.\+h}
+\hypertarget{kolibri__frame_8h_source}{}\label{kolibri__frame_8h_source}\index{INCLUDE/kolibri\_frame.h@{INCLUDE/kolibri\_frame.h}}
+\mbox{\hyperlink{kolibri__frame_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ KOLIBRI\_FRAME\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ KOLIBRI\_FRAME\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__frame_8h_a1c411d36bb7c1e632cb2cad7119c3dca}{fr\_text\_position\_t}}\ \{}
+\DoxyCodeLine{00005\ \ \ \ \ \mbox{\hyperlink{kolibri__frame_8h_a1c411d36bb7c1e632cb2cad7119c3dcaaf6fa0acd45c9bae8ab26371d5347bbc9}{FR\_TOP}},}
+\DoxyCodeLine{00006\ \ \ \ \ \mbox{\hyperlink{kolibri__frame_8h_a1c411d36bb7c1e632cb2cad7119c3dcaaedaa44fa32b54e2c67be845d47ce2a07}{FR\_BOTTON}}}
+\DoxyCodeLine{00007\ \};}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00009\ \textcolor{comment}{/*}}
+\DoxyCodeLine{00010\ \textcolor{comment}{;\ FR\_FLAGS\ =\ [x][yyy][z]}}
+\DoxyCodeLine{00011\ \textcolor{comment}{;\ z\ \ \ \ \ \ \ \ -\/\ \ Caption}}
+\DoxyCodeLine{00012\ \textcolor{comment}{;\ yyy\ \ \ \ \ \ -\/\ \ BorderStyle}}
+\DoxyCodeLine{00013\ \textcolor{comment}{;\ x\ \ \ \ \ \ \ \ -\/\ \ BackStyle}}
+\DoxyCodeLine{00014\ \textcolor{comment}{*/}}
+\DoxyCodeLine{00015\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__frame_8h_ad135963485684507c6dfee188e0fc8a7}{fr\_flags\_t}}\ \{}
+\DoxyCodeLine{00016\ \ \ \ \ \mbox{\hyperlink{kolibri__frame_8h_ad135963485684507c6dfee188e0fc8a7a052643123b4516a71bb717145d184920}{FR\_CAPTION}}\ =\ 1,\ \ \textcolor{comment}{//\ if\ text\ !=\ null\ set\ auto}}
+\DoxyCodeLine{00017\ \ \ \ \ \mbox{\hyperlink{kolibri__frame_8h_ad135963485684507c6dfee188e0fc8a7a6144512a836937487dd9da2a77f323f7}{FR\_DOUBLE}}\ =\ 0,\ \textcolor{comment}{//\ default}}
+\DoxyCodeLine{00018\ \ \ \ \ \mbox{\hyperlink{kolibri__frame_8h_ad135963485684507c6dfee188e0fc8a7a9f4a169fc2e4a13c1c7938bf0fc1f836}{FR\_RAISED}}\ =\ 2,}
+\DoxyCodeLine{00019\ \ \ \ \ \mbox{\hyperlink{kolibri__frame_8h_ad135963485684507c6dfee188e0fc8a7aae328887e8964e5beb107eac13dcc4ad}{FR\_SUNKEN}}\ =\ 4,}
+\DoxyCodeLine{00020\ \ \ \ \ \mbox{\hyperlink{kolibri__frame_8h_ad135963485684507c6dfee188e0fc8a7ab1cf2099e2ad1ff4d67d028e180d4179}{FR\_ETCHED}}\ =\ 6,}
+\DoxyCodeLine{00021\ \ \ \ \ \mbox{\hyperlink{kolibri__frame_8h_ad135963485684507c6dfee188e0fc8a7a62db6fec450f0a14f882ed29d3e49663}{FR\_RINGED}}\ =\ 8,}
+\DoxyCodeLine{00022\ \ \ \ \ \mbox{\hyperlink{kolibri__frame_8h_ad135963485684507c6dfee188e0fc8a7a11aeb54a0223aa4eeaeec7d6c6a970cc}{FR\_FILLED}}\ =\ 0x10}
+\DoxyCodeLine{00023\ \};}
+\DoxyCodeLine{00024\ }
+\DoxyCodeLine{00025\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\{}
+\DoxyCodeLine{00026\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structframe_ad44b615021ed3ccb734fcaf583ef4a03}{type}};}
+\DoxyCodeLine{00027\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structframe_a64c25853b860ae0dcaf46365fd906f36}{x\_w}};}
+\DoxyCodeLine{00028\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structframe_a6d8b46a1e0c0e314dfb5ad2a718f168f}{y\_h}};}
+\DoxyCodeLine{00029\ \ \ \ \ color\_t\ \mbox{\hyperlink{structframe_a469d572c3284a80fd25eb501cc175f01}{ext\_col}};}
+\DoxyCodeLine{00030\ \ \ \ \ color\_t\ \mbox{\hyperlink{structframe_a17399891e0e266d7dbcecbb3cfd88164}{int\_col}};}
+\DoxyCodeLine{00031\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structframe_a773b39d480759f67926cb18ae2219281}{flags}};}
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{structframe_ad8a9df84b6bb5cc72a8c406cdb16a908}{text\_pointer}};}
+\DoxyCodeLine{00033\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structframe_a8651ef865dc4167f16961eebfb1eb42f}{text\_position}};}
+\DoxyCodeLine{00034\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structframe_ac06dea4d98aa0abf70e539a67c713d15}{font\_number}};}
+\DoxyCodeLine{00035\ \ \ \ \ uint32\_t\ \mbox{\hyperlink{structframe_a96cc66643fad993dee6090d8e41d4034}{font\_size\_y}};}
+\DoxyCodeLine{00036\ \ \ \ \ color\_t\ \mbox{\hyperlink{structframe_a72e6525f032223be5fdb9951e0510e3c}{font\_color}};}
+\DoxyCodeLine{00037\ \ \ \ \ color\_t\ \mbox{\hyperlink{structframe_a52de804aaa6ba31ddc0f76151172ccf5}{font\_bg\_color}};}
+\DoxyCodeLine{00038\ \}\mbox{\hyperlink{structframe}{frame}};}
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00040\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{structframe}{frame}}*\ kolibri\_frame(\mbox{\hyperlink{structframe}{frame}}*\ f,\ uint32\_t\ x\_w,\ uint32\_t\ y\_h,\ color\_t\ ext\_col,\ color\_t\ int\_col,\ \textcolor{keywordtype}{char}\ *text,\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__frame_8h_a1c411d36bb7c1e632cb2cad7119c3dca}{fr\_text\_position\_t}}\ text\_position,}
+\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ color\_t\ font\_color,\ color\_t\ font\_bgcolor,\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__frame_8h_ad135963485684507c6dfee188e0fc8a7}{fr\_flags\_t}}\ flags)}
+\DoxyCodeLine{00042\ \{}
+\DoxyCodeLine{00043\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_ad44b615021ed3ccb734fcaf583ef4a03}{type}}\ =\ 0;}
+\DoxyCodeLine{00044\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_a64c25853b860ae0dcaf46365fd906f36}{x\_w}}\ =\ x\_w;}
+\DoxyCodeLine{00045\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_a6d8b46a1e0c0e314dfb5ad2a718f168f}{y\_h}}\ =\ y\_h;}
+\DoxyCodeLine{00046\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_a469d572c3284a80fd25eb501cc175f01}{ext\_col}}\ =\ ext\_col;}
+\DoxyCodeLine{00047\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_a17399891e0e266d7dbcecbb3cfd88164}{int\_col}}\ =\ int\_col;}
+\DoxyCodeLine{00048\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_a773b39d480759f67926cb18ae2219281}{flags}}\ =\ flags;}
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keywordflow}{if}\ (text)\ f-\/>\mbox{\hyperlink{structframe_a773b39d480759f67926cb18ae2219281}{flags}}\ |=\ \mbox{\hyperlink{kolibri__frame_8h_ad135963485684507c6dfee188e0fc8a7a052643123b4516a71bb717145d184920}{FR\_CAPTION}};}
+\DoxyCodeLine{00050\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_ad8a9df84b6bb5cc72a8c406cdb16a908}{text\_pointer}}\ =\ text;}
+\DoxyCodeLine{00051\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_a8651ef865dc4167f16961eebfb1eb42f}{text\_position}}\ =\ text\_position;}
+\DoxyCodeLine{00052\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_ac06dea4d98aa0abf70e539a67c713d15}{font\_number}}\ =\ 0;\ \ \textcolor{comment}{//\ 0\ ==\ font\ 6x9,\ 1==8x16}}
+\DoxyCodeLine{00053\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_a96cc66643fad993dee6090d8e41d4034}{font\_size\_y}}\ =\ 9;}
+\DoxyCodeLine{00054\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_a72e6525f032223be5fdb9951e0510e3c}{font\_color}}\ =\ font\_color\ |\ 0x80000000;}
+\DoxyCodeLine{00055\ \ \ \ \ f-\/>\mbox{\hyperlink{structframe_a52de804aaa6ba31ddc0f76151172ccf5}{font\_bg\_color}}\ =\ font\_bgcolor;}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keywordflow}{return}\ f;}
+\DoxyCodeLine{00059\ \}}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{structframe}{frame}}*\ kolibri\_new\_frame(uint32\_t\ x\_w,\ uint32\_t\ y\_h,\ color\_t\ ext\_col,\ color\_t\ int\_col,\ \textcolor{keywordtype}{char}\ *text,\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__frame_8h_a1c411d36bb7c1e632cb2cad7119c3dca}{fr\_text\_position\_t}}\ text\_position,}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ color\_t\ font\_color,\ color\_t\ font\_bgcolor,\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__frame_8h_ad135963485684507c6dfee188e0fc8a7}{fr\_flags\_t}}\ flags)}
+\DoxyCodeLine{00063\ \{}
+\DoxyCodeLine{00064\ \ \ \ \ \mbox{\hyperlink{structframe}{frame}}\ *new\_frame\ =\ (\mbox{\hyperlink{structframe}{frame}}\ *)malloc(\textcolor{keyword}{sizeof}(\mbox{\hyperlink{structframe}{frame}}));}
+\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keywordflow}{return}\ kolibri\_frame(new\_frame,\ x\_w,\ y\_h,\ ext\_col,\ int\_col,\ text,\ text\_position,\ font\_color,\ font\_bgcolor,\ flags);}
+\DoxyCodeLine{00066\ \}}
+\DoxyCodeLine{00067\ }
+\DoxyCodeLine{00068\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{structframe}{frame}}*\ kolibri\_frame\_def(\mbox{\hyperlink{structframe}{frame}}*\ f,\ uint32\_t\ x\_w,\ uint32\_t\ y\_h,\ \textcolor{keywordtype}{char}\ *text)}
+\DoxyCodeLine{00069\ \{}
+\DoxyCodeLine{00070\ \ \ \ \ \textcolor{keywordflow}{return}\ kolibri\_frame(f,\ x\_w,\ y\_h,\ 0x00FCFCFC,\ 0x00DCDCDC,\ text,\ \mbox{\hyperlink{kolibri__frame_8h_a1c411d36bb7c1e632cb2cad7119c3dcaaf6fa0acd45c9bae8ab26371d5347bbc9}{FR\_TOP}},\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a938ae4559485f5f4e099a0e863bbc5bf}{color\_work\_text}},\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_ab98874ff4cd41197078ed4f2fbd2909a}{color\_work\_area}},\ 0);}
+\DoxyCodeLine{00071\ \}}
+\DoxyCodeLine{00072\ }
+\DoxyCodeLine{00073\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{structframe}{frame}}*\ kolibri\_new\_frame\_def(uint32\_t\ x\_w,\ uint32\_t\ y\_h,\ \textcolor{keywordtype}{char}\ *text)}
+\DoxyCodeLine{00074\ \{}
+\DoxyCodeLine{00075\ \ \ \ \ \textcolor{keywordflow}{return}\ kolibri\_new\_frame(x\_w,\ y\_h,\ 0x00FCFCFC,\ 0x00DCDCDC,\ text,\ \mbox{\hyperlink{kolibri__frame_8h_a1c411d36bb7c1e632cb2cad7119c3dcaaf6fa0acd45c9bae8ab26371d5347bbc9}{FR\_TOP}},\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a938ae4559485f5f4e099a0e863bbc5bf}{color\_work\_text}},\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_ab98874ff4cd41197078ed4f2fbd2909a}{color\_work\_area}},\ 0);}
+\DoxyCodeLine{00076\ \}}
+\DoxyCodeLine{00077\ }
+\DoxyCodeLine{00078\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ gui\_add\_frame(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}\ *wnd,\ \mbox{\hyperlink{structframe}{frame}}*\ f)}
+\DoxyCodeLine{00079\ \{}
+\DoxyCodeLine{00080\ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_ac057f3a16d5ffb0741fcabf191c5855f}{kolibri\_window\_add\_element}}(wnd,\ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a9acc422b37d67946ad653c565729d46e}{KOLIBRI\_FRAME}},\ f);}
+\DoxyCodeLine{00081\ \}}
+\DoxyCodeLine{00082\ }
+\DoxyCodeLine{00083\ }
+\DoxyCodeLine{00084\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__frame_8h_a30fbbbad58a7327def95a1c869d31c73}{frame\_draw}})(\mbox{\hyperlink{structframe}{frame}}\ *)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00085\ }
+\DoxyCodeLine{00086\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ KOLIBRI\_FRAME\_H\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

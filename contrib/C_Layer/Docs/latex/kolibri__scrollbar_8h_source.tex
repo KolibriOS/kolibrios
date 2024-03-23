@@ -1,0 +1,95 @@
+\doxysection{kolibri\+\_\+scrollbar.\+h}
+\hypertarget{kolibri__scrollbar_8h_source}{}\label{kolibri__scrollbar_8h_source}\index{INCLUDE/kolibri\_scrollbar.h@{INCLUDE/kolibri\_scrollbar.h}}
+\mbox{\hyperlink{kolibri__scrollbar_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ KOLIBRI\_SCROLLBAR\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ KOLIBRI\_SCROLLBAR\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{kolibri__scrollbar_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}\ ((\_\_packed\_\_))\ \{}
+\DoxyCodeLine{00005\ \textcolor{comment}{//\ \ uint16\_t\ xsize;}}
+\DoxyCodeLine{00006\ \textcolor{comment}{//\ \ \ \ uint16\_t\ xpos;}}
+\DoxyCodeLine{00007\ \textcolor{comment}{//\ \ \ \ uint16\_t\ ysize;}}
+\DoxyCodeLine{00008\ \textcolor{comment}{//\ \ \ \ uint16\_t\ ypos;}}
+\DoxyCodeLine{00009\ \ \ \ \ uint32\_t\ x\_w;}
+\DoxyCodeLine{00010\ \ \ \ \ uint32\_t\ y\_h;}
+\DoxyCodeLine{00011\ \ \ \ \ uint32\_t\ btn\_height;}
+\DoxyCodeLine{00012\ \ \ \ \ uint32\_t\ type;\ \ \textcolor{comment}{//\ type\ 1\ -\/\ stylish\ frame,\ type\ 2\ -\/\ ?,\ type\ 0\ -\/\ ?}}
+\DoxyCodeLine{00013\ \ \ \ \ uint32\_t\ max\_area;}
+\DoxyCodeLine{00014\ \ \ \ \ uint32\_t\ cur\_area;}
+\DoxyCodeLine{00015\ \ \ \ \ uint32\_t\ position;}
+\DoxyCodeLine{00016\ \ \ \ \ uint32\_t\ back\_color;}
+\DoxyCodeLine{00017\ \ \ \ \ uint32\_t\ front\_color;}
+\DoxyCodeLine{00018\ \ \ \ \ uint32\_t\ line\_color;}
+\DoxyCodeLine{00019\ \ \ \ \ uint32\_t\ redraw;}
+\DoxyCodeLine{00020\ \ \ \ \ uint16\_t\ delta;}
+\DoxyCodeLine{00021\ \ \ \ \ uint16\_t\ delta2;}
+\DoxyCodeLine{00022\ \ \ \ \ uint16\_t\ r\_size\_x;}
+\DoxyCodeLine{00023\ \ \ \ \ uint16\_t\ r\_start\_x;}
+\DoxyCodeLine{00024\ \ \ \ \ uint16\_t\ r\_size\_y;}
+\DoxyCodeLine{00025\ \ \ \ \ uint16\_t\ r\_start\_y;}
+\DoxyCodeLine{00026\ \ \ \ \ uint32\_t\ m\_pos;}
+\DoxyCodeLine{00027\ \ \ \ \ uint32\_t\ m\_pos2;}
+\DoxyCodeLine{00028\ \ \ \ \ uint32\_t\ m\_keys;}
+\DoxyCodeLine{00029\ \ \ \ \ uint32\_t\ run\_size;}
+\DoxyCodeLine{00030\ \ \ \ \ uint32\_t\ position2;}
+\DoxyCodeLine{00031\ \ \ \ \ uint32\_t\ work\_size;}
+\DoxyCodeLine{00032\ \ \ \ \ uint32\_t\ all\_redraw;\ \ \textcolor{comment}{//\ need\ to\ be\ set\ =1\ before\ each\ redraw}}
+\DoxyCodeLine{00033\ \ \ \ \ uint32\_t\ ar\_offset;}
+\DoxyCodeLine{00034\ \}\ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}};}
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00036\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*\ kolibri\_scrollbar(\mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*\ sb,\ uint32\_t\ x\_w,\ uint32\_t\ y\_h,\ uint32\_t\ btn\_height,\ uint32\_t\ max\_area,}
+\DoxyCodeLine{00037\ \ \ \ \ uint32\_t\ cur\_area,\ uint32\_t\ position,\ uint32\_t\ back\_color,\ uint32\_t\ front\_color,\ uint32\_t\ line\_color)}
+\DoxyCodeLine{00038\ \{}
+\DoxyCodeLine{00039\ \ \ \ \ memset(sb,\ 0,\ \textcolor{keyword}{sizeof}(\mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}));}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00041\ \ \ \ \ sb-\/>x\_w\ =\ x\_w;}
+\DoxyCodeLine{00042\ \ \ \ \ sb-\/>y\_h\ =\ y\_h;}
+\DoxyCodeLine{00043\ \ \ \ \ sb-\/>btn\_height\ =\ btn\_height;}
+\DoxyCodeLine{00044\ \ \ \ \ sb-\/>type\ =\ 1;}
+\DoxyCodeLine{00045\ \ \ \ \ sb-\/>max\_area\ =\ max\_area;}
+\DoxyCodeLine{00046\ \ \ \ \ sb-\/>cur\_area\ =\ cur\_area;}
+\DoxyCodeLine{00047\ \ \ \ \ sb-\/>position\ =\ position;}
+\DoxyCodeLine{00048\ \ \ \ \ sb-\/>line\_color\ =\ line\_color;}
+\DoxyCodeLine{00049\ \ \ \ \ sb-\/>back\_color\ =\ back\_color;\ \ \textcolor{comment}{//\ 0xeeeeee}}
+\DoxyCodeLine{00050\ \ \ \ \ sb-\/>front\_color\ =\ front\_color;\ \textcolor{comment}{//\ 0xbbddff}}
+\DoxyCodeLine{00051\ \ \ \ \ sb-\/>ar\_offset\ =\ max\_area\ /\ 30;\ \textcolor{comment}{//\ temporary\ step\ 3\%}}
+\DoxyCodeLine{00052\ \ \ \ \ sb-\/>all\_redraw\ =\ 1;}
+\DoxyCodeLine{00053\ \ \ \ \ \textcolor{keywordflow}{return}\ sb;}
+\DoxyCodeLine{00054\ \};}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00056\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*\ kolibri\_new\_scrollbar(uint32\_t\ x\_w,\ uint32\_t\ y\_h,\ uint32\_t\ btn\_height,\ uint32\_t\ max\_area,}
+\DoxyCodeLine{00057\ \ \ \ \ uint32\_t\ cur\_area,\ uint32\_t\ position,\ uint32\_t\ back\_color,\ uint32\_t\ front\_color,\ uint32\_t\ line\_color)}
+\DoxyCodeLine{00058\ \{}
+\DoxyCodeLine{00059\ \ \ \ \ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}\ *sb\ =\ (\mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}\ *)malloc(\textcolor{keyword}{sizeof}(\mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}));}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keywordflow}{return}\ kolibri\_scrollbar(sb,\ x\_w,\ y\_h,\ btn\_height,\ max\_area,\ cur\_area,\ position,\ back\_color,\ front\_color,\ line\_color);}
+\DoxyCodeLine{00062\ \};}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00064\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*\ kolibri\_scrollbar\_def(\mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*\ sb,\ uint32\_t\ x\_w,\ uint32\_t\ y\_h,\ uint32\_t\ max\_area,\ uint32\_t\ cur\_area,\ uint32\_t\ position)}
+\DoxyCodeLine{00065\ \{}
+\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keywordflow}{return}\ kolibri\_scrollbar(sb,\ x\_w,\ y\_h,\ 15,\ max\_area,\ cur\_area,\ position,\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_ab98874ff4cd41197078ed4f2fbd2909a}{color\_work\_area}},\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a4801b37fbaaabae4d514b30a4be32fb9}{color\_work\_button}},\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a0b6c34b0cb4d36f10b363bff071220c2}{color\_work\_button\_text}});}
+\DoxyCodeLine{00067\ \};}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00069\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*\ kolibri\_new\_scrollbar\_def(uint32\_t\ x\_w,\ uint32\_t\ y\_h,\ uint32\_t\ max\_area,\ uint32\_t\ cur\_area,\ uint32\_t\ position)}
+\DoxyCodeLine{00070\ \{}
+\DoxyCodeLine{00071\ \ \ \ \ \textcolor{keywordflow}{return}\ kolibri\_new\_scrollbar(x\_w,\ y\_h,\ 15,\ max\_area,\ cur\_area,\ position,\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_ab98874ff4cd41197078ed4f2fbd2909a}{color\_work\_area}},\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a4801b37fbaaabae4d514b30a4be32fb9}{color\_work\_button}},\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a0b6c34b0cb4d36f10b363bff071220c2}{color\_work\_button\_text}});}
+\DoxyCodeLine{00072\ \};}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00074\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ gui\_add\_scrollbar\_h(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}\ *wnd,\ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*\ sb)}
+\DoxyCodeLine{00075\ \{}
+\DoxyCodeLine{00076\ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_ac057f3a16d5ffb0741fcabf191c5855f}{kolibri\_window\_add\_element}}(wnd,\ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a8a2562c9821ac4a1757e7c63ec1ef413}{KOLIBRI\_SCROLL\_BAR\_H}},\ sb);}
+\DoxyCodeLine{00077\ \}}
+\DoxyCodeLine{00078\ }
+\DoxyCodeLine{00079\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ gui\_add\_scrollbar\_v(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}\ *wnd,\ \mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*\ sb)}
+\DoxyCodeLine{00080\ \{}
+\DoxyCodeLine{00081\ \ \ \ \ \mbox{\hyperlink{kolibri__gui__elements_8h_ac057f3a16d5ffb0741fcabf191c5855f}{kolibri\_window\_add\_element}}(wnd,\ \mbox{\hyperlink{kolibri__gui__elements_8h_a08294bd57296884e31c2cc31f42f3fc5a39d88d3fbe68eee96b306b4bf94ae388}{KOLIBRI\_SCROLL\_BAR\_V}},\ sb);}
+\DoxyCodeLine{00082\ \}}
+\DoxyCodeLine{00083\ }
+\DoxyCodeLine{00084\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__scrollbar_8h_a0c58c073880933b87a48366a4f1c4095}{scrollbar\_h\_draw}})(\mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*)\ \mbox{\hyperlink{kolibri__scrollbar_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00085\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__scrollbar_8h_a5b739cb4a8d2cc2851956e42fee43c3d}{scrollbar\_h\_mouse}})(\mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*)\ \mbox{\hyperlink{kolibri__scrollbar_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00086\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__scrollbar_8h_a2461e9a7ae750151ee8318b33188ba08}{scrollbar\_v\_draw}})(\mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*)\ \mbox{\hyperlink{kolibri__scrollbar_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00087\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__scrollbar_8h_a100feaf81334473a8ff291088d94571f}{scrollbar\_v\_mouse}})(\mbox{\hyperlink{kolibri__scrollbar_8h_a4c3482f7afd29668687eda7253a988f7}{scrollbar}}*)\ \mbox{\hyperlink{kolibri__scrollbar_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00088\ }
+\DoxyCodeLine{00089\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ KOLIBRI\_SCROLLBAR\_H\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}
