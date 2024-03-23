@@ -307,6 +307,13 @@ proc find_next_task
         mov     [ebx + APPDATA.wait_param], eax  ; retval for wait
         mov     [ebx + APPDATA.state], TSTATE_RUNNING
 .task_found:
+        mov     dl, [ebx + APPDATA.def_priority]
+        test    dl, dl
+        jz      .no_local_priority
+        dec     [ebx + APPDATA.cur_priority]
+        jnz     .task_next
+        xchg    [ebx + APPDATA.cur_priority], dl
+.no_local_priority:
         mov     [scheduler_current+ecx*4], ebx
 ; If we have selected a thread with higher priority
 ; AND rescheduling is due to IRQ,

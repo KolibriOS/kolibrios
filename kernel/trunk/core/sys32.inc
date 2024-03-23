@@ -114,6 +114,18 @@ endg
 
 page_fault_exc:                   ; foolproof: selectors are clobbered ...
         pop     [ss:pf_err_code]  ; actually, until the next #PF
+
+        cmp     edi, CONTROL_EXCEPTION ; equ 'EXPT'
+        jne     .no_ctrl_exc
+        bt      dword [esp], 31
+        jc      .setret
+        test    esi, esi
+        jl      .no_ctrl_exc
+.setret:
+        mov     [esp], esi
+        iret
+
+.no_ctrl_exc:
         save_ring3_context
         mov     bl, 14
 
@@ -211,8 +223,7 @@ IRetToUserHook:
         add     ecx, 1000h
         jl      .nostack
 .ex_stack:
-        xor     ecx, ecx
-        mov     ecx, [ecx+APP_HEADER_01_.except_stack_top]
+        mov     ecx, [esi+APPDATA.exc_reserve_stack]
         test    ecx, ecx
         jle     .nostack
         xchg    edi, eax

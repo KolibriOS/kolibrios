@@ -4281,15 +4281,85 @@ align 4
 ;-----------------------------------------------------------------------------
 
 align 4
-syscall_threads:                        ; CreateThreads
-;
-;   ecx=thread entry point
-;   edx=thread stack pointer
-;
-; on return : eax = pid
-        xor     ebx, ebx
+syscall_threads:
+; eax = 51
+; if ebx = 1  CreateThreads
+; ecx = thread entry point
+; edx = thread stack pointer
+; return eax = pid
+
+; if ebx = 2 GetCurrentThreadId
+; return eax = current id slot
+
+; if ebx = 3 GetThreadPriority
+; ecx = -1 curr slot  or  id slot
+; return eax = priority
+
+; if ebx = 4 SetThreadPriority
+; ecx = -1 curr slot or id slot
+; edx = set priority
+; return eax = old priority
+
+        dec     ebx
+        jz      .create
+        mov     eax, [current_slot_idx]
+        dec     ebx
+        jz      .end  ;get_curr_slot
+
+        test    ecx, ecx  ;-1 curr slot
+        jl      .cur_slot
+        mov     eax, ecx
+.cur_slot:
+        shl     eax, BSF sizeof.APPDATA
+        add     eax, SLOT_BASE
+
+        test    ecx, ecx  ;-1 curr slot
+        jl      .curr_slot
+
+        mov     esi, .err_exit
+        mov     edi, CONTROL_EXCEPTION
+
+        movzx   ecx, [eax+APPDATA.state]
+        test    ecx, ecx
+        jnz     .check_state
+
+        cmp     [eax+APPDATA.tid], ecx
+        jnz     .curr_slot
+        jmp     .err_exit
+
+.check_state:
+        sub     ecx, 3 ;TSTATE_ZOMBIE
+        jl      .curr_slot
+        je      .err_exit
+        dec     ecx ; 4 TSTATE_TERMINATING
+        dec     ecx ; 5 TSTATE_WAITING
+        jnz     .err_exit
+
+.curr_slot:
+        dec     ebx
+        jz      .get_priority
+        dec     ebx
+        jz      .set_priority
+
+.err_exit:
+        push    -1
+        pop     eax
+        jmp     .end
+
+.set_priority:  ;;sysfn 51,4
+        mov     dh, dl
+        lock xchg word [eax+APPDATA.def_priority], dx
+        movzx   eax, dl ;old priority
+        jmp     .end
+
+.get_priority:  ;;sysfn 51,3
+        movzx   eax, [eax+APPDATA.def_priority]
+        jmp     .end
+
+.create:        ;sysfn 51,1 
         call    new_sys_threads
 
+.end:
         mov     [esp + SYSCALL_STACK.eax], eax
         ret
 
