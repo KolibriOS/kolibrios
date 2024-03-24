@@ -4,16 +4,16 @@
 #include "kolibri_colors.h"
 
 /*  flags meaning
-ed_figure_only= 1000000000000000b   ;���� �������
-ed_always_focus= 100000000000000b   // ������ � �������� (�������)
-ed_focus=                     10b   ;����� ����� ����������, ������� ��������������
-ed_pass=                       1b   ;���� � �������
-ed_shift_on=                1000b   ;���� �� ���������� -������ ������� ����� shift,���� ��� ����������, ������ �� ��� ��� - �� ������ ��������� shift
+ed_figure_only= 1000000000000000b   
+ed_always_focus= 100000000000000b   
+ed_focus=                     10b   
+ed_pass=                       1b   
+ed_shift_on=                1000b   
 ed_shift_on_off=1111111111110111b
-ed_shift=                    100b   ;���������� ��� ������� �� shift �.�. ���� �������
+ed_shift=                    100b   
 ed_shift_off=   1111111111111011b
-ed_shift_bac=              10000b   ;��� ��� ������� ���������� shift �.�. ��� ��������� ������� ��� ���� ���������
-ed_shift_bac_cl=1111111111101111b   ;������� ��� �������� ���������
+ed_shift_bac=              10000b   
+ed_shift_bac_cl=1111111111101111b   
 ed_shift_cl=    1111111111100011b
 ed_shift_mcl=   1111111111111011b
 ed_left_fl=               100000b

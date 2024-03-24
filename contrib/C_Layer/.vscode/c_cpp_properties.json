@@ -4,7 +4,8 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/../sdk/sources/newlib/libc/include"
+                "${workspaceFolder}/../sdk/sources/newlib/libc/include",
+                "${workspaceFolder}/../../programs/develop/ktcc/trunk/libc.obj/include"
             ],
             "defines": [
                 "_DEBUG",
@@ -13,7 +14,7 @@
             ],
             "cStandard": "c11",
             "cppStandard": "gnu++14",
-            "intelliSenseMode": "windows-gcc-x64"
+            "intelliSenseMode": "windows-gcc-x86"
         }
     ],
     "version": 4

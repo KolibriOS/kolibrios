@@ -3,35 +3,69 @@
 
 #include "kolibri_colors.h"
 
-/*
-ch_flag_en - ���� �������������� ��� �����
-ch_flag_top - ���� ������������ ������ ������
-ch_flag_middle - ���� ������������ ������ � ������
-ch_flag_bottom - ���� ������������ ������ � ���� �.�. �� ��������� ����������� �������� �����
-*/
-
 enum CHECKBOX_FLAGS {
      CHECKBOX_IS_SET = 0x00000002
      /* Add more flags later */
 };
 
 typedef struct {
-    unsigned int left_s;
-    unsigned int top_s;
-    unsigned int ch_text_margin;
-    unsigned int color;
+	union 
+	{
+		/// @brief left padding + width (in format: x position * 65536 + x length)
+		unsigned int left_s;
+		struct 
+		{
+			uint16_t x;
+			uint16_t width;
+		};
+		
+	};
+	union 
+	{
+		/// @brief top margin + height (in the format: y position * 65536 + y length).
+		unsigned int top_s;
+		struct
+		{
+			uint16_t y;
+			uint16_t height;
+		};
+		
+	};
+
+	/// @brief distance from the check box rectangle to the inscription
+	unsigned int ch_text_margin;
+
+	/// @brief color inside checkbox
+	unsigned int color;
+
+	/// @brief Border color
     unsigned int border_color;
+
+	/// @brief text color
     unsigned int text_color;
+
+	/// @brief Pointer to text
     char *text;
+
+	/// @brief Flags
     unsigned int flags;
 
-    /* Users can use members above this */
+	/// @brief length of the string, calculated when the component is initialized
+    /// @note Users can use members above this 
     unsigned int size_of_str;
 } check_box;
 
-extern void (*check_box_draw2)(check_box *) __attribute__((__stdcall__));
-extern void (*check_box_mouse2)(check_box *)__attribute__((__stdcall__));
-extern void (*init_checkbox2)(check_box *)__attribute__((__stdcall__));
+/// @brief This function should be called when entering information from the keyboard.
+/// @param checkbox Pointer to checkbox
+extern void (*check_box_draw2)(check_box * checkbox) __attribute__((__stdcall__));
+
+/// @brief This function should be called when entering information from the mouse.
+/// @param checkbox Pointer to checkbox
+extern void (*check_box_mouse2)(check_box * checkbox)__attribute__((__stdcall__));
+
+/// @brief This function should be called when the application is initialized; in fact, it counts the number of characters in the drain for output. If you don’t need to display signatures for the checkbox, then you don’t have to call it.
+/// @param checkbox Pointer to checkbox
+extern void (*init_checkbox2)(check_box * checkbox)__attribute__((__stdcall__));
 
 /// @brief Create check_box
 /// @param tlx 
@@ -39,7 +73,7 @@ extern void (*init_checkbox2)(check_box *)__attribute__((__stdcall__));
 /// @param sizex 
 /// @param sizey
 /// @param label_text
-/// @return 
+/// @return Pointer to new checkbox
 check_box* kolibri_new_check_box(unsigned int tlx, unsigned int tly, unsigned int sizex, unsigned int sizey, char *label_text)
 {
      check_box* new_checkbox = (check_box *)malloc(sizeof(check_box));

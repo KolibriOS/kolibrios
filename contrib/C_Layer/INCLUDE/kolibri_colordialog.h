@@ -46,4 +46,5 @@ struct open_dialog* kolibri_new_color_dialog(unsigned int type, unsigned short t
 extern void kolibri_proclib_init() __attribute__((__stdcall__));
 extern void (*ColorDialog_init)(color_dialog *) __attribute__((__stdcall__));
 extern void (*ColorDialog_start)(color_dialog *) __attribute__((__stdcall__));
+
 #endif /* KOLIBRI_COLORDIALOG_H */

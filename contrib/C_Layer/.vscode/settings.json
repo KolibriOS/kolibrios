@@ -4,5 +4,6 @@
         "kolibri_debug.h": "c",
         "reent.h": "c",
         "kolibri_gui_elements.h": "c"
-    }
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

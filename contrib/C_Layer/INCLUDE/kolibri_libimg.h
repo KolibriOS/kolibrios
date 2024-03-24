@@ -50,9 +50,12 @@ enum BPP
 {
 	/// @brief indexed
 	IMAGE_BPP8i = 1,
+	/// @brief "True color" 24bit
 	IMAGE_BPP24 = 2,
+	/// @brief 32bit
 	IMAGE_BPP32 = 3,
 	IMAGE_BPP15 = 4,
+	/// @brief 16bit
 	IMAGE_BPP16 = 5,
 	IMAGE_BPP1 = 6,
 	/// @brief grayscale
@@ -65,19 +68,33 @@ enum BPP
 /// @brief List of format id's
 enum Formats
 {
+	/// @brief bmp format
 	LIBIMG_FORMAT_BMP = 1,
+	/// @brief ico format
 	LIBIMG_FORMAT_ICO = 2,
+	/// @brief cur format
 	LIBIMG_FORMAT_CUR = 3,
+	/// @brief gif format
 	LIBIMG_FORMAT_GIF = 4,
+	/// @brief png format
 	LIBIMG_FORMAT_PNG = 5,
+	/// @brief jpeg format
 	LIBIMG_FORMAT_JPEG = 6,
+	/// @brief tga format
 	LIBIMG_FORMAT_TGA = 7,
+	/// @brief pcx format
 	LIBIMG_FORMAT_PCX = 8,
+	/// @brief xcf format
 	LIBIMG_FORMAT_XCF = 9,
+	/// @brief tiff format
 	LIBIMG_FORMAT_TIFF = 10,
+	/// @brief Portable anymap format
 	LIBIMG_FORMAT_PNM = 11,
+	/// @brief Wireless Application Protocol Bitmap format
 	LIBIMG_FORMAT_WBMP = 12,
+	/// @brief X BitMap format
 	LIBIMG_FORMAT_XBM = 13,
+
 	LIBIMG_FORMAT_Z80 = 14
 };
 
@@ -105,11 +122,11 @@ enum Inter
 	LIBIMG_INTER_BILINEAR = 1,
 	/// @brief Bicubic algorithm
 	LIBIMG_INTER_BICUBIC = 2,
+	/// @brief Lanczos algorithm
 	LIBIMG_INTER_LANCZOS = 3,
 	/// @brief Default algorithm
 	LIBIMG_INTER_DEFAULT = LIBIMG_INTER_BILINEAR
 };
-
 
 /// @brief error codes
 enum Errors
@@ -214,6 +231,8 @@ extern int32_t  (*img_count)(Image *img) _stdcall;
 /// @param img Image to be deleted
 extern bool     (*img_destroy)(Image *img) _stdcall;
 
+/// @brief Destroy layer
+/// @param img layer to be deleted
 extern bool     (*img_destroy_layer)(Image* img) _stdcall;
 
 /// @brief "Blend" two images
@@ -236,6 +255,10 @@ extern Image*   (*img_blend)(Image* dst, Image* src, uint32_t out_x, uint32_t ou
 /// @return Pointer to the converted image
 extern Image*   (*img_convert)(Image *src, Image *dst, uint32_t dst_type, uint32_t, uint32_t) _stdcall; 
 
+/// @brief Resize image data (Image.Data)
+/// @param src
+/// @param width
+/// @param height 
 extern Image*   (*img_resize_data)(Image *src, uint32_t width, uint32_t height) _stdcall;
 
 /// @brief Resize image

@@ -124,7 +124,10 @@ void kolibri_handle_event_mouse(kolibri_window* some_window)
 
 void kolibri_exit(void)
 {
-	__asm__ volatile ("int $0x40"::"a"(-1));
+	__asm__ volatile (
+		"int $0x40"
+		::"a"(-1)
+	);
 }
 
 /// @brief Inilizate libguic 

@@ -14,15 +14,28 @@ typedef struct __attribute__ ((__packed__)) {
 typedef void (*msgbox_callback)(void);
 
 static int msgbox_inited;
+
+/// @brief Inilizate msgbox
+/// @return -1 if unsucessful
 extern void kolibri_msgbox_init();
-extern void (*msgbox_create)(msgbox *, void *thread) __attribute__((__stdcall__)); // clears callbacks, ! if fix lib, we can return eax as of Fn51
-extern void (*msgbox_setfunctions)(msgbox_callback*) __attribute__((__stdcall__)); // must be called immediately after create, zero-ended array
+
+/// @param 
+/// @param thread
+/// @note clears callbacks, ! if fix lib, we can return eax as of Fn51
+extern void (*msgbox_create)(msgbox *, void *thread) __attribute__((__stdcall__));
+
+/// @note must be called immediately after create, zero-ended array
+extern void (*msgbox_setfunctions)(msgbox_callback*) __attribute__((__stdcall__));
 extern void (*msgbox_reinit)(msgbox *) __attribute__((__stdcall__));  // recalc sizes when structure changes, called auto when MsgBoxCreate
 
+/// @param title
+/// @param text
+/// @param def_but
+/// @note text can be multilined by code 13 = "\r"
+/// @note def_but - highlighted and used on Enter (if zero - default is [X]), user may use Tabs or Arrows
+/// @note last params are buttons text, max 8. last must set as NULL
 static inline msgbox* kolibri_new_msgbox(char* title, char* text, int def_but, ...)
-/// text can be multilined by code 13 = "\r"
-/// def_but - highlighted and used on Enter (if zero - default is [X]), user may use Tabs or Arrows
-/// last params are buttons text, max 8. last must set as NULL
+
 {
     va_list vl;
     va_start(vl, def_but);
