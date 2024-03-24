@@ -1177,6 +1177,7 @@ f68:
         mov     eax, [current_slot]
         xchg    ecx, [eax + APPDATA.exc_handler]
         xchg    edx, [eax + APPDATA.except_mask]
+        xchg    esi, [eax + APPDATA.exc_reserve_stack]
         mov     [esp + SYSCALL_STACK.ebx], edx
         mov     [esp + SYSCALL_STACK.eax], ecx
         ret

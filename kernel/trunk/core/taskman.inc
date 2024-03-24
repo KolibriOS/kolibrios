@@ -28,7 +28,6 @@ struct  APP_HEADER_01_
         stack_top       dd ?    ;+24
         i_param         dd ?    ;+28
         i_icon          dd ?    ;+32
-        except_stack_top dd ?   ;+36
 ends
 
 struct  APP_HDR
@@ -1009,6 +1008,7 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 
 ;set draw data to full screen
         xor     eax, eax
+        mov     [SLOT_BASE + ebx + APPDATA.def_priority], al
         mov     [ecx + WDATA.draw_data.left], eax
         mov     [ecx + WDATA.draw_data.top], eax
         mov     eax, [screen_workarea.right]

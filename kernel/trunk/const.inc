@@ -511,7 +511,7 @@ struct  APPDATA
         exc_handler     dd ?            ;+32
         except_mask     dd ?            ;+36
         pl0_stack       dd ?            ;+40
-                        dd ?            ;+44
+        exc_reserve_stack dd ?            ;+44
         fd_ev           dd ?            ;+48
         bk_ev           dd ?            ;+52
         fd_obj          dd ?            ;+56
@@ -528,7 +528,9 @@ struct  APPDATA
         tls_base        dd ?            ;+104
         event_mask      dd ?            ;+108   stores event types allowed for task
         tid             dd ?            ;+112   thread id
-                        dd ?            ;+116
+        def_priority    db ?            ;+116
+        cur_priority    db ?            ;+117
+                        dw ?            ;+118
                         dd ?            ;+120
         state           db ?            ;+124   thread state
         wnd_number      db ?            ;+125
@@ -589,6 +591,8 @@ ZPOS_DESKTOP            = -2
 ZPOS_ALWAYS_BACK        = -1
 ZPOS_NORMAL             = 0
 ZPOS_ALWAYS_TOP         = 1     ;ZPOS_ALWAYS_TOP is always last and has max number!
+
+CONTROL_EXCEPTION  = 'EXPT'
 
 ; Window structure:
 struct  WDATA
