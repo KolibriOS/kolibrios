@@ -1,0 +1,154 @@
+\doxysection{Image Struct Reference}
+\hypertarget{struct_image}{}\label{struct_image}\index{Image@{Image}}
+
+
+\doxylink{struct_image}{Image}.  
+
+
+
+
+{\ttfamily \#include $<$kolibri\+\_\+libimg.\+h$>$}
+
+\doxysubsubsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{struct_image_accaadc9242598c4c1e7568d191e1f09b}{Checksum}}
+\begin{DoxyCompactList}\small\item\em ((Width ROL 16) OR Height) XOR Data\mbox{[}0\mbox{]} \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{struct_image_ad672690f555bb08866a491753109e551}{Width}}
+\begin{DoxyCompactList}\small\item\em \doxylink{struct_image}{Image} width. \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{struct_image_a3bdc883455d9732f65c9d4cb1aebe28b}{Height}}
+\begin{DoxyCompactList}\small\item\em \doxylink{struct_image}{Image} height. \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{struct_image_a41eac2a7f4c28580bf1bf3db0dcdf0ce}{Next}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{struct_image_a876c6d060a74a6673fc4074d24d43467}{Previous}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{struct_image_a140acdd7ac30628e97d1851104f05c03}{Type}}
+\begin{DoxyCompactList}\small\item\em One of \doxylink{struct_image}{Image} bppN. \end{DoxyCompactList}\item 
+uint32\+\_\+t \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{struct_image_a647b9352989979cb02110987cbe81664}{Data}}
+\begin{DoxyCompactList}\small\item\em \doxylink{struct_image}{Image}, array of colors. \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{struct_image_a5d183196e17089ea0d6906ef1b7dc78d}{Palette}}
+\begin{DoxyCompactList}\small\item\em Used if Type eq Image.\+bpp1, Image.\+bpp2, Image.\+bpp4 or Image.\+bpp8i. \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{struct_image_acc458f18e9f9e07a5ede1b6c997d7a1d}{Extended}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{struct_image_ae91751449932fe1a8fe52092a2851b9e}{Flags}}
+\begin{DoxyCompactList}\small\item\em Bitfield. \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{struct_image_aac038719c7fefb2012f3b38dc7a456ab}{Delay}}
+\begin{DoxyCompactList}\small\item\em Used if \doxylink{struct_image}{Image} is animated is set in Flags. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\doxylink{struct_image}{Image}. \begin{Desc}
+\item[Examples]\par
+\mbox{\hyperlink{main_8c-example}{main.\+c}}.\end{Desc}
+
+
+\doxysubsection{Field Documentation}
+\Hypertarget{struct_image_accaadc9242598c4c1e7568d191e1f09b}\label{struct_image_accaadc9242598c4c1e7568d191e1f09b} 
+\index{Image@{Image}!Checksum@{Checksum}}
+\index{Checksum@{Checksum}!Image@{Image}}
+\doxysubsubsection{\texorpdfstring{Checksum}{Checksum}}
+{\footnotesize\ttfamily uint32\+\_\+t Checksum}
+
+
+
+((Width ROL 16) OR Height) XOR Data\mbox{[}0\mbox{]} 
+
+\begin{DoxyNote}{Note}
+Ignored so far 
+\end{DoxyNote}
+\Hypertarget{struct_image_a647b9352989979cb02110987cbe81664}\label{struct_image_a647b9352989979cb02110987cbe81664} 
+\index{Image@{Image}!Data@{Data}}
+\index{Data@{Data}!Image@{Image}}
+\doxysubsubsection{\texorpdfstring{Data}{Data}}
+{\footnotesize\ttfamily uint32\+\_\+t\texorpdfstring{$\ast$}{*} Data}
+
+
+
+\doxylink{struct_image}{Image}, array of colors. 
+
+\Hypertarget{struct_image_aac038719c7fefb2012f3b38dc7a456ab}\label{struct_image_aac038719c7fefb2012f3b38dc7a456ab} 
+\index{Image@{Image}!Delay@{Delay}}
+\index{Delay@{Delay}!Image@{Image}}
+\doxysubsubsection{\texorpdfstring{Delay}{Delay}}
+{\footnotesize\ttfamily uint32\+\_\+t Delay}
+
+
+
+Used if \doxylink{struct_image}{Image} is animated is set in Flags. 
+
+\Hypertarget{struct_image_acc458f18e9f9e07a5ede1b6c997d7a1d}\label{struct_image_acc458f18e9f9e07a5ede1b6c997d7a1d} 
+\index{Image@{Image}!Extended@{Extended}}
+\index{Extended@{Extended}!Image@{Image}}
+\doxysubsubsection{\texorpdfstring{Extended}{Extended}}
+{\footnotesize\ttfamily uint32\+\_\+t Extended}
+
+\Hypertarget{struct_image_ae91751449932fe1a8fe52092a2851b9e}\label{struct_image_ae91751449932fe1a8fe52092a2851b9e} 
+\index{Image@{Image}!Flags@{Flags}}
+\index{Flags@{Flags}!Image@{Image}}
+\doxysubsubsection{\texorpdfstring{Flags}{Flags}}
+{\footnotesize\ttfamily uint32\+\_\+t Flags}
+
+
+
+Bitfield. 
+
+\Hypertarget{struct_image_a3bdc883455d9732f65c9d4cb1aebe28b}\label{struct_image_a3bdc883455d9732f65c9d4cb1aebe28b} 
+\index{Image@{Image}!Height@{Height}}
+\index{Height@{Height}!Image@{Image}}
+\doxysubsubsection{\texorpdfstring{Height}{Height}}
+{\footnotesize\ttfamily uint32\+\_\+t Height}
+
+
+
+\doxylink{struct_image}{Image} height. 
+
+\Hypertarget{struct_image_a41eac2a7f4c28580bf1bf3db0dcdf0ce}\label{struct_image_a41eac2a7f4c28580bf1bf3db0dcdf0ce} 
+\index{Image@{Image}!Next@{Next}}
+\index{Next@{Next}!Image@{Image}}
+\doxysubsubsection{\texorpdfstring{Next}{Next}}
+{\footnotesize\ttfamily uint32\+\_\+t Next}
+
+\Hypertarget{struct_image_a5d183196e17089ea0d6906ef1b7dc78d}\label{struct_image_a5d183196e17089ea0d6906ef1b7dc78d} 
+\index{Image@{Image}!Palette@{Palette}}
+\index{Palette@{Palette}!Image@{Image}}
+\doxysubsubsection{\texorpdfstring{Palette}{Palette}}
+{\footnotesize\ttfamily uint32\+\_\+t Palette}
+
+
+
+Used if Type eq Image.\+bpp1, Image.\+bpp2, Image.\+bpp4 or Image.\+bpp8i. 
+
+\Hypertarget{struct_image_a876c6d060a74a6673fc4074d24d43467}\label{struct_image_a876c6d060a74a6673fc4074d24d43467} 
+\index{Image@{Image}!Previous@{Previous}}
+\index{Previous@{Previous}!Image@{Image}}
+\doxysubsubsection{\texorpdfstring{Previous}{Previous}}
+{\footnotesize\ttfamily uint32\+\_\+t Previous}
+
+\Hypertarget{struct_image_a140acdd7ac30628e97d1851104f05c03}\label{struct_image_a140acdd7ac30628e97d1851104f05c03} 
+\index{Image@{Image}!Type@{Type}}
+\index{Type@{Type}!Image@{Image}}
+\doxysubsubsection{\texorpdfstring{Type}{Type}}
+{\footnotesize\ttfamily uint32\+\_\+t Type}
+
+
+
+One of \doxylink{struct_image}{Image} bppN. 
+
+\begin{Desc}
+\item[Examples]\par
+\mbox{\hyperlink{main_8c-example}{main.\+c}}.\end{Desc}
+\Hypertarget{struct_image_ad672690f555bb08866a491753109e551}\label{struct_image_ad672690f555bb08866a491753109e551} 
+\index{Image@{Image}!Width@{Width}}
+\index{Width@{Width}!Image@{Image}}
+\doxysubsubsection{\texorpdfstring{Width}{Width}}
+{\footnotesize\ttfamily uint32\+\_\+t Width}
+
+
+
+\doxylink{struct_image}{Image} width. 
+
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+INCLUDE/\mbox{\hyperlink{kolibri__libimg_8h}{kolibri\+\_\+libimg.\+h}}\end{DoxyCompactItemize}

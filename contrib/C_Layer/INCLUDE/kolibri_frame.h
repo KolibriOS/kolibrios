@@ -14,10 +14,15 @@ typedef enum fr_flags_t
     /// @note if text != null set auto
     FR_CAPTION = 1,
     /// @brief default
+    /// \image html SCR_1.PNG
     FR_DOUBLE = 0,
+    /// \image html SCR_2.PNG
     FR_RAISED = 2,
+    /// \image html SCR_3.PNG
     FR_SUNKEN = 4,
+    /// \image html SCR_4.PNG
     FR_ETCHED = 6,
+    /// \image html SCR_5.PNG
     FR_RINGED = 8,
     /// @brief whether to paint the background inside the element or not
     /// @note does not affect the text background
@@ -158,7 +163,7 @@ static inline void gui_add_frame(kolibri_window *wnd, frame* f)
 }
 
 /// @brief Draw frame
-/// @param frame frame to be draw
+/// @param frame Frame to be draw
 extern void (*frame_draw)(frame *) __attribute__((__stdcall__));
 
 #endif /* KOLIBRI_FRAME_H */

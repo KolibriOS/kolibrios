@@ -112,6 +112,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ad09246453a4dabd919c7541484046a87" id="r_ad09246453a4dabd919c7541484046a87"><td class="memItemLeft" align="right" valign="top">struct&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad09246453a4dabd919c7541484046a87">__attribute__</a> ((__packed__))</td></tr>
 <tr class="separator:ad09246453a4dabd919c7541484046a87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29d02e30c5a50ea57759fdff39852e86" id="r_a29d02e30c5a50ea57759fdff39852e86"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a29d02e30c5a50ea57759fdff39852e86">kolibri_msgbox_init</a> ()</td></tr>
+<tr class="memdesc:a29d02e30c5a50ea57759fdff39852e86"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inilizate msgbox.  <br /></td></tr>
 <tr class="separator:a29d02e30c5a50ea57759fdff39852e86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
@@ -181,6 +182,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Inilizate msgbox. </p>
+<dl class="section return"><dt>Returns</dt><dd>-1 if unsucessful </dd></dl>
+
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
@@ -226,6 +230,13 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname"></td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<p>param thread </p><dl class="section note"><dt>Note</dt><dd>clears callbacks, ! if fix lib, we can return eax as of Fn51 </dd></dl>
 
 </div>
 </div>
@@ -276,6 +287,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+<dl class="section note"><dt>Note</dt><dd>must be called immediately after create, zero-ended array </dd></dl>
 
 </div>
 </div>

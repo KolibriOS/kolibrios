@@ -140,19 +140,28 @@ static char f1_table[] = {
     "Last\0"
 };
 
+/// @brief Redrawing the entire editor window, including child scrolls.
+/// @param ed Pointer to editor struct
+extern void (*ted_draw)(editor * ed) __attribute__((__stdcall__));
 
-extern void (*ted_draw)(editor *) __attribute__((__stdcall__));
 extern void (*ted_init_scroll_bars)(editor *, int opt) __attribute__((__stdcall__));
 //  opt bits = 1 - ������ ���� �����������, 2 - ���������� ������� ����, 4 - ���������� ������� ���������
 extern void (*ted_init_syntax_file)(editor *) __attribute__((__stdcall__));
-extern void (*ted_mouse)(editor *) __attribute__((__stdcall__));
+
+/// @brief Function for moving or clicking the mouse
+/// @param ed Pointer to editor struct
+extern void (*ted_mouse)(editor * ed) __attribute__((__stdcall__));
 extern void (*ted_text_add)(editor *, char *text, int textlen, int opt) __attribute__((__stdcall__));
+
 //  add text to cursor pos
 //  opt == ted_opt_ed_change_time, ted_opt_ed_move_cursor
 // ted_opt_ed_move_cursor equ 1 ;������� ������ ����� ���������� ������
 // ted_opt_ed_change_time equ 2 ;��������� ��������� ��� �������������� ������
 extern void (*ted_but_select_word)(editor *) __attribute__((__stdcall__));
 // select word under cursor
+
+/// @brief A function that will be called when the copy to clipboard button or Ctrl+C is pressed. The text is copied into the ted_buffer, the maximum buffer size is specified in ted_buffer_size.
+/// @param ed Pointer to editor struct
 extern void (*ted_but_copy)(editor *) __attribute__((__stdcall__));
 extern void (*ted_but_paste)(editor *) __attribute__((__stdcall__));
 
@@ -185,11 +194,13 @@ static inline void editor_delete(editor *ed)
     free(ed->buffer_find);
 }
 
-/// allocate memory
-extern void (*ted_init)(editor *) __attribute__((__stdcall__));
+/// @brief The element constructor allocates the memory necessary for the text editor to work.
+/// @param ed pointer to editor struct
+extern void (*ted_init)(editor * ed) __attribute__((__stdcall__));
 
-/// return 1 if have selection
-extern int (*ted_is_select)(editor *) __attribute__((__stdcall__));
+/// @brief Determines whether there is selected text in the editor window. If there is, 1 is written to the al register, otherwise 0. The function is necessary to create toolbars in which, depending on the selection, certain buttons (actions) will be available or blocked. For example, a button for copying to the clipboard can be blocked if there is no selected text.
+/// @param ed Pointer to editor struct
+extern int (*ted_is_select)(editor * ed) __attribute__((__stdcall__));
 
 enum control_keys {
     KM_SHIFT = 0x00010000,

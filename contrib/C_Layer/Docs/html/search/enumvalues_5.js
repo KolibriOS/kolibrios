@@ -1,14 +1,4 @@
 var searchData=
 [
-  ['image_5fbpp1_0',['IMAGE_BPP1',['../kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46a2491ff267248b2a7eebfeffcbcd0d617',1,'kolibri_libimg.h']]],
-  ['image_5fbpp15_1',['IMAGE_BPP15',['../kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46ae664ce6a4b7f05e8506e0e921ee3ade5',1,'kolibri_libimg.h']]],
-  ['image_5fbpp16_2',['IMAGE_BPP16',['../kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46a255d9625d4f4167fd23003c22b752b72',1,'kolibri_libimg.h']]],
-  ['image_5fbpp24_3',['IMAGE_BPP24',['../kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46a5a7cc115f5c798015bb49e582b4a1aa4',1,'kolibri_libimg.h']]],
-  ['image_5fbpp2i_4',['IMAGE_BPP2i',['../kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46a4fe09d4a387979c9de5c2da61d9c8311',1,'kolibri_libimg.h']]],
-  ['image_5fbpp32_5',['IMAGE_BPP32',['../kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46afc1f7da9bb85078e43dad49072b4effe',1,'kolibri_libimg.h']]],
-  ['image_5fbpp4i_6',['IMAGE_BPP4i',['../kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46adc0155a14e4f44cf7a8a238a88999b6c',1,'kolibri_libimg.h']]],
-  ['image_5fbpp8a_7',['IMAGE_BPP8a',['../kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46ab48d3c4bf928e17b49b02452552f0ffc',1,'kolibri_libimg.h']]],
-  ['image_5fbpp8g_8',['IMAGE_BPP8g',['../kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46a1c1897b0acdf20ebe4a1b1a6480e3761',1,'kolibri_libimg.h']]],
-  ['image_5fbpp8i_9',['IMAGE_BPP8i',['../kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46abfde050d0f623912f4104bb9b9bd031c',1,'kolibri_libimg.h']]],
-  ['italic_10',['Italic',['../kolibri__rasterworks_8h.html#ab126c13bc335f4a996ef88c85aec7a24ac2a214096085052039c5b35d6aae7bd0',1,'kolibri_rasterworks.h']]]
+  ['heavyiron_5fmod_0',['HEAVYIRON_MOD',['../d6/da3/kolibri__buf2d_8h.html#a280f4f234c3e6fd34e254d6408343124a62a8a5ef87fbff725fefda36fe7048cf',1,'kolibri_buf2d.h']]]
 ];

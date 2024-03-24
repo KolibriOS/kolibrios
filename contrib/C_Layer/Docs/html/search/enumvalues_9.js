@@ -1,8 +1,7 @@
 var searchData=
 [
-  ['rotate_5f180_0',['ROTATE_180',['../kolibri__libimg_8h.html#aabe6019d3de9522cbe8bdcbe111bd11fa186263164422bb8f0eb5f7b7d195a3d1',1,'kolibri_libimg.h']]],
-  ['rotate_5f270_5fccw_1',['ROTATE_270_CCW',['../kolibri__libimg_8h.html#aabe6019d3de9522cbe8bdcbe111bd11fad06908a79729bd1b5c8572a0c7a22fcb',1,'kolibri_libimg.h']]],
-  ['rotate_5f270_5fcw_2',['ROTATE_270_CW',['../kolibri__libimg_8h.html#aabe6019d3de9522cbe8bdcbe111bd11fa50ad5d3572df812fdbf82db67a96c769',1,'kolibri_libimg.h']]],
-  ['rotate_5f90_5fccw_3',['ROTATE_90_CCW',['../kolibri__libimg_8h.html#aabe6019d3de9522cbe8bdcbe111bd11fa8798f4467d63dc90750fc0bc948777ea',1,'kolibri_libimg.h']]],
-  ['rotate_5f90_5fcw_4',['ROTATE_90_CW',['../kolibri__libimg_8h.html#aabe6019d3de9522cbe8bdcbe111bd11fa784258fef84e19cb22449963d5086cb3',1,'kolibri_libimg.h']]]
+  ['od_5fdir_0',['OD_DIR',['../d3/d31/kolibri__proclib_8h.html#a46c8a310cf4c094f8c80e1cb8dc1f911a087f7fefce5b778e85c49a782fbe693c',1,'kolibri_proclib.h']]],
+  ['od_5fopen_1',['OD_OPEN',['../d3/d31/kolibri__proclib_8h.html#a46c8a310cf4c094f8c80e1cb8dc1f911abc3175416a6910665838a521e23a9955',1,'kolibri_proclib.h']]],
+  ['od_5fsave_2',['OD_SAVE',['../d3/d31/kolibri__proclib_8h.html#a46c8a310cf4c094f8c80e1cb8dc1f911afa3e1cc67bb9c862e51f3d104b5884fc',1,'kolibri_proclib.h']]],
+  ['open_3',['OPEN',['../df/d6c/kolibri__opendialog_8h.html#a201e1db9634e428f48ad9f5060ebd784a0e0143636c29971736eab47415868eae',1,'kolibri_opendialog.h']]]
 ];

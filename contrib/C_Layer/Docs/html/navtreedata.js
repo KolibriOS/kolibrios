@@ -52,9 +52,9 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"kolibri__frame_8h.html#a1c411d36bb7c1e632cb2cad7119c3dca",
-"kolibri__optionbox_8h.html#a7e56846a517ff7f992a046aad941c346",
-"structkmenuitem__t.html#aea3b4e935746760499bf7c978c872f34"
+"d3/df4/kolibri__treelist_8h.html",
+"d6/d35/kolibri__editor_8h.html#adcce573f618083899b3ff2c0ffa79d22a2423b3215e75234b6e550abb0c7f2048",
+"dd/d22/structkmenuitem__t.html#abbf6e4360a8f6d7c30ea1ed1a71188f7"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

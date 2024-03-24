@@ -122,12 +122,15 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:aeb6a268f36e9189cc25b437dd271c1b7" id="r_aeb6a268f36e9189cc25b437dd271c1b7"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aeb6a268f36e9189cc25b437dd271c1b7">check_box_draw2</a> )(<a class="el" href="structcheck__box.html">check_box</a> *) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__))</td></tr>
-<tr class="separator:aeb6a268f36e9189cc25b437dd271c1b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a224d41e2fdf9654759808ba4eefd3db0" id="r_a224d41e2fdf9654759808ba4eefd3db0"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a224d41e2fdf9654759808ba4eefd3db0">check_box_mouse2</a> )(<a class="el" href="structcheck__box.html">check_box</a> *) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__))</td></tr>
-<tr class="separator:a224d41e2fdf9654759808ba4eefd3db0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae5cf614e724a972918ac6a9d5a1f27e" id="r_aae5cf614e724a972918ac6a9d5a1f27e"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aae5cf614e724a972918ac6a9d5a1f27e">init_checkbox2</a> )(<a class="el" href="structcheck__box.html">check_box</a> *) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__))</td></tr>
-<tr class="separator:aae5cf614e724a972918ac6a9d5a1f27e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa082db38b6af424406a826b0bc919be8" id="r_aa082db38b6af424406a826b0bc919be8"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa082db38b6af424406a826b0bc919be8">check_box_draw2</a> )(<a class="el" href="structcheck__box.html">check_box</a> *checkbox) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__))</td></tr>
+<tr class="memdesc:aa082db38b6af424406a826b0bc919be8"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function should be called when entering information from the keyboard.  <br /></td></tr>
+<tr class="separator:aa082db38b6af424406a826b0bc919be8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8fe54e687ac9033319ddee51c32ba78e" id="r_a8fe54e687ac9033319ddee51c32ba78e"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8fe54e687ac9033319ddee51c32ba78e">check_box_mouse2</a> )(<a class="el" href="structcheck__box.html">check_box</a> *checkbox) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__))</td></tr>
+<tr class="memdesc:a8fe54e687ac9033319ddee51c32ba78e"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function should be called when entering information from the mouse.  <br /></td></tr>
+<tr class="separator:a8fe54e687ac9033319ddee51c32ba78e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9d571c83667b20aa45743b81e95ec33" id="r_ad9d571c83667b20aa45743b81e95ec33"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad9d571c83667b20aa45743b81e95ec33">init_checkbox2</a> )(<a class="el" href="structcheck__box.html">check_box</a> *checkbox) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__))</td></tr>
+<tr class="memdesc:ad9d571c83667b20aa45743b81e95ec33"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function should be called when the application is initialized; in fact, it counts the number of characters in the drain for output. If you don’t need to display signatures for the checkbox, then you don’t have to call it.  <br /></td></tr>
+<tr class="separator:ad9d571c83667b20aa45743b81e95ec33"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
 <a id="a8b55ea2892ba576f85a1a061851ca723" name="a8b55ea2892ba576f85a1a061851ca723"></a>
@@ -193,16 +196,15 @@ Variables</h2></td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd><br  />
- </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to new checkbox </dd></dl>
 <dl class="section examples"><dt>Examples</dt><dd><a class="el" href="boardmsg_8c-example.html#a6">boardmsg.c</a>.</dd>
 </dl>
 
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
-<a id="aeb6a268f36e9189cc25b437dd271c1b7" name="aeb6a268f36e9189cc25b437dd271c1b7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeb6a268f36e9189cc25b437dd271c1b7">&#9670;&#160;</a></span>check_box_draw2</h2>
+<a id="aa082db38b6af424406a826b0bc919be8" name="aa082db38b6af424406a826b0bc919be8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa082db38b6af424406a826b0bc919be8">&#9670;&#160;</a></span>check_box_draw2</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -211,9 +213,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void(* check_box_draw2) (<a class="el" href="structcheck__box.html">check_box</a> *) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__)) </td>
+          <td class="memname">void(* check_box_draw2) (<a class="el" href="structcheck__box.html">check_box</a> *checkbox) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__)) </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structcheck__box.html">check_box</a> *</td>          <td class="paramname"><span class="paramname"></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="structcheck__box.html">check_box</a> *</td>          <td class="paramname"><span class="paramname"><em>checkbox</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -224,10 +226,18 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>This function should be called when entering information from the keyboard. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">checkbox</td><td>Pointer to checkbox </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
-<a id="a224d41e2fdf9654759808ba4eefd3db0" name="a224d41e2fdf9654759808ba4eefd3db0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a224d41e2fdf9654759808ba4eefd3db0">&#9670;&#160;</a></span>check_box_mouse2</h2>
+<a id="a8fe54e687ac9033319ddee51c32ba78e" name="a8fe54e687ac9033319ddee51c32ba78e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8fe54e687ac9033319ddee51c32ba78e">&#9670;&#160;</a></span>check_box_mouse2</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -236,9 +246,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void(* check_box_mouse2) (<a class="el" href="structcheck__box.html">check_box</a> *) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__)) </td>
+          <td class="memname">void(* check_box_mouse2) (<a class="el" href="structcheck__box.html">check_box</a> *checkbox) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__)) </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structcheck__box.html">check_box</a> *</td>          <td class="paramname"><span class="paramname"></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="structcheck__box.html">check_box</a> *</td>          <td class="paramname"><span class="paramname"><em>checkbox</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -249,10 +259,18 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>This function should be called when entering information from the mouse. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">checkbox</td><td>Pointer to checkbox </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
-<a id="aae5cf614e724a972918ac6a9d5a1f27e" name="aae5cf614e724a972918ac6a9d5a1f27e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aae5cf614e724a972918ac6a9d5a1f27e">&#9670;&#160;</a></span>init_checkbox2</h2>
+<a id="ad9d571c83667b20aa45743b81e95ec33" name="ad9d571c83667b20aa45743b81e95ec33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9d571c83667b20aa45743b81e95ec33">&#9670;&#160;</a></span>init_checkbox2</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -261,9 +279,9 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void(* init_checkbox2) (<a class="el" href="structcheck__box.html">check_box</a> *) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__)) </td>
+          <td class="memname">void(* init_checkbox2) (<a class="el" href="structcheck__box.html">check_box</a> *checkbox) <a class="el" href="kolibri__buf2d_8h.html#ad09246453a4dabd919c7541484046a87">__attribute__</a>((__stdcall__)) </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structcheck__box.html">check_box</a> *</td>          <td class="paramname"><span class="paramname"></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="structcheck__box.html">check_box</a> *</td>          <td class="paramname"><span class="paramname"><em>checkbox</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -273,6 +291,14 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>This function should be called when the application is initialized; in fact, it counts the number of characters in the drain for output. If you don’t need to display signatures for the checkbox, then you don’t have to call it. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">checkbox</td><td>Pointer to checkbox </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

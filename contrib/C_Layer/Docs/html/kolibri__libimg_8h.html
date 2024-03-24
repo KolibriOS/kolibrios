@@ -313,6 +313,7 @@ Variables</h2></td></tr>
 <tr class="memdesc:af80726e7628ffa475a5bf80bf97d3a07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy image.  <br /></td></tr>
 <tr class="separator:af80726e7628ffa475a5bf80bf97d3a07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a630cc6121840eb620fd2a31e8ab9d3ee" id="r_a630cc6121840eb620fd2a31e8ab9d3ee"><td class="memItemLeft" align="right" valign="top">bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a630cc6121840eb620fd2a31e8ab9d3ee">img_destroy_layer</a> )(<a class="el" href="struct_image.html">Image</a> *img) <a class="el" href="#a3107b1d0ca10d4ae4575d9107d4cbffe">_stdcall</a></td></tr>
+<tr class="memdesc:a630cc6121840eb620fd2a31e8ab9d3ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy layer.  <br /></td></tr>
 <tr class="separator:a630cc6121840eb620fd2a31e8ab9d3ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8507d388ce1da7b7247b6f0c90a6fce2" id="r_a8507d388ce1da7b7247b6f0c90a6fce2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_image.html">Image</a> *(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8507d388ce1da7b7247b6f0c90a6fce2">img_blend</a> )(<a class="el" href="struct_image.html">Image</a> *dst, <a class="el" href="struct_image.html">Image</a> *src, uint32_t out_x, uint32_t out_y, uint32_t in_x, uint32_t in_y, uint32_t width, uint32_t height) <a class="el" href="#a3107b1d0ca10d4ae4575d9107d4cbffe">_stdcall</a></td></tr>
 <tr class="memdesc:a8507d388ce1da7b7247b6f0c90a6fce2"><td class="mdescLeft">&#160;</td><td class="mdescRight">"Blend" two images  <br /></td></tr>
@@ -321,6 +322,7 @@ Variables</h2></td></tr>
 <tr class="memdesc:ad21764b5a9c1d6aed4bc2432afb3c3ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert image to other format.  <br /></td></tr>
 <tr class="separator:ad21764b5a9c1d6aed4bc2432afb3c3ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ad59bc1b6cc097f9ba7b16c84f14fa3" id="r_a8ad59bc1b6cc097f9ba7b16c84f14fa3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_image.html">Image</a> *(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8ad59bc1b6cc097f9ba7b16c84f14fa3">img_resize_data</a> )(<a class="el" href="struct_image.html">Image</a> *src, uint32_t width, uint32_t height) <a class="el" href="#a3107b1d0ca10d4ae4575d9107d4cbffe">_stdcall</a></td></tr>
+<tr class="memdesc:a8ad59bc1b6cc097f9ba7b16c84f14fa3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resize image data (<a class="el" href="struct_image.html#a647b9352989979cb02110987cbe81664" title="Image, array of colors.">Image.Data</a>)  <br /></td></tr>
 <tr class="separator:a8ad59bc1b6cc097f9ba7b16c84f14fa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc0c1196a66f24a7b0e3978275d80e8a" id="r_adc0c1196a66f24a7b0e3978275d80e8a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_image.html">Image</a> *(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#adc0c1196a66f24a7b0e3978275d80e8a">img_scale</a> )(<a class="el" href="struct_image.html">Image</a> *src, uint32_t crop_x, uint32_t crop_y, uint32_t crop_width, uint32_t crop_height, <a class="el" href="struct_image.html">Image</a> *dst, uint32_t scale_type, uint32_t inter, uint32_t new_width, uint32_t new_height) <a class="el" href="#a3107b1d0ca10d4ae4575d9107d4cbffe">_stdcall</a></td></tr>
 <tr class="memdesc:adc0c1196a66f24a7b0e3978275d80e8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resize image.  <br /></td></tr>
@@ -358,10 +360,13 @@ Variables</h2></td></tr>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ae932abe1baf2fc58d0433104a97afa46abfde050d0f623912f4104bb9b9bd031c" name="ae932abe1baf2fc58d0433104a97afa46abfde050d0f623912f4104bb9b9bd031c"></a>IMAGE_BPP8i&#160;</td><td class="fielddoc"><p>indexed </p>
 </td></tr>
-<tr><td class="fieldname"><a id="ae932abe1baf2fc58d0433104a97afa46a5a7cc115f5c798015bb49e582b4a1aa4" name="ae932abe1baf2fc58d0433104a97afa46a5a7cc115f5c798015bb49e582b4a1aa4"></a>IMAGE_BPP24&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ae932abe1baf2fc58d0433104a97afa46afc1f7da9bb85078e43dad49072b4effe" name="ae932abe1baf2fc58d0433104a97afa46afc1f7da9bb85078e43dad49072b4effe"></a>IMAGE_BPP32&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ae932abe1baf2fc58d0433104a97afa46a5a7cc115f5c798015bb49e582b4a1aa4" name="ae932abe1baf2fc58d0433104a97afa46a5a7cc115f5c798015bb49e582b4a1aa4"></a>IMAGE_BPP24&#160;</td><td class="fielddoc"><p>"True color" 24bit </p>
+</td></tr>
+<tr><td class="fieldname"><a id="ae932abe1baf2fc58d0433104a97afa46afc1f7da9bb85078e43dad49072b4effe" name="ae932abe1baf2fc58d0433104a97afa46afc1f7da9bb85078e43dad49072b4effe"></a>IMAGE_BPP32&#160;</td><td class="fielddoc"><p>32bit </p>
+</td></tr>
 <tr><td class="fieldname"><a id="ae932abe1baf2fc58d0433104a97afa46ae664ce6a4b7f05e8506e0e921ee3ade5" name="ae932abe1baf2fc58d0433104a97afa46ae664ce6a4b7f05e8506e0e921ee3ade5"></a>IMAGE_BPP15&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ae932abe1baf2fc58d0433104a97afa46a255d9625d4f4167fd23003c22b752b72" name="ae932abe1baf2fc58d0433104a97afa46a255d9625d4f4167fd23003c22b752b72"></a>IMAGE_BPP16&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ae932abe1baf2fc58d0433104a97afa46a255d9625d4f4167fd23003c22b752b72" name="ae932abe1baf2fc58d0433104a97afa46a255d9625d4f4167fd23003c22b752b72"></a>IMAGE_BPP16&#160;</td><td class="fielddoc"><p>16bit </p>
+</td></tr>
 <tr><td class="fieldname"><a id="ae932abe1baf2fc58d0433104a97afa46a2491ff267248b2a7eebfeffcbcd0d617" name="ae932abe1baf2fc58d0433104a97afa46a2491ff267248b2a7eebfeffcbcd0d617"></a>IMAGE_BPP1&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae932abe1baf2fc58d0433104a97afa46a1c1897b0acdf20ebe4a1b1a6480e3761" name="ae932abe1baf2fc58d0433104a97afa46a1c1897b0acdf20ebe4a1b1a6480e3761"></a>IMAGE_BPP8g&#160;</td><td class="fielddoc"><p>grayscale </p>
 </td></tr>
@@ -454,19 +459,32 @@ Variables</h2></td></tr>
 
 <p>List of format id's. </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4aaeea81c6731815dfea013dc23b17cf69" name="a20f606f0ef9377a0de98c641cc7375d4aaeea81c6731815dfea013dc23b17cf69"></a>LIBIMG_FORMAT_BMP&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4af5c5549c847eb837c62b96c118ebd22b" name="a20f606f0ef9377a0de98c641cc7375d4af5c5549c847eb837c62b96c118ebd22b"></a>LIBIMG_FORMAT_ICO&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a2aeb4df9f20ea9983bd48753420dd2e7" name="a20f606f0ef9377a0de98c641cc7375d4a2aeb4df9f20ea9983bd48753420dd2e7"></a>LIBIMG_FORMAT_CUR&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a0ca775641df7e4e08b472b03f7b39be1" name="a20f606f0ef9377a0de98c641cc7375d4a0ca775641df7e4e08b472b03f7b39be1"></a>LIBIMG_FORMAT_GIF&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a769a08b6b77196581ca75ab165ce67ef" name="a20f606f0ef9377a0de98c641cc7375d4a769a08b6b77196581ca75ab165ce67ef"></a>LIBIMG_FORMAT_PNG&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a30bec63b25899b8c4df45277a936282d" name="a20f606f0ef9377a0de98c641cc7375d4a30bec63b25899b8c4df45277a936282d"></a>LIBIMG_FORMAT_JPEG&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a9677e0a08dc65133745e34badcb53a36" name="a20f606f0ef9377a0de98c641cc7375d4a9677e0a08dc65133745e34badcb53a36"></a>LIBIMG_FORMAT_TGA&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a87dd2b39162649135a30ccb964c728d5" name="a20f606f0ef9377a0de98c641cc7375d4a87dd2b39162649135a30ccb964c728d5"></a>LIBIMG_FORMAT_PCX&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a16315d2cb26f6113b876c522accdbe92" name="a20f606f0ef9377a0de98c641cc7375d4a16315d2cb26f6113b876c522accdbe92"></a>LIBIMG_FORMAT_XCF&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4ab5989a7a3967b41e97ebb18dd708356e" name="a20f606f0ef9377a0de98c641cc7375d4ab5989a7a3967b41e97ebb18dd708356e"></a>LIBIMG_FORMAT_TIFF&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a0a8fb8f1b2ce08d4aa605f93d6445faf" name="a20f606f0ef9377a0de98c641cc7375d4a0a8fb8f1b2ce08d4aa605f93d6445faf"></a>LIBIMG_FORMAT_PNM&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a0c146677fc4d31505d10d30386d9876c" name="a20f606f0ef9377a0de98c641cc7375d4a0c146677fc4d31505d10d30386d9876c"></a>LIBIMG_FORMAT_WBMP&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a057d50c7bc8feee0a37d5afd3766315f" name="a20f606f0ef9377a0de98c641cc7375d4a057d50c7bc8feee0a37d5afd3766315f"></a>LIBIMG_FORMAT_XBM&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4aaeea81c6731815dfea013dc23b17cf69" name="a20f606f0ef9377a0de98c641cc7375d4aaeea81c6731815dfea013dc23b17cf69"></a>LIBIMG_FORMAT_BMP&#160;</td><td class="fielddoc"><p>bmp format </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4af5c5549c847eb837c62b96c118ebd22b" name="a20f606f0ef9377a0de98c641cc7375d4af5c5549c847eb837c62b96c118ebd22b"></a>LIBIMG_FORMAT_ICO&#160;</td><td class="fielddoc"><p>ico format </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a2aeb4df9f20ea9983bd48753420dd2e7" name="a20f606f0ef9377a0de98c641cc7375d4a2aeb4df9f20ea9983bd48753420dd2e7"></a>LIBIMG_FORMAT_CUR&#160;</td><td class="fielddoc"><p>cur format </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a0ca775641df7e4e08b472b03f7b39be1" name="a20f606f0ef9377a0de98c641cc7375d4a0ca775641df7e4e08b472b03f7b39be1"></a>LIBIMG_FORMAT_GIF&#160;</td><td class="fielddoc"><p>gif format </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a769a08b6b77196581ca75ab165ce67ef" name="a20f606f0ef9377a0de98c641cc7375d4a769a08b6b77196581ca75ab165ce67ef"></a>LIBIMG_FORMAT_PNG&#160;</td><td class="fielddoc"><p>png format </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a30bec63b25899b8c4df45277a936282d" name="a20f606f0ef9377a0de98c641cc7375d4a30bec63b25899b8c4df45277a936282d"></a>LIBIMG_FORMAT_JPEG&#160;</td><td class="fielddoc"><p>jpeg format </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a9677e0a08dc65133745e34badcb53a36" name="a20f606f0ef9377a0de98c641cc7375d4a9677e0a08dc65133745e34badcb53a36"></a>LIBIMG_FORMAT_TGA&#160;</td><td class="fielddoc"><p>tga format </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a87dd2b39162649135a30ccb964c728d5" name="a20f606f0ef9377a0de98c641cc7375d4a87dd2b39162649135a30ccb964c728d5"></a>LIBIMG_FORMAT_PCX&#160;</td><td class="fielddoc"><p>pcx format </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a16315d2cb26f6113b876c522accdbe92" name="a20f606f0ef9377a0de98c641cc7375d4a16315d2cb26f6113b876c522accdbe92"></a>LIBIMG_FORMAT_XCF&#160;</td><td class="fielddoc"><p>xcf format </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4ab5989a7a3967b41e97ebb18dd708356e" name="a20f606f0ef9377a0de98c641cc7375d4ab5989a7a3967b41e97ebb18dd708356e"></a>LIBIMG_FORMAT_TIFF&#160;</td><td class="fielddoc"><p>tiff format </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a0a8fb8f1b2ce08d4aa605f93d6445faf" name="a20f606f0ef9377a0de98c641cc7375d4a0a8fb8f1b2ce08d4aa605f93d6445faf"></a>LIBIMG_FORMAT_PNM&#160;</td><td class="fielddoc"><p>Portable anymap format. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a0c146677fc4d31505d10d30386d9876c" name="a20f606f0ef9377a0de98c641cc7375d4a0c146677fc4d31505d10d30386d9876c"></a>LIBIMG_FORMAT_WBMP&#160;</td><td class="fielddoc"><p>Wireless Application Protocol Bitmap format. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4a057d50c7bc8feee0a37d5afd3766315f" name="a20f606f0ef9377a0de98c641cc7375d4a057d50c7bc8feee0a37d5afd3766315f"></a>LIBIMG_FORMAT_XBM&#160;</td><td class="fielddoc"><p>X BitMap format. </p>
+</td></tr>
 <tr><td class="fieldname"><a id="a20f606f0ef9377a0de98c641cc7375d4adb6557b6bc2960b1fe2e6522d6017104" name="a20f606f0ef9377a0de98c641cc7375d4adb6557b6bc2960b1fe2e6522d6017104"></a>LIBIMG_FORMAT_Z80&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
@@ -492,7 +510,8 @@ Variables</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="a100905ea9409684ebb4c0fd0422ab79bab5145291915a25f01332692aa50f9723" name="a100905ea9409684ebb4c0fd0422ab79bab5145291915a25f01332692aa50f9723"></a>LIBIMG_INTER_BICUBIC&#160;</td><td class="fielddoc"><p>Bicubic algorithm. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a100905ea9409684ebb4c0fd0422ab79ba4a774dcbad2ea0745688d51b74ad5876" name="a100905ea9409684ebb4c0fd0422ab79ba4a774dcbad2ea0745688d51b74ad5876"></a>LIBIMG_INTER_LANCZOS&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a100905ea9409684ebb4c0fd0422ab79ba4a774dcbad2ea0745688d51b74ad5876" name="a100905ea9409684ebb4c0fd0422ab79ba4a774dcbad2ea0745688d51b74ad5876"></a>LIBIMG_INTER_LANCZOS&#160;</td><td class="fielddoc"><p>Lanczos algorithm. </p>
+</td></tr>
 <tr><td class="fieldname"><a id="a100905ea9409684ebb4c0fd0422ab79ba11d07fcb870c435216b393ca7f94596b" name="a100905ea9409684ebb4c0fd0422ab79ba11d07fcb870c435216b393ca7f94596b"></a>LIBIMG_INTER_DEFAULT&#160;</td><td class="fielddoc"><p>Default algorithm. </p>
 </td></tr>
 </table>
@@ -975,6 +994,14 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Destroy layer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">img</td><td>layer to be deleted </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
 <a id="acff45b1986af0d6ce7af0949c8457932" name="acff45b1986af0d6ce7af0949c8457932"></a>
@@ -1181,6 +1208,17 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Resize image data (<a class="el" href="struct_image.html#a647b9352989979cb02110987cbe81664" title="Image, array of colors.">Image.Data</a>) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">src</td><td></td></tr>
+    <tr><td class="paramname">width</td><td></td></tr>
+    <tr><td class="paramname">height</td><td><br  />
+ </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

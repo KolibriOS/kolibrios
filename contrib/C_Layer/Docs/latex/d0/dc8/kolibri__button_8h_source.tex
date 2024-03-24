@@ -1,0 +1,54 @@
+\doxysection{kolibri\+\_\+button.\+h}
+\hypertarget{kolibri__button_8h_source}{}\label{kolibri__button_8h_source}\index{INCLUDE/kolibri\_button.h@{INCLUDE/kolibri\_button.h}}
+\mbox{\hyperlink{kolibri__button_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ KOLIBRI\_BUTTON\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ KOLIBRI\_BUTTON\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\{}
+\DoxyCodeLine{00005\ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structkolibri__button_a22932c461e56538d1cfb9278b46c43fc}{x65536sizex}};}
+\DoxyCodeLine{00006\ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structkolibri__button_aa475403c8c34ec92b3606c900beca4de}{y65536sizey}};}
+\DoxyCodeLine{00007\ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structkolibri__button_aeedc2afa1e522527db2235d0700a3b0d}{color}};}
+\DoxyCodeLine{00008\ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structkolibri__button_af2fe43bfd5d5deecee699f9a1d0292d0}{identifier}};}
+\DoxyCodeLine{00009\ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structkolibri__button_ac0170d4856f465833fedd3ab74e48216}{XY}};}
+\DoxyCodeLine{00010\ \}\mbox{\hyperlink{structkolibri__button}{kolibri\_button}};}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00012\ \mbox{\hyperlink{structkolibri__button}{kolibri\_button}}\ *\mbox{\hyperlink{kolibri__button_8h_ab3efa5c038ac456eec2432c3e172022d}{kolibri\_new\_button}}(\textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ tlx,\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ tly,\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ sizex,\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ sizey,}
+\DoxyCodeLine{00013\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ identifier,\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ color)}
+\DoxyCodeLine{00014\ \{}
+\DoxyCodeLine{00015\ \ \ \mbox{\hyperlink{structkolibri__button}{kolibri\_button}}*\ new\_button\ =\ (\mbox{\hyperlink{structkolibri__button}{kolibri\_button}}\ *)malloc(\textcolor{keyword}{sizeof}(\mbox{\hyperlink{structkolibri__button}{kolibri\_button}}));}
+\DoxyCodeLine{00016\ \ \ new\_button\ -\/>\ x65536sizex\ =\ (tlx\ <<\ 16)\ +\ sizex;}
+\DoxyCodeLine{00017\ \ \ new\_button\ -\/>\ y65536sizey\ =\ (tly\ <<\ 16)\ +\ sizey;}
+\DoxyCodeLine{00018\ \ \ new\_button\ -\/>\ color\ =\ color;}
+\DoxyCodeLine{00019\ \ \ new\_button\ -\/>\ identifier\ =\ identifier;}
+\DoxyCodeLine{00020\ \ \ new\_button\ -\/>\ XY\ =\ 0;}
+\DoxyCodeLine{00021\ \ \ \textcolor{keywordflow}{return}\ new\_button;}
+\DoxyCodeLine{00022\ \}}
+\DoxyCodeLine{00023\ }
+\DoxyCodeLine{00024\ \mbox{\hyperlink{kolibri__button_8h_a8e3d21ce75410f5d4a1f09a5e484d3d1}{\_\_attribute\_\_}}((\_\_stdcall\_\_))}
+\DoxyCodeLine{00025\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ draw\_button(\mbox{\hyperlink{structkolibri__button}{kolibri\_button}}\ *some\_button)}
+\DoxyCodeLine{00026\ \{}
+\DoxyCodeLine{00027\ \ \ define\_button(some\_button\ -\/>\ x65536sizex,\ some\_button\ -\/>\ y65536sizey,\ some\_button\ -\/>\ identifier,\ some\_button\ -\/>\ color);}
+\DoxyCodeLine{00028\ \}}
+\DoxyCodeLine{00029\ }
+\DoxyCodeLine{00030\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{kolibri__button_8h_a55ae7b6ad65b2e19c77cc7ad0183191f}{kolibri\_button\_get\_identifier}}(\textcolor{keywordtype}{void})}
+\DoxyCodeLine{00031\ \{}
+\DoxyCodeLine{00032\ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{int}\ identifier;}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00034\ \ \ \_\_asm\_\_\ \mbox{\hyperlink{kolibri__editor_8h_a6d952a8d068aaf8ee03623416d163a37}{\_\_volatile\_\_}}(}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{stringliteral}{"{}int\ \$0x40"{}}}
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ :\textcolor{stringliteral}{"{}=a"{}}(identifier)}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ :\textcolor{stringliteral}{"{}a"{}}(17)}
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ );}
+\DoxyCodeLine{00039\ \ \ \textcolor{comment}{/*\ If\ no\ button\ pressed,\ returns\ 1\ */}}
+\DoxyCodeLine{00040\ \ \ \textcolor{comment}{/*\ Otherwise,\ returns\ identifier\ of\ button\ */}}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00042\ \ \ \textcolor{keywordflow}{if}(identifier\ !=\ 1)\ \textcolor{comment}{/*\ Button\ was\ detected\ indeed\ */}}
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keywordflow}{return}\ identifier>>8;}
+\DoxyCodeLine{00044\ \ \ \textcolor{keywordflow}{else}}
+\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keywordflow}{return}\ identifier;\ \textcolor{comment}{/*\ No\ button\ detected\ */}}
+\DoxyCodeLine{00046\ \}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ KOLIBRI\_BUTTON\_H\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

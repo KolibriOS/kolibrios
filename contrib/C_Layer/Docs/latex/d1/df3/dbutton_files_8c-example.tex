@@ -1,0 +1,294 @@
+\doxysection{dbutton\+\_\+files.\+c}
+\hypertarget{dbutton_files_8c-example}{}\label{dbutton_files_8c-example}
+\begin{DoxyCodeInclude}{0}
+\DoxyCodeLine{\textcolor{comment}{/*}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ KolibriGUI\ demobox}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ -\/Picture\ Button}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ -\/StaticText}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ -\/File\ Open/Save\ Dialog}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ -\/Filebrowser}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ -\/Controlling\ minimal\ window\ size}}
+\DoxyCodeLine{\textcolor{comment}{}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ Free\ for\ all}}
+\DoxyCodeLine{\textcolor{comment}{}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ Initially\ written\ by\ Siemargl,\ 2016}}
+\DoxyCodeLine{\textcolor{comment}{}}
+\DoxyCodeLine{\textcolor{comment}{}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ ToDo}}
+\DoxyCodeLine{\textcolor{comment}{*/}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include\ <stdio.h>}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include\ <stdlib.h>}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include\ <string.h>}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include\ <assert.h>}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include\ "{}kos32sys.h"{}}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__gui_8h}{kolibri\_gui.h}}"{}}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__opendialog_8h}{kolibri\_opendialog.h}}"{}}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{kolibri__libimg_8h}{kolibri\_libimg.h}}"{}}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{char}\ temp\_path[4096];}
+\DoxyCodeLine{\textcolor{keywordtype}{char}**\ sys\_path\ =\ (\textcolor{keywordtype}{char}**)0x20;\ \textcolor{comment}{//\ hack\ -\/\ get\ path\ from\ KOS\ header.\ analog\ argv[0]}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{char}*\ \ \ load\_file\_inmem(\textcolor{keywordtype}{char}*\ fname,\ int32\_t*\ read\_sz);\ \textcolor{comment}{//\ see\ below}}
+\DoxyCodeLine{\textcolor{keywordtype}{void}*\ read\_folderdata(\textcolor{keywordtype}{char}*\ name);}
+\DoxyCodeLine{\textcolor{keywordtype}{void}\ control\_minimal\_window\_size(\textcolor{keywordtype}{int}\ wmin,\ \textcolor{keywordtype}{int}\ hmin);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{int}\ main(\textcolor{keywordtype}{int}\ argc,\ \textcolor{keywordtype}{char}\ **argv)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{/*\ Load\ all\ libraries,\ initialize\ global\ tables\ like\ system\ color\ table\ and}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ operations\ table.\ kolibri\_gui\_init()\ will\ EXIT\ with\ mcall\ -\/1\ if\ it\ fails}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ to\ do\ it's\ job.\ This\ is\ all\ you\ need\ to\ call\ and\ all\ libraries\ and\ GUI}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ elements\ can\ be\ used\ after\ a\ successful\ call\ to\ this\ function}}
+\DoxyCodeLine{\textcolor{comment}{\ \ \ \ */}}
+\DoxyCodeLine{\ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a8b904ab02df6cc248ac2a4cbb33295c3}{kolibri\_gui\_init}}();}
+\DoxyCodeLine{\ \ \ \ \mbox{\hyperlink{kolibri__colordialog_8h_a49b48e408e863bfdac5f8302ab72764e}{kolibri\_proclib\_init}}();\ \ \textcolor{comment}{//\ opensave\ \&\&\ color\ dialogs}}
+\DoxyCodeLine{\ \ \ \ \mbox{\hyperlink{kolibri__libimg_8h_a48d1fa50e5dd5ae820b4a05b4a59b939}{kolibri\_libimg\_init}}();\ \ \textcolor{comment}{//\ png\ handling}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{int}\ gui\_event\ =\ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca0a84f1803dcad15708cd5bf208a8118a}{KOLIBRI\_EVENT\_REDRAW}};}
+\DoxyCodeLine{\ \ \ \ uint32\_t\ pressed\_button\ =\ 0;}
+\DoxyCodeLine{\textcolor{comment}{//\ \ \ \ uint32\_t\ mouse\_button;}}
+\DoxyCodeLine{\textcolor{comment}{//\ \ \ \ pos\_t\ \ \ mouse\_pos;}}
+\DoxyCodeLine{\ \ \ \ oskey\_t\ \mbox{\hyperlink{kolibri__filebrowse_8h_aaa84feee2fd9a558df8015fe2a6cf806}{keypress}};}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ load\ image\ for\ buttons}}
+\DoxyCodeLine{\ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ icon\_rgb\_size\ =\ 16*16*3;\ \textcolor{comment}{//\ every\ icons\ 16x16\ 24bpp}}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{char}\ *image\_data\_rgb,}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ *image\_data,}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ *filedata;}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ make\ full\ path\ +\ argv}}
+\DoxyCodeLine{\ \ \ \ strcpy(temp\_path,\ *sys\_path);}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{char}\ *pc\ =\ strrchr(temp\_path,\ \textcolor{charliteral}{'/'});\ \ \textcolor{comment}{//\ this\ fails\ if\ has\ params\ with\ '/'\ within.\ use\ argv[0]\ instead}}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}\ (pc)\ pc[1]\ =\ 0;}
+\DoxyCodeLine{\ \ \ \ strcat(temp\_path,\ \textcolor{stringliteral}{"{}reload\_16x16\_8b.png"{}});}
+\DoxyCodeLine{\textcolor{comment}{//\ \ \ \ debug\_board\_write\_str(temp\_path);}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ int32\_t\ read\_bytes;}
+\DoxyCodeLine{\ \ \ \ filedata\ =\ load\_file\_inmem(temp\_path,\ \&read\_bytes);}
+\DoxyCodeLine{\ \ \ \ image\_data\_rgb\ =\ malloc(icon\_rgb\_size\ *\ 3);\ \ \textcolor{comment}{//\ we\ know\ size}}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ определяем вид изображения и переводим его\ во временный\ буфер image\_data}}
+\DoxyCodeLine{\ \ \ \ image\_data\ =\ (*img\_decode)(filedata,\ read\_bytes,\ 0);}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ преобразуем изображение к формату\ rgb}}
+\DoxyCodeLine{\ \ \ \ (*img\_to\_rgb2)(image\_data,\ image\_data\_rgb);}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ удаляем временный\ буфер image\_data}}
+\DoxyCodeLine{\ \ \ \ (*img\_destroy)(image\_data);}
+\DoxyCodeLine{\ \ \ \ free(filedata);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ creating\ GUI\ using\ library\ functions}}
+\DoxyCodeLine{\ \ \ \ \mbox{\hyperlink{structkolibri__window}{kolibri\_window}}\ *main\_window\ =\ \mbox{\hyperlink{kolibri__gui__elements_8h_a62aa1b7d35feb27a0a4cc4cd909e8cb2}{kolibri\_new\_window}}(50,\ 40,\ 430,\ 500,\ \textcolor{stringliteral}{"{}PictureButton\ and\ File\ dialog\ demo"{}});}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \mbox{\hyperlink{structpict__button}{pict\_button}}\ tbar[3];}
+\DoxyCodeLine{\ \ \ \ gui\_add\_pict\_button(main\_window,\ kolibri\_pict\_button(\&tbar[0],\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(10,\ 16),\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(10,\ 16),\ image\_data\_rgb,\ image\_data\_rgb\ +\ icon\_rgb\_size,\ image\_data\_rgb\ +\ icon\_rgb\_size\ *\ 2,\ 24,\ NULL,\ 0));}
+\DoxyCodeLine{\ \ \ \ gui\_add\_pict\_button(main\_window,\ kolibri\_pict\_button(\&tbar[1],\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(35,\ 16),\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(10,\ 16),\ image\_data\_rgb,\ image\_data\_rgb\ +\ icon\_rgb\_size,\ image\_data\_rgb\ +\ icon\_rgb\_size\ *\ 2,\ 24,\ NULL,\ 0));}
+\DoxyCodeLine{\ \ \ \ gui\_add\_pict\_button(main\_window,\ kolibri\_pict\_button(\&tbar[2],\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(60,\ 16),\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(10,\ 16),\ image\_data\_rgb,\ image\_data\_rgb\ +\ icon\_rgb\_size,\ image\_data\_rgb\ +\ icon\_rgb\_size\ *\ 2,\ 24,\ NULL,\ 0));}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \mbox{\hyperlink{structstatictext}{statictext}}\ labels[3];\ \ \textcolor{comment}{//\ \ tips}}
+\DoxyCodeLine{\ \ \ \ gui\_add\_statictext(main\_window,\ \mbox{\hyperlink{kolibri__statictext_8h_a59bb849195a8854bb0a23f39cecdab13}{kolibri\_statictext\_def}}(\&labels[0],\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(5,\ 28),\ \textcolor{stringliteral}{"{}Open"{}}));}
+\DoxyCodeLine{\ \ \ \ gui\_add\_statictext(main\_window,\ \mbox{\hyperlink{kolibri__statictext_8h_a59bb849195a8854bb0a23f39cecdab13}{kolibri\_statictext\_def}}(\&labels[1],\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(35,\ 28),\ \textcolor{stringliteral}{"{}Save"{}}));}
+\DoxyCodeLine{\ \ \ \ gui\_add\_statictext(main\_window,\ \mbox{\hyperlink{kolibri__statictext_8h_a59bb849195a8854bb0a23f39cecdab13}{kolibri\_statictext\_def}}(\&labels[2],\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(65,\ 28),\ \textcolor{stringliteral}{"{}Select\ Dir\ \&\ browse"{}}));}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \mbox{\hyperlink{kolibri__opendialog_8h_a9208ba717d6a306155a3290b1994ea39}{open\_dialog}}\ *dlg\_opensave\ =\ \mbox{\hyperlink{kolibri__opendialog_8h_a47b5958fd77a97221781ac0e98503aa8}{kolibri\_new\_open\_dialog}}(\mbox{\hyperlink{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a0e0143636c29971736eab47415868eae}{OPEN}},\ 10,\ 10,\ 420,\ 320);}
+\DoxyCodeLine{\ \ \ \ (*OpenDialog\_init)(dlg\_opensave);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}\ pview;}
+\DoxyCodeLine{\ \ \ \ gui\_add\_pathview(main\_window,\ kolibri\_pathview(\&pview,\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(10,\ 50),\ 330,\ 1,\ 0,\ dlg\_opensave-\/>openfile\_path,\ temp\_path,\ 0,\ 0));\ \textcolor{comment}{//\ black\ font,\ no\ background,\ font\ 1}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \mbox{\hyperlink{kolibri__filebrowse_8h_a6b5ef4ac78b07d1261f514f338fccc9b}{filebrowser}}\ brows;}
+\DoxyCodeLine{\ \ \ \ filedata\ =\ load\_file\_inmem(\textcolor{stringliteral}{"{}/sys/File\ managers/z\_icons.png"{}},\ \&read\_bytes);}
+\DoxyCodeLine{\ \ \ \ image\_data\_rgb\ =\ malloc(icon\_rgb\_size\ *\ 20);\ \ \textcolor{comment}{//\ we\ know\ size}}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ определяем вид изображения и переводим его\ во временный\ буфер image\_data}}
+\DoxyCodeLine{\ \ \ \ image\_data\ =\ (*img\_decode)(filedata,\ read\_bytes,\ 0);}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ преобразуем изображение к формату\ rgb}}
+\DoxyCodeLine{\ \ \ \ (*img\_to\_rgb2)(image\_data,\ image\_data\_rgb);}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ удаляем временный\ буфер image\_data}}
+\DoxyCodeLine{\ \ \ \ (*img\_destroy)(image\_data);}
+\DoxyCodeLine{\ \ \ \ free(filedata);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ filedata\ =\ load\_file\_inmem(\textcolor{stringliteral}{"{}/sys/File\ managers/icons.ini"{}},\ \&read\_bytes);}
+\DoxyCodeLine{\ \ \ \ gui\_add\_filebrowser(main\_window,\ kolibri\_filebrowser(\&brows,\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(10,\ 400),\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(80,\ 300),\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(6,\ 9),\ \mbox{\hyperlink{kolibri__gui__elements_8h_a1392177b848ade0c5e3f62f759a283b3}{X\_Y}}(16,\ 16),\ image\_data\_rgb,\ NULL,\ 24,}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ filedata,\ filedata\ +\ read\_bytes,}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 0x00FF00,\ 0xbbddff,\ 0x000000,\ 0xFFFFFF,\ 0xFF0000));}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ try\ devices\ "{}/"{}\ -\/\ good}}
+\DoxyCodeLine{\ \ \ \ brows.folder\_data\ =\ read\_folderdata(\textcolor{stringliteral}{"{}/sys"{}});}
+\DoxyCodeLine{\ \ \ \ brows.select\_panel\_counter\ =\ 1;\ \ \textcolor{comment}{//\ if\ want\ to\ show\ selection}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{do}\ \ \textcolor{comment}{/*\ Start\ of\ main\ activity\ loop\ */}}
+\DoxyCodeLine{\ \ \ \ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}(gui\_event)}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca0a84f1803dcad15708cd5bf208a8118a}{KOLIBRI\_EVENT\_REDRAW}}:}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ control\_minimal\_window\_size(430,\ 500);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ brows.all\_redraw\ =\ 1;}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a81a1ea83d66ffc14350b4b72b078a3ef}{kolibri\_handle\_event\_redraw}}(main\_window);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ brows.all\_redraw\ =\ 0;}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca2dbec864e4e963d6bea9954806521df2}{KOLIBRI\_EVENT\_NONE}}:}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca563a416dc7f301d71a631da21a3963aa}{KOLIBRI\_EVENT\_KEY}}:}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__filebrowse_8h_aaa84feee2fd9a558df8015fe2a6cf806}{keypress}}\ =\ get\_key();}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ filebrowser\_key(\&brows,\ \mbox{\hyperlink{kolibri__filebrowse_8h_aaa84feee2fd9a558df8015fe2a6cf806}{keypress}});}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//kolibri\_handle\_event\_key(main\_window);}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e}{KOLIBRI\_EVENT\_BUTTON}}:}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ pressed\_button\ =\ get\_os\_button();}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (pressed\_button)}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \mbox{\hyperlink{kolibri__gui_8h_a5fb27a09574b3a8473fac0e17075675c}{BTN\_QUIT}}:}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 0;}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \mbox{\hyperlink{kolibri__gui_8h_a97735f796c03253d408c7e5bdf5f37dca3e55219fb3a0deaa00798ad87e12a401}{KOLIBRI\_EVENT\_MOUSE}}:}
+\DoxyCodeLine{\textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ \ \ mouse\_pos\ =\ get\_mouse\_pos(POS\_WINDOW);\ //\ window\ relative}}
+\DoxyCodeLine{\textcolor{comment}{//\ \ \ \ \ \ \ \ \ \ \ \ mouse\_button\ =\ get\_mouse\_eventstate();}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ brows.select\_flag\ =\ 0;}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a5970422747362f11880a68439b7ef870}{kolibri\_handle\_event\_mouse}}(main\_window);}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (brows.mouse\_keys\_delta\ ==\ 3)\ \ \textcolor{comment}{//\ double\ clicked\ in\ browser}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ debug\_board\_printf(\textcolor{stringliteral}{"{}mouse\_keys\_delta\ ==\ 3,\ name\ \%s\(\backslash\)n"{}},\ brows.selected\_BDVK\_adress-\/>fname);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ brows.mouse\_keys\_delta\ =\ 0;}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}(tbar[0].click)\ \ \textcolor{comment}{//\ open}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ tbar[0].\mbox{\hyperlink{structpict__button_af0a714dedc17ffffbfb7382a193f1a69}{click}}\ =\ 0;}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dlg\_opensave-\/>mode\ =\ \mbox{\hyperlink{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a0e0143636c29971736eab47415868eae}{OPEN}};}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (*OpenDialog\_start)(dlg\_opensave);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//debug\_board\_printf("{}status\ ==\ \%d,\ buf\ =\ \%s\(\backslash\)n"{},\ dlg\_opensave-\/>status,\ dlg\_opensave-\/>openfile\_path);}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (dlg\_opensave-\/>status\ !=\ 2\ \&\&\ dlg\_opensave-\/>status\ !=\ 0)\ \textcolor{comment}{//\ fail\ or\ cancel}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (*path\_show\_prepare)(\&pview);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (*path\_show\_draw)(\&pview);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}(tbar[1].click)\ \ \textcolor{comment}{//\ save}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ tbar[1].\mbox{\hyperlink{structpict__button_af0a714dedc17ffffbfb7382a193f1a69}{click}}\ =\ 0;}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dlg\_opensave-\/>mode\ =\ \mbox{\hyperlink{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a793562cbf5bffacba71303cee907ef7d}{SAVE}};}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (*OpenDialog\_start)(dlg\_opensave);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (dlg\_opensave-\/>status\ !=\ 2\ \&\&\ dlg\_opensave-\/>status\ !=\ 0)\ \textcolor{comment}{//\ fail\ or\ cancel}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (*path\_show\_prepare)(\&pview);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ just\ calling\ line\ below\ draws\ incomplete}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ kolibri\_handle\_event\_redraw(main\_window);}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}(tbar[2].click)\ \ \textcolor{comment}{//\ select}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ tbar[2].\mbox{\hyperlink{structpict__button_af0a714dedc17ffffbfb7382a193f1a69}{click}}\ =\ 0;}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ dlg\_opensave-\/>mode\ =\ \mbox{\hyperlink{kolibri__opendialog_8h_a201e1db9634e428f48ad9f5060ebd784a1697a91b22c2369eb2ba427c2d193329}{SELECT}};}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (*OpenDialog\_start)(dlg\_opensave);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (dlg\_opensave-\/>status\ !=\ 2\ \&\&\ dlg\_opensave-\/>status\ !=\ 0)\ \textcolor{comment}{//\ fail\ or\ cancel}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (*path\_show\_prepare)(\&pview);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ free(brows.folder\_data);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ brows.folder\_data\ =\ read\_folderdata(dlg\_opensave-\/>openfile\_path);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ brows.start\_draw\_line\ =\ brows.start\_draw\_cursor\_line\ =\ 0;}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ we\ may\ redraw\ here,\ or\ just\ wait\ next\ redraw\ event}}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ brows.all\_redraw\ =\ 1;}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__gui_8h_a81a1ea83d66ffc14350b4b72b078a3ef}{kolibri\_handle\_event\_redraw}}(main\_window);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ brows.all\_redraw\ =\ 0;}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{break};}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ gui\_event\ =\ get\_os\_event();}
+\DoxyCodeLine{\ \ \ \ \}\ \textcolor{keywordflow}{while}(1)\ ;\ \textcolor{comment}{/*\ End\ of\ main\ activity\ loop\ */}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \textcolor{keywordflow}{return}\ 0;}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{char}*\ \ \ load\_file\_inmem(\textcolor{keywordtype}{char}*\ fname,\ int32\_t*\ read\_sz)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\ \ \ \ FILE\ *f\ =\ fopen(fname,\ \textcolor{stringliteral}{"{}rb"{}});}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}\ (!f)\ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ debug\_board\_printf(\textcolor{stringliteral}{"{}Can't\ open\ file:\ \%s"{}},\ fname);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ exit(1);}
+\DoxyCodeLine{\ \ \ \ \}}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}\ (fseek(f,\ 0,\ SEEK\_END))\ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ debug\_board\_printf(\textcolor{stringliteral}{"{}Can't\ SEEK\_END\ file:\ \%s"{}},\ fname);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ exit(1);}
+\DoxyCodeLine{\ \ \ \ \}}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{int}\ filesize\ =\ ftell(f);}
+\DoxyCodeLine{\ \ \ \ rewind(f);}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{char}*\ fdata\ =\ malloc(filesize);}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}(!fdata)\ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ debug\_board\_printf(\textcolor{stringliteral}{"{}No\ memory\ for\ file\ \%s"{}},\ fname);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ exit(1);}
+\DoxyCodeLine{\ \ \ \ \}}
+\DoxyCodeLine{\ \ \ \ *read\_sz\ =\ fread(fdata,\ 1,\ filesize,\ f);}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}\ (ferror(f))\ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ debug\_board\_printf(\textcolor{stringliteral}{"{}Error\ reading\ file\ \%s"{}},\ fname);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ exit(1);}
+\DoxyCodeLine{\ \ \ \ \}}
+\DoxyCodeLine{\ \ \ \ fclose(f);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{return}\ fdata;}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{void}*\ read\_folderdata(\textcolor{keywordtype}{char}*\ name)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keyword}{struct\ }fs\_dirinfo\ di;}
+\DoxyCodeLine{\ \ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structfs__dirheader}{fs\_dirheader}}\ dhead;}
+\DoxyCodeLine{\ \ \ \ assert(\textcolor{keyword}{sizeof}\ di\ ==\ 25);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ memset(\&di,\ 0,\ \textcolor{keyword}{sizeof}\ di);}
+\DoxyCodeLine{\ \ \ \ di.ppath\ =\ name;}
+\DoxyCodeLine{\ \ \ \ di.retval\ =\ (uint32\_t)\&dhead;}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{int}\ rc\ =\ sf\_file(1,\ \&di);\ \ \textcolor{comment}{//\ read\ dir\ size}}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}(rc)\ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ debug\_board\_printf(\textcolor{stringliteral}{"{}Error\ reading\ dir\ size\ \%s"{}},\ name);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ exit(1);}
+\DoxyCodeLine{\ \ \ \ \}}
+\DoxyCodeLine{\ \ \ \ di.size\ =\ dhead.totl\_blocks;}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{char}\ *retdir\ =\ malloc(\textcolor{keyword}{sizeof}\ dhead\ +\ dhead.totl\_blocks\ *\ \textcolor{keyword}{sizeof}(\textcolor{keyword}{struct}\ \mbox{\hyperlink{structfs_b_d_f_e}{fsBDFE}}));}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}(!retdir)\ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ debug\_board\_printf(\textcolor{stringliteral}{"{}No\ memory\ for\ dir\ \%s"{}},\ name);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ exit(1);}
+\DoxyCodeLine{\ \ \ \ \}}
+\DoxyCodeLine{\ \ \ \ di.retval\ =\ (uint32\_t)retdir;}
+\DoxyCodeLine{\ \ \ \ rc\ =\ sf\_file(1,\ \&di);\ \ \textcolor{comment}{//\ read\ dir\ size}}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}(rc)\ \{}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ debug\_board\_printf(\textcolor{stringliteral}{"{}Error\ 2\ reading\ dir\ size\ \%s"{}},\ name);}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ exit(1);}
+\DoxyCodeLine{\ \ \ \ \}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ manual\ clear\ mark\ flag\ (random\ junk\ in\ fname\ free\ space)}}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{int}\ i;}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{for}\ (i\ =\ 0;\ i\ <\ dhead.totl\_blocks;\ i++)}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ ((\textcolor{keyword}{struct}\ \mbox{\hyperlink{structfs_b_d_f_e}{fsBDFE}}*)(retdir+32))[i].fname[259]\ =\ 0;}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ debug\_board\_printf(\textcolor{stringliteral}{"{}Loaded\ dir\ [\%s]\ etnries\ \%d,\(\backslash\)n\ first\ file\ [\%s]\(\backslash\)n"{}},\ name,\ ((\textcolor{keyword}{struct}\ \mbox{\hyperlink{structfs__dirheader}{fs\_dirheader}}*)(retdir))-\/>\mbox{\hyperlink{structfs__dirheader_a46a34525bd7f375673a3de93f94669d3}{curn\_blocks}},\ ((\textcolor{keyword}{struct}\ \mbox{\hyperlink{structfs_b_d_f_e}{fsBDFE}}*)(retdir+32))-\/>fname);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{return}\ retdir;}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+\DoxyCodeLine{\textcolor{keywordtype}{void}\ control\_minimal\_window\_size(\textcolor{keywordtype}{int}\ wmin,\ \textcolor{keywordtype}{int}\ hmin)}
+\DoxyCodeLine{\{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{char}\ pinfo[1024];}
+\DoxyCodeLine{\ \ \ \ get\_proc\_info(pinfo);}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{int}\ win\_hight\ =\ *(\textcolor{keywordtype}{int}*)(pinfo\ +\ 46),}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ win\_width\ =\ *(\textcolor{keywordtype}{int}*)(pinfo\ +\ 42);}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordtype}{char}\ win\_status\ =\ pinfo[70];}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}\ (win\_status\ \&\ 7)\ \textcolor{keywordflow}{return};\ \ \textcolor{comment}{//\ maximized,\ minimized\ or\ titlebar\ mode}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}\ (win\_width\ <\ wmin)}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \_\_asm\_\_\ \mbox{\hyperlink{kolibri__editor_8h_a6d952a8d068aaf8ee03623416d163a37}{\_\_volatile\_\_}}(\textcolor{stringliteral}{"{}int\ \$0x40"{}}\ ::\textcolor{stringliteral}{"{}a"{}}(67),\ \textcolor{stringliteral}{"{}b"{}}(-\/1),\ \textcolor{stringliteral}{"{}c"{}}(-\/1),\ \textcolor{stringliteral}{"{}d"{}}(wmin),\ \textcolor{stringliteral}{"{}S"{}}(-\/1));\ \ \textcolor{comment}{//\ SF\_CHANGE\_WINDOW\ x,y,w,h}}
+\DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{if}\ (win\_hight\ <\ hmin)}
+\DoxyCodeLine{\ \ \ \ \ \ \ \ \_\_asm\_\_\ \mbox{\hyperlink{kolibri__editor_8h_a6d952a8d068aaf8ee03623416d163a37}{\_\_volatile\_\_}}(\textcolor{stringliteral}{"{}int\ \$0x40"{}}\ ::\textcolor{stringliteral}{"{}a"{}}(67),\ \textcolor{stringliteral}{"{}b"{}}(-\/1),\ \textcolor{stringliteral}{"{}c"{}}(-\/1),\ \textcolor{stringliteral}{"{}d"{}}(-\/1),\ \textcolor{stringliteral}{"{}S"{}}(hmin));\ \ \textcolor{comment}{//\ x,y,w,h}}
+\DoxyCodeLine{}
+\DoxyCodeLine{\}}
+\DoxyCodeLine{}
+\DoxyCodeLine{}
+
+\end{DoxyCodeInclude}
+ 
