@@ -128,21 +128,21 @@ $(function(){initNavTree('d7/da6/rasterworks_example_8c-example.html','../../');
 <div class="line">    </div>
 <div class="line">  debug_board_printf(<span class="stringliteral">&quot;String len: %d \n&quot;</span>, ln_str);</div>
 <div class="line">  </div>
-<div class="line">  <a id="a8" name="a8"></a><a class="code hl_variable" href="../../d8/d18/kolibri__rasterworks_8h.html#a5144721ab30b914ca5ee359b24ceb267">drawText</a>(buffi, 0, 0, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x30C18);</div>
-<div class="line">  <a class="code hl_variable" href="../../d8/d18/kolibri__rasterworks_8h.html#a5144721ab30b914ca5ee359b24ceb267">drawText</a>(buffi, 0, 32, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x1030C18);</div>
-<div class="line">  <a class="code hl_variable" href="../../d8/d18/kolibri__rasterworks_8h.html#a5144721ab30b914ca5ee359b24ceb267">drawText</a>(buffi, 0, 64, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x2030C18);</div>
-<div class="line">  <a class="code hl_variable" href="../../d8/d18/kolibri__rasterworks_8h.html#a5144721ab30b914ca5ee359b24ceb267">drawText</a>(buffi, 0, 96, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x4030C18);</div>
-<div class="line">  <a class="code hl_variable" href="../../d8/d18/kolibri__rasterworks_8h.html#a5144721ab30b914ca5ee359b24ceb267">drawText</a>(buffi, 0, 128, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x8030C18);</div>
-<div class="line">  <a class="code hl_variable" href="../../d8/d18/kolibri__rasterworks_8h.html#a5144721ab30b914ca5ee359b24ceb267">drawText</a>(buffi, 0, 160, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x0F031428);</div>
+<div class="line">  drawText(buffi, 0, 0, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x30C18);</div>
+<div class="line">  drawText(buffi, 0, 32, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x1030C18);</div>
+<div class="line">  drawText(buffi, 0, 64, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x2030C18);</div>
+<div class="line">  drawText(buffi, 0, 96, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x4030C18);</div>
+<div class="line">  drawText(buffi, 0, 128, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x8030C18);</div>
+<div class="line">  drawText(buffi, 0, 160, <span class="stringliteral">&quot;Пример работы&quot;</span>, ln_str, 0xFF000000, 0x0F031428);</div>
 <div class="line">  </div>
 <div class="line">  <span class="keywordflow">do</span>  <span class="comment">/* Start of main activity loop */</span></div>
 <div class="line">    {</div>
 <div class="line">      <span class="keywordflow">if</span>(gui_event == <a class="code hl_enumvalue" href="../../d5/d21/kolibri__gui_8h.html#a97735f796c03253d408c7e5bdf5f37dca0a84f1803dcad15708cd5bf208a8118a">KOLIBRI_EVENT_REDRAW</a>)</div>
 <div class="line">    {</div>
-<div class="line">      <a id="a9" name="a9"></a><a class="code hl_function" href="../../d5/d21/kolibri__gui_8h.html#a81a1ea83d66ffc14350b4b72b078a3ef">kolibri_handle_event_redraw</a>(main_window);</div>
+<div class="line">      <a id="a8" name="a8"></a><a class="code hl_function" href="../../d5/d21/kolibri__gui_8h.html#a81a1ea83d66ffc14350b4b72b078a3ef">kolibri_handle_event_redraw</a>(main_window);</div>
 <div class="line">      DrawBitmap(buffi+8, 5, 5, 768, 256);</div>
 <div class="line">    }</div>
-<div class="line">      <span class="keywordflow">else</span> <span class="keywordflow">if</span>(gui_event == <a id="a10" name="a10"></a><a class="code hl_enumvalue" href="../../d5/d21/kolibri__gui_8h.html#a97735f796c03253d408c7e5bdf5f37dca563a416dc7f301d71a631da21a3963aa">KOLIBRI_EVENT_KEY</a>)</div>
+<div class="line">      <span class="keywordflow">else</span> <span class="keywordflow">if</span>(gui_event == <a id="a9" name="a9"></a><a class="code hl_enumvalue" href="../../d5/d21/kolibri__gui_8h.html#a97735f796c03253d408c7e5bdf5f37dca563a416dc7f301d71a631da21a3963aa">KOLIBRI_EVENT_KEY</a>)</div>
 <div class="line">    {</div>
 <div class="line">      <a class="code hl_variable" href="../../d6/d35/kolibri__editor_8h.html#a6efc9555d65f172040066b7da1e3d2a0">key</a> = get_key();</div>
 <div class="line">      <span class="keywordflow">switch</span> (<a class="code hl_variable" href="../../d6/d35/kolibri__editor_8h.html#a6efc9555d65f172040066b7da1e3d2a0">key</a>.code)</div>
@@ -150,20 +150,20 @@ $(function(){initNavTree('d7/da6/rasterworks_example_8c-example.html','../../');
 <div class="line">      }</div>
 <div class="line">      <a class="code hl_variable" href="../../dc/d1d/kolibri__editbox_8h.html#ab5b37242fb83f9460dc7944d3ba27767">press_key</a> = <a class="code hl_variable" href="../../d6/d35/kolibri__editor_8h.html#a6efc9555d65f172040066b7da1e3d2a0">key</a>.val;</div>
 <div class="line"> </div>
-<div class="line">      <a id="a11" name="a11"></a><a class="code hl_function" href="../../d5/d21/kolibri__gui_8h.html#a90720148918d989921c1572058d21a58">kolibri_handle_event_key</a>(main_window, <a class="code hl_variable" href="../../d6/d35/kolibri__editor_8h.html#a6efc9555d65f172040066b7da1e3d2a0">key</a>);</div>
+<div class="line">      <a id="a10" name="a10"></a><a class="code hl_function" href="../../d5/d21/kolibri__gui_8h.html#a90720148918d989921c1572058d21a58">kolibri_handle_event_key</a>(main_window, <a class="code hl_variable" href="../../d6/d35/kolibri__editor_8h.html#a6efc9555d65f172040066b7da1e3d2a0">key</a>);</div>
 <div class="line">    }</div>
-<div class="line">      <span class="keywordflow">else</span> <span class="keywordflow">if</span>(gui_event == <a id="a12" name="a12"></a><a class="code hl_enumvalue" href="../../d5/d21/kolibri__gui_8h.html#a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e">KOLIBRI_EVENT_BUTTON</a>)</div>
+<div class="line">      <span class="keywordflow">else</span> <span class="keywordflow">if</span>(gui_event == <a id="a11" name="a11"></a><a class="code hl_enumvalue" href="../../d5/d21/kolibri__gui_8h.html#a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e">KOLIBRI_EVENT_BUTTON</a>)</div>
 <div class="line">    {</div>
-<div class="line">      <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> pressed_button = <a id="a13" name="a13"></a><a class="code hl_function" href="../../d0/dc8/kolibri__button_8h.html#a55ae7b6ad65b2e19c77cc7ad0183191f">kolibri_button_get_identifier</a>();</div>
+<div class="line">      <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> pressed_button = <a id="a12" name="a12"></a><a class="code hl_function" href="../../d0/dc8/kolibri__button_8h.html#a55ae7b6ad65b2e19c77cc7ad0183191f">kolibri_button_get_identifier</a>();</div>
 <div class="line">      <span class="keywordflow">switch</span> (pressed_button)</div>
 <div class="line">      {</div>
-<div class="line">          <span class="keywordflow">case</span> <a id="a14" name="a14"></a><a class="code hl_define" href="../../d5/d21/kolibri__gui_8h.html#a198bffa888e7f18fbee8a13b209976c0">BUTTON_CLOSE</a>:</div>
-<div class="line">            <a id="a15" name="a15"></a><a class="code hl_function" href="../../d5/d21/kolibri__gui_8h.html#a0830b6d7b228582bd73694d2d85b47cc">kolibri_exit</a>();</div>
+<div class="line">          <span class="keywordflow">case</span> <a id="a13" name="a13"></a><a class="code hl_define" href="../../d5/d21/kolibri__gui_8h.html#a198bffa888e7f18fbee8a13b209976c0">BUTTON_CLOSE</a>:</div>
+<div class="line">            <a id="a14" name="a14"></a><a class="code hl_function" href="../../d5/d21/kolibri__gui_8h.html#a0830b6d7b228582bd73694d2d85b47cc">kolibri_exit</a>();</div>
 <div class="line">      }</div>
 <div class="line">     }</div>
-<div class="line">      <span class="keywordflow">else</span> <span class="keywordflow">if</span>(gui_event == <a id="a16" name="a16"></a><a class="code hl_enumvalue" href="../../d5/d21/kolibri__gui_8h.html#a97735f796c03253d408c7e5bdf5f37dca3e55219fb3a0deaa00798ad87e12a401">KOLIBRI_EVENT_MOUSE</a>)</div>
+<div class="line">      <span class="keywordflow">else</span> <span class="keywordflow">if</span>(gui_event == <a id="a15" name="a15"></a><a class="code hl_enumvalue" href="../../d5/d21/kolibri__gui_8h.html#a97735f796c03253d408c7e5bdf5f37dca3e55219fb3a0deaa00798ad87e12a401">KOLIBRI_EVENT_MOUSE</a>)</div>
 <div class="line">    {</div>
-<div class="line">      <a id="a17" name="a17"></a><a class="code hl_function" href="../../d5/d21/kolibri__gui_8h.html#a5970422747362f11880a68439b7ef870">kolibri_handle_event_mouse</a>(main_window);</div>
+<div class="line">      <a id="a16" name="a16"></a><a class="code hl_function" href="../../d5/d21/kolibri__gui_8h.html#a5970422747362f11880a68439b7ef870">kolibri_handle_event_mouse</a>(main_window);</div>
 <div class="line">    }</div>
 <div class="line"> </div>
 <div class="line">    } <span class="keywordflow">while</span>((gui_event = get_os_event())); <span class="comment">/* End of main activity loop */</span></div>
@@ -188,7 +188,6 @@ $(function(){initNavTree('d7/da6/rasterworks_example_8c-example.html','../../');
 <div class="ttc" id="akolibri__gui_8h_html_a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e"><div class="ttname"><a href="../../d5/d21/kolibri__gui_8h.html#a97735f796c03253d408c7e5bdf5f37dca775f06d5461504664e4a97428e9d7a2e">KOLIBRI_EVENT_BUTTON</a></div><div class="ttdeci">@ KOLIBRI_EVENT_BUTTON</div><div class="ttdoc">A button was clicked with the mouse.</div><div class="ttdef"><b>Definition</b> kolibri_gui.h:24</div></div>
 <div class="ttc" id="akolibri__gui__elements_8h_html_a62aa1b7d35feb27a0a4cc4cd909e8cb2"><div class="ttname"><a href="../../d6/de5/kolibri__gui__elements_8h.html#a62aa1b7d35feb27a0a4cc4cd909e8cb2">kolibri_new_window</a></div><div class="ttdeci">kolibri_window * kolibri_new_window(int tlx, int tly, int sizex, int sizey, char *title)</div><div class="ttdef"><b>Definition</b> kolibri_gui_elements.h:173</div></div>
 <div class="ttc" id="akolibri__rasterworks_8h_html"><div class="ttname"><a href="../../d8/d18/kolibri__rasterworks_8h.html">kolibri_rasterworks.h</a></div></div>
-<div class="ttc" id="akolibri__rasterworks_8h_html_a5144721ab30b914ca5ee359b24ceb267"><div class="ttname"><a href="../../d8/d18/kolibri__rasterworks_8h.html#a5144721ab30b914ca5ee359b24ceb267">drawText</a></div><div class="ttdeci">void(* drawText)(void *canvas, int x, int y, const char *string, int charQuantity, int fontColor, int params) __attribute__((__stdcall__))</div><div class="ttdoc">Draw text on 24bpp or 32bpp image.</div></div>
 <div class="ttc" id="akolibri__rasterworks_8h_html_a6f4e39486aa4d2a58140c9cad796a1d1"><div class="ttname"><a href="../../d8/d18/kolibri__rasterworks_8h.html#a6f4e39486aa4d2a58140c9cad796a1d1">kolibri_rasterworks_init</a></div><div class="ttdeci">int kolibri_rasterworks_init(void)</div><div class="ttdoc">Initialize the RasterWorks library.</div></div>
 <div class="ttc" id="akolibri__rasterworks_8h_html_afd0d07b5a6fb419ab7353b6176518814"><div class="ttname"><a href="../../d8/d18/kolibri__rasterworks_8h.html#afd0d07b5a6fb419ab7353b6176518814">countUTF8Z</a></div><div class="ttdeci">int(* countUTF8Z)(const char *string, int byteQuantity) __attribute__((__stdcall__))</div><div class="ttdoc">Calculate amount of valid chars in UTF-8 string.</div></div>
 <div class="ttc" id="astructkolibri__window_html"><div class="ttname"><a href="../../d1/d70/structkolibri__window.html">kolibri_window</a></div><div class="ttdoc">Structure for a GUI Window on Kolibri. It also contains all the elements drawn in window.</div><div class="ttdef"><b>Definition</b> kolibri_gui_elements.h:59</div></div>

@@ -94,6 +94,7 @@ $(function(){initNavTree('dc/d1d/kolibri__editbox_8h.html','../../'); initResiza
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">kolibri_editbox.h File Reference</div></div>
@@ -112,6 +113,67 @@ Data Structures</h2></td></tr>
 Typedefs</h2></td></tr>
 <tr class="memitem:a429dca2bb9edc0b6dc42738853f80fef" id="r_a429dca2bb9edc0b6dc42738853f80fef"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="../../d2/d9b/structedit__box__t.html">edit_box_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a429dca2bb9edc0b6dc42738853f80fef">edit_box</a></td></tr>
 <tr class="separator:a429dca2bb9edc0b6dc42738853f80fef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:a1691c1b22c2efc46844e7bad76bd3abe" id="r_a1691c1b22c2efc46844e7bad76bd3abe"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abe">EditBoxFlags</a> { <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea9346bbfd0e666c061b17acf0d0bfcffa">ed_pass</a> = 0b1
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea79ac440941ea9dbae6b8e3cc86eabf52">ed_focus</a> = 0b10
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea66a7a8380a612ef8556d2bfd8e4bbfdf">ed_shift</a> = 0b100
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea9396f7731443b029d90f665e3b2b66c8">ed_shift_on</a> = 0b1000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea61928a1ed5b8ea533a404b0ac08600f5">ed_shift_bac</a> = 0b10000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea7a16d37fd8027bc3e6b3ae69d8ce5808">ed_left_fl</a> = 0b100000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea80b9ee997a49abf3957cd5014d59d711">ed_offset_fl</a> = 0b1000000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea4cc71dd97d8c6674d7a6555139e1d01c">ed_insert</a> = 0b10000000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea664de24071390722d934c8507cb56d62">ed_mouse_on</a> = 0b100000000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abeabea8a283c5ac09e6d0d14e2843732f43">ed_ctrl_on</a> = 0b1000000000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abeaa470c0d9e5eff4914b439d3441b350ed">ed_alt_on</a> = 0b10000000000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea2e4be5e4c5a760b9e4624ba4f5302255">ed_disabled</a> = 0b100000000000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea7aeadf6a314d541cd8455e332233997e">ed_always_focus</a> = 0b100000000000000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea608940fe2141e7b700d19aad5de02182">ed_figure_only</a> = 0b1000000000000000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea6626d82afb36ba957684a7186c51f09b">ed_shift_on_off</a> = 0b1111111111110111
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea7e6ae8e6a432ca2dc259e17c16433dc2">ed_shift_off</a> = 0b1111111111111011
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abeacd9d38a1032ff6eb3dea0b7b236f5bcd">ed_shift_bac_cl</a> = 0b1111111111101111
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea7454b60fe2f8c6eb440c61ba59dd7736">ed_shift_cl</a> = 0b1111111111100011
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea5156b1212de36b8ddbd211d6a79b35f1">ed_shift_mcl</a> = 0b1111111111111011
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abeae4421534f14079a014f006a8f26b7eaf">ed_right_fl</a> = 0b1111111111011111
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abeaac6e4eeba7f940eae98d317c0ed5f8f1">ed_offset_cl</a> = 0b1111111110111111
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea93f54172a15b6d95df4e969707f81b95">ed_insert_cl</a> = 0b1111111101111111
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abeab5a7ab68fb1863759e7b893446e0426f">ed_mous_adn_b</a> = 0b100011000
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea4d7a900f34170b3efcafae412afeeb59">ed_mouse_on_off</a> = 0b1111111011111111
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea4d7a900f34170b3efcafae412afeeb59">ed_mouse_on_off</a> = 0b1111111011111111
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abeac6ab238c0ed17a70a3f2ebba6d84ce37">ed_ctrl_off</a> = !(ed_ctrl_on)
+, <br />
+&#160;&#160;<a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abea782d122769fc8b6e7f303c8f6ac14d50">ed_alt_off</a> = !(ed_alt_on)
+<br />
+ }</td></tr>
+<tr class="memdesc:a1691c1b22c2efc46844e7bad76bd3abe"><td class="mdescLeft">&#160;</td><td class="mdescRight">flags meaning  <a href="#a1691c1b22c2efc46844e7bad76bd3abe">More...</a><br /></td></tr>
+<tr class="separator:a1691c1b22c2efc46844e7bad76bd3abe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -148,6 +210,52 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="a1691c1b22c2efc46844e7bad76bd3abe" name="a1691c1b22c2efc46844e7bad76bd3abe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1691c1b22c2efc46844e7bad76bd3abe">&#9670;&#160;</a></span>EditBoxFlags</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="#a1691c1b22c2efc46844e7bad76bd3abe">EditBoxFlags</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>flags meaning </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea9346bbfd0e666c061b17acf0d0bfcffa" name="a1691c1b22c2efc46844e7bad76bd3abea9346bbfd0e666c061b17acf0d0bfcffa"></a>ed_pass&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea79ac440941ea9dbae6b8e3cc86eabf52" name="a1691c1b22c2efc46844e7bad76bd3abea79ac440941ea9dbae6b8e3cc86eabf52"></a>ed_focus&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea66a7a8380a612ef8556d2bfd8e4bbfdf" name="a1691c1b22c2efc46844e7bad76bd3abea66a7a8380a612ef8556d2bfd8e4bbfdf"></a>ed_shift&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea9396f7731443b029d90f665e3b2b66c8" name="a1691c1b22c2efc46844e7bad76bd3abea9396f7731443b029d90f665e3b2b66c8"></a>ed_shift_on&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea61928a1ed5b8ea533a404b0ac08600f5" name="a1691c1b22c2efc46844e7bad76bd3abea61928a1ed5b8ea533a404b0ac08600f5"></a>ed_shift_bac&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea7a16d37fd8027bc3e6b3ae69d8ce5808" name="a1691c1b22c2efc46844e7bad76bd3abea7a16d37fd8027bc3e6b3ae69d8ce5808"></a>ed_left_fl&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea80b9ee997a49abf3957cd5014d59d711" name="a1691c1b22c2efc46844e7bad76bd3abea80b9ee997a49abf3957cd5014d59d711"></a>ed_offset_fl&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea4cc71dd97d8c6674d7a6555139e1d01c" name="a1691c1b22c2efc46844e7bad76bd3abea4cc71dd97d8c6674d7a6555139e1d01c"></a>ed_insert&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea664de24071390722d934c8507cb56d62" name="a1691c1b22c2efc46844e7bad76bd3abea664de24071390722d934c8507cb56d62"></a>ed_mouse_on&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abeabea8a283c5ac09e6d0d14e2843732f43" name="a1691c1b22c2efc46844e7bad76bd3abeabea8a283c5ac09e6d0d14e2843732f43"></a>ed_ctrl_on&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abeaa470c0d9e5eff4914b439d3441b350ed" name="a1691c1b22c2efc46844e7bad76bd3abeaa470c0d9e5eff4914b439d3441b350ed"></a>ed_alt_on&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea2e4be5e4c5a760b9e4624ba4f5302255" name="a1691c1b22c2efc46844e7bad76bd3abea2e4be5e4c5a760b9e4624ba4f5302255"></a>ed_disabled&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea7aeadf6a314d541cd8455e332233997e" name="a1691c1b22c2efc46844e7bad76bd3abea7aeadf6a314d541cd8455e332233997e"></a>ed_always_focus&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea608940fe2141e7b700d19aad5de02182" name="a1691c1b22c2efc46844e7bad76bd3abea608940fe2141e7b700d19aad5de02182"></a>ed_figure_only&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea6626d82afb36ba957684a7186c51f09b" name="a1691c1b22c2efc46844e7bad76bd3abea6626d82afb36ba957684a7186c51f09b"></a>ed_shift_on_off&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea7e6ae8e6a432ca2dc259e17c16433dc2" name="a1691c1b22c2efc46844e7bad76bd3abea7e6ae8e6a432ca2dc259e17c16433dc2"></a>ed_shift_off&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abeacd9d38a1032ff6eb3dea0b7b236f5bcd" name="a1691c1b22c2efc46844e7bad76bd3abeacd9d38a1032ff6eb3dea0b7b236f5bcd"></a>ed_shift_bac_cl&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea7454b60fe2f8c6eb440c61ba59dd7736" name="a1691c1b22c2efc46844e7bad76bd3abea7454b60fe2f8c6eb440c61ba59dd7736"></a>ed_shift_cl&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea5156b1212de36b8ddbd211d6a79b35f1" name="a1691c1b22c2efc46844e7bad76bd3abea5156b1212de36b8ddbd211d6a79b35f1"></a>ed_shift_mcl&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abeae4421534f14079a014f006a8f26b7eaf" name="a1691c1b22c2efc46844e7bad76bd3abeae4421534f14079a014f006a8f26b7eaf"></a>ed_right_fl&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abeaac6e4eeba7f940eae98d317c0ed5f8f1" name="a1691c1b22c2efc46844e7bad76bd3abeaac6e4eeba7f940eae98d317c0ed5f8f1"></a>ed_offset_cl&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea93f54172a15b6d95df4e969707f81b95" name="a1691c1b22c2efc46844e7bad76bd3abea93f54172a15b6d95df4e969707f81b95"></a>ed_insert_cl&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abeab5a7ab68fb1863759e7b893446e0426f" name="a1691c1b22c2efc46844e7bad76bd3abeab5a7ab68fb1863759e7b893446e0426f"></a>ed_mous_adn_b&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea4d7a900f34170b3efcafae412afeeb59" name="a1691c1b22c2efc46844e7bad76bd3abea4d7a900f34170b3efcafae412afeeb59"></a>ed_mouse_on_off&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea4d7a900f34170b3efcafae412afeeb59" name="a1691c1b22c2efc46844e7bad76bd3abea4d7a900f34170b3efcafae412afeeb59"></a>ed_mouse_on_off&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abeac6ab238c0ed17a70a3f2ebba6d84ce37" name="a1691c1b22c2efc46844e7bad76bd3abeac6ab238c0ed17a70a3f2ebba6d84ce37"></a>ed_ctrl_off&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a1691c1b22c2efc46844e7bad76bd3abea782d122769fc8b6e7f303c8f6ac14d50" name="a1691c1b22c2efc46844e7bad76bd3abea782d122769fc8b6e7f303c8f6ac14d50"></a>ed_alt_off&#160;</td><td class="fielddoc"></td></tr>
+</table>
 
 </div>
 </div>
@@ -218,7 +326,7 @@ Variables</h2></td></tr>
 <div class="line">    __asm__ <a class="code hl_function" href="../../d6/d35/kolibri__editor_8h.html#a6d952a8d068aaf8ee03623416d163a37">__volatile__</a> (</div>
 <div class="line">             <span class="stringliteral">&quot;push %2\n\t&quot;</span></div>
 <div class="line">             <span class="stringliteral">&quot;call *%1 \n\t&quot;</span>::<span class="stringliteral">&quot;a&quot;</span>(<a class="code hl_variable" href="#a17ebe84fe1c5af7f936ae66083cd10ac">ch</a>.val), <span class="stringliteral">&quot;m&quot;</span>(<a class="code hl_variable" href="#a80671d96dab6ff41899f507ad329a833">edit_box_key</a>), <span class="stringliteral">&quot;m&quot;</span>(e):)</div>
-<div class="ttc" id="akolibri__editbox_8h_html_a17ebe84fe1c5af7f936ae66083cd10ac"><div class="ttname"><a href="#a17ebe84fe1c5af7f936ae66083cd10ac">ch</a></div><div class="ttdeci">oskey_t ch</div><div class="ttdef"><b>Definition</b> kolibri_editbox.h:114</div></div>
+<div class="ttc" id="akolibri__editbox_8h_html_a17ebe84fe1c5af7f936ae66083cd10ac"><div class="ttname"><a href="#a17ebe84fe1c5af7f936ae66083cd10ac">ch</a></div><div class="ttdeci">oskey_t ch</div><div class="ttdef"><b>Definition</b> kolibri_editbox.h:118</div></div>
 <div class="ttc" id="akolibri__editbox_8h_html_a80671d96dab6ff41899f507ad329a833"><div class="ttname"><a href="#a80671d96dab6ff41899f507ad329a833">edit_box_key</a></div><div class="ttdeci">void(* edit_box_key)(edit_box *) __attribute__((__stdcall__))</div></div>
 <div class="ttc" id="akolibri__editor_8h_html_a6d952a8d068aaf8ee03623416d163a37"><div class="ttname"><a href="../../d6/d35/kolibri__editor_8h.html#a6d952a8d068aaf8ee03623416d163a37">__volatile__</a></div><div class="ttdeci">__asm__ __volatile__(&quot;push %4\n\t&quot; &quot;push %3\n\t&quot; &quot;push %2\n\t&quot; &quot;call *%1 \n\t&quot;::&quot;a&quot;(ch), &quot;m&quot;(ted_key_asm), &quot;m&quot;(ed), &quot;m&quot;(table), &quot;m&quot;(control):)</div></div>
 </div><!-- fragment --><p>���� flags �� �������� ed_focus, ���������� ���� ���� flags �������� ed_mouse_on ��� ed_disabled, ���������� ���� �� ����� ������� ch - ��� �������, ������ � ������ ASCII </p>

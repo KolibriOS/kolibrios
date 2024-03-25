@@ -21,12 +21,12 @@
 \DoxyCodeLine{00017\ }
 \DoxyCodeLine{00018\ }
 \DoxyCodeLine{00019\ }
-\DoxyCodeLine{00020\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}*\ kolibri\_pathview(\mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}*\ p,\ uint32\_t\ x\_y,\ uint32\_t\ width,\ uint32\_t\ font\_number,\ uint32\_t\ is\_bkgr,\ \textcolor{keywordtype}{char}*\ text,\ \textcolor{keywordtype}{char}*\ temp\_buf,\ color\_t\ font,\ color\_t\ \ bkgr)}
+\DoxyCodeLine{00020\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}*\ kolibri\_pathview(\mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}*\ p,\ uint32\_t\ x\_y,\ uint32\_t\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ uint32\_t\ font\_number,\ uint32\_t\ is\_bkgr,\ \textcolor{keywordtype}{char}*\ text,\ \textcolor{keywordtype}{char}*\ temp\_buf,\ color\_t\ font,\ color\_t\ \ bkgr)}
 \DoxyCodeLine{00021\ \{}
 \DoxyCodeLine{00022\ \ \ \ \ p-\/>type\ =\ p-\/>temp\_text\_length\ =\ 0;}
 \DoxyCodeLine{00023\ \ \ \ \ p-\/>x\_y\ =\ x\_y;}
 \DoxyCodeLine{00024\ \ \ \ \ p-\/>font\_size\_x\ =\ font\_number\ ==\ 0\ ?\ 6\ :\ 8;\ \ \textcolor{comment}{//\ need\ correction\ for\ bigger\ fonts}}
-\DoxyCodeLine{00025\ \ \ \ \ p-\/>area\_size\_x\ =\ width;}
+\DoxyCodeLine{00025\ \ \ \ \ p-\/>area\_size\_x\ =\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}};}
 \DoxyCodeLine{00026\ \ \ \ \ p-\/>font\_number\ =\ font\_number;}
 \DoxyCodeLine{00027\ \ \ \ \ p-\/>background\_flag\ =\ is\_bkgr;}
 \DoxyCodeLine{00028\ \ \ \ \ p-\/>text\_pointer\ =\ text;}
@@ -37,10 +37,10 @@
 \DoxyCodeLine{00033\ \ \ \ \ \textcolor{keywordflow}{return}\ p;}
 \DoxyCodeLine{00034\ \}}
 \DoxyCodeLine{00035\ }
-\DoxyCodeLine{00036\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}*\ kolibri\_new\_pathview(\mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}*\ p,\ uint32\_t\ x\_y,\ uint32\_t\ width,\ uint32\_t\ font\_number,\ uint32\_t\ is\_bkgr,\ \textcolor{keywordtype}{char}*\ text,\ \textcolor{keywordtype}{char}*\ temp\_buf,\ color\_t\ font,\ color\_t\ \ bkgr)}
+\DoxyCodeLine{00036\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}*\ kolibri\_new\_pathview(\mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}*\ p,\ uint32\_t\ x\_y,\ uint32\_t\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ uint32\_t\ font\_number,\ uint32\_t\ is\_bkgr,\ \textcolor{keywordtype}{char}*\ text,\ \textcolor{keywordtype}{char}*\ temp\_buf,\ color\_t\ font,\ color\_t\ \ bkgr)}
 \DoxyCodeLine{00037\ \{}
 \DoxyCodeLine{00038\ \ \ \ \ \mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}\ *new\_pv\ =\ (\mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}\ *)malloc(\textcolor{keyword}{sizeof}(\mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}));}
-\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keywordflow}{return}\ kolibri\_pathview(new\_pv,\ x\_y,\ width,\ font\_number,\ is\_bkgr,\ text,\ temp\_buf,\ font,\ bkgr);}
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keywordflow}{return}\ kolibri\_pathview(new\_pv,\ x\_y,\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ font\_number,\ is\_bkgr,\ text,\ temp\_buf,\ font,\ bkgr);}
 \DoxyCodeLine{00040\ \}}
 \DoxyCodeLine{00041\ }
 \DoxyCodeLine{00042\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ gui\_add\_pathview(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}\ *wnd,\ \mbox{\hyperlink{kolibri__pathshow_8h_a1eb869bd22804216af2f27cea23c6982}{pathview}}*\ pv)}

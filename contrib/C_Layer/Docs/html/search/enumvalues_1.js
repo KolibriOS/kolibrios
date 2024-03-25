@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['bold_0',['Bold',['../d8/d18/kolibri__rasterworks_8h.html#ab126c13bc335f4a996ef88c85aec7a24aa529a7a50505042b4f78439ecc3fb0d6',1,'kolibri_rasterworks.h']]],
+  ['bold_0',['Bold',['../d8/d18/kolibri__rasterworks_8h.html#aed8cfa894472863abfeaa3290bcdfa65aa529a7a50505042b4f78439ecc3fb0d6',1,'kolibri_rasterworks.h']]],
   ['buf2d_5fopt_5fcrop_5fbottom_1',['BUF2D_OPT_CROP_BOTTOM',['../d6/da3/kolibri__buf2d_8h.html#a57382626da202c1deb01f780a6bda808af6f653ba0c57b7e98f501e8cb614cc26',1,'kolibri_buf2d.h']]],
   ['buf2d_5fopt_5fcrop_5fleft_2',['BUF2D_OPT_CROP_LEFT',['../d6/da3/kolibri__buf2d_8h.html#a57382626da202c1deb01f780a6bda808aeaba47ec814676f1a1adb3ebe78f42e3',1,'kolibri_buf2d.h']]],
   ['buf2d_5fopt_5fcrop_5fright_3',['BUF2D_OPT_CROP_RIGHT',['../d6/da3/kolibri__buf2d_8h.html#a57382626da202c1deb01f780a6bda808a085280a0ca1462f914ad31ba4dc3c757',1,'kolibri_buf2d.h']]],

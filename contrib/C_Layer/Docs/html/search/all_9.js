@@ -42,7 +42,7 @@ var searchData=
   ['is_5ffocused_39',['is_focused',['../dd/d22/structkmenuitem__t.html#a0dd47f0da9616fac412134d7c720289e',1,'kmenuitem_t']]],
   ['is_5fopened_40',['is_opened',['../d5/df0/structksubmenu__t.html#adbe64916620897e95f884bf03e11993e',1,'ksubmenu_t']]],
   ['is_5fvisible_41',['is_visible',['../dd/d22/structkmenuitem__t.html#a1b083beaea1066db879ad99644f28cca',1,'kmenuitem_t']]],
-  ['italic_42',['Italic',['../d8/d18/kolibri__rasterworks_8h.html#ab126c13bc335f4a996ef88c85aec7a24ac2a214096085052039c5b35d6aae7bd0',1,'kolibri_rasterworks.h']]],
+  ['italic_42',['Italic',['../d8/d18/kolibri__rasterworks_8h.html#aed8cfa894472863abfeaa3290bcdfa65ac2a214096085052039c5b35d6aae7bd0',1,'kolibri_rasterworks.h']]],
   ['items_43',['items',['../d5/df0/structksubmenu__t.html#a590c0dfaa9f5516caf98ce90fb7161e7',1,'ksubmenu_t']]],
   ['items_5fmargin_44',['items_margin',['../d5/df0/structksubmenu__t.html#a6680971560b8774b04787d2c84f0cd93',1,'ksubmenu_t']]],
   ['items_5fpadding_45',['items_padding',['../d5/df0/structksubmenu__t.html#ac460b911fc7b09ec4355c8711ba20998',1,'ksubmenu_t']]]

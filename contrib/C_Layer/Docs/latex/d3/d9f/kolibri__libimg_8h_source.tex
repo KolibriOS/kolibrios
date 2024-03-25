@@ -143,7 +143,7 @@
 \DoxyCodeLine{00190\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_encode)(\mbox{\hyperlink{struct_image}{Image}}*\ img,\ uint32\_t\ length,\ uint32\_t\ option)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
 \DoxyCodeLine{00191\ }
 \DoxyCodeLine{00192\ }
-\DoxyCodeLine{00199\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_create)(uint32\_t\ width,\ uint32\_t\ height,\ uint32\_t\ type)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00199\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_create)(uint32\_t\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ uint32\_t\ height,\ uint32\_t\ type)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
 \DoxyCodeLine{00200\ }
 \DoxyCodeLine{00201\ \textcolor{keyword}{extern}\ void\ \ \ \ \ (*\mbox{\hyperlink{kolibri__libimg_8h_af50840297230106db6d3bd1e3cf9b24d}{img\_to\_rgb2}})(\mbox{\hyperlink{struct_image}{Image}}*\ img,\ \textcolor{keywordtype}{void}\ *rgb\_data)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
 \DoxyCodeLine{00202\ }
@@ -167,11 +167,11 @@
 \DoxyCodeLine{00233\ }
 \DoxyCodeLine{00236\ \textcolor{keyword}{extern}\ bool\ \ \ \ \ (*\mbox{\hyperlink{kolibri__libimg_8h_a630cc6121840eb620fd2a31e8ab9d3ee}{img\_destroy\_layer}})(\mbox{\hyperlink{struct_image}{Image}}*\ img)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
 \DoxyCodeLine{00237\ }
-\DoxyCodeLine{00249\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_blend)(\mbox{\hyperlink{struct_image}{Image}}*\ dst,\ \mbox{\hyperlink{struct_image}{Image}}*\ src,\ uint32\_t\ out\_x,\ uint32\_t\ out\_y,\ uint32\_t\ in\_x,\ uint32\_t\ in\_y,\ uint32\_t\ width,\ uint32\_t\ height)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00249\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_blend)(\mbox{\hyperlink{struct_image}{Image}}*\ dst,\ \mbox{\hyperlink{struct_image}{Image}}*\ src,\ uint32\_t\ out\_x,\ uint32\_t\ out\_y,\ uint32\_t\ in\_x,\ uint32\_t\ in\_y,\ uint32\_t\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ uint32\_t\ height)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
 \DoxyCodeLine{00250\ }
 \DoxyCodeLine{00256\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_convert)(\mbox{\hyperlink{struct_image}{Image}}\ *src,\ \mbox{\hyperlink{struct_image}{Image}}\ *dst,\ uint32\_t\ dst\_type,\ uint32\_t,\ uint32\_t)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};\ }
 \DoxyCodeLine{00257\ }
-\DoxyCodeLine{00262\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_resize\_data)(\mbox{\hyperlink{struct_image}{Image}}\ *src,\ uint32\_t\ width,\ uint32\_t\ height)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
+\DoxyCodeLine{00262\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_resize\_data)(\mbox{\hyperlink{struct_image}{Image}}\ *src,\ uint32\_t\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ uint32\_t\ height)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
 \DoxyCodeLine{00263\ }
 \DoxyCodeLine{00276\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{struct_image}{Image}}*\ \ \ (*img\_scale)(\mbox{\hyperlink{struct_image}{Image}}*\ src,\ uint32\_t\ crop\_x,\ uint32\_t\ crop\_y,\ uint32\_t\ crop\_width,\ uint32\_t\ crop\_height,\ \mbox{\hyperlink{struct_image}{Image}}*\ dst,\ uint32\_t\ scale\_type,\ uint32\_t\ inter,\ uint32\_t\ new\_width,\ uint32\_t\ new\_height)\ \mbox{\hyperlink{kolibri__libimg_8h_a3107b1d0ca10d4ae4575d9107d4cbffe}{\_stdcall}};}
 \DoxyCodeLine{00277\ }
@@ -180,10 +180,10 @@
 \DoxyCodeLine{00280\ \}}
 \DoxyCodeLine{00281\ \textcolor{preprocessor}{\#endif}}
 \DoxyCodeLine{00282\ }
-\DoxyCodeLine{00288\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__libimg_8h_abc2e9231ec42609656c796eb8baa9683}{img\_fill\_color}}(\mbox{\hyperlink{struct_image}{Image}}*\ img,\ uint32\_t\ width,\ uint32\_t\ height,\ uint32\_t\ color)\ }
+\DoxyCodeLine{00288\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{kolibri__libimg_8h_abc2e9231ec42609656c796eb8baa9683}{img\_fill\_color}}(\mbox{\hyperlink{struct_image}{Image}}*\ img,\ uint32\_t\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ uint32\_t\ height,\ uint32\_t\ color)\ }
 \DoxyCodeLine{00289\ \{}
 \DoxyCodeLine{00290\ \ \ \ \ uint32\_t\ i;}
-\DoxyCodeLine{00291\ \ \ \ \ \textcolor{keywordflow}{for}\ (i\ =\ 0;\ i\ <\ width*height;\ i++)\ \{}
+\DoxyCodeLine{00291\ \ \ \ \ \textcolor{keywordflow}{for}\ (i\ =\ 0;\ i\ <\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}}*height;\ i++)\ \{}
 \DoxyCodeLine{00292\ \ \ \ \ \ \ \ \ img-\/>\mbox{\hyperlink{struct_image_a647b9352989979cb02110987cbe81664}{Data}}[i]\ =\ color;}
 \DoxyCodeLine{00293\ \ \ \ \ \}}
 \DoxyCodeLine{00294\ \}}

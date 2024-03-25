@@ -78,7 +78,7 @@
 \DoxyCodeLine{00076\ }
 \DoxyCodeLine{00077\ }
 \DoxyCodeLine{00078\ }
-\DoxyCodeLine{00079\ \mbox{\hyperlink{structstaticnum}{staticnum}}*\ \mbox{\hyperlink{kolibri__statictext_8h_a909a3a0e6b910924b6e0933ed293a91b}{kolibri\_staticnum}}(\mbox{\hyperlink{structstaticnum}{staticnum}}*\ st,\ uint32\_t\ xy,\ int32\_t\ width,\ int16\_t\ number,\ \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\_t}}\ enc,\ \textcolor{keywordtype}{int}\ size,\ color\_t\ font,\ color\_t\ bg)}
+\DoxyCodeLine{00079\ \mbox{\hyperlink{structstaticnum}{staticnum}}*\ \mbox{\hyperlink{kolibri__statictext_8h_a909a3a0e6b910924b6e0933ed293a91b}{kolibri\_staticnum}}(\mbox{\hyperlink{structstaticnum}{staticnum}}*\ st,\ uint32\_t\ xy,\ int32\_t\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ int16\_t\ number,\ \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\_t}}\ enc,\ \textcolor{keywordtype}{int}\ size,\ color\_t\ font,\ color\_t\ bg)}
 \DoxyCodeLine{00080\ \{}
 \DoxyCodeLine{00081\ \ \ \ \ st-\/>\mbox{\hyperlink{structstaticnum_ae418fc869176df7ee268e75be27b262c}{start\_xy}}\ =\ xy;}
 \DoxyCodeLine{00082\ \ \ \ \ st-\/>\mbox{\hyperlink{structstaticnum_a875e6b85754551c9eaea424a5a4c7934}{number}}\ =\ number;}
@@ -87,26 +87,26 @@
 \DoxyCodeLine{00085\ \ \ \ \ \textcolor{keywordflow}{if}(bg\ \&\ 0xFFFFFF)\ st-\/>\mbox{\hyperlink{structstaticnum_a2415955bc304f7926ef781ffaaaea34f}{color\_flags}}\ |=\ 0x40000000;\textcolor{comment}{//\ use\ background}}
 \DoxyCodeLine{00086\ \ \ \ \ st-\/>\mbox{\hyperlink{structstaticnum_a2415955bc304f7926ef781ffaaaea34f}{color\_flags}}\ |=\ ((enc\ \&\ 1)\ <<\ 4)\ |\ (size\ \&\ 7)\ <<\ 24;}
 \DoxyCodeLine{00087\ \ \ \ \ st-\/>\mbox{\hyperlink{structstaticnum_a2415955bc304f7926ef781ffaaaea34f}{color\_flags}}\ |=\ font\ \&\ 0xFFFFFF;}
-\DoxyCodeLine{00088\ \ \ \ \ st-\/>\mbox{\hyperlink{structstaticnum_ad0eab1042455a2067c812ab8071d5376}{width}}\ =\ width;}
+\DoxyCodeLine{00088\ \ \ \ \ st-\/>\mbox{\hyperlink{structstaticnum_ad0eab1042455a2067c812ab8071d5376}{width}}\ =\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}};}
 \DoxyCodeLine{00089\ }
 \DoxyCodeLine{00090\ \ \ \ \ \textcolor{keywordflow}{return}\ st;}
 \DoxyCodeLine{00091\ \}}
 \DoxyCodeLine{00092\ }
-\DoxyCodeLine{00093\ \mbox{\hyperlink{structstaticnum}{staticnum}}*\ \mbox{\hyperlink{kolibri__statictext_8h_a37a728bda419f1a338351ea652b58484}{kolibri\_staticnum\_def}}(\mbox{\hyperlink{structstaticnum}{staticnum}}*\ st,\ uint32\_t\ xy,\ int16\_t\ width,\ int32\_t\ number)}
+\DoxyCodeLine{00093\ \mbox{\hyperlink{structstaticnum}{staticnum}}*\ \mbox{\hyperlink{kolibri__statictext_8h_a37a728bda419f1a338351ea652b58484}{kolibri\_staticnum\_def}}(\mbox{\hyperlink{structstaticnum}{staticnum}}*\ st,\ uint32\_t\ xy,\ int16\_t\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ int32\_t\ number)}
 \DoxyCodeLine{00094\ \{}
-\DoxyCodeLine{00095\ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{kolibri__statictext_8h_a909a3a0e6b910924b6e0933ed293a91b}{kolibri\_staticnum}}(st,\ xy,\ width,\ number,\ 0,\ 0,\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a938ae4559485f5f4e099a0e863bbc5bf}{color\_work\_text}},\ 0);}
+\DoxyCodeLine{00095\ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{kolibri__statictext_8h_a909a3a0e6b910924b6e0933ed293a91b}{kolibri\_staticnum}}(st,\ xy,\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ number,\ 0,\ 0,\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a938ae4559485f5f4e099a0e863bbc5bf}{color\_work\_text}},\ 0);}
 \DoxyCodeLine{00096\ \}}
 \DoxyCodeLine{00097\ }
-\DoxyCodeLine{00098\ \mbox{\hyperlink{structstaticnum}{staticnum}}*\ \mbox{\hyperlink{kolibri__statictext_8h_a3f3a0a7f763ae30a84a062fe79846de4}{kolibri\_new\_staticnum}}(uint32\_t\ xy,\ int32\_t\ width,\ int32\_t\ number,\ \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\_t}}\ enc,\ \textcolor{keywordtype}{int}\ size,\ color\_t\ font,\ color\_t\ bg)}
+\DoxyCodeLine{00098\ \mbox{\hyperlink{structstaticnum}{staticnum}}*\ \mbox{\hyperlink{kolibri__statictext_8h_a3f3a0a7f763ae30a84a062fe79846de4}{kolibri\_new\_staticnum}}(uint32\_t\ xy,\ int32\_t\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ int32\_t\ number,\ \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932}{encoding\_t}}\ enc,\ \textcolor{keywordtype}{int}\ size,\ color\_t\ font,\ color\_t\ bg)}
 \DoxyCodeLine{00099\ \{}
 \DoxyCodeLine{00100\ \ \ \ \ \mbox{\hyperlink{structstaticnum}{staticnum}}\ *st\ =\ (\mbox{\hyperlink{structstaticnum}{staticnum}}*)malloc(\textcolor{keyword}{sizeof}(\mbox{\hyperlink{structstaticnum}{staticnum}}));}
 \DoxyCodeLine{00101\ }
-\DoxyCodeLine{00102\ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{kolibri__statictext_8h_a909a3a0e6b910924b6e0933ed293a91b}{kolibri\_staticnum}}(st,\ xy,\ width,\ number,\ enc,\ size,\ font,\ bg);}
+\DoxyCodeLine{00102\ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{kolibri__statictext_8h_a909a3a0e6b910924b6e0933ed293a91b}{kolibri\_staticnum}}(st,\ xy,\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ number,\ enc,\ size,\ font,\ bg);}
 \DoxyCodeLine{00103\ \}}
 \DoxyCodeLine{00104\ }
-\DoxyCodeLine{00105\ \mbox{\hyperlink{structstaticnum}{staticnum}}*\ \mbox{\hyperlink{kolibri__statictext_8h_a57fec9fda3b6915e3fc30bc9496a0c6e}{kolibri\_new\_staticnum\_def}}(uint32\_t\ xy,\ int32\_t\ width,\ int32\_t\ number)}
+\DoxyCodeLine{00105\ \mbox{\hyperlink{structstaticnum}{staticnum}}*\ \mbox{\hyperlink{kolibri__statictext_8h_a57fec9fda3b6915e3fc30bc9496a0c6e}{kolibri\_new\_staticnum\_def}}(uint32\_t\ xy,\ int32\_t\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ int32\_t\ number)}
 \DoxyCodeLine{00106\ \{}
-\DoxyCodeLine{00107\ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{kolibri__statictext_8h_a3f3a0a7f763ae30a84a062fe79846de4}{kolibri\_new\_staticnum}}(xy,\ width,\ number,\ \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932ad1fa5891b16c9dbf4559a3d20b7251c3}{cp866}},\ 0,\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a938ae4559485f5f4e099a0e863bbc5bf}{color\_work\_text}},\ 0);}
+\DoxyCodeLine{00107\ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{kolibri__statictext_8h_a3f3a0a7f763ae30a84a062fe79846de4}{kolibri\_new\_staticnum}}(xy,\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ number,\ \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932ad1fa5891b16c9dbf4559a3d20b7251c3}{cp866}},\ 0,\ \mbox{\hyperlink{kolibri__colors_8h_ac77ec63968092be419c5830451154d2f}{kolibri\_color\_table}}.\mbox{\hyperlink{structkolibri__system__colors_a938ae4559485f5f4e099a0e863bbc5bf}{color\_work\_text}},\ 0);}
 \DoxyCodeLine{00108\ \}}
 \DoxyCodeLine{00109\ }
 \DoxyCodeLine{00110\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ gui\_add\_staticnum(\mbox{\hyperlink{structkolibri__window}{kolibri\_window}}\ *wnd,\ \mbox{\hyperlink{structstaticnum}{staticnum}}*\ sn)}

@@ -27,44 +27,43 @@
 \DoxyCodeLine{00029\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__msgbox_8h_aa5689e013f298491f1956e0037a74326}{msgbox\_reinit}})(\mbox{\hyperlink{kolibri__msgbox_8h_a9976a6476044d5ef24d9ec5988ef1059}{msgbox}}\ *)\ \mbox{\hyperlink{kolibri__msgbox_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));\ \ \textcolor{comment}{//\ recalc\ sizes\ when\ structure\ changes,\ called\ auto\ when\ MsgBoxCreate}}
 \DoxyCodeLine{00030\ }
 \DoxyCodeLine{00037\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \mbox{\hyperlink{kolibri__msgbox_8h_a9976a6476044d5ef24d9ec5988ef1059}{msgbox}}*\ kolibri\_new\_msgbox(\textcolor{keywordtype}{char}*\ title,\ \textcolor{keywordtype}{char}*\ text,\ \textcolor{keywordtype}{int}\ def\_but,\ ...)}
-\DoxyCodeLine{00038\ }
-\DoxyCodeLine{00039\ \{}
-\DoxyCodeLine{00040\ \ \ \ \ va\_list\ vl;}
-\DoxyCodeLine{00041\ \ \ \ \ va\_start(vl,\ def\_but);}
-\DoxyCodeLine{00042\ }
-\DoxyCodeLine{00043\ \ \ \ \ \mbox{\hyperlink{kolibri__msgbox_8h_a9976a6476044d5ef24d9ec5988ef1059}{msgbox}}*\ box\ =\ calloc(\textcolor{keyword}{sizeof}(\mbox{\hyperlink{kolibri__msgbox_8h_a9976a6476044d5ef24d9ec5988ef1059}{msgbox}}),\ 1);}
-\DoxyCodeLine{00044\ \ \ \ \ box-\/>retval\ =\ (uint8\_t)def\_but;}
-\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ *pc\ =\ box-\/>texts;}
-\DoxyCodeLine{00046\ \ \ \ \ strcpy(pc,\ title);}
-\DoxyCodeLine{00047\ \ \ \ \ pc\ +=\ strlen(title)\ +\ 1;}
-\DoxyCodeLine{00048\ \ \ \ \ strcpy(pc,\ text);}
-\DoxyCodeLine{00049\ \ \ \ \ pc\ +=\ strlen(text)\ +\ 1;}
-\DoxyCodeLine{00050\ }
-\DoxyCodeLine{00051\ \ \ \ \ \textcolor{keywordtype}{char}\ \ *but\_text\ =\ va\_arg(vl,\ \textcolor{keywordtype}{char}*);}
-\DoxyCodeLine{00052\ \ \ \ \ \textcolor{keywordflow}{while}\ (but\_text)}
-\DoxyCodeLine{00053\ \ \ \ \ \{}
-\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ strcpy(pc,\ but\_text);}
-\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ pc\ +=\ strlen(but\_text)\ +\ 1;}
-\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ assert(pc\ -\/\ box-\/>texts\ <\ sizeof\ box-\/>texts);}}
-\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ but\_text\ =\ va\_arg(vl,\ \textcolor{keywordtype}{char}*);}
-\DoxyCodeLine{00058\ \ \ \ \ \}}
-\DoxyCodeLine{00059\ }
-\DoxyCodeLine{00060\ \ \ \ \ va\_end(vl);}
-\DoxyCodeLine{00061\ }
-\DoxyCodeLine{00062\ \ \ \ \ \textcolor{keywordflow}{return}\ box;}
-\DoxyCodeLine{00063\ \}}
-\DoxyCodeLine{00064\ }
-\DoxyCodeLine{00065\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ kolibri\_start\_msgbox(\mbox{\hyperlink{kolibri__msgbox_8h_a9976a6476044d5ef24d9ec5988ef1059}{msgbox}}*\ box,\ \mbox{\hyperlink{kolibri__msgbox_8h_a9a4ca03838f75a3cb167860308c7a444}{msgbox\_callback}}\ cb[])}
-\DoxyCodeLine{00066\ \{}
-\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keywordflow}{if}\ (!msgbox\_inited)}
-\DoxyCodeLine{00068\ \ \ \ \ \{}
-\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__msgbox_8h_a29d02e30c5a50ea57759fdff39852e86}{kolibri\_msgbox\_init}}();}
-\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ msgbox\_inited++;}
-\DoxyCodeLine{00071\ \ \ \ \ \}}
-\DoxyCodeLine{00072\ \ \ \ \ (*msgbox\_create)(box,\ \&box-\/>top\_stack);}
-\DoxyCodeLine{00073\ \ \ \ \ \textcolor{keywordflow}{if}\ (cb)\ (*msgbox\_setfunctions)(cb);}
-\DoxyCodeLine{00074\ \}}
-\DoxyCodeLine{00075\ }
-\DoxyCodeLine{00076\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00038\ \{}
+\DoxyCodeLine{00039\ \ \ \ \ va\_list\ vl;}
+\DoxyCodeLine{00040\ \ \ \ \ va\_start(vl,\ def\_but);}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00042\ \ \ \ \ \mbox{\hyperlink{kolibri__msgbox_8h_a9976a6476044d5ef24d9ec5988ef1059}{msgbox}}*\ box\ =\ calloc(\textcolor{keyword}{sizeof}(\mbox{\hyperlink{kolibri__msgbox_8h_a9976a6476044d5ef24d9ec5988ef1059}{msgbox}}),\ 1);}
+\DoxyCodeLine{00043\ \ \ \ \ box-\/>retval\ =\ (uint8\_t)def\_but;}
+\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keywordtype}{char}\ \ \ \ *pc\ =\ box-\/>texts;}
+\DoxyCodeLine{00045\ \ \ \ \ strcpy(pc,\ title);}
+\DoxyCodeLine{00046\ \ \ \ \ pc\ +=\ strlen(title)\ +\ 1;}
+\DoxyCodeLine{00047\ \ \ \ \ strcpy(pc,\ text);}
+\DoxyCodeLine{00048\ \ \ \ \ pc\ +=\ strlen(text)\ +\ 1;}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00050\ \ \ \ \ \textcolor{keywordtype}{char}\ \ *but\_text\ =\ va\_arg(vl,\ \textcolor{keywordtype}{char}*);}
+\DoxyCodeLine{00051\ \ \ \ \ \textcolor{keywordflow}{while}\ (but\_text)}
+\DoxyCodeLine{00052\ \ \ \ \ \{}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ strcpy(pc,\ but\_text);}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ pc\ +=\ strlen(but\_text)\ +\ 1;}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ assert(pc\ -\/\ box-\/>texts\ <\ sizeof\ box-\/>texts);}}
+\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ but\_text\ =\ va\_arg(vl,\ \textcolor{keywordtype}{char}*);}
+\DoxyCodeLine{00057\ \ \ \ \ \}}
+\DoxyCodeLine{00058\ }
+\DoxyCodeLine{00059\ \ \ \ \ va\_end(vl);}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keywordflow}{return}\ box;}
+\DoxyCodeLine{00062\ \}}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00064\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ kolibri\_start\_msgbox(\mbox{\hyperlink{kolibri__msgbox_8h_a9976a6476044d5ef24d9ec5988ef1059}{msgbox}}*\ box,\ \mbox{\hyperlink{kolibri__msgbox_8h_a9a4ca03838f75a3cb167860308c7a444}{msgbox\_callback}}\ cb[])}
+\DoxyCodeLine{00065\ \{}
+\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keywordflow}{if}\ (!msgbox\_inited)}
+\DoxyCodeLine{00067\ \ \ \ \ \{}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{kolibri__msgbox_8h_a29d02e30c5a50ea57759fdff39852e86}{kolibri\_msgbox\_init}}();}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ msgbox\_inited++;}
+\DoxyCodeLine{00070\ \ \ \ \ \}}
+\DoxyCodeLine{00071\ \ \ \ \ (*msgbox\_create)(box,\ \&box-\/>top\_stack);}
+\DoxyCodeLine{00072\ \ \ \ \ \textcolor{keywordflow}{if}\ (cb)\ (*msgbox\_setfunctions)(cb);}
+\DoxyCodeLine{00073\ \}}
+\DoxyCodeLine{00074\ }
+\DoxyCodeLine{00075\ \textcolor{preprocessor}{\#endif}}
 
 \end{DoxyCode}

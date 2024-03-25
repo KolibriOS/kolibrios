@@ -6,7 +6,7 @@ var searchData=
   ['bg_5fcolor_3',['bg_color',['../d4/d72/structstatictext.html#aaea7a057dd76d8bf6454e3dd5aeee7c5',1,'statictext::bg_color'],['../df/df5/structstaticnum.html#aaea7a057dd76d8bf6454e3dd5aeee7c5',1,'staticnum::bg_color']]],
   ['bgcolor_4',['bgcolor',['../da/da6/structt__font.html#a99b9d694368a0f6e51fc078ad8516f9d',1,'t_font']]],
   ['blur_5fborder_5fcolor_5',['blur_border_color',['../d2/d9b/structedit__box__t.html#ac98345840d64753752a0840b0d40e04c',1,'edit_box_t']]],
-  ['bold_6',['Bold',['../d8/d18/kolibri__rasterworks_8h.html#ab126c13bc335f4a996ef88c85aec7a24aa529a7a50505042b4f78439ecc3fb0d6',1,'kolibri_rasterworks.h']]],
+  ['bold_6',['Bold',['../d8/d18/kolibri__rasterworks_8h.html#aed8cfa894472863abfeaa3290bcdfa65aa529a7a50505042b4f78439ecc3fb0d6',1,'kolibri_rasterworks.h']]],
   ['border_5fcolor_7',['border_color',['../d6/d9b/structcheck__box.html#aadf59f6b7b9e36ad3036f37edda8bff9',1,'check_box']]],
   ['bpp_8',['BPP',['../d3/d9f/kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46',1,'kolibri_libimg.h']]],
   ['btn_5fquit_9',['BTN_QUIT',['../d5/d21/kolibri__gui_8h.html#a5fb27a09574b3a8473fac0e17075675c',1,'kolibri_gui.h']]],

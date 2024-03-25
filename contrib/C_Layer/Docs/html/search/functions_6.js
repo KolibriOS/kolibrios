@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['if_0',['if',['../d6/d35/kolibri__editor_8h.html#a43106dea236936cfc574e84b95074981',1,'if(control &amp;3):&#160;kolibri_editor.h'],['../dc/dc3/kolibri__filebrowse_8h.html#a0c0469b3d7b65923266c63e8806d88ac',1,'if(keypress.state) return:&#160;kolibri_filebrowse.h'],['../dc/dc3/kolibri__filebrowse_8h.html#a1b4744db91cbfd68bc9d60d5eaad4124',1,'if(extended_key) extended_key=0:&#160;kolibri_filebrowse.h']]],
-  ['img_5ffill_5fcolor_1',['img_fill_color',['../d3/d9f/kolibri__libimg_8h.html#abc2e9231ec42609656c796eb8baa9683',1,'img_fill_color(Image *img, uint32_t width, uint32_t height, uint32_t color):&#160;kolibri_libimg.h'],['../d3/d9f/kolibri__libimg_8h.html#a74dc0294ee1721d78d114ce1dc5ec049',1,'img_fill_color(Image *img, uint32_t color):&#160;kolibri_libimg.h']]]
+  ['get_5fkeyboard_5flayout_0',['get_keyboard_layout',['../d6/d35/kolibri__editor_8h.html#af0dfce1f8ceb41f6acb0e2b660ae4bf9',1,'kolibri_editor.h']]]
 ];

@@ -54,7 +54,7 @@ var NAVTREEINDEX =
 "annotated.html",
 "d3/df4/kolibri__treelist_8h.html",
 "d6/d35/kolibri__editor_8h.html#adcce573f618083899b3ff2c0ffa79d22a2423b3215e75234b6e550abb0c7f2048",
-"dd/d22/structkmenuitem__t.html#abbf6e4360a8f6d7c30ea1ed1a71188f7"
+"dc/dc3/kolibri__filebrowse_8h.html#aaa84feee2fd9a558df8015fe2a6cf806"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

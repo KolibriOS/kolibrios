@@ -24,7 +24,7 @@ var searchData=
   ['staticnum_21',['staticnum',['../df/df5/structstaticnum.html',1,'']]],
   ['statictext_22',['statictext',['../d4/d72/structstatictext.html',1,'']]],
   ['status_23',['status',['../d7/d07/struct_a_r_p__entry.html#a724f8cf1b8ff3d96c3a9cbcd2a6957a6',1,'ARP_entry']]],
-  ['strikethrough_24',['StrikeThrough',['../d8/d18/kolibri__rasterworks_8h.html#ab126c13bc335f4a996ef88c85aec7a24ae452f9f9eb572f91e272123cda564e20',1,'kolibri_rasterworks.h']]],
+  ['strikethrough_24',['StrikeThrough',['../d8/d18/kolibri__rasterworks_8h.html#aed8cfa894472863abfeaa3290bcdfa65ae452f9f9eb572f91e272123cda564e20',1,'kolibri_rasterworks.h']]],
   ['strwidth_25',['strWidth',['../d8/d18/kolibri__rasterworks_8h.html#a2cd1f0075885890478a9713f0998cbb5',1,'kolibri_rasterworks.h']]],
   ['style_26',['style',['../dd/d22/structkmenuitem__t.html#a38644fe8d39815a5c3d82259aa977413',1,'kmenuitem_t::style'],['../d0/df9/structprogressbar.html#a4d68f144910566d3cc85c6ebcc173e05',1,'progressbar::style']]],
   ['submenu_27',['submenu',['../dd/d22/structkmenuitem__t.html#aa83faebd40c6122d10888fd19eee6864',1,'kmenuitem_t::submenu'],['../d9/d44/structkmenu__t.html#adf1a4931e61412e9544ac6885a9323b6',1,'kmenu_t::submenu']]],

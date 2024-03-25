@@ -10,5 +10,5 @@ var searchData=
   ['image_5fbpp8a_7',['IMAGE_BPP8a',['../d3/d9f/kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46ab48d3c4bf928e17b49b02452552f0ffc',1,'kolibri_libimg.h']]],
   ['image_5fbpp8g_8',['IMAGE_BPP8g',['../d3/d9f/kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46a1c1897b0acdf20ebe4a1b1a6480e3761',1,'kolibri_libimg.h']]],
   ['image_5fbpp8i_9',['IMAGE_BPP8i',['../d3/d9f/kolibri__libimg_8h.html#ae932abe1baf2fc58d0433104a97afa46abfde050d0f623912f4104bb9b9bd031c',1,'kolibri_libimg.h']]],
-  ['italic_10',['Italic',['../d8/d18/kolibri__rasterworks_8h.html#ab126c13bc335f4a996ef88c85aec7a24ac2a214096085052039c5b35d6aae7bd0',1,'kolibri_rasterworks.h']]]
+  ['italic_10',['Italic',['../d8/d18/kolibri__rasterworks_8h.html#aed8cfa894472863abfeaa3290bcdfa65ac2a214096085052039c5b35d6aae7bd0',1,'kolibri_rasterworks.h']]]
 ];

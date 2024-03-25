@@ -113,7 +113,7 @@ $(function(){initNavTree('d6/da3/kolibri__buf2d_8h_source.html','../../'); initR
 <div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> *buf_pointer;</div>
 <div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>    uint16_t left;</div>
 <div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>    uint16_t top;</div>
-<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> width;</div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> <a class="code hl_variable" href="../../d8/d18/kolibri__rasterworks_8h.html#af7ccd8d63caab8f1882a2de961ff34fa">width</a>;</div>
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> height;</div>
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> bgcolor;</div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>    uint8_t color_bit;</div>
@@ -148,7 +148,7 @@ $(function(){initNavTree('d6/da3/kolibri__buf2d_8h_source.html','../../'); initR
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <a class="code hl_variable" href="../../d6/da3/kolibri__buf2d_8h.html#abfa994a7ddf4308aac64ae07e4edaf07">buf2d_struct</a> *new_buf2d_struct = (<a class="code hl_variable" href="../../d6/da3/kolibri__buf2d_8h.html#abfa994a7ddf4308aac64ae07e4edaf07">buf2d_struct</a> *)malloc(<span class="keyword">sizeof</span>(<a class="code hl_variable" href="../../d6/da3/kolibri__buf2d_8h.html#abfa994a7ddf4308aac64ae07e4edaf07">buf2d_struct</a>));</div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    new_buf2d_struct -&gt; left = tlx;</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    new_buf2d_struct -&gt; top = tly;</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    new_buf2d_struct -&gt; width = sizex;</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    new_buf2d_struct -&gt; <a class="code hl_variable" href="../../d8/d18/kolibri__rasterworks_8h.html#af7ccd8d63caab8f1882a2de961ff34fa">width</a> = sizex;</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    new_buf2d_struct -&gt; height = sizey;</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    new_buf2d_struct -&gt; bgcolor = font_bgcolor;</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    new_buf2d_struct -&gt; color_bit = color_bit;</div>
@@ -236,6 +236,7 @@ $(function(){initNavTree('d6/da3/kolibri__buf2d_8h_source.html','../../'); initR
 <div class="ttc" id="akolibri__buf2d_8h_html_ae58d5ae2b3b8c5ae967f26585a884bf0"><div class="ttname"><a href="../../d6/da3/kolibri__buf2d_8h.html#ae58d5ae2b3b8c5ae967f26585a884bf0">buf2d_conv_24_to_8</a></div><div class="ttdeci">void(* buf2d_conv_24_to_8)(buf2d_struct *, unsigned int) __attribute__((__stdcall__))</div></div>
 <div class="ttc" id="akolibri__buf2d_8h_html_aea4c92e9bcb6b157af4b7255371c7400"><div class="ttname"><a href="../../d6/da3/kolibri__buf2d_8h.html#aea4c92e9bcb6b157af4b7255371c7400">buf2d_filled_rect_by_size</a></div><div class="ttdeci">void(* buf2d_filled_rect_by_size)(buf2d_struct *, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int) __attribute__((__stdcall__))</div></div>
 <div class="ttc" id="akolibri__buf2d_8h_html_af29c0d6d7d7d1ba563ab522225c147ae"><div class="ttname"><a href="../../d6/da3/kolibri__buf2d_8h.html#af29c0d6d7d7d1ba563ab522225c147ae">buf2d_curve_bezier</a></div><div class="ttdeci">void buf2d_curve_bezier(buf2d_struct *buf, unsigned int p0_x, unsigned int p0_y, unsigned int p1_x, unsigned int p1_y, unsigned int p2_x, unsigned int p2_y, unsigned int color)</div><div class="ttdef"><b>Definition</b> kolibri_buf2d.h:53</div></div>
+<div class="ttc" id="akolibri__rasterworks_8h_html_af7ccd8d63caab8f1882a2de961ff34fa"><div class="ttname"><a href="../../d8/d18/kolibri__rasterworks_8h.html#af7ccd8d63caab8f1882a2de961ff34fa">width</a></div><div class="ttdeci">hh char height ww char width</div><div class="ttdoc">Draw text on 24bpp or 32bpp image.</div><div class="ttdef"><b>Definition</b> kolibri_rasterworks.h:51</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

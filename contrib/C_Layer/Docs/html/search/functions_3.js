@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['editor_5fkeyboard_0',['editor_keyboard',['../d6/d35/kolibri__editor_8h.html#a532baff1c7d05a30c4d11be8250dc372',1,'kolibri_editor.h']]]
+  ['drawtext_0',['DrawText',['../d8/d18/kolibri__rasterworks_8h.html#a98792c65e70e5031122c3b54501cdc94',1,'kolibri_rasterworks.h']]]
 ];

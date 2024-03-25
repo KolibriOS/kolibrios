@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['switch_0',['switch',['../dc/dc3/kolibri__filebrowse_8h.html#af1b4dc2f33fb0d8d77acb5d59568e9f4',1,'kolibri_filebrowse.h']]]
+  ['networklib_5finit_0',['networklib_init',['../d4/d33/kolibri__network_8h.html#a1b3f00e699b6934789568abb4db4ba88',1,'kolibri_network.h']]]
 ];

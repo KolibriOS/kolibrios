@@ -17,8 +17,8 @@ var searchData=
   ['ai_5fpassive_14',['AI_PASSIVE',['../d4/d33/kolibri__network_8h.html#a4e524e86664980f9097e3f4b3b984313a639f7226a124591a1bf1f26fa6fc3a07',1,'kolibri_network.h']]],
   ['ai_5fprotocol_15',['ai_protocol',['../d6/d9d/structaddrinfo.html#a6ade486587feaa03d492eb84cfc83451',1,'addrinfo']]],
   ['ai_5fsocktype_16',['ai_socktype',['../d6/d9d/structaddrinfo.html#a2109130e73586150c41fed16311e1af6',1,'addrinfo']]],
-  ['aligncenter_17',['AlignCenter',['../d8/d18/kolibri__rasterworks_8h.html#ab126c13bc335f4a996ef88c85aec7a24afed76d6718c0a44a25c5e19ae8fb51d1',1,'kolibri_rasterworks.h']]],
-  ['alignright_18',['AlignRight',['../d8/d18/kolibri__rasterworks_8h.html#ab126c13bc335f4a996ef88c85aec7a24a4758d977046d9c084a0eaf7434fd29e1',1,'kolibri_rasterworks.h']]],
+  ['aligncenter_17',['AlignCenter',['../d8/d18/kolibri__rasterworks_8h.html#aed8cfa894472863abfeaa3290bcdfa65afed76d6718c0a44a25c5e19ae8fb51d1',1,'kolibri_rasterworks.h']]],
+  ['alignright_18',['AlignRight',['../d8/d18/kolibri__rasterworks_8h.html#aed8cfa894472863abfeaa3290bcdfa65a4758d977046d9c084a0eaf7434fd29e1',1,'kolibri_rasterworks.h']]],
   ['arp_5fentry_19',['ARP_entry',['../d7/d07/struct_a_r_p__entry.html',1,'']]],
   ['atkinson_20',['ATKINSON',['../d6/da3/kolibri__buf2d_8h.html#a280f4f234c3e6fd34e254d6408343124ae9506f85d1de7d1ecae83871d435b61e',1,'kolibri_buf2d.h']]]
 ];

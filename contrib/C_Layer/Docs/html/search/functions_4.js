@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['fake_5fon_5fredraw_0',['fake_on_redraw',['../df/d6c/kolibri__opendialog_8h.html#a78a81d49f5c2a7635f0ca1346ae85b2e',1,'kolibri_opendialog.h']]]
+  ['editor_5fkeyboard_0',['editor_keyboard',['../d6/d35/kolibri__editor_8h.html#a532baff1c7d05a30c4d11be8250dc372',1,'kolibri_editor.h']]]
 ];

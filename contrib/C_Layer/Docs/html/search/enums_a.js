@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['rotate_0',['Rotate',['../d3/d9f/kolibri__libimg_8h.html#aabe6019d3de9522cbe8bdcbe111bd11f',1,'kolibri_libimg.h']]]
+  ['scale_0',['Scale',['../d3/d9f/kolibri__libimg_8h.html#a8e8d3da3ac3510ba6f5aa1a4c8c82eae',1,'kolibri_libimg.h']]]
 ];

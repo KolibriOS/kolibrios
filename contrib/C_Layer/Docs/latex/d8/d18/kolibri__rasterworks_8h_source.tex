@@ -5,33 +5,62 @@
 \DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ KOLIBRI\_RASTERWORKS\_H}}
 \DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ KOLIBRI\_RASTERWORKS\_H}}
 \DoxyCodeLine{00003\ }
-\DoxyCodeLine{00005\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__rasterworks_8h_ab126c13bc335f4a996ef88c85aec7a24}{Params}}}
-\DoxyCodeLine{00006\ \{}
-\DoxyCodeLine{00008\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_ab126c13bc335f4a996ef88c85aec7a24aa529a7a50505042b4f78439ecc3fb0d6}{Bold}}\ =\ 0b1,}
-\DoxyCodeLine{00009\ }
-\DoxyCodeLine{00011\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_ab126c13bc335f4a996ef88c85aec7a24ac2a214096085052039c5b35d6aae7bd0}{Italic}}\ =\ 0b10,}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <sys/ksys.h>}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__rasterworks_8h_afe0f42561b99996f419a3a8d0c8f109a}{RasterworksEncoding}}}
+\DoxyCodeLine{00007\ \{}
+\DoxyCodeLine{00008\ \ \ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_afe0f42561b99996f419a3a8d0c8f109aa7a1ba91ea44b65d73be1c123c0e0da9e}{Rasterworks\_cp688}}\ =\ 1,}
+\DoxyCodeLine{00009\ \ \ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_afe0f42561b99996f419a3a8d0c8f109aaa7812ef6cef148dc43ff54ea4852cc80}{Rasterworks\_UTF8}}\ =\ 2,}
+\DoxyCodeLine{00010\ \ \ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_afe0f42561b99996f419a3a8d0c8f109aa4b7a420256083c95ceef179fb7a7ccc5}{Rasterworks\_UTF16LE}}\ =\ 3,}
+\DoxyCodeLine{00011\ \};}
 \DoxyCodeLine{00012\ }
-\DoxyCodeLine{00014\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_ab126c13bc335f4a996ef88c85aec7a24aa909c5f2b588ba35fcc40b3b504ad2ed}{Underline}}\ =\ 0b100,}
-\DoxyCodeLine{00015\ }
-\DoxyCodeLine{00017\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_ab126c13bc335f4a996ef88c85aec7a24ae452f9f9eb572f91e272123cda564e20}{StrikeThrough}}\ =\ 0b1000,}
+\DoxyCodeLine{00014\ \textcolor{keyword}{enum}\ \mbox{\hyperlink{kolibri__rasterworks_8h_aed8cfa894472863abfeaa3290bcdfa65}{RasterworksParams}}}
+\DoxyCodeLine{00015\ \{}
+\DoxyCodeLine{00017\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_aed8cfa894472863abfeaa3290bcdfa65aa529a7a50505042b4f78439ecc3fb0d6}{Bold}}\ =\ 0b1,}
 \DoxyCodeLine{00018\ }
-\DoxyCodeLine{00020\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_ab126c13bc335f4a996ef88c85aec7a24a4758d977046d9c084a0eaf7434fd29e1}{AlignRight}}\ =\ 0b00010000,}
+\DoxyCodeLine{00020\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_aed8cfa894472863abfeaa3290bcdfa65ac2a214096085052039c5b35d6aae7bd0}{Italic}}\ =\ 0b10,}
 \DoxyCodeLine{00021\ }
-\DoxyCodeLine{00023\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_ab126c13bc335f4a996ef88c85aec7a24afed76d6718c0a44a25c5e19ae8fb51d1}{AlignCenter}}\ =\ 0b00100000,}
+\DoxyCodeLine{00023\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_aed8cfa894472863abfeaa3290bcdfa65aa909c5f2b588ba35fcc40b3b504ad2ed}{Underline}}\ =\ 0b100,}
 \DoxyCodeLine{00024\ }
-\DoxyCodeLine{00026\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_ab126c13bc335f4a996ef88c85aec7a24a2595738543a149c36efe4210abfca7e3}{Use32bit}}\ =\ 0b010000000}
-\DoxyCodeLine{00027\ \};}
-\DoxyCodeLine{00028\ }
-\DoxyCodeLine{00031\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{kolibri__rasterworks_8h_a6f4e39486aa4d2a58140c9cad796a1d1}{kolibri\_rasterworks\_init}}(\textcolor{keywordtype}{void});\ }
-\DoxyCodeLine{00032\ }
-\DoxyCodeLine{00043\ \textcolor{keyword}{extern}\ void\ (*\mbox{\hyperlink{kolibri__rasterworks_8h_a5144721ab30b914ca5ee359b24ceb267}{drawText}})(\textcolor{keywordtype}{void}\ *canvas,\ \textcolor{keywordtype}{int}\ x,\ \textcolor{keywordtype}{int}\ y,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *string,\ \textcolor{keywordtype}{int}\ charQuantity,\ \textcolor{keywordtype}{int}\ fontColor,\ \textcolor{keywordtype}{int}\ params)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
-\DoxyCodeLine{00044\ }
-\DoxyCodeLine{00049\ \textcolor{keyword}{extern}\ int\ (*\mbox{\hyperlink{kolibri__rasterworks_8h_afd0d07b5a6fb419ab7353b6176518814}{countUTF8Z}})(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *string,\ \textcolor{keywordtype}{int}\ byteQuantity)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
-\DoxyCodeLine{00050\ }
-\DoxyCodeLine{00052\ \textcolor{keyword}{extern}\ int\ (*\mbox{\hyperlink{kolibri__rasterworks_8h_a328f64d5f3e48e70d19f021afb680b00}{charsFit}})(\textcolor{keywordtype}{int}\ areaWidth,\ \textcolor{keywordtype}{int}\ charHeight)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
-\DoxyCodeLine{00053\ }
-\DoxyCodeLine{00057\ \textcolor{keyword}{extern}\ int\ (*\mbox{\hyperlink{kolibri__rasterworks_8h_a2cd1f0075885890478a9713f0998cbb5}{strWidth}})(\textcolor{keywordtype}{int}\ charQuantity,\ \textcolor{keywordtype}{int}\ charHeight)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
-\DoxyCodeLine{00058\ }
-\DoxyCodeLine{00064\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ KOLIBRI\_RASTERWORKS\_H\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00026\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_aed8cfa894472863abfeaa3290bcdfa65ae452f9f9eb572f91e272123cda564e20}{StrikeThrough}}\ =\ 0b1000,}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00029\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_aed8cfa894472863abfeaa3290bcdfa65a4758d977046d9c084a0eaf7434fd29e1}{AlignRight}}\ =\ 0b00010000,}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00032\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_aed8cfa894472863abfeaa3290bcdfa65afed76d6718c0a44a25c5e19ae8fb51d1}{AlignCenter}}\ =\ 0b00100000,}
+\DoxyCodeLine{00033\ }
+\DoxyCodeLine{00035\ \ \ \mbox{\hyperlink{kolibri__rasterworks_8h_aed8cfa894472863abfeaa3290bcdfa65a2595738543a149c36efe4210abfca7e3}{Use32bit}}\ =\ 0b010000000}
+\DoxyCodeLine{00036\ \};}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00040\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{kolibri__rasterworks_8h_a6f4e39486aa4d2a58140c9cad796a1d1}{kolibri\_rasterworks\_init}}(\textcolor{keywordtype}{void});}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00050\ hh\ -\/\ \textcolor{keywordtype}{char}\ height\ \ \(\backslash\)}
+\DoxyCodeLine{00051\ ww\ -\/\ \textcolor{keywordtype}{char}\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}}\ \ \ \ ;\ 0\ =\ \textcolor{keyword}{auto}\ (proportional)\ \(\backslash\)}
+\DoxyCodeLine{00052\ ee\ -\/\ encoding\ \ \ ;\ 1\ =\ \mbox{\hyperlink{kolibri__statictext_8h_a1201c14bf3d1ae648d759a790bd98932ad1fa5891b16c9dbf4559a3d20b7251c3}{cp866}},\ 2\ =\ UTF-\/16LE,\ 3\ =\ UTF-\/8\ \(\backslash\)}
+\DoxyCodeLine{00053\ ff\ -\/\ Parameters\ from\ the\ \mbox{\hyperlink{kolibri__rasterworks_8h_aed8cfa894472863abfeaa3290bcdfa65}{RasterworksParams}}\ list}
+\DoxyCodeLine{00056\ \textcolor{keyword}{extern}\ void\ (*drawText)(\textcolor{keywordtype}{void}\ *canvas,\ \textcolor{keywordtype}{int}\ x,\ \textcolor{keywordtype}{int}\ y,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *string,\ \textcolor{keywordtype}{int}\ charQuantity,\ ksys\_color\_t\ fontColor,\ uint32\_t\ params)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00062\ \textcolor{keyword}{extern}\ int\ (*\mbox{\hyperlink{kolibri__rasterworks_8h_afd0d07b5a6fb419ab7353b6176518814}{countUTF8Z}})(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *string,\ \textcolor{keywordtype}{int}\ byteQuantity)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00065\ \textcolor{keyword}{extern}\ int\ (*\mbox{\hyperlink{kolibri__rasterworks_8h_a328f64d5f3e48e70d19f021afb680b00}{charsFit}})(\textcolor{keywordtype}{int}\ areaWidth,\ \textcolor{keywordtype}{int}\ charHeight)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00070\ \textcolor{keyword}{extern}\ int\ (*\mbox{\hyperlink{kolibri__rasterworks_8h_a2cd1f0075885890478a9713f0998cbb5}{strWidth}})(\textcolor{keywordtype}{int}\ charQuantity,\ \textcolor{keywordtype}{int}\ charHeight)\ \mbox{\hyperlink{kolibri__buf2d_8h_ad09246453a4dabd919c7541484046a87}{\_\_attribute\_\_}}((\_\_stdcall\_\_));}
+\DoxyCodeLine{00071\ }
+\DoxyCodeLine{00086\ rgb\_t\ *\mbox{\hyperlink{kolibri__rasterworks_8h_a98792c65e70e5031122c3b54501cdc94}{DrawText}}(\textcolor{keyword}{const}\ rgb\_t\ *canvas,\ \textcolor{keywordtype}{int}\ canvasWidth,\ \textcolor{keywordtype}{int}\ canvasHeight,\ \textcolor{keywordtype}{int}\ x,\ \textcolor{keywordtype}{int}\ y,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *\textcolor{keywordtype}{string},\ uint8\_t\ \mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}},\ uint8\_t\ height,\ ksys\_color\_t\ fontColor,\ uint8\_t\ flags,\ uint8\_t\ encoding\ =\ \mbox{\hyperlink{kolibri__rasterworks_8h_afe0f42561b99996f419a3a8d0c8f109aaa7812ef6cef148dc43ff54ea4852cc80}{Rasterworks\_UTF8}})}
+\DoxyCodeLine{00087\ \{}
+\DoxyCodeLine{00088\ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ l\ =\ canvasHeight\ *\ canvasHeight\ *\ 3\ *\ \textcolor{keyword}{sizeof}(char);}
+\DoxyCodeLine{00089\ }
+\DoxyCodeLine{00090\ \ \ \ \ rgb\_t\ *buff\ =\ (rgb\_t)\ malloc(l);}
+\DoxyCodeLine{00091\ \ \ \ \ *((\textcolor{keywordtype}{int}\ *)buff)\ =\ canvasWidth;}
+\DoxyCodeLine{00092\ \ \ \ \ *((\textcolor{keywordtype}{int}\ *)buff\ +\ 1)\ =\ canvasHeight;}
+\DoxyCodeLine{00093\ \ \ \ \ memcpy(buff+8,\ canvas,\ l);}
+\DoxyCodeLine{00094\ }
+\DoxyCodeLine{00095\ \ \ \ \ drawText(buff,\ x,\ y,\ \textcolor{keywordtype}{string},\ \mbox{\hyperlink{kolibri__rasterworks_8h_afd0d07b5a6fb419ab7353b6176518814}{countUTF8Z}}(\textcolor{keywordtype}{string},\ -\/1),\ fontColor,\ (flags\ >>\ 24)\ +\ (\mbox{\hyperlink{kolibri__rasterworks_8h_af7ccd8d63caab8f1882a2de961ff34fa}{width}}\ >>\ 16)\ +\ (height\ >>\ 8)\ +\ encoding);}
+\DoxyCodeLine{00096\ }
+\DoxyCodeLine{00097\ \ \ \ \ memcpy(buff,\ buff+8,\ l);}
+\DoxyCodeLine{00098\ }
+\DoxyCodeLine{00099\ \ \ \ \ \textcolor{keywordflow}{return}\ buff;}
+\DoxyCodeLine{00100\ \}}
+\DoxyCodeLine{00101\ }
+\DoxyCodeLine{00107\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ KOLIBRI\_RASTERWORKS\_H\ */}\textcolor{preprocessor}{}}
 
 \end{DoxyCode}
