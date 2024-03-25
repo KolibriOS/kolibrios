@@ -1,19 +1,15 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "C_Layer",
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/../sdk/sources/newlib/libc/include",
                 "${workspaceFolder}/../../programs/develop/ktcc/trunk/libc.obj/include"
             ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
+            "defines": [],
             "cStandard": "c11",
-            "cppStandard": "gnu++14",
+            "cppStandard": "gnu++11",
             "intelliSenseMode": "windows-gcc-x86"
         }
     ],

@@ -1,8 +1,17 @@
 #ifndef KOLIBRI_RASTERWORKS_H
 #define KOLIBRI_RASTERWORKS_H
 
+#include <sys/ksys.h>
+
+enum RasterworksEncoding
+{
+	Rasterworks_cp688 = 1,
+	Rasterworks_UTF8 = 2,
+	Rasterworks_UTF16LE = 3,
+};
+
 /// @brief List of parameters
-enum Params
+enum RasterworksParams
 {
   /// @brief Bold text
   Bold = 0b1,
@@ -37,14 +46,14 @@ extern int kolibri_rasterworks_init(void);
 /// @param string Pointer to string
 /// @param charQuantity String length
 /// @param fontColor Text color
-/// @param params ffeewwhh  \
+ /// @param params ffeewwhh  \
 hh - char height  \
 ww - char width	; 0 = auto (proportional) \
 ee - encoding	; 1 = cp866, 2 = UTF-16LE, 3 = UTF-8 \
-ff - Parameters from the Params list
+ff - Parameters from the RasterworksParams list
 /// @note All flags combinable, except align right + align center
 /// @note The text is drawn on the image, in order for changes to occur in the window, you need to draw the image after calling this function
-extern void (*drawText)(void *canvas, int x, int y, const char *string, int charQuantity, int fontColor, int params) __attribute__((__stdcall__));
+extern void (*drawText)(void *canvas, int x, int y, const char *string, int charQuantity, ksys_color_t fontColor, uint32_t params) __attribute__((__stdcall__));
 
 /// @brief Calculate amount of valid chars in UTF-8 string
 /// @note Supports zero terminated string (set byteQuantity = -1)
@@ -59,6 +68,36 @@ extern int (*charsFit)(int areaWidth, int charHeight) __attribute__((__stdcall__
 /// @param charQuantity Characters
 /// @param charHeight character height
 extern int (*strWidth)(int charQuantity, int charHeight) __attribute__((__stdcall__));
+
+/// @brief Draw text on 24bpp or 32bpp image, the same as drawText but easier to use
+/// @param canvas Pointer to image (array of colors)
+/// @param canvasWidth image width
+/// @param canvasHeight image height
+/// @param x Coordinate of the text along the X axis
+/// @param y Coordinate of the text along the Y axis
+/// @param string Pointer to string
+/// @param width char width (0 - auto)
+/// @param height char height
+/// @param fontColor Text color
+/// @param flags value from enum RasterworksParams
+/// @param encoding value fram enum RasterworksEncoding
+/// @note don't forget free(buff)
+/// @author Egor00f
+rgb_t *DrawText(const rgb_t *canvas, int canvasWidth, int canvasHeight, int x, int y, const char *string, uint8_t width, uint8_t height, ksys_color_t fontColor, uint8_t flags, uint8_t encoding = Rasterworks_UTF8)
+{
+	const int l = canvasHeight * canvasHeight * 3 * sizeof(char);
+
+	rgb_t *buff = (rgb_t) malloc(l);
+	*((int *)buff) = canvasWidth;
+	*((int *)buff + 1) = canvasHeight;
+	memcpy(buff+8, canvas, l);
+
+	drawText(buff, x, y, string, countUTF8Z(string, -1), fontColor, (flags >> 24) + (width >> 16) + (height >> 8) + encoding);
+
+	memcpy(buff, buff+8, l);
+
+	return buff;
+}
 
 /**
  * \example rasterworks_example.c

@@ -1,1 +1,17 @@
-contrib/C_Layer/.vscode/
+
+#C_Layer gitignore
+## C_Layer vscode
+contrib/C_Layer/.vscode/c_cpp_properties.json
+contrib/C_Layer/.vscode/settings.json
+## C_Layer OBJ
+C:\Users\yyari\Documents\KolibriOS\kolibrios\contrib\C_Layer\OBJ\loadboxlib.obj
+C:\Users\yyari\Documents\KolibriOS\kolibrios\contrib\C_Layer\OBJ\loadbuf2d.obj
+C:\Users\yyari\Documents\KolibriOS\kolibrios\contrib\C_Layer\OBJ\loadhttp.obj
+C:\Users\yyari\Documents\KolibriOS\kolibrios\contrib\C_Layer\OBJ\loadkmenu.obj
+C:\Users\yyari\Documents\KolibriOS\kolibrios\contrib\C_Layer\OBJ\loadlibimg.obj
+C:\Users\yyari\Documents\KolibriOS\kolibrios\contrib\C_Layer\OBJ\loadlibini.obj
+C:\Users\yyari\Documents\KolibriOS\kolibrios\contrib\C_Layer\OBJ\loadmsgbox.obj
+C:\Users\yyari\Documents\KolibriOS\kolibrios\contrib\C_Layer\OBJ\loadnetwork.obj
+C:\Users\yyari\Documents\KolibriOS\kolibrios\contrib\C_Layer\OBJ\loadproclib.obj
+C:\Users\yyari\Documents\KolibriOS\kolibrios\contrib\C_Layer\OBJ\loadrasterworks.obj
+
