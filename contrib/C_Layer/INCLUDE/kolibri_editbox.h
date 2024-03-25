@@ -3,35 +3,38 @@
 
 #include "kolibri_colors.h"
 
-/*  flags meaning
-ed_figure_only= 1000000000000000b   
-ed_always_focus= 100000000000000b   
-ed_focus=                     10b   
-ed_pass=                       1b   
-ed_shift_on=                1000b   
-ed_shift_on_off=1111111111110111b
-ed_shift=                    100b   
-ed_shift_off=   1111111111111011b
-ed_shift_bac=              10000b   
-ed_shift_bac_cl=1111111111101111b   
-ed_shift_cl=    1111111111100011b
-ed_shift_mcl=   1111111111111011b
-ed_left_fl=               100000b
-ed_right_fl=    1111111111011111b
-ed_offset_fl=            1000000b
-ed_offset_cl=   1111111110111111b
-ed_insert=              10000000b
-ed_insert_cl=   1111111101111111b
-ed_mouse_on =          100000000b
-ed_mous_adn_b=         100011000b
-ed_mouse_on_off=1111111011111111b
-ed_mouse_on_off= not (ed_mouse_on)
-ed_ctrl_on =          1000000000b
-ed_ctrl_off = not (ed_ctrl_on)
-ed_alt_on =          10000000000b
-ed_alt_off = not (ed_alt_on)
-ed_disabled=        100000000000b
-*/
+/// @brief flags meaning
+enum EditBoxFlags
+{
+    ed_pass =                        0b1,
+    ed_focus =                      0b10,
+    ed_shift =                     0b100,
+    ed_shift_on =                 0b1000,
+    ed_shift_bac =               0b10000,
+    ed_left_fl =                0b100000,
+    ed_offset_fl =             0b1000000,
+    ed_insert =               0b10000000,
+    ed_mouse_on            = 0b100000000,
+    ed_ctrl_on            = 0b1000000000,
+    ed_alt_on            = 0b10000000000,
+    ed_disabled =         0b100000000000,
+    ed_always_focus  = 0b100000000000000,
+    ed_figure_only  = 0b1000000000000000,
+    ed_shift_on_off = 0b1111111111110111,
+    ed_shift_off = 0b1111111111111011,
+    ed_shift_bac_cl = 0b1111111111101111,
+    ed_shift_cl = 0b1111111111100011,
+    ed_shift_mcl = 0b1111111111111011,
+    ed_right_fl = 0b1111111111011111,
+    ed_offset_cl = 0b1111111110111111,
+    ed_insert_cl = 0b1111111101111111,
+    ed_mous_adn_b = 0b100011000,
+    ed_mouse_on_off = 0b1111111011111111,
+    ed_mouse_on_off = !(ed_mouse_on),
+    ed_ctrl_off = !(ed_ctrl_on),
+    ed_alt_off = !(ed_alt_on),
+    
+};
 
 typedef struct edit_box_t {
   unsigned int width;
@@ -104,6 +107,7 @@ edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsigned int 
 extern void (*edit_box_draw)(edit_box *) __attribute__((__stdcall__));
 
 extern void (*edit_box_key)(edit_box *) __attribute__((__stdcall__));
+
 /* editbox_key is a wrapper written in assembly to handle key press events for editboxes */
 /* because inline assembly in GCC is a PITA and interferes with the EAX (AH) register */
 /* which edit_box_key requires */

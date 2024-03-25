@@ -28,7 +28,7 @@ enum Params
 
 /// @brief Initialize the RasterWorks library
 /// @return -1 if unsuccessful
-extern int kolibri_rasterworks_init(void); 
+extern int kolibri_rasterworks_init(void);
 
 /// @brief Draw text on 24bpp or 32bpp image
 /// @param canvas Pointer to image (array of colors)
@@ -37,7 +37,11 @@ extern int kolibri_rasterworks_init(void);
 /// @param string Pointer to string
 /// @param charQuantity String length
 /// @param fontColor Text color
-/// @param params Parameters from the Params list
+/// @param params ffeewwhh  \
+hh - char height  \
+ww - char width	; 0 = auto (proportional) \
+ee - encoding	; 1 = cp866, 2 = UTF-16LE, 3 = UTF-8 \
+ff - Parameters from the Params list
 /// @note All flags combinable, except align right + align center
 /// @note The text is drawn on the image, in order for changes to occur in the window, you need to draw the image after calling this function
 extern void (*drawText)(void *canvas, int x, int y, const char *string, int charQuantity, int fontColor, int params) __attribute__((__stdcall__));

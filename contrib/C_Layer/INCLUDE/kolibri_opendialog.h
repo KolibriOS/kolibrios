@@ -14,7 +14,7 @@ enum open_dialog_mode {
 typedef struct __attribute__ ((__packed__)) {
 	unsigned int size;
 	unsigned char end;
-}od_filter;
+} od_filter;
 
 typedef struct __attribute__ ((__packed__)) {
     unsigned int mode;
@@ -33,7 +33,7 @@ typedef struct __attribute__ ((__packed__)) {
     unsigned short x_start;
     unsigned short y_size;
     unsigned short y_start;
-}open_dialog;
+} open_dialog;
 
 void fake_on_redraw(void) {}
 
@@ -68,7 +68,11 @@ open_dialog* kolibri_new_open_dialog(unsigned int mode, unsigned short tlx, unsi
 	return new_opendialog;
 }
 
+/// @brief Inilizate proclib
+/// @return -1 if unsuccessful
 extern void kolibri_proclib_init();
+
 extern void (*OpenDialog_init)(open_dialog *) __attribute__((__stdcall__));
 extern void (*OpenDialog_start)(open_dialog *) __attribute__((__stdcall__));
+
 #endif /* KOLIBRI_OPENDIALOG_H */

@@ -35,7 +35,6 @@ extern void (*msgbox_reinit)(msgbox *) __attribute__((__stdcall__));  // recalc 
 /// @note def_but - highlighted and used on Enter (if zero - default is [X]), user may use Tabs or Arrows
 /// @note last params are buttons text, max 8. last must set as NULL
 static inline msgbox* kolibri_new_msgbox(char* title, char* text, int def_but, ...)
-
 {
     va_list vl;
     va_start(vl, def_but);

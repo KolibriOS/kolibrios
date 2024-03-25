@@ -2,28 +2,28 @@
 #define KOLIBRI_TREELIST_H
 
 
-/// константы стиля
+/// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 enum tl_style {
-    TL_KEY_NO_EDIT  = 1,    // элемент нельзя редактировать на клавиатуре (изменять уровни стрелками, удалять DEL)
-    TL_DRAW_PAR_LINE = 2,   // рисовать линии к родительскому узлу
-    TL_LISTBOX_MODE  = 4    //стиль не отображает уровни (как в ListBox все одного уровня)
+    TL_KEY_NO_EDIT  = 1,    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ DEL)
+    TL_DRAW_PAR_LINE = 2,   // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+    TL_LISTBOX_MODE  = 4    //пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅ пїЅ ListBox пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 };
 
-/// константы для функций
+/// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 enum tl_err {
-    TL_ERR_LOAD_CAPTION     = 1, //в памяти нет заголовка 'tree'
-    TL_ERR_SAVE_MEMOTY_SIZE = 2, //не хватает памяти для сохранения элемента
-    TL_ERR_LOAD_INFO_SIZE   = 4, //не совпадает размер информационной структуры при открытии
+    TL_ERR_LOAD_CAPTION     = 1, //пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ 'tree'
+    TL_ERR_SAVE_MEMOTY_SIZE = 2, //пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    TL_ERR_LOAD_INFO_SIZE   = 4, //пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 };
 
 typedef struct __attribute__ ((__packed__)) {
-    uint16_t    type;   //тип элемента, или индекс иконки для узла
-    uint8_t     lev;    //уровень элемента
-    uint8_t     clo;    //флаг закрытия, или открытия (имеет смысл для родительского узла)
-    uint32_t    prev;   //индекс предыдущего элемента
-    uint32_t    next;   //индекс последующего элемента
-    uint32_t    tcreat; //врем. создания
-    uint32_t    tdel;   //врем. удаления
+    uint16_t    type;   //пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+    uint8_t     lev;    //пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    uint8_t     clo;    //пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ)
+    uint32_t    prev;   //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    uint32_t    next;   //пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    uint32_t    tcreat; //пїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    uint32_t    tdel;   //пїЅпїЅпїЅпїЅ. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 } treelist_node;
 
 
@@ -32,31 +32,31 @@ typedef struct __attribute__ ((__packed__)) {
     uint32_t    top;
     uint32_t    width;
     uint32_t    height;
-    void       *data_info;  // указатель на основные даные
-    uint16_t    info_size;  // размер данных выделяемых для каждого узла (пользовательськие данные + текст для подписи)
-    uint32_t    info_max_count; // максимальное количество узлов, которые можно добавить в элемент
-    uint32_t    style;      // стили элемента
-    treelist_node *data_nodes; // указатель на структуры узлов
-    void       *data_img;   // указатель на изображения с иконками узлов
-    uint16_t    img_cx;     // ширина иконок
-    uint16_t    img_cy;     // высота иконок
-    void       *data_img_sys;//указатель на системные изображения (стрелки, плюсики)
-    uint32_t    ch_tim;     // количество изменений в файле
-    uint32_t    tim_undo;   // количество отмененных действий
-    uint32_t    cur_pos;    // позиция курсора
-    color_t     col_bkg;    // цвет фона
-    color_t     col_zag; // цвет заголовка
-    color_t     col_txt; // цвет текста
-    uint16_t    capt_cy;    // высота подписи
-    uint16_t    info_capt_offs;//сдвиг для начала текста (подписи узла)
-    uint16_t    info_capt_len;//длина текста подписи узла (если = 0 то до конца структуры)
-    void       *el_focus;   // указатель на структуру элемента в фокусе
-    scrollbar  *p_scroll;   // указатель на структуру скроллинга
-    void       *on_press;   // +84 указатель на функцию, которая вызывается при нажатии Enter
+    void       *data_info;  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+    uint16_t    info_size;  // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ + пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+    uint32_t    info_max_count; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    uint32_t    style;      // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    treelist_node *data_nodes; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+    void       *data_img;   // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+    uint16_t    img_cx;     // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+    uint16_t    img_cy;     // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+    void       *data_img_sys;//пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+    uint32_t    ch_tim;     // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ
+    uint32_t    tim_undo;   // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    uint32_t    cur_pos;    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    color_t     col_bkg;    // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+    color_t     col_zag; // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    color_t     col_txt; // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+    uint16_t    capt_cy;    // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    uint16_t    info_capt_offs;//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ)
+    uint16_t    info_capt_len;//пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅ = 0 пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+    void       *el_focus;   // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+    scrollbar  *p_scroll;   // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    void       *on_press;   // +84 пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ Enter
 } treelist;
 
-// capt_cy may be 0 = no caption
-// if icon_size is 16x16, and data_img id NULL, no icons - useful in list mode
+/// @note capt_cy may be 0 = no caption
+/// @note if icon_size is 16x16, and data_img id NULL, no icons - useful in list mode
 static inline treelist* kolibri_new_treelist( uint32_t x_w, uint32_t y_h, uint16_t capt_cy, uint32_t icon_size_xy, uint16_t info_size, uint32_t info_max_count,
                                              uint16_t info_capt_len, uint16_t info_capt_offs, enum tl_style style, void *el_focus, color_t back, color_t title, color_t txt)
 {
@@ -87,10 +87,10 @@ static inline void gui_add_treelist(kolibri_window *wnd, treelist* tl)
 }
 
 
-///реакция на мышь
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ
 extern void (*tl_mouse)(treelist *) __attribute__((__stdcall__));
 
-///вывод списка на экран
+///пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 extern void (*tl_draw)(treelist *) __attribute__((__stdcall__));
 __attribute__((__stdcall__)) static inline void treelist_draw(treelist *tl)
 {
@@ -99,29 +99,31 @@ __attribute__((__stdcall__)) static inline void treelist_draw(treelist *tl)
 }
 
 
-///перемещаем узел вверх
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
 extern void (*tl_node_move_up)(treelist *) __attribute__((__stdcall__));
 
-///перемещаем узел вниз
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 extern void (*tl_node_move_down)(treelist *) __attribute__((__stdcall__));
 
-///выделение памяти для структур списка и основной информации (конструктор)
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 extern void (*tl_data_init)(treelist *) __attribute__((__stdcall__));
 
 
-///очистка памяти элемента (деструктор)
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 extern void (*tl_data_clear)(treelist *) __attribute__((__stdcall__));
+
 static inline void treelist_data_clear(treelist *tl)
 {
     (*tl_data_clear)(tl);
     free(tl->p_scroll);
 }
 
-///очистка списка (информации)
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 extern void (*tl_info_clear)(treelist *) __attribute__((__stdcall__));
 
 extern void (*tl_key_asm)(treelist *) __attribute__((__stdcall__));
-///реакция на клавиатуру
+
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 __attribute__((__stdcall__)) static inline void treelist_key(treelist *tl, oskey_t code)
 {
     __asm__ __volatile__ (
@@ -131,89 +133,85 @@ __attribute__((__stdcall__)) static inline void treelist_key(treelist *tl, oskey
 //    (*tl_key_asm)(tl);
 }
 
-///отмена действия
+///пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 extern void (*tl_info_undo)(treelist *) __attribute__((__stdcall__));
 
-///повтор действия
+///пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 extern void (*tl_info_redo)(treelist *) __attribute__((__stdcall__));
 
 extern void (*tl_node_add)(treelist *, uint32_t n_opt, void *n_info) __attribute__((__stdcall__));
-///добавить узел
-///input:
-/// tlist - указатель на структуру листа
-/// n_opt - опции добавления
-/// n_info - указатель на добавляемые данные
-static inline void treelist_node_add(treelist *tl, void *n_info, uint16_t type, uint8_t clos, uint8_t lev)
+
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+/// @param tlist - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+/// @param n_opt - пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+/// @param n_info - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+static inline void treelist_node_add(treelist *tlist, void *n_info, uint16_t type, uint8_t clos, uint8_t lev)
 {
     uint32_t    n_opt = (type << 16) | (clos << 8) | lev;
     (*tl_node_add)(tl, n_opt, n_info);
 }
 
-///записать в текущий узел
-///input:
-/// tlist - указатель на структуру листа
-/// n_info - указатель на данные
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+/// @param tlist - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+/// @param n_info - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 extern void (*tl_node_set_data)(treelist *, void *n_info) __attribute__((__stdcall__));
 
-///взять указатель на данные узла под курсором
+///пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 extern void* (*tl_node_get_data)(treelist *) __attribute__((__stdcall__));
 
-///удалить узел под курсором
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 extern void (*tl_node_delete)(treelist *) __attribute__((__stdcall__));
 
-///поставить курсор на первый узел
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 extern void (*tl_cur_beg)(treelist *) __attribute__((__stdcall__));
 
-///перенести курсор на 1 позицию ниже
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ 1 пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 extern void (*tl_cur_next)(treelist *) __attribute__((__stdcall__));
 
-///перенести курсор на 1 позицию выше
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ 1 пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
 extern void (*tl_cur_perv)(treelist *) __attribute__((__stdcall__));
 
-///открыть/закрыть узел (работает с узлами которые имеют дочерние узлы)
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅ/пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ)
 extern void (*tl_node_close_open)(treelist *) __attribute__((__stdcall__));
 
-///увеличить уровень
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 extern void (*tl_node_lev_inc)(treelist *) __attribute__((__stdcall__));
 
-///уменьшить уровень
+///пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 extern void (*tl_node_lev_dec)(treelist *) __attribute__((__stdcall__));
 
-///взять указатель на структуру узла в указанной позиции
-///input:
-/// tlist - pointer to 'TreeList' struct
-/// node_ind - node index
-///output - pointer to node info or NULL
-extern treelist_node* (*tl_node_poi_get_info)(treelist *, int node_ind) __attribute__((__stdcall__));
+/// @brief пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+/// @param tlist pointer to 'TreeList' struct
+/// @param node_ind node index
+/// @return pointer to node info or NULL
+extern treelist_node* (*tl_node_poi_get_info)(treelist * tlist, int node_ind) __attribute__((__stdcall__));
 
-///взять указатель на следущую структуру узла
-///input:
-/// tlist - pointer to 'TreeList' struct
-/// node_p - node param struct
-///output - pointer to next node struct or NULL
-extern treelist_node* (*tl_node_poi_get_next_info)(treelist *, treelist_node*) __attribute__((__stdcall__));
+///пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+/// @param tlist pointer to 'TreeList' struct
+/// @param node_p node param struct
+/// @return pointer to next node struct or NULL
+extern treelist_node* (*tl_node_poi_get_next_info)(treelist *tlist, treelist_node *node_p) __attribute__((__stdcall__));
 
-///;взять указатель на данные узла
-///input:
-/// tlist - pointer to 'TreeList' struct
-/// node_p - node param struct
-///output - pointer
-extern void* (*_tl_node_poi_get_data)(treelist *, treelist_node*) __attribute__((__stdcall__));
+/// @brief пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+/// @param tlist pointer to 'TreeList' struct
+/// @param node_p - node param struct
+/// @return pointer
+extern void* (*_tl_node_poi_get_data)(treelist *tlist, treelist_node *node_p) __attribute__((__stdcall__));
 
-/// tlist - pointer to 'TreeList' struct
-/// opt - options: 0 - first element, 1 - add next element
-/// h_mem - pointer to memory
-/// mem_size - memory size
-///output - error code
+/// @param tlist pointer to 'TreeList' struct
+/// @param opt options: 0 - first element, 1 - add next element
+/// @param h_mem pointer to memory
+/// @param mem_size memory size
+/// @return error code
 extern int (*tl_save_mem)(treelist *, int opt, void *h_mem, int mem_size) __attribute__((__stdcall__));
 
 /**input:
 ; tlist - pointer to 'TreeList' struct
-; opt   - options: element index + (2*(add mode)+(init mode)) shl 16, tl_load_mode_add        equ 0x20000 ;опция считывания в режиме добавления информации
+; opt   - options: element index + (2*(add mode)+(init mode)) shl 16, tl_load_mode_add        equ 0x20000 ;пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 ; h_mem - pointer to memory
 ; mem_size - memory size
-;   размер памяти, пока не используется (назначался для контроля)
-;   для его использования нужно доработать функцию
+;   пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+;   пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 ;output:
 ; eax - error code
 ;memory header format:
@@ -229,9 +227,9 @@ extern int (*tl_save_mem)(treelist *, int opt, void *h_mem, int mem_size) __attr
 ; +26 - (info size + 8) * count nodes */
 extern int (*_tl_load_mem)(treelist *, int opt, void *h_mem, int mem_size) __attribute__((__stdcall__));
 
-/// ;берет размер памяти занятой функцией tl_save_mem при сохранении элементов
-/// tlist - pointer to 'TreeList' struct
-/// h_mem - pointer to saved memory
-extern int (*tl_get_mem_size)(treelist *, void *h_mem) __attribute__((__stdcall__));
+/// @brief пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ tl_save_mem пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+/// @param tlist pointer to 'TreeList' struct
+/// @param h_mem pointer to saved memory
+extern int (*tl_get_mem_size)(treelist *tlist, void *h_mem) __attribute__((__stdcall__));
 
 #endif //KOLIBRI_TREELIST_H

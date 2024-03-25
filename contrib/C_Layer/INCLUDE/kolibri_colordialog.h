@@ -1,8 +1,8 @@
 #ifndef KOLIBRI_COLORIALOG_H
 #define KOLIBRI_COLORIALOG_H
 
-char cd_com_area_name[]    = "FFFFFFFF_color_dialog";
-char cd_start_path[]       = "/sys/colrdial";
+char cd_com_area_name[] = "FFFFFFFF_color_dialog";
+char cd_start_path[]    = "/sys/colrdial";
 
 typedef struct __attribute__ ((__packed__)) {
     unsigned int type;
