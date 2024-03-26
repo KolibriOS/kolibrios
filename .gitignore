@@ -1,17 +1,11 @@
 
+/contrib/sdk/lib/
+
 #C_Layer gitignore
 ## C_Layer vscode
-/contrib/C_Layer/.vscode/c_cpp_properties.json
-/contrib/C_Layer/.vscode/settings.json
+/contrib/C_Layer/.vscode/
 ## C_Layer OBJ
-/contrib/C_Layer/OBJ/loadboxlib.obj
-/contrib/C_Layer/OBJ/loadbuf2d.obj
-/contrib/C_Layer/OBJ/loadhttp.obj
-/contrib/C_Layer/OBJ/loadkmenu.obj
-/contrib/C_Layer/OBJ/loadlibimg.obj
-/contrib/C_Layer/OBJ/loadlibini.obj
-/contrib/C_Layer/OBJ/loadmsgbox.obj
-/contrib/C_Layer/OBJ/loadnetwork.obj
-/contrib/C_Layer/OBJ/loadproclib.obj
-/contrib/C_Layer/OBJ/loadrasterworks.obj
+/contrib/C_Layer/OBJ/*.obj
+
+
 

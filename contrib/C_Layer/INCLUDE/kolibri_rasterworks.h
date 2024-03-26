@@ -57,16 +57,21 @@ extern void (*drawText)(void *canvas, int x, int y, const char *string, int char
 
 /// @brief Calculate amount of valid chars in UTF-8 string
 /// @note Supports zero terminated string (set byteQuantity = -1)
-/// @param string
+/// @param string pointer to string
 /// @param byteQuantity
+/// @return amount of valid chars in UTF-8 string
 extern int (*countUTF8Z)(const char *string, int byteQuantity) __attribute__((__stdcall__));
 
 /// @brief Calculate amount of chars that fits given width
+/// @param areaWidth width of area
+/// @param charHeight char height
+/// @return amount of chars that fits given width
 extern int (*charsFit)(int areaWidth, int charHeight) __attribute__((__stdcall__));
 
 /// @brief Calculate string width in pixels
 /// @param charQuantity Characters
 /// @param charHeight character height
+/// @return string width in pixels
 extern int (*strWidth)(int charQuantity, int charHeight) __attribute__((__stdcall__));
 
 /// @brief Draw text on 24bpp or 32bpp image, the same as drawText but easier to use
