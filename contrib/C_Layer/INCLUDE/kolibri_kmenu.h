@@ -26,7 +26,7 @@ typedef struct __attribute__ ((__packed__)) {
 	uint16_t left, top, right, bottom;
 } t_rect;
 
-typedef struct kmenuitem_t{
+typedef struct kmenuitem_t {
 	int type;
 	char *text;
 	union {
@@ -51,7 +51,7 @@ typedef struct kmenuitem_t{
 	size_t padding_left, padding_right, padding_top, padding_bottom;
 } kmenuitem_t;
 
-typedef struct ksubmenu_t{
+typedef struct ksubmenu_t {
 	kmenuitem_t **items;
 	int count;
 
@@ -87,7 +87,8 @@ typedef struct {
 	int submenu_tid;
 } kmenu_t;
 
-
+/// @brief Inilizate kmnenu
+/// @return -1 if unsucessful
 extern int kolibri_kmenu_init(void);
 
 extern void (*kmainmenu_draw)(ksubmenu_t *) __attribute__((__stdcall__));

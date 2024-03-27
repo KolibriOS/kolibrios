@@ -1,11 +1,14 @@
 #ifndef KOLIBRI_STATICTEXT_H
 #define KOLIBRI_STATICTEXT_H
 
-typedef enum {
-	cp866,  // 6x9
-	CP866,  // 8x16
-	UTF16,
-	UTF8
+typedef enum
+{
+    /// @brief 6x9
+    cp866,
+    /// @brief 8x16
+    CP866, 
+    UTF16,
+    UTF8
 } encoding_t;
 
 typedef struct {
@@ -13,7 +16,7 @@ typedef struct {
 	char *text;
 	uint32_t color_flags;
 	uint32_t bg_color;
-}statictext;
+} statictext;
 
 typedef struct {
 	uint32_t start_xy;
@@ -21,7 +24,7 @@ typedef struct {
 	uint32_t color_flags;
 	uint32_t bg_color;
 	uint16_t width;
-}staticnum;
+} staticnum;
 
 statictext* kolibri_statictext(statictext* st, uint32_t xy, char *text, encoding_t enc, int size, color_t font, color_t bg)
 {

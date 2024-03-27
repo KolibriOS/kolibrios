@@ -7,7 +7,7 @@ typedef struct {
   unsigned int color;
   unsigned int identifier;
   unsigned int XY;
-}kolibri_button;
+} kolibri_button;
 
 kolibri_button *kolibri_new_button(unsigned int tlx, unsigned int tly, unsigned int sizex, unsigned int sizey,
 					  unsigned int identifier, unsigned int color)

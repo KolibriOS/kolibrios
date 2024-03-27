@@ -8,12 +8,13 @@ typedef struct __attribute__ ((__packed__)) option_box_t {
     uint32_t text_margin; // = 4 ���������� �� �������������� ��� ����� �� �������
     uint32_t size;       // 12 ������ �������� ��� �����
     color_t color;
-    color_t border_color; // individual border
+    /// @brief individual border
+    color_t border_color;
     color_t text_color;
     char *text;
     uint32_t text_len;
     uint32_t flags;
-}option_box;
+} option_box;
 
 extern void (*option_box_draw)(option_box **) __attribute__((__stdcall__));
 extern void (*option_box_mouse)(option_box **)__attribute__((__stdcall__));

@@ -1,22 +1,22 @@
 #ifndef KOLIBRI_COLORS_H
 #define KOLIBRI_COLORS_H
 /*
-  * +0: dword: frames - цвет рамки
-  * +4: dword: grab - цвет заголовка
-  * +8: dword: grab_button - цвет кнопки на полосе заголовка
-  * +12 = +0xC: dword: grab_button_text - цвет текста на кнопке
-    на полосе заголовка
-  * +16 = +0x10: dword: grab_text - цвет текста на заголовке
-  * +20 = +0x14: dword: work - цвет рабочей области
-  * +24 = +0x18: dword: work_button - цвет кнопки в рабочей области
-  * +28 = +0x1C: dword: work_button_text - цвет текста на кнопке
-    в рабочей области
-  * +32 = +0x20: dword: work_text - цвет текста в рабочей области
-  * +36 = +0x24: dword: work_graph - цвет графики в рабочей области
+  * +0: dword: frames - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+  * +4: dword: grab - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+  * +8: dword: grab_button - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+  * +12 = +0xC: dword: grab_button_text - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+    пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+  * +16 = +0x10: dword: grab_text - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+  * +20 = +0x14: dword: work - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+  * +24 = +0x18: dword: work_button - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+  * +28 = +0x1C: dword: work_button_text - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+    пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+  * +32 = +0x20: dword: work_text - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+  * +36 = +0x24: dword: work_graph - пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 */
 
 typedef struct {
-  unsigned int color_frame_area; // 0 цвет рамки
+  unsigned int color_frame_area; // 0 пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
   unsigned int color_grab_bar; // 4
   unsigned int color_grab_bar_button; // 8
   unsigned int color_grab_button_text; // 12
@@ -26,10 +26,12 @@ typedef struct {
   unsigned int color_work_button_text; // 28
   unsigned int color_work_text; // 32
   unsigned int color_work_graph; // 36
-}kolibri_system_colors;
+} kolibri_system_colors;
 
 kolibri_system_colors kolibri_color_table;
 
+/// @brief Get system colors table
+/// @param color_table Pointer to table
 void kolibri_get_system_colors(kolibri_system_colors *color_table)
 {
   __asm__ volatile ("int $0x40"

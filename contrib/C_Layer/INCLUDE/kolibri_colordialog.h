@@ -1,8 +1,8 @@
 #ifndef KOLIBRI_COLORIALOG_H
 #define KOLIBRI_COLORIALOG_H
 
-char cd_com_area_name[]    = "FFFFFFFF_color_dialog";
-char cd_start_path[]       = "/sys/colrdial";
+char cd_com_area_name[] = "FFFFFFFF_color_dialog";
+char cd_start_path[]    = "/sys/colrdial";
 
 typedef struct __attribute__ ((__packed__)) {
     unsigned int type;
@@ -18,7 +18,7 @@ typedef struct __attribute__ ((__packed__)) {
     unsigned short y_start;
     unsigned int color_type;
     unsigned int color;
-}color_dialog;
+} color_dialog;
 
 void cd_fake_on_redraw(void) {}
 
@@ -46,4 +46,5 @@ struct open_dialog* kolibri_new_color_dialog(unsigned int type, unsigned short t
 extern void kolibri_proclib_init() __attribute__((__stdcall__));
 extern void (*ColorDialog_init)(color_dialog *) __attribute__((__stdcall__));
 extern void (*ColorDialog_start)(color_dialog *) __attribute__((__stdcall__));
+
 #endif /* KOLIBRI_COLORDIALOG_H */

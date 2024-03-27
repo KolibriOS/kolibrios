@@ -3,48 +3,53 @@
 
 #include "kolibri_colors.h"
 
-/*  flags meaning
-ed_figure_only= 1000000000000000b   ;одни символы
-ed_always_focus= 100000000000000b   // всегда с курсором (фокусом)
-ed_focus=                     10b   ;фокус ввода приложения, мышится самостоятельно
-ed_pass=                       1b   ;поле с паролем
-ed_shift_on=                1000b   ;если не установлен -значит впервые нажат shift,если был установлен, значит мы уже что - то делали удерживая shift
-ed_shift_on_off=1111111111110111b
-ed_shift=                    100b   ;включается при нажатии на shift т.е. если нажимаю
-ed_shift_off=   1111111111111011b
-ed_shift_bac=              10000b   ;бит для очистки выделеного shift т.е. при установке говорит что есть выделение
-ed_shift_bac_cl=1111111111101111b   ;очистка при удалении выделения
-ed_shift_cl=    1111111111100011b
-ed_shift_mcl=   1111111111111011b
-ed_left_fl=               100000b
-ed_right_fl=    1111111111011111b
-ed_offset_fl=            1000000b
-ed_offset_cl=   1111111110111111b
-ed_insert=              10000000b
-ed_insert_cl=   1111111101111111b
-ed_mouse_on =          100000000b
-ed_mous_adn_b=         100011000b
-ed_mouse_on_off=1111111011111111b
-ed_mouse_on_off= not (ed_mouse_on)
-ed_ctrl_on =          1000000000b
-ed_ctrl_off = not (ed_ctrl_on)
-ed_alt_on =          10000000000b
-ed_alt_off = not (ed_alt_on)
-ed_disabled=        100000000000b
-*/
+/// @brief flags meaning
+enum EditBoxFlags
+{
+    ed_pass =                        0b1,
+    ed_focus =                      0b10,
+    ed_shift =                     0b100,
+    ed_shift_on =                 0b1000,
+    ed_shift_bac =               0b10000,
+    ed_left_fl =                0b100000,
+    ed_offset_fl =             0b1000000,
+    ed_insert =               0b10000000,
+    ed_mouse_on            = 0b100000000,
+    ed_ctrl_on            = 0b1000000000,
+    ed_alt_on            = 0b10000000000,
+    ed_disabled =         0b100000000000,
+    ed_always_focus  = 0b100000000000000,
+    ed_figure_only  = 0b1000000000000000,
+    ed_shift_on_off = 0b1111111111110111,
+    ed_shift_off = 0b1111111111111011,
+    ed_shift_bac_cl = 0b1111111111101111,
+    ed_shift_cl = 0b1111111111100011,
+    ed_shift_mcl = 0b1111111111111011,
+    ed_right_fl = 0b1111111111011111,
+    ed_offset_cl = 0b1111111110111111,
+    ed_insert_cl = 0b1111111101111111,
+    ed_mous_adn_b = 0b100011000,
+    ed_mouse_on_off = 0b1111111011111111,
+    ed_mouse_on_off = !(ed_mouse_on),
+    ed_ctrl_off = !(ed_ctrl_on),
+    ed_alt_off = !(ed_alt_on),
+    
+};
 
 typedef struct edit_box_t {
   unsigned int width;
     unsigned int left;
     unsigned int top;
     unsigned int color;
-    unsigned int shift_color;   // selected text color
+    /// @brief selected text color
+    unsigned int shift_color;
     unsigned int focus_border_color;
     unsigned int blur_border_color;
     unsigned int text_color;
     unsigned int max;
     char        *text;
-    void        *mouse_variable; // must be pointer edit_box** to save focused editbox
+    /// @note  must be pointer edit_box** to save focused editbox
+    void        *mouse_variable;
     unsigned int flags;
 
     unsigned int size;  // used symbols in buffer without trailing zero
@@ -57,7 +62,7 @@ typedef struct edit_box_t {
     unsigned int shift_old;
     unsigned int height;
     unsigned int char_width;
-}edit_box;
+} edit_box;
 
 /* Initializes an Editbox with sane settings, sufficient for most use.
    This will let you create a box and position it somewhere on the screen.
@@ -102,13 +107,14 @@ edit_box* kolibri_new_edit_box(unsigned int tlx, unsigned int tly, unsigned int 
 extern void (*edit_box_draw)(edit_box *) __attribute__((__stdcall__));
 
 extern void (*edit_box_key)(edit_box *) __attribute__((__stdcall__));
+
 /* editbox_key is a wrapper written in assembly to handle key press events for editboxes */
 /* because inline assembly in GCC is a PITA and interferes with the EAX (AH) register */
 /* which edit_box_key requires */
 __attribute__((__stdcall__)) void editbox_key(edit_box *e, oskey_t ch)
-/// если flags не содержит ed_focus, игнорирует ввод
-/// если flags содержит ed_mouse_on или ed_disabled, игнорирует ввод
-/// на вводе ожидает ch - код клавиши, только в режиме ASCII
+/// пїЅпїЅпїЅпїЅ flags пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ed_focus, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+/// пїЅпїЅпїЅпїЅ flags пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ed_mouse_on пїЅпїЅпїЅ ed_disabled, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
+/// пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ ch - пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ ASCII
 {
     __asm__ __volatile__ (
              "push %2\n\t"
@@ -116,7 +122,7 @@ __attribute__((__stdcall__)) void editbox_key(edit_box *e, oskey_t ch)
 }
 
 extern void (*edit_box_mouse)(edit_box *) __attribute__((__stdcall__));
-/// при щелчке не левой кнопкой, обнуляет *mouse_variable! и сбрасывает флаг ed_mouse_on
+/// пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ *mouse_variable! пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ ed_mouse_on
 
 
 extern void (*edit_box_set_text)(edit_box *, char *) __attribute__((__stdcall__));

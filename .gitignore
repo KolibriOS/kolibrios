@@ -1,0 +1,11 @@
+
+/contrib/sdk/lib/
+
+#C_Layer gitignore
+## C_Layer vscode
+/contrib/C_Layer/.vscode/
+## C_Layer OBJ
+/contrib/C_Layer/OBJ/*.obj
+
+
+

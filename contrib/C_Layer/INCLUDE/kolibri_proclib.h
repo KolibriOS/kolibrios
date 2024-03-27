@@ -1,7 +1,9 @@
 #ifndef KOLIBRI_PROCLIB_H
 #define KOLIBRI_PROCLIB_H
 
-extern int kolibri_proclib_init(void)
+/// @brief Inilizate proclib
+/// @return -1 if unsucessful
+extern int kolibri_proclib_init(void);
 
 enum Mode {
 	OD_OPEN,
