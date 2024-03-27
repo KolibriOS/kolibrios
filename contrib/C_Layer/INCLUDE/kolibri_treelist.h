@@ -154,7 +154,7 @@ static inline void treelist_node_add(treelist *tlist, void *n_info, uint16_t typ
 ///�������� � ������� ����
 /// @param tlist - ��������� �� ��������� �����
 /// @param n_info - ��������� �� ������
-extern void (*tl_node_set_data)(treelist *, void *n_info) __attribute__((__stdcall__));
+extern void (*tl_node_set_data)(treelist * tlist, void *n_info) __attribute__((__stdcall__));
 
 ///����� ��������� �� ������ ���� ��� ��������
 extern void* (*tl_node_get_data)(treelist *) __attribute__((__stdcall__));
@@ -203,7 +203,7 @@ extern void* (*_tl_node_poi_get_data)(treelist *tlist, treelist_node *node_p) __
 /// @param h_mem pointer to memory
 /// @param mem_size memory size
 /// @return error code
-extern int (*tl_save_mem)(treelist *, int opt, void *h_mem, int mem_size) __attribute__((__stdcall__));
+extern int (*tl_save_mem)(treelist *tlist, int opt, void *h_mem, int mem_size) __attribute__((__stdcall__));
 
 /**input:
 ; tlist - pointer to 'TreeList' struct

@@ -162,7 +162,7 @@ extern void (*ted_but_select_word)(editor *) __attribute__((__stdcall__));
 
 /// @brief A function that will be called when the copy to clipboard button or Ctrl+C is pressed. The text is copied into the ted_buffer, the maximum buffer size is specified in ted_buffer_size.
 /// @param ed Pointer to editor struct
-extern void (*ted_but_copy)(editor *) __attribute__((__stdcall__));
+extern void (*ted_but_copy)(editor * ed) __attribute__((__stdcall__));
 extern void (*ted_but_paste)(editor *) __attribute__((__stdcall__));
 
 extern void (*ted_but_find)(editor *) __attribute__((__stdcall__));

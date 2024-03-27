@@ -163,7 +163,7 @@ static inline void gui_add_frame(kolibri_window *wnd, frame* f)
 }
 
 /// @brief Draw frame
-/// @param frame Frame to be draw
-extern void (*frame_draw)(frame *) __attribute__((__stdcall__));
+/// @param frame Pointer to frame to be draw
+extern void (*frame_draw)(frame *frame) __attribute__((__stdcall__));
 
 #endif /* KOLIBRI_FRAME_H */

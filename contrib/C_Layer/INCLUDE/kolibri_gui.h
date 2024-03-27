@@ -164,7 +164,7 @@ int kolibri_gui_init(void)
 
 
 /**
-* \example boardmsg.c
+ * \example boardmsg.c
  * \example scroll_progress.c
  * \example option_menu.c
  * \example editor_tree_msgbox.c

@@ -69,7 +69,6 @@ open_dialog* kolibri_new_open_dialog(unsigned int mode, unsigned short tlx, unsi
 }
 
 /// @brief Inilizate proclib
-/// @return -1 if unsuccessful
 extern void kolibri_proclib_init();
 
 extern void (*OpenDialog_init)(open_dialog *) __attribute__((__stdcall__));

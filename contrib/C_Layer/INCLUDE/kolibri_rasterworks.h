@@ -107,6 +107,6 @@ rgb_t *DrawText(const rgb_t *canvas, int canvasWidth, int canvasHeight, int x, i
 /**
  * \example rasterworks_example.c
  * example of using rasterworks library
- */
+*/
 
 #endif /* KOLIBRI_RASTERWORKS_H */
