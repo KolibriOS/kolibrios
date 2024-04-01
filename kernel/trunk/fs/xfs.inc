@@ -517,6 +517,8 @@ struct XFS PARTITION
         dir_leafn_magic         dw ?
         da_node_magic           dw ?
         bmap_magic              dd ?
+        dirx_leaf_ents_offset   dd ?
+        dirx_leaf_hdr_count_offset dd ?
         bmbt_block_size         dd ?
         dir_block_size          dd ?
         dir_data_size           dd ?
