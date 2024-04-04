@@ -16,6 +16,7 @@ skinlist = {
 "ConLenov/HotFox/HotFox.skn",
 "ConLenov/Yaru/Yaru.skn",
 "ConLenov/Yaru-light/Yaru-light.skn",
+"ConLenov/Yaru-dark/Yaru-dark.skn",
 "dunkaist/mursky/mursky.skn",
 "dunkaist/testtest/testtest.skn",
 "Leency/AreaSq/AreaSq.skn",

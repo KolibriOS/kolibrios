@@ -180,6 +180,8 @@ proc xfs_create_partition uses ebx esi edi
         mov     [edi+XFS.dir_leafn_magic], XFS_DIR2_LEAFN_MAGIC
         mov     [edi+XFS.da_node_magic], XFS_DA_NODE_MAGIC
         mov     [edi+XFS.bmap_magic], XFS_BMAP_MAGIC
+        mov     [edi+XFS.dirx_leaf_ents_offset], xfs_dir2_leaf.ents
+        mov     [edi+XFS.dirx_leaf_hdr_count_offset], xfs_dir2_leaf_hdr.count
         mov     [edi+XFS.dir_block_size], sizeof.xfs_dir2_data_hdr
         mov     [edi+XFS.bmbt_block_size], sizeof.xfs_bmbt_block
         mov     [edi+XFS.da_blkinfo_size], sizeof.xfs_da_blkinfo
@@ -198,6 +200,8 @@ proc xfs_create_partition uses ebx esi edi
         mov     [edi+XFS.dir_leafn_magic], XFS_DIR3_LEAFN_MAGIC
         mov     [edi+XFS.da_node_magic], XFS_DA3_NODE_MAGIC
         mov     [edi+XFS.bmap_magic], XFS_BMAP3_MAGIC
+        mov     [edi+XFS.dirx_leaf_ents_offset], xfs_dir3_leaf.ents
+        mov     [edi+XFS.dirx_leaf_hdr_count_offset], xfs_dir3_leaf_hdr.count
         mov     [edi+XFS.dir_block_size], sizeof.xfs_dir3_data_hdr
         mov     [edi+XFS.bmbt_block_size], sizeof.xfs_bmbt3_block
         mov     [edi+XFS.da_blkinfo_size], sizeof.xfs_da3_blkinfo
@@ -1012,7 +1016,8 @@ proc xfs._.lookup_block uses esi, _name, _len
         mov     eax, ebx
         mov     ebx, [ebp+XFS.cur_dirblock]
         stdcall xfs._.extent_unpack, eax
-        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], ebx
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], \
+                [ebp+XFS.extent.br_startblock.hi], ebx
         jnz     .error
         mov     eax, [ebp+XFS.dir_block_magic]
         cmp     [ebx+xfs_dir2_block.hdr.magic], eax
@@ -1097,7 +1102,8 @@ proc xfs._.lookup_leaf uses ebx esi edi, _name, _len
         mov     eax, [ebp+XFS.dir2_leaf_offset_blocks.hi]
         mov     [ebp+XFS.offset_begin.hi], ecx
         stdcall xfs._.extent_list.seek, ecx
-        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], \
+                [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
         jnz     .error
         mov     ebx, [ebp+XFS.cur_dirblock]
         movzx   eax, [ebp+XFS.dir_leaf1_magic]
@@ -1228,24 +1234,29 @@ endl
         add     ebx, [ebp+XFS.inode_core_size]
         stdcall xfs._.btree_read_block, ebx, ecx, eax, edx, [ebp+XFS.cur_dirblock]
         mov     ebx, [ebp+XFS.cur_dirblock]
-        cmp     [ebx+xfs_da_intnode.hdr.info.magic], XFS_DA_NODE_MAGIC
+        movzx   eax, [ebp+XFS.da_node_magic]
+        cmp     [ebx+xfs_da_blkinfo.magic], ax
         jz      .next_level
-        cmp     [ebx+xfs_dir2_leaf.hdr.info.magic], XFS_DIR2_LEAFN_MAGIC
+        movzx   eax, [ebp+XFS.dir_leafn_magic]
+        cmp     [ebx+xfs_da_blkinfo.magic], ax
         jz      .leafn
-        cmp     [ebx+xfs_dir2_leaf.hdr.info.magic], XFS_DIR2_LEAF1_MAGIC
+        movzx   eax, [ebp+XFS.dir_leaf1_magic]
+        cmp     [ebx+xfs_da_blkinfo.magic], ax
         jnz     .error
         mov     eax, [.hash]
-        movzx   ecx, [ebx+xfs_dir2_leaf.hdr.count]
+        mov     ecx, [ebp+XFS.dirx_leaf_hdr_count_offset]
+        movzx   ecx, word[ebx+ecx]
         xchg    cl, ch
-        add     ebx, xfs_dir2_leaf.ents
+        add     ebx, [ebp+XFS.dirx_leaf_ents_offset]
         stdcall xfs._.get_addr_by_hash, ebx, ecx
         jnz     .error
         mov     ebx, [ebp+XFS.cur_dirblock]
         jmp     .got_addr
 .leafn:
-        movzx   ecx, [ebx+xfs_dir2_leaf.hdr.count]
+        mov     ecx, [ebp+XFS.dirx_leaf_hdr_count_offset]
+        movzx   ecx, word[ebx+ecx]
         xchg    cl, ch
-        add     ebx, xfs_dir2_leaf.ents
+        add     ebx, [ebp+XFS.dirx_leaf_ents_offset]
         mov     eax, [.hash]
         stdcall xfs._.get_addr_by_hash, ebx, ecx
         jnz     .error
@@ -2028,7 +2039,8 @@ proc xfs._.btree_read_block uses ebx esi edi, _tree, _size, _block_lo, _block_hi
         mov     eax, [_block_hi]
         mov     [ebp+XFS.offset_begin.hi], eax
         stdcall xfs._.extent_list.seek, ecx
-        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], [_buf]
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], \
+                [ebp+XFS.extent.br_startblock.hi], [_buf]
 .error:
 .quit:
         ret
