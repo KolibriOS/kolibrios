@@ -516,7 +516,11 @@ KOSAPI void _ksys_define_button(uint32_t x, uint32_t y, uint32_t w, uint32_t h, 
 
 KOSAPI void _ksys_delete_button(uint32_t id)
 {
-    asm_inline("int $0x40" ::"a"(8), "d"(id & 0x00FFFFFF | 0x80000000));
+    asm_inline("int $0x40" 
+        ::
+        "a"(8), 
+        "d"(((id) & (0x00FFFFFF)) | (0x80000000))
+    );
 }
 
 /*============ Function 9 - information on execution thread. ===========*/

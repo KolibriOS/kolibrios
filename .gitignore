@@ -1,7 +1,10 @@
 
 /contrib/sdk/lib/
 
+/programs/develop/libraries/buf2d/trunk/examples/bin/
+
 #C_Layer gitignore
+/contrib/C_Layer/Docs/html/
 ## C_Layer vscode
 /contrib/C_Layer/.vscode/
 ## C_Layer OBJ
