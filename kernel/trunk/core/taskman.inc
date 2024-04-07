@@ -10,15 +10,6 @@ $Revision$
 
 GREEDY_KERNEL  = 0
 
-struct  APP_HEADER_00_
-        banner          dq ?
-        version         dd ?    ;+8
-        start           dd ?    ;+12
-        i_end           dd ?    ;+16
-        mem_size        dd ?    ;+20
-        i_param         dd ?    ;+24
-ends
-
 struct  APP_HEADER_01_
         banner          dq ?
         version         dd ?    ;+8
@@ -216,9 +207,6 @@ endp
 align 4
 test_app_header:
        virtual at eax
-         APP_HEADER_00 APP_HEADER_00_
-       end virtual
-       virtual at eax
          APP_HEADER_01 APP_HEADER_01_
        end virtual
 
@@ -226,36 +214,6 @@ test_app_header:
         jne     .fail
         cmp     word [eax+4], 'ET'
         jne     .fail
-
-        cmp     [eax+6], word '00'
-        jne     .check_01_header
-
-        mov     ecx, [APP_HEADER_00.start]
-        mov     [ebx + APP_HDR.eip], ecx
-        mov     edx, [APP_HEADER_00.mem_size]
-        mov     [ebx + APP_HDR._emem], edx
-
-        cmp     edx, [APP_HEADER_00.i_end]
-        jb      .fail
-
-        cmp     edx, OS_BASE ;check memory
-        jae     .fail
-        mov     ecx, [pg_data.pages_free]
-        shl     ecx, 12 ; ecx * 4kb
-        cmp     edx, ecx
-        jae     .fail
-
-        shr     edx, 1
-        sub     edx, 0x10
-        mov     [ebx + APP_HDR.esp], edx
-        mov     ecx, [APP_HEADER_00.i_param]
-        mov     [ebx + APP_HDR.cmdline], ecx
-        mov     [ebx + APP_HDR.path], 0
-        mov     edx, [APP_HEADER_00.i_end]
-        mov     [ebx + APP_HDR._edata], edx
-        ret
-
- .check_01_header:
 
         cmp     [eax+6], word '01'
         je      @f
@@ -847,11 +805,7 @@ common_app_entry:
         and     edi, -PAGE_SIZE
         sub     edi, ecx
         dec     edi
-        cmp     word [6], '00'
-        jne     @f
-        mov     [APP_HEADER_00_.i_param], edi
-        jmp     .copy_cmdline
-@@:
+
         mov     [APP_HEADER_01_.i_param], edi
 .copy_cmdline:
         inc     ecx  ; keep in mind about 0 in the end
