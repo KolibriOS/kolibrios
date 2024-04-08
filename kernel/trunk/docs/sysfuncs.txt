@@ -1277,53 +1277,6 @@ Constant position of the window relative to other windows:
   ebx - SSF_WINDOW_BEHAVIOR (25)
   ecx - SSSF_GET_WB (1), SSSF_SET_WB (2)
 ======================================================================
-==================== Function 20 - MIDI interface. ===================
-======================================================================
-
-!!! WARNING. This interface is outdated and should not be used !!!
-
------------------------ Subfunction 1 - reset ------------------------
-Parameters:
-  * eax = 20 - function number
-  * ebx = 1 - subfunction number
-
--------------------- Subfunction 2 - output byte ---------------------
-Parameters:
-  * eax = 20 - function number
-  * ebx = 2 - subfunction number
-  * cl = byte for output
-Returned value (is the same for both subfunctions):
-  * eax = 0 - success
-  * eax = 1 - base port is not defined
-Remarks:
-  * Previously the base port must be defined by
-    subfunction 1 of function 21.
-
----------------------- Constants for registers: ----------------------
-  eax - SF_MIDI (20)
-  ebx - SSF_RESET (1), SSF_OUTPUT (2)
-======================================================================
-======== Function 21, subfunction 1 - set MPU MIDI base port. ========
-======================================================================
-
-!!! WARNING. This interface is outdated and should not be used !!!
-
-Parameters:
-  * eax = 21 - function number
-  * ebx = 1 - subfunction number
-  * ecx = number of base port
-Returned value
-  * eax = 0 - success
-  * eax = -1 - erratic number of a port
-Remarks:
-  * Number of a port must satisfy to conditions 0x100<=ecx<=0xFFFF.
-  * The installation of base is necessary for function 20.
-  * To get base port use subfunction 1 of function 26.
-
----------------------- Constants for registers: ----------------------
-  eax - SF_SYSTEM_SET (21)
-  ebx - SSF_MPU_MIDI_BASE (1)
-======================================================================
 ========== Function 21, subfunction 2 - set keyboard layout. =========
 ======================================================================
 Keyboard layout is used to convert keyboard scancodes to ASCII-codes,
@@ -1550,23 +1503,6 @@ Remarks:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SCREEN_PUT_IMAGE (25)
-======================================================================
-======== Function 26, subfunction 1 - get MPU MIDI base port. ========
-======================================================================
-
-!!! WARNING. This interface is outdated and should not be used !!!
-
-Parameters:
-  * eax = 26 - function number
-  * ebx = 1 - subfunction number
-Returned value:
-  * eax = port number
-Parameters:
-  * To set base port use subfunction 1 of function 21.
-
----------------------- Constants for registers: ----------------------
-  eax - SF_SYSTEM_GET (26)
-  ebx - SSF_MPU_MIDI_BASE (1)
 ======================================================================
 ========== Function 26, subfunction 2 - get keyboard layout. =========
 ======================================================================
