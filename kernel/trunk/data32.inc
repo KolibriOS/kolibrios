@@ -429,9 +429,6 @@ current_slot_idx    dd  ?   ; index of current thread slot
 thread_count        dd  ?
 
 ; device addresses
-mididp  dd  ?
-midisp  dd  ?
-
 ;cdbase  dd  ?
 ;cdid    dd  ?
 

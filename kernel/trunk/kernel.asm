@@ -1511,7 +1511,7 @@ draw_num_text:
 ;-----------------------------------------------------------------------------
 align 4
 sys_setup:
-;  1 = roland mpu midi base , base io address
+;  1 = not used
 ;  2 = keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
 ;  3 = not used
 ;  4 = not used
@@ -1525,26 +1525,8 @@ sys_setup:
 ; 12 = enable pci access
 ;-----------------------------------------------------------------------------
         and     [esp + SYSCALL_STACK.eax], 0
-; F.21.1 - set MPU MIDI base port
-        dec     ebx
-        jnz     @f
-
-        cmp     ecx, 0x100
-        jb      @f
-
-        mov     esi, 65535
-        cmp     esi, ecx
-        jb      @f
-
-        mov     [midi_base], cx
-        mov     word [mididp], cx
-        inc     cx
-        mov     word [midisp], cx
-        ret
-;--------------------------------------
-@@:
 ; F.21.2 - set keyboard layout
-        dec     ebx
+        sub     ebx, 2
         jnz     @f
 
         mov     eax, edx
@@ -1616,7 +1598,7 @@ sys_setup:
 ;-----------------------------------------------------------------------------
 align 4
 sys_getsetup:
-;  1 = roland mpu midi base , base io address
+;  1 = not used
 ;  2 = keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
 ;  3 = not used
 ;  4 = not used
@@ -1629,17 +1611,8 @@ sys_getsetup:
 ; 11 = get the state "lba read"
 ; 12 = get the state "pci access"
 ;-----------------------------------------------------------------------------
-; F.26.1 - get MPU MIDI base port
-        dec     ebx
-        jnz     @f
-
-        movzx   eax, [midi_base]
-        mov     [esp + SYSCALL_STACK.eax], eax
-        ret
-;--------------------------------------
-@@:
 ; F.26.2 - get keyboard layout
-        dec     ebx
+        sub     ebx, 2
         jnz     @f
 
         mov     ebx, edx
@@ -1741,90 +1714,6 @@ sys_getsetup:
 get_timer_ticks:
         mov     eax, [timer_ticks]
         ret
-;-----------------------------------------------------------------------------
-iglobal
-midi_base dw 0
-endg
-
-align 4
-sys_midi:
-        cmp     word [mididp], 0
-        jnz     @f
-        mov     [esp + SYSCALL_STACK.eax], 1
-        ret
-@@:
-        and     [esp + SYSCALL_STACK.eax], 0
-        dec     ebx
-        jnz     .smn1
- ;    call setuart
-@@:
-        call    .is_output
-        test    al, al
-        jnz     @b
-        mov     dx, word [midisp]
-        mov     al, 0xff
-        out     dx, al
-@@:
-        mov     dx, word [midisp]
-        mov     al, 0xff
-        out     dx, al
-        call    .is_input
-        test    al, al
-        jnz     @b
-        call    .get_mpu_in
-        cmp     al, 0xfe
-        jnz     @b
-@@:
-        call    .is_output
-        test    al, al
-        jnz     @b
-        mov     dx, word [midisp]
-        mov     al, 0x3f
-        out     dx, al
-        ret
-.smn1:
-        dec     ebx
-        jnz     .ret
-@@:
-        call    .get_mpu_in
-        call    .is_output
-        test    al, al
-        jnz     @b
-        mov     al, bl
-        call    .put_mpu_out
-.ret:
-        ret
-
-.is_input:
-        push    edx
-        mov     dx, word [midisp]
-        in      al, dx
-        and     al, 0x80
-        pop     edx
-        ret
-
-.is_output:
-        push    edx
-        mov     dx, word [midisp]
-        in      al, dx
-        and     al, 0x40
-        pop     edx
-        ret
-
-.get_mpu_in:
-        push    edx
-        mov     dx, word [mididp]
-        in      al, dx
-        pop     edx
-        ret
-
-.put_mpu_out:
-        push    edx
-        mov     dx, word [mididp]
-        out     dx, al
-        pop     edx
-        ret
-
 ;-----------------------------------------------------------------------------
 sys_end:
 ; restore default cursor before killing

@@ -118,8 +118,8 @@ iglobal
       dd sys_getbutton           ; 17-GetButton
       dd sys_system              ; 18-System Services
       dd undefined_syscall       ; 19-reserved
-      dd sys_midi                ; 20-ResetMidi and OutputMidi
-      dd sys_setup               ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
+      dd undefined_syscall       ; 20- deprecated ResetMidi and OutputMidi
+      dd sys_setup               ; 21-SetKeymap,SetShiftKeymap,.
       dd sys_settime             ; 22-setting date,time,clock and alarm-clock
       dd sys_wait_event_timeout  ; 23-TimeOutWaitForEvent
       dd syscall_cdaudio         ; 24-PlayCdTrack,StopCd and GetCdPlaylist

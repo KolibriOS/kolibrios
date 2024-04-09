@@ -499,6 +499,8 @@ struct process_information
                               dw ?  ; +52
         client_box            BOX   ; +54
         wnd_state             db ?  ; +70
+        event_mask            dd ?  ; +71
+        keyboard_mode         db ?  ; +75
 ends
 
 struct  APPDATA
@@ -573,7 +575,7 @@ TSTATE_TERMINATING    = 4
 TSTATE_WAITING        = 5
 TSTATE_FREE           = 9
 
-; Window constants:
+; Window constants(fl_wstate):
 WSTATE_NORMAL    = 00000000b
 WSTATE_MAXIMIZED = 00000001b
 WSTATE_MINIMIZED = 00000010b
@@ -612,12 +614,13 @@ struct  WDATA
                         rb 3
         saved_box       BOX
         cursor          dd ?
-        temp_cursor     dd ?
+        temp_cursor     dd ?   ;?
         draw_bgr_x      dd ?
         draw_bgr_y      dd ?
         draw_data       RECT
         thread          dd ? ; ptr APPDATA
-                        rb 12
+        buttons         rd 1 ; ptr array buttons
+                        rb 12 - 4
 ends
 
 label WDATA.fl_wstyle byte at WDATA.cl_workarea + 3
