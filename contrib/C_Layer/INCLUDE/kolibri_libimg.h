@@ -238,10 +238,10 @@ extern bool     (*img_destroy_layer)(Image* img) _stdcall;
 /// @brief "Blend" two images
 /// @param dst first(out) image
 /// @param src second(in) image
-/// @param out_x coordinate along the X axis in the first image with which blending takes place
-/// @param out_y coordinate along the Y axis in the first image with which blending takes place
-/// @param in_x coordinate along the X axis in the second image with which blending takes place
-/// @param in_y coordinate along the Y axis in the second image with which blending takes place
+/// @param out_x 
+/// @param out_y 
+/// @param in_x 
+/// @param in_y 
 /// @param width first image width
 /// @param height first image height
 /// @return first image

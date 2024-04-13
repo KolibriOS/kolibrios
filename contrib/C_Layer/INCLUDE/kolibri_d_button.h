@@ -1,6 +1,13 @@
 #ifndef KOLIBRI_DBUTTON_H
 #define KOLIBRI_DBUTTON_H
 
+enum ButtonStates
+{
+    ButtonState_Passive = 0,
+    ButtonState_Pressed = 2,
+    ButtonState_Clicked = 1
+};
+
 typedef struct {
 	uint32_t type;
 	uint32_t x_w;
@@ -8,13 +15,20 @@ typedef struct {
 	uint32_t mouse_pos;
     uint32_t mouse_keys;
     uint32_t mouse_keys_old;
-    void*    active_raw;        //active bitmap
-    void*    passive_raw;       //passive bitmap
-    void*    click_raw;         //pressed bitmap
-    uint32_t resolution_raw; // bpp, as esi fn65
-    void*    palette_raw;    // palette, as edi fn65
-    uint32_t offset_raw;     // width as ebp fn65
-    uint32_t select;         // internal state: 0 - passive, 2 - pressed, 1 - clicked
+    /// @brief active bitmap
+    void*    active_raw;
+    /// @brief passive bitmap
+    void*    passive_raw;
+    /// @brief pressed bitmap
+    void*    click_raw;
+    /// @brief  bpp, as esi fn65
+    uint32_t resolution_raw;
+    /// @brief palette, as edi fn65
+    void*    palette_raw;
+    /// @brief width as ebp fn65
+    uint32_t offset_raw;
+    /// @brief internal state, codes from enum  ButtonStates
+    uint32_t select;
     uint32_t click;          // clicked - 1, zero it after tested
 } pict_button;
 

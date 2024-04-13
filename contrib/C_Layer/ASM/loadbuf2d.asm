@@ -6,7 +6,7 @@ section '.init' code			; Keep this line before includes or GCC messes up call ad
 
 include '../../../programs/proc32.inc'
 include '../../../programs/macros.inc'
-purge section,mov,add,sub
+purge section, mov, add, sub
 	
 include '../../../programs/dll.inc'
 	
@@ -26,6 +26,7 @@ library lib_buf2d, 	'buf2d.obj'
 
 import lib_buf2d, \
 	buf2d_create, 'buf2d_create' , \
+	buf2d_create_f_img, 'buf2d_create_f_img', \
 	buf2d_clear, 'buf2d_clear' , \
 	buf2d_draw, 'buf2d_draw' , \
 	buf2d_delete, 'buf2d_delete', \
@@ -56,6 +57,7 @@ import lib_buf2d, \
 	buf2d_filter_dither, 'buf2d_filter_dither'
 	
 public buf2d_create as '_buf2d_create_asm' 
+public buf2d_create_f_img as '_buf2d_create_f_img'
 public buf2d_clear as '_buf2d_clear' 
 public buf2d_draw as '_buf2d_draw' 
 public buf2d_delete as '_buf2d_delete'

@@ -3,6 +3,7 @@
 
 #include <sys/ksys.h>
 
+/// @brief Encoding codes
 enum RasterworksEncoding
 {
 	Rasterworks_cp688 = 1,
@@ -46,11 +47,11 @@ extern int kolibri_rasterworks_init(void);
 /// @param string Pointer to string
 /// @param charQuantity String length
 /// @param fontColor Text color
- /// @param params ffeewwhh  \
-hh - char height  \
-ww - char width	; 0 = auto (proportional) \
-ee - encoding	; 1 = cp866, 2 = UTF-16LE, 3 = UTF-8 \
-ff - Parameters from the RasterworksParams list
+/// @param params ffeewwhh 
+/// hh - char height 
+/// ww - char width	; 0 = auto (proportional)
+/// ee - encoding	; 1 = cp866, 2 = UTF-16LE, 3 = UTF-8
+/// ff - Parameters from the RasterworksParams list
 /// @note All flags combinable, except align right + align center
 /// @note The text is drawn on the image, in order for changes to occur in the window, you need to draw the image after calling this function
 extern void (*drawText)(void *canvas, int x, int y, const char *string, int charQuantity, ksys_color_t fontColor, uint32_t params) __attribute__((__stdcall__));
@@ -87,12 +88,11 @@ extern int (*strWidth)(int charQuantity, int charHeight) __attribute__((__stdcal
 /// @param flags value from enum RasterworksParams
 /// @param encoding value fram enum RasterworksEncoding
 /// @note don't forget free(buff)
-/// @author Egor00f
-rgb_t *DrawText(const rgb_t *canvas, int canvasWidth, int canvasHeight, int x, int y, const char *string, uint8_t width, uint8_t height, ksys_color_t fontColor, uint8_t flags, uint8_t encoding = Rasterworks_UTF8)
+void *DrawText(const void *canvas, int canvasWidth, int canvasHeight, int x, int y, const char *string, uint8_t width, uint8_t height, ksys_color_t fontColor, uint8_t flags, uint8_t encoding = Rasterworks_UTF8)
 {
 	const int l = canvasHeight * canvasHeight * 3 * sizeof(char);
 
-	rgb_t *buff = (rgb_t) malloc(l);
+	void *buff = malloc(l);
 	*((int *)buff) = canvasWidth;
 	*((int *)buff + 1) = canvasHeight;
 	memcpy(buff+8, canvas, l);

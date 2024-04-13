@@ -125,7 +125,11 @@ typedef struct __attribute__ ((__packed__))
 	uint32_t select_flag;  // widget have focus, set auto on mouseclick, but need to reset before mouse()
 	color_t background_color;  // self explained, 0xffffff
 	color_t select_color; // self explained, 0xbbddff
-    color_t select_text_color; // self explained - have a bug - never really used
+
+    /// @brief never really used
+    /// @note self explained
+    /// @warning have a bug
+    color_t select_text_color;
     color_t text_color; // self explained
     color_t reduct_text_color; // 0xff0000  - spec color for cutted filenames
     /// @note not used
@@ -172,8 +176,25 @@ typedef struct __attribute__ ((__packed__))
 
 } filebrowser;
 
+/// @brief
+/// @param fb
+/// @param x_w
+/// @param y_h
+/// @param font_size_xy
+/// @param icon_size_xy
+/// @param icon_raw_area
+/// @param icon_palette_raw
+/// @param icon_res
+/// @param ini_file_start
+/// @param ini_file_end
+/// @param font_selected
+/// @param bk_select
+/// @param font_color
+/// @param bgcolor
+/// @param reduct_color
+/// @return Pointer to filebrowser struct
 static inline filebrowser* kolibri_filebrowser(filebrowser* fb, uint32_t x_w, uint32_t y_h, uint32_t font_size_xy, uint32_t icon_size_xy, void* icon_raw_area, 
-                                               void* icon_palette_raw, uint32_t icon_res,char* ini_file_start, char* ini_file_end,color_t font_select, 
+                                               void* icon_palette_raw, uint32_t icon_res, char* ini_file_start, char* ini_file_end, color_t font_select, 
                                                color_t bk_select, color_t font_color, color_t bgcolor, color_t reduct_color)
 {
     static char name_temp_area[256];

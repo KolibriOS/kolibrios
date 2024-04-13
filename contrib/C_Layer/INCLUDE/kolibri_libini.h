@@ -1,6 +1,8 @@
 #ifndef KOLIBRI_LIBINI_H
 #define KOLIBRI_LIBINI_H
 
+#include <stdint.h>
+
 /// @brief Inilizate libini
 /// @return -1 if unsucessful
 extern int kolibri_libini_init(void);
@@ -79,5 +81,11 @@ extern uint32_t (*LIBINI_set_color)(const char* filename, const char* sec_name, 
 /// @return def_val if error, else shortcut key value as scancode
 /// @result modifiers unchanged (error) / modifiers state for this shortcut
 extern uint32_t (*LIBINI_get_shortcut)(const char* filename, const char* sec_name, const char* key_name, uint32_t def_val, const char* modifiers) __attribute__((__stdcall__));
+
+/**
+ * \brief buf2d lib
+ * <a href="http://wiki.kolibrios.org/wiki/Libs-dev/libini">info on wiki</a>
+ * <a href="http://wiki.kolibrios.org/wiki/Libs-dev/libini/ru">info on wiki(ru)</a>
+ */
 
 #endif /* KOLIBRI_LIBINI_H */

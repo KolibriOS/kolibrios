@@ -3,11 +3,11 @@
 #include <stdarg.h>
 
 typedef struct __attribute__ ((__packed__)) {
-    uint8_t     retval;  // 0 - win closed, 1 to n - button num, also default button on start
-    uint8_t     reserv;
-    char        texts[2048];      // must be enough ;-)
-    char        msgbox_stack[1024];
-    uint32_t    top_stack;
+	uint8_t     retval;  // 0 - win closed, 1 to n - button num, also default button on start
+	uint8_t     reserv;
+	char        texts[2048];      // must be enough ;-)
+	char        msgbox_stack[1024];
+	uint32_t    top_stack;
 } msgbox;
 
 
@@ -26,7 +26,9 @@ extern void (*msgbox_create)(msgbox * msg, void *thread) __attribute__((__stdcal
 
 /// @note must be called immediately after create, zero-ended array
 extern void (*msgbox_setfunctions)(msgbox_callback*) __attribute__((__stdcall__));
-extern void (*msgbox_reinit)(msgbox *) __attribute__((__stdcall__));  // recalc sizes when structure changes, called auto when MsgBoxCreate
+
+/// @brief recalc sizes when structure changes, called auto when MsgBoxCreate
+extern void (*msgbox_reinit)(msgbox *) __attribute__((__stdcall__));
 
 /// @param title
 /// @param text

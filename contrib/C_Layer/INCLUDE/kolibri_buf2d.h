@@ -2,28 +2,39 @@
 #define KOLIBRI_BUF2D_H
 
 #include <sys/ksys.h>
+#include <stdlib.h>
+#include <string.h>
 
 /*ToDo
  * voxel function
  */
 
-/// @brief Inilizate buf2d Library
-/// @return -1 if unsuccess
+/// @brief Inilizate buf2d library
+/// @return -1 if unsuccessful
 extern int kolibri_buf2d_init(void);
 
+/// @brief Buffer struct
 typedef struct __attribute__ ((__packed__)) 
 {
 	/// @brief Pointer to buffer
 	unsigned int *buf_pointer;
-	/// @brief 
+
+	/// @brief coord by X axis
 	uint16_t left;
+
+	/// @brief coord by Y axis
 	uint16_t top;
+
 	/// @brief Buffer width
 	unsigned int width;
+
 	/// @brief Buffer heigth
 	unsigned int height;
+
 	/// @brief Background color
 	unsigned int bgcolor;
+
+	/// @brief Color depth
 	uint8_t color_bit;
 } buf2d_struct;
 
@@ -45,6 +56,7 @@ enum BUF2D_OPT_CROP {
 /// @brief Params for function buf2d_resize
 enum ResizeParams
 {
+	/// @brief Change buffer size
 	BUF2D_Resize_ChangeSize = 1,
 	/// @brief Change image in buffer
 	BUF2D_Resize_ChangeImage = 2
@@ -60,25 +72,7 @@ extern void (*buf2d_create_asm)(buf2d_struct * buffer) __attribute__((__stdcall_
 /// @param p2 point 2
 /// @param p3 point 3
 /// @param color Color of curve
-extern void (*buf2d_curve_bezier_asm)(buf2d_struct *buffer, ksys_pos_t p1, ksys_pos_t p2, ksys_pos_t p3, ksys_color_t color) __attribute__((__stdcall__));
-
-buf2d_struct* buf2d_create(uint16_t tlx, uint16_t tly, unsigned int sizex, unsigned int sizey, ksys_color_t font_bgcolor, uint8_t color_bit)
-{
-    buf2d_struct *new_buf2d_struct = (buf2d_struct *)malloc(sizeof(buf2d_struct));
-    new_buf2d_struct -> left = tlx;
-	new_buf2d_struct -> top = tly;
-	new_buf2d_struct -> width = sizex;
-	new_buf2d_struct -> height = sizey;
-	new_buf2d_struct -> bgcolor = font_bgcolor;
-	new_buf2d_struct -> color_bit = color_bit;
-	buf2d_create_asm(new_buf2d_struct);
-    return new_buf2d_struct;
-}
-
-void buf2d_curve_bezier(buf2d_struct *buf, unsigned int p0_x, unsigned int p0_y, unsigned int p1_x, unsigned int p1_y, unsigned int p2_x, unsigned int p2_y, ksys_color_t color)
-{
-	buf2d_curve_bezier_asm(buf, (p0_x<<16)+p0_y, (p1_x<<16)+p1_y, (p2_x<<16)+p2_y, color);
-}
+extern void (*buf2d_curve_bezier_asm)(buf2d_struct *buffer, uint32_t p1, uint32_t p2, uint32_t p3, ksys_color_t color) __attribute__((__stdcall__));
 
 /// @brief Draws a buffer on the screen (works through system f. 7).
 /// @param buffer Poiter to buf2d_struct
@@ -87,7 +81,7 @@ extern void (*buf2d_draw)(buf2d_struct *buffer) __attribute__((__stdcall__));
 
 /// @brief Clear buffer with specified color
 /// @param buffer Poiter to buf2d_struct
-/// @param color Color
+/// @param color Сolor that will fill the buffer
 extern void (*buf2d_clear)(buf2d_struct *buffer, ksys_color_t color) __attribute__((__stdcall__));
 
 /// @brief Frees memory occupied by the buffer image.
@@ -236,9 +230,61 @@ extern void (*buf2d_flip_v)(buf2d_struct *buffer) __attribute__((__stdcall__));
 
 extern void (*buf2d_filter_dither)(buf2d_struct *, unsigned int) __attribute__((__stdcall__));
 
+/// @brief
+/// @param tlx
+/// @param tly
+/// @param sizex
+/// @param sizey
+/// @param font_bgcolor
+/// @param color_bit
+buf2d_struct *buf2d_create(uint16_t tlx, uint16_t tly, unsigned int sizex, unsigned int sizey, ksys_color_t font_bgcolor, uint8_t color_bit)
+{
+	buf2d_struct *new_buf2d_struct = (buf2d_struct *)malloc(sizeof(buf2d_struct));
+	new_buf2d_struct->left = tlx;
+	new_buf2d_struct->top = tly;
+	new_buf2d_struct->width = sizex;
+	new_buf2d_struct->height = sizey;
+	new_buf2d_struct->bgcolor = font_bgcolor;
+	new_buf2d_struct->color_bit = color_bit;
+	buf2d_create_asm(new_buf2d_struct);
+	return new_buf2d_struct;
+}
+
+/// @brief Draws a segment of a bezier curve using three points.
+/// @param buffer Poiter to buf2d_struct
+/// @param p1 point 1
+/// @param p2 point 2
+/// @param p3 point 3
+/// @param color Color of curve
+void buf2d_curve_bezier(buf2d_struct *buf, unsigned int p0_x, unsigned int p0_y, unsigned int p1_x, unsigned int p1_y, unsigned int p2_x, unsigned int p2_y, ksys_color_t color)
+{
+	buf2d_curve_bezier_asm(buf, (p0_x << 16) + p0_y, (p1_x << 16) + p1_y, (p2_x << 16) + p2_y, color);
+}
+
+/// @brief Draws a segment of a bezier curve using three points.
+/// @param buffer Poiter to buf2d_struct
+/// @param p1 point 1
+/// @param p2 point 2
+/// @param p3 point 3
+/// @param color Color of curve
+void buf2d_curve_bezier(buf2d_struct *buf, ksys_pos_t p1, ksys_pos_t p2, ksys_pos_t p3, ksys_color_t color)
+{
+	buf2d_curve_bezier_asm(buf, (p1.x << 16) + p1.y, (p2.x << 16) + p2.y, (p3.x << 16) + p3.y, color);
+}
+
+/// @brief Copy buf2d_struct
+/// @param buff struct to be copy
+/// @return Pointer to copy
+buf2d_struct *buf2d_copy(const buf2d_struct *buff)
+{
+	buf2d_struct *b = (buf2d_struct *)malloc(sizeof(buf2d_struct));
+	memcpy(b, buff, sizeof(buf2d_struct));
+	return b;
+}
+
 /*!
  * \brief buf2d lib
- * <a href="http://wiki.kolibrios.org/wiki/Buf2d/ru">wiki</a>
+ * <a href="http://wiki.kolibrios.org/wiki/Buf2d/ru">info on wiki</a>
  */
 
 #endif /* KOLIBRI_BUF2D_H */
