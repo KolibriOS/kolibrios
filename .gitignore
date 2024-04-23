@@ -1,7 +1,6 @@
 
 /contrib/sdk/lib/
 
-/programs/develop/libraries/buf2d/trunk/examples/bin/
 
 #C_Layer gitignore
 /contrib/C_Layer/Docs/html/
@@ -10,5 +9,8 @@
 ## C_Layer OBJ
 /contrib/C_Layer/OBJ/*.obj
 
+# freetype o
+/contrib/sdk/sources/freetype/src/*.o
 
-
+# buf2d examples bin
+/programs/develop/libraries/buf2d/trunk/examples/bin/
