@@ -1,13 +1,13 @@
-ID_CLOSE_BTN	  = 1
-ID_COMPILE_BTN	  = 2
-ID_EXECUTE_BTN	  = 3
-ID_EXECDBG_BTN	  = 4
-ID_OPENDLG_BTN	  = 5
+ID_CLOSE_BTN      = 1
+ID_COMPILE_BTN    = 2
+ID_EXECUTE_BTN    = 3
+ID_EXECDBG_BTN    = 4
+ID_OPENDLG_BTN    = 5
 
 NORMAL_MODE    = 8
 CONSOLE_MODE   = 32
-MAGIC1	       = 6*(text.line_size-1)+14
-MAGIC2	       = (14*3+16)/3+1
+MAGIC1         = 6*(text.line_size-1)+14
+MAGIC2         = (14*3+16)/3+1
 
 APP_MEMORY     = 0x00800000
 
@@ -18,7 +18,7 @@ WIN_MIN_H     = 350
 LINE_H = 25
 RIGHT_BTN_W = 80
 
-MAX_PATH       = 100
+MAX_PATH       = 0x1000
 
 macro mmov reg,a1,a2 {
  mov reg,(a1) shl 16 + (a2)
@@ -34,5 +34,5 @@ macro msub reg,a1,a2 {
 
 struc path name:?& {
         .:
-	db name
-	rb MAX_PATH-$+. }
+        db name
+        rb MAX_PATH-$+. }
