@@ -228,6 +228,7 @@ extra_files = {
  {"kolibrios/speech/", "common/media/speech/*"},
  {"kolibrios/drivers/drvinf.ini", "common/drivers/drvinf.ini"},
  {"kolibrios/drivers/ahci/", "common/drivers/ahci/*"},
+ {"kolibrios/drivers/acpi/readme.txt", "common/drivers/acpi/readme.txt"},
  -- {"kolibrios/drivers/acpi/", "common/drivers/acpi/*"},
  {"kolibrios/drivers/atikms/", "common/drivers/atikms/*"},
  -- {"kolibrios/drivers/geode/", "common/drivers/geode/*"},
