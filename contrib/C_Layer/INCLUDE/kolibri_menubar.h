@@ -52,12 +52,14 @@ static inline menubar* kolibri_menubar(menubar* bar, uint32_t x_w, uint32_t y_h,
     // count summary length
     char *pc, **mitem;
     int len = 0;
-    for(mitem = menutext; *mitem; mitem++) len += strlen(*mitem) + 1;
+    for(mitem = menutext; *mitem; mitem++)
+        len += strlen(*mitem) + 1;
 
     // copy menu items in needed format
     bar->text_pointer = malloc(len + 1);   // need to be freed manual at closing secondary windows with menu
     for (pc = bar->text_pointer, mitem = menutext; *mitem; pc += strlen(*mitem++) + 1)
         strcpy(pc, *mitem);
+        
     *pc = 0;
     bar->text_end = pc;
     bar->pos_pointer = strchr(bar->text_pointer, 0) + 1;

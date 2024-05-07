@@ -52,38 +52,38 @@ void kolibri_handle_event_redraw(kolibri_window* some_window)
 	BeginDraw();
 
 	DrawWindow(some_window->topleftx, some_window->toplefty,
-			 some_window->sizex, some_window->sizey,
-			 some_window->window_title,
-			 kolibri_color_table.color_work_area, some_window->XY);
+	           some_window->sizex, some_window->sizey,
+	           some_window->window_title,
+	           kolibri_color_table.color_work_area, some_window->XY);
 
 	/* Enumerate and draw all window elements here */
 	if(some_window->elements) /* Draw all elements added to window */
-		{
-			kolibri_window_element* current_element = some_window -> elements;
-
-			do
 	{
-		/* The redraw_fn serves as draw_fn on initial draw */
-		if((int)kolibri_gui_op_table[current_element -> type].redraw_fn > 0)	// -1 if DLL link fail
-			kolibri_gui_op_table[current_element -> type].redraw_fn(current_element -> element);
+		kolibri_window_element* current_element = some_window -> elements;
 
-//sie after fixing calling conventions no more needed
-/*
-		switch(current_element -> type)
+		do
+		{
+			/* The redraw_fn serves as draw_fn on initial draw */
+			if((int)kolibri_gui_op_table[current_element -> type].redraw_fn > 0)	// -1 if DLL link fail
+				kolibri_gui_op_table[current_element -> type].redraw_fn(current_element -> element);
+
+			//sie after fixing calling conventions no more needed
+			/*
+			switch(current_element -> type)
 			{
-			case KOLIBRI_EDIT_BOX:
-			case KOLIBRI_CHECK_BOX:
-				__asm__ volatile("push $0x13371337"::); / * Random value pushed to balance stack * /
-									/ * otherwise edit_box_draw leaves stack unbalanced * /
-									/ * and GCC jumps like a crazy motha' fucka' * /
+				case KOLIBRI_EDIT_BOX:
+				case KOLIBRI_CHECK_BOX:
+					__asm__ volatile("push $0x13371337"::); / * Random value pushed to balance stack * /
+					                                        / * otherwise edit_box_draw leaves stack unbalanced * /
+				 	                                       / * and GCC jumps like a crazy motha' fucka' * /
 
-				break;
+					break;
 			}
-*/
-		current_element = current_element -> next;
+			*/
+			current_element = current_element -> next;
 
-	} while(current_element != some_window->elements); /* Have we covered all elements? */
-		}
+		} while(current_element != some_window->elements); /* Have we covered all elements? */
+	}
 }
 
 void kolibri_handle_event_key(kolibri_window* some_window, oskey_t key)
@@ -101,7 +101,7 @@ void kolibri_handle_event_key(kolibri_window* some_window, oskey_t key)
 
 			current_element = current_element->next;
 		} while (current_element != some_window->elements); /* Have we covered all elements? */
-		}
+	}
 }
 
 void kolibri_handle_event_mouse(kolibri_window* some_window)

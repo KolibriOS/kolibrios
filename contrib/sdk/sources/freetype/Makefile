@@ -5,7 +5,7 @@ AR = kos32-ar
 LD = kos32-ld
 STRIP = kos32-strip
 
-INSTALLDIR:= /home/autobuild/tools/win32/lib
+INSTALLDIR:= C:/MinGW/msys/1.0/home/autobuild/tools/win32/lib
 
 CFLAGS = -U_Win32 -U_WIN32 -U__MINGW32__ -c -O2 -Wall -Winline -fno-ident -fomit-frame-pointer
 

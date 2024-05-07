@@ -15,7 +15,7 @@ typedef void (*msgbox_callback)(void);
 
 static int msgbox_inited;
 
-/// @brief Inilizate msgbox
+/// @brief Initialize msgbox
 extern void kolibri_msgbox_init();
 
 /// @brief Create msgbox
@@ -27,7 +27,7 @@ extern void (*msgbox_create)(msgbox * msg, void *thread) __attribute__((__stdcal
 /// @note must be called immediately after create, zero-ended array
 extern void (*msgbox_setfunctions)(msgbox_callback*) __attribute__((__stdcall__));
 
-/// @brief recalc sizes when structure changes, called auto when MsgBoxCreate
+/// @brief recalculate sizes when structure changes, called auto when MsgBoxCreate
 extern void (*msgbox_reinit)(msgbox *) __attribute__((__stdcall__));
 
 /// @param title

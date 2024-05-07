@@ -32,7 +32,7 @@ enum RasterworksParams
   /// @brief Center alignment
   AlignCenter = 0b00100000,
 
-  /// @brief 32bpp canvas insted of 24bpp
+  /// @brief 32bpp canvas instead of 24bpp
   Use32bit = 0b010000000
 };
 

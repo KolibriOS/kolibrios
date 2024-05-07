@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 
-/// @brief Inilizate libini
-/// @return -1 if unsucessful
+/// @brief Initialize libini
+/// @return -1 if unsuccessful
 extern int kolibri_libini_init(void);
 
 /// @brief Enumerate sections, calling callback function for each of them.

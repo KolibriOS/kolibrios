@@ -118,12 +118,16 @@ enum Inter
 {
 	/// @note use it with LIBIMG_SCALE_INTEGER, LIBIMG_SCALE_TILE, etc
 	LIBIMG_INTER_NONE = 0,
+
 	/// @brief Bilinear algorithm
 	LIBIMG_INTER_BILINEAR = 1,
+
 	/// @brief Bicubic algorithm
 	LIBIMG_INTER_BICUBIC = 2,
+
 	/// @brief Lanczos algorithm
 	LIBIMG_INTER_LANCZOS = 3,
+
 	/// @brief Default algorithm
 	LIBIMG_INTER_DEFAULT = LIBIMG_INTER_BILINEAR
 };
@@ -206,7 +210,6 @@ extern Image*   (*img_to_rgb)(Image* img) _stdcall;
 extern bool     (*img_flip)(Image* img, uint32_t flip) _stdcall;
 
 extern bool     (*img_flip_layer)(Image *img, uint32_t flip) _stdcall;
-
 
 extern bool     (*img_rotate)(Image *img, uint32_t rotate) _stdcall;
 

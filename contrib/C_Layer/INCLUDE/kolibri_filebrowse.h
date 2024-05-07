@@ -1,7 +1,8 @@
 #ifndef KOLIBRI_FILEBROWSE_H
 #define KOLIBRI_FILEBROWSE_H
 
-struct  __attribute__ ((__packed__)) fs_dirinfo {
+struct  __attribute__ ((__packed__)) fs_dirinfo 
+{
     uint32_t    subfn; // 1 read dir
     uint32_t    start;
     uint32_t    flags;
@@ -16,8 +17,8 @@ struct  __attribute__ ((__packed__)) fs_dirinfo {
     } ;
 };
 
+/// @return 0 if ok
 static inline uint32_t sf_file(int subfn, struct fs_dirinfo* dinfo)
-// retval 0 if ok
 {
     uint32_t retval;
     dinfo->subfn = subfn;
@@ -32,10 +33,16 @@ static inline uint32_t sf_file(int subfn, struct fs_dirinfo* dinfo)
 };
 
 
-struct fs_dirheader {
+struct fs_dirheader 
+{
     uint32_t     version; // 1
-    uint32_t     curn_blocks;  // number of read dir items (BDFE)
-    uint32_t     totl_blocks;  // directory full size
+
+    /// @brief number of read dir items (BDFE)
+    uint32_t     curn_blocks; 
+
+    /// @brief directory full size
+    uint32_t     totl_blocks;
+
     char         other[20]; // reserved 0
 };
 
@@ -49,14 +56,16 @@ enum filetype
     fs_nonarchived = 0x20
 };
 
-struct __attribute__ ((__packed__)) fs_filetime {
+struct __attribute__ ((__packed__)) fs_filetime 
+{
     uint8_t    sec;
     uint8_t    mm;
     uint8_t    hour;
     uint8_t    zero;
 };
 
-struct __attribute__ ((__packed__)) fs_filedate {
+struct __attribute__ ((__packed__)) fs_filedate 
+{
     uint8_t    day;
     uint8_t    month;
     uint16_t   year;
@@ -102,24 +111,32 @@ typedef struct __attribute__ ((__packed__))
 	uint32_t x_w;  // 10, 400
 	uint32_t y_h; // 45, 550
 	uint32_t icon_size_xy;  // x_y (16, 16)
+
     /// @note not used
     uint16_t line_size_x; 
 	uint16_t line_size_y;  // 18 or 17  - ������ ����� - ������ � ������
+
 	/// @note not used
     uint16_t type_size_x;
+
     /// @note not used
     uint16_t size_size_x;
+
     /// @note not used
     uint16_t date_size_x;
+
     /// @note not used
     uint16_t attributes_size_x;
+
     /// @note not used
     uint32_t icon_assoc_area;
 	void* icon_raw_area;   // z_icons.png
 	uint32_t icon_resolution_raw;  // ...
 	void* icon_palette_raw;      // ...
+
 	/// @note not used
     uint32_t directory_path_area;
+
     /// @note not used
     uint32_t file_name_area;
 	uint32_t select_flag;  // widget have focus, set auto on mouseclick, but need to reset before mouse()
@@ -132,6 +149,7 @@ typedef struct __attribute__ ((__packed__))
     color_t select_text_color;
     color_t text_color; // self explained
     color_t reduct_text_color; // 0xff0000  - spec color for cutted filenames
+
     /// @note not used
     color_t marked_text_color;
     uint32_t max_panel_line;    // moved to scrollbar->cur_area, - ������������ ����� ����� � ����, �����������������
@@ -139,15 +157,21 @@ typedef struct __attribute__ ((__packed__))
 	uint32_t folder_block;   // auto formed, ���������� ������ ������ ����� �������� (����) ????? format BDVK == bdfe,, // moved to scrollbar->max_area
 	uint32_t start_draw_line;    // internal - top showed file n. moved to scrollbar->position and back
 	uint16_t start_draw_cursor_line;  //internal
-    void* folder_data;      // 32 byte - dir_header, +4 = number, +32 - bdvk[], size of rec(bdvk cp866) = 304byte
+
+    /// @brief 32 byte - dir_header, +4 = number, +32 - bdvk[], size of rec(bdvk cp866) = 304byte
+    void* folder_data;
     uint32_t temp_counter; //internal
     uint32_t file_name_length; //internal
     uint32_t marked_file;  // have a mark 0/1 ?
     uint32_t extension_size;  //internal
     uint32_t extension_start;  //internal
+
     /// @brief type buffer
     void* type_table;
-    char* ini_file_start;   // icons.ini contens - file<>icon association
+
+    /// @brief icons.ini contens
+    /// @details file<>icon association
+    char* ini_file_start;
     char* ini_file_end;     // start + filesize
     uint32_t draw_scroll_bar;  // 1 = need redraw sb after key(), user - resetted
     uint32_t font_size_xy;  // x_y	(6, 9)
@@ -156,21 +180,33 @@ typedef struct __attribute__ ((__packed__))
     uint32_t mouse_pos; // saved internal
     uint32_t mouse_keys_delta; // saved internal
     uint32_t mouse_key_delay; // 50
-    uint32_t mouse_keys_tick; // internal timer
+
+    /// @brief internal timer
+    uint32_t mouse_keys_tick;
+
     /// @brief internal cursor line
     uint16_t start_draw_cursor_line_2;
-    uint32_t all_redraw;         // 0 - skip draw contens, 1 - force draw, 2 - no draw selection (but draw icons), used when scroll
-    struct fsBDFE* selected_BDVK_adress;  // pointer to selected
+
+    /// @details // 0 - skip draw contens, 1 - force draw, 2 - no draw selection (but draw icons), used when scroll
+    uint32_t all_redraw;
+
+    /// @brief pointer to selected
+    struct fsBDFE* selected_BDVK_adress;
     uint16_t key_action;   // fill before key(), 1..12, wiki
     uint16_t key_action_num; // fill before key()  fn2 >> 8
+
     /// @brief temporary string format buffer
     char* name_temp_area;
     uint32_t max_name_temp_size;  // sizeof ^
     uint32_t display_name_max_length;  // autocounted
-    uint32_t draw_panel_selection_flag;  // flag internal showing selected item
+
+    /// @brief flag internal showing selected item
+    uint32_t draw_panel_selection_flag;
     uint32_t mouse_pos_old;  // saved internal
+
     /// @brief number of marked files
     uint32_t marked_counter;
+
     /// @brief keyboard layout map
     char* keymap_pointer; 
 

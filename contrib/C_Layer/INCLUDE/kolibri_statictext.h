@@ -11,14 +11,16 @@ typedef enum
     UTF8
 } encoding_t;
 
-typedef struct {
+typedef struct 
+{
 	uint32_t start_xy;
 	char *text;
 	uint32_t color_flags;
 	uint32_t bg_color;
 } statictext;
 
-typedef struct {
+typedef struct
+{
 	uint32_t start_xy;
 	int32_t number;
 	uint32_t color_flags;

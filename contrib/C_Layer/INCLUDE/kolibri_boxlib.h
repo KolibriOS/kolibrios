@@ -5,8 +5,8 @@
 	extern "C" {
 #endif
 
-/// @brief Inilizate boxlib
-/// @return -1 if unsucessful
+/// @brief Initialize boxlib
+/// @return -1 if unsuccessful
 extern int kolibri_boxlib_init(void);
 
 #ifdef __cplusplus

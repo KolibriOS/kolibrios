@@ -85,7 +85,7 @@ typedef struct {
     color_t font_bg_color;
 } frame;
 
-/// @brief inilizate drame struct
+/// @brief Initialize frame struct
 /// @param f Pointer to frame
 /// @param x_w coord by X + frame width
 /// @param y_h Y coord + frame height
@@ -94,7 +94,7 @@ typedef struct {
 /// @param text Pointer to string
 /// @param text_position This is a bit flag. If it is set to zero, then the inscription will be at the top of the frame, if 1, then the inscription will be at the bottom of the frame.
 /// @param fint_color color of the output text.
-/// @param font_bgcolor ackground color for text.
+/// @param font_bgcolor Background color for text.
 /// @param flags Flags, value from enum fr_flags_t
 static inline frame* kolibri_frame(frame* f, uint32_t x_w, uint32_t y_h, color_t ext_col, color_t int_col, char *text, enum fr_text_position_t text_position,
                                    color_t font_color, color_t font_bgcolor, enum fr_flags_t flags)
@@ -125,7 +125,7 @@ static inline frame* kolibri_frame(frame* f, uint32_t x_w, uint32_t y_h, color_t
 /// @param text Pointer to string
 /// @param text_position This is a bit flag. If it is set to zero, then the inscription will be at the top of the frame, if 1, then the inscription will be at the bottom of the frame.
 /// @param fint_color color of the output text.
-/// @param font_bgcolor ackground color for text.
+/// @param font_bgcolor Background color for text.
 /// @param flags Flags, value from enum fr_flags_t
 /// @return Pointer to new frame
 static inline frame* kolibri_new_frame(uint32_t x_w, uint32_t y_h, color_t ext_col, color_t int_col, char *text, enum fr_text_position_t text_position,
