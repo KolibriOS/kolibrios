@@ -15,14 +15,14 @@ public init_buf2d as '_kolibri_buf2d_init'
 
 proc init_buf2d
 	pusha
-	mcall 68,11
+	mcall 68, 11
 	stdcall dll.Load, @IMPORT
 	popa
 	ret
 endp	
 
 @IMPORT:
-library lib_buf2d, 	'buf2d.obj'
+library lib_buf2d,'buf2d.obj'
 
 import lib_buf2d, \
 	buf2d_create,	'buf2d_create' , \
@@ -54,9 +54,7 @@ import lib_buf2d, \
 	buf2d_get_pixel,	'buf2d_get_pixel', \
 	buf2d_flip_h,	'buf2d_flip_h', \
 	buf2d_flip_v,	'buf2d_flip_v', \
-	buf2d_filter_dither,	'buf2d_filter_dither';, \
-	; Voxel funcs
-	buf2d_vox_brush_create	'buf2d_vox_brush_create'. \
+	buf2d_filter_dither,	'buf2d_filter_dither', \	buf2d_vox_brush_create	'buf2d_vox_brush_create', \
 	buf2d_vox_brush_delete	'buf2d_vox_brush_delete', \
 	buf2d_vox_obj_get_img_w_3g	'buf2d_vox_obj_get_img_w_3g', \
 	buf2d_vox_obj_get_img_h_3g	'buf2d_vox_obj_get_img_h_3g', \
