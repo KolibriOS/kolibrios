@@ -23,6 +23,7 @@
 	dd IM_END	; file size
 	dd I_END	; memory
 	dd stacktop	; stack pointer
+M01header.params:
 	dd app_param	; parameters
 	dd cur_dir_path	; path to file
  
@@ -115,8 +116,8 @@ load_libraries l_libs_start,end_l_libs
 	stdcall string.copy, default_dtp, dtp_name
 ;---------------------------------------------------------------------
 ; check app param
-	stdcall string.length, app_param
-	add eax, app_param
+	stdcall string.length, [M01header.params]
+	add eax, [M01header.params]
 	mov ecx, [eax-4]
 	or ecx, 0x20202000 ;letters to lowercase
 	cmp ecx, '.skn'
@@ -126,12 +127,12 @@ load_libraries l_libs_start,end_l_libs
 	jmp no_param
 	
 load_dtp_from_param:
-	stdcall string.copy, app_param, dtp_name
+	stdcall string.copy, [M01header.params], dtp_name
 	call   load_dtp_file.1
 	jmp    skin_path_ready
 
 load_skin_from_param:
-	stdcall string.copy, app_param, skin_info
+	stdcall string.copy, [M01header.params], skin_info
 	call    load_skin_file.2
 	jmp     skin_path_ready
 

@@ -9,8 +9,10 @@
 
     use32
     org     0
-    db	    'MENUET01'
-    dd	    1, main, dataend, memory, memory, params, 0
+    db      'MENUET01'
+    dd      1, main, dataend, memory, memory
+M01header.params:
+    dd      params, 0
 
     include "../../proc32.inc"
     include "../../macros.inc"
@@ -62,7 +64,7 @@ end if
 
  sb_apps scrollbar \
   13, WIN_WIDTH - 25, LIST_HEIGHT, 10 + 12, \  ;; w, x, h, y
-  0, 0, LIST_SIZE / 2, 0, \		       ;; b.h, max, area, pos
+  0, 0, LIST_SIZE / 2, 0, \                    ;; b.h, max, area, pos
   0, 0, 0, 2
 
  cb_always check_box2 \
@@ -91,16 +93,16 @@ end if
  .filter dd 0
 
  ps_addres:
-  dd 0		;; type
-  dw 7		;; y
-  dw 4		;; x
-  dw 6		;; font.w
+  dd 0          ;; type
+  dw 7          ;; y
+  dw 4          ;; x
+  dw 6          ;; font.w
   dw LIST_WIDTH ;; w
-  dd 0		;; mono
-  dd 0		;; without bg
-  .color dd 0	;; text color
-  dd 0		;; bg color
-  .txt dd 0	;; text
+  dd 0          ;; mono
+  dd 0          ;; without bg
+  .color dd 0   ;; text color
+  dd 0          ;; bg color
+  .txt dd 0     ;; text
   dd buffer2
   dd 0
 
@@ -148,28 +150,28 @@ end if
  imports:
     library libini, "libini.obj"
     import  libini, libini.get_str, "ini_get_str", \
-		    libini.set_str, "ini_set_str", \
-		    libini.get_num, "ini_get_int", \
-		    libini.for_each_section, "ini_enum_sections"
+                    libini.set_str, "ini_set_str", \
+                    libini.get_num, "ini_get_int", \
+                    libini.for_each_section, "ini_enum_sections"
 
  imports_add:
     library libimg, "libimg.obj", \
-	    boxlib, "box_lib.obj", \
-	    prclib, "proc_lib.obj"
+            boxlib, "box_lib.obj", \
+            prclib, "proc_lib.obj"
     import  libimg, libimg.init, "lib_init", \
-		    libimg.toRGB, "img_to_rgb2", \
-		    libimg.decode, "img_decode", \
-		    libimg.destroy, "img_destroy"
+                    libimg.toRGB, "img_to_rgb2", \
+                    libimg.decode, "img_decode", \
+                    libimg.destroy, "img_destroy"
     import  boxlib, scrollbar.draw, "scrollbar_v_draw", \
-		    scrollbar.mouse, "scrollbar_v_mouse", \
-		    pathshow.init, "PathShow_prepare", \
-		    pathshow.draw, "PathShow_draw", \
-		    checkbox.init, "init_checkbox2", \
-		    checkbox.draw, "check_box_draw2", \
-		    checkbox.mouse, "check_box_mouse2"
+                    scrollbar.mouse, "scrollbar_v_mouse", \
+                    pathshow.init, "PathShow_prepare", \
+                    pathshow.draw, "PathShow_draw", \
+                    checkbox.init, "init_checkbox2", \
+                    checkbox.draw, "check_box_draw2", \
+                    checkbox.mouse, "check_box_mouse2"
     import  prclib, opendialog.lib_init, "lib_init", \
-		    opendialog.init, "OpenDialog_init", \
-		    opendialog.start, "OpenDialog_start"
+                    opendialog.init, "OpenDialog_init", \
+                    opendialog.start, "OpenDialog_start"
 
  ;===============================
 
@@ -178,18 +180,18 @@ end if
     stdcall dll.Load, imports
 
 if DEBUG eq 1
-    stdcall string.copy, std_param, params
+    stdcall string.copy, std_param, [M01header.params]
 end if
 
  ;; trim params
-	stdcall string.copy, params, paramorig
+        stdcall string.copy, [M01header.params], paramorig
     stdcall string.trim_last, paramorig
     stdcall string.trim_first, paramorig
-	mov     [param_s], eax
+        mov     [param_s], eax
 
-    stdcall string.to_lower_case, params
-    stdcall string.trim_last, params
-    stdcall string.trim_first, params
+    stdcall string.to_lower_case, [M01header.params]
+    stdcall string.trim_last, [M01header.params]
+    stdcall string.trim_first, [M01header.params]
     mov     [param_lwr], eax
 
  ;; if empty - exit
@@ -267,7 +269,7 @@ end if
  ;----------------------
 
  start_dialog_pre:
-    or	    [cb_always.flags], ch_flag_en
+    or      [cb_always.flags], ch_flag_en
 
  start_dialog:
     stdcall dll.Load, imports_add
@@ -299,7 +301,7 @@ end if
     mov     ebx, [skin.work_text]
     mov     [ps_addres.txt], eax
     mov     [ps_addres], ebx
-	m2m     [ps_addres.color], [skin.work_text]
+        m2m     [ps_addres.color], [skin.work_text]
     invoke  pathshow.init, ps_addres
 
  ;; get checkbox
@@ -584,8 +586,8 @@ end if
   @@:
 
     stdcall string.length, buffer
-	mov     edi, eax
-	
+        mov     edi, eax
+        
     invoke  libini.set_str, assoc_ini, assoc_ini.sec, [param_e], buffer, edi
     jmp     exit
 
@@ -596,7 +598,7 @@ end if
     mov     edi, [sb_apps.position]
     invoke  scrollbar.mouse, sb_apps
     sub     edi, [sb_apps.position]
-    jz	    @f
+    jz      @f
     call    draw_list
   @@:
 
@@ -676,7 +678,7 @@ end if
     mcall   12, 1
 
     mov     edx, [skin.work]
-    or	    edx, 0x34 shl 24
+    or      edx, 0x34 shl 24
     mcall   0, <[win.x], WIN_WIDTH>, <[win.y], WIN_HEIGHT>, , , win.title
     stdcall draw_list
     invoke  pathshow.draw, ps_addres
@@ -722,7 +724,7 @@ end if
 
  proc draw_list
     mcall   13, <3, LIST_WIDTH + 2 + 12>, <9 + 12, 1>, [skin.work_graph]
-    mcall     , 			, <LIST_HEIGHT + 9 + 1 + 12, 1>
+    mcall     ,                         , <LIST_HEIGHT + 9 + 1 + 12, 1>
     mcall     , <3, 1>, <9 + 12, LIST_HEIGHT + 1>
     mcall     , <3 + LIST_WIDTH + 12 + 1, 1>
     mcall     , <4, LIST_WIDTH>, <10 + 12, LIST_HEIGHT>, 0xFFFfff
@@ -979,7 +981,7 @@ end if
 
  .loop1:
     mov     edx, list.lowercased ;; j = 0
-    mov     esi, [list.size]	 ;; j < n - i - 1
+    mov     esi, [list.size]     ;; j < n - i - 1
     sub     esi, edi
     dec     esi
     imul    esi, 32
@@ -1056,9 +1058,9 @@ end if
  buffer4 rb 2048 ;OD
  buffer5 rb 2048 ;OD
  buffer6 rb 2048 ;check existance
- buffer7 rb 32	 ;for sorting
+ buffer7 rb 32   ;for sorting
  buffer8 rd 2048
- params rb 2048
  paramorig rb 2048
  _stack rb 2048
+ params rb 256
  memory:

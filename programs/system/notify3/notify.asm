@@ -1,7 +1,9 @@
     use32
     org     0
-    db	    'MENUET01'
-    dd	    1, @ENTRY, @end, @memory, @stack, @params, 0
+    db      'MENUET01'
+    dd      1, @ENTRY, @end, @memory, @stack
+M01header.params:
+    dd      @params, 0
 
     include "../../macros.inc"
     include "../../proc32.inc"
@@ -11,9 +13,9 @@
     
     include "notify.inc"
 
- LINEH	    equ 12
+ LINEH      equ 12
  MARGIN     equ 12
- ICONS	    equ 11
+ ICONS      equ 11
 
 ;-------------------------------------------------------------------------------
 
@@ -31,8 +33,8 @@
     mcall   18, 25, 2, -1, 1
 
 ;; SET STD PARAMS, IF IT NEEDS
-    mov     eax, @params
-    cmpne   byte [@params], 0, @f
+    mov     eax, [M01header.params]
+    cmpne   byte [eax], 0, @f
     mov     eax, sz_std
   @@:
     mov     [params.source], eax
@@ -499,8 +501,8 @@
     mov     edx, [window.height]
     shr     edx, 1
     sub     edx, 12
-	
-	stdcall dword [img.draw], dword [img_data.obj], 12, edx, 24, 24, 0, ebx
+        
+        stdcall dword [img.draw], dword [img_data.obj], 12, edx, 24, 24, 0, ebx
   @@:
 
     ret
@@ -757,8 +759,8 @@
  @imports:
     library img, "libimg.obj"
     import  img, img.to_rgb,  "img_to_rgb2", \
-		 img.decode,  "img_decode",  \
-		 img.draw, "img_draw"
+                 img.decode,  "img_decode",  \
+                 img.draw, "img_draw"
 
  ;----------------------------
 
@@ -766,31 +768,31 @@
  sz_ifile   db "/sys/notify3.png", 0
  sz_shname  db "notify-mem-v01", 0
  sz_std     db "'NOTIFY 3\n",                 \
-	       "d - disable auto-closing\n",  \
-	       "c - disable click-closing\n", \
-	       "p - use progressbar\n",       \
-	       "t - title\n",		      \
-	       " \n",			      \
-	       "ICONS:\n",		      \
-	       "A - application\n",	      \
-	       "E - error\n",		      \
-	       "W - warning\n", 	      \
-	       "O - ok\n",		      \
-	       "N - network\n", 	      \
-	       "I - info\n",		      \
-	       "F - folder\n",		      \
-	       "C - component\n",	      \
-	       "M - mail\n",		      \
-	       "D - download\n",	      \
-	       "S - audio player",	      \
-	       "' -td", 0
+               "d - disable auto-closing\n",  \
+               "c - disable click-closing\n", \
+               "p - use progressbar\n",       \
+               "t - title\n",                 \
+               " \n",                         \
+               "ICONS:\n",                    \
+               "A - application\n",           \
+               "E - error\n",                 \
+               "W - warning\n",               \
+               "O - ok\n",                    \
+               "N - network\n",               \
+               "I - info\n",                  \
+               "F - folder\n",                \
+               "C - component\n",             \
+               "M - mail\n",                  \
+               "D - download\n",              \
+               "S - audio player",            \
+               "' -td", 0
 
  fi:
-	    dd 5
-	    dd 0, 0, 0
-	    dd buffer
-	    db 0
-	    dd sz_ifile
+            dd 5
+            dd 0, 0, 0
+            dd buffer
+            db 0
+            dd sz_ifile
 
  ;----------------------------
 
@@ -799,8 +801,8 @@
 ;=====================================================================
 
  window:
- .x	   rd 1
- .y	   rd 1
+ .x        rd 1
+ .y        rd 1
  .width    rd 1
  .height   rd 1
 
@@ -816,28 +818,28 @@
 
  params:
  .source   rd 1
- .atcl	   rb 1
- .clcl	   rb 1
+ .atcl     rb 1
+ .clcl     rb 1
  .title    rb 1
- .pbar	   rb 1
- .icon	   rb 1
- .ctrl	   rb 1
+ .pbar     rb 1
+ .icon     rb 1
+ .ctrl     rb 1
 
  img_data:
  .file  rd 1
- .obj	   rd 1
+ .obj      rd 1
 
  timer:
  .value    rd 1
- .step	   rd 1
+ .step     rd 1
 
  shm:
- .addr	   rd 1
- .our	   rd 1
+ .addr     rd 1
+ .our      rd 1
 
  ctrl:
- .name	   rb 31
- .addr	   rd 1
+ .name     rb 31
+ .addr     rd 1
 
  pbar:
  .width    rd 1
@@ -850,8 +852,8 @@
  prev_pid   rd 1
 
 ;=====================================================================
-	    rb 2048
+            rb 2048
  @stack:
- @params    rb 2048
+ @params    rb 256
 
  @memory:
