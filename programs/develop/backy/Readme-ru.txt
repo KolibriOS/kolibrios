@@ -13,7 +13,7 @@ Backy - это программа для создания резервной к�
  backy /hd0/1/test.c -o /tmp0/1/
 
 //--------------------------------------//
-  The programme: 
+  The program: 
    - Compiled with KTCC compiler.
    - Written in KolibriOS NB svn7768.
    - Designed and written by JohnXenox

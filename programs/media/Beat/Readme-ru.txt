@@ -18,7 +18,7 @@ Beat - простой метроном. Для работы использует
 
 
 //--------------------------------------//
-  The programme: 
+  The program: 
    - Compiled with KTCC compiler.
    - Written in KolibriOS NB svn7768.
    - Designed and written by JohnXenox

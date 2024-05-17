@@ -2,8 +2,8 @@
 /*
  * Author: JohnXenox aka Aleksandr Igorevich.
  *
- * Programme name: PlayNote
- * Description: The programme to play a note.
+ * Program name: PlayNote
+ * Description: The program to play a note.
  *
  * Works from command line, only!
 */
@@ -68,7 +68,7 @@ _ksys_set_wanted_events(0);
 
         con_printf("\n Name: PlayNote");
         con_printf("\n Date: %s", CREATION_DATE);
-        con_printf("\n Description: The programme to play a note.\n");
+        con_printf("\n Description: The program to play a note.\n");
 
         con_printf("\n Author: JohnXenox\n");
 
@@ -104,11 +104,3 @@ _ksys_set_wanted_events(0);
 
     return 0;
 }
-
-
-
-
-
-
-
-

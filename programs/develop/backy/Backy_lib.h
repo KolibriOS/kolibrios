@@ -86,7 +86,7 @@ int checkStateOnSave(int state)
             case 6:  con_printf("\nEnd of a file, EOF!\n");
                      return 6;
 
-            case 7:  con_printf("\nPointer lies outside of application memory!\n");
+            case 7:  con_printf("\nPointer is outside of application memory!\n");
                      return 7;
 
             case 8:  con_printf("\nDisk is full!\n");
