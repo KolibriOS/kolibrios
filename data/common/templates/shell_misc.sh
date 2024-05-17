@@ -7,7 +7,7 @@ sleep 200
 
 echo 
 echo ==============
-echo runing palitra
+echo running palitra
 echo ==============
 
 /sys/media/palitra H 00AEC3D8 003A95BF
@@ -20,7 +20,7 @@ sleep 200
 
 echo 
 echo ==============
-echo runing fillscr
+echo running fillscr
 echo ==============
 
 /sys/media/fillscr 105,145,200, 105,145,200, 105,145,200, 60,60,128, 82,102,164, 60,60,128, 60,60,128, 60,60,128, 60,60,128
@@ -29,7 +29,7 @@ sleep 200
 
 echo 
 echo ==============
-echo runing @notify
+echo running @notify
 echo ==============
 
 /sys/@notify "Hello, I am a @notify app!"

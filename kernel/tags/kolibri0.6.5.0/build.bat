@@ -10,7 +10,7 @@ call :Target_%target%
 
 if ERRORLEVEL 0 goto Exit_OK
 
-echo Probably at runing has been created error
+echo Error encountered while running!
 echo For help send a report...
 pause
 goto :eof
@@ -109,6 +109,6 @@ pause
 exit 1
 
 :Exit_OK
-echo all operations has been done
+echo all operations have been done
 pause
 exit 0
