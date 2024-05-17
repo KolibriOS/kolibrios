@@ -5,7 +5,7 @@
 ;;                                                                 ;;
 ;;  rhine.asm                                                      ;;
 ;;                                                                 ;;
-;;  Ethernet driver for Kolibri OS                                 ;;
+;;  Ethernet driver for KolibriOS                                  ;;
 ;;                                                                 ;;
 ;;  This driver is based on the via-rhine driver from              ;;
 ;;  the etherboot 5.0.6 project. The copyright statement is        ;;

@@ -1,5 +1,5 @@
 ;*****************************************************************************
-; Color Dialog - for Kolibri OS
+; Color Dialog - for KolibriOS
 ; Copyright (c) 2013, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;

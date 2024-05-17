@@ -1,6 +1,6 @@
 #include <sys/ksys.h>
 
-/* Very simple example of working with futexes in Kolibri OS.
+/* Very simple example of working with futexes in KolibriOS.
  * Author turbocat (Maxim Logaev).
  * Thanks to Vitaly Krylov for help.
  * 

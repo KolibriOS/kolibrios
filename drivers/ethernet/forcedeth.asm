@@ -5,7 +5,7 @@
 ;;                                                                 ;;
 ;;  FORCEDETH.INC                                                  ;;
 ;;                                                                 ;;
-;;  Ethernet driver for Kolibri OS                                 ;;
+;;  Ethernet driver for KolibriOS                                  ;;
 ;;                                                                 ;;
 ;;  Driver for chips of NVIDIA nForce2                             ;;
 ;;  References:                                                    ;;

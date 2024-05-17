@@ -3,7 +3,7 @@
 ;       Added border styles(raised, sunken, etched, ridged).
 ;       Added possibility to fill frame background.
 ;**************************************************************
-; Frame Macro for Kolibri OS
+; Frame Macro for KolibriOS
 ; Copyright (c) 2013, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;

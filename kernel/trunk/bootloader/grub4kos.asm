@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Kolibri OS support loader for GRUB
+; KolibriOS support loader for GRUB
 ;
 ; Copyright (C) Alex Nogueira Teixeira
 ; Copyright (C) Diamond

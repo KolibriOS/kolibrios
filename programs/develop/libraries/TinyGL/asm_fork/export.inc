@@ -171,7 +171,7 @@ E_LIB gluCylinder ;(GLUquadricObj, double, double, double, int, int)
 E_LIB gluSphere ;(GLUquadricObj, float, int, int)
 
 ;
-; Kolibri OS functions
+; KolibriOS functions
 ;
 
 E_LIB kosglMakeCurrent

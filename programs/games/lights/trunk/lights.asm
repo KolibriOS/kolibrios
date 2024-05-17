@@ -1,5 +1,5 @@
 ;#**************************
-;#*        LIGHTS          *  Kolibri OS
+;#*        LIGHTS          *  KolibriOS
 ;#**************************  15/10/2007
 include 'main.inc'
 include 'data.inc'

@@ -1,5 +1,5 @@
 ;*****************************************************************************
-; CROPFLAT - set limits of screen - for Kolibri OS
+; CROPFLAT - set limits of screen - for KolibriOS
 ; Copyright (c) 2012, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;

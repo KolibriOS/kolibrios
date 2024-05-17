@@ -1,5 +1,5 @@
 /*
-Kolibri OS config for gcc 5.4
+KolibriOS config for gcc 5.4
 
 Started by Siemargl @Nov 2016
 */

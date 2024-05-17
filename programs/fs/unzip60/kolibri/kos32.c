@@ -1,5 +1,5 @@
 /*
-Kolibri OS port for gcc 5.4
+KolibriOS port for gcc 5.4
 
 Started by Siemargl @Nov 2016
 Borrowed code parts from other unzip ports

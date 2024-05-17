@@ -1,4 +1,4 @@
-; FAT12 boot sector for Kolibri OS
+; FAT12 boot sector for KolibriOS
 ;
 ; Copyright (C) Alex Nogueira Teixeira
 ; Copyright (C) Diamond

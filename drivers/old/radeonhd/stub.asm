@@ -18,5 +18,4 @@ start:
                                    ; AL = exit code
 
  ; ---------------------------------------------------------------------------
- msg db 'This is Kolibri OS device driver.',0Dh,0Ah,'$',0
-
+ msg db 'This is KolibriOS device driver.',0Dh,0Ah,'$',0
