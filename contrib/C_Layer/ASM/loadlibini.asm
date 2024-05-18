@@ -37,10 +37,10 @@ import  lib_libini, \
         LIBINI_set_int         		   , 'ini_set_int'          , \          
         LIBINI_set_color          	   , 'ini_set_color'
         
-public LIBINI_enum_sections         as  '_LIBINI_enum_sections' 
-public LIBINI_enum_keys             as  '_LIBINI_enum_keys'     
-public LIBINI_get_str               as  '_LIBINI_get_str'       
-public LIBINI_get_int  			    as  '_LIBINI_get_int'  		
-public LIBINI_get_color             as  '_LIBINI_get_color'     
-public LIBINI_set_str            	as  '_LIBINI_set_str'       
-public LIBINI_set_int         		as  '_LIBINI_set_int'       
+public LIBINI_enum_sections	as	'_LIBINI_enum_sections' 
+public LIBINI_enum_keys		as	'_LIBINI_enum_keys'     
+public LIBINI_get_str		as	'_LIBINI_get_str'       
+public LIBINI_get_int		as	'_LIBINI_get_int'  		
+public LIBINI_get_color		as	'_LIBINI_get_color'     
+public LIBINI_set_str		as	'_LIBINI_set_str'       
+public LIBINI_set_int		as	'_LIBINI_set_int'       

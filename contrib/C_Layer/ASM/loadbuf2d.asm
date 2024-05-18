@@ -54,16 +54,17 @@ import lib_buf2d, \
 	buf2d_get_pixel,	'buf2d_get_pixel', \
 	buf2d_flip_h,	'buf2d_flip_h', \
 	buf2d_flip_v,	'buf2d_flip_v', \
-	buf2d_filter_dither,	'buf2d_filter_dither', \	buf2d_vox_brush_create	'buf2d_vox_brush_create', \
-	buf2d_vox_brush_delete	'buf2d_vox_brush_delete', \
-	buf2d_vox_obj_get_img_w_3g	'buf2d_vox_obj_get_img_w_3g', \
-	buf2d_vox_obj_get_img_h_3g	'buf2d_vox_obj_get_img_h_3g', \
-	buf2d_vox_obj_draw_1g	'buf2d_vox_obj_draw_1g', \
-	buf2d_vox_obj_draw_3g	'buf2d_vox_obj_draw_3g', \
-	buf2d_vox_obj_draw_3g_scaled	'buf2d_vox_obj_draw_3g_scaled', \
-	buf2d_vox_obj_draw_pl	'buf2d_vox_obj_draw_pl', \
-	buf2d_vox_obj_draw_pl_scaled	'buf2d_vox_obj_draw_pl_scaled', \
-	buf2d_vox_obj_draw_3g_shadows	'buf2d_vox_obj_draw_3g_shadows'
+	buf2d_filter_dither,	'buf2d_filter_dither', \
+	buf2d_vox_brush_create,	'buf2d_vox_brush_create', \
+	buf2d_vox_brush_delete,	'buf2d_vox_brush_delete', \
+	buf2d_vox_obj_get_img_w_3g,	'buf2d_vox_obj_get_img_w_3g', \
+	buf2d_vox_obj_get_img_h_3g,	'buf2d_vox_obj_get_img_h_3g', \
+	buf2d_vox_obj_draw_1g,	'buf2d_vox_obj_draw_1g', \
+	buf2d_vox_obj_draw_3g,	'buf2d_vox_obj_draw_3g', \
+	buf2d_vox_obj_draw_3g_scaled,	'buf2d_vox_obj_draw_3g_scaled', \
+	buf2d_vox_obj_draw_pl,	'buf2d_vox_obj_draw_pl', \
+	buf2d_vox_obj_draw_pl_scaled,	'buf2d_vox_obj_draw_pl_scaled', \
+	buf2d_vox_obj_draw_3g_shadows,	'buf2d_vox_obj_draw_3g_shadows'
 	
 public buf2d_create	as	'_buf2d_create_asm' 
 public buf2d_create_f_img	as	'_buf2d_create_f_img'
