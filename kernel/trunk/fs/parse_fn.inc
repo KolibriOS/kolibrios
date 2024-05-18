@@ -71,7 +71,6 @@ else
         jne     .next_cd
 @@:
         ret
-end if
 
 .hard_disk:
         sub     al, '1'
@@ -82,6 +81,8 @@ end if
         mov     [ecx+9], dword 'IBRI'
         mov     [ecx+13], byte 0
         ret
+end if
+
 endp
 
 cp866toUpper:

@@ -448,8 +448,10 @@ file_system_lfn:
         jz      @f
         mov     eax, dword[ebp+DISK.MediaInfo.Capacity]
         mov     edx, dword[ebp+DISK.MediaInfo.Capacity+4]
-        shld    edx, eax, 9
-        shl     eax, 9
+        mov     ecx, [ebp + DISK.MediaInfo.SectorSize]
+        bsf     ecx, ecx
+        shld    edx, eax, cl
+        shl     eax, cl
         mov     [edi+36], edx
         mov     [edi+32], eax
 @@:

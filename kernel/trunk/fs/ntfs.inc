@@ -18,7 +18,7 @@ iglobal
 align 4
 ntfs_user_functions:
         dd      ntfs_free
-        dd      (ntfs_user_functions_end - ntfs_user_functions - 4) / 4
+        dd      (ntfs_user_functions_end - ntfs_user_functions - 8) / 4
         dd      ntfs_ReadFile
         dd      ntfs_ReadFolder
         dd      ntfs_CreateFile
@@ -3478,7 +3478,7 @@ ntfs_WriteFile:
         mov     edx, [ebx+8]
         add     eax, [ebx+12]
         adc     edx, 0
-        mov     [edi+fileRealSize], eax
+
         cmp     edx, [edi+fileRealSize+4]
         jc      @f
         jnz     .resize
@@ -3488,7 +3488,6 @@ ntfs_WriteFile:
         mov     [edi+fileRealSize], eax
         mov     [edi+fileRealSize+4], edx
 @@:
-        mov     [edi+fileRealSize+4], edx
         push    edx eax ebx
         call    ntfsGetTime
         mov     [edi+fileModified], eax

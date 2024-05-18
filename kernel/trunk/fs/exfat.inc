@@ -18,7 +18,7 @@ iglobal
 align 4
 exFAT_user_functions:
         dd      exFAT_free
-        dd      (exFAT_user_functions_end - exFAT_user_functions - 4) / 4
+        dd      (exFAT_user_functions_end - exFAT_user_functions - 8) / 4
         dd      exFAT_ReadFile
         dd      exFAT_ReadFolder
         dd      0 ;exFAT_CreateFile
