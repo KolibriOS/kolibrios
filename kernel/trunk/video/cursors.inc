@@ -318,9 +318,11 @@ align 4
 ;  ecx= flags
 
 create_cursor:
-.src     equ esp
-.flags   equ esp+4
-.hcursor equ esp+8
+virtual at esp
+.src     dd ?
+.flags   dd ?
+.hcursor dd ?
+end virtual
 
         sub     esp, 4         ;space for .hcursor
         push    ecx
