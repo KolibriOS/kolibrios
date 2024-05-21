@@ -4,4 +4,4 @@ tup.definerule{
   command = "echo %%define lang '" .. ((tup.getconfig("LANG") == "") and "en" or tup.getconfig("LANG")) .. "'> %o",
   outputs = {"lang_nasm.inc"}
 }
-tup.rule({"c4.asm", extra_inputs = {"lang_nasm.inc"}}, "nasm -I" .. tup.getvariantdir() .. " -f bin -o %o %f " .. tup.getconfig("KPACK_CMD"), "c4")
+tup.rule({"c4.asm", extra_inputs = {"lang_nasm.inc"}}, "nasm -I" .. tup.getvariantdir() .. "/ -f bin -o %o %f " .. tup.getconfig("KPACK_CMD"), "c4")
