@@ -317,14 +317,14 @@ if build_type == "rus" then tup.append_table(extra_files, {
  {"Docs/cp866/hot_keys.txt", build_type .. "/docs/HOT_KEYS.TXT"},
  {"Docs/cp866/install.txt", build_type .. "/docs/INSTALL.TXT"},
  {"Docs/cp866/credits.txt", build_type .. "/docs/CREDITS.TXT"},
- {"Docs/cp866/sysfuncr.txt", SRC_PROGS .. "/system/docpack/trunk/SYSFUNCR.TXT"},
- {"Docs/cp1251/config.txt", build_type .. "/docs/CONFIG.WIN.TXT", cp1251_from = build_type .. "/docs/CONFIG.TXT"},
- {"Docs/cp1251/gnu.txt", build_type .. "/docs/GNU.WIN.TXT", cp1251_from = build_type .. "/docs/GNU.TXT"},
- {"Docs/cp1251/history.txt", build_type .. "/docs/HISTORY.WIN.TXT", cp1251_from = build_type .. "/docs/HISTORY.TXT"},
- {"Docs/cp1251/hot_keys.txt", build_type .. "/docs/HOT_KEYS.WIN.TXT", cp1251_from = build_type .. "/docs/HOT_KEYS.TXT"},
- {"Docs/cp1251/install.txt", build_type .. "/docs/INSTALL.WIN.TXT", cp1251_from = build_type .. "/docs/INSTALL.TXT"},
- {"Docs/cp1251/credits.txt", build_type .. "/docs/CREDITS.WIN.TXT", cp1251_from = build_type .. "/docs/CREDITS.TXT"},
- {"Docs/cp1251/sysfuncr.txt", build_type .. "/docs/SYSFUNCR.WIN.TXT", cp1251_from = SRC_PROGS .. "/system/docpack/trunk/SYSFUNCR.TXT"},
+ {"Docs/cp866/sysfuncr.txt", VAR_PROGS .. "/system/docpack/trunk/SYSFUNCR.TXT"},
+ {"Docs/cp1251/config.txt", VAR_DATA .. "/" .. build_type .. "/docs/CONFIG.WIN.TXT", cp1251_from = build_type .. "/docs/CONFIG.TXT"},
+ {"Docs/cp1251/gnu.txt", "$(VAR_DATA)/$(build_type)/docs/GNU.WIN.TXT", cp1251_from = build_type .. "/docs/GNU.TXT"},
+ {"Docs/cp1251/history.txt", "$(VAR_DATA)/$(build_type)/docs/HISTORY.WIN.TXT", cp1251_from = build_type .. "/docs/HISTORY.TXT"},
+ {"Docs/cp1251/hot_keys.txt", "$(VAR_DATA)/$(build_type)/docs/HOT_KEYS.WIN.TXT", cp1251_from = build_type .. "/docs/HOT_KEYS.TXT"},
+ {"Docs/cp1251/install.txt", "$(VAR_DATA)/$(build_type)/docs/INSTALL.WIN.TXT", cp1251_from = build_type .. "/docs/INSTALL.TXT"},
+ {"Docs/cp1251/credits.txt", "$(VAR_DATA)/$(build_type)/docs/CREDITS.WIN.TXT", cp1251_from = build_type .. "/docs/CREDITS.TXT"},
+ {"Docs/cp1251/sysfuncr.txt", "$(VAR_DATA)/$(build_type)/docs/SYSFUNCR.WIN.TXT", cp1251_from = SRC_PROGS .. "/system/docpack/trunk/SYSFUNCR.TXT"},
  {"HD_Load/9x2klbr/", SRC_PROGS .. "/hd_load/9x2klbr/readme_dos.txt"},
  {"HD_Load/9x2klbr/", SRC_PROGS .. "/hd_load/9x2klbr/readme_win.txt"},
  {"HD_Load/mtldr/", SRC_PROGS .. "/hd_load/mtldr/install.txt"},
@@ -377,7 +377,7 @@ Same syntax as extra_files.
 if build_type == "rus" then
 iso_extra_files = {
  {"/readme_dos.txt", build_type .. "/distr_data/readme_dos.txt"},
- {"/readme.txt", build_type .. "/distr_data/readme.txt", cp1251_from = build_type .. "/distr_data/readme_dos.txt"},
+ {"/readme.txt", "$(VAR_DATA)/$(build_type)/distr_data/readme.txt", cp1251_from = build_type .. "/distr_data/readme_dos.txt"},
 }
 else
 iso_extra_files = {
