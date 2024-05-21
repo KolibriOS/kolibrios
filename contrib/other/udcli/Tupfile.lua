@@ -3,7 +3,7 @@ HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../../programs" or tup.ge
 tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
 
-LDFLAGS = LDFLAGS .. " -Llibudis86"
+LDFLAGS = LDFLAGS .. " -L" .. tup.getvariantdir() .. "/libudis86"
 LIBS = "-ludis86 " .. LIBS
 table.insert(LIBDEPS, "libudis86/<libudis86>")
 INCLUDES = INCLUDES .. " -Ilibudis86"

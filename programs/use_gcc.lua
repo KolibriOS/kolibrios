@@ -11,7 +11,7 @@ CFLAGS = CFLAGS_OPTIMIZE_SIZE
 
 CFLAGS_c = "" -- extra flags for *.c
 CFLAGS_cpp = " -fno-rtti" -- extra flags for *.cpp
-LDFLAGS = "-static -nostdlib -n --file-alignment=16 --section-alignment=16"
+LDFLAGS = "-static -nostdlib -n --file-alignment=16 --section-alignment=16 -L" .. tup.getvariantdir() .. " "
 INCLUDES = ""
 LIBS = ""
 LIBDEPS = {}

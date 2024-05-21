@@ -9,7 +9,7 @@ DEFINES = " -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_X86_L1_CACHE_SHIFT=6 -DCONFIG_
 
 CFLAGS = " -w -Os -march=i686 -fno-ident -msse2 -fomit-frame-pointer -fno-builtin-printf -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -mno-ms-bitfields " .. DEFINES 
 
-LDFLAGS = " -nostdlib -T acpi.lds -shared -s --image-base 0 --file-alignment 512 --section-alignment 4096 -L../../contrib/sdk/lib -L../ddk -Lacpica "
+LDFLAGS = " -nostdlib -T acpi.lds -shared -s --image-base 0 --file-alignment 512 --section-alignment 4096 -L../../contrib/sdk/lib -L" .. tup.getvariantdir() .. "/../ddk -L" .. tup.getvariantdir() .. "/acpica "
 
 NAME = "acpi.sys"
 

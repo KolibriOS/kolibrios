@@ -1,5 +1,9 @@
 if tup.getconfig("NO_FASM") ~= "" or tup.getconfig("BUILD_TYPE") == "" then return end
-deps = tup.rule("echo lang fix " .. ((tup.getconfig("LANG") == "") and "en" or tup.getconfig("LANG")) .. " > lang.inc", {"lang.inc"})
+HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../.." or tup.getconfig("HELPERDIR")
+tup.include(HELPERDIR .. "/use_fasm.lua")
+add_include(tup.getvariantdir())
+
+deps = tup.rule("echo lang fix " .. ((tup.getconfig("LANG") == "") and "en" or tup.getconfig("LANG")) .. " > %o", {"lang.inc"})
 DOCDIR = "../../../../data/" .. tup.getconfig("BUILD_TYPE") .. "/docs/"
 if tup.getconfig("TUP_PLATFORM") == "win32"
 then env_prefix = "set DOCDIR=$(DOCDIR)&&"; cp_cmd = "copy %f %o"
@@ -17,4 +21,4 @@ tup.append_table(deps,
 tup.append_table(deps,
   tup.rule("../../../../kernel/trunk/docs/stack.txt", cp_cmd, "STACK.TXT")
 )
-tup.rule({"docpack.asm", extra_inputs = deps}, env_prefix .. "fasm %f %o " .. tup.getconfig("KPACK_CMD"), "docpack")
+tup.rule({"docpack.asm", extra_inputs = deps}, env_prefix .. FASM .. " %f %o " .. tup.getconfig("KPACK_CMD"), "docpack")
