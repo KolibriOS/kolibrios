@@ -1126,7 +1126,7 @@ if lang eq ru
  RMenuProp	db 'Свойства',0
 else
  RMenuRedrawFon db 'Redraw',0
- RMenuAlign	db 'Snap to Grid',0
+ RMenuAlign	db 'Snap to grid',0
  RMenuOffMoving db 'Fix the icons',0
  RMenuOnMoving	db 'Unfix the icons',0
  RMenuAdd	db 'Add',0
@@ -1140,8 +1140,8 @@ if lang eq ru
  ErrNotFoundIni db 'Не найден icon.ini',0
  ErrName	db 'Имя "rbmenu" зарезервировано',0
 else
- ErrRunProg	db 'Error runing program',0
- WarningSave	db 'Do not forget to save the changes, run the RDSave',0
+ ErrRunProg	db 'Error running program',0
+ WarningSave	db 'Remember to save changes with "RDSave"',0
  ErrNotFoundIni db 'icon.ini not found',0
  ErrName	db 'The name "rbmenu" reserved',0
 end if
