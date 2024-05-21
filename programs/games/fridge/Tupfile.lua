@@ -7,7 +7,7 @@ tup.include(HELPERDIR .. "/use_newlib.lua")
 CFLAGS = CFLAGS .. " -std=c99 -Wall -Wextra"
 INCLUDES = INCLUDES .. " -I../../../contrib/C_Layer/INCLUDE"
 table.insert(LIBDEPS, "../../../contrib/C_Layer/OBJ/<C_Layer>")
-LIBS = LIBS .. " " .. tup.getvariantdir() .. "/../../../contrib/C_Layer/OBJ/loadlibimg.o "
+LIBS += " " .. tup.getvariantdir() .. "/../../../contrib/C_Layer/OBJ/loadlibimg.o "
 
 -- Subsystem native
 LDFLAGS = LDFLAGS .. " --subsystem native"

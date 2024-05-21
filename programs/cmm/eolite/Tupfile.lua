@@ -9,7 +9,7 @@ else C_LANG = "LANG_ENG" -- this includes default case without config
 end
 
 LFLAGS = LFLAGS .. " -stack=20480"
-LIBS = LIBS .. " ../../develop/ktcc/trunk/bin/lib/tiny.o -nostdlib -lbox_lib -lini -limg"
+LIBS += " ../../develop/ktcc/trunk/bin/lib/tiny.o -nostdlib -lbox_lib -lini -limg"
 
 tup.rule("Eolite.c", "c-- -coff /D=" .. C_LANG .. " /OPATH=%o %f", "%B.obj")
 tup.rule("Eolite.obj", "objconv -felf32 %f %o", "%B.o")
