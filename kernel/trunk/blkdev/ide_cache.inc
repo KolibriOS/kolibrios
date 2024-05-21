@@ -1,9 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;**************************************************************************
 ;
@@ -20,8 +21,6 @@
 ;  or [cache_ide[x]_appl_data] - cache entries
 ;
 ;**************************************************************************
-
-$Revision$
 
 align 4
 find_empty_slot_CD_cache:

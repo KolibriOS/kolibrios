@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 read_ramdisk:
@@ -111,18 +109,18 @@ no_sys_on_hd:
         mov     edi, RAMDISK
         mov     ecx, 0x1080
         xor     eax, eax
-@@:             
+@@:
         stosd
         loop    @b
 
         mov     ecx, 0x58F7F
         mov     eax, 0xF6F6F6F6
-@@:             
+@@:
         stosd
         loop    @b
-        
+
         mov     [RAMDISK+0x200], dword 0xFFFFF0         ; fat table
         mov     [RAMDISK+0x4200], dword 0xFFFFF0
-        
+
 not_format_ram_disk:
 yes_sys_on_hd:

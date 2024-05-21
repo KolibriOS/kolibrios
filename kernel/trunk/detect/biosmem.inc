@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2009-2017. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2009-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 ; Query physical memory map from BIOS.

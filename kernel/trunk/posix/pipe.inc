@@ -1,11 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 F_READ              = 0x0001  ; file opened for reading
 F_WRITE             = 0x0002  ; file opened for writing

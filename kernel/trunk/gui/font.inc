@@ -1,11 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 dtext:
 ; edx -> string
@@ -19,18 +18,18 @@ dtext:
 ; FF=3: UTF-8 8x16, FF=2: UTF-16LE 8x16
 ; FF=1: cp866 8x16, FF=0: cp866 6x9
 ; SSS = (font multiplier)-1
-; edi=1: force output    
+; edi=1: force output
 ; flag CF=1 means that we deal with asciiz but need to draw no more than esi symbols
         clc
-._:        
+._:
         push    ecx edx
-        setc    dl        
+        setc    dl
         and     eax, 0xFFFFFF
         and     ecx, 1 shl 31
         shl     edx, 29
-        or      eax, ecx    
+        or      eax, ecx
         or      eax, edx
-        pop     edx ecx        
+        pop     edx ecx
         bt      ecx, 30
         jc      @f
         or      eax, 1 shl 30
@@ -93,8 +92,8 @@ dtext:
         or      eax, -1
         mov     [esp+28], edi
         jmp     .1
-@@:     
-        and     eax, 0x00ffffff          
+@@:
+        and     eax, 0x00ffffff
 .1:
         mov     edi, edx
         rep stosd
@@ -155,13 +154,13 @@ deltaToScreen = 28
         js      .done
         movzx   ebx, word [esi]
         test    dword [esp + 24], 1 shl 31
-        jnz     @f                
+        jnz     @f
         test    dword [esp + 24], 1 shl 29
         jz      .u16Still
-@@:        
+@@:
         test    ebx, ebx
         jz      .done
-.u16Still:        
+.u16Still:
         inc     esi
         inc     esi
         cmp     bx, 1419
@@ -186,13 +185,13 @@ deltaToScreen = 28
         xor     eax, eax
         call    utf8to16
         test    dword [esp + 24], 1 shl 31
-        jnz     @f                
+        jnz     @f
         test    dword [esp + 24], 1 shl 29
         jz      .u8Still
-@@:        
+@@:
         test    eax, eax
         jz      .done
-.u8Still:        
+.u8Still:
         cmp     eax, 1419
         jc      @f
         xor     eax, eax
@@ -214,13 +213,13 @@ deltaToScreen = 28
         js      .done
         movzx   ebx, byte [esi]
         test    dword [esp + 24], 1 shl 31
-        jnz     @f                
+        jnz     @f
         test    dword [esp + 24], 1 shl 29
         jz      .866Still
-@@:        
+@@:
         test    ebx, ebx
         jz      .done
-.866Still:        
+.866Still:
         inc     esi
         pushd   esi edi 9
         lea     ebx, [ebx*8+ebx+font1]
@@ -238,13 +237,13 @@ deltaToScreen = 28
         js      .done
         movzx   eax, byte [esi]
         test    dword [esp + 24], 1 shl 31
-        jnz     @f                
+        jnz     @f
         test    dword [esp + 24], 1 shl 29
-        jz      .8662uStill         
-@@:        
+        jz      .8662uStill
+@@:
         test    eax, eax
         jz      .done
-.8662uStill:        
+.8662uStill:
         call    ansi2uni_char
         shl     eax, 4
         lea     ebx, [eax+fontUni]

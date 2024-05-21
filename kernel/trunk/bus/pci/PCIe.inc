@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2010-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2010-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;                                                              ;;
@@ -12,7 +12,6 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 ;***************************************************************************
 ;   Function
@@ -21,16 +20,16 @@ $Revision$
 ;   Description
 ;       PCIe extended (memory-mapped) config space detection
 ;
-;   WARNINGs: 
-;       1) Very Experimental! 
+;   WARNINGs:
+;       1) Very Experimental!
 ;       2) direct HT-detection (no ACPI or BIOS service used)
-;       3) Only AMD/HT processors currently supported 
+;       3) Only AMD/HT processors currently supported
 ;
 ;***************************************************************************
 
 PCIe_CONFIG_SPACE       =       0xF0000000      ; to be moved to const.inc
 mmio_pcie_cfg_addr      dd      0x0             ; intel pcie space may be defined here
-mmio_pcie_cfg_lim       dd      0x0             ; upper pcie space address 
+mmio_pcie_cfg_lim       dd      0x0             ; upper pcie space address
 
 
 align 4
@@ -40,7 +39,7 @@ pci_ext_config:
         mov     ebx, [mmio_pcie_cfg_addr]
         or      ebx, ebx
         jz      @f
-        or      ebx, 0x7FFFFFFF         ; required by PCI-SIG standards 
+        or      ebx, 0x7FFFFFFF         ; required by PCI-SIG standards
         jnz     .pcie_failed
         add     ebx, 0x0FFFFC
         cmp     ebx, [mmio_pcie_cfg_lim]; is the space limit correct?
@@ -60,8 +59,8 @@ pci_ext_config:
         sub     bl, 4
         and     al, 0x80                ; check the NP bit
         jz      .no_pcie_cfg
-        shl     eax, 8                  ; bus:[27..20], dev:[19:15] 
-        or      eax, 0x00007FFC         ; fun:[14..12], reg:[11:2] 
+        shl     eax, 8                  ; bus:[27..20], dev:[19:15]
+        or      eax, 0x00007FFC         ; fun:[14..12], reg:[11:2]
         mov     [mmio_pcie_cfg_lim], eax
         mov     cl, bl
         mov     ax, 0x0002              ; bus = 0, 1dword to read
@@ -80,7 +79,7 @@ pci_ext_config:
         sub     eax, [mmio_pcie_cfg_lim]; MMIO must cover at least one bus
         ja      .no_pcie_cfg
 
-;       -- it looks like a true PCIe config space; 
+;       -- it looks like a true PCIe config space;
         mov     eax, [mmio_pcie_cfg_addr]       ; physical address
         or      eax, (PG_SHARED + PG_LARGE + PG_USER)
         mov     ebx, PCIe_CONFIG_SPACE          ; linear address
@@ -98,12 +97,12 @@ pci_ext_config:
         jmp     @b
 
 .pcie_cfg_mapped:
-        
+
 ;       -- glad to have the extended PCIe config field found
 ;       mov     esi, boot_pcie_ok
 ;       call    boot_log
         ret     ; <<<<<<<<<<< OK >>>>>>>>>>>
-        
+
 .no_pcie_cfg:
 
         xor     eax, eax

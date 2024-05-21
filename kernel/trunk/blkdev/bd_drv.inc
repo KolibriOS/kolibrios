@@ -1,11 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 ; Disk access through BIOS
 iglobal
@@ -105,7 +104,7 @@ locals
 sectors_todo    dd      ?
 endl
 ; 1. Initialize number of sectors: get number of requested sectors
-; and say that no sectors were read yet.      
+; and say that no sectors were read yet.
         mov     ecx, [numsectors]
         mov     eax, [ecx]
         mov     dword [ecx], 0

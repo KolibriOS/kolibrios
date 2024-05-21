@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2013-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2013-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 ;------------------------------------------------------------------------------
@@ -136,7 +134,7 @@ align 4
         cmp     [ebx], eax
         je      .exit_2
 
-; there should be a procedure for checking the integrity of the slots 
+; there should be a procedure for checking the integrity of the slots
 ; and I will do so in the future
 
 ; unlock last slot

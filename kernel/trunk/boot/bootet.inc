@@ -1,9 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;======================================================================
 ;
@@ -11,9 +12,6 @@
 ;
 ;======================================================================
 
-$Revision$
-
- 
 d80x25_bottom:
           latin1   '║ KolibriOS on IGASUGUSE GARANTIITA. Vaata faili COPYING info saamiseks. Kui   ║'
           latin1   '║ leiate vigu, anna neist palun teada aadressil: http://board.kolibrios.org    ║'

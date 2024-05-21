@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 keymap:
@@ -179,7 +177,7 @@ kernel_file_load:
 dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
 ; { Patch by Coldy, For DLL autoload
 dll_lib_path  db '/SYS/LIB/DLL.OBJ',0
-dll_error_msg db '"DLL.OBJ not found!\nTerminate application!" -dE',0   
+dll_error_msg db '"DLL.OBJ not found!\nTerminate application!" -dE',0
 ; } End patch by Coldy, For DLL autoload
 align 4
 

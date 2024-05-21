@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
@@ -10,8 +10,6 @@
 ;;                        based on bootcode for MenuetOS        ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 ;==========================================================================
@@ -805,7 +803,7 @@ end if
         push    word [es:bp+6]
         pop     word [number_vm]
         mov     word [preboot_graph], bp          ;save choose
-        
+
         jmp     .d
 
 .change_b:                      ; b) preboot_biosdisk  = use BIOS disks through V86 emulation?
@@ -1012,7 +1010,7 @@ end if
 
 ; Start the first app (right now it's LAUNCHER) after kernel is loaded?
         mov     al, [preboot_launcher]
-        mov     [es:BOOT_LO.launcher_start], al    ;// 0x901D        
+        mov     [es:BOOT_LO.launcher_start], al    ;// 0x901D
 
 ; BOOT DEVICE
 
@@ -1168,7 +1166,7 @@ include '../detect/biosmem.inc'
 ; and copy them to extended memory
         mov     si, movedesc
         mov     [si+8*2+3], bh          ; from
-        
+
         mov     ax, word [BPB_BytsPerSec]
         shr     ax, 1                   ; words per sector
         mov     cx, word [BPB_RsvdSecCnt]
@@ -1176,7 +1174,7 @@ include '../detect/biosmem.inc'
         mul     cx
         push    ax                      ; save to stack count of words in boot+FAT
         xchg    ax, cx
-        
+
         push    es
         push    ds
         pop     es
@@ -1202,7 +1200,7 @@ sayerr_memmove:
 ; TODO: BPB_NumFATs !!!!!
         add     bx, word [BPB_BytsPerSec]       ; !!! TODO: may be need multiply by BPB_RsvdSecCnt !!!
         mov     byte [si+8*2+3], bh     ; bx - begin of FAT
-        
+
         mov     ax, word [BPB_BytsPerSec]
         shr     ax, 1                   ; words per sector
         mov     cx, word [BPB_FATSz16]
@@ -1217,12 +1215,12 @@ sayerr_memmove:
         pop     es
         test    ah, ah
         jnz     sayerr_floppy
-        
+
         mov     ax, cx
         shl     ax, 1
         and     eax, 0ffffh             ; ax - count of bytes in FAT
         add     dword [si+8*3+2], eax
-        
+
 ; reading RootDir
 ; TODO: BPB_NumFATs
         add     bx, ax
@@ -1247,7 +1245,7 @@ sayerr_memmove:
         pop     bx
         push    bx
         add     word [FirstDataSector], bx      ; Begin of data region of floppy
-        
+
 ; read RootDir
         call    conv_abs_to_THS
         pop     ax

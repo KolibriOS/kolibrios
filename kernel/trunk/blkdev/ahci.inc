@@ -1,11 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 PCI_REG_STATUS_COMMAND = 0x0004
 PCI_REG_BAR5 = 0x0024
@@ -45,11 +44,11 @@ bit_AHCI_HBA_CAP2_BOH   = 0        ; Supports BIOS/OS Handoff
 
 bit_AHCI_HBA_BOHC_BOS  = 0         ; BIOS-Owned Semaphore (BIOS owns controller)
 bit_AHCI_HBA_BOHC_OOS  = 1         ; OS-Owned Semaphore (OS owns controller)
-bit_AHCI_HBA_BOHC_BB   = 4         ; BIOS Busy (polling bit while BIOS cleans up 
+bit_AHCI_HBA_BOHC_BB   = 4         ; BIOS Busy (polling bit while BIOS cleans up
 
 bit_AHCI_HBA_GHC_AHCI_ENABLE      = 31  ; Enable AHCI mode
 bit_AHCI_HBA_GHC_RESET            = 0   ; Reset HBA
-bit_AHCI_HBA_GHC_INTERRUPT_ENABLE = 1   ; Enable interrupts from the HBA 
+bit_AHCI_HBA_GHC_INTERRUPT_ENABLE = 1   ; Enable interrupts from the HBA
 
 bit_AHCI_HBA_PxCMD_ST    = 0
 bit_AHCI_HBA_PxCMD_FRE   = 4
@@ -97,7 +96,7 @@ struct HBA_MEM
         cap2                  dd ?                    ; 0x24, Host capabilities extended
         bohc                  dd ?                    ; 0x28, BIOS/OS handoff control and status
         reserved              rb (0xA0-HBA_MEM.reserved)        ; 0x2C - 0x9F, Reserved
-        vendor                rb (0x100-HBA_MEM.vendor)         ; 0xA0 - 0xFF, Vendor specific 
+        vendor                rb (0x100-HBA_MEM.vendor)         ; 0xA0 - 0xFF, Vendor specific
         ports                 rb (sizeof.HBA_PORT*AHCI_MAX_PORTS) ; 0x100 - 0x10FF, Port control registers, max AHCI_MAX_PORTS
 ends
 
@@ -128,10 +127,10 @@ ends
 struct HBA_CMD_HDR
     flags1       db ? ; 0bPWACCCCC, P - Prefetchable, W - Write (1: H2D, 0: D2H)
                        ; A - ATAPI, C - Command FIS length in DWORDS, 2 ~ 16
-    
+
     flags2       db ? ; 0bPPPPRCB(Re), P - Port multiplier port, R - Reserved,
                        ; C - Clear busy upon R_OK, B - BIST, Re - Reset
-    
+
     prdtl         dw ? ; Physical region descriptor table length in entries
     prdbc         dd ? ; Physical region descriptor byte count transferred
     ctba          dd ? ; Command table descriptor base address
@@ -173,52 +172,52 @@ struct FIS_REG_H2D
         fis_type      db ?       ; FIS_TYPE_REG_H2D
         flags        db ?       ; 0bCRRRPPPP, C - 1: Command, 0: Control
                                  ; R - Reserved, P - Port multiplier
- 
+
         command       db ?       ; Command register
         featurel      db ?       ; Feature register, 7:0
- 
+
         lba0          db ?       ; LBA low register, 7:0
         lba1          db ?       ; LBA mid register, 15:8
         lba2          db ?       ; LBA high register, 23:16
         device        db ?       ; Device register
- 
+
         lba3          db ?       ; LBA register, 31:24
         lba4          db ?       ; LBA register, 39:32
         lba5          db ?       ; LBA register, 47:40
         featureh      db ?       ; Feature register, 15:8
- 
+
         countl        db ?       ; Count register, 7:0
         counth        db ?       ; Count register, 15:8
         icc           db ?       ; Isochronous command completion
         control       db ?       ; Control register
- 
+
                       rb 4       ; Reserved
 ends
 
 ; Register FIS – Device to Host
 struct FIS_REG_D2H
     fis_type      db ?           ; FIS_TYPE_REG_D2H
- 
+
     flags        db ?           ; 0bRIRPPPP, P - Port multiplier, R - Reserved
                                  ; I - Interrupt bit
- 
+
     status        db ?           ; Status register
     error         db ?           ; Error register
- 
+
     lba0          db ?           ; LBA low register, 7:0
     lba1          db ?           ; LBA mid register, 15:8
     lba2          db ?           ; LBA high register, 23:16
     device        db ?           ; Device register
- 
+
     lba3          db ?           ; LBA register, 31:24
     lba4          db ?           ; LBA register, 39:32
     lba5          db ?           ; LBA register, 47:40
                   db ?           ; Reserved
- 
+
     countl        db ?           ; Count register, 7:0
     counth        db ?           ; Count register, 15:8
                   rb 2           ; Reserved
- 
+
                   rb 4           ; Reserved
 ends
 
@@ -234,28 +233,28 @@ ends
 ; PIO Setup – Device to Host
 struct FIS_PIO_SETUP
     fis_type      db ?           ; FIS_TYPE_PIO_SETUP
- 
+
     flags        db ?           ; 0bRIDRPPPP, P - Port multiplier, R - Reserved
                                  ; I - Interrupt bit, D - Data transfer direction, 1 - device to host
- 
+
     status        db ?           ; Status register
     error         db ?           ; Error register
- 
+
     lba0          db ?           ; LBA low register, 7:0
     lba1          db ?           ; LBA mid register, 15:8
     lba2          db ?           ; LBA high register, 23:16
     device        db ?           ; Device register
- 
+
     lba3          db ?           ; LBA register, 31:24
     lba4          db ?           ; LBA register, 39:32
     lba5          db ?           ; LBA register, 47:40
                   db ?           ; Reserved
- 
+
     countl        db ?           ; Count register, 7:0
     counth        db ?           ; Count register, 15:8
                   db ?           ; Reserved
     e_status      db ?           ; New value of status register
- 
+
     tc            dw ?           ; Transfer count
                   rb 2           ; Reserved
 ends
@@ -284,10 +283,10 @@ struct FIS_DEV_BITS
     fis_type      db ?           ; FIS_TYPE_DEV_BITS
     flags        db ?           ; 0bNIRRPPPP, N - Notification, I - Interrupt,
                                  ; R - Reserved, P - Port multiplier
-    
+
     status        db ?           ; Status register
     error         db ?           ; Error register
-    
+
     protocol      dd ?           ; Protocol
 ends
 
@@ -390,8 +389,8 @@ ahci_init:
         movzx   edx, byte [esi+PCIDEV.devfn]
         and     edx, 00000111b ; get only 3 lowest bits (function code)
         DEBUGF  1, "K: found AHCI controller, (class, subcl, progif) = %x, bus = %x, device = %x, function = %x\n", eax, ebx, ecx, edx
-        
-        ; get BAR5 value, it is physical address 
+
+        ; get BAR5 value, it is physical address
         movzx   ebx, [esi + PCIDEV.bus]
         movzx   ebp, [esi + PCIDEV.devfn]
         stdcall pci_read32, ebx, ebp, PCI_REG_BAR5
@@ -475,7 +474,7 @@ ahci_init:
         bts     [esi + HBA_MEM.ghc], bit_AHCI_HBA_GHC_INTERRUPT_ENABLE
         mov     ebx, 2
         call    delay_hs
-        
+
         DEBUGF  1, "K: AHCI: caps: %x %x, ver: %x, ghc: %x, pi: %x\n", [esi + HBA_MEM.cap], [esi + HBA_MEM.cap2], [esi + HBA_MEM.version], [esi + HBA_MEM.ghc], [esi + HBA_MEM.pi]
 
         ; TODO:
@@ -553,7 +552,7 @@ ahci_init:
         cmp     ecx, AHCI_HBA_PxSSTS_DET_PRESENT
         jne     .continue_detect_drives
 
-        ; DEBUGF  1, "K: AHCI: found drive at port %d, cmd = 0x%x, ssts = 0x%x, signature = 0x%x\n", ebx, [edi + HBA_PORT.command], [edi + HBA_PORT.sata_status], [edi + HBA_PORT.signature]  
+        ; DEBUGF  1, "K: AHCI: found drive at port %d, cmd = 0x%x, ssts = 0x%x, signature = 0x%x\n", ebx, [edi + HBA_PORT.command], [edi + HBA_PORT.sata_status], [edi + HBA_PORT.signature]
 
         mov     ecx, ebx
         imul    ecx, sizeof.PORT_DATA
@@ -595,7 +594,7 @@ ahci_init:
         cmp     [ecx + PORT_DATA.drive_type], AHCI_DEV_SATA
         jne     .after_add_disk ; skip adding disk code
         ; register disk in system:
-        
+
         ;stdcall ahci_read_first_sector, ecx
 
         push    ecx
@@ -638,7 +637,7 @@ ahci_init:
         inc     ebx
         jmp     .detect_drives
 
-        
+
 
 .end_detect_drives:
         pop     esi
@@ -663,7 +662,7 @@ proc ahci_port_identify stdcall, pdata: dword
         endl
 
         pushad
-        
+
         mov     esi, [pdata] ; esi - address of PORT_DATA struct of port
         stdcall ahci_find_cmdslot, esi
 
@@ -748,7 +747,7 @@ proc ahci_port_identify stdcall, pdata: dword
         cld
         rep movsb
         mov     byte [edi], 0
-        
+
         stdcall swap_bytes_in_words, modelstr, (46-27)+1
         DEBUGF  1, "IDENTIFICATION RESULT: MODEL = %s\n", modelstr
 
@@ -848,7 +847,7 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
         shl     ebx, 9 ; *= 512
         mov     [vbuf_len], ebx
         DEBUGF  AHCI_DBGLVL, "vbuf_len = %u bytes\n", ebx
-        
+
         mov     ebx, [vbuf]
         and     ebx, 0xFFF
         mov     eax, [vbuf]
@@ -889,7 +888,7 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
         mov     [dbc], eax
         mov     eax, [next_phys_page]
         mov     [new_phys_region_start], eax
-        jmp     .add_prd 
+        jmp     .add_prd
 
 .check_if2:
         mov     eax, [cur_phys]
@@ -934,7 +933,7 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
         and     [ebx + HBA_PRDT_ENTRY.flags], not 0x3FFFFF ; zero out lower 22 bits, they used for byte count
         mov     eax, [dbc]
         or      [ebx + HBA_PRDT_ENTRY.flags], eax
-        
+
         inc     [cur_prd]
         mov     eax, [dbc]
         inc     eax
@@ -945,7 +944,7 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
         jne     @f
         jmp     .fill_prdt_end
 @@:
-        
+
 .step_next:
         mov     eax, [vbuf_len]
         cmp     eax, [cur_antioffset]
@@ -1051,7 +1050,7 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
         endl
 
         pushad
- 
+
         mov     ecx, [pdata]
         mov     ecx, [ecx + PORT_DATA.ctr_ptr]
         mov     ecx, [ecx + AHCI_CTR.mutex]
@@ -1096,7 +1095,7 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
         mov     ecx, [ecx + PORT_DATA.ctr_ptr]
         mov     ecx, [ecx + AHCI_CTR.mutex]
         call    mutex_unlock
- 
+
         popad
         xor     eax, eax
         ret
@@ -1110,7 +1109,7 @@ proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsect
         endl
 
         pushad
- 
+
         mov     ecx, [pdata]
         mov     ecx, [ecx + PORT_DATA.ctr_ptr]
         mov     ecx, [ecx + AHCI_CTR.mutex]
@@ -1146,7 +1145,7 @@ proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsect
         mov     ecx, [ecx + PORT_DATA.ctr_ptr]
         mov     ecx, [ecx + AHCI_CTR.mutex]
         call    mutex_unlock
- 
+
         popad
         xor     eax, eax
         ret
@@ -1158,7 +1157,7 @@ ahci_start_cmd:
 .wait_cr: ; Wait until CR (bit15) is cleared
         bt      [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_CR
         jc      .wait_cr
- 
+
         ; Set FRE (bit4) and ST (bit0)
         bts     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FRE
         bts     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_ST
@@ -1248,7 +1247,7 @@ endp
 ; ahci_send_cmd:
 ;         push    ecx
 ;         mov     [eax + HBA_PORT.interrupt_status], 0xFFFFFFFF
-        
+
 ;         mov     cl, bl
 ;         mov     [eax + HBA_PORT.command_issue], 1
 ;         shl     [eax + HBA_PORT.command_issue], cl
@@ -1291,7 +1290,7 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
         mov     esi, [port]
         mov     ebx, [phys_page1]
         mov     [esi + HBA_PORT.command_list_base_l], ebx ; set the command list base
-        mov     [esi + HBA_PORT.command_list_base_h], 0  ; zero upper 32 bits of addr cause we are 32 bit os 
+        mov     [esi + HBA_PORT.command_list_base_h], 0  ; zero upper 32 bits of addr cause we are 32 bit os
 
         mov     edi, [pdata]
         mov     ebx, [virt_page1]
@@ -1303,7 +1302,7 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
         mov     [edi + PORT_DATA.portno], eax
 
         stdcall _memset, ebx, 0, 1024 ; zero out the command list
-        
+
         ; FIS entry size = 256 bytes per port
         mov     eax, [phys_page1]
         add     eax, 1024
@@ -1312,9 +1311,9 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
 
         mov     eax, [virt_page1]
         add     eax, 1024
-        mov     [edi + PORT_DATA.fb], eax ; set pdata->fb 
+        mov     [edi + PORT_DATA.fb], eax ; set pdata->fb
         stdcall _memset, eax, 0, 256 ; zero out
-        
+
         stdcall alloc_pages, 32*(64 + 16 + 48 + PRDT_MAX_ENTRIES*16)/4096
         mov     [phys_page23], eax
         stdcall map_io_mem, eax, 32*(64 + 16 + 48 + PRDT_MAX_ENTRIES*16), PG_NOCACHE + PG_SWR
@@ -1337,7 +1336,7 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
         ; bytes per command table = 64+16+48+PRDT_MAX_ENTRIES*16 = N
 
         push    edx
-        
+
         ; cmdheader[ecx].ctba = phys_page23 + ecx*N
         mov     [ebx + HBA_CMD_HDR.ctba], ecx
         mov     edx, [ebx + HBA_CMD_HDR.ctba]
@@ -1361,13 +1360,13 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
         inc     ecx
         jmp     .for1
 .for1_end:
-        
+
         mov     eax, [port]
         call    ahci_start_cmd
 
         DEBUGF  1, "End rebasing port %u\n", [portno]
         popad
-        ret    
+        ret
 endp
 
 ; ----------------------------------------------------------- ; TODO check
@@ -1420,9 +1419,9 @@ proc _memset stdcall, dest:dword, val:byte, cnt:dword ; doesnt clobber any regis
         mov     edi, dword [dest]
         mov     al, byte [val]
         mov     ecx, dword [cnt]
-        rep stosb   
+        rep stosb
         pop     edi ecx eax
-        ret 
+        ret
 endp
 
 ; Swaps byte order in words

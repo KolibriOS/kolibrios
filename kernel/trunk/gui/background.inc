@@ -1,12 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 ; Background graphics implementation
 
@@ -527,12 +526,12 @@ syscall_putarea_backgr: ; sysfn 25
         mov     esi, ecx
 ; ecx - size x, edx - size y
         mov     ebp, edx
-        
+
         lea     ebp, [ebp*4]
         imul    ebp, esi
         stdcall is_region_userspace, edi, ebp
         jnz     .exit
- 
+
         mov     ebp, edx
 
         dec     ebp

@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2011-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2011-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 struct  BLITTER_BLOCK
@@ -210,7 +208,7 @@ virtual at sizeof.BLITTER
 .local_vars_size = $
 end virtual
         sub     esp, .local_vars_size
-        
+
         mov     [esp + .flags], ebx
 
         mov     eax, [current_slot]
@@ -267,9 +265,9 @@ end virtual
         mov     ebp, [esp + BLITTER.dst_y]
         add     ebx, [eax + WDATA.box.left]
         add     ebp, [eax + WDATA.box.top]
-        
+
         test    [esp + .flags], BLIT_CLIENT_RELATIVE
-        jz      .no_client_relative        
+        jz      .no_client_relative
 
         add     ebx, [eax + WDATA.clientbox.left]
         add     ebp, [eax + WDATA.clientbox.top]

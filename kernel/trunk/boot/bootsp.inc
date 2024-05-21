@@ -1,9 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;======================================================================
 ;
@@ -12,9 +13,6 @@
 ;======================================================================
 
 ; Para modificar éste archivo es necesario abrirlo con codificación CP850
-
-$Revision$
-
 
 d80x25_bottom:
           cp850    '║ KolibriOS viene ABSOLUTAMENTE SIN GARANTíA. Lee el archivo COPYING por más   ║'
