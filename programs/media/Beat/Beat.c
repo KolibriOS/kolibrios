@@ -2,7 +2,7 @@
 /*
  * Author: JohnXenox aka Aleksandr Igorevich.
  *
- * Programme name: Beat
+ * Program name: Beat
  * Description: A simple metronome.
  */
 
@@ -136,7 +136,7 @@ int main(int argc, char** argv)
     setCurrentPathToARawFile(_path_to_a_sample2, argv[0], SMPL_NAME2);
     setCurrentPathToARawFile(_path_to_a_playnote, argv[0], PRG_NAME);
 
-    // searches for a PlayNote programme.
+    // searches for a PlayNote program
     for(char i = 0; (i < SEARCH_PATHES_NUMBER); i++)
     {
         if(startApp("/sys/loool.raw", 0, search_pathes_to_a_playnote[i]) > 0)
@@ -148,7 +148,7 @@ int main(int argc, char** argv)
     if(path_to_a_playnote == 0)
     {
         #if defined (lang_en)
-            startApp("\"Can't find a PlayNote programme!\" -W", 0, "/sys/@notify");
+            startApp("\"Can't find the PlayNote program!\" -W", 0, "/sys/@notify");
         #elif defined (lang_ru)
             startApp("\"Не могу найти программу PlayNote!\" -W", 0, "/sys/@notify");
         #endif
@@ -367,7 +367,7 @@ int main(int argc, char** argv)
 
 
 
-                   // invertation of colours.
+                   // invert colors.
                    if(key == KEY_SLASH)
                    {
                        if(counterIndicatorFlag != 0)
@@ -523,22 +523,3 @@ int main(int argc, char** argv)
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

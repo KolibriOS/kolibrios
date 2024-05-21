@@ -1,6 +1,6 @@
 PlayNote (release date 2020.05.17)
 
-PlayNote is a programme to play a note. Sound plays through a sound driver.
+PlayNote is a program to play a note. Sound plays through a sound driver.
 
 Usage: PlayNote <path>
  path - path to a file to be played.
@@ -20,10 +20,9 @@ To install a sox in Ubuntu:
 ===========================
 
 //--------------------------------------//
-  The programme: 
+  The program: 
    - Compiled with KTCC compiler.
    - Written in KolibriOS NB svn7768.
    - Designed and written by JohnXenox
      aka Aleksandr Igorevich.
 //--------------------------------------//
-
