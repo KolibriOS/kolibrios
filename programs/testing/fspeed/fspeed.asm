@@ -1,5 +1,5 @@
 ;*****************************************************************************
-; File Speed - for Kolibri OS
+; File Speed - for KolibriOS
 ; Copyright (c) 2014, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;

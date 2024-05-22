@@ -1,5 +1,5 @@
 ; макрос для системной библиотеки box_lib.obj
-; элемент TextEditor для Kolibri OS
+; элемент TextEditor для KolibriOS
 ; файл последний раз изменялся 12.01.2021 IgorA
 ; на код применена GPL2 лицензия
 

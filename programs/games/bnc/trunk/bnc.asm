@@ -1,5 +1,5 @@
 ;************************************************
-;*  Bulls-and-Cows       */ Kolibri OS /*
+;*  Bulls-and-Cows       */ KolibriOS /*
 ;*************************  25/10/2007  *********
 include 'main.inc'   ; main.inc
 include 'data.inc'   ; data.inc
