@@ -1,9 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;======================================================================
 ;
@@ -11,12 +12,10 @@
 ;
 ;======================================================================
 
-$Revision$
-
 
 d80x25_bottom:
           db       186,' KolibriOS comes with ABSOLUTELY NO WARRANTY. See file COPYING for details    ',186
-          db       186,' If you find any bugs, please report them at: http://board.kolibrios.org      ',186
+          db       186,' If you find any bugs, please report them at: https://board.kolibrios.org     ',186
           line_full_bottom
 d80x25_bottom_num = 3
 
@@ -91,9 +90,9 @@ loading_msg db    "Loading KolibriOS...",0
 
 if ~ defined extended_primary_loader
 save_quest db     "New settings have been applied.",13,10,13,10,186
-           db     " Do you want to record them for the future boots?",13,10,186
+           db     " Do you want to save them for future boots?",13,10,186
            db     " Answer 'yes' only if your booting device is writable. [y/n]: ",0
-loader_block_error db "Bootloader data invalid, I cannot continue. Stopped.",0
+loader_block_error db "Bootloader data invalid. Stopped.",0
 write_err_msg db "Recording the configuration has failed. Press any key to resume booting...",0
 end if
 
@@ -103,8 +102,8 @@ _r2 latin1 '║                   │  640x480  VGA 16 colors       │ │',13,
 _rs latin1 '║                   │  ????x????@??  SVGA VESA      │ │',13,10,0
 _bt latin1 '║                   └───────────────────────────────┴─┘',13,10,0
 
-remark1 db      "Default values were selected to match most of configurations, but not all.",0
+remark1 db      "Default values were selected to match most configurations, but not all.",0
 remark2 db      "If the system does not boot, try to disable option [b]. If the system gets",0
-remark3 db      "stuck after booting, enable option [c], disable option [d] and make photo.",0
+remark3 db      "stuck after booting, enable option [c], disable option [d] and take photo.",0
 remarks dw      remark1, remark2, remark3
 num_remarks = 3
