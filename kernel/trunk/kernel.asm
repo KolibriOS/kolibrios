@@ -24,12 +24,11 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
 format binary as "mnt"
 
 include 'macros.inc'
 include 'struct.inc'
-
-$Revision$
 
 
 USE_COM_IRQ     = 1      ; make irq 3 and irq 4 available for PCI devices
@@ -4245,7 +4244,7 @@ syscall_threads:
         movzx   eax, [eax+APPDATA.def_priority]
         jmp     .end
 
-.create:        ;sysfn 51,1 
+.create:        ;sysfn 51,1
         call    new_sys_threads
 
 .end:

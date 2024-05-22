@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  VESA20.INC                                                  ;;
@@ -11,13 +11,12 @@
 ;;  Alexey, kgaz@crosswindws.net                                ;;
 ;;  - Voodoo compatible graphics                                ;;
 ;;  Juan M. Caravaca                                            ;;
-;;  - Graphics optimimizations eg. drawline                     ;;
+;;  - Graphics optimimizations e.g. drawline                    ;;
 ;;                                                              ;;
 ;;  See file COPYING for details                                ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 uglobal
 align 4

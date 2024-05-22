@@ -1,11 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2010-2023. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2010-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 ;================================
 ;/////// public functions ///////
@@ -390,11 +389,11 @@ mouse._.move_handler:
         ; change cursor to resizing cursor
         shl     esi, BSF sizeof.WDATA
         add     esi, window_data
-        
+
         ; if resizing cursor we need (eax) isnt set already, set it
         cmp     eax, [esi + WDATA.cursor]
         je      @f
-        
+
         ; DEBUGF  1, "changing cursor to resizing\n"
         xchg    eax, [esi + WDATA.cursor] ; set resizing cursor, prev cursor goes to eax
         ; save previous cursor (will be restored when we'll get out of the resizing area)
@@ -421,7 +420,7 @@ mouse._.move_handler:
 
         test    eax, eax
         jz      .end1
-        
+
         ; restore prev cursor
         mov     [esi + WDATA.temp_cursor], 0
         mov     [esi + WDATA.cursor], eax

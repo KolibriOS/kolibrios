@@ -1,11 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 struc VBE_VGAInfo {
   .VESASignature          dd ?    ; char
@@ -194,7 +193,7 @@ calc_vmodes_table:
         mov     word [es:bx], 640
         mov     word [es:bx+2], 480
         mov     word [es:bx+6], 0x13
-        
+
         mov     word [es:bx+10], 640
         mov     word [es:bx+12], 480
         mov     word [es:bx+16], 0x12
@@ -222,7 +221,7 @@ calc_vmodes_table:
         jb      @f
 
 ; 16 bpp might actually be 15 bpp
-        cmp     [es:mi.BitsPerPixel], 16 
+        cmp     [es:mi.BitsPerPixel], 16
         jne     .l0
         cmp     [es:mi.GreenMaskSize], 5
         jne     .l0
@@ -727,7 +726,7 @@ set_vmode:
 
         mov     si, word [preboot_graph]           ;[preboot_graph]
         mov     cx, word [es:si+6]           ; number of mode
-        
+
 
         mov     ax, word [es:si+0]           ; resolution X
         mov     bx, word [es:si+2]           ; resolution Y

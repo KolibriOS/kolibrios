@@ -174,10 +174,6 @@ kernel_alloc:
         mov     eax, buffer
         ret     4
 
-macro $Revision [args]
-{
-}
-
 ; Error handlers
 error1:
         mov     eax, 1

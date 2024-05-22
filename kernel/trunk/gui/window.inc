@@ -1,15 +1,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 ;==============================================================================
-;     public functions 
+;     public functions
 ;==============================================================================
 
 window.BORDER_SIZE = 5
@@ -74,7 +73,7 @@ syscall_draw_window: ;     system function 0
 
 align 4
 ; system function 1
-syscall_setpixel:  
+syscall_setpixel:
         mov     eax, ebx
         mov     ebx, ecx
         mov     ecx, edx
@@ -92,7 +91,7 @@ syscall_setpixel:
 
 align 4
 ; system function 4
-syscall_writetext: 
+syscall_writetext:
 
         push    esi    ;check pointer on kernel address.
         test    ecx, 0x80000000
@@ -132,7 +131,7 @@ align 4
 
 align 4
 ; system function 13
-syscall_drawrect: 
+syscall_drawrect:
         mov     edi, edx ; color + gradient
         and     edi, 0x80FFFFFF
         test    bx, bx  ; x.size
@@ -184,8 +183,8 @@ syscall_drawline:
 
 
 align 4
-; system function 48 
-syscall_display_settings: 
+; system function 48
+syscall_display_settings:
         cmp     ebx, .ftable.size-1
         ja      .ret
         jmp     dword[.ftable + ebx*4]
@@ -406,7 +405,7 @@ align 4
 ;; Set window shape scale:
 ;> ebx = 1
 ;> ecx = scale power (resulting scale is 2^ebx)
-syscall_set_window_shape: 
+syscall_set_window_shape:
         mov     edi, [current_slot]
         mov     edi, [edi + APPDATA.window]
 
@@ -426,8 +425,8 @@ align 4
 ;------------------------------------------------------------------------------
 
 align 4
-;     system function 67 
-syscall_move_window: 
+;     system function 67
+syscall_move_window:
         mov     edi, [current_slot]
         mov     edi, [edi + APPDATA.window]
 
@@ -482,7 +481,7 @@ align 4
 ;------------------------------------------------------------------------------
 
 ; system function 71
-syscall_window_settings: 
+syscall_window_settings:
         mov     edi, [current_slot]
         mov     edi, [edi + APPDATA.window]
         or      [edi + WDATA.fl_wstyle], WSTYLE_HASCAPTION
@@ -2322,7 +2321,7 @@ align 4
         inc     edx
 @@:
         shl     eax, 28
-        or      ecx, eax        
+        or      ecx, eax
         xor     edi, edi
         stc
         call    dtext._

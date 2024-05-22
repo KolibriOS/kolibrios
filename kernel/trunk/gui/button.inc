@@ -1,12 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 button.MAX_BUTTONS = 4095
 
@@ -71,7 +70,7 @@ syscall_button:
 ;>          6 (30) = don't draw button
 ;>          5 (29) = don't draw button frame when pressed
 ;> esi = button color
-; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;; Undefine button:
 ;> edx = pack[8(flags), 24(button identifier)]
 ;>       flags bits:

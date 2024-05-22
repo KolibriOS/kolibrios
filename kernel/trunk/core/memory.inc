@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 align 4
@@ -597,7 +595,7 @@ proc page_fault_handler
         mov     eax, [page_tabs + ebx*4]
         test    eax, 2
         jz      .fail             ;address is not reserved for usage. Error
-                                  
+
 .alloc:
         call    alloc_page
         test    eax, eax
@@ -656,10 +654,10 @@ proc page_fault_handler
 
         test    eax, 12 ;U/S (+below)
         jnz     .fail   ;application requested kernel memory
-                        
+
        ;test    eax, 8
        ;jnz     .fail   ;the reserved bit is set in page tables. Added in P4/Xeon
-                        
+
 
 ;an attempt to write to a protected kernel page
 
