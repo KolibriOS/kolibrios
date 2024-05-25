@@ -1073,7 +1073,7 @@ include '../detect/biosmem.inc'
 
 ; TODO: !!!! read only first sector and set variables !!!!!
 ; ...
-; TODO: !!! then read flippy image track by track
+; TODO: !!! then read floppy image track by track
 
         mov     cx, 0x0001      ; startcyl,startsector
 .a1:
@@ -1425,22 +1425,22 @@ setgr:
         mov     al, 0x05
         mov     dx, 0x03ce
         push    dx
-        out     dx, al      ; select GDC mode register
+        out     dx, al          ; select GDC mode register
         mov     al, 0x02
         inc     dx
-        out     dx, al      ; set write mode 2
+        out     dx, al          ; set write mode 2
 
         mov     al, 0x02
         mov     dx, 0x03c4
-        out     dx, al      ; select VGA sequencer map mask register
+        out     dx, al          ; select VGA sequencer map mask register
         mov     al, 0x0f
         inc     dx
-        out     dx, al      ; set mask for all planes 0-3
+        out     dx, al          ; set mask for all planes 0-3
 
         mov     al, 0x08
         pop     dx
-        out     dx, al      ; select GDC bit mask register
-                           ; for writes to 0x03cf
+        out     dx, al          ; select GDC bit mask register
+                                ; for writes to 0x03cf
 gmok2:
         push    ds
         pop     es
