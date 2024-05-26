@@ -83,6 +83,14 @@ struct  DISKFUNC
 ; Optional, may be NULL.
 ; unsigned int adjust_cache_size(void* userdata, unsigned int suggested_size);
 ; Return value: 0 = disable cache, otherwise = used cache size in bytes.
+        LoadTray        dd ?
+; This pointer to the function which load and unload tray drive.
+; Optional, may be NULL
+; int LoadTray(void* userdata, int flags);
+; flags:
+; 0 - load
+; 1 - unload
+; Return value: one of DISK_STATUS_*
 ends
 
 ; This structure holds information on a medium.
@@ -95,6 +103,8 @@ struct  DISKMEDIAINFO
 ; Size of the sector.
         Capacity        dq ?
 ; Size of the media in sectors.
+        LastSessionSector       dd ?
+; Number last session sectors for CDFS
 ends
 
 ; This structure represents the disk cache. To follow the old implementation,
@@ -599,6 +609,7 @@ disk_media_changed:
 ; 3a. Call the 'querymedia' callback.
 ; .Flags are set to zero for possible future extensions.
         lea     edx, [esi+DISK.MediaInfo]
+        and     [edx+DISKMEDIAINFO.LastSessionSector], 0
         and     [edx+DISKMEDIAINFO.Flags], 0
         mov     al, DISKFUNC.querymedia
         stdcall disk_call_driver, edx
@@ -1282,6 +1293,9 @@ end virtual
         call    xfs_create_partition
         test    eax, eax
         jnz     .success
+        call    iso9660_create_partition
+        test    eax, eax
+        jnz     .success
 ; 3. No file system has recognized the volume, so just allocate the PARTITION
 ; structure without extra fields.
         movi    eax, sizeof.PARTITION
@@ -1490,6 +1504,7 @@ dyndisk_handler:
 @@:
         cmp     byte [esi], 0
         jnz     @f
+        ;  partition  info
         cmp     byte [ebx], 1
         jz      @f
         cmp     byte [ebx], 5
@@ -1502,21 +1517,25 @@ dyndisk_handler:
 ; was inserted/removed/changed. Otherwise, assume that media status is valid.
         test    byte [edx+DISK.DriverFlags], DISK_NO_INSERT_NOTIFICATION
         jz      .media_accurate
+
         push    ecx esi
         mov     esi, edx
         cmp     dword [esp+8], 0
         jz      .test_no_media
         cmp     [esi+DISK.MediaRefCount], 2
         jnz     .media_accurate_pop
+
         lea     edx, [esi+DISK.MediaInfo]
         and     [edx+DISKMEDIAINFO.Flags], 0
         mov     al, DISKFUNC.querymedia
         stdcall disk_call_driver, edx
         test    eax, eax
         jz      .media_accurate_pop
+
         stdcall disk_media_dereference  ; drop our reference so that disk_media_changed could close the media
         stdcall disk_media_changed, esi, 0
         and     dword [esp+8], 0        ; no media
+        ;jmp     .media_accurate_pop
 .test_no_media:
         stdcall disk_media_changed, esi, 1      ; issue fake notification
 ; if querymedia() inside disk_media_changed returns error, the notification is ignored
@@ -1524,9 +1543,11 @@ dyndisk_handler:
         jz      .media_accurate_pop
         lock inc [esi+DISK.MediaRefCount]
         mov     dword [esp+8], esi
+
 .media_accurate_pop:
         mov     edx, esi
         pop     esi ecx
+
 .media_accurate:
         pop     eax
         test    eax, eax
@@ -1688,3 +1709,59 @@ dyndisk_enum_root:
         xor     eax, eax
         pop     edx             ; restore register used in file_system_lfn
         ret
+
+; void fastcall eject_disk_media(const char* str, uint32_t code);
+; for load/eject drive
+; ecx -> asciiz string disk name (sd0, usbhd0)
+; edx = code command(0 - LoadTray 1-EjectTray)
+eject_disk_media:
+        push    esi edx ecx
+
+        mov     ecx, disk_list_mutex
+        call    mutex_lock
+        ; find disk ejected
+        mov     edx, disk_list
+.next:
+        mov     edx, [edx]
+        cmp     edx, disk_list
+        jz      .nf
+
+        mov     ecx, [edx + DISK.Name]
+        mov     esi, [esp]
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+
+        or      al, 0x20
+        cmp     al, [ecx]
+        jnz     .next
+        inc     ecx
+        jmp     @b
+@@:
+        cmp     byte[ecx], al
+        jnz     .next
+
+        mov     ecx, disk_list_mutex
+        call    mutex_unlock
+; found disk
+        pop     ecx edx esi
+
+        and     edx, 1b
+        mov     al, DISKFUNC.LoadTray
+        stdcall disk_call_driver, edx   ; ecx - code command
+        ret
+
+.nf:
+        mov     ecx, disk_list_mutex
+        call    mutex_unlock
+        pop     ecx edx esi
+        ret
+
+; for disk emulation PARTITION structure
+; int32_t find_part(char* esi) esi -> name disk and partition
+; return number partition or zero for disk and
+;find_part:
+;        mov     ecx, disk_list_mutex
+;
+;        ret
