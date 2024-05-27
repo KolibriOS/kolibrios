@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  DEC 21x4x driver for KolibriOS                                 ;;
@@ -95,7 +95,7 @@ CSR0_CACHEALIGN_128     = 11b shl 14
 CSR0_DEFAULT            = CSR0_WIE + CSR0_RLE + CSR0_RML + CSR0_CACHEALIGN_NONE
 
 ;------- CSR5 -STATUS- bits --------------------------------
-CSR5_TI                 = 0x00000001    ;1 shl 0        ; Transmit interupt - frame transmition completed
+CSR5_TI                 = 0x00000001    ;1 shl 0        ; Transmit interupt - frame transmission completed
 CSR5_TPS                = 0x00000002    ;1 shl 1        ; Transmit process stopped
 CSR5_TU                 = 0x00000004    ;1 shl 2        ; Transmit Buffer unavailable
 CSR5_TJT                = 0x00000008    ;1 shl 3        ; Transmit Jabber Timeout (transmitter had been excessively active)
@@ -182,7 +182,7 @@ DES0_OWN                = 1 shl 31              ; if set, the NIC controls the d
 RDES0_ZER               = 1 shl 0               ; must be 0 if legal length :D
 RDES0_CE                = 1 shl 1               ; CRC error, valid only on last desc (RDES0<8>=1)
 RDES0_DB                = 1 shl 2               ; dribbling bit - not multiple of 8 bits, valid only on last desc (RDES0<8>=1)
-RDES0_RE                = 1 shl 3               ; Report on MII error.. i dont realy know what this means :P
+RDES0_RE                = 1 shl 3               ; Report on MII error.. I don't realy know what this means :P
 RDES0_RW                = 1 shl 4               ; received watchdog timer expiration - must set CSR5<9>, valid only on last desc (RDES0<8>=1)
 RDES0_FT                = 1 shl 5               ; frame type: 0->IEEE802.0 (len<1500) 1-> ETHERNET frame (len>1500), valid only on last desc (RDES0<8>=1)
 RDES0_CS                = 1 shl 6               ; Collision seen, valid only on last desc (RDES0<8>=1)
@@ -194,7 +194,7 @@ RDES0_RF                = 1 shl 11              ; Runt frame, valid only on last
 RDES0_DT_SERIAL         = 00b shl 12            ; Data type-Serial recv frame, valid only on last desc (RDES0<8>=1)
 RDES0_DT_INTERNAL       = 01b shl 12            ; Data type-Internal loopback recv frame, valid only on last desc (RDES0<8>=1)
 RDES0_DT_EXTERNAL       = 11b shl 12            ; Data type-External loopback recv frame, valid only on last desc (RDES0<8>=1)
-RDES0_DE                = 1 shl 14              ; Descriptor error - cant own a new desc and frame doesnt fit, valid only on last desc (RDES0<8>=1)
+RDES0_DE                = 1 shl 14              ; Descriptor error - can't own a new desc and frame doesn't fit, valid only on last desc (RDES0<8>=1)
 RDES0_ES                = 1 shl 15              ; Error Summmary - bits 1+6+11+14, valid only on last desc (RDES0<8>=1)
 RDES0_FL_SH             = 16                    ; Field length shift, valid only on last desc (RDES0<8>=1)
 RDES0_FL_MASK           = 11111111111111b       ; Field length mask (+CRC), valid only on last desc (RDES0<8>=1)
@@ -206,11 +206,11 @@ RDES1_RBS2_MASK         = 11111111111b          ; second buffer size MASK
 RDES1_RCH               = 1 shl 24              ; Second address chained - second address (buffer) is next desc address
 RDES1_RER               = 1 shl 25              ; Receive End of Ring - final descriptor, NIC must return to first desc
 
-;transmition
+;transmission
 TDES0_DE                = 1 shl 0               ; Deffered
 TDES0_UF                = 1 shl 1               ; Underflow error
 TDES0_LF                = 1 shl 2               ; Link fail report (only if CSR6<23>=1)
-TDES0_CC_SH             = 3                     ; Collision Count shift - no of collision before transmition
+TDES0_CC_SH             = 3                     ; Collision Count shift - no of collision before transmission
 TDES0_CC_MASK           = 1111b                 ; Collision Count mask
 TDES0_HF                = 1 shl 7               ; Heartbeat fail
 TDES0_EC                = 1 shl 8               ; Excessive Collisions - >16 collisions
@@ -381,7 +381,7 @@ proc service_proc stdcall, ioctl:dword
 
         mov     eax, [edx + IOCTL.input]
         cmp     byte [eax], 1                                           ; 1 means device number and bus number (pci) are given
-        jne     .fail                                                   ; other types arent supported for this card yet
+        jne     .fail                                                   ; other types aren't supported for this card yet
 
 ; check if the device is already listed
 
@@ -390,20 +390,20 @@ proc service_proc stdcall, ioctl:dword
         test    ecx, ecx
         jz      .firstdevice
 
-;        mov     eax, [edx + IOCTL.input]                                ; get the pci bus and device numbers
+;        mov     eax, [edx + IOCTL.input]                               ; get the pci bus and device numbers
         mov     ax, [eax+1]                                             ;
   .nextdevice:
         mov     ebx, [esi]
         cmp     al, byte[ebx + device.pci_bus]
         jne     @f
         cmp     ah, byte[ebx + device.pci_dev]
-        je      .find_devicenum                                         ; Device is already loaded, let's find it's device number
+        je      .find_devicenum                                         ; Device is already loaded, let's find its device number
        @@:
         add     esi, 4
         loop    .nextdevice
 
 
-; This device doesnt have its own eth_device structure yet, lets create one
+; This device doesn't have its own eth_device structure yet, let's create one
   .firstdevice:
         cmp     [devices], MAX_DEVICES                                  ; First check if the driver can handle one more card
         jae     .fail
@@ -1350,7 +1350,7 @@ write_mac:      ; in: mac pushed onto stack (as 3 words)
         movsd
         movsw
         add     esp, 6
-        
+
 ;; send setup packet (only if driver is started)
 ;;        call    Create_Setup_Packet
 
@@ -1399,12 +1399,12 @@ SROM_GetWidth:  ; should be 6 or 8 according to some manuals (returns in ecx)
         in      eax, dx
         and     eax, not (CSR9_SROM_DI)
         call    SROM_out
-        
+
         mov     ecx,1
   .loop2:
         Bit_Set CSR9_SROM_CK
         SROM_Delay
-        
+
         in      eax, dx
         and     eax, CSR9_SROM_DO
         jnz     .not_zero
@@ -1413,21 +1413,21 @@ SROM_GetWidth:  ; should be 6 or 8 according to some manuals (returns in ecx)
         SROM_Delay
         jmp     .end_loop2
   .not_zero:
-        
+
         Bit_Clear CSR9_SROM_CK
         SROM_Delay
-        
+
         inc     ecx
         cmp     ecx, 12
         jbe     .loop2
   .end_loop2:
-        
+
         DEBUGF  1,"SROM width=%u\n", ecx
-        
+
         call    SROM_Idle
         call    SROM_EnterAccessMode
         call    SROM_Idle
-        
+
         ret
 
 
@@ -1464,7 +1464,7 @@ SROM_EnterAccessMode:
 
         Bit_Set CSR9_SROM_CS
         SROM_Delay
-        
+
         ret
 
 
@@ -1475,10 +1475,10 @@ SROM_Idle:
 ;        DEBUGF 1,"SROM_Idle\n"
 
         call    SROM_EnterAccessMode
-        
+
 ;        set_io  [ebx + device.io_addr], 0
 ;        set_io  [ebx + device.io_addr], CSR9
-        
+
         mov     ecx, 25
      .loop_clk:
 
@@ -1486,19 +1486,19 @@ SROM_Idle:
         SROM_Delay
         Bit_Set CSR9_SROM_CK
         SROM_Delay
-        
+
         dec     ecx
         jnz     .loop_clk
 
-        
+
         Bit_Clear CSR9_SROM_CK
         SROM_Delay
         Bit_Clear CSR9_SROM_CS
         SROM_Delay
-        
+
         xor     eax, eax
         out     dx, eax
-        
+
         ret
 
 
@@ -1525,11 +1525,11 @@ SROM_Read_Word:
         out     dx , eax
 
         ; TODO: change this hard-coded 6-bit stuff to use value from srom_getwidth
-        
+
 ; send read command "110b" + address to read from
         and     esi, 111111b
         or      esi, 110b shl 6
-        
+
         mov     ecx, 1 shl 9
   .loop_cmd:
         mov     eax, CSR9_SR + CSR9_RD + CSR9_SROM_CS
@@ -1542,7 +1542,7 @@ SROM_Read_Word:
         or      eax, CSR9_SROM_CK
         out     dx , eax
         SROM_Delay
-        
+
         shr     ecx, 1
         jnz     .loop_cmd
 
@@ -1551,24 +1551,24 @@ SROM_Read_Word:
         xor     esi, esi
         mov     ecx, 17 ;;; TODO: figure out why 17, not 16
   .loop_read:
-        
+
         mov     eax, CSR9_SR + CSR9_RD + CSR9_SROM_CS + CSR9_SROM_CK
         out     dx , eax
         SROM_Delay
-        
+
         in      eax, dx
         and     eax, CSR9_SROM_DO
         shr     eax, 3
         shl     esi, 1
         or      esi, eax
-        
+
         mov     eax, CSR9_SR + CSR9_RD + CSR9_SROM_CS
         out     dx , eax
         SROM_Delay
-        
+
         dec     ecx
         jnz     .loop_read
-        
+
         mov     eax, esi
 
 ;        DEBUGF 1,"%x\n", ax
