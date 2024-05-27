@@ -74,7 +74,7 @@ img_files = {
 }
 
 -- For russian build, add russian-only files.
-if build_type == "rus" then tup.append_table(img_files, {
+if build_type == "ru_RU" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/trunk/rus/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy_ru"},
  {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
@@ -84,7 +84,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/GAMES.INI", "rus/settings/games.ini"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/trunk/mykey.ini"},
  {"SETTINGS/SYSPANEL.INI", "rus/settings/syspanel.ini"},
-}) elseif build_type == "eng" then tup.append_table(img_files, {
+}) elseif build_type == "en_US" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
@@ -93,7 +93,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/trunk/mykey.ini"},
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
-}) elseif build_type == "sp" then tup.append_table(img_files, {
+}) elseif build_type == "es_ES" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
@@ -102,7 +102,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/trunk/mykey.ini"},
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
-}) elseif build_type == "it" then tup.append_table(img_files, {
+}) elseif build_type == "it_IT" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
@@ -310,7 +310,7 @@ extra_files = {
  {"kolibrios/utils/tedit/info/HTML.SYN", VAR_PROGS .. "/other/t_edit/info/html.syn"},
  {"kolibrios/utils/tedit/info/INI.SYN", VAR_PROGS .. "/other/t_edit/info/ini_files.syn"},
  }
-if build_type == "rus" then tup.append_table(extra_files, {
+if build_type == "ru_RU" then tup.append_table(extra_files, {
  {"Docs/cp866/config.txt", build_type .. "/docs/CONFIG.TXT"},
  {"Docs/cp866/gnu.txt", build_type .. "/docs/GNU.TXT"},
  {"Docs/cp866/history.txt", build_type .. "/docs/HISTORY.TXT"},
@@ -360,7 +360,7 @@ if build_type == "rus" then tup.append_table(extra_files, {
 Files to be included in distribution kit outside of kolibri.img, but not kolibri.iso.
 Same syntax as extra_files.
 ]]--
-if build_type == "rus" then
+if build_type == "ru_RU" then
 distr_extra_files = {
  {"/readme_dos.txt", build_type .. "/distr_data/readme_dos_distr.txt"},
  {"/readme.txt", build_type .. "/distr_data/readme_distr.txt", cp1251_from = build_type .. "/distr_data/readme_dos_distr.txt"},
@@ -374,7 +374,7 @@ end
 Files to be included in kolibri.iso outside of kolibri.img, but not distribution kit.
 Same syntax as extra_files.
 ]]--
-if build_type == "rus" then
+if build_type == "ru_RU" then
 iso_extra_files = {
  {"/readme_dos.txt", build_type .. "/distr_data/readme_dos.txt"},
  {"/readme.txt", "$(VAR_DATA)/$(build_type)/distr_data/readme.txt", cp1251_from = build_type .. "/distr_data/readme_dos.txt"},
@@ -615,7 +615,7 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/tedit/t_edit", VAR_PROGS .. "/other/t_edit/t_edit"},
 })
 -- For russian build, add russian-only programs.
-if build_type == "rus" then tup.append_table(img_files, {
+if build_type == "ru_RU" then tup.append_table(img_files, {
  {"PERIOD", VAR_PROGS .. "/other/period/trunk/period"},
  {"GAMES/KLAVISHA", VAR_PROGS .. "/games/klavisha/trunk/klavisha"},
  {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
@@ -623,7 +623,7 @@ if build_type == "rus" then tup.append_table(img_files, {
  {"DEVELOP/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
 }) end
 
-if build_type == "rus" then tup.append_table(extra_files, {
+if build_type == "ru_RU" then tup.append_table(extra_files, {
  {"kolibrios/games/Dungeons/Dungeons", VAR_PROGS .. "/games/Dungeons/Dungeons"},
 }) end
 
@@ -793,7 +793,7 @@ if tup.getconfig('NO_NASM') ~= 'full' then
   })
 end
 -- For russian build, add russian-only programs.
-if build_type == "rus" then tup.append_table(extra_files, {
+if build_type == "ru_RU" then tup.append_table(extra_files, {
  {"kolibrios/games/21days", VAR_PROGS .. "/games/21days/21days"},
 }) end
 end -- tup.getconfig('NO_GCC') ~= 'full'
@@ -877,16 +877,15 @@ for i,v in ipairs(img_files) do
   local_file = v[2]
   if v[1] == "KERNEL.MNT"
   then
-    -- for kernel.mnt, insert autobuild revision identifier
-    -- from .revision to .kernel.mnt
-    -- note that .revision and .kernel.mnt must begin with .
-    -- to prevent tup from tracking them
+    -- for kernel.mnt, insert autobuild commit id to .kernel.mnt
+    -- note that .kernel.mnt must begin with a dot to prevent
+    -- tup from tracking it
     cmd = "cp %f %o"
-    if tup.getconfig("INSERT_REVISION_ID") ~= ""
+    if tup.getconfig("INSERT_COMMIT_ID") ~= ""
     then
-      if build_type == "rus"
-      then str='$(LANG=ru_RU.utf8 date -u +"[автосборка %d %b %Y %R, r$(get-current-revision)]"|iconv -f utf8 -t cp866)'
-      else str='$(date -u +"[auto-build %d %b %Y %R, r$(get-current-revision)]")'
+      if build_type == "ru_RU"
+      then str='$(LANG=ru_RU.utf8 date -u +"[автосборка %d %b %Y %R, r$(get-current-cmtid)]"|iconv -f utf8 -t cp866)'
+      else str='$(date -u +"[auto-build %d %b %Y %R, r$(get-current-cmtid)]")'
       end
       str = string.gsub(str, "%$", "\\$") -- escape $ as \$
       str = string.gsub(str, "%%", "%%%%") -- escape % as %%
@@ -912,8 +911,8 @@ for i,v in ipairs(iso_extra_files) do
 end
 
 -- generate tup rule for kolibri.iso
-if tup.getconfig("INSERT_REVISION_ID") ~= ""
-then volume_id = "KolibriOS r`get-current-revision`"
+if tup.getconfig("INSERT_COMMIT_ID") ~= ""
+then volume_id = "KolibriOS r`get-current-cmtid`"
 else volume_id = "KolibriOS"
 end
 tup.definerule{inputs = input_deps, command =
