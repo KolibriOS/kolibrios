@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  3Com network driver for KolibriOS                           ;;
@@ -94,7 +94,7 @@ entry START
 
         MAX_DEVICES             = 16    ; Maximum number of devices this driver may handle
 
-        FORCE_FD                = 0     ; forcing full duplex mode makes sense at some cards and link types
+        FORCE_FD                = 0     ; Forcing full duplex mode makes sense for some cards and link types
 
         NUM_RX_DESC             = 32    ; Number of receive descriptors (must be power of 2)
         NUM_TX_DESC             = 16    ; Number of transmit descriptors (must be power of 2)
@@ -175,7 +175,7 @@ end if
         REG_PHYSICAL_MGMT       = 0x8
         REG_NETWORK_DIAGNOSTIC  = 0x6
         REG_FIFO_DIAGNOSTIC     = 0x4
-        REG_VCO_DIAGNOSTIC      = 0x2   ; may not supported
+        REG_VCO_DIAGNOSTIC      = 0x2   ; may not be supported
 
 ; Bits in register window 4
         BIT_AUTOSELECT          = 24
@@ -346,7 +346,7 @@ struct  device                  ETH_DEVICE
         has_hwcksm              db ?
         preamble                db ?
         dn_list_ptr_cleared     db ?
-        internal_link           dd ?    ; link state (to be used only internally by driver)
+        internal_link           dd ?    ; link state (only used internally by the driver)
 
         rb 0x100 - ($ and 0xff) ; align 256
         tx_desc_buffer          rd (sizeof.tx_desc*NUM_TX_DESC)/4
@@ -414,7 +414,7 @@ proc service_proc stdcall, ioctl:dword
 
         mov     eax, [edx + IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
-        jne     .fail                                   ; other types of this hardware dont exist
+        jne     .fail                                   ; other types of this hardware don't exist
 
 ; check if the device is already listed
 
@@ -435,7 +435,7 @@ proc service_proc stdcall, ioctl:dword
         add     esi, 4
         loop    .nextdevice
 
-; This device doesnt have its own eth_device structure yet, lets create one
+; This device doesn't have its own eth_device structure yet, lets create one
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
         jae     .fail
@@ -1181,7 +1181,7 @@ try_phy:
         mov     eax, [esp]
 
         mov     al, MII_BMSR
-        call    mdio_read ; returns with window #4
+        call    mdio_read       ; returns with window #4
         test    al, BMSR_ANEGCOMPLETE
         jnz     .auto_neg_ok
 
@@ -2734,7 +2734,7 @@ int_boomerang:
         mov     ax, ((11b shl 12)+1) ; upUnStall
         out     dx, ax
 
-        ;;;; FIXME: make upunstall work
+        ;;;; FIXME: make upUnStall work
 
   .noUpUnStall:
   .noRX:
@@ -2905,7 +2905,7 @@ dw 0x9056, IS_CYCLONE or HAS_NWAY or HAS_HWCKSM or EXTRA_PREAMBLE               
 dw 0x9210, IS_TORNADO or HAS_NWAY or HAS_HWCKSM                                                                                 ; 3c920B-EMB-WNM Tornado
 HW_VERSIONS_SIZE = $ - hw_versions
 
-include_debug_strings                           ; All data wich FDO uses will be included here
+include_debug_strings                           ; All data which FDO uses will be included here
 
 align 4
 devices         dd 0
