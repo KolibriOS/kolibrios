@@ -219,31 +219,34 @@ shared_locked_list:
 ; } mike.dld
 
 
-align 4
-keyboard   dd 1
-
-if lang eq en
+if lang eq en_US
   SYSLANG = 1
-else if lang eq fi
+else if lang eq fi_FI
   SYSLANG = 2
-else if lang eq de
+else if lang eq de_DE
   SYSLANG = 3
-else if lang eq ru
+else if lang eq ru_RU
   SYSLANG = 4
-else if lang eq fr
+else if lang eq fr_FR
   SYSLANG = 5
-else if lang eq et
+else if lang eq et_EE
   SYSLANG = 6
-else if lang eq sp
+else if lang eq uk_UA
   SYSLANG = 7
-else if lang eq it
+else if lang eq it_IT
   SYSLANG = 8
-else if lang eq ca
+else if lang eq nl_BE
   SYSLANG = 9
+else if lang eq es_ES
+  SYSLANG = 10
+else if lang eq ca_ES
+  SYSLANG = 11
 else
   display 'unsupported language specified',13,10
 end if
+align 4
 syslang    dd SYSLANG
+keyboard   dd SYSLANG
 
 boot_y     dd 10
 

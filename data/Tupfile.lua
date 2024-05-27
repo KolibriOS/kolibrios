@@ -81,9 +81,9 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
  {"GAMES/DESCENT", build_type .. "/games/descent"},
  {"SETTINGS/.shell", SRC_PROGS .. "/system/shell/bin/rus/.shell"},
- {"SETTINGS/GAMES.INI", "rus/settings/games.ini"},
+ {"SETTINGS/GAMES.INI", "ru_RU/settings/games.ini"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/trunk/mykey.ini"},
- {"SETTINGS/SYSPANEL.INI", "rus/settings/syspanel.ini"},
+ {"SETTINGS/SYSPANEL.INI", "ru_RU/settings/syspanel.ini"},
 }) elseif build_type == "en_US" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},

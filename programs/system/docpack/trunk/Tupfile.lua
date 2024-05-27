@@ -3,13 +3,13 @@ HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../.." or tup.getconfig("
 tup.include(HELPERDIR .. "/use_fasm.lua")
 add_include(tup.getvariantdir())
 
-deps = tup.rule("echo lang fix " .. ((tup.getconfig("LANG") == "") and "en" or tup.getconfig("LANG")) .. " > %o", {"lang.inc"})
+deps = tup.rule("echo lang fix " .. ((tup.getconfig("LANG") == "") and "en_US" or tup.getconfig("LANG")) .. " > %o", {"lang.inc"})
 DOCDIR = "../../../../data/" .. tup.getconfig("BUILD_TYPE") .. "/docs/"
 if tup.getconfig("TUP_PLATFORM") == "win32"
 then env_prefix = "set DOCDIR=$(DOCDIR)&&"; cp_cmd = "copy %f %o"
 else env_prefix = "DOCDIR=$(DOCDIR) "; cp_cmd = "cp %f %o"
 end
-if tup.getconfig("LANG") == "ru"
+if tup.getconfig("LANG") == "ru_RU"
 then tup.append_table(deps,
   tup.rule("../../../../kernel/trunk/docs/sysfuncr.txt", "iconv -f utf-8 -t cp866 %f > %o", "SYSFUNCR.TXT"))
 else tup.append_table(deps,
