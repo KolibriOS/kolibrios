@@ -205,7 +205,7 @@ endl
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: socket ptr=%x state=%u flags=%x\n", ebx, [ebx + TCP_SOCKET.t_state], [edx + TCP_header.Flags]:2
 
 ;----------------------------
-; Check if socket isnt closed
+; Check if socket is not closed
 
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_CLOSED
         je      .drop_no_socket
@@ -232,7 +232,7 @@ endl
         push    ecx
         mov     cl, [ebx + TCP_SOCKET.SND_SCALE]
         shl     eax, cl
-        mov     dword[edx + TCP_header.Window], eax     ; word after window is checksum, we dont need checksum anymore
+        mov     dword[edx + TCP_header.Window], eax     ; word after window is checksum, we don't need checksum anymore
         pop     ecx
 
 ;-----------------------------------------------------------------------------------
@@ -397,7 +397,7 @@ endl
         mov     [ebx + TCP_SOCKET.ts_ecr], eax
         or      [temp_bits], TCP_BIT_TIMESTAMP
 
-        ; Since we have a timestamp, lets do the paws test right away!
+        ; Since we have a timestamp, let's do the paws test right away!
 
         test    [edx + TCP_header.Flags], TH_RST
         jnz     .no_paws
@@ -1270,7 +1270,7 @@ endl
         jz      .ack_processed
 
 ; If we can't receive any more data, then closing user can proceed.
-; Starting the timer is contrary to the specification, but if we dont get a FIN,
+; Starting the timer is contrary to the specification, but if we don't get a FIN,
 ; we'll hang forever.
 
         test    [ebx + SOCKET.state], SS_CANTRCVMORE
@@ -1514,7 +1514,7 @@ endl
 
         inc     [edx + TCP_header.SequenceNumber]
 
-; Drop any received data that doesnt fit in the receive window.
+; Drop any received data that doesn't fit in the receive window.
 
         cmp     ecx, [ebx + TCP_SOCKET.RCV_WND]
         jbe     .dont_trim
@@ -1542,7 +1542,7 @@ endl
   .ack_processed:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: ACK processed\n"
 
-; dont look at window if no ACK
+; don't look at window if no ACK
 
         test    [edx + TCP_header.Flags], TH_ACK
         jz      .no_window_update
@@ -1668,7 +1668,7 @@ endl
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
         jne     .out_of_order
 
-; Ok, lets do this..  Set delayed ACK flag and copy data into socket buffer
+; Ok, let's do this..  Set delayed ACK flag and copy data into socket buffer
 
         or      [ebx + TCP_SOCKET.t_flags], TF_DELACK
 
@@ -1691,7 +1691,7 @@ endl
         DEBUGF  DEBUG_NETWORK_VERBOSE,  "TCP data is out of order!\nSequencenumber is %u, we expected %u.\n", \
         [edx + TCP_header.SequenceNumber], [ebx + TCP_SOCKET.RCV_NXT]
 
-; Uh-oh, some data is out of order, lets call TCP reassemble for help
+; Uh-oh, some data is out of order, let's call TCP reassemble for help
 
         call    tcp_reassemble          ;;; TODO!
 
@@ -1835,7 +1835,7 @@ endl
         test    [edx + TCP_header.Flags], TH_RST
         jnz     .done
 
-; TODO: if its a multicast/broadcast, also drop
+; TODO: if it's a multicast/broadcast, also drop
 
         test    [edx + TCP_header.Flags], TH_ACK
         jnz     .respond_ack
@@ -1871,7 +1871,7 @@ endl
         test    [edx + TCP_header.Flags], TH_RST
         jnz     .drop_no_socket
 
-; TODO: if its a multicast/broadcast, also drop
+; TODO: if it's a multicast/broadcast, also drop
 
         test    [edx + TCP_header.Flags], TH_ACK
         jnz     .respond_seg_ack

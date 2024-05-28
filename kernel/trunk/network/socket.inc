@@ -745,7 +745,7 @@ socket_close:
 
         mov     dword[esp + SYSCALL_STACK.eax], 0               ; The socket exists, so we will succeed in closing it.
 
-        or      [eax + SOCKET.options], SO_NONBLOCK             ; Mark the socket as non blocking, we dont want it to block any longer!
+        or      [eax + SOCKET.options], SO_NONBLOCK             ; Mark the socket as non blocking, we don't want it to block any longer!
 
         test    [eax + SOCKET.state], SS_BLOCKED                ; Is the socket still in blocked state?
         jz      @f
@@ -1055,7 +1055,7 @@ socket_send_tcp:
         mov     [esp + SYSCALL_STACK.eax], ecx
         mov     [eax + SOCKET.errorcode], 0
         push    eax
-        call    tcp_output              ; FIXME: this doesnt look pretty, does it?
+        call    tcp_output              ; FIXME: this doesn't look pretty, does it?
         pop     eax
         mov     eax, [eax + SOCKET.errorcode]
         mov     [esp + SYSCALL_STACK.ebx], eax
@@ -1834,7 +1834,7 @@ socket_ring_free:
 
         ret
 
-  .error:       ; we could free all available bytes, but that would be stupid, i guess..
+  .error:       ; we could free all available bytes, but that would be stupid, I guess..
         DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_ring_free: buffer=%x error!\n", eax
         add     [eax + RING_BUFFER.size], ecx
 

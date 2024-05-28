@@ -408,7 +408,7 @@ endl
 ; esi = data len
 
 ;---------------------------------------------
-; check if we dont exceed the max segment size
+; check if we don't exceed the max segment size
 
         add     esi, edi                        ; total TCP segment size
         cmp     esi, [eax + TCP_SOCKET.t_maxseg]
@@ -464,7 +464,7 @@ endl
   .eos:
 
 ;---------------------------------------------------
-; Dont increase sequence number when resending a FIN
+; Don't increase sequence number when resending a FIN
 
         test    dl, TH_FIN
         jz      .no_fin_retransmit
@@ -482,7 +482,7 @@ endl
 
 ;----------------------------------------------------
 ; Calculate the receive window.
-; Dont shrink window, but avoid silly window syndrome
+; Don't shrink window, but avoid silly window syndrome
 
         xor     ebx, ebx
         test    [eax + SOCKET.state], SS_CANTRCVMORE

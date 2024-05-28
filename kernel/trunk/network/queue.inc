@@ -16,8 +16,8 @@
 ; The Queues implemented by these macros form a ring-buffer.
 ; The data to these queue's always looks like this:
 ;
-; At top, you have the queue struct, wich has the size (number of currently queued packets, read and write pointers.
-; This struct is followed by a number of slots wich you can read and write to using the macros.
+; At top, you have the queue struct, which has the size number of currently queued packets, read and write pointers.
+; This struct is followed by a number of slots which you can read and write to using the macros.
 ; How these slots look like is up to you to chose, normally they should have at least a pointer to where the real data is.
 ; (you can see some examples below)
 
@@ -37,8 +37,8 @@ ends
 ; entry_size    = size of one slot, in bytes
 ; failaddr      = the address where macro will jump to when there is no data in the queue
 
-; additionally, add_to_queue requires you to set esi to the data wich you want to queue
-; get_from_queue on the other hand will return a pointer in esi, to the entry you're interessed in
+; additionally, add_to_queue requires you to set esi to the data which you want to queue
+; get_from_queue on the other hand will return a pointer in esi, to the entry you're interested in
 ; PS: macros WILL destroy ecx and edi
 
 macro add_to_queue ptr, size, entry_size, failaddr {
@@ -47,7 +47,7 @@ local .ok, .no_wrap
 
         spin_lock_irqsave
 
-        cmp     [ptr + queue.size], size        ; Check if queue isnt full
+        cmp     [ptr + queue.size], size        ; Check if queue isn't full
         jb      .ok
 
         spin_unlock_irqrestore

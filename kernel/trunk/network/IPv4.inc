@@ -203,7 +203,7 @@ macro ipv4_checksum ptr {
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; ipv4_input: Check if IPv4 Packet isnt damaged and call          ;
+; ipv4_input: Check the IPv4 Packet is not damaged and call       ;
 ; appropriate handler. (TCP/UDP/ICMP/..)                          ;
 ; We will also re-construct fragmented packets.                   ;
 ;                                                                 ;
@@ -258,7 +258,7 @@ ipv4_input:
         cmp     eax, 224
         je      .ip_ok
 
-; maybe we just dont have an IP yet and should accept everything on the IP level
+; maybe we just don't have an IP yet and should accept everything on the IP level
         cmp     [IPv4_address + edi], 0
         je      .ip_ok
 
@@ -393,7 +393,7 @@ ipv4_input:
         or      edi, -1
   .find_last_entry:                                             ; The following routine will try to find the last entry
         cmp     edi, [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.PrevPtr]
-        jne     .destroy_slot                                   ; Damn, something screwed up, remove the whole slot (and free buffers too if possible!)
+        jne     .destroy_slot                                   ; Oh, something screwed up, remove the whole slot (and free buffers too if possible!)
         mov     edi, esi
         mov     esi, [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr]
         cmp     esi, -1
@@ -461,7 +461,7 @@ ipv4_input:
 
   .count_bytes:
         cmp     [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.PrevPtr], edi
-        jne     .destroy_slot_pop                                                       ; Damn, something screwed up, remove the whole slot (and free buffers too if possible!)
+        jne     .destroy_slot_pop                                                       ; Oh, something screwed up, remove the whole slot (and free buffers too if possible!)
         mov     cx, [esi + sizeof.NET_BUFF + sizeof.IPv4_FRAGMENT_entry + IPv4_header.TotalLength]        ; Add total length
         xchg    cl, ch
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Packet size=%u\n", cx
@@ -482,7 +482,7 @@ ipv4_input:
         mov     [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.PrevPtr], edi
         mov     [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.Owner], ebx
 
-        mov     cx, [edx + IPv4_header.TotalLength]                                     ; Note: This time we dont substract Header length
+        mov     cx, [edx + IPv4_header.TotalLength]                                     ; Note: This time we don't substract Header length
         xchg    cl, ch
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Packet size=%u\n", cx
         add     ax, cx
@@ -503,7 +503,7 @@ ipv4_input:
         push    eax
         call    kernel_alloc
         test    eax, eax
-        je      .destroy_slot_pop12                                                     ; If we dont have enough space to allocate the buffer, discard all packets in slot
+        je      .destroy_slot_pop12                                                     ; If we don't have enough space to allocate the buffer, discard all packets in slot
         mov     edx, [esp+8]                                                            ; Get pointer to first fragment entry back in edx
 
         ; FIXME: Allocate NET_BUFF here instead of raw IP packet buffer
@@ -525,7 +525,7 @@ ipv4_input:
 
         cmp     edi, eax                                                                ; Is this packet the first fragment ?
         je      .first_fragment
-        sub     cx, bx                                                                  ; If not, dont copy the header
+        sub     cx, bx                                                                  ; If not, don't copy the header
         add     esi, ebx                                                                ;
         add     edi, ebx                                                                ; FIXME: We should add size of header of first fragment here
                                                                                         ; instead of size of currently copying fragment

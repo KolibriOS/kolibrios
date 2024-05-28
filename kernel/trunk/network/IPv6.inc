@@ -61,7 +61,7 @@ macro   ipv6_init {
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; ipv6_input: Check if IPv6 Packet isnt damaged and call          ;
+; ipv6_input: Check the IPv6 Packet is not damaged and call       ;
 ; appropriate handler. (TCP/UDP/ICMP/..)                          ;
 ; We will also re-construct fragmented packets                    ;
 ;                                                                 ;
@@ -285,4 +285,3 @@ ipv6_api:
   .packets_rx:
         mov     eax, [IPv6.packets_rx + eax]
         ret
-

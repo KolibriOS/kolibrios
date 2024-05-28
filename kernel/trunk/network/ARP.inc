@@ -217,7 +217,7 @@ arp_input:
   .gotit:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: found matching entry\n"
 
-        cmp     [esi + ARP_entry.TTL], ARP_STATIC_ENTRY         ; if it is a static entry, dont touch it
+        cmp     [esi + ARP_entry.TTL], ARP_STATIC_ENTRY         ; if it is a static entry, don't touch it
         je      .exit
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: updating entry\n"
@@ -239,7 +239,7 @@ arp_input:
         cmp     [edx + ARP_header.Opcode], ARP_REQ_OPCODE
         jne     .exit
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: its a request\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: it is a request\n"
 
         mov     eax, [IPv4_address + edi]
         cmp     eax, [edx + ARP_header.TargetIP]                ; Is it looking for my IP address?
@@ -388,10 +388,10 @@ arp_add_entry:
         cmp     [edi + ARP_entry.Status], ARP_NO_ENTRY                  ; is this slot empty?
         je      .add
 
-        cmp     [edi + ARP_entry.IP], eax                               ; if not, check if it doesnt collide
+        cmp     [edi + ARP_entry.IP], eax                               ; if not, check it doesn't collide
         jne     .maybe_next
 
-        cmp     [edi + ARP_entry.TTL], ARP_STATIC_ENTRY                 ; ok, its the same IP, update it if not static
+        cmp     [edi + ARP_entry.TTL], ARP_STATIC_ENTRY                 ; ok, it's the same IP, update it if not static
         jne     .add
 
         DEBUGF  DEBUG_NETWORK_ERROR, "ARP_add_entry: failed, IP already has a static entry\n"
