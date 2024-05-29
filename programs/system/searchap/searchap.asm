@@ -33,7 +33,7 @@
 	params dd PARAMS
 	dd 0x0
 ;---------------------------------------------------------------------
-delay dd 500 
+delay dd 500
 mount_attempt dd 0
 ;---------------------------------------------------------------------
 fileinfo:
@@ -84,13 +84,13 @@ START:
 	mov	esi, [params]
 	cmp	[esi], byte '/'
 	jne @f
-	mov esi, [params] ;user gave us the path so lets mount it
+	mov esi, [params] ;user gave us the path so let's mount it
 	inc	esi
 	mov	edi,f30_3_work_area+64
 	call	proc_copy_path
 	mcall	30,3,f30_3_work_area
 	mcall   -1
-@@:	
+@@:
 	test	[esi], byte 0xFF
 	jz	.params_done
 	cmp	word[esi], '-d' ; delay
@@ -262,7 +262,7 @@ load_file:
 	jbe	@f
 	mov	ecx,eax
 ;-----------------------------------
-@@:	
+@@:
 	mov	[fileinfo.size],ecx
 ;--------------------------------------
 	DEBUGF	1, "Searchap: get file\n"
@@ -283,7 +283,7 @@ load_file:
 	DEBUGF	1, "Searchap: read file - error!\n"
 ;--------------------------------------
 	ret
-;-----------------------------------	
+;-----------------------------------
 @@:
 ;--------------------------------------
 	DEBUGF	1, "Searchap: read file corrected size: %d\n",[fileinfo.size]
@@ -446,7 +446,7 @@ mount_dir		rb 1
 ;-------------------------------------------------------------------------------
 align 4
 f30_3_work_area:
-	db 'kolibrios',0 
+	db 'kolibrios',0
 	rb 118
 ;-------------------------------------------------------------------------------
 align 4

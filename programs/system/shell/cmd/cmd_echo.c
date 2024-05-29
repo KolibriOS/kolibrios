@@ -7,7 +7,7 @@ int newline_to_file(char *fn, unsigned long long pos)
 	kol_struct70 k70_out;
 
 	k70_out.p00 = 3;
-	k70_out.p04 = pos; // offset 
+	k70_out.p04 = pos; // offset
     //k70_out.p08 = 0;
     k70_out.p12 = 2;
     k70_out.p16 = (unsigned)newline;
@@ -60,7 +60,7 @@ int cmd_echo(char text[])
     // remove spaces at the end of out_len
     while (out_len > 0 && text[out_len - 1] == ' ') { out_len--; }
 
-    // delete quotes if has
+    // delete quotes if present
     if (text[out_len - 1] == '"') { out_len--; }
     if (text[0] == '"') { text++; out_len--; }
 
@@ -123,7 +123,7 @@ int cmd_echo(char text[])
 		    k70_in.p21 = filename_out;
 
 		    result = kol_file_70(&k70_in); // get information about file
-		    if ( 0 != result ) // file doesnt exist, then rewrite
+		    if ( 0 != result ) // file doesn't exist, then rewrite
 		    {
 		    	k70_out.p00 = 2;
 	    		k70_out.p04 = 0; // offset
@@ -148,7 +148,7 @@ int cmd_echo(char text[])
 		    unsigned long long filesize = bdvk.p32;
 
 		    k70_out.p00 = 3;
-    		k70_out.p04 = filesize; // offset 
+    		k70_out.p04 = filesize; // offset
 		    //k70_out.p08 = 0;
 		    k70_out.p12 = out_len;
 		    k70_out.p16 = (unsigned)text;
@@ -170,4 +170,3 @@ int cmd_echo(char text[])
     //free(filename_out);
     return TRUE;
 }
-

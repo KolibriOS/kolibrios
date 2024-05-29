@@ -10,17 +10,17 @@
 ;include		'smb_nf2.inc'
 
 smb_base	dd	0	; IO port base for SMBus acces
-smb_slave	dd	0	; SMBus addres for monitoring chip
+smb_slave	dd	0	; SMBus address for monitoring chip
 
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 smbInit:
 	; Изменить, код только для тестирования !!!
 	; mov	dword[IO_Read ], nf2_readb
 	; mov	dword[IO_Write], nf2_writeb
-	
-	
+
+
 	; See pci_pm.c -> pci_pm_smb_prob
-	
+
 
 .exit_err:
 	stc
@@ -28,7 +28,7 @@ smbInit:
 .exit_ok:
 	clc
 	ret
-	
+
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 ; pci_bus_num:	db	2	; Номер шины
 ; pci_devfn:	db	255
@@ -67,6 +67,6 @@ smbInit:
 	; ret
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 smbClose:
-	
+
 	ret
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
