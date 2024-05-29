@@ -24,8 +24,8 @@ _ipc_send:
 	xchg	edx, esi
 .send_again:
 	mov	eax, 5
-	mov	ebx, SEND_DELAY 		
-	int	0x40			
+	mov	ebx, SEND_DELAY
+	int	0x40
 
 	mov	eax, 60
 	mov	ebx, 2
@@ -65,7 +65,7 @@ _ipc_recv:
 	push	ecx
 
 	mov	dword [esi + 4], 0	; unlock buffer
-	mov	dword [esi + 8], 0	; 
+	mov	dword [esi + 8], 0	;
 
 	push	edx
 	mov	eax, 60			; register buffer
@@ -89,7 +89,7 @@ _ipc_recv:
 	cmp	eax, 7
 	jnz	.err
 
-	mov	eax, [clipboard_init.clipserv_pid]	; not message from 
+	mov	eax, [clipboard_init.clipserv_pid]	; not message from
 	cmp	eax, [esi + 4]				; daemon, so ignore
 	jnz	.wait
 
@@ -136,13 +136,13 @@ clipboard_init:
 ;	mov	[.IPC_buffer], ecx
 
 	push	ebp
-	mov	ebp, 1    
+	mov	ebp, 1
 .next_process:
 	mov	eax, 9
 	mov	ebx, .process_info
 	mov	ecx, ebp
 	int	0x40
-	mov	ecx, eax     
+	mov	ecx, eax
 	mov	ebx, .process_info + 10
 	mov	eax, [ebx]
 	cmp	eax, '@CLI'
@@ -153,19 +153,19 @@ clipboard_init:
 	jmp	.similar
 
 ;	mov	edx, .clipserv_name
-;.compare:          
+;.compare:
 ;	mov	al, [edx]
 ;	cmp	al, 0
 ;	jz	.similar
 ;	cmp	al, [ebx]
-;	jnz	.differ 
-;	inc	edx    
+;	jnz	.differ
+;	inc	edx
 ;	inc	ebx
 ;	jmp	.compare
 .differ:
 	inc	ebp
 	cmp	ebp, ecx
-	jae	.err		; process not found 
+	jae	.err		; process not found
 	jmp	.next_process
 .similar:
 ;print "found server"
@@ -185,7 +185,7 @@ clipboard_init:
 	ret
 .clipserv_pid	dd	0
 .process_info	db	1024 dup(0)
-;;.clipserv_name	db	'@clip',0 
+;;.clipserv_name	db	'@clip',0
 ;.IPC_buffer	dd	.IPC_real_buffer	; sorry
 ;.IPC_real_buffer	db	IPC_buffer_size dup(0)
 
@@ -231,7 +231,7 @@ print "write failed"
 	pop	edi
 	pop	edx
 	pop	ecx
-	ret   	
+	ret
 
 .msg_set_size	dw	1
 		dw	1
@@ -240,8 +240,8 @@ print "write failed"
 
 clipboard_read:
 ; esi -> CLIP_buffer, ax = format id
-; edx - ��᪠ ᮡ�⨩ �� 㬮�砭��
-; result: eax = 1 - success, 0 - general failure, 
+; edx - маска событий по умолчанию
+; result: eax = 1 - success, 0 - general failure,
 ; -1 - buffer too small
 ; edx = size of data
 
@@ -262,7 +262,7 @@ clipboard_read:
 	mov	[.msg_get_buf + 2], ax
 	mov	edx, 8
 	call	_ipc_send
-	or	eax, eax	
+	or	eax, eax
 	jz	.err
 
 	;;mov	edx, DEFAULT_MASK
@@ -291,7 +291,7 @@ pregs
 	or	eax, eax
 	jz	.err
 
-;print "send fuck"
+;print "send DEBUG!"
 
 	mov	edx, ebp
 	mov	esi, edi
@@ -304,8 +304,7 @@ print "read get data"
 	mov	edx, ebx
 	mov	eax, 1
 print "read ok"
-	jmp	.exit		; i'm an idiot. Never will I code at night again
-				; i put jz instead of jmp.
+	jmp	.exit.
 
 .size:
 print "buffer small"
@@ -347,7 +346,7 @@ clipboard_delete:
 	mov	[esi + 2], ax
 	mov	edx, 8
 
-	call	_ipc_send 
+	call	_ipc_send
 
 	pop	esi
 	pop	edx
@@ -356,4 +355,3 @@ clipboard_delete:
 .msg_del	dw	0
 		dw	1
 		dd	0
-

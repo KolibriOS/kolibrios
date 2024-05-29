@@ -245,7 +245,7 @@ else
 	WG_help mstr \
 	'Your aim is to drag the wriggley worms by head or',\
 	'tail until each worm covers the squares of its',\
-	'own colour leaving only white squares exposed.',\
+	'own color leaving only white squares exposed.',\
 	'Worms cannot cross or overlap.','',\
 	'http://www.clickmazes.com'
 end if

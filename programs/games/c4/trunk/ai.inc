@@ -34,8 +34,8 @@ INFTY		equ	1000000000
 moveorder	dd	1,7,2,6,3,5,4
 
 ; table used for static evaluation.
-; this table is taken from 4st attack: it is ways better
-; than the table i used before =)
+; this table is taken from 4st attack: it is much better
+; than the table I used before =)
 evaltable:	dd	 0, 0, 0, 0, 0, 0, 0, 0, 0
 		dd	 0, 3, 4, 5, 7, 5, 4, 3, 0
 		dd	 0, 4, 6, 8,10, 8, 6, 4, 0
@@ -74,14 +74,14 @@ aiGetMove:
 	mov [cpulevel],eax
 	mov dword [bestval],-INFTY
 	mov dword [nbestmoves],0
-	
+
 	; try every move
 	mov ecx,6
 .evalmoves:
 
 	; get move to make from move order table
 	mov eax,[moveorder+ecx*4]
-	
+
 	; if this is an invalid move, continue with next move
 	BOARDISVALIDMOVE eax
 	jz .nextmove
@@ -89,7 +89,7 @@ aiGetMove:
 	; make move for current player
 	mov ebx,[currentplayer]
 	call boardMakeMove
-	
+
 	; evaluate move
 	push eax			; save move #
 	push ecx			; save loop counter
@@ -100,14 +100,14 @@ aiGetMove:
 	push dword -INFTY		; alpha
 	push dword INFTY		; beta
 	call alphabeta
-	neg eax				; damn, how could i forget this ???
+	neg eax				; How could I forget this ???
 	mov ebx,eax			; save result for later
 	pop ecx				; restore loop counter
 	pop eax				; restore move #
-	
+
 	; undo move (eax = move #)
 	call boardUndoMove
-	
+
 	; let's see wether we have a new best move
 	cmp ebx,[bestval]		; new best value found ?
 	jle .nonewbestval
@@ -127,7 +127,7 @@ aiGetMove:
 	js .done
 	jmp .evalmoves
 .done:
-	
+
 	; randomly pick one of the best moves
 	call rand			; rand() % nbestmoves
 	xor edx,edx
@@ -156,7 +156,7 @@ alphabeta:
 %define beta	(ebp+ 8)
 
 	enter 0,0
-	
+
 	; win for other player -> end search
 	mov eax,[player]
 	BOARDGETOTHERPLAYER eax
@@ -180,7 +180,7 @@ alphabeta:
 	; max search depth reached -> do static evaluation
 	cmp dword [ply],0
 	je .staticeval
-	
+
 
 	; for each move
 	mov ecx,6
@@ -193,15 +193,15 @@ alphabeta:
 
 	; pick move from move order table
 	mov eax,[moveorder+ecx*4]
-	
+
 	; invalid move ? if so, continue with next move
 	BOARDISVALIDMOVE eax
 	jz .nextmove
-	
+
 	; make move for current player
 	mov ebx,[player]
 	call boardMakeMove
-	
+
 	; evaluate move
 	push eax
 	push ecx
@@ -219,27 +219,27 @@ alphabeta:
 	push edx
 	call alphabeta
 	neg eax
-	
+
 	; new alpha ?
 	cmp eax,[alpha]
 	jle .nonewalpha
 	mov [alpha],eax			; yes -> save it
-.nonewalpha:	
+.nonewalpha:
 	pop ecx
 	pop eax
-	
+
 	; undo move
 	call boardUndoMove
 
 .nextmove:				; evaluate next move
 	dec ecx
 	jns .evalmoves
-	
+
 .done:
 	mov eax,[alpha]
 	leave
 	ret 4*4
-		
+
 	; static evaluation
 .staticeval:
 	xor eax,eax
@@ -255,7 +255,7 @@ alphabeta:
 	je .empty			; nope -> go on
 	sub eax,[evaltable+esi*4]	; yes -> sub stone value from eax
 .empty:
-	
+
 .next:					; next stone
 	dec esi
 	jns .l

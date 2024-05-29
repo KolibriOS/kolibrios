@@ -27,6 +27,7 @@
 // warnings. See
 // https://www.gnu.org/software/libc/manual/html_node/Feature-Test-Macros.html
 // for more info.
+
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
 #define _GNU_SOURCE
@@ -77,11 +78,11 @@ void notify(char *text);
 
 /*** Data section ***/
 
-// Kolibri defaults
+// KolibriOS defaults
 int con_def_wnd_width   =    80;
 int	con_def_wnd_height  =    25;
 /// winFile support
-int	fileIsOd0a; 
+int	fileIsOd0a;
 
 typedef struct editor_row {
     int idx; // Row own index within the file.
@@ -137,7 +138,7 @@ struct editor_config {
 
 // Having a dynamic buffer will allow us to write only one
 // time once the screen is refreshing, instead of doing
-// a lot of write's.
+// a lot of writes.
 struct a_buf {
     char* buf;
     int len;
@@ -465,7 +466,7 @@ void enableRawMode() {
 ///        die("Failed to set raw mode");
 }
 
-/// by Siemargl rewritten, still Ctrl+ combination works only in english locale, so need analyze scancode
+/// by Siemargl rewritten, still Ctrl+ combination works only in English locale, so need analyze scancode
 int editorReadKey() {
     int key = con_getch2();
     if (key == 0)
@@ -485,13 +486,13 @@ int editorReadKey() {
 
 			case 9: // TAB
 				return	key;
-				
+
 			case 22: // Ctrl+V
 				return CTRL_KEY('v');
-				
+
 			case 3: // Ctrl+C
 				return CTRL_KEY('c');
-				
+
 			case 12: // Ctrl+L
 				return CTRL_KEY('l');
 
@@ -516,7 +517,7 @@ int editorReadKey() {
 */
 			case 24: // Ctrl+X
 				return CTRL_KEY('x');
-				
+
 			default:
 				return	key;
 
@@ -529,7 +530,7 @@ int editorReadKey() {
 
 			case 75: // Left
 				return ARROW_LEFT;
-				
+
 			case 77: // Right
 				return ARROW_RIGHT;
 
@@ -541,16 +542,16 @@ int editorReadKey() {
 
 			case 81: // PgDn
 				return PAGE_DOWN;
-				
+
 			case 73: // PgUp
 				return PAGE_UP;
-				
+
 			case 71: // Home
 				return HOME_KEY;
-				
+
 			case 79: // End
 				return END_KEY;
-				
+
 			default:
 				return	0;
 		}
@@ -844,7 +845,7 @@ void editorSelectSyntaxHighlight() {
 int editorRowCursorXToRenderX(editor_row* row, int cursor_x) {
     int render_x = 0;
     int j;
-    // For each character, if its a tab we use rx % TTE_TAB_STOP
+    // For each character, if it's a tab we use rx % TTE_TAB_STOP
     // to find out how many columns we are to the right of the last
     // tab stop, and then subtract that from TTE_TAB_STOP - 1 to
     // find out how many columns we are to the left of the next tab
@@ -1100,7 +1101,7 @@ char* editorRowsToString(int* buf_len) {
     // to each one for the newline character we'll add to
     // the end of each line.
     for (j = 0; j < ec.num_rows; j++) {
-        total_len += ec.row[j].size + 1 
+        total_len += ec.row[j].size + 1
 							+ (fileIsOd0a ? 1:0); /// winFile suppor
     }
     *buf_len = total_len;
@@ -1187,7 +1188,7 @@ void editorSave() {
 	}
 
     free(buf);
-    editorSetStatusMessage("Cant's save file. Error occurred: %s", strerror(errno));
+    editorSetStatusMessage("Can't save file. Error occurred: %s", strerror(errno));
 }
 
 /*** Search section ***/
@@ -1361,11 +1362,11 @@ void editorDrawStatusBar(struct a_buf* ab) {
 
 void editorDrawMessageBar(struct a_buf *ab) {
     // Clearing the message bar.
-///    abufAppend(ab, "\x1b[K", 3);	/// not work in Kolibri
+///    abufAppend(ab, "\x1b[K", 3);	/// not work in KolibriOS
     int msg_len = strlen(ec.status_msg);
     if (msg_len > ec.screen_cols)
         msg_len = ec.screen_cols;
-    // We only show the message if its less than 5 secons old, but
+    // We only show the message if it's less than 5 seconds old, but
     // remember the screen is only being refreshed after each keypress.
     if (msg_len && time(NULL) - ec.status_msg_time < 5)
         abufAppend(ab, ec.status_msg, msg_len);
@@ -1730,7 +1731,7 @@ void initEditor() {
 }
 
 void printHelp() {
-/*	
+/*
 	printf("Usage: tte [OPTIONS] [FILE]\n\n");
     printf("\nKEYBINDINGS\n-----------\n\n");
     printf("Keybinding\t\tAction\n\n");
@@ -1751,9 +1752,9 @@ void printHelp() {
 
     printf("\n\nFor now, usage of ISO 8859-1 is recommended.\n");
 */
-    
-    /// NOTIFY HOTKEYS 
-    char* __help__ = 
+
+    /// NOTIFY HOTKEYS
+    char* __help__ =
     "'Hotkeys: \n\
 ^Q, ^Z   Exit \n\
 Ctrl-S   Save \n\
@@ -1765,9 +1766,9 @@ Ctrl-C   Copy line \n\
 Ctrl-X   Cut line \n\
 Ctrl-V   Paste line' -t -I";
     notify(__help__);
-    
+
     /// NOTIFY OPTIONS
-    __help__ = 
+    __help__ =
     "'Options:\n\
 -h, --help     Prints the help \n\
 -v, --version  Prints the version of tte \n\
@@ -1798,7 +1799,7 @@ int handleArgs(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
-	
+
 	#ifdef TCC_BUILD
 	con_init_console_dll_param(con_def_wnd_width, con_def_wnd_height, con_def_wnd_width, con_def_wnd_height, "TinyTextEditor");
 	#endif
@@ -1806,19 +1807,19 @@ int main(int argc, char* argv[]) {
 	load_console();
 	con_init(con_def_wnd_width, con_def_wnd_height, con_def_wnd_width, con_def_wnd_height, "TinyTextEditor");
 	#endif
-	
+
     initEditor();
     int arg_response = handleArgs(argc, argv);
     if (arg_response == 1) {
 		char* filename = argv[1];
 		// tolower
 		for (int i = 0; i < strlen(filename); i++) filename[i] = tolower(filename[i]);
-		
+
 		editorOpen(filename);
 		char* title = argv[1];
 		strcat(title, " - TinyTextEditor");
 		con_set_title(title);
-	}  
+	}
     else if (arg_response == -1)
         return 0;
     enableRawMode();

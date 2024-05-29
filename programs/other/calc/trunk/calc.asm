@@ -1,7 +1,7 @@
 ;;   Calculator for MenuetOS (c) Ville Turjanmaa
-;;  
+;;
 ;;   Compile with FASM
-;;   
+;;
 ;;   Pavel Rymovski (Heavyiron) - version for KolibriOS
 ;;
 ;; What's new:
@@ -12,7 +12,7 @@
 ;;   Calc 1.2
 ;;           1) added some useful functions, such as arcsin, arccos, arctg, 1/x, x^2
 ;;   Calc 1.31
-;;           1) optimised program
+;;           1) optimized program
 ;;           2) new type of window (you need kernel 114 revision or higher)
 ;;   Calc 1.32
 ;;           1) fixed arccos
@@ -44,13 +44,13 @@ butid:  db 12, 13, 14, 19, 20, 21, 26, 27, 28, 34, 15, 39, 39, 22, 36, 29, 35, 3
 START:
 red:
         call    draw_window
-still:  
+still:
         mcall   10
 
         dec     eax
         jz      red
-        dec     eax 
-        jz      key 
+        dec     eax
+        jz      key
 
 button:
         mcall   17      ; get button id
@@ -76,7 +76,7 @@ testbut:
         cmp     eax, 1  ; button 1 -- exit
         jne     noexit
         mcall   -1
- 
+
 noexit:
         cmp     eax, 2
         jne     no_reset
@@ -206,7 +206,7 @@ no_int:
         fdiv    [trans1]
         jmp     show_result
 
-no_1x:  
+no_1x:
         cmp     eax, 24
         jne     no_cos
         fld     [trans1]
@@ -226,14 +226,14 @@ no_cos:
         fpatan
         jmp     show_result
 
-no_acos:   
+no_acos:
         cmp     eax, 30
         jne     no_x2
         fld     [trans1]
         fmul    st, st0
         jmp     show_result
 
-no_x2:  
+no_x2:
         cmp     eax, 31
         jne     no_tan
         fld     [trans1]
@@ -279,7 +279,7 @@ no_add:
         mov     [calc], '-'
 		call    print_display
         jmp     still
-  
+
 no_sub:
         cmp     eax, 29
         jne     no_div
@@ -450,7 +450,7 @@ new_entry:
         ret
 
 
-ftoa:                         ; fpu st0 -> [integer],[decimal]
+ftoa:                           ; fpu st0 -> [integer],[decimal]
         pusha
         fst     [tmp2]
         fstcw   [controlWord]      ; set truncate integer mode
@@ -559,7 +559,7 @@ atof:
 
   .error:
         mov     bh, 1    ; Set error code.
-;       fstp    st0    ; Pop top of fpu stack.
+;       fstp    st0     ; Pop top of fpu stack.
 
   .exit:
         pop     di
@@ -661,12 +661,12 @@ draw_window:
 		mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
 
 		mov     ecx, 200 shl 16 + 210
-		add     ecx, eax                ; add skin height to window height 
+		add     ecx, eax                ; add skin height to window height
         mov     edx, [sc.work]
         or      edx, 0x34000000
 		mov     edi, title
         mcall   0, <250, 317>
-		
+
         mov     eax, SF_DEFINE_BUTTON
         mov     ebx, 19 shl 16 + 36
         mov     ecx, 55 shl 16 + 22
@@ -719,7 +719,7 @@ next_button:
 		DrawRectangle DISPLAY_X,DISPLAY_Y,DISPLAY_W,DISPLAY_H, [sc.work_graph]
         mcall   38, < DISPLAY_X+1, DISPLAY_W+DISPLAY_X-1>, <DISPLAY_Y+1, DISPLAY_Y+1>, 0xE0E0E0 ; internal shadow
 		mcall     , < DISPLAY_X+1,  DISPLAY_X+1>, <DISPLAY_Y+2, DISPLAY_Y+DISPLAY_H-1>,          ; internal shadow
-		
+
         call    print_display
 
         mcall   12, 2
@@ -729,11 +729,11 @@ print_display:
         pusha
 		mcall   13, < DISPLAY_X+2, DISPLAY_W-2>, <DISPLAY_Y+2, DISPLAY_H-2>, 0xFFFfff ; background
 		mcall   8, <236,53>, <DISPLAY_Y,DISPLAY_H>, 3, [sc.work]        ; 'dec-bin-hex'
-		
+
         mov     ecx, [sc.work_text]
         or      ecx, 0x40000000
         mcall   4, <135,6>,,calc,1,[sc.work]
-		
+
         mov     edx, [display_type]
         shl     edx, 2
         add     edx, display_type_text
@@ -746,7 +746,7 @@ print_display:
         je      positive
         mcall   , <23, 26>, 0, dsign, 1
 
-positive:  
+positive:
         cmp     [display_type], 0
         jne     no_display_decimal
         cmp     [decimal], 0

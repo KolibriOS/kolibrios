@@ -851,7 +851,7 @@ draw_window:
     mov  edi,title                 ; WINDOW LABEL
     mcall
 
-                                   
+
     mov  eax,8                     ; START/STOP  - id 2
     mov  ebx,24*65536+77
     mov  ecx,80*65536+16
@@ -977,7 +977,7 @@ text:
     db '                                        '
     db '                                        '
     db ' START/STOP    <<  >>   REPEAT:OFF      '
-    db 'x <- END MARKER, DONT DELETE            '
+    db 'x <- END MARKER, DON'T DELETE           '
 now_playing:
     db '                                        '
     db 'xx                                      '
