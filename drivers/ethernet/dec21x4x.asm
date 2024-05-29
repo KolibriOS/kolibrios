@@ -423,7 +423,7 @@ proc service_proc stdcall, ioctl:dword
         movzx   ecx, byte[eax+2]
         mov     [ebx + device.pci_dev], ecx
 
-; Now, it's time to find the base io addres of the PCI device
+; Now, it's time to find the base io address of the PCI device
         stdcall PCI_find_io, [ebx + device.pci_bus], [ebx + device.pci_dev]
         mov     [ebx + device.io_addr], eax
 

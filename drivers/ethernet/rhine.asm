@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2021. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  rhine.asm                                                      ;;
@@ -600,13 +600,13 @@ proc service_proc stdcall, ioctl:dword
         cmp     al, byte[ebx + device.pci_bus]
         jne     @f
         cmp     ah, byte[ebx + device.pci_dev]
-        je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+        je      .find_devicenum                         ; Device is already loaded, let's find its device number
        @@:
         add     esi, 4
         loop    .nextdevice
 
 
-; This device doesn't have its own eth_device structure yet, lets create one
+; This device doesn't have its own eth_device structure yet, let's create one
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
         jae     .fail
@@ -1533,7 +1533,7 @@ int_handler:
         lea     edi, [ebx + device.rx_ring]
         add     edi, eax
 
-; Check it's status
+; Check its status
         test    [edi + rx_head.status], RX_SBITS_OWN_BIT
         jnz     .not_RX
 
@@ -1545,7 +1545,7 @@ int_handler:
         mov     ecx, [edi + rx_head.status]
         and     ecx, RX_SBITS_FRAME_LENGTH
         shr     ecx, 16
-        sub     ecx, 4                          ; We dont want CRC
+        sub     ecx, 4                          ; We don't want CRC
 
 ; Update stats
         add     dword [ebx + device.bytes_rx], ecx

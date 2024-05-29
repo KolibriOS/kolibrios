@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  FORCEDETH.INC                                                  ;;
@@ -457,7 +457,7 @@ proc service_proc stdcall, ioctl:dword
 
         mov     eax, [edx + IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
-        jne     .fail                                   ; other types arent supported for this card yet
+        jne     .fail                                   ; other types aren't supported for this card yet
 
 ; check if the device is already listed
 
@@ -473,13 +473,13 @@ proc service_proc stdcall, ioctl:dword
         cmp     al, byte [ebx + device.pci_bus]               ; compare with pci and device num in device list (notice the usage of word instead of byte)
         jne     @f
         cmp     ah, byte [ebx + device.pci_dev]
-        je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+        je      .find_devicenum                         ; Device is already loaded, let's find its device number
   @@:
         add     esi, 4
         loop    .nextdevice
 
 
-; This device doesnt have its own eth_device structure yet, lets create one
+; This device doesn't have its own eth_device structure yet, let's create one
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
         jae     .fail
@@ -581,7 +581,7 @@ probe:
         invoke  PciWrite8, [ebx + device.pci_bus], [ebx + device.pci_dev], PCI_header00.max_latency, eax
   @@:
 
-; Now, it's time to find the base mmio addres of the PCI device
+; Now, it's time to find the base mmio address of the PCI device
         stdcall PCI_find_mmio, [ebx + device.pci_bus], [ebx + device.pci_dev] ; returns in eax
         test    eax, eax
         jnz     @f
@@ -622,7 +622,7 @@ probe:
         ; disable WOL
         mov     [WakeUpFlags], 0
         mov     [ebx + device.wolenabled], 0
-        
+
         mov     [ebx + device.txflags], (NV_TX2_LASTPACKET or NV_TX2_VALID)
         cmp     [ebx + device.desc_ver], DESC_VER_1
         jne     @f
@@ -715,7 +715,7 @@ probe:
 
         ; DEV_NEED_LASTPACKET1|DEV_IRQMASK_2|DEV_NEED_TIMERIRQ
         mov     [ebx + device.irqmask], (IRQMASK_WANTED_2 or IRQ_TIMER)         ; was 0
-        
+
         mov     [ebx + device.needs_mac_reset], 1
         cmp     [ebx + device.desc_ver], DESC_VER_1
         jne     @f
@@ -767,7 +767,7 @@ probe:
 
         ; PHY in isolate mode? No phy attached and user wants to test loopback?
         ; Very odd, but can be correct.
-        
+
         DEBUGF  2,"Could not find a valid PHY.\n"
         jmp     .no_phy
 
@@ -791,7 +791,7 @@ probe:
         je      @f
         call    mac_reset
   @@:
-        
+
 ;***************************************************************************
 ;   Function
 ;      reset
@@ -870,7 +870,7 @@ reset:
         mov     [MIIStatus], MIISTAT_MASK2
 
 ;
-        
+
         mov     [Misc1], (MISC1_FORCE or MISC1_HD)
 
         mov     eax, [TransmitterStatus]
@@ -907,7 +907,7 @@ reset:
         mov     [MIISpeed], (MIISPEED_BIT8 or MIIDELAY)
         mov     [UnknownSetupReg4], UNKSETUP4_VAL
         mov     [WakeUpFlags], WAKEUPFLAGS_VAL
-        
+
         or      [PowerState], POWERSTATE_POWEREDUP
         call    pci_push
 
@@ -937,7 +937,7 @@ reset:
         mov     [PacketFilterFlags], (PFF_ALWAYS or PFF_MYADDR)
 
         call    set_multicast
-        
+
         ; One manual link speed update: Interrupts are enabled, future link
         ; speed changes cause interrupts and are handled by nv_link_irq().
 
@@ -1097,7 +1097,7 @@ endp
 phy_init:
 
         push    ebx ecx
-        
+
         ; set advertise register
         mov     edx, [ebx + device.phyaddr]
         mov     eax, MII_ADVERTISE
@@ -1128,7 +1128,7 @@ phy_init:
         mov     eax, MII_BMSR
         mov     ecx, MII_READ
         call    mii_rw
-        
+
         test    eax, PHY_GIGABIT
         jnz     .gigabit
         mov     [ebx + device.gigabit], 0
@@ -1140,7 +1140,7 @@ phy_init:
         mov     eax, MII_CTRL1000
         mov     ecx, MII_READ
         call    mii_rw
-        
+
         and     eax, (not ADVERTISE_1000HALF)
 
         test    [PhyInterface], PHY_RGMII
@@ -1223,11 +1223,11 @@ phy_init:
 
         cmp     [ebx + device.phy_oui], PHY_OUI_CICADA
         jne     .restart
-        
+
         mov     eax, MII_SREVISION
         mov     ecx, MII_READ
         call    mii_rw
-        
+
         or      eax, PHY_INIT6
         mov     ecx, eax
         mov     eax, MII_SREVISION
@@ -1411,7 +1411,7 @@ init_ring:
         pop     ecx
         dec     ecx
         jnz     .rx_loop
-        
+
         pop     ecx esi
 
         xor     eax, eax
@@ -1565,7 +1565,7 @@ update_linkspeed:
         DEBUGF  1,"update linkspeed\n"
 
 ; BMSR_LSTATUS is latched, read it twice: we want the current value.
-        
+
         mov     edx, [ebx + device.phyaddr]
         mov     eax, MII_BMSR
         mov     ecx, MII_READ
@@ -1574,7 +1574,7 @@ update_linkspeed:
         mov     eax, MII_BMSR
         mov     ecx, MII_READ
         call    mii_rw
-        
+
         test    ax, BMSR_LSTATUS               ; Link up?
         jz      .no_link
 
@@ -1684,10 +1684,10 @@ set_speed:
 
   .update:
         DEBUGF  1,"update_linkspeed: changing link to 0x%x/XD.\n", ecx
-        
+
         mov     [ebx + device.duplex], eax
         mov     [ebx + device.linkspeed], ecx
-        
+
         cmp     [ebx + device.gigabit], PHY_GIGABIT
         jne     .no_gigabit
 
@@ -1740,7 +1740,7 @@ set_speed:
 
   .end_if5:
         mov     [PhyInterface], ecx
-                
+
         cmp     [ebx + device.duplex], 0
         je      @f
         xor     ecx, ecx

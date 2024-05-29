@@ -430,12 +430,12 @@ proc service_proc stdcall, ioctl:dword
         cmp     al, byte[ebx + device.pci_bus]
         jne     @f
         cmp     ah, byte[ebx + device.pci_dev]
-        je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+        je      .find_devicenum                         ; Device is already loaded, let's find its device number
        @@:
         add     esi, 4
         loop    .nextdevice
 
-; This device doesn't have its own eth_device structure yet, lets create one
+; This device doesn't have its own eth_device structure yet, let's create one
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
         jae     .fail
@@ -457,7 +457,7 @@ proc service_proc stdcall, ioctl:dword
         movzx   ecx, byte[eax+2]
         mov     [ebx + device.pci_dev], ecx
 
-; Now, it's time to find the base io addres of the PCI device
+; Now, it's time to find the base io address of the PCI device
 
         stdcall PCI_find_io, [ebx + device.pci_bus], [ebx + device.pci_dev]
         mov     [ebx + device.io_addr], eax
@@ -693,7 +693,7 @@ probe:
 
         DEBUGF 1,"Waiting for NIC to boot..\n"
 ; wait for 2 seconds for NIC to boot
-        mov     esi, 2000               ; WTF? FIXME
+        mov     esi, 2000               ; Hack!? FIXME
         invoke  Sleep ; 2 seconds
 
         DEBUGF 1,"Ok!\n"
@@ -2390,7 +2390,7 @@ write_mac:
         mov     ax, SELECT_REGISTER_WINDOW+2
         out     dx, ax
 
-; write MAC addres back into the station address registers
+; write MAC address back into the station address registers
         set_io  [ebx + device.io_addr], REG_STATION_ADDRESS_LO
         lea     esi, [ebx + device.mac]
         outsw

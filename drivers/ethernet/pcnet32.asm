@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                  ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.     ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.     ;;
 ;; Distributed under terms of the GNU General Public License        ;;
 ;;                                                                  ;;
 ;;  AMD PCnet driver for KolibriOS                                  ;;
@@ -417,7 +417,7 @@ proc service_proc stdcall, ioctl:dword
 
         mov     eax, [edx + IOCTL.input]
         cmp     byte[eax], 1                            ; 1 means device number and bus number (pci) are given
-        jne     .fail                                   ; other types arent supported for this card yet
+        jne     .fail                                   ; other types aren't supported for this card yet
 
 ; check if the device is already listed
 
@@ -433,12 +433,12 @@ proc service_proc stdcall, ioctl:dword
         cmp     al, byte[ebx + device.pci_bus]
         jne     @f
         cmp     ah, byte[ebx + device.pci_dev]
-        je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+        je      .find_devicenum                         ; Device is already loaded, let's find its device number
        @@:
         add     esi, 4
         loop    .nextdevice
 
-; This device doesnt have its own eth_device structure yet, lets create one
+; This device doesn't have its own eth_device structure yet, let's create one
 
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
@@ -461,7 +461,7 @@ proc service_proc stdcall, ioctl:dword
         movzx   ecx, byte[eax+2]
         mov     [ebx + device.pci_dev], ecx
 
-; Now, it's time to find the base io addres of the PCI device
+; Now, it's time to find the base io address of the PCI device
 
         stdcall PCI_find_io, [ebx + device.pci_bus], [ebx + device.pci_dev]
         mov     [ebx + device.io_addr], eax
@@ -1160,14 +1160,14 @@ int_handler:
 
         test    ax, RXSTAT_OWN                  ; If this bit is set, the controller OWN's the packet, if not, we do
         jnz     .rx_done
-; Both Start of packet and End of packet bits should be set, we dont support multi frame packets
+; Both Start of packet and End of packet bits should be set, we don't support multi frame packets
         test    ax, RXSTAT_ENP
         jz      .rx_drop
         test    ax, RXSTAT_STP
         jz      .rx_drop
 
         movzx   ecx, [edi + descriptor.msg_length]      ; get packet length in ecx
-        sub     ecx, 4                                  ; We dont need the CRC
+        sub     ecx, 4                                  ; We don't need the CRC
         DEBUGF  1,"Got %u bytes\n", ecx
 
 ; Set pointers for ETH_input
