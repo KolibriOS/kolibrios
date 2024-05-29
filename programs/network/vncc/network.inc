@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  VNC client for KolibriOS                                       ;;
@@ -24,7 +24,7 @@ thread_start:
         jz      .port_done
         cmp     al, ':'
         jne     @r
-        mov     byte[esi-1], 0          ; replace colon with 0 byte, we dont want to upset getaddrinfo
+        mov     byte[esi-1], 0          ; replace colon with 0 byte, we don't want to upset getaddrinfo
         xor     eax, eax
         xor     ebx, ebx                ; port number
   @@:

@@ -96,7 +96,7 @@ user_parser:
   .ret:
         ret
 
-; Text begins with a '/' lets try to find the command in the lookup table.
+; Text begins with a '/' let's try to find the command in the lookup table.
   .command:
         mov     eax, dword[user_command+1]      ; skip '/'
         or      eax, 0x20202020                 ; convert to lowercase
@@ -309,7 +309,7 @@ cmd_usr_nick:
   .fail:
         ret
 
-; We arent logged in yet, directly change user_nick field and print notification to user.
+; We aren't logged in yet, directly change user_nick field and print notification to user.
   .dontsend:
         mov     ecx, MAX_NICK_LEN
         mov     esi, user_command+6

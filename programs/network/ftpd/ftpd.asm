@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2017. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ftpd.asm - FTP Daemon for KolibriOS                            ;;
@@ -139,7 +139,7 @@ start:
         add     esp, 8
 
 ; open listening socket
-        mcall   socket, AF_INET4, SOCK_STREAM, SO_NONBLOCK      ; we dont want to block on accept
+        mcall   socket, AF_INET4, SOCK_STREAM, SO_NONBLOCK      ; we don't want to block on accept
         cmp     eax, -1
         je      sock_err
         mov     [socketnum], eax

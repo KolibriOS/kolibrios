@@ -7,9 +7,9 @@ https://www.binarytides.com/whois-client-code-in-c-with-linux-sockets/
 #include <errno.h>
 #include <sys/ksys.h>
 #include <stdio.h>
-#include <string.h>	
-#include <stdlib.h>	
-#include <sys/socket.h>	
+#include <string.h>
+#include <stdlib.h>
+#include <sys/socket.h>
 #include <clayer/network.h>
 #include <conio.h>
 
@@ -38,7 +38,7 @@ char* str_copy(char*);
 
 
 int main(int argc , char *argv[])
-{	
+{
 	char *domain , *data = NULL;
 	int f_flag=0;
 
@@ -106,11 +106,11 @@ int get_whois_data(char *domain , char **data)
 		// Next line please
 		pch = strtok(NULL , "\n");
 	}
-	// Now we have the TLD whois server in wch , query again
-	//This will provide minimal whois information along with the parent whois server of the specific domain :)
+	// Now we have the TLD whois server in 'wch', query again
+	// This will provide minimal whois information along with the parent whois server of the specific domain :)
 	wch = strdup(wch);
 	free(response);
-    //This should not be necessary , but segmentation fault without this , why ?
+    // This should not be necessary, but segmentation fault without this, why ?
 	response = NULL;
 	if(wch != NULL){
 		fprintf(out,"\nTLD Whois server is : %s" , wch);
@@ -122,9 +122,9 @@ int get_whois_data(char *domain , char **data)
 		fprintf(out, "\nTLD whois server for %s not found\n" , ext);
 		return EXIT_SUCCESS;
 	}
-	
+
 	response_2 = strdup(response);
-	
+
     // Again search for a whois server in this response. :)
 	pch = strtok(response , "\n");
 	while(pch != NULL){
@@ -141,11 +141,11 @@ int get_whois_data(char *domain , char **data)
         If a registrar whois server is found then query it
     */
 	if(wch){
-		// Now we have the registrar whois server , this has the direct full information of the particular domain
-		// so lets query again
-		
+		// Now we have the registrar whois server, this has the direct full information of the particular domain
+		// so let's query again
+
 		fprintf(out, "\nRegistrar Whois server is : %s" , wch);
-		
+
 		if( whois_query(wch , domain , &response) == EXIT_FAILURE ){
 			fprintf(out, "Whois query failed");
 		}else{
@@ -157,7 +157,7 @@ int get_whois_data(char *domain , char **data)
     */
 	else{
 		fprintf(out, "%s" , response_2);
-	}	
+	}
 	return 0;
 }
 
@@ -170,22 +170,22 @@ int whois_query(char *server , char *query , char **response)
 	int sock , read_size , total_size = 0;
 	int WHOIS_PORT = 43;
     struct sockaddr dest;
-    
+
 	sock = socket(AF_INET4 , SOCK_STREAM , IPPROTO_TCP);
-     
+
     //Prepare connection structures :)
     memset(&dest , 0 , sizeof(dest) );
 	dest.sin_family = AF_INET;
     server = str_copy(server);
-	
+
     server[strcspn(server, "\r\n")] = '\0';
 	fprintf(out, "\nResolving: %s ...\n" , server);
 	if(hostname_to_ip(server , ip) == EXIT_FAILURE ){
         fprintf(out, "Failed\n");
         return EXIT_FAILURE;
 	}
-	
-	fprintf(out, "Found ip: %s \n" , ip);    
+
+	fprintf(out, "Found ip: %s \n" , ip);
     dest.sin_addr = inet_addr(ip);
 	dest.sin_port = PORT(WHOIS_PORT);
 
@@ -203,7 +203,7 @@ int whois_query(char *server , char *query , char **response)
 		perror("send failed");
         return EXIT_FAILURE;
 	}
-	
+
 	//Now receive the response
 	while((read_size = recv(sock, buffer, sizeof(buffer), 0))){
 		*response = realloc(*response , read_size + total_size);
@@ -214,9 +214,9 @@ int whois_query(char *server , char *query , char **response)
 		memcpy(*response + total_size , buffer , read_size);
 		total_size += read_size;
 	}
-	
+
 	fprintf(out, "Done\n");
-	
+
 	*response = realloc(*response , total_size + 1);
 	*(*response + total_size) = '\0';
 	close(sock);
@@ -231,7 +231,7 @@ int hostname_to_ip(char *hostname , char *ip)
     char port_str[16]; sprintf(port_str, "%d", 80);
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC; // IPv4 or IPv6 doesnt matter
+    hints.ai_family = AF_UNSPEC; // IPv4 or IPv6 doesn't matter
     hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
     if (getaddrinfo(hostname, port_str, 0, &addr_info) != 0) {
         freeaddrinfo(addr_info);
@@ -248,48 +248,48 @@ char *str_replace(char *search , char *replace , char *subject)
 {
 	char  *p = NULL , *old = NULL , *new_subject = NULL ;
 	int c = 0 , search_size;
-	
+
 	search_size = strlen(search);
-	
+
 	//Count how many occurences
 	for(p = strstr(subject , search) ; p != NULL ; p = strstr(p + search_size , search)){
 		c++;
 	}
 	//Final size
 	c = ( strlen(replace) - search_size )*c + strlen(subject);
-	
+
 	//New subject with new size
 	new_subject = malloc( c );
-	
+
 	//Set it to blank
 	strcpy(new_subject , "");
-	
+
 	//The start position
 	old = subject;
-	
+
 	for(p = strstr(subject , search) ; p != NULL ; p = strstr(p + search_size , search)){
 		//move ahead and copy some text from original subject , from a certain position
 		strncpy(new_subject + strlen(new_subject) , old , p - old);
-		
+
 		//move ahead and copy the replacement text
 		strcpy(new_subject + strlen(new_subject) , replace);
-		
+
 		//The new start position after this search match
 		old = p + search_size;
 	}
-	
+
 	//Copy the part after the last search match
 	strcpy(new_subject + strlen(new_subject) , old);
-	
+
 	return new_subject;
 }
 
 char* str_copy(char *source)
 {
-    char *copy = malloc(strlen(source) + 1); 
-    
+    char *copy = malloc(strlen(source) + 1);
+
     if(copy){
         strcpy(copy, source);
     }
     return copy;
-} 
+}
