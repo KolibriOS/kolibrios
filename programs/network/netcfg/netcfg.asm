@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2010-2016. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2010-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  netcfg.asm - Network driver control center for KolibriOS       ;;
@@ -411,7 +411,7 @@ Print_New_Device:
 ;------------------------------------------------------------------
         mov     edx, VendorsTab
         mov     cx, [PCI_Vendor]
-        
+
 .fn:    mov     ax, [edx]
         add     edx, 6
         test    ax, ax
@@ -419,7 +419,7 @@ Print_New_Device:
         cmp     ax, cx
         jne     .fn
 .find:  mov     edx, [edx - 4]
-        mcall   4,, 0x80000000          ; lets print the vendor Name
+        mcall   4,, 0x80000000          ; let's print the vendor Name
 
 ;------------------------------------------------------------------
 ; Get description based on Class/Subclass
@@ -444,7 +444,7 @@ Print_New_Device:
 .endfc: test    edx, edx
         jnz     @f
         mov     edx, [Classes + esi * 8 - 4]
-@@:     
+@@:
         add     ebx, 288 shl 16
         mcall   4,, 0x80000000,, 32     ; draw the text
         movzx   edx, bx                 ; get y coordinate
@@ -460,7 +460,7 @@ Print_New_Device:
         call    get_drv_ptr
         mov     edx, eax
         pop     ebx
-        mcall   4,,0x80000000          ; lets print the vendor Name
+        mcall   4,,0x80000000          ; let's print the vendor Name
         pop     edx
         ret
 
@@ -491,7 +491,7 @@ get_drv_ptr:
         jmp     .driverloop
 
   .nodriver:
-        mov     eax, lbl_none          ; lets print the vendor Name
+        mov     eax, lbl_none          ; let's print the vendor Name
         ret
 
   .driverfound:
@@ -555,14 +555,14 @@ V_Bus           db ?
 V_Dev           db ?
 PCI_Version     dw ?
 PCI_LastBus     db ?
-; Dont change order
+; Don't change order
 PCI_Vendor      dw ?
 PCI_Device      dw ?
 
 PCI_Bus         db ?
 PCI_Dev         db ?
 PCI_Rev         db ?
-; Dont change order
+; Don't change order
 PCI_Class       db ?
 PCI_SubClass    db ?
 PCI_Interface   db ?

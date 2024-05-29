@@ -69,7 +69,7 @@ login_ok:
 
         cmp     [param_path], 0x20 ; no path specified
         jbe     wait_for_usercommand
-        
+
         ; copy path to buf_cmd and execute CWD
         jmp     arg_handler.get_path
 
@@ -175,7 +175,7 @@ data_loop:
 
         cmp     [operation], OPERATION_LIST
         je      .list
-        
+
 ; not retreiving, just print to console
         icall   eax, interface_addr, interface.print, buf_buffer2
         jmp     data_loop
@@ -267,9 +267,9 @@ data_loop:
         jne     .copy_buf
 
         ; All received filenames have been copied, calculate new size of fname buffer
-        dec     edi                             ; dont count the trailing 0 byte
+        dec     edi                             ; don't count the trailing 0 byte
         sub     edi, [ptr_fname]
-        mov     [size_fname], edi       
+        mov     [size_fname], edi
         jmp     data_loop
 
 

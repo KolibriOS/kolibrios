@@ -228,7 +228,7 @@ ipcfg:
         jnz     .draw
 
 ; Settings look valid, save them to the ini file
-; Re-create 'ip..' string, we dont want to save to 'ip?' section.
+; Re-create 'ip..' string, we don't want to save to 'ip?' section.
         call    create_str_ini_int
 
         cmp     [option_ip], op_ip_auto
@@ -266,7 +266,7 @@ ipcfg:
   .key:
         mcall   2
 
-; Editbox doesnt allow us to filter input decently, so we do it here.
+; Editbox doesn't allow us to filter input decently, so we do it here.
         cmp     ah, 13
         je      .apply
         cmp     ah, 8
