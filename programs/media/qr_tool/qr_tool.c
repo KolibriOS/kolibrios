@@ -30,7 +30,7 @@
 #define IMG1_DISPLAY_H 256
 
 const char WINDOW_TITLE[] = "QR Tool 0.2b";
- 
+
 kolibri_system_colors sys_color_table;
 const color_t DRAWTEXT_FLAG_DEFAULT = 0x90000000;
 
@@ -95,9 +95,9 @@ void redraw_window() {
     pos_t win_pos = get_mouse_pos(0);
     begin_draw();
     sys_create_window(win_pos.x, win_pos.y, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, sys_color_table.color_work_area, 0x14);
- 
+
     //draw_text_sys("", /*x*/, /*y*/, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.work_text);
- 
+
     define_button(X_W(WINDOW_COL2_X,100), Y_H(WINDOW_ROW1_Y,30), MYBTN_OPEN, sys_color_table.color_work_button);
     draw_text_sys("Open image", WINDOW_COL2_X + 12, WINDOW_ROW1_Y + 7, 0, DRAWTEXT_FLAG_DEFAULT | sys_color_table.color_work_button_text);
 
@@ -121,13 +121,13 @@ void redraw_window() {
 void tedit1_print(const char *text, int text_len, int do_newline) {
     if (text_len == -1) { text_len = strlen(text); }
     ted_text_add(tedit1, (char *)text, text_len, 1);
-    if (do_newline != 0 ) { ted_text_add(tedit1, "\r", 1, 1); } 
+    if (do_newline != 0 ) { ted_text_add(tedit1, "\r", 1, 1); }
 }
 
 void create_components() {
     tedit1 = kolibri_new_editor(X_W(WINDOW_COL2_X, TEDIT1_W), Y_H(WINDOW_ROW1_Y + IMG1_DISPLAY_H - TEDIT1_H - 16, TEDIT1_H), 0/*0x11*/, TEDIT1_MAXCHAR, &tedit1_lock);  // 0x11 font 8x16 sized x2, 0 - default (8x16)
     tedit1_lock = tedit1;
-    tedit1->mode_invis = 0; /* dont show invisible characters */
+    tedit1->mode_invis = 0; /* don't show invisible characters */
 
     op_dialog1 = kolibri_new_open_dialog(OPEN, 10, 10, 420, 320);
     op_dialog1->dir_default_path = cur_dir_path;
@@ -191,7 +191,7 @@ void recognize_qr() {
             tedit1_print(data.payload, data.payload_len, 1);
         }
     }
-    
+
     puts("\nquirc_destroy()...\n");
     quirc_destroy(qr);
 }
@@ -203,7 +203,7 @@ void on_btn_open() {
     if (op_dialog1->status != 2 && op_dialog1->status != 0) {// fail or cancel
         img1_path = op_dialog1->openfile_path;
         //ted_text_add(tedit1, img1_path, strlen(img1_path), 1);
-        //ted_text_add(tedit1, "\r", 1, 1); // newline 
+        //ted_text_add(tedit1, "\r", 1, 1); // newline
     } else {
         return;
     }
@@ -211,35 +211,35 @@ void on_btn_open() {
     if (img1 != NULL) { img_destroy(img1); }
     if (img1_grayscale != NULL) { img_destroy(img1_grayscale); }
     uint32_t file_size;
-    void *file_data = load_img(img1_path, &file_size); // Get RAW data and size 
+    void *file_data = load_img(img1_path, &file_size); // Get RAW data and size
     img1 = img_decode(file_data, file_size, 0); // Decode RAW data to Image data
     img1_grayscale = img_decode(file_data, file_size, 0); // Decode RAW data to Image data
     free(file_data); //
     printf("original: image->Width = %d, Image->Height = %d,\n original image type = %d\n\n", img1->Width, img1->Height, img1->Type);
-    if (img1->Type != IMAGE_BPP24) { 
+    if (img1->Type != IMAGE_BPP24) {
         oldimg = img1; //
         img1 = img_convert(img1, NULL, IMAGE_BPP24, 0, 0); // Convert image to RGB 24
         img_destroy(oldimg); //
         if (!img1) {
-            printf("Сonvert img1 to BPP24 error!: \n");  
+            printf("Сonvert img1 to BPP24 error!: \n");
             exit(-1);
         }
     }
-    if (img1_grayscale->Type != IMAGE_BPP24) { 
+    if (img1_grayscale->Type != IMAGE_BPP24) {
         oldimg = img1_grayscale; //
         img1_grayscale = img_convert(img1_grayscale, NULL, IMAGE_BPP24, 0, 0); // Convert image to RGB
         img_destroy(oldimg); //
         if (!img1_grayscale) {
-            printf("Сonvert img1_grayscale to BPP24 error!: \n");  
+            printf("Сonvert img1_grayscale to BPP24 error!: \n");
             exit(-1);
         }
     }
-    if (img1_grayscale->Type != IMAGE_BPP8g) { 
+    if (img1_grayscale->Type != IMAGE_BPP8g) {
         oldimg = img1_grayscale; //
         img1_grayscale = img_convert(img1_grayscale, NULL, IMAGE_BPP8g, 0, 0); // Convert image to grayscale
         img_destroy(oldimg); //
         if (!img1_grayscale) {
-            printf("Сonvert img1_grayscale to BPP8g error!: \n");  
+            printf("Сonvert img1_grayscale to BPP8g error!: \n");
             exit(-1);
         }
     }
@@ -259,14 +259,14 @@ int main(int argc, char *argv[]) {
     ((void)argc);
     strcpy(cur_dir_path, argv[0] + 2); char *pc = strrchr(cur_dir_path, '/'); if (pc) { *pc = '\0'; }
     printf("cur_dir_path = %s\n", cur_dir_path);
- 
+
     kolibri_boxlib_init();
     kolibri_proclib_init();  // opensave && color dialogs
     kolibri_libimg_init();
 
     set_wanted_events_mask(0xC0000027);
-    set_os_keyb_mode(1); // scan code mode needed for editor    
-    
+    set_os_keyb_mode(1); // scan code mode needed for editor
+
     kolibri_get_system_colors(&sys_color_table); // Get system colors theme
 
     create_components();
@@ -281,7 +281,7 @@ int main(int argc, char *argv[]) {
             break;
         case KOLIBRI_EVENT_MOUSE:
             ted_mouse(tedit1);
-            break;        
+            break;
         case KOLIBRI_EVENT_KEY:
             key = get_key();
             if (tedit1_lock == tedit1) { editor_key(tedit1, key); }
@@ -301,7 +301,7 @@ int main(int argc, char *argv[]) {
                     ted_clear(tedit1, 1);
                     redraw_window();
                     break; */
- 
+
                 case MYBTN_QUIT:
                     exit(0);
                     break;
