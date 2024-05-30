@@ -671,7 +671,7 @@ void close_outfile(__G)    /* GRR: change to return PK-style warning level */
     /* skip restoring time stamps on user's request */
     if (uO.D_flag <= 1) {
         /* set the file's access and modification times */
-        /* siemargl: dont using extra fields */
+        /* siemargl: don't using extra fields */
         unsigned ftim, fdat;
         dos_to_kolibri_time(G.lrec.last_mod_dos_datetime, &fdat, &ftim);
 
@@ -849,7 +849,7 @@ int set_direc_attribs(__G__ d)
     /* skip restoring time stamps on user's request */
     if (uO.D_flag <= 0) {
         /* set the file's access and modification times */
-        /* siemargl: dont using extra fields */
+        /* siemargl: don't using extra fields */
         unsigned ftim, fdat;
         dos_to_kolibri_time(G.lrec.last_mod_dos_datetime, &fdat, &ftim);
 

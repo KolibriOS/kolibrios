@@ -19,7 +19,7 @@ In panels:
    d) Ctrl+F6 - sorting by date of modification.
 7) Ctrl+R - repeated loading of contents of the directory in the active panel.
 8) Delete and F8 - the deleting of the file on which is the cursor.
-9) Insert - the selection by red colour of the file on which is the cursor and cursor update on 1 position downwards.
+9) Insert - the selection by red color of the file on which is the cursor and cursor update on 1 position downwards.
 10) F4 - to open the file for editing in the registered application, according to a contents of the file kfm.ini, unit " < > files association1 ".
 11) F7 - creation of the directory in the active panel.
 12) F5 - copying file from the active panel in opposite.
