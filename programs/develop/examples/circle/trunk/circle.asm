@@ -64,7 +64,7 @@ shape_window:
     mcall
 
     mov  eax,50       ; give the shape scale  32 x 32  ->  128 x 128
-    mov  ebx,1        ; you dont have to give this, scale is 1:1 by default
+    mov  ebx,1        ; you don't have to give this, scale is 1:1 by default
     mov  ecx,2
     mcall
 

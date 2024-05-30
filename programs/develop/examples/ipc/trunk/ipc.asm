@@ -229,7 +229,7 @@ draw_window:
     mov  edi,title                 ; WINDOW LABEL
     mcall
 
-                                   
+
     mov  eax,9
     mov  ebx,process_info
     mov  ecx,-1
@@ -387,7 +387,7 @@ text:
     db '                                        '
     db '                                        '
     db 'RECEIVED:                          POP  '
-    db 'x' ; <- END MARKER, DONT DELETE
+    db 'x' ; <- END MARKER, DO NOT DELETE
 
 
 title      db   'IPC - START AT LEAST 2',0

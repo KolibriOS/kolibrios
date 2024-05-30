@@ -1295,9 +1295,9 @@ align 4
 ;--------------------------------------
 align 4
 @@:
-;        DEBUGF  1, "K : SHIT HAPPENS: %x %x \n", ecx,ebx
+;        DEBUGF  1, "K : ERRORS HAPPEN: %x %x \n", ecx,ebx
         pop     ebx
-        jmp     .sh   ; SORRY! SHIT HAPPENS!
+        jmp     .sh   ; SORRY! ERRORS HAPPEN!
 ;--------------------------------------
 align 4
 .ok:

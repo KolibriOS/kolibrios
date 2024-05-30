@@ -1,8 +1,8 @@
-; EntropyView - file entropy visualisation
+; EntropyView - file entropy visualization
 ; rgimad 2021
- 
+
 ; header:
-use32              
+use32
         org     0
         db      'MENUET01'   ; magic
         dd      1            ; header version
@@ -16,7 +16,7 @@ use32
 
 __DEBUG__       = 1             ; 0 - disable debug output / 1 - enable debug output
 __DEBUG_LEVEL__ = DBG_ERR       ; set the debug level
- 
+
 DBG_ALL       = 0  ; all messages
 DBG_INFO      = 1  ; info and errors
 DBG_ERR       = 2  ; only errors
@@ -32,16 +32,16 @@ HIST_Y          = 230
 HIST_X          = 10
 
 TMP_BUF_SIZE    = 4096
- 
+
 include '../../macros.inc'
 purge   mov, add, sub
 
 include '../../debug-fdo.inc'
 include '../../proc32.inc'
- 
+
 _start:
-        cmp     byte [cmdline], 0 ; if no argument then print usage and exit 
-        jne     @f     
+        cmp     byte [cmdline], 0 ; if no argument then print usage and exit
+        jne     @f
 
         mov     dword [notify_struct.msg], msg_print_usage
         mcall   70, notify_struct
@@ -55,39 +55,39 @@ _start:
         ;     cmp     ecx, 256
         ;     jae     .end_table_loop
         ;     mov     ebx, dword [byte_table + ecx*4]
-        
+
         ;     DEBUGF  DBG_INFO, "number of bytes %x = %u\n", ecx, ebx
 
         ;     inc     ecx
         ;     jmp     .table_loop
         ; .end_table_loop:
- 
+
 
 ; event loop:
 event_loop:
         mcall   10            ; wait for event
- 
+
         cmp     eax, 1        ; redraw event
         je      on_redraw
- 
+
         cmp     eax,3         ; button event
-        je      on_button        
- 
+        je      on_button
+
         jmp     event_loop
- 
- 
+
+
 on_button:
         mcall   17            ; 17 - get key code
         cmp     ah, 1         ; if key with code 1 is not pressed then continue
         jne     event_loop
         mcall   -1 ; else exit
- 
+
 ; define and draw window
 align 4
 on_redraw:
         mcall   12, 1       ; begin redraw
         mcall   48, 3, sc,sizeof.system_colors
- 
+
         mov     edx, [sc.work] ; background color
         or      edx, 0x34000000        ; window type
         mcall   0, <WND_START_X, WND_WIDTH>, <WND_START_Y, WND_HEIGHT>, , , wnd_title
@@ -109,7 +109,7 @@ on_redraw:
         cmp     ecx, 256
         jae     .end_table_loop
         mov     ebx, dword [byte_table + ecx*4] ; ebx = frequency of ecx value
-        
+
         mov     esi, ecx
         imul    esi, COL_WIDTH ; esi = x of column
 
@@ -129,7 +129,7 @@ on_redraw:
 
         mov     ebp, eax ; ebp = height of column
         mov     edi, HIST_Y
-        sub     edi, eax ; edi = y of left upper corner of column 
+        sub     edi, eax ; edi = y of left upper corner of column
 
         push    ecx
         ; DEBUGF  DBG_INFO, "drawing rect x = %u y = %u, height = %u\n", esi, edi, ebp
@@ -150,7 +150,7 @@ on_redraw:
         jmp     .table_loop
 .end_table_loop:
         ; DEBUGF  DBG_INFO, "esi = %u\n", esi
- 
+
         mcall   12, 2                  ; end draw
         jmp     event_loop
 
@@ -215,13 +215,13 @@ endp
 
 
 align 4
-proc _memset stdcall, dest:dword, val:byte, cnt:dword ; doesnt clobber any registers
+proc _memset stdcall, dest:dword, val:byte, cnt:dword ; doesn't clobber any registers
         ;DEBUGF  DBG_INFO, "memset(%x, %u, %u)\n", [dest], [val], [cnt]
         push    eax ecx edi
         mov     edi, dword [dest]
         mov     al,  byte [val]
         mov     ecx, dword [cnt]
-        rep     stosb  
+        rep     stosb
         pop     edi ecx eax
         ret
 endp
@@ -244,8 +244,8 @@ file_size           dd 0
 
 sc              system_colors
 wnd_title       db 'EntropyView 0.0.1', 0
-msg_file_not_found  db '"File not found" -tE', 0    
-msg_print_usage  db '"Use from shell like:\nentropyview somefile.txt" -tI', 0 
+msg_file_not_found  db '"File not found" -tE', 0
+msg_print_usage  db '"Use from shell like:\nentropyview somefile.txt" -tI', 0
 
 notify_struct:
         dd 7            ; run application
@@ -254,7 +254,7 @@ notify_struct:
         dd 0
         dd 0
         db '/sys/@notify', 0
- 
+
 ; reverved data:
 
 align 16
@@ -264,8 +264,8 @@ _i_end:
     byte_table  rd 256   ; table which stores how many times each byte value(0-255) occured in the file
 
     rb          4096     ; for stack
- 
+
 align 16
 _stacktop:               ; stack top label, stack grows downwards
-                       
+
 _mem:                    ; end
