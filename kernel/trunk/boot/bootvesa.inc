@@ -77,13 +77,13 @@ virtual at $A000
   mi VBE_ModeInfo
 modes_table:
 end virtual
-cursor_pos  dw 0         ;временное хранение курсора.
+cursor_pos  dw 0        ; temporary cursor storage
 cursor_pos_old  dw 0
-home_cursor dw 0    ;current shows rows a table
-end_cursor  dw 0     ;end of position current shows rows a table
-scroll_start dw 0    ;start position of scroll bar
-scroll_end  dw 0     ;end position of scroll bar
-long_v_table = 9   ;long of visible video table
+home_cursor dw 0        ; current shows rows a table
+end_cursor  dw 0        ; end of position current shows rows a table
+scroll_start dw 0       ; start position of scroll bar
+scroll_end  dw 0        ; end position of scroll bar
+long_v_table = 9        ; long of visible video table
 size_of_step = 10
 scroll_area_size = long_v_table - 2
 int2str:
@@ -696,7 +696,7 @@ draw_vmodes_table:
         jmp     .@@_sh
 
 ;-----------------------------------------------------------------------------
-;Clear arrea of current video page (0xb800)
+;Clear area of current video page (0xb800)
 clear_vmodes_table:
         pusha
        ; draw frames
@@ -724,17 +724,17 @@ set_vmode:
         push    0 ;0;x1000
         pop     es
 
-        mov     si, word [preboot_graph]           ;[preboot_graph]
-        mov     cx, word [es:si+6]           ; number of mode
+        mov     si, word [preboot_graph]        ;[preboot_graph]
+        mov     cx, word [es:si+6]              ; number of mode
 
 
-        mov     ax, word [es:si+0]           ; resolution X
-        mov     bx, word [es:si+2]           ; resolution Y
+        mov     ax, word [es:si+0]              ; resolution X
+        mov     bx, word [es:si+2]              ; resolution Y
 
 
-        mov     word [es:BOOT_LO.x_res], ax             ; resolution X
-        mov     word [es:BOOT_LO.y_res], bx             ; resolution Y
-        mov     word [es:BOOT_LO.vesa_mode], cx         ; number of mode
+        mov     word [es:BOOT_LO.x_res], ax     ; resolution X
+        mov     word [es:BOOT_LO.y_res], bx     ; resolution Y
+        mov     word [es:BOOT_LO.vesa_mode], cx ; number of mode
 
         cmp     cx, 0x12
         je      .mode0x12_0x13
@@ -752,7 +752,7 @@ set_vmode:
         mov     di, mi;0xa000
         int     0x10
         ; LFB
-        mov     eax, [es:mi.PhysBasePtr];di+0x28]
+        mov     eax, [es:mi.PhysBasePtr]        ; di+0x28
         mov     [es:BOOT_LO.lfb], eax
         ; ---- vbe voodoo
         BytesPerLine = 0x10

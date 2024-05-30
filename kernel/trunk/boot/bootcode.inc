@@ -414,7 +414,7 @@ sayerr:
         test    al, 2
         loopnz  @b
 
-        mov     al, 0xf6        ; Сброс клавиатуры, разрешить сканирование
+        mov     al, 0xf6        ; Keyboard reset, enable scanning
         out     0x60, al
         xor     cx, cx
 @@:
@@ -704,7 +704,7 @@ end if
 if defined extended_primary_loader
         _ask_question bdev,'13',preboot_device  ; range accepted for answer: 1-3
 else
-        _ask_question bdev,'14',preboot_device              ; range accepted for answer: 1-4
+        _ask_question bdev,'14',preboot_device  ; range accepted for answer: 1-4
 end if
         _setcursor 14,0
 
@@ -875,7 +875,7 @@ end if
         xor     dx, dx
         div     bx
 if lang eq ru
-; подождите 5 секунд, 4/3/2 секунды, 1 секунду
+; подождите 5 секунд, 4/3/2 секундЫ, 1 секундУ
         cmp     al, 5
         mov     cl, ' '
         jae     @f
@@ -892,7 +892,7 @@ else if lang eq et
         mov     byte [time_str+10], ' '
 @@:
 else if lang eq sp
-; esperar 5/4/3/2 segundos, 1 segundo
+; esperar 5/4/3/2 segundo_s_, 1 segundo
         cmp     al, 1
         mov     cl, 's'
         ja      @f
@@ -900,7 +900,7 @@ else if lang eq sp
 @@:
         mov     [time_str+10], cl
 else
-; wait 5/4/3/2 seconds, 1 second
+; wait 5/4/3/2 second_s_, 1 second
         cmp     al, 1
         mov     cl, 's'
         ja      @f

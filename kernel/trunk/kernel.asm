@@ -337,11 +337,11 @@ high_code:
         or      eax, 1 ; bit_0 - System Call Extension (SCE)
         wrmsr
 
-        ; !!!! It`s dirty hack, fix it !!!
+        ; !!!! FIXME: Hack, fix it !!!
         ; Bits of EDX :
-        ; Bit 31–16 During the SYSRET instruction, this field is copied into the CS register
+        ; Bit 31-16 During the SYSRET instruction, this field is copied into the CS register
         ;  and the contents of this field, plus 8, are copied into the SS register.
-        ; Bit 15–0 During the SYSCALL instruction, this field is copied into the CS register
+        ; Bit 15-0 During the SYSCALL instruction, this field is copied into the CS register
         ;  and the contents of this field, plus 8, are copied into the SS register.
 
         ; mov   edx, (os_code + 16) * 65536 + os_code
@@ -2553,8 +2553,8 @@ sys_sheduler:
 ;now counter in ecx
 ;(edx:eax) esi:edi => edx:esi
         ; Fast Call MSR can't be destroy
-        ; Но MSR_AMD_EFER можно изменять, т.к. в этом регистре лиш
-        ; включаются/выключаются расширенные возможности
+        ; But MSR_AMD_EFER can be changed, because in this register only
+        ; advanced features are enabled/disabled
         cmp     edx, MSR_SYSENTER_CS
         je      @f
         cmp     edx, MSR_SYSENTER_ESP
@@ -2857,13 +2857,13 @@ newdw2:
 
         cmp     eax, [esp+4]
         je      not_this_task
-                                   ; check if window in redraw area
+                                ; check if window in redraw area
         mov     edi, eax
 
-        cmp     ecx, 1             ; limit for background
+        cmp     ecx, 1          ; limit for background
         jz      bgli
 
-        mov     eax, [esp+4]        ;if upper in z-position - no redraw
+        mov     eax, [esp+4]    ; if upper in z-position - no redraw
         test    eax, eax
         jz      @f
         mov     al, [eax + WDATA.z_modif]
