@@ -44,7 +44,7 @@ bit_AHCI_HBA_CAP2_BOH   = 0        ; Supports BIOS/OS Handoff
 
 bit_AHCI_HBA_BOHC_BOS  = 0         ; BIOS-Owned Semaphore (BIOS owns controller)
 bit_AHCI_HBA_BOHC_OOS  = 1         ; OS-Owned Semaphore (OS owns controller)
-bit_AHCI_HBA_BOHC_BB   = 4         ; BIOS Busy (polling bit while BIOS cleans up
+bit_AHCI_HBA_BOHC_BB   = 4         ; BIOS Busy (polling bit while BIOS cleans up)
 
 bit_AHCI_HBA_GHC_AHCI_ENABLE      = 31  ; Enable AHCI mode
 bit_AHCI_HBA_GHC_RESET            = 0   ; Reset HBA
@@ -167,7 +167,7 @@ struct PORT_DATA
     ctr_ptr       dd ? ; pointer to controller to which port belongs
 ends
 
-; Register FIS – Host to Device
+; Register FIS - Host to Device
 struct FIS_REG_H2D
         fis_type      db ?       ; FIS_TYPE_REG_H2D
         flags        db ?       ; 0bCRRRPPPP, C - 1: Command, 0: Control
@@ -194,7 +194,7 @@ struct FIS_REG_H2D
                       rb 4       ; Reserved
 ends
 
-; Register FIS – Device to Host
+; Register FIS - Device to Host
 struct FIS_REG_D2H
     fis_type      db ?           ; FIS_TYPE_REG_D2H
 
@@ -221,7 +221,7 @@ struct FIS_REG_D2H
                   rb 4           ; Reserved
 ends
 
-; Data FIS – Bidirectional
+; Data FIS - Bidirectional
 struct FIS_DATA
     fis_type      db ?           ; FIS_TYPE_DATA
     flags        db ?           ; 0bRRRRPPPP, R - Reserved, P - Port multiplier
@@ -230,7 +230,7 @@ struct FIS_DATA
     data          rd 1           ; Payload
 ends
 
-; PIO Setup – Device to Host
+; PIO Setup - Device to Host
 struct FIS_PIO_SETUP
     fis_type      db ?           ; FIS_TYPE_PIO_SETUP
 
@@ -259,7 +259,7 @@ struct FIS_PIO_SETUP
                   rb 2           ; Reserved
 ends
 
-; DMA Setup – Device to Host
+; DMA Setup - Device to Host
 struct FIS_DMA_SETUP
     fis_type      db ?           ; FIS_TYPE_DMA_SETUP
     flags        db ?           ; 0bAIDRPPPP, A - Auto-activate. Specifies if DMA Activate FIS is needed,

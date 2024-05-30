@@ -505,16 +505,16 @@ IDE_common_irq_handler:
 ; Most of the time, we are here because we have requested
 ; a DMA transfer for the corresponding drive.
 ; However,
-; a) we can be here because IDE IRQ is shared with some other device,
+; (a) we can be here because IDE IRQ is shared with some other device,
 ;    that device has actually raised IRQ,
 ;    it has nothing to do with IDE;
-; b) we can be here because IDE controller just does not want
+; (b) we can be here because IDE controller just does not want
 ;    to be silent and reacts to something even though
 ;    we have, in theory, disabled IRQs.
 ; If the interrupt corresponds to our current request,
 ; remove the interrupt request and raise the event for the waiting code.
-; In the case a), just return zero - not our interrupt.
-; In the case b), remove the interrupt request and hope for the best.
+; In the case (a), just return zero - not our interrupt.
+; In the case (b), remove the interrupt request and hope for the best.
 ; DEBUGF 1, 'K : IDE_irq_handler %x\n', [IDE_common_irq_param]:2
         mov     ecx, [esp+4]
         mov     dx, [ecx+IDE_DATA.RegsBaseAddres]

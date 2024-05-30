@@ -16,8 +16,8 @@
 ; allocated/freed sector-wise, so items for sequential sectors can be
 ; scattered over all the cache.
 ; So read/write functions allocate a temporary buffer which is
-; 1) not greater than half of free memory and
-; 2) not greater than the following constant.
+; (1) not greater than half of free memory and
+; (2) not greater than the following constant.
 CACHE_MAX_ALLOC_SIZE = 4 shl 20
 
 ; Legacy interface for filesystems fs_{read,write}32_{sys,app}

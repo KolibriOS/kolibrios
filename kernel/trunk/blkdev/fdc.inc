@@ -11,7 +11,7 @@ uglobal
   dmamode         db 0x0
 endg
 
-fdc_init:                               ;start with clean tracks.
+fdc_init:                               ; start with clean tracks
         mov     edi, OS_BASE+0xD201
         mov     al, 0
         mov     ecx, 160
@@ -28,9 +28,9 @@ save_image:
         call    floppy_read_bootsector
         cmp     [FDC_Status], 0
         jne     .unnecessary_save_image
-        mov     [FDD_Track], 0; Цилиндр
-        mov     [FDD_Head], 0; Сторона
-        mov     [FDD_Sector], 1; Сектор
+        mov     [FDD_Track], 0
+        mov     [FDD_Head], 0
+        mov     [FDD_Sector], 1
         mov     esi, RAMDISK
         call    SeekTrack
 .save_image_1:
