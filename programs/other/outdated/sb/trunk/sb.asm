@@ -977,7 +977,7 @@ text:
     db '                                        '
     db '                                        '
     db ' START/STOP    <<  >>   REPEAT:OFF      '
-    db 'x <- END MARKER, DON'T DELETE           '
+    db 'x <- END MARKER, DO NOT DELETE          '
 now_playing:
     db '                                        '
     db 'xx                                      '

@@ -304,7 +304,7 @@ print "read get data"
 	mov	edx, ebx
 	mov	eax, 1
 print "read ok"
-	jmp	.exit.
+	jmp	.exit
 
 .size:
 print "buffer small"
