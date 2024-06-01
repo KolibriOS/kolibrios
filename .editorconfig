@@ -10,10 +10,10 @@ trim_trailing_whitespace = true
 end_of_line = lf
 insert_final_newline = true
 
-[*.{asm,inc}]
+[*.{asm,inc,ASM,INC}]
 indent_size = 8
 
-[kernel/**.{asm,inc}]
+[kernel/**.{asm,inc,ASM,INC}]
 charset = utf-8
 
 [*.{bat,cmd}]

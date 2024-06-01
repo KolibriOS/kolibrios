@@ -35,6 +35,7 @@
     dd	   temp_area , 0x0	   ; I_Param , I_Icon
 
 include    'lang.inc'
+; Language support for locales: ru_RU (CP866), en_US, de_DE.
 include    '..\..\..\..\macros.inc'
 include    '..\..\..\..\develop\examples\editbox\trunk\editbox.inc'
 ;include    'macros.inc'
@@ -655,9 +656,9 @@ labelt:
 	 db 'MeView v.0.4'
 
 lsz buttext,\
-    en,   ' FILE   OPEN   INFO   BGRD',\
-    ru,   ' ФАЙЛ  ОТКР   ИНФО   ФОН  ',\
-    de,   'DATEI OEFNEN  INFO   HGRD'
+    en_US,   ' FILE   OPEN   INFO   BGRD',\
+    ru_RU,   ' ФАЙЛ  ОТКР   ИНФО   ФОН  ',\
+    de_DE,   'DATEI OEFNEN  INFO   HGRD'
 
 thread1:			; start of thread1
 
@@ -926,25 +927,25 @@ draw_window2:
 ; DATA AREA
 
 lsz labelt2,\
-    en,   'File info',\
-    ru,   'Информация о файле',\
-    de,   'Dateiinfo'
+    en_US,   'File info',\
+    ru_RU,   'Информация о файле',\
+    de_DE,   'Dateiinfo'
 
 lsz fitext,\
-     en, 'FILE SIZE     ',\
-     en, 'X SIZE        ',\
-     en, 'Y SIZE        ',\
-     en, 'BITS PER PIXEL',\
+     en_US, 'FILE SIZE     ',\
+     en_US, 'X SIZE        ',\
+     en_US, 'Y SIZE        ',\
+     en_US, 'BITS PER PIXEL',\
 			  \
-     ru, 'Размер файла  ',\
-     ru, 'Ширина        ',\
-     ru, 'Высота        ',\
-     ru, 'Бит на пиксел ',\
+     ru_RU, 'Размер файла  ',\
+     ru_RU, 'Ширина        ',\
+     ru_RU, 'Высота        ',\
+     ru_RU, 'Бит на пиксел ',\
 			  \
-     de, 'FATEIGROESSE  ',\
-     de, 'X GROESSE     ',\
-     de, 'Y GROESSE     ',\
-     de, 'BITS PER PIXEL'
+     de_DE, 'FATEIGROESSE  ',\
+     de_DE, 'X GROESSE     ',\
+     de_DE, 'Y GROESSE     ',\
+     de_DE, 'BITS PER PIXEL'
 
 thread3:			  ; start of bgrd thread
 
@@ -1114,29 +1115,29 @@ wnd_width dd 210
 wnd_height dd 53
 
 lsz labelt3,\
-    en,   'Background set',\
-    ru,   "Установка фона",\
-    de,   'Hintergrund gesetzt'
+    en_US,   'Background set',\
+    ru_RU,   "Установка фона",\
+    de_DE,   'Hintergrund gesetzt'
 
 lsz bgrdtext,\
-    en, 'SET AS BACKGROUND:',\
-    ru, 'Тип обоев:',\
-    de, 'ALS HINTERGRUND'
+    en_US, 'SET AS BACKGROUND:',\
+    ru_RU, 'Тип обоев:',\
+    de_DE, 'ALS HINTERGRUND'
 
 lsz tiled,\
-    en, 'TILED',\
-    ru, 'замостить',\
-    de, 'GEKACHELT'
+    en_US, 'TILED',\
+    ru_RU, 'замостить',\
+    de_DE, 'GEKACHELT'
 
 lsz stretch,\
-    en, 'STRETCH',\
-    ru, 'растянуть',\
-    de, 'GESTRECKT'
+    en_US, 'STRETCH',\
+    ru_RU, 'растянуть',\
+    de_DE, 'GESTRECKT'
 
 lsz ok_btn,\
-    en, 'Ok',\
-    ru, 'Ok',\
-    de, 'Ok'
+    en_US, 'Ok',\
+    ru_RU, 'Ok',\
+    de_DE, 'Ok'
 
 image_file dd 0
 image_file_1 dd 0

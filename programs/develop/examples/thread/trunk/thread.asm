@@ -15,7 +15,7 @@
   dd     0x2000                ; esp
   dd     0x0 , 0x0              ; I_Param , I_Icon
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include '..\..\..\..\macros.inc'
 
 
@@ -97,7 +97,7 @@ draw_window:
     mov  edi,title               ; WINDOW LABEL
     mcall
 
-                                   
+
     mov  eax,8                     ; NEW THREAD BUTTON
     mov  ebx,20*65536+128
     mov  ecx,63*65536+20
@@ -127,7 +127,7 @@ draw_window:
 
 ; DATA AREA
 
-if lang eq ru
+if lang eq ru_RU
   text:
       db 'Эта программа создает потоки, запуская  '
       db 'один и тот же код много раз. Нам нужно  '
@@ -136,11 +136,11 @@ if lang eq ru
       db 'Память для всех потоков общая.          '
       db '                                        '
       db ' СОЗДАТЬ НОВЫЙ ПОТОК                    '
-      db 'x' ; <- END MARKER, DONT DELETE
+      db 'x' ; <- END MARKER, DO NOT DELETE
 
   title   db   'Пример использования потоков',0
 
-else
+else ; Default to en_US
   text:
       db 'THIS EXAMPLE CREATES THREADS BY RUNNING '
       db 'THE SAME CODE MULTIPLE TIMES. ALL WE    '
@@ -149,7 +149,7 @@ else
       db '                                        '
       db '                                        '
       db '  CREATE NEW THREAD                     '
-      db 'x' ; <- END MARKER, DONT DELETE
+      db 'x' ; <- END MARKER, DO NOT DELETE
 
   title   db   'THREAD EXAMPLE',0
 

@@ -233,7 +233,7 @@ WG_mouse:
 WG_level:
 file 'wriggle.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	WG_help mstr \
 	'Ваша задача - тянуть червяков за голову или',\
 	'хвост, пока каждый из них не покроет клетки',\
@@ -241,7 +241,7 @@ if lang eq ru
 	'Червяки не могут перекрывать и пересекать друг',\
 	'друга.','',\
 	'http://www.clickmazes.com'
-else
+else ; Default to en_US
 	WG_help mstr \
 	'Your aim is to drag the wriggley worms by head or',\
 	'tail until each worm covers the squares of its',\

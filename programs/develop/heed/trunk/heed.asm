@@ -13,7 +13,7 @@
 ; Marat Zakiyanov aka Mario79, aka Mario
 ;--------------------------------------------------------------------
 ; v.014 05.02.2010
-; 
+;
 ; PageUp, PageDown      - страница вверх/вниз
 ; Ctrl+UP, Ctrl+Down    - прокрутка страницы на строку вверх/вниз без смещения курсора
 ; Home,End              - в начало/конец строки
@@ -59,9 +59,9 @@ use32
 ;--------------------------------------------------------------------
 _title	equ 'HeEd 0.16', 0
 
-include	'lang.inc'
+include	'lang.inc'      ; Language support for locales: ru_RU (CP866), en_US.
 include '../../../KOSfuncs.inc'
-include '../../../config.inc'		;for nightbuild
+include '../../../config.inc'		; for nightbuild
 include '../../../macros.inc'
 include	'../../libraries/box_lib/trunk/box_lib.mac'
 include	'../../../load_lib.mac'
@@ -108,25 +108,25 @@ load_libraries l_libs_start,end_l_libs
 ;OpenDialog	initialisation
 	push    dword OpenDialog_data
 	call    [OpenDialog_Init]
-;--------------------------------------------------------------------	
+;--------------------------------------------------------------------
 	mov	esi,fname_buf
 	cmp	[esi],byte 0
 	je	.start_temp_file_name
-	
+
 	cld
 @@:
 	lodsb
 	test	al,al
 	jne	@b
-	
+
 	std
 @@:
 	lodsb
-	cmp	al,'/'	
+	cmp	al,'/'
 	jne	@b
 	add	esi,2
 	jmp	.selected_start_file_name
-;--------------------------------------------------------------------	
+;--------------------------------------------------------------------
 .start_temp_file_name:
 	mov	esi,start_temp_file_name
 .selected_start_file_name:
@@ -1068,7 +1068,7 @@ main_area:
 	mov	ecx,edx
 	mov	edx,frgrd_color
 	movzx	ebx,[scroll_bar_data_vertical.x_pos]
-	
+
 	mov	ax,[scroll_bar_data_vertical.x_size]
 	test	ax,ax
 	jnz	.no_inc_ebx
@@ -1091,7 +1091,7 @@ main_area:
 	shl	ebx,16
 	mov	bx,ax
 	mov	cx,16
-	
+
 	mov	ax,[scroll_bar_data_vertical.x_size]
 	test	ax,ax
 	jnz	.no_inc_ebx_2
@@ -1938,13 +1938,13 @@ draw_ed_box:	;рисование edit box'а
 	cmp	al,1
 	jne	.2
 	call	draw_window
-	
+
 	mov     eax,[threath_buf+70]
 	test    eax,10b
 	jnz     .2
 	test    eax,100b
 	jnz     .2
-	
+
 	call	main_area
 	bt	[flags],2
 	jnc	@f
@@ -2805,7 +2805,7 @@ Ctrl_V:
 	mov	[shblock_end],eax
 	jmp	red
 ;--------------------------------------------------------------------
-;если блок не выделен, то вставляем блок перед курсором 
+;если блок не выделен, то вставляем блок перед курсором
 .past_kurs:
 ;	bt	[flags],1
 ;	jnc	still
@@ -2963,9 +2963,9 @@ menu_data_1:
 .mouse_pos	dd 0	;+24
 .mouse_keys	dd 0	;+28
 .x1:
-if lang eq ru
+if lang eq ru_RU
  .size_x1	dw 4*2+9*6	;+32
-else
+else ; Default to en_US
  .size_x1	dw 40	;+32
 end if
 .start_x1	dw 2	;+34
@@ -2994,13 +2994,13 @@ end if
 .get_mouse_flag	dd 0	;+116
 
 menu_text_area:
-if lang eq ru
+if lang eq ru_RU
   	 db 'Файл',0
  .1:
 	 db 'Открыть',0
 	 db 'Сохранить',0
 	 db 'Выход',0
-else
+else ; Default to en_US
   	 db 'File',0
  .1:
 	 db 'Open',0
@@ -3053,10 +3053,10 @@ menu_data_2:
 .get_mouse_flag	dd 0	;+116
 
 menu_text_area_2:
-if lang eq ru
+if lang eq ru_RU
 	 db 'Вид',0
  .1:
-else
+else ; Default to en_US
 	 db 'View',0
  .1:
 end if
@@ -3072,9 +3072,9 @@ align	4
 menu_data_3:
 .type:		dd 0	;+0
 .x:
-if lang eq ru
+if lang eq ru_RU
  .size_x	dw 4*2+7*6	;+32
-else
+else ; Default to en_US
  .size_x	dw 40	;+4
 end if
 .start_x	dw 84	;+6
@@ -3087,9 +3087,9 @@ end if
 .mouse_pos	dd 0	;+24
 .mouse_keys	dd 0	;+28
 .x1:
-if lang eq ru
+if lang eq ru_RU
  .size_x1	dw 4*2+7*6	;+32
-else
+else ; Default to en_US
  .size_x1	dw 40	;+32
 end if
 .start_x1	dw 84	;+34
@@ -3118,11 +3118,11 @@ end if
 .get_mouse_flag	dd 0	;+116
 
 menu_text_area_3:
-if lang eq ru
+if lang eq ru_RU
 	db 'Справка',0
  .1:
 	db 'Справка',0
-else
+else ; Default to en_US
 	db 'Help',0
  .1:
 	db 'Help',0
@@ -3148,14 +3148,14 @@ Option_boxs	dd op1,op2,op3,0
 Option_boxs2	dd op11,op12,0
 
 op_text:	; Сопровождающий текст для чек боксов
-if lang eq ru
+if lang eq ru_RU
  .1	db 'Абсолютное'
  .e1:
  .2	db 'Вперед'
  .e2:
  .3	db 'Назад'
  .e3:
-else
+else ; Default to en_US
  .1	db 'Absolutely'
  .e1:
  .2	db 'Forward'
@@ -3178,10 +3178,10 @@ sel_text	db "From to",0
 help_but_text	= menu_text_area_3 ;db	'Help',0
 
 head_f_i:
-if lang eq ru
+if lang eq ru_RU
  error_open_file_string	db "Файл не найден!",0
  error_save_file_string	db "Файл не сохранен!",0
-else
+else ; Default to en_US
  error_open_file_string	db "Isn't found!",0
  error_save_file_string	db "Isn't saved!",0
 end if
@@ -3218,7 +3218,7 @@ flags	dw 001000010b
 ;10:	в памяти "висит" скопированный блок
 ;--------------------------------------------------------------------
 help_text:
-if lang eq ru
+if lang eq ru_RU
  db 'Ctrl+O              - открыть файл                 '
  db 'Ctrl+S              - сохранить                    '
  db 'PageUp, PageDown    - страница вверх/вниз          '
@@ -3240,7 +3240,7 @@ if lang eq ru
  db 'Ctrl+C              - копировать блок              '
  db 'Ctrl+V              - вставить в выделенную область'
  db 'Ctrl+X              - вырезать в буфер             '
-else
+else ; Default to en_US
  db 'Ctrl+O              - open file                    '
  db 'Ctrl+S              - save file                    '
  db 'PageUp, PageDown    - page up/down                 '
@@ -3268,7 +3268,7 @@ help_end:
 ;align	4096
 font_buffer	file 'cp866-8x16'	;ASCII+cp866	(+Ё,ё)
 cp1251		file 'cp1251-8x16'
-koi8_r		file 'koi8-r-8x16'	
+koi8_r		file 'koi8-r-8x16'
 
 title	db	_title
 ;---------------------------------------------------------------------

@@ -20,7 +20,7 @@ include '../../../KOSfuncs.inc'
 include '../../../load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../develop/info3ds/info_fun_float.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
 @use_library
 
@@ -256,10 +256,10 @@ hexstr db 'hex:',0
 decstr db 'dec:',0
 binstr db 'bin:',0
 
-if lang eq ru
+if lang eq ru_RU
 	numstr db 'Число:',0
 	Okstr db 'Ввод',0
-else
+else ; Default to en_US
 	numstr db 'Number:',0
 	Okstr db 'Ok',0
 end if
@@ -311,7 +311,7 @@ dd 0,0
 
 i_end:
 	sys_colors system_colors
-align 16	
+align 16
 	sys_path rb 4096
 	library_path rb 4096
 	rb 0x400 ;stack
