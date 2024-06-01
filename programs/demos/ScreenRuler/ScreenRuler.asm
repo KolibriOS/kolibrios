@@ -15,7 +15,7 @@
         dd      0x1000    ; esp
         dd      0, 0      ; no parameters, no path
 ;---------------------------------------------------------------------
-        include 'lang.inc'
+        include 'lang.inc' ; Language support for locales: ru_RU (UTF-8), en_US.
         include '..\..\macros.inc'
 
         delay   = 20
@@ -240,7 +240,7 @@ draw_magnify:
         ret
 
 ;------------------------- Data area
-        if      lang eq ru
+if      lang eq ru_RU
 labelt:
         db      3, 'Измеритель', 0
 start_pix:
@@ -256,7 +256,7 @@ measure_d:
 inf:
         db      'Нажмите пробел', 0
 
-        else
+else ; Default to en_US
 labelt:
         db      3, 'Ruler', 0
 start_pix:
@@ -272,7 +272,8 @@ measure_d:
 inf:
         db      'Press Space', 0
 
-         end if
+end if
+
 I_END:
         align   4
         magnify_area_start_x  dd ?

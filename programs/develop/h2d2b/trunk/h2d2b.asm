@@ -22,7 +22,7 @@ include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
 include '../../../KOSfuncs.inc'
 include '../../../load_lib.mac'
 include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include 'lang.inc'
+include 'lang.inc'      ; Language support for locales: ru_RU (CP866), en_US.
 
 @use_library
 
@@ -170,7 +170,7 @@ draw_window:
 	;or	esi, [sys_colors.grab_text]
     mcall SF_CREATE_WINDOW, 200*65536+WIN_W, 200*65536+179, ,,title
 
-	
+
     mcall  SF_DEFINE_BUTTON, 15*65536+42,106*65536+ 21, 2, [sys_colors.work_button] ; кнопка shl
     mcall   ,         70*65536+42,             ,  , ; кнопка sal
     mcall   , (WIN_W-55)*65536+42,             , 3, ; кнопка shr
@@ -196,7 +196,7 @@ draw_window:
 
     mcall SF_DRAW_NUMBER, 10*65536,   ,(WIN_W-92)*65536+62,    ; 10-ная со знаком
 	BIN_LINE_BLOCK_W = 76
-    mcall SF_DRAW_NUMBER, 8*65536+512,,(WIN_W-BIN_LINE_BLOCK_W)*65536+30 ; 2-ная	
+    mcall SF_DRAW_NUMBER, 8*65536+512,,(WIN_W-BIN_LINE_BLOCK_W)*65536+30 ; 2-ная
     ror    ecx, 8
 	mov    edx, (WIN_W-BIN_LINE_BLOCK_W*2)*65536+30
 	mcall
@@ -272,10 +272,10 @@ string1_end:
  sdecstr db 'signed dec:',0
  shl_sal_sar_shr_button_caption db 'shl    sal                    sar    shr',0
 
-if lang eq ru
+if lang eq ru_RU
 	numstr db 'Число:',0
 	Okstr db 'Ввод',0
-else
+else ; Default to en_US
 	numstr db 'Number:',0
 	Okstr db 'Enter',0
 end if

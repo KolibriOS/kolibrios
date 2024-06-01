@@ -16,7 +16,7 @@ use32
     dd     0x1000           ; esp
     dd     0x0 , 0x0        ; I_Param , I_Icon
 
-include 'lang.inc'
+include 'lang.inc'      ; Language support for locales: ru_RU (CP866), en_US.
 include '..\..\..\macros.inc'
 
 START:                      ; start of execution
@@ -137,9 +137,9 @@ draw_window:
 
 ; DATA AREA
 
-if lang eq ru
-    title   db   '’€‰Œ…',0
-else
+if lang eq ru_RU
+    title   db   'ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½',0
+else ; Default to en_US
     title   db   'TIMER',0
 end if
 
