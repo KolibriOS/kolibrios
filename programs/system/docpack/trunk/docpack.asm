@@ -45,7 +45,7 @@ macro embed_local_file fn
    dd     I_END+0x400             ; esp
    dd     my_param , 0x0          ; I_Param , I_Icon
 include '../../../macros.inc'
-include 'lang.inc'
+include 'lang.inc'      ; Language support for locales: ru_RU, en_US.
 
 start:
   cmp   [my_param],0
@@ -194,7 +194,7 @@ embedded:
   embed_docdir_file 'CREDITS.TXT'       ;a
 if lang eq ru_RU
   embed_docdir_file 'GNU.TXT'          ;b
-else
+else ; Default to en_US
   embed_docdir_file 'COPYING.TXT'      ;b
 end if
   embed_docdir_file 'HOT_KEYS.TXT'     ;c
@@ -202,7 +202,7 @@ end if
   embed_docdir_file 'MTDBG.TXT'        ;e
 if lang eq ru_RU
   embed_local_file 'SYSFUNCR.TXT'      ;f
-else
+else ; Default to en_US
   embed_local_file 'SYSFUNCS.TXT'      ;f
 end if
   embed_local_file 'STACK.TXT'        ;g

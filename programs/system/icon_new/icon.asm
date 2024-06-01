@@ -34,7 +34,8 @@ BegData 	equ fiStdIco.point
 	dd 0		; boot parameters
 	dd 0		; path
 ;------------------------------------------------------------------------------
-include 'lang.inc'
+
+include 'lang.inc'      ; Language support for locales: ru_RU (CP866), en_US.
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
@@ -1104,9 +1105,9 @@ import	libini,\
 ;----- RButton.inc -------------------------------------------------------------
 ;-------------------------------------------------------------------------------
 
-if lang eq ru
+if lang eq ru_RU
  MinRMenuW	 dd 18*6+10
-else
+else ; Default to en_US
  MinRMenuW	 dd 15*6+10
 end if
 
@@ -1116,7 +1117,7 @@ curpath     db '/sys',0
 
 PredItem	dd -1
 
-if lang eq ru
+if lang eq ru_RU
  RMenuRedrawFon db 'Перерисовать',0
  RMenuAlign	db 'Выровнять по сетке',0
  RMenuOffMoving db 'Закрепить иконки',0
@@ -1124,7 +1125,7 @@ if lang eq ru
  RMenuAdd	db 'Добавить',0
  RMenuDel	db 'Удалить',0
  RMenuProp	db 'Свойства',0
-else
+else ; Default to en_US
  RMenuRedrawFon db 'Redraw',0
  RMenuAlign	db 'Snap to grid',0
  RMenuOffMoving db 'Fix the icons',0
@@ -1134,12 +1135,12 @@ else
  RMenuProp	db 'Properties',0
 end if
 
-if lang eq ru
+if lang eq ru_RU
  ErrRunProg	db 'Ошибка запуска программы',0
  WarningSave	db 'Не забудьте сохранить изменения, запустить RDSave',0
  ErrNotFoundIni db 'Не найден icon.ini',0
  ErrName	db 'Имя "rbmenu" зарезервировано',0
-else
+else ; Default to en_US
  ErrRunProg	db 'Error running program',0
  WarningSave	db 'Remember to save changes with "RDSave"',0
  ErrNotFoundIni db 'icon.ini not found',0
@@ -1149,7 +1150,7 @@ end if
 ;-------------------------------------------------------------------------------
 ;------- AddDlg.inc ---------------------------------------------------------------
 ;-------------------------------------------------------------------------------
-if lang eq ru
+if lang eq ru_RU
 DTitleAdd	db 'Добавить иконку',0
 DTitleProp	db 'Изменить иконку',0
 
@@ -1161,7 +1162,7 @@ DCaptCreate	db 'Создать',0
 DCaptProperties db 'Изменить',0
 DCaptCancel	db 'Отменить',0
 
-else
+else ; Default to en_US
 DTitleAdd	db 'Add icon',0
 DTitleProp	db 'Change icon',0
 

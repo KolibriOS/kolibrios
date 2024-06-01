@@ -84,12 +84,14 @@ B_NS	  equ 190 shl 16+50
 
 FOCUSABLE equ 4
 
-; multilanguage interface - configuratable in lang.inc
 day_count db 3,0,3,2,3,2,3,3,2,3,2,3
 Fkeys	  db 210,211,212,213,214,215,216,217,208,209,228,159
 
+; Multilanguage interface - configurable in lang.inc
+; Language support for locales: ru_RU (CP866), de_DE, fr_FR, fi_FI, et_ES, it_IT, en_US
+
 month_name:
-if lang eq ru
+if lang eq ru_RU
      db   8
      db   'Январь  '
      db   'Февраль '
@@ -103,7 +105,7 @@ if lang eq ru
      db   'Октябрь '
      db   'Ноябрь  '
      db   'Декабрь '
-else if lang eq de
+else if lang eq de_DE
      db   9
      db   'Januar   '
      db   'Februar  '
@@ -117,7 +119,7 @@ else if lang eq de
      db   'Oktober  '
      db   'November '
      db   'Dezember '
-else if lang eq fr
+else if lang eq fr_FR
      db   9
      db   'Janvier  '
      db   'Fevrier  '
@@ -131,7 +133,7 @@ else if lang eq fr
      db   'Octobre  '
      db   'Novembre '
      db   'Decembre '
-else if lang eq fi
+else if lang eq fi_FI
      db   9
      db   'Tammikuu '
      db   'Helmikuu '
@@ -145,7 +147,7 @@ else if lang eq fi
      db   'Lokakuu  '
      db   'Marraskuu'
      db   'Joulukuu '
-else if lang eq et
+else if lang eq et_EE
      db   9
      db   'Jaanuar  '
      db   'Veebruar '
@@ -159,7 +161,7 @@ else if lang eq et
      db   'Oktoober '
      db   'November '
      db   'Detsember'
-else if lang eq it
+else if lang eq it_IT
      db   9
      db   'Gennaio  '
      db   'Febbraio '
@@ -173,7 +175,7 @@ else if lang eq it
      db   'Ottobre  '
      db   'Novembre '
      db   'Dicembre '
-else
+else ; Default to en_US
      db   9
      db   'January  '
      db   'February '
@@ -189,7 +191,7 @@ else
      db   'December '
 end if
 week_days:
-if lang eq ru
+if lang eq ru_RU
      db   2
      db   1
      db   'Пн'
@@ -199,7 +201,7 @@ if lang eq ru
      db   'Пт'
      db   'Сб'
      db   'Вс'
-else if lang eq de
+else if lang eq de_DE
      db   2
      db   7
      db   'So'
@@ -209,7 +211,7 @@ else if lang eq de
      db   'Do'
      db   'Fr'
      db   'Sa'
-else if lang eq fr
+else if lang eq fr_FR
      db   3
      db   7
      db   'Dim'
@@ -219,7 +221,7 @@ else if lang eq fr
      db   'Jeu'
      db   'Ven'
      db   'Sam'
-else if lang eq fi
+else if lang eq fi_FI
      db   2
      db   7
      db   'Su'
@@ -229,7 +231,7 @@ else if lang eq fi
      db   'To'
      db   'Pe'
      db   'La'
-else if lang eq et
+else if lang eq et_EE
      db   3
      db   7
      db   'Esm'
@@ -239,7 +241,7 @@ else if lang eq et
      db   'Ree'
      db   'Lau'
      db   'P№h'
-else if lang eq it
+else if lang eq it_IT
      db   3
      db   7
      db   'Dom'
@@ -249,7 +251,7 @@ else if lang eq it
      db   'Gio'
      db   'Ven'
      db   'Sab'
-else
+else ; Default to en_US
      db   3
      db   7
      db   'Sun'
@@ -262,32 +264,32 @@ else
 end if
 
 title:
-if lang eq ru
+if lang eq ru_RU
      db   'Календарь',0
-else if lang eq ge
+else if lang eq de_DE
      db   'Kalender',0
-else if lang eq fr
+else if lang eq fr_FR
      db   'Calendrier',0
-else if lang eq et
+else if lang eq et_EE
      db   'Kalender',0
-else if lang eq it
+else if lang eq it_IT
      db   'Calendario',0
-else
+else ; Default to en_US
      db   'Calendar',0
 end if
 
 today_msg:
-if lang eq ru
+if lang eq ru_RU
      db   'Сегодня'
-else if lang eq ge
+else if lang eq de_DE
      db   'Heute'
-else if lang eq fr
+else if lang eq fr_FR
      db   "Aujourd'hui"
-else if lang eq et
+else if lang eq et_EE
      db   'Tфna'
-else if lang eq it
+else if lang eq it_IT
      db   'Oggi'
-else
+else ; Default to en_US
      db   'Today'
 end if
 today_end:
@@ -296,26 +298,26 @@ new_style dd 1
 dropped db 0
 
 sys_text:
-if lang eq ru
-		db  'Время',0
-else if lang eq it
-		db  '  Ora',0
-else if lang eq et
-		db  ' Aeg ',0
-else
-		db  ' Time',0
+if lang eq ru_RU
+        db  'Время',0
+else if lang eq it_IT
+        db  '  Ora',0
+else if lang eq et_EE
+        db  ' Aeg ',0
+else ; Default to en_US
+        db  ' Time',0
 end if
 separator  db ':',0
 plus  db  '+',0
 minus db  '-',0
-set_date_t:
-if lang eq ru
-		db  'Установить дату',0
-else if lang eq it
-		db   ' Impostazioni ',0
-else if lang eq et
-		db   ' Mффra kuupфev ',0
-else
-		db  '   Set date    ',0
-end if
 
+set_date_t:
+if lang eq ru_RU
+        db  'Установить дату',0
+else if lang eq it_IT
+        db   ' Impostazioni ',0
+else if lang eq et_EE
+        db   ' Mффra kuupфev ',0
+else ; Default to en_US
+        db  '   Set date    ',0
+end if

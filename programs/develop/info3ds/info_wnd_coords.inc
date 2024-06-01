@@ -25,9 +25,9 @@ obj_point: ;добавляемый объект
 .text:
 	rb MAX_OBJECT_SIZE
 
-if lang eq ru
+if lang eq ru_RU
 txt_select_vert: db 'Выбрано: '
-else
+else ; Default to en_US
 txt_select_vert: db 'Select: '
 end if
 .count:
@@ -126,7 +126,7 @@ pushad
 				stdcall str_cat, obj_point.text,esi
 				stdcall str_cat, obj_point.text,Data_String
 				loop @b
-			stdcall dword[tl_node_add], tree3,(ID_ICON_POINT shl 16),obj_point 
+			stdcall dword[tl_node_add], tree3,(ID_ICON_POINT shl 16),obj_point
 			stdcall dword[tl_cur_next], tree3
 			dec edx
 			cmp edx,0
@@ -186,7 +186,7 @@ prop_still:
 	cmp al,3
 	jz prop_button
 	cmp al,6
-	jne @f 
+	jne @f
 		call prop_mouse
 	@@:
 .end:

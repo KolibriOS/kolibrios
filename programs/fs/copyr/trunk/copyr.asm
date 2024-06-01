@@ -8,7 +8,7 @@
 ;                                           ;
 ; On base SYSTREE FILE COPIER 1.02          ;
 ;    Ivan Poddubny ivan-yar@bk.ru           ;
-;                                           ; 
+;                                           ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;Данная прога еще сырая и глючная но уже кое как работает
@@ -23,11 +23,11 @@
     dd      0x10000        ; esp
     dd      param_area , 0x0      ; I_Param , I_Icon
 
-include 'lang.inc'
-include '..\..\..\macros.inc'       ; very useful stuff for MeOS
+include 'lang.inc'              ; Language support for locales: ru_RU (CP866), en_US.
+include '..\..\..\macros.inc'   ; very useful stuff for MeOS
 include 'ascl.inc'
 
-START:                     ; start of execution
+START:                          ; start of execution
 
 ; Параметры:
 ; db n1 = длина пути к источнику
@@ -187,7 +187,7 @@ draw_window:
     mov  edi,labelt                ; WINDOW LABEL
     mcall
 
-                                   
+
     mov  eax,8
     mov  ebx,105*65536+290
     mov  ecx,33*65536+12
@@ -236,7 +236,7 @@ draw_window:
   ya    dd  0x0
   temp  dd  0
 
-if lang eq ru
+if lang eq ru_RU
 text:
       db '   ОТКУДА:    |Россия, Селятино, МПК Москва  , 1 Курс         '
       db '    КУДА:     |        Павлюшин Евгений, waptap@mail.ru       '
@@ -264,12 +264,13 @@ errors:
   db     "(запись) неизвестная ошибка                "
   db     "Путь к источнику и приемнику не указаны!!! "
   db     "Путь к приемнику не указан!!!              "
-else
+
+else ; Default to en_US
 text:
       db 'SOURCE:       |                                               '
       db 'DESTINATION:  |                                               '
       db '                                                              '
-      db 'x' ; <- END MARKER, DONT DELETE
+      db 'x' ; <- END MARKER, DO NOT DELETE
 labelt:
       db   'SYSTREE FILE COPIER'
 labellen:
@@ -292,6 +293,7 @@ errors:
   db     "(write) unknown error                      "
   db     "Path to source is not given!!!             "
   db     "Path to destination is not given!!!        "
+
 end if
 
          ;0123456789012345678901234567890123456789012
