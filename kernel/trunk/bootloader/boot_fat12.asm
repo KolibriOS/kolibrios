@@ -271,7 +271,7 @@ conv_abs_to_THS:
         retn
 ;------------------------------------------
 
-if lang eq sp
+if lang eq es_ES
 loading         db      cr,lf,'Iniciando el sistema ',00h
 else
 loading         db      cr,lf,'Starting system ',00h

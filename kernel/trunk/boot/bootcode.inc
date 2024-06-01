@@ -314,7 +314,7 @@ end if
         mov     ax, 3
         int     0x10
 
-if lang eq ru
+if lang eq ru_RU
  ; Load & set russian VGA font (RU.INC)
         mov     bp, RU_FNT1             ; RU_FNT1 - First part
         mov     bx, 1000h               ; 768 bytes
@@ -330,7 +330,7 @@ if lang eq ru
         mov     ax, 1100h
         int     10h
  ; End set VGA russian font
-else if lang eq et
+else if lang eq et_EE
         mov     bp, ET_FNT              ; ET_FNT1
         mov     bx, 1000h               ;
         mov     cx, 255                 ; 256 symbols
@@ -874,7 +874,7 @@ end if
         mov     bx, 18
         xor     dx, dx
         div     bx
-if lang eq ru
+if lang eq ru_RU
 ; подождите 5 секунд, 4/3/2 секундЫ, 1 секундУ
         cmp     al, 5
         mov     cl, ' '
@@ -885,13 +885,13 @@ if lang eq ru
         mov     cl, 0xEB ; 'ы' in cp866
 @@:
         mov     [time_str+9], cl
-else if lang eq et
+else if lang eq et_EE
         cmp     al, 1
         ja      @f
         mov     byte [time_str+9], ' '
         mov     byte [time_str+10], ' '
 @@:
-else if lang eq sp
+else if lang eq es_ES
 ; esperar 5/4/3/2 segundo_s_, 1 segundo
         cmp     al, 1
         mov     cl, 's'
@@ -953,7 +953,7 @@ if ~ defined extended_primary_loader
         or      al, 20h
         cmp     al, 'n'
         jz      .loadc
-        if lang eq sp
+        if lang eq es_ES
         cmp     al, 's'
         else
         cmp     al, 'y'

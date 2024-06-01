@@ -73,7 +73,7 @@ udev_midibase_def db '0x320',0
 endg
 
 iglobal
-if lang eq sp
+if lang eq es_ES
   include 'core/conf_lib-sp.inc'
 else
   ugui_mouse_speed db 'mouse_speed',0

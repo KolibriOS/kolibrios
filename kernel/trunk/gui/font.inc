@@ -865,9 +865,9 @@ iglobal
 fontSmoothing   db  2   ; = 0, 1 or 2
 fontSize        db  0   ; user mode setting
 font1:
-  if lang eq sp
+  if lang eq es_ES
   file 'gui/char_sp.mt'
-  else if lang eq et
+  else if lang eq et_EE
   file 'gui/char_et.mt'
   else
   file 'gui/char.mt'

@@ -46,7 +46,7 @@ keymap_alt:
 
 
 
-if lang eq ru
+if lang eq ru_RU
   boot_initirq      cp866 'Инициализация IRQ',0
   boot_picinit      cp866 'Инициализация PIC',0
   boot_v86machine   cp866 'Инициализация системной V86 машины',0
@@ -88,9 +88,9 @@ if lang eq ru
 if preboot_blogesc
   boot_tasking      cp866 'Все готово для запуска, нажмитре ESC для старта',0
 end if
-else if lang eq sp
+else if lang eq es_ES
   include 'data32sp.inc'
-else if lang eq et
+else if lang eq et_EE
   include 'data32et.inc'
 else
   boot_initirq      db   'Initialize IRQ',0
@@ -139,7 +139,7 @@ start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
 
 msg_unresolved db 'unresolved ',0
 ;msg_module     db 'in module ',0
-;if ~ lang eq sp
+;if ~ lang eq es_ES
 ;msg_version    db 'incompatible driver version',13,10,0
 ;msg_www        db 'please visit www.kolibrios.org',13,10,0
 ;end if
@@ -158,10 +158,10 @@ szIMPORTS      db 'IMPORTS',0
 read_firstapp  db '/sys/'
 firstapp       db '/sys/LAUNCHER',0
 notifyapp      db '/sys/@notify',0
-if lang eq ru
+if lang eq ru_RU
 ud_user_message  cp866 'Ошибка: неподдерживаемая инструкция процессора',0
 mtrr_user_message cp866 '"Обнаружена проблема с конфигурацией MTRR.\nПроизводительность может быть пониженной" -dW',0
-else if ~ lang eq sp
+else if ~ lang eq es_ES
 ud_user_message db 'Error: unsupported processor instruction',0
 mtrr_user_message db '"There is a problem with MTRR configuration.\nPerformance can be low" -dW',0
 end if
@@ -508,7 +508,7 @@ IncludeUGlobals
 
 uglobals_size = $ - endofcode
 
-if ~ lang eq sp
+if ~ lang eq es_ES
 diff16 "end of .bss",0,$
 end if
 

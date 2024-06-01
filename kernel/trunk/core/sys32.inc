@@ -76,7 +76,7 @@ iglobal
   msg_exc_e     db "Page fault", 0
   msg_exc_11    db "Alignment Check", 0
 
-  if lang eq sp
+  if lang eq es_ES
     include 'core/sys32-sp.inc'
   else
     msg_sel_ker   db "kernel", 0
@@ -281,7 +281,7 @@ show_error_parameters:
         pop     ebx
 .no_ud:
         mov     edx, [current_slot];not scratched below
-        if lang eq sp
+        if lang eq es_ES
         DEBUGF  1, "K : Proceso - terminado forzado PID: %x [%s]\n", [edx + APPDATA.tid], [current_slot]
         else
         DEBUGF  1, "K : Process - forced terminate PID: %x [%s]\n", [edx + APPDATA.tid], [current_slot]

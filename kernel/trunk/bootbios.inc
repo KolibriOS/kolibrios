@@ -30,14 +30,14 @@ org 0
 include "boot/bootstr.inc"      ; language-independent boot messages
 include "boot/preboot.inc"
 
-if lang eq ge
+if lang eq de_DE
 include "boot/bootge.inc"       ; german system boot messages
-else if lang eq sp
+else if lang eq es_ES
 include "boot/bootsp.inc"       ; spanish system boot messages
-else if lang eq ru
+else if lang eq ru_RU
 include "boot/bootru.inc"       ; russian system boot messages
 include "boot/ru.inc"           ; Russian font
-else if lang eq et
+else if lang eq et_EE
 include "boot/bootet.inc"       ; estonian system boot messages
 include "boot/et.inc"           ; Estonian font
 else
@@ -115,6 +115,6 @@ code_l:
 
 include "data16.inc"
 
-if ~ lang eq sp
+if ~ lang eq es_ES
 diff16 "end of bootcode",0,$+KERNEL_BASE
 end if

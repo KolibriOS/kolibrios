@@ -774,9 +774,9 @@ end if
         call    boot_log
 
         movzx   ecx, word [boot_y]
-        if lang eq ru
+        if lang eq ru_RU
         or      ecx, (10+30*6) shl 16
-        else if lang eq sp
+        else if lang eq es_ES
         or      ecx, (10+33*6) shl 16
         else
         or      ecx, (10+29*6) shl 16
@@ -882,9 +882,9 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         mov     ebx, eax
 
         movzx   ecx, word [boot_y]
-        if lang eq ru
+        if lang eq ru_RU
         add     ecx, (10+19*6) shl 16 - 10
-        else if lang eq sp
+        else if lang eq es_ES
         add     ecx, (10+25*6) shl 16 - 10
         else
         add     ecx, (10+17*6) shl 16 - 10
@@ -4458,7 +4458,7 @@ proc is_string_userspace stdcall, base:dword
         ret
 endp
 
-if ~ lang eq sp
+if ~ lang eq es_ES
 diff16 "end of .text segment",0,$
 end if
 
@@ -4466,6 +4466,6 @@ include "data32.inc"
 
 __REV__ = __REV
 
-if ~ lang eq sp
+if ~ lang eq es_ES
 diff16 "end of kernel code",0,$
 end if
