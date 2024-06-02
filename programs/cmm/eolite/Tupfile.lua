@@ -3,7 +3,7 @@ if tup.getconfig("NO_TCC") ~= "" then return end
 HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../.." or tup.getconfig("HELPERDIR")
 tup.include(HELPERDIR .. "/use_tcc.lua")
 
-if tup.getconfig("LANG") == "ru"
+if tup.getconfig("LANG") == "ru_RU"
 then C_LANG = "LANG_RUS"
 else C_LANG = "LANG_ENG" -- this includes default case without config
 end
