@@ -1,20 +1,20 @@
 ;-----------------------------------------------------------------------------
 s_text:
-if lang eq ru
+if lang eq ru_RU
 	db 'Выбор файла',0
 else
 	db 'Select file',0
 end if
 ;-----------------------------------------------------------------------------
 r_text:
-if lang eq ru
+if lang eq ru_RU
 	db 'Пуск',0
 else
 	db 'Start',0
 end if
 ;-----------------------------------------------------------------------------
 result_table_text:
-if lang eq ru
+if lang eq ru_RU
 	db 'Размер   Чтение (КБ/с)   Запись (КБ/с)',0
 else
 	db 'Size     Read (KB/s)     Write (KB/s)',0
@@ -168,14 +168,14 @@ check1 check_box2 (100 shl 16)+12,(27 shl 16)+12,6,0xFFFFFF,0,0xffffff,\
 		check_text1,ch_flag_middle
 
 check_text1:
-if lang eq ru
+if lang eq ru_RU
 	db 'Тестировать запись',0
 else
 	db 'Use testing of write',0
 end if
 
 check_box_warning_text:
-if lang eq ru
+if lang eq ru_RU
 	db 'ВНИМАНИЕ! Проверка скорости записи уничтожает содержимое файла!',0
 else
 	db 'WARNING! Testing of write speed is destroy contents of file!',0

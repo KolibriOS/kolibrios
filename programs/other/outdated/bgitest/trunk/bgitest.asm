@@ -358,7 +358,7 @@ title_end:
 _M equ 30
 cross dd _M shl 16+_X*2-_M,_Y shl 16+_Y,_X shl 16+_X,_M shl 16+_Y*2-_M
 helptxt:
-if  lang eq ru
+if  lang eq ru_RU
 _txt _X shl 16+60,40,0x434ba010,BGI_HACENTER,\
      "ГОРЯЧИЕ КЛАВИШИ:",\
      "Пробел - шрифты/этот текст/демка;",\

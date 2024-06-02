@@ -2780,7 +2780,7 @@ title   db 'CMD - Command line interpreter',0
 smb_cursor db '|'
 
 prompt db 'CMD>>'
-if lang eq de
+if lang eq de_DE
 h1  db '  CMD - Command line interpreter version 0.26 '
 h2  db '        copyleft Chemist - dmitry_gt@tut.by   '
 h3  db '  Verfuegbare Kommandos:                      '

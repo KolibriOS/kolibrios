@@ -347,7 +347,7 @@ ENTRANCE:
 
  ; interface data
 
- if lang eq de
+ if lang eq de_DE
  keylab db "    PACKEN           ENTPACKEN"
  dellab db "   LOESCHE I/O      LOESCHE *.MHC"
  title  db "MHC 0.09"

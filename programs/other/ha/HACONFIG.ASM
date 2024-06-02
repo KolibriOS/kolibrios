@@ -1406,7 +1406,7 @@ import  box_lib,\
 commonButtonText db '...', 0  ;ЄхъёЄ фы▀ ъэюяюъ т√чютр OpenDial
 commonButtonTextSize = 3
 
-if lang eq ru  ;хёыш ▀ч√ъ ёсюЁъш Ёєёёъшщ
+if lang eq ru_RU  ;хёыш ▀ч√ъ ёсюЁъш Ёєёёъшщ
 
 text    db  "Конфигуратор Hot Angles отвечает за настройку активных углов. "
         db  "Настройте параметры под себя или отключите эту опцию.         "

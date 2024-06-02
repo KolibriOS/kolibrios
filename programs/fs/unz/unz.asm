@@ -279,7 +279,7 @@ proc winRedraw
 	mcall 4, <15,37>, , strPath
 	mov	ecx,[sc.work_button_text]
 	or	ecx,90000000h
-if lang eq ru
+if lang eq ru_RU
 	mcall 4, <107,70>, , strGo
 else
 	mcall 4, <127,70>, , strGo
@@ -610,7 +610,7 @@ sc system_colors
 bWinChild db 0	;1 - дочернее окно есть, главное окно не должно реагировать
 redInput  db 0	;1 - подсветить красным надпись
 
-if lang eq ru
+if lang eq ru_RU
  title db 'uNZ v0.2 - Распаковщик Zip и 7z',0
  strGo db 'Распаковать',0
  strInp db  '    Архив',0
@@ -624,7 +624,7 @@ if lang eq ru
  strUnpackFault  db "'Ошибка распаковки' -E",0
  strNotSupport db "'Неподдерживаемый формат архива' -E",0
  strNotFound db "'Файл не найден' -E",0
-else if lang eq es
+else if lang eq es_ES
  title db 'uNZ v0.2 - Desarchivador para Zip y 7z',0
  strGo db 'Desarchivar',0
  strInp db 'Archivar',0

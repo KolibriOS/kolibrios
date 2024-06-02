@@ -194,7 +194,7 @@ proc level1.init
 .sun2_file_path db 'Resources/Textures/Objects/Sun2.png', 0
 .sun3_file_path db 'Resources/Textures/Objects/Sun3.png', 0
 
-.message                                        langstr0 ru, < \
+.message                                        langstr0 ru_RU, < \
 'Вы - искатель сокровищ. Тяга к наживе привела вас в    ', 10, \
 'лесную пещеру, где, по рассказам селян, пару столетий  ', 10, \
 'назад, один правитель, спрятал свою казну. В пещере вы ', 10, \
@@ -224,7 +224,7 @@ proc level1.action uses ebx ecx edx, action, cell_x, cell_y
 
         mov     eax, .message_door1_closed
         jmp     .exit
-.message_door1_closed                           langstr0 ru, < \
+.message_door1_closed                           langstr0 ru_RU, < \
 'Заперто. У двери нет ни ручки, ни замочной скважины.   ', 10, \
 'Вероятно, где-то должен быть скрытый механизм...       '      >
 
@@ -235,7 +235,7 @@ proc level1.action uses ebx ecx edx, action, cell_x, cell_y
 
         mov     eax, .message_door3_closed
         jmp     .exit
-.message_door3_closed                           langstr0 ru, < \
+.message_door3_closed                           langstr0 ru_RU, < \
 'Такую дверь вы уже видели, и в прошлый раз она так     ', 10, \
 'просто не открылась.                                   '      >
 
@@ -249,7 +249,7 @@ proc level1.action uses ebx ecx edx, action, cell_x, cell_y
 
         mov     eax, .message_door1_opens
         jmp     .exit
-.message_door1_opens                            langstr0 ru, < \
+.message_door1_opens                            langstr0 ru_RU, < \
 'Вы слышите звук лебёдки и скрежет шестерёнок.          '      >
 
 @@:     cmp     edx, level1.Grid + (11 * level1.Width + 8) * 4
@@ -302,7 +302,7 @@ proc level1.action uses ebx ecx edx, action, cell_x, cell_y
         mov     [level1.Chest.Visible], 0
         mov     eax, .message_chest
         jmp     .exit
-.message_chest                                  langstr0 ru, < \
+.message_chest                                  langstr0 ru_RU, < \
 'Вы нашли сундук с барахлом: 1 золотой монеткой и       ', 10, \
 '3-мя монетами с изображением солнца в разных фазах.    '      >
 
@@ -313,7 +313,7 @@ proc level1.action uses ebx ecx edx, action, cell_x, cell_y
         mov     eax, .message_ogre
         jmp     .exit
 
-.message_ogre                                   langstr0 ru, < \
+.message_ogre                                   langstr0 ru_RU, < \
 '- Стой! Куда это ты? Дальше хода нет.                  '      >
 
 @@:
@@ -343,12 +343,12 @@ proc level1.action uses ebx ecx edx, action, cell_x, cell_y
         mov     eax, .message_3levers
         jmp     .exit
 
-.message_3levers                                langstr0 ru, < \
+.message_3levers                                langstr0 ru_RU, < \
 'Вы переставили этот рычаг в другое положение.          '      >
-.message_door2_closed                           langstr0 ru, < \
+.message_door2_closed                           langstr0 ru_RU, < \
 'Хоть вы и полны сил, но сдвинуть эту дверь хоть на     ', 10, \
 'миллиметр у вас не получилось.                         '      >
-.message_door2_opens                            langstr0 ru, < \
+.message_door2_opens                            langstr0 ru_RU, < \
 'До вас донёсся металлический скрежет.                  '      >
 endp
 
@@ -359,7 +359,7 @@ proc level1.columns uses ebx ecx, action, cell_x, cell_y
         jne     @f
         mov     eax, .message_description
         jmp     .exit
-.message_description                            langstr0 ru, < \
+.message_description                            langstr0 ru_RU, < \
 'Перед вами стоит невысокая колонна с хорошо заметной   ', 10, \
 'надписью. Колонна стоит здесь явно не для поддержки    ', 10, \
 'потолка...                                             '      >
@@ -419,7 +419,7 @@ proc level1.columns uses ebx ecx, action, cell_x, cell_y
 @@:
         ret
 
-.message_activated                              langstr0 ru, < \
+.message_activated                              langstr0 ru_RU, < \
 'Вы положили монету на колонну и она начала светиться   ', 10, \
 'странным светом.                                       '      >
 endp
@@ -451,7 +451,7 @@ proc level1.ogre action, cell_x, cell_y
 .exit:
         ret
 
-.message_ogre                                   langstr0 ru, < \
+.message_ogre                                   langstr0 ru_RU, < \
 '- Ой! Монетка! А ну вернись!!!                         '      >
 endp
 

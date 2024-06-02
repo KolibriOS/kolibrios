@@ -1,1 +1,1 @@
-lang fix ca
+lang fix ca_ES

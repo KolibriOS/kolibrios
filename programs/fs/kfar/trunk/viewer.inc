@@ -512,7 +512,7 @@ viewer_draw_text:
         mov     al, ' '
         mov     cl, 5
         rep     stosw
-if lang eq ru
+if lang eq ru_RU
         mov     al, 'К'
         stosw
         mov     al, 'о'
@@ -1385,7 +1385,7 @@ viewer_prev_newline:
 
 viewer_set_keybar:
         mov     eax, keybar_viewer
-if lang eq ru
+if lang eq ru_RU
         test    [ebp+viewer_data.flags], 1
         jnz     .hex
         mov     dword [eax+(4-1)*6], 'Код '
@@ -1805,7 +1805,7 @@ search_failed:
 	ret
 
 viewer_getname:
-if lang eq ru
+if lang eq ru_RU
         mov     eax, 'Прос'
         stosd
         mov     eax, 'мотр'
@@ -1823,7 +1823,7 @@ else
 end if
         jmp     viewedit_getname
 editor_getname:
-if lang eq ru
+if lang eq ru_RU
         mov     eax, 'Реда'
         stosd
         mov     eax, 'ктор'

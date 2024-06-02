@@ -73,7 +73,7 @@ NLT_drawm:
 NLT_level:
 file 'nolt.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	NLT_help mstr \
 	'Ваша задача - провести зеленый квадрат к красному',\
 	'без поворота налево и движения назад. Это труднее',\

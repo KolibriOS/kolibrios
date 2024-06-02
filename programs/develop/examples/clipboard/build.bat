@@ -1,4 +1,4 @@
-@echo lang fix en >lang.inc
+@echo lang fix en_US >lang.inc
 @fasm.exe -m 16384 clip_put.asm clip_put
 @fasm.exe -m 16384 clip_get.asm clip_get
 @erase lang.inc

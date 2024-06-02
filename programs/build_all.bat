@@ -37,7 +37,7 @@ goto :eof
 
 
 :MAIN
-set languages=en ru ge et
+set languages=en_US ru_RU de_DE et_EE
 set __CPU_type=p5 p6 k6
 set BIN=bin
 

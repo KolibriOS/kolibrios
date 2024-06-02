@@ -690,7 +690,7 @@ endf
 
 
 
-if lang eq ru
+if lang eq ru_RU
 title db 'Магический квадрат',0
 txt:
 .dif db "Сложность (+/-):",0

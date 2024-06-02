@@ -648,7 +648,7 @@ code
     mcall
 
     mov     eax, 4
-    if lang eq it
+    if lang eq it_IT
         mov     ebx, 7 shl 16 + 22 + topbuttonsbarheight/2 - 4
     else
         mov     ebx, 20 shl 16 + 22 + topbuttonsbarheight/2 - 4
@@ -1985,7 +1985,7 @@ code
 ;******************************************************************************
 
 ; <--- initialised data --->
-if lang eq ru
+if lang eq ru_RU
   title db 'Солитер',0
 
   new_game: db "Новая игра"
@@ -1996,7 +1996,7 @@ if lang eq ru
 
   s: db "10"
 
-else if lang eq it
+else if lang eq it_IT
   title db 'Freecell',0
 
   new_game: db "Nuova partita"

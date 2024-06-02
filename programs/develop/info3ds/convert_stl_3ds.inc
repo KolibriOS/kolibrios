@@ -23,7 +23,7 @@
 ; uint16 - атрибуты
 
 
-if lang eq ru
+if lang eq ru_RU
 txt_err_stl_open:
 	db '"STL',13,10
 	db 'Файл *.stl очень большой." -tW',0

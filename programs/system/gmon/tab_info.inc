@@ -134,7 +134,7 @@ end if
 	
 dub_p	db	':'
 
-if lang eq it
+if lang eq it_IT
 	lab_info_tab mls \
 		'Vendor CPU',\
 		'Frequenza CPU (MHz)',\

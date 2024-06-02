@@ -2,8 +2,8 @@
 # This script does for linux the same as build.bat for DOS,
 # it compiles the KoOS kernel, hopefully ;-)
 
-	echo "lang fix en"
-	echo "lang fix en" > lang.inc
+	echo "lang fix en_US"
+	echo "lang fix en_US" > lang.inc
 	fasm -m 16384 rdsave.asm rdsave
 	rm -f lang.inc
 	exit 0

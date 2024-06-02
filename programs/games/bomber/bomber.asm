@@ -2343,7 +2343,7 @@ file_info:	      ; информационная структура для работы с файлами
   db 0
   _fi_pfilename dd ?
 
-if lang eq ru
+if lang eq ru_RU
 	include 'ruslang.inc'
 else
 	include 'englang.inc'

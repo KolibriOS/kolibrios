@@ -6,7 +6,7 @@ KPACK=/opt/bin/kpack
 LANG=lang.inc
 
 en:
-	echo "lang fix ru" > ${LANG}
+	echo "lang fix en_US" > ${LANG}
 	${FASM} \@clip.ASM \@clip
 	${FASM} cliptest.ASM cliptest
 	${FASM} test2.asm test2

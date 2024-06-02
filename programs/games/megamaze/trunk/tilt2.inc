@@ -86,7 +86,7 @@ TILT2_drawm:
 TILT2_level:
 file 'tilt2.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	TILT2_help mstr \
 	'Красный и синий блоки должны достичь клеток',\
 	'соответствующего цвета. Внимание! Блоки сделаны',\

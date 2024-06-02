@@ -1,6 +1,6 @@
 if not exist bin mkdir bomber_rus_bin
 @erase lang.inc
-@echo lang fix ru >lang.inc
+@echo lang fix ru_RU >lang.inc
 @fasm -m 16384 bomber.asm bomber_rus_bin\bomber
 @erase lang.inc
 @kpack bomber_rus_bin\bomber

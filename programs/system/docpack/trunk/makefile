@@ -9,7 +9,7 @@ SOURCE=${FILE}.asm
 OUT=${FILE}.bin
 
 ru:
-	echo "lang fix ru" > ${LANG}
+	echo "lang fix ru_RU" > ${LANG}
 	${FASM} ${SOURCE} ${OUT}
 	${KPACK} ${OUT}
 

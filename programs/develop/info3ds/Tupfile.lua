@@ -3,6 +3,6 @@ HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../.." or tup.getconfig("HEL
 tup.include(HELPERDIR .. "/use_fasm.lua")
 add_include(tup.getvariantdir())
 
-tup.rule("echo lang fix " .. ((tup.getconfig("LANG") == "") and "en" or tup.getconfig("LANG")) .. " > %o", {"lang.inc"})
+tup.rule("echo lang fix " .. ((tup.getconfig("LANG") == "") and "en_US" or tup.getconfig("LANG")) .. " > %o", {"lang.inc"})
 tup.rule({"info3ds.asm", extra_inputs = {"lang.inc"}}, FASM .. " %f %o " .. tup.getconfig("KPACK_CMD"), "info3ds")
 tup.rule({"info3ds_u.asm", extra_inputs = {"lang.inc"}}, FASM .. " %f %o " .. tup.getconfig("KPACK_CMD"), "info3ds_u")

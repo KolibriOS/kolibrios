@@ -52,7 +52,7 @@ ends
 ted_symbol_space db 32 ;ascii код пробела, иногда бывает нужен в коде
 ted_symbol_tab db 26 ;ascii код стрелки вправо, используется для рисования табуляции в режиме показа невидимых символов
 
-if lang eq ru
+if lang eq ru_RU
 
 txtRow db 'Строка',0
 txtCol db 'Знак',0

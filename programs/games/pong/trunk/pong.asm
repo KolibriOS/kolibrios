@@ -457,7 +457,7 @@ is_up2  dd 0x0 ; |
 is_dn2  dd 0x0 ; /
 
 include "lang.inc"
-if lang eq ru
+if lang eq ru_RU
 include "russian.inc"
 else
 include "english.inc"

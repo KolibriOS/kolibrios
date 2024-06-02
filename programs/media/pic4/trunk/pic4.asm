@@ -424,7 +424,7 @@ draw_window:
 
 ; DATA SECTION
 
-if lang eq ru
+if lang eq ru_RU
     title db 'Генератор фона рабочего стола',0
 else
     title db 'Background',0

@@ -124,7 +124,7 @@ block_3ds 0xa08c, 3,1,txt_a08c
 block_3ds 0xa08e, 3,1,txt_a08e
 .end:
 
-if lang eq ru
+if lang eq ru_RU
 txt_0002 db '3ds версия',0
 txt_0011 db 'Цвет rgb (байтовый формат)',0
 ;txt_0012 db 'LIN_COLOR_24',0
@@ -289,7 +289,7 @@ txt_a08e db 'Wire in units',0
 txt_not_delete db 'I can not delete the selected chunk. It is protected.',0
 end if
 
-if lang eq ru
+if lang eq ru_RU
 txt_open_3ds db 'Открыт файл:',0
 txt_no_3ds: db 'Открытый файл не в формате *.3ds ',39
 	.zag: rb 8

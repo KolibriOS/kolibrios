@@ -418,11 +418,11 @@ CheckUnique:
 ;------------------------------------------------------------------------------
 ; DATA
 
-if lang eq ru
+if lang eq ru_RU
  title	db 'Доска отладки и сообщений',0
-else if lang eq it
+else if lang eq it_IT
  title	db 'Notifiche e informazioni generiche per il debug',0
-else if lang eq ge
+else if lang eq de_DE
  title	db 'Allgemeines debug- & nachrichtenboard',0
 else
  title	db 'General debug & message board',0

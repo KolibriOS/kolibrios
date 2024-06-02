@@ -112,7 +112,7 @@ CZ_drawm:
 CZ_level:
 file 'colzone.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	CZ_help mstr \
 	'Черный блок из 2 кубиков стоит на раскрашенной',\
 	'клетчатой доске. Ваша задача - перекатить его на',\

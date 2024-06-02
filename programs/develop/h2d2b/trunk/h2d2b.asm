@@ -272,7 +272,7 @@ string1_end:
  sdecstr db 'signed dec:',0
  shl_sal_sar_shr_button_caption db 'shl    sal                    sar    shr',0
 
-if lang eq ru
+if lang eq ru_RU
 	numstr db 'Число:',0
 	Okstr db 'Ввод',0
 else

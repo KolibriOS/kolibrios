@@ -901,7 +901,7 @@ RunProgram:
     clc
     ret
   .err_out:
-    if lang eq it
+    if lang eq it_IT
 		print	 "Impossibile caricare il programma"
 ;--------------------------------------
     else
@@ -923,7 +923,7 @@ mykey_window	dd	0	   ; Slot number of MyKey
 ;########### Input Thread data start ############
 
 ; Input Thread Title
-if lang eq it
+if lang eq it_IT
 	it_labelt	db	"Inserisci hotkey e nome   "
 ;--------------------------------------
 else
@@ -937,7 +937,7 @@ it_window	  dd	  0	     ; Slot number of the input thread
 it_alive	  db	  0	     ; Flag of the input thread existance
 it_keycode	  db	  0
 it_hotkey_addr	  dd	  0
-if lang eq it
+if lang eq it_IT
 	it_hint 	  db	  'o premi Esc per cancellare',0
 ;--------------------------------------
 else
@@ -947,7 +947,7 @@ end if
 ;########### Input Thread data end   ############
 
 ;Button names
-if lang eq it
+if lang eq it_IT
 	AddKeyText	db 'Aggiungi',0
 	ReloadKeyText	db 'Ricarica',0
 	SaveKeyText	db 'Salva',0
@@ -979,7 +979,7 @@ sys_path:
 system_dir0 db '/sys/lib/'
 boxlib_name db 'box_lib.obj',0
 
-if lang eq it
+if lang eq it_IT
 	err_message_found_lib	db "Non trovo box_lib.obj",0
 	head_f_i:
 	head_f_l		db 'Errore di sistema',0

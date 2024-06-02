@@ -1426,7 +1426,7 @@ mat_shininess dd 3.0 ; Размер блика (обратная пропорция)
 white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемого источником
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
-if lang eq ru
+if lang eq ru_RU
 capt db 'info 3ds [user] версия 29.09.20',0 ;подпись окна
 else
 capt db 'info 3ds [user] version 29.09.20',0 ;window caption

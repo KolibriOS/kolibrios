@@ -17,7 +17,7 @@ txt_buf rb 8
 include '../trunk/vox_rotate.inc'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-if lang eq ru
+if lang eq ru_RU
 caption db 'Создатель вокселей 04.05.20',0 ;подпись окна
 else
 caption db 'Voxel creator 04.05.20',0
@@ -35,7 +35,7 @@ buf2d_bits equ byte[edi+20] ;количество бит в 1-й точке изображения
 
 vox_obj_size dd 0 ;размер воксельного объекта (для ускорения вставки)
 txt_space db ' ',0
-if lang eq ru
+if lang eq ru_RU
 txt_pref db ' б ',0,' Кб',0,' Мб',0,' Гб',0 ;приставки: кило, мега, гига
 txt_f_size: db 'Размер: '
 else

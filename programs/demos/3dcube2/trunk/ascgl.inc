@@ -1,4 +1,4 @@
-lang equ ru
+lang equ ru_RU
 
 ;
 ;   Assembler

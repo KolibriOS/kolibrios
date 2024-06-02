@@ -1309,7 +1309,7 @@ show_SmartBlock:
 	ret
 ;---------------------------------------------------------------------
 ;DATA AREA
-if lang eq it
+if lang eq it_IT
 	t:
 	.sup	db 'supportato',0
 	.sel	db 'selzionato',0
@@ -1330,7 +1330,7 @@ else
 	.chs	db 'CHS',0
 end if
 
-if lang eq it
+if lang eq it_IT
 	.10_19	db 'Numero seriale',0
 	.23_26	db 'Versione firmware',0
 	.27_46	db 'Numero modello',0
@@ -1640,7 +1640,7 @@ page_text	db 'Page:',0
 ;head_f_l	db 'error',0
 ;err_message_found_lib	db 'box_lib.obj was not found',0
 ;err_message_import	db 'box_lib.obj was not imported ',0
-if lang eq it
+if lang eq it_IT
 	error_open_file_string_Info	db 'Non riesco ad aprire Info file!',0
 	error_save_file_string_Info	db 'Non riesco a salvare Info file!',0
 

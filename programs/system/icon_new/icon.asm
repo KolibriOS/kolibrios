@@ -1104,7 +1104,7 @@ import	libini,\
 ;----- RButton.inc -------------------------------------------------------------
 ;-------------------------------------------------------------------------------
 
-if lang eq ru
+if lang eq ru_RU
  MinRMenuW	 dd 18*6+10
 else
  MinRMenuW	 dd 15*6+10
@@ -1116,7 +1116,7 @@ curpath     db '/sys',0
 
 PredItem	dd -1
 
-if lang eq ru
+if lang eq ru_RU
  RMenuRedrawFon db 'Перерисовать',0
  RMenuAlign	db 'Выровнять по сетке',0
  RMenuOffMoving db 'Закрепить иконки',0
@@ -1134,7 +1134,7 @@ else
  RMenuProp	db 'Properties',0
 end if
 
-if lang eq ru
+if lang eq ru_RU
  ErrRunProg	db 'Ошибка запуска программы',0
  WarningSave	db 'Не забудьте сохранить изменения, запустить RDSave',0
  ErrNotFoundIni db 'Не найден icon.ini',0
@@ -1149,7 +1149,7 @@ end if
 ;-------------------------------------------------------------------------------
 ;------- AddDlg.inc ---------------------------------------------------------------
 ;-------------------------------------------------------------------------------
-if lang eq ru
+if lang eq ru_RU
 DTitleAdd	db 'Добавить иконку',0
 DTitleProp	db 'Изменить иконку',0
 

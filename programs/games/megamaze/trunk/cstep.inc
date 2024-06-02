@@ -47,7 +47,7 @@ CSTEP_drawm:
 CSTEP_level:
 file 'cstep.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	CSTEP_help mstr \
 	'Соедините красный и синий блоки путем управления',\
 	'одним красным блоком. Синий блок следует за',\

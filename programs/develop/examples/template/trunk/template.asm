@@ -76,9 +76,9 @@ CODE
 ; <--- initialised data --->
 DATA
 
-if lang eq ru
+if lang eq ru_RU
 title db 'Шаблон программы',0
-else if lang eq fr
+else if lang eq fr_FR
 title db 'La programme poncive',0
 else
 title db 'Template program',0

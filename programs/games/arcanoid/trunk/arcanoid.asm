@@ -418,7 +418,7 @@ noplayagain:
 draw_window:
     startwd
     window 0,0,400+8,480+24,window_Skinned
-    if lang eq it
+    if lang eq it_IT
         label 12,8,'ARCANOID: Usa le freccie    Vite      Punti',cl_White+font_Big
     else
         label 12,8,'ARCANOID: USE ARROW KEYS    LIVES      SCORE',cl_White+font_Big
@@ -430,7 +430,7 @@ draw_window:
 
     cmp [nextlev],1
     je  nlev
-    if lang eq it
+    if lang eq it_IT
         label 160,200,'Hai perso!',cl_Red+font_Big
         label 130,220,'Punteggio:',cl_Red+font_Big
     else
@@ -447,14 +447,14 @@ draw_window:
     mov ecx,260*65536+12
     mov edx,1
     mcall
-    if lang eq it
+    if lang eq it_IT
         label 152,244,'Rigioca',cl_Red+font_Big
     else
         label 152,244,'Play again?',cl_Red+font_Big
     end if
     jmp elev
 nlev:
-    if lang eq it
+    if lang eq it_IT
         label 160,200,'Hai vinto!',cl_Green+font_Big
         label 130,220,'Punteggio:',cl_Green+font_Big
     else
@@ -471,13 +471,13 @@ nlev:
     mov ecx,260*65536+12
     mov edx,1
     mcall
-    if lang eq it
+    if lang eq it_IT
         label 152,244,'Prossimo Livello',cl_Red+font_Big
     else
         label 152,244,'Next level?',cl_Red+font_Big
     end if
 elev:
-    if lang eq it
+    if lang eq it_IT
         label 178,264,'Esci',cl_Red+font_Big
     else
         label 178,264,'Exit?',cl_Red+font_Big

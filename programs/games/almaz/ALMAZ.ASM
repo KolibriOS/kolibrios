@@ -2065,7 +2065,7 @@ Enemy:	dw  1,448,128,0,0,500	;враги класс,Х,У,положение в лабиринте,направление 
 
 ;%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if lang eq ru
+if lang eq ru_RU
 title db 'ПОДЗЕМЕЛЬЕ для КолибриОС <RU095@YANDEX.RU> z/x стрелять',0
 else
 title db 'Dungeon for KolibriOS <RU095@YANDEX.RU> z/x - shoot',0

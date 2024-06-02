@@ -832,7 +832,7 @@ VERSION db 'ARCANOID II',0
 AUTHOR db 'by jj (jacek jerzy malinowski)',0
 CHANGE_SPEED db 'F2 dec speed   F3 inc speed',0
 
-if lang eq it
+if lang eq it_IT
 THANKS_FOR_PLAYING db 'Grazie per aver giocato', 0
 PRESS_SPACE db 'Premi spazio per iniziare',0
 LEVEL db 'LIVELLO',0

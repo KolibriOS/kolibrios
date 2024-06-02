@@ -256,7 +256,7 @@ hexstr db 'hex:',0
 decstr db 'dec:',0
 binstr db 'bin:',0
 
-if lang eq ru
+if lang eq ru_RU
 	numstr db 'Число:',0
 	Okstr db 'Ввод',0
 else

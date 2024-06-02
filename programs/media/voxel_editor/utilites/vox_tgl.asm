@@ -15,7 +15,7 @@ include '../trunk/str.inc'
 include 'lang.inc'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-if lang eq ru
+if lang eq ru_RU
 caption db 'Просмотр вокселей 11.11.20',0 ;подпись окна
 else
 caption db 'Voxel viewer 11.11.20',0
@@ -709,7 +709,7 @@ endp
 
 align 4
 txt_stat_m1:
-if lang eq ru
+if lang eq ru_RU
 	db 'Статистика',13,10,'Вокселей: '
 .v: rb 70
 txt_stat_m2:

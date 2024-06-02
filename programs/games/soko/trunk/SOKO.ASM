@@ -1040,7 +1040,7 @@ ud:
 
 ; интерфейс программы двуязычный - задайте язык в macros.inc
 load_char:
-if lang eq ru
+if lang eq ru_RU
      db 'Загрузить'
 else
      db 'Open file'
@@ -1048,7 +1048,7 @@ end if
 loadlen:
 
 ll_msg:
-if lang eq ru
+if lang eq ru_RU
      db 'Выберите уровень'
 else
      db 'Choose a level'
@@ -1059,7 +1059,7 @@ ll_msg_end:
 fn_input:
 ;   db 'cnf'
 ;    db 'soko-4.lev'
-if lang eq ru
+if lang eq ru_RU
      db 'или введите имя файла'
 else
      db 'or enter a filename'
@@ -1068,7 +1068,7 @@ inp_end:
      rb 256-(inp_end-fn_input)
 
 win_msg:
-if lang eq ru
+if lang eq ru_RU
      db 'Ура!!! Вы прошли уровень!'
 else
      db "You've completed the level!"
@@ -1076,7 +1076,7 @@ end if
 win_msg_end:
 
 lose_msg:
-if lang eq ru
+if lang eq ru_RU
      db 'Вы парализованы! Проигрыш...'
 else
      db "You're paralized! Game over..."

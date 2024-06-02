@@ -1,1 +1,1 @@
-lang fix ru
+lang fix ru_RU

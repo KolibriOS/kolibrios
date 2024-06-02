@@ -285,9 +285,9 @@ DATA
 UDATA
 mouse_timer_ticks	dd 0
 ;-----------------------------------------------------------------------------
-if lang eq ru
+if lang eq ru_RU
 	ud_user_message db '"NumLock включает и выключает эмулятор мыши.\nУправление через Numpad." -I',0
-else if lang eq it
+else if lang eq it_IT
 	ud_user_message db '"NumLock - on/off - usa Numpad per muovere il cursore." -I',0
 else
 	ud_user_message db '"NumLock - on/off mouse emul. Numpad - move cursor." -I',0

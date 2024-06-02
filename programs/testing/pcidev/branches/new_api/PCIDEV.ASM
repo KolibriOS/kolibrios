@@ -422,7 +422,7 @@ Form:	dw 800 ; window width (no more, special for 800x600)
 	dw 420 ; window height
 	dw 100 ; window y start
 
-if lang eq it
+if lang eq it_IT
 title	db 'PCI Device Enumeration v 2.1n new PCI API test', 0
 PCIWin mls \
 	'Ricordarsi di abilitare l accesso alla PCI per le applicazioni dal menu.',\

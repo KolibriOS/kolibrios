@@ -1185,7 +1185,7 @@ endf
 text_cpu db 'CPU',0
 text_user db 'USER',0
 but_lis_con db 'Listen     Connect     Disconnect',0
-if lang eq ru
+if lang eq ru_RU
 title db 'Морской бой 0.4',0
 but_auto db 'Расставить',0
 but_new db 'Новая',0

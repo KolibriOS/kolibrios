@@ -78,7 +78,7 @@ SMZ_drawm:
 SMZ_level:
 file 'smz.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	SMZ_help mstr \
 	'Повторяйте последовательность ходов, двигая',\
 	'зеленый квадрат на подсвеченное количество клеток',\

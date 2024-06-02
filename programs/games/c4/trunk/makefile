@@ -12,11 +12,11 @@ OUT=${FILE}.bin
 all:en
 
 en:
-	echo "%define lang 'en'" > lang_nasm.inc
+	echo "%define lang 'en_US'" > lang_nasm.inc
 	${NASM} -f bin -o ${OUT} ${SOURCE}
 
 it:
-	echo "%define lang 'it'" > lang_nasm.inc
+	echo "%define lang 'it_IT'" > lang_nasm.inc
 	${NASM} -f bin -o ${OUT} ${SOURCE}
 
 clean:

@@ -484,7 +484,7 @@ stringsAmount = 6
 align 4
 langs:
 db 'ENGLISH FINNISH GERMAN  RUSSIAN FRENCH  ESTONIANSPANISH ITALIAN '
-sz langMarks, 'en','fi','de','ru','fr','et','sp','it'
+sz langMarks, 'en','fi','de','ru','fr','et','es','it'
 
 textrus:
 db 'Язык системы              :              <  >  Применить'

@@ -25,7 +25,7 @@ obj_point: ;добавляемый объект
 .text:
 	rb MAX_OBJECT_SIZE
 
-if lang eq ru
+if lang eq ru_RU
 txt_select_vert: db 'Выбрано: '
 else
 txt_select_vert: db 'Select: '

@@ -134,7 +134,7 @@ macro str_table [str]
 
 
 strs:
-if  language eq ru
+if  language eq ru_RU
 str_table \
    <'***  @RCHER - Deflate Unpacker  ***',13,10>,\  ;0
    <'*** Copyright Wiland Inc., 2005 ***',13,10>,\  ;1

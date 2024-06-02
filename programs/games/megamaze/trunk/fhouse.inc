@@ -175,7 +175,7 @@ FH_mouse:
 FH_level:
 file 'fhouse.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	FH_help mstr \
 	'В задании найдите начальную клетку и проведите',\
 	'линию, которая проходит через пустые клетки по',\

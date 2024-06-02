@@ -503,7 +503,7 @@ draw_window:
 	test	eax,100b
 	jne	.end
 
-;if lang eq ru
+;if lang eq ru_RU
   load_w  = (5*2+6*9)
   save_w  = (5*2+6*9)
   flat_w  = (5*2+6*7)

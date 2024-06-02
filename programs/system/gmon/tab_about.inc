@@ -9,7 +9,7 @@
 	call	show_text
 	jmp	redraw
 
-if lang eq it
+if lang eq it_IT
 	msg_about mls \
 		'               Ghost Monitor',\
 		'',\

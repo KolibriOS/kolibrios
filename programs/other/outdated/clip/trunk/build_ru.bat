@@ -1,4 +1,4 @@
-@echo lang fix ru >lang.inc
+@echo lang fix ru_RU >lang.inc
 @fasm @clip.asm @clip
 @fasm cliptest.asm cliptest
 @fasm test2.asm test2

@@ -59,7 +59,7 @@ key_face db 'col_faces',0
 key_select db 'col_select',0
 
 txt_err_save_img_file:
-if lang eq ru
+if lang eq ru_RU
 	db '"Не могу сохранить файл." -W',0
 else
 	db '"Can',39,'t save file." -W',0

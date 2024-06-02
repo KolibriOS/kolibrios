@@ -233,7 +233,7 @@ WG_mouse:
 WG_level:
 file 'wriggle.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	WG_help mstr \
 	'Ваша задача - тянуть червяков за голову или',\
 	'хвост, пока каждый из них не покроет клетки',\

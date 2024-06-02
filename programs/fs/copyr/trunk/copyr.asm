@@ -236,7 +236,7 @@ draw_window:
   ya    dd  0x0
   temp  dd  0
 
-if lang eq ru
+if lang eq ru_RU
 text:
       db '   ОТКУДА:    |Россия, Селятино, МПК Москва  , 1 Курс         '
       db '    КУДА:     |        Павлюшин Евгений, waptap@mail.ru       '

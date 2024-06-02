@@ -1,1 +1,1 @@
-lang fix et
+lang fix et_EE

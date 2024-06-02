@@ -465,7 +465,7 @@ proc DRedrawWin
 	mcall	 ,<30+IMG_SIZE,35>,,DCaptPath
 	mcall	 ,<30+IMG_SIZE,59>,,DCaptParams
 
-if lang eq ru
+if lang eq ru_RU
 	mov	ecx,[sc.work_button_text]
 	or	ecx,90000000h
 	mcall	 ,<369,35+END_ICONS_AREAH>,,DCaptCancel

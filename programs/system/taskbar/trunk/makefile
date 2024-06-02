@@ -9,19 +9,19 @@ SOURCE=${FILE}.ASM
 OUT=${FILE}.bin
 
 en:
-	echo "lang fix en" > ${LANG}
+	echo "lang fix en_US" > ${LANG}
 	${FASM} ${SOURCE} ${OUT}
 	${KPACK} ${OUT}
 et:
-	echo "lang fix et" > ${LANG}
+	echo "lang fix et_EE" > ${LANG}
 	${FASM} ${SOURCE} ${OUT}
 	${KPACK} ${OUT}
 ru:
-	echo "lang fix ru" > ${LANG}
+	echo "lang fix ru_RU" > ${LANG}
 	${FASM} ${SOURCE} ${OUT}
 	${KPACK} ${OUT}
 it:
-	echo "lang fix it" > ${LANG}
+	echo "lang fix it_IT" > ${LANG}
 	${FASM} ${SOURCE} ${OUT}
 	${KPACK} ${OUT}
 

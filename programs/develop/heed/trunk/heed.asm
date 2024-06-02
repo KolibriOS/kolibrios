@@ -2963,7 +2963,7 @@ menu_data_1:
 .mouse_pos	dd 0	;+24
 .mouse_keys	dd 0	;+28
 .x1:
-if lang eq ru
+if lang eq ru_RU
  .size_x1	dw 4*2+9*6	;+32
 else
  .size_x1	dw 40	;+32
@@ -2994,7 +2994,7 @@ end if
 .get_mouse_flag	dd 0	;+116
 
 menu_text_area:
-if lang eq ru
+if lang eq ru_RU
   	 db 'Файл',0
  .1:
 	 db 'Открыть',0
@@ -3053,7 +3053,7 @@ menu_data_2:
 .get_mouse_flag	dd 0	;+116
 
 menu_text_area_2:
-if lang eq ru
+if lang eq ru_RU
 	 db 'Вид',0
  .1:
 else
@@ -3072,7 +3072,7 @@ align	4
 menu_data_3:
 .type:		dd 0	;+0
 .x:
-if lang eq ru
+if lang eq ru_RU
  .size_x	dw 4*2+7*6	;+32
 else
  .size_x	dw 40	;+4
@@ -3087,7 +3087,7 @@ end if
 .mouse_pos	dd 0	;+24
 .mouse_keys	dd 0	;+28
 .x1:
-if lang eq ru
+if lang eq ru_RU
  .size_x1	dw 4*2+7*6	;+32
 else
  .size_x1	dw 40	;+32
@@ -3118,7 +3118,7 @@ end if
 .get_mouse_flag	dd 0	;+116
 
 menu_text_area_3:
-if lang eq ru
+if lang eq ru_RU
 	db 'Справка',0
  .1:
 	db 'Справка',0
@@ -3148,7 +3148,7 @@ Option_boxs	dd op1,op2,op3,0
 Option_boxs2	dd op11,op12,0
 
 op_text:	; Сопровождающий текст для чек боксов
-if lang eq ru
+if lang eq ru_RU
  .1	db 'Абсолютное'
  .e1:
  .2	db 'Вперед'
@@ -3178,7 +3178,7 @@ sel_text	db "From to",0
 help_but_text	= menu_text_area_3 ;db	'Help',0
 
 head_f_i:
-if lang eq ru
+if lang eq ru_RU
  error_open_file_string	db "Файл не найден!",0
  error_save_file_string	db "Файл не сохранен!",0
 else
@@ -3218,7 +3218,7 @@ flags	dw 001000010b
 ;10:	в памяти "висит" скопированный блок
 ;--------------------------------------------------------------------
 help_text:
-if lang eq ru
+if lang eq ru_RU
  db 'Ctrl+O              - открыть файл                 '
  db 'Ctrl+S              - сохранить                    '
  db 'PageUp, PageDown    - страница вверх/вниз          '

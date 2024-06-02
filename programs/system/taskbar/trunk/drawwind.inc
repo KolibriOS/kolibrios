@@ -276,7 +276,7 @@ align 4
         sub     bx,7
         mov     ecx,[PanelText_color]
         or      ecx,0x10000000
-        if lang eq et
+        if lang eq et_EE
         mcall   4,,,m_text,5
         else
         mcall   4,,,m_text,4

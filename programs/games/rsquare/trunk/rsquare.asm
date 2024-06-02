@@ -186,7 +186,7 @@ draw_window:
     mcall 12,1
     mcall 0,<100,FLDSIZE2+16>,<100,FLDSIZE2+38>,0x14008000, , header
  
-  if lang eq ru
+  if lang eq ru_RU
     mcall 47,0x20000,[levnum],<128,8>, 0
   else
     mcall 47,0x20000,[levnum],<117,8>, 0
@@ -638,7 +638,7 @@ level:
 file 'rlevels.bin'
 
 msg_ok db 'OK'
-if lang eq ru
+if lang eq ru_RU
 header db 'Red Square - Уровень       h - Помощь, p - Пауза', 0
 
 messages mstr 'Отлично! Вы переходите на следующий уровень.',\

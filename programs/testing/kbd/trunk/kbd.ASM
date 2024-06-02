@@ -234,7 +234,7 @@ bd_stat:        db      0       ; 0 - не найден, 1 - выключен, 2 - включен
 nb_name         dd      nb_nf
 bd_msk          dd      msk_i440
 
-if lang eq it
+if lang eq it_IT
         ;nb_nf           db      9, 'Non trovato'
          nb_nf           db     11, 'Non trovato'
 else
@@ -593,7 +593,7 @@ msg_nb          db 'North bridge :'
 msg_stat        db 'Status :'
 .length = $ - msg_stat
 
-if lang eq it
+if lang eq it_IT
         msg_en  db 'Abilitato   '
         .length = $ - msg_en
         msg_dis db 'Disabilitato'

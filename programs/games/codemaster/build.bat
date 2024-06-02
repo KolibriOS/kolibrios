@@ -1,4 +1,4 @@
-@echo lang fix en >lang.inc
+@echo lang fix en_US >lang.inc
 @fasm -m 65536 binary_master.asm binary_master
 @fasm -m 65536 hang_programmer.asm hang_programmer
 @fasm -m 65536 kolibri_puzzle.asm kolibri_puzzle
