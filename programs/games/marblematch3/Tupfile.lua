@@ -6,10 +6,10 @@ tup.include(HELPERDIR .. "/use_sound.lua")
 LDFLAGS = LDFLAGS .. " -T kolibri.ld"
 tup.append_table(OBJS, tup.rule("start.asm", "fasm %f %o", "start.o"))
 
-if tup.getconfig("LANG") == "ru"
+if tup.getconfig("LANG") == "ru_RU"
 then C_LANG = "LANG_RU"
 
-elseif tup.getconfig("LANG") == "sp"
+elseif tup.getconfig("LANG") == "es_ES"
 then C_LANG = "LANG_SP" -- just for example, other languages are not implemented
 
 else C_LANG = "LANG_EN" -- default language is English

@@ -1,6 +1,6 @@
 ; Timer with three buttons ;
-; %define lang "ru"
-; %define lang "it"
+; %define lang "ru_RU"
+; %define lang "it_IT"
 ORG 0
 BITS 32
 ; ---------------------------------------------------------------------------- ;
@@ -88,7 +88,7 @@ ButtonEvents:
 .pause  dd     EmptyProc       ; at start Pause must not work
 .reset  dd     On_ButtonReset
 ; ---------------------------------------------------------------------------- ;
-%ifidn     lang, "ru"
+%ifidn     lang, "ru_RU"
                sz_timer       db "Таймер",0
 
                sz_start:      db "старт"
@@ -97,7 +97,7 @@ ButtonEvents:
                  .end:        db 0
                sz_reset:      db "сброс"
                  .end:        db 0
-%elifidn   lang, "it"
+%elifidn   lang, "it_IT"
                sz_timer       db "Timer",0
 
                sz_start:      db "lancio"

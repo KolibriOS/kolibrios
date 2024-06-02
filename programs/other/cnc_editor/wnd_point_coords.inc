@@ -268,7 +268,7 @@ endp
 
 align 4
 capt_p rb 64
-if lang eq ru
+if lang eq ru_RU
 capt_fig: db 'Команда: ',39
 .name: rb 55
 capt_poi: db 'Точка: '

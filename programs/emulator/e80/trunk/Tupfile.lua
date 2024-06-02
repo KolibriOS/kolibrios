@@ -3,7 +3,7 @@ HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../.." or tup.getconfig("
 tup.include(HELPERDIR .. "/use_gcc.lua")
 INCLUDES = INCLUDES .. "-I" .. tup.getvariantdir()
 LDFLAGS = LDFLAGS .. " -T kolibri.ld"
-if tup.getconfig("LANG") == "ru"
+if tup.getconfig("LANG") == "ru_RU"
 then C_LANG = "LANG_RUS"
 else C_LANG = "LANG_ENG" -- this includes default case without config
 end

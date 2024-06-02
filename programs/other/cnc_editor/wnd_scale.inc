@@ -167,7 +167,7 @@ proc timer_funct_scale
 endp
 
 align 4
-if lang eq ru
+if lang eq ru_RU
 capt_opt db 'Настройки',0
 capt_sc db 'Масштаб:',0
 else

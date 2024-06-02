@@ -1,12 +1,12 @@
 if tup.getconfig('NO_JWASM') ~= "" or tup.getconfig("NO_GCC") ~= "" then return end
 
-if     tup.getconfig("LANG") == "it" then
+if     tup.getconfig("LANG") == "it_IT" then
   tup.definerule{command = "echo LANG_IT = 1 > %o", outputs = {"lang.inc"}}
-elseif tup.getconfig("LANG") == "sp" then
+elseif tup.getconfig("LANG") == "es_ES" then
   tup.definerule{command = "echo LANG_SP = 1 > %o", outputs = {"lang.inc"}}
-elseif tup.getconfig("LANG") == "ru" then
+elseif tup.getconfig("LANG") == "ru_RU" then
   tup.definerule{command = "echo LANG_RU = 1 > %o", outputs = {"lang.inc"}}
-elseif tup.getconfig("LANG") == "en" then
+elseif tup.getconfig("LANG") == "en_US" then
   tup.definerule{command = "echo LANG_EN = 1 > %o", outputs = {"lang.inc"}}
 else
   tup.definerule{command = "echo LANG_EN = 1 > %o", outputs = {"lang.inc"}}
