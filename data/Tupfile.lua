@@ -884,13 +884,17 @@ for i,v in ipairs(img_files) do
     if tup.getconfig("INSERT_COMMIT_ID") ~= ""
     then
       if build_type == "ru_RU"
-      then str='$(LANG=ru_RU.utf8 date -u +"[автосборка %d %b %Y %R, r$(get-current-cmtid)]"|iconv -f utf8 -t cp866)'
-      else str='$(date -u +"[auto-build %d %b %Y %R, r$(get-current-cmtid)]")'
+      then str='$(LANG=ru_RU.utf8 date -u +"[автосборка %d %b %Y %R, $(get-current-cmtid|grep -oE [a-z0-9]{7}$)]"|iconv -f utf8 -t cp866)'
+      else str='$(date -u +"[auto-build %d %b %Y %R, $(get-current-cmtid|grep -oE [a-z0-9]{7}$)]")'
       end
       str = string.gsub(str, "%$", "\\$") -- escape $ as \$
       str = string.gsub(str, "%%", "%%%%") -- escape % as %%
       cmd += " && str=" .. str
       cmd += ' && echo -n $str | dd status=none of=%o bs=1 seek=`expr 274 - length "$str"` conv=notrunc'
+      str2='$(get-current-cmtid|grep -oE "\\+[0-9]+")'
+      str2 = string.gsub(str2, "%$", "\\$") -- escape $ as \$
+      cmd += " && str2=" .. str2
+      cmd += ' && echo -n $str2 | dd status=none of=%o bs=1 seek=216 conv=notrunc'
     end
     local_file = VAR_KERNEL .. "/.kernel.mnt"
     tup.definerule{inputs = {v[2]}, command = cmd, outputs = {local_file}}
