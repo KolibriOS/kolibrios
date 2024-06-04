@@ -17,7 +17,7 @@ max_height = 255
 
 include '../../../KOSfuncs.inc'
 include '../../../macros.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include 'font.inc'
 include 'sort.inc'
 include 'kglobals.inc'
@@ -1024,7 +1024,7 @@ get_keybar_ind:
         jmp     .l
 .ret:
         lea     eax, [esi+ecx-1]
-        pop     edi esi edx ecx ebx   
+        pop     edi esi edx ecx ebx
         ret
 
 align 16
@@ -2564,7 +2564,7 @@ panels_OnKey:
         stosb
         jmp     @b
 @@:
-if lang eq ru
+if lang eq ru_RU
         mov     dword [edi], ' эле'
         mov     dword [edi+4], 'мент'
         add     edi, 8
@@ -2577,7 +2577,7 @@ if lang eq ru
         mov     word [edi-1], 'ов'
         inc     edi
 @@:
-else
+else ; Default to en_US
         mov     dword [edi], ' ite'
         mov     byte [edi+4], 'm'
         add     edi, 5
@@ -2935,7 +2935,7 @@ end if
         mov     edi, saved_file_name+511
         mov     byte [edi], 0
         mov     eax, [ebp + PanelData.selected_num]
-if lang eq ru
+if lang eq ru_RU
         cmp     eax, 1
         jz      @f
         dec     edi
@@ -2948,7 +2948,7 @@ if lang eq ru
         mov     dword [edi-4], 'мент'
         mov     dword [edi-8], ' эле'
         sub     edi, 8
-else
+else ; Default to en_US
         cmp     eax, 1
         jz      @f
         dec     edi
@@ -3788,7 +3788,7 @@ quick_find_prev:
         jmp     @b
 
 panels_getname:
-if lang eq ru
+if lang eq ru_RU
         mov     eax, 'Пане'
         stosd
         mov     eax, 'ли  '
@@ -3796,7 +3796,7 @@ if lang eq ru
         mov     eax, '    '
         stosd
         stosb
-else
+else ; Default to en_US
         mov     eax, 'Pane'
         stosd
         mov     eax, 'ls  '
@@ -4949,7 +4949,7 @@ draw_panel:
 fill_total_info:
         mov     edi, saved_file_name+511
         mov     byte [edi], ' '
-if lang eq ru
+if lang eq ru_RU
         mov     byte [edi-1], 'е'
         dec     edi
         cmp     eax, 1
@@ -4960,7 +4960,7 @@ if lang eq ru
         mov     dword [edi-4], 'файл'
         mov     byte [edi-5], ' '
         sub     edi, 5
-else
+else ; Default to en_US
         cmp     eax, 1
         jz      @f
         dec     edi
@@ -4981,11 +4981,11 @@ end if
         xor     edx, edx
         test    eax, eax
         jnz     @b
-if lang eq ru
+if lang eq ru_RU
         mov     dword [edi-4], 'т в '
         mov     dword [edi-8], ' бай'
         sub     edi, 8
-else
+else ; Default to en_US
         mov     dword [edi-4], ' in '
         mov     dword [edi-8], 'ytes'
         mov     word [edi-10], ' b'
@@ -5243,7 +5243,7 @@ draw_size_column:
         jnz     .nodotdot
         cmp     byte [esi+42], 0
         jnz     .nodotdot
-if lang eq ru
+if lang eq ru_RU
         mov     al, 'х'
         stosw
         mov     al, 'р'
@@ -5255,7 +5255,7 @@ if lang eq ru
         mov     al, 'В'
         stosw
         sub     ecx, 5
-else
+else ; Default to en_US
         mov     al, ' '
         stosw
         stosw
@@ -5269,7 +5269,7 @@ end if
 .nodotdot:
         test    byte [esi], 10h
         jz      .nofolder
-if lang eq ru
+if lang eq ru_RU
         mov     al, 'а'
         stosw
         mov     al, 'к'
@@ -5281,7 +5281,7 @@ if lang eq ru
         mov     al, 'П'
         stosw
         sub     ecx, 5
-else
+else ; Default to en_US
         mov     al, 'r'
         stosw
         mov     al, 'e'
@@ -6850,14 +6850,14 @@ bSilentFolderMode db    1
 bQuickSearchMode db     0
 bDisplayQuickSearch db  0
 
-if lang eq ru
+if lang eq ru_RU
 aFolder         db      'Папка'
 .size = $-aFolder
 aUp             db      'Вверх'
 .size = $-aUp
 aDrive          db      'Диск',0
 aScreens        db      'Экраны',0
-else
+else ; Default to en_US
 aFolder         db      'Folder'
 .size = $-aFolder
 aUp             db      'Up'
@@ -6876,7 +6876,7 @@ _100 db 100
 fpu_cw  dw      000011100111111b
 
 keybar_panels:
-if lang eq ru
+if lang eq ru_RU
 ; без клавиш-модификаторов
         db      'Помощь'
         db      'ПользМ'
@@ -6959,7 +6959,8 @@ if lang eq ru
 times 12 db     '      '
 ; Alt+Ctrl+Shift
 times 12 db     '      '
-else
+
+else ; Default to en_US
 ; No modificators
         db      'Help  '
         db      'UserMn'
@@ -7045,7 +7046,7 @@ times 12 db     '      '
 end if
 
 keybar_viewer:
-if lang eq ru
+if lang eq ru_RU
 ; без клавиш-модификаторов
         db      'Помощь'
         db      'Развер'
@@ -7129,7 +7130,8 @@ keybar_cp:
 times 12 db     '      '
 ; Alt+Ctrl+Shift
 times 12 db     '      '
-else
+
+else ; Default to en_US
 ; No modificators
         db      'Help  '
         db      'Unwrap'
@@ -7216,7 +7218,7 @@ times 12 db     '      '
 end if
 
 keybar_editor:
-if lang eq ru
+if lang eq ru_RU
 ; без клавиш-модификаторов
         db      'Помощь'
         db      'Сохран'
@@ -7300,7 +7302,8 @@ keybar_cp2:
 times 12 db     '      '
 ; Alt+Ctrl+Shift
 times 12 db     '      '
-else
+
+else ; Default to en_US
 ; No modificators
         db      'Help  '
         db      'Save  '
@@ -7546,28 +7549,28 @@ encodings:
 .menu.1:
         dd      .menu.2
         dd      0
-if lang eq ru
-        db      '&DOS текст (cp866)',0
-else
-        db      '&DOS text (cp866)',0
+if lang eq ru_RU
+        db      '&DOS текст (CP866)',0
+else ; Default to en_US
+        db      '&DOS text (CP866)',0
 end if
         db      .cp1251
 .menu.2:
         dd      .menu.3
         dd      .menu.1
-if lang eq ru
-        db      '&Windows текст (cp1251)',0
-else
-        db      '&Windows text (cp1251)',0
+if lang eq ru_RU
+        db      '&Windows текст (CP1251)',0
+else ; Default to en_US
+        db      '&Windows text (CP1251)',0
 end if
         db      .koi8r
 .menu.3:
         dd      .menu.4
         dd      .menu.2
-if lang eq ru
-        db      '&Linux текст (koi8-r)',0
-else
-        db      '&Linux text (koi8-r)',0
+if lang eq ru_RU
+        db      '&Linux текст (KOI8-R)',0
+else ; Default to en_US
+        db      '&Linux text (KOI8-R)',0
 end if
         db      .unicode
 .menu.4:
@@ -7930,9 +7933,9 @@ mkdirinfo:
                 db      0
                 dd      CopyDestEditBuf+12
 
-if lang eq ru
+if lang eq ru_RU
 compare_names   db      'иИрРмМаАнНсСдД'
-else
+else ; Default to en_US
 compare_names   db      'nNxXmMsSuUcCaA'
 end if
 
@@ -8315,7 +8318,7 @@ ConfirmCancelMsg        dd      aConfirmCancel
 EditConfigErr_ptr:
         dd      aEditConfigErr1
         dd      aEditConfigErr2
-if lang eq ru
+if lang eq ru_RU
 aDeleteCaption          db      'Удаление',0
 aConfirmDeleteText      db      'Вы хотите удалить',0
 aDeleteFolder           db      ' папку',0
@@ -8429,7 +8432,8 @@ aCannotSaveToPlugin     db      'Сохранение файлов на панелях плагинов не поддер
 aCannotSearchOnPlugin   db      'Поиск на панелях плагинов не поддерживается',0
 aCancelled              db      'Действие было прервано',0
 aConfirmCancel          db      'Вы действительно хотите отменить действие?',0
-else
+
+else ; Default to en_US
 aDeleteCaption          db      'Delete',0
 aConfirmDeleteText      db      'Do you wish to delete',0
 aDeleteFolder           db      ' the folder',0
@@ -8466,7 +8470,7 @@ error3msg               db      'Unknown file system',0
 error4msg               db      'Strange... Error 4',0
 error5msg               db      'File not found',0
 error6msg               db      'End of file',0
-error7msg               db      'Strange... Pointer lies outside of application memory',0
+error7msg               db      'Strange... Pointer is outside of application memory',0
 error8msg               db      'Disk is full',0
 error9msg               db      'File structure is destroyed',0
 error10msg              db      'Access denied',0

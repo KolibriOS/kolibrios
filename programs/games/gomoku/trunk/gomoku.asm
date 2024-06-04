@@ -13,7 +13,7 @@ use32
 	dd	0x0,0x0
 
 include '../../../macros.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
 AttackFactor dw 1	; Importance of attack (1..16)
 
@@ -717,15 +717,15 @@ pic_o db 01111100b, \
 	 01111100b
 
 pic_plt dd 0xffffff, 0x000000
-if lang eq ru
+if lang eq ru_RU
 title db 'Гомоку',0
 txt_buttons db 'Новая   Авто',0
 txt_go db 'Игра окончена',0
 txt_tie db 'Нет ходов',0
-else
+else ; Default to en_US
 title db 'Gomoku',0
 txt_go db 'Game over',0
-txt_tie db 'Tie game',0
+txt_tie db 'Tie game',0 ; FIXME: Should text be 'Draw'?
 txt_buttons db 'New     Auto',0
 endf
 

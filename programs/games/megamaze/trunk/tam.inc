@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 TM_levelp:
     call get_xy_sf
     mov  [levptr],esi
@@ -134,31 +136,31 @@ TM_drawm:
 TM_level:
 file 'tam.bin'
 
-if lang eq ru
-	TM_help mstr \
-	' Тесей (зеленый квадрат) должен убежать из',\
-	'лабиринта. За ним гонится механический Минотавр',\
-	'(красный квадрат). На каждый ход Тесей Минотавр',\
-	'делает 2 хода по такой схеме:',\
-	' Сначала он пытается приблизиться к Тесею по',\
-	'горизонтали на 1 квадрат. Если это невозможно,',\
-	'он пытается подойти по вертикали на 1 квадрат.',\
-	'Если невозможно сделать ни того, ни другого,',\
-	'Минотавр пропускает данный ход.','',\
-  'http://puzzleprograms.narod.ru'
-else
-	TM_help mstr \
-  ' Theseus (the green dot) must escape from a maze.',\
-  'There is also a mechanical Minotaur (the red',\
-  'dot) in each maze. For every turn that Theseus',\
-  'takes, the Minotaur takes two turns.',\
-  ' Each turn he decides following:',\
-  'First he tests if he can move horizontally and',\
-  'get closer to Theseus. If he can, he will move',\
-  "one square horizontally. If he can't, he will",\
-  'test if he could move vertically and get closer',\
-  'to Theseus. If he can, he will move one square',\
-  "vertically. If he can't move either horizontally",\
-  'or vertically, then he just skips that turn.','',\
-  'http://puzzleprograms.narod.ru'
+if lang eq ru_RU
+        TM_help mstr \
+        ' Тесей (зеленый квадрат) должен убежать из',\
+        'лабиринта. За ним гонится механический Минотавр',\
+        '(красный квадрат). На каждый ход Тесей Минотавр',\
+        'делает 2 хода по такой схеме:',\
+        ' Сначала он пытается приблизиться к Тесею по',\
+        'горизонтали на 1 квадрат. Если это невозможно,',\
+        'он пытается подойти по вертикали на 1 квадрат.',\
+        'Если невозможно сделать ни того, ни другого,',\
+        'Минотавр пропускает данный ход.','',\
+        'http://puzzleprograms.narod.ru' ; FIXME: Check link works
+else ; Default to en_US
+        TM_help mstr \
+        ' Theseus (the green dot) must escape from a maze.',\
+        'There is also a mechanical Minotaur (the red',\
+        'dot) in each maze. For every turn that Theseus',\
+        'takes, the Minotaur takes two turns.',\
+        ' Each turn he decides following:',\
+        'First he tests if he can move horizontally and',\
+        'get closer to Theseus. If he can, he will move',\
+        "one square horizontally. If he can't, he will",\
+        'test if he could move vertically and get closer',\
+        'to Theseus. If he can, he will move one square',\
+        "vertically. If he can't move either horizontally",\
+        'or vertically, then he just skips that turn.','',\
+        'http://puzzleprograms.narod.ru' ; FIXME: Check link works
 end if

@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 SMZ_levelp:
     call get_xy_sf
     xor  eax,eax
@@ -78,17 +80,17 @@ SMZ_drawm:
 SMZ_level:
 file 'smz.bin'
 
-if lang eq ru
-	SMZ_help mstr \
-	'Повторяйте последовательность ходов, двигая',\
-	'зеленый квадрат на подсвеченное количество клеток',\
-	'по прямой, пока не достигнете красного квадрата.','',\
-  'http://puzzleprograms.narod.ru'
-else
-	SMZ_help mstr \
-	'Repeat sequence shown above the field moving the',\
-	'green square by highlighted count of spaces as',\
-	'many times as you like, until you finish at the',\
-	'red square.','',\
-  'http://puzzleprograms.narod.ru'
+if lang eq ru_RU
+        SMZ_help mstr \
+        'Повторяйте последовательность ходов, двигая',\
+        'зеленый квадрат на подсвеченное количество клеток',\
+        'по прямой, пока не достигнете красного квадрата.','',\
+        'http://puzzleprograms.narod.ru' ; FIXME: Check link works
+else ; Default to en_US
+        SMZ_help mstr \
+        'Repeat sequence shown above the field moving the',\
+        'green square by highlighted count of spaces as',\
+        'many times as you like, until you finish at the',\
+        'red square.','',\
+        'http://puzzleprograms.narod.ru' ; FIXME: Check link works
 end if

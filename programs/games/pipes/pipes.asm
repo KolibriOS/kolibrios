@@ -16,12 +16,12 @@ fg3color equ  0x007F7F55
 btcolor  equ  0x005B6200
 
 include '..\..\macros.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: et_EE, en_US.
 
 use32
 
 	org    0x0
-	
+
 	db     'MENUET01'              ; 8 byte id
 	dd     0x01                    ; header version
 	dd     START                   ; start of code
@@ -322,11 +322,13 @@ or   esi,0x50000000
 mcall 47, 0x20000, [time], <60,395>
 mov  ebx,0x50000
 mov  ecx,[score]
-if lang eq et
+
+if lang eq et_EE
 add  edx,88 shl 16
-else
+else ; Default to en_US
 add  edx,80 shl 16
 end if
+
 mcall
 mov  ebx,0x20000
 mov  ecx,[level]
@@ -450,7 +452,7 @@ pusha
     mcall 4, <159,202>,,lbl_new_game
     jmp .nomessage
 
-  .stat1:       
+  .stat1:
     cmp   [stat],1
      je   .winmessage
     mov   ecx,btcolor OR 0xB0000000
@@ -556,7 +558,7 @@ pusha
 ;=================================================
 ; DATA - LABELS
 ;=================================================
-if lang eq et
+if lang eq et_EE
 lbl_title    db 'Torud',0
 lbl_gameover db 'M ä n g   L ä b i !',0
 lbl_new_game db 'Alusta enne uut mängu',0
@@ -565,7 +567,8 @@ lbl_win2     db '          Lähme edasi!          ',0
 lbl_yscore   db 'Sinu tulemus:',0
 lbl_toolbar  db 'Uus mäng:  Lihtne    Keskmine   Raske',0
 lbl_score    db ' Aeg:   Tulemus:       Tase:',0
-else
+
+else ; Default to en_US
 lbl_title    db 'Pipes',0
 lbl_gameover db 'G a m e   O v e r !',0
 lbl_new_game db 'Start a new game first',0

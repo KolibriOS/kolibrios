@@ -456,10 +456,10 @@ is_dn1  dd 0x0 ; | какие клавиши нажаты
 is_up2  dd 0x0 ; |
 is_dn2  dd 0x0 ; /
 
-include "lang.inc"
-if lang eq ru
+include "lang.inc" ; Language support for locales: ru_RU (CP866), en_US.
+if lang eq ru_RU
 include "russian.inc"
-else
+else ; Default to en_US
 include "english.inc"
 end if
 

@@ -7,7 +7,7 @@
 ;
 
 include '..\..\..\macros.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: it_IT, en_US.
 
 memsize = 1000h
                org 0
@@ -185,7 +185,7 @@ end_dr: mov     eax, 12
         cmp     al, 3
         jne     not_bt
 
-        mov     eax, 17                 ; get id
+        mov     eax, 17         ; get id
         mcall
         cmp     ah, 1
         jne     no_exit
@@ -234,10 +234,9 @@ bd_stat:        db      0       ; 0 - не найден, 1 - выключен, 2 - включен
 nb_name         dd      nb_nf
 bd_msk          dd      msk_i440
 
-if lang eq it
-        ;nb_nf           db      9, 'Non trovato'
-         nb_nf           db     11, 'Non trovato'
-else
+if lang eq it_IT
+        nb_nf           db     11, 'Non trovato'
+else ; Default to en_US
         nb_nf           db      9, 'Not found'
 end if
 msk_i440        db      0
@@ -593,14 +592,14 @@ msg_nb          db 'North bridge :'
 msg_stat        db 'Status :'
 .length = $ - msg_stat
 
-if lang eq it
+if lang eq it_IT
         msg_en  db 'Abilitato   '
         .length = $ - msg_en
         msg_dis db 'Disabilitato'
         .length = $ - msg_dis
         msg_nf  db 'Non trovato '
         .length = $ - msg_nf
-else
+else ; Default to en_US
         msg_en  db 'Enabled  '
         .length = $ - msg_en
         msg_dis db 'Disabled '

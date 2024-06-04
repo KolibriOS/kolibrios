@@ -18,7 +18,7 @@ include '../../develop/libraries/box_lib/load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include 'mem.inc'
 ;include 'dll.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: it_IT, en_US.
 
 @use_library ;_mem mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
 
@@ -152,11 +152,11 @@ ch3 check_box2 (5 shl 16)+15,(29 shl 16)+10,5, 0xffffff,0x8000,0xff,\
  txt_158,0+ch_flag_middle
 check_boxes_end:
 
-if lang eq it
+if lang eq it_IT
 	txt_160 db 'Bloc Num',0
 	txt_159 db 'Bloc Maiusc',0
 	txt_158 db 'Bloc Scorr',0
-else
+else ; Default to en_US
 	txt_160 db 'Num',0
 	txt_159 db 'Caps',0
 	txt_158 db 'Scroll',0

@@ -1038,19 +1038,19 @@ ud:
 
 ; Здесь находятся данные программы:
 
-; интерфейс программы двуязычный - задайте язык в macros.inc
+; Set the locale in 'macros.inc'. Language support for locales: ru_RU (CP866), en_US.
 load_char:
-if lang eq ru
+if lang eq ru_RU
      db 'Загрузить'
-else
+else ; Default to en_US
      db 'Open file'
 end if
 loadlen:
 
 ll_msg:
-if lang eq ru
+if lang eq ru_RU
      db 'Выберите уровень'
-else
+else ; Default to en_US
      db 'Choose a level'
 end if
      db ' (0-9, PgUp, PgDn)'
@@ -1059,27 +1059,27 @@ ll_msg_end:
 fn_input:
 ;   db 'cnf'
 ;    db 'soko-4.lev'
-if lang eq ru
+if lang eq ru_RU
      db 'или введите имя файла'
-else
+else ; Default to en_US
      db 'or enter a filename'
 end if
 inp_end:
      rb 256-(inp_end-fn_input)
 
 win_msg:
-if lang eq ru
+if lang eq ru_RU
      db 'Ура!!! Вы прошли уровень!'
-else
+else ; Default to en_US
      db "You've completed the level!"
 end if
 win_msg_end:
 
 lose_msg:
-if lang eq ru
+if lang eq ru_RU
      db 'Вы парализованы! Проигрыш...'
-else
-     db "You're paralized! Game over..."
+else ; Default to en_US
+     db "You can't move! Game over..."
 end if
 lose_msg_end:
 

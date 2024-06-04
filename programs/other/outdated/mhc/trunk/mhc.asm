@@ -39,7 +39,7 @@ use32
   dd 0x0
   dd 0x0
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: de_DE, en_US.
 include '..\..\..\macros.inc'
 ; CODE AREA
 
@@ -347,7 +347,8 @@ ENTRANCE:
 
  ; interface data
 
- if lang eq de
+ if lang eq de_DE
+
  keylab db "    PACKEN           ENTPACKEN"
  dellab db "   LOESCHE I/O      LOESCHE *.MHC"
  title  db "MHC 0.09"
@@ -363,9 +364,10 @@ ENTRANCE:
  db "ENTPACKE...     "
  db "KEIN I/O!       "
  db "KEINE *.MHC!    "
- db "FALSCHE METHODe!"
+ db "FALSCHE METHODE!"
 
- else
+ else ; Default to en_US
+
  keylab db "    COMPRESS         DECOMPRESS"
  dellab db "   DELETE I/O       DELETE *.MHC"
  title  db "MHC 0.09"

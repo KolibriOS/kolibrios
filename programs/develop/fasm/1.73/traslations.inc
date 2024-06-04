@@ -1,7 +1,7 @@
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
-if lang eq ru
+if lang eq ru_RU
 
 text		db ' ВхФайл:','ВыхФайл:','   Путь:'
 	.line_size = ($-text)/3
@@ -14,13 +14,13 @@ s_dbgdescr	db 'Создавать отладочную информацию',0
 sz_EPnotFound	db 'Not found entry point to ',0
 sizeof.sz_EPnotFound = $-sz_EPnotFound
 
-sz_cantLL	db 'Can not load library ',0
+sz_cantLL	db 'Cannot load library ',0
 sizeof.sz_cantLL = $-sz_cantLL
 
 sz_system_error db 'System error: ',0
 sizeof.sz_system_error = $-sz_system_error
 
-else
+else ; Default to en_US
 
 text	db    ' InFile:','OutFile:','   Path:'
 	.line_size = ($-text)/3
@@ -33,11 +33,10 @@ s_dbgdescr	db    'Generate debug information',0
 sz_EPnotFound	db 'Not found entry point to ',0
 sizeof.sz_EPnotFound = $-sz_EPnotFound
 
-sz_cantLL	db 'Can not load library ',0
+sz_cantLL	db 'Cannot load library ',0
 sizeof.sz_cantLL = $-sz_cantLL
 
 sz_system_error db 'System error: ',0
 sizeof.sz_system_error = $-sz_system_error
 
 end if
-

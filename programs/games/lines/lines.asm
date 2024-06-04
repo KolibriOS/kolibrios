@@ -9,7 +9,7 @@ use32
     dd	0x0,0x0
 
 include '../../macros.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include 'draw_window.inc'
 include 'ball_operations.inc'
 include 'basic_alg.inc'
@@ -220,12 +220,12 @@ test_new_ball:
 	@@:
 	ret
 
-if lang eq ru
+if lang eq ru_RU
 	szTitle  db 'Цветные линии v 0.3',0
 	szNewGame db 'F2 - новая игра',0
 	szRecord db 'Рекорд',0
 	szScore  db 'Очки',0
-else
+else ; Default to en_US
 	szTitle  db 'Color lines v 0.3',0
 	szNewGame db 'F2 - new game',0
 	szRecord db 'Record',0

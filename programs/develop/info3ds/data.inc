@@ -2,6 +2,8 @@
 ; здесь собраны данные по блокам *.3ds
 ;
 
+; Language support for locales: ru_RU (CP866), en_US.
+
 MAX_FILE_LEVEL equ 20 ;максимальный уровень вложенности блоков для анализа
 
 sizeof.block_3ds equ 9
@@ -124,7 +126,7 @@ block_3ds 0xa08c, 3,1,txt_a08c
 block_3ds 0xa08e, 3,1,txt_a08e
 .end:
 
-if lang eq ru
+if lang eq ru_RU
 txt_0002 db '3ds версия',0
 txt_0011 db 'Цвет rgb (байтовый формат)',0
 ;txt_0012 db 'LIN_COLOR_24',0
@@ -208,7 +210,8 @@ txt_a08c db 'Soften',0
 txt_a08e db 'Wire in units',0
 
 txt_not_delete db 'Не могу удалить выбранный блок. Он защищен.',0
-else
+
+else ; Default to en_US
 
 txt_0002 db '3ds version',0
 txt_0011 db 'Color rgb (byte format)',0
@@ -286,10 +289,10 @@ txt_a08a db 'In tranc',0
 txt_a08c db 'Soften',0
 txt_a08e db 'Wire in units',0
 
-txt_not_delete db 'I can not delete the selected chunk. It is protected.',0
+txt_not_delete db 'Cannot delete the selected chunk: it is protected.',0
 end if
 
-if lang eq ru
+if lang eq ru_RU
 txt_open_3ds db 'Открыт файл:',0
 txt_no_3ds: db 'Открытый файл не в формате *.3ds ',39
 	.zag: rb 8
@@ -303,7 +306,8 @@ txt_3ds_offs:
 	.siz: rb 8
 	db 0
 txt_mat_null db 'Материалы не найдены',0
-else
+
+else ; Default to en_US
 txt_open_3ds db 'Open file:',0
 txt_no_3ds: db 'Open file not in format *.3ds ',39
 	.zag: rb 8

@@ -38,7 +38,7 @@ db     'MENUET01'
 dd     1, start, init_end, end_mem, stack_top, params,	0
 
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), es_ES, en_US.
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
@@ -279,13 +279,13 @@ proc winRedraw
 	mcall 4, <15,37>, , strPath
 	mov	ecx,[sc.work_button_text]
 	or	ecx,90000000h
-if lang eq ru
+if lang eq ru_RU
 	mcall 4, <107,70>, , strGo
-else
+else ; Default to en_US
 	mcall 4, <127,70>, , strGo
 end if
 	mcall 4, <(WIN_W-47),12>, , strDots
-	mcall 4, <(WIN_W-47),37>, , strDots	
+	mcall 4, <(WIN_W-47),37>, , strDots
 
 	mcall 12, 2
 	ret
@@ -610,7 +610,7 @@ sc system_colors
 bWinChild db 0	;1 - дочернее окно есть, главное окно не должно реагировать
 redInput  db 0	;1 - подсветить красным надпись
 
-if lang eq ru
+if lang eq ru_RU
  title db 'uNZ v0.2 - Распаковщик Zip и 7z',0
  strGo db 'Распаковать',0
  strInp db  '    Архив',0
@@ -624,7 +624,7 @@ if lang eq ru
  strUnpackFault  db "'Ошибка распаковки' -E",0
  strNotSupport db "'Неподдерживаемый формат архива' -E",0
  strNotFound db "'Файл не найден' -E",0
-else if lang eq es
+else if lang eq es_ES
  title db 'uNZ v0.2 - Desarchivador para Zip y 7z',0
  strGo db 'Desarchivar',0
  strInp db 'Archivar',0
@@ -638,7 +638,7 @@ else if lang eq es
  strUnpackFault db "'Fallo al extraer' -E",0
  strNotSupport db "'El formato del archivo no es soportado' -E",0
  strNotFound db "'Archivo no encontrado' -E",0
-else
+else ; Default to en_US
  title db 'uNZ v0.2 - Unarchiver of Zip and 7z',0
  strGo db   'Unpack',0
  strInp db  'Archive',0
@@ -648,8 +648,8 @@ else
  strOk	db 'OK',0
  strGetPass db 'Password',0
  strCancel  db 'Cancel',0
- strUnpackOk  db "'Unpacked successfuly' -O",0
- strUnpackFault  db "'Unprack failed' -E",0
+ strUnpackOk  db "'Unpacked successfully' -O",0
+ strUnpackFault  db "'Unpack failed' -E",0
  strNotSupport db "'Archive format is not supported' -E",0
  strNotFound db "'File not found' -E",0
 end if

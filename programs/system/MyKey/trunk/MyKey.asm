@@ -19,7 +19,7 @@ use32
 	dd	0x0
 	dd	app_path
 
-include 'lang.inc'	;language support
+include 'lang.inc' ; Language support for locales: it_IT, en_US.
 
 include 'string.inc'
 ;include 'macros.inc'
@@ -901,12 +901,10 @@ RunProgram:
     clc
     ret
   .err_out:
-    if lang eq it
-		print	 "Impossibile caricare il programma"
-;--------------------------------------
-    else
-		print	 "Can't load program"
-
+    if lang eq it_IT
+        print "Impossibile caricare il programma"
+    else ; Default to en_US
+        print "Cannot load program"
     end if
     popa
     stc
@@ -923,13 +921,13 @@ mykey_window	dd	0	   ; Slot number of MyKey
 ;########### Input Thread data start ############
 
 ; Input Thread Title
-if lang eq it
-	it_labelt	db	"Inserisci hotkey e nome   "
-;--------------------------------------
-else
-	it_labelt	db	"Input hotkey and it's name"
 
+if lang eq it_IT
+        it_labelt       db "Inserisci hotkey e nome   "
+else ; Default to en_US
+        it_labelt       db "Input hotkey and its name"
 end if
+
 ;labellen:
 it_edit edit_box 180, 20, 30, 0xffffff, 0xAA80, 0x0000ff, 0x0, 0x0, 31, it_buf_cmd_line, 0, 0
 it_buf_cmd_line   dd	  0 ;db MAX_HOTKEYS_NUM*32 dup(0)  ; !Make it dynamic!!!
@@ -937,30 +935,28 @@ it_window	  dd	  0	     ; Slot number of the input thread
 it_alive	  db	  0	     ; Flag of the input thread existance
 it_keycode	  db	  0
 it_hotkey_addr	  dd	  0
-if lang eq it
-	it_hint 	  db	  'o premi Esc per cancellare',0
-;--------------------------------------
-else
-	it_hint 	  db	  'or press Esc to cancel',0
 
+if lang eq it_IT
+        it_hint         db 'o premi Esc per cancellare',0
+else ; Default to en_US
+        it_hint         db 'or press Esc to cancel',0
 end if
+
 ;########### Input Thread data end   ############
 
 ;Button names
-if lang eq it
-	AddKeyText	db 'Aggiungi',0
-	ReloadKeyText	db 'Ricarica',0
-	SaveKeyText	db 'Salva',0
-	;DeleteKeyText   db 'Delete',0
-	;ManageKeyText   db 'Manage',0
-;--------------------------------------
-else
-	AddKeyText	db 'Add',0
-	ReloadKeyText	db 'Reload',0
-	SaveKeyText	db 'Save',0
-	;DeleteKeyText   db 'Delete',0
-	;ManageKeyText   db 'Manage',0
-
+if lang eq it_IT
+        AddKeyText      db 'Aggiungi',0
+        ReloadKeyText   db 'Ricarica',0
+        SaveKeyText     db 'Salva',0
+        ;DeleteKeyText  db 'Delete',0
+        ;ManageKeyText  db 'Manage',0
+else ; Default to en_US
+        AddKeyText      db 'Add',0
+        ReloadKeyText   db 'Reload',0
+        SaveKeyText     db 'Save',0
+        ;DeleteKeyText  db 'Delete',0
+        ;ManageKeyText  db 'Manage',0
 end if
 
 hotkeys_num   db 0;15
@@ -979,19 +975,18 @@ sys_path:
 system_dir0 db '/sys/lib/'
 boxlib_name db 'box_lib.obj',0
 
-if lang eq it
-	err_message_found_lib	db "Non trovo box_lib.obj",0
-	head_f_i:
-	head_f_l		db 'Errore di sistema',0
-	err_message_import	db 'Error di importazione di box_lib.obj',0
-;--------------------------------------
-else
-	err_message_found_lib	db "Can't find box_lib.obj",0
-	head_f_i:
-	head_f_l		db 'System error',0
-	err_message_import	db 'Error on import box_lib.obj',0
-
+if lang eq it_IT
+        err_message_found_lib   db "Non trovo box_lib.obj",0
+        head_f_i:
+        head_f_l                db 'Errore di sistema',0
+        err_message_import      db 'Error di importazione di box_lib.obj',0
+else ; Default to en_US
+        err_message_found_lib   db "Can't find box_lib.obj",0
+        head_f_i:
+        head_f_l                db 'System error',0
+        err_message_import      db 'Error on import box_lib.obj',0
 end if
+
 align 4
 myimport:
 edit_box_draw	dd  aEdit_box_draw

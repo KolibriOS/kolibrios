@@ -24,7 +24,7 @@ dd PARAMS	 ; адрес буфера для параметров
 dd cur_dir_path
 
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), et_EE, it_IT, en_US.
 include '../../../macros.inc'
 if debug eq yes
 include '../../../debug.inc'
@@ -365,7 +365,7 @@ draw_window:
 	m2m dword [frame_data.font_color],[sc.work_text]
 	m2m dword [frame_data.ext_fr_col],[sc.work_graph]
 	m2m dword [frame_data.int_fr_col],[sc.work_light]
-	
+
 	push	dword frame_data
 	call	[Frame_draw]
 
@@ -378,7 +378,7 @@ draw_window:
 ;---------------------------------------------------------------------
 ;---  Data  ----------------------------------------------------------
 ;---------------------------------------------------------------------
-if lang eq ru
+if lang eq ru_RU
 save		db 'Сохранить',0
 cancel		db 'Отмена',0
 select		db 'Изменить',0
@@ -400,7 +400,7 @@ aUnknownError	db 'Неизвестная ошибка',0
 rdError 	db 'Нельзя сохранять образ в самого себя',0
 error		db 'Ошибка: ',0
 ;---------------------------------------------------------------------
-else if lang eq et
+else if lang eq et_EE
 save		db 'Salvesta',0
 cancel		db 'Cancel',0
 select		db ' Valige',0
@@ -422,7 +422,7 @@ aUnknownError	db 'Tundmatu viga',0
 rdError 	db "You can't save image on itself",0
 error		db 'Viga: ',0
 ;---------------------------------------------------------------------
-else if lang eq it
+else if lang eq it_IT
 save		db '  Salva',0
 cancel		db 'Cancel',0
 select		db 'Seleziona',0
@@ -444,7 +444,7 @@ aUnknownError	db 'Errore sconosciuto',0
 rdError 	db "You can't save image on itself",0
 error		db 'Errore: ',0
 ;---------------------------------------------------------------------
-else
+else ; Default to en_US
 save		db '  Save',0
 cancel		db 'Cancel',0
 select		db ' Select',0

@@ -19,7 +19,7 @@
 	dd      0x1000                  ; esp
 	dd      0, 0                    ; no parameters, no path
 ;---------------------------------------------------------------------
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include '..\..\..\macros.inc'
 delay   equ     20
 
@@ -52,7 +52,7 @@ button:
 ;---------------------------------------------------------------------
 draw_window:
 	mcall	12,1
-	
+
 	mov	al, 48          ; function 48 : graphics parameters
 	mov	bl, 4           ; subfunction 4 : get skin height
 	mcall
@@ -63,7 +63,7 @@ draw_window:
 	mov	edi, labelt             ; header
 	xor	eax, eax                ; function 0 : define and draw window
 	mcall
-	
+
 	mcall	12,2
 	ret
 ;---------------------------------------------------------------------
@@ -80,7 +80,7 @@ draw_magnify:
 	shr	eax, 16
 	inc	eax
 	mov	[size_x], eax
-	
+
 	xor	ebx, ebx
 	mcall	37	; get mouse coordinates
 	mov	ecx, eax
@@ -134,10 +134,10 @@ draw_magnify:
 ;---------------------------------------------------------------------
 ; DATA AREA
 ;---------------------------------------------------------------------
-if lang eq ru
+if lang eq ru_RU
 labelt:
     db   'Magnifier - Экранная лупа', 0
-else
+else ; Default to en_US
 labelt:
     db   'Magnifier', 0
 end if

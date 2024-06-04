@@ -22,15 +22,16 @@
 ; float[9] - вершины 1,2,3
 ; uint16 - атрибуты
 
+ ; Language support for locales: ru_RU (CP866), en_US.
 
-if lang eq ru
+if lang eq ru_RU
 txt_err_stl_open:
 	db '"STL',13,10
 	db 'Файл *.stl очень большой." -tW',0
 txt_err_stl_null_v:
 	db '"STL',13,10
 	db 'Вершины не найдены." -tE',0
-else
+else ; Default to en_US
 txt_err_stl_open:
 	db '"STL',13,10
 	db 'File *.stl is very large." -tW',0
@@ -68,7 +69,7 @@ endl
 		call convert_binary_stl
 		jmp .no_stl
 	@@:
-	
+
 	;в начале найдено 'solid '
 	stdcall txt_next_line, 80
 
@@ -135,13 +136,13 @@ endl
 	pop esi ecx
 
 	;4100
-	mov word[ebx],CHUNK_TRIMESH 
+	mov word[ebx],CHUNK_TRIMESH
 	sub ecx,6
 	mov dword[ebx+2],ecx
 	add ebx,6
 
 	;4110
-	mov word[ebx],CHUNK_VERTLIST 
+	mov word[ebx],CHUNK_VERTLIST
 	mov dword[ebx+2],8 ;+ число вершин * 12
 	add ebx,6
 
@@ -270,13 +271,13 @@ endl
 	add ebx,4
 
 	;4100
-	mov word[ebx],CHUNK_TRIMESH 
+	mov word[ebx],CHUNK_TRIMESH
 	sub ecx,6
 	mov dword[ebx+2],ecx
 	add ebx,6
 
 	;4110
-	mov word[ebx],CHUNK_VERTLIST 
+	mov word[ebx],CHUNK_VERTLIST
 	mov dword[ebx+2],8 ;+ число вершин * 12
 	add ebx,6
 
@@ -284,7 +285,7 @@ endl
 	mov ecx,[vert_c]
 	mov word[edx],cx ;кол. вершин
 	add ebx,2
-	
+
 	add esi,80+4+12 ;пропуск заголовка, числа граней, 1-го вектора нормалей
 	mov edi,ebx
 	mov eax,[face_c]

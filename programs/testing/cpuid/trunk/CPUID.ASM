@@ -32,7 +32,7 @@ include '..\..\..\develop\libraries\box_lib\load_lib.mac'
 include '..\..\..\macros.inc'
 include '../../../gui_patterns.inc'
 include '../../../KOSfuncs.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: it_IT, en_US.
 include 'draw.inc'
 include 'brand.inc'     ; brand ID decoding
 include 'caches.inc'    ; L1 and L2 cashes decoding for Intel
@@ -3140,43 +3140,30 @@ techlen:
 
 name:
 
-if lang eq it
-
+if lang eq it_IT
         db 'Codename:',0
-
-else
-
+else ; Default to en_US
         db 'CODENAME:',0
-
-
 end if
 
 namelen:
 
 vendorname:
 
-if lang eq it
-
+if lang eq it_IT
          db 'Vendor CPU              ', 0
-
-else
-
+else ; Default to en_US
          db 'CPU VENDOR:             ', 0
-
 end if
 
 vendornamelen:
 
 cpuname:
 
-if lang eq it
-
+if lang eq it_IT
          db 'Vendor CPU              ', 0
-
-else
-
+else ; Default to en_US
          db 'CPU VENDOR:             ', 0
-
 end if
 
 cpunamelen:
@@ -3184,42 +3171,30 @@ cpunamelen:
 
 fam:
 
-if lang eq it
-
+if lang eq it_IT
          db 'Famiglia:   std   ext', 0
-
-else
-
+else ; Default to en_US
          db 'FAMILY:   std   ext', 0
-
 end if
 
 famlen:
 
 mode:
 
-if lang eq it
-
-          db 'Modello:    std    ext', 0
-
-else
-
-          db 'MODEL:    std    ext', 0
-
+if lang eq it_IT
+        db 'Modello:    std    ext', 0
+else ; Default to en_US
+        db 'MODEL:    std    ext', 0
 end if
 
 modelen:
 
 step:
 
-if lang eq it
-
-           db 'Stepping:        ', 0
-
-else
-
-           db 'STEPPING:        ', 0
-
+if lang eq it_IT
+        db 'Stepping:        ', 0
+else ; Default to en_US
+        db 'STEPPING:        ', 0
 end if
 
 steplen:
@@ -3296,14 +3271,10 @@ logcpuslen:
 
 speed :
 
-if lang eq it
-
-;               db 'Performance',0
-
-else
-
-;               db 'PERFORMANCE:',0
-
+if lang eq it_IT
+;       db 'Performance',0
+else ; Default to en_US
+;       db 'PERFORMANCE:',0
 end if
 
 speedlen:
@@ -3320,14 +3291,10 @@ kbperseclen:
 
 instruct:
 
-if lang eq it
-
-                db 'Set istruzioni'
-
-else
-
-                db 'Instruction sets'
-
+if lang eq it_IT
+        db 'Set istruzioni'
+else ; Default to en_US
+        db 'Instruction sets'
 end if
 
 instructlen:
@@ -3354,14 +3321,10 @@ EXTCAlen:
 
 oblom:
 
-if lang eq it
-
-                db 'CPUID non e disponibile'
-
-else
-
-                db 'SORRY, CPUID IS NOT AVAILABLE'
-
+if lang eq it_IT
+        db 'CPUID non e disponibile'
+else ; Default to en_US
+        db 'SORRY, CPUID IS NOT AVAILABLE'
 end if
 
 oblomlen:
@@ -3369,17 +3332,14 @@ oblomlen:
 
 other:
 
-if lang eq it
-
-                db 'Questo vendor non e supportato'
-
-else
-
-                db 'SORRY, THIS VENDOR IS NOT SUPPORTED YET'
-
+if lang eq it_IT
+        db 'Questo vendor non e supportato'
+else ; Default to en_US
+        db 'SORRY, THIS VENDOR IS NOT SUPPORTED YET'
 end if
 
 otherlen:
+
 
 cacheP4:
 
@@ -3388,21 +3348,13 @@ cacheP4:
 cacheP4len:
 
 
-
-
 typen:
 
-if lang eq it
-
-                db 'Tipo:'
-
-else
-
-                db 'Type:'
-
+if lang eq it_IT
+        db 'Tipo:'
+else ; Default to en_US
+        db 'Type:'
 end if
-
-
 
 typenlen:
 

@@ -17,6 +17,8 @@
 ;;  For more details see readme.txt                                                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Language support for locales: it_IT, en_US.
+
 format binary
 
 APP_NAME fix 'Launch'
@@ -345,7 +347,7 @@ window_title:
 	db APP_NAME, ' ', APP_VERSION, 0
 
 ;; Messages
-if lang eq it
+if lang eq it_IT
 	message_dbg_not_found:
 		db '%s non trovato', 10, 0
 
@@ -354,7 +356,7 @@ if lang eq it
 
 	message_ok:
 		db '%s caricato correttamente. PID: %d (0x%X)', 0
-else
+else ; Default to en_US
 	message_dbg_not_found:
 		db '%s not found', 10, 0
 
@@ -362,7 +364,7 @@ else
 		db 'File (%s) not found!', 0
 
 	message_ok:
-		db '%s loaded succesfully. PID: %d (0x%X)', 0
+		db '%s loaded successfully. PID: %d (0x%X)', 0
 end if
 ;; Configuration path
 etc_cfg:
@@ -435,7 +437,7 @@ struct FileInfoRun
       Zero       db 0
       FileNameP  dd ?
     ends
-  ends  
+  ends
 ends
 
 LaunchStruct FileInfoRun

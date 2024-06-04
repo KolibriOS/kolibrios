@@ -19,7 +19,7 @@
 
 ;******************************************************************************
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: it_IT, en_US.
 include '..\..\..\macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
@@ -285,7 +285,7 @@ end_col:
     cmp [delay_cnt],0
     jne no_delay
     mov [delay_cnt],1
-    delay 1             ;don't generate delay for fast speed programm
+    delay 1             ; don't generate delay for fast speed program
 no_delay:
     dec [delay_cnt]
 
@@ -297,9 +297,9 @@ win_test:
     mov [againbut],1
     call draw_window
 ;    label 160,200,'You Win!',cl_Green+font_Big
-;    label 130,220,'Youre Score:',cl_Green+font_Big
+;    label 130,220,'Your Score:',cl_Green+font_Big
 ;    outcount dword [scorea],230,220,cl_Green,5*65536
-;    label 130,234,'Youre Lives:',cl_Green+font_Big
+;    label 130,234,'Your Lives:',cl_Green+font_Big
 ;    outcount dword [scoreb],230,234,cl_Green,5*65536
 ;    delay 600  ;wait 2sec
 ;    close      ;exit from program
@@ -310,7 +310,7 @@ lose_test:
     jne stl2
 ;    call draw_window
 ;    label 160,200,'You Lose!',cl_Red+font_Big
-;    label 130,220,'Youre Score:',cl_Red+font_Big
+;    label 130,220,'Your Score:',cl_Red+font_Big
 ;    outcount dword [scorea],230,220,cl_Red,5*65536
 ;    delay 300  ;wait 2sec
 ;    close      ;exit from program
@@ -418,9 +418,9 @@ noplayagain:
 draw_window:
     startwd
     window 0,0,400+8,480+24,window_Skinned
-    if lang eq it
+    if lang eq it_IT
         label 12,8,'ARCANOID: Usa le freccie    Vite      Punti',cl_White+font_Big
-    else
+    else ; Default to en_US
         label 12,8,'ARCANOID: USE ARROW KEYS    LIVES      SCORE',cl_White+font_Big
     end if
 
@@ -430,12 +430,12 @@ draw_window:
 
     cmp [nextlev],1
     je  nlev
-    if lang eq it
+    if lang eq it_IT
         label 160,200,'Hai perso!',cl_Red+font_Big
         label 130,220,'Punteggio:',cl_Red+font_Big
-    else
+    else ; Default to en_US
         label 160,200,'You Lose!',cl_Red+font_Big
-        label 130,220,'Youre Score:',cl_Red+font_Big
+        label 130,220,'Your Score:',cl_Red+font_Big
     end if
     outcount dword [scorea],230,220,cl_Red,5*65536
     mov ebx,150*65536+80
@@ -447,19 +447,19 @@ draw_window:
     mov ecx,260*65536+12
     mov edx,1
     mcall
-    if lang eq it
+    if lang eq it_IT
         label 152,244,'Rigioca',cl_Red+font_Big
-    else
+    else ; Default to en_US
         label 152,244,'Play again?',cl_Red+font_Big
     end if
     jmp elev
 nlev:
-    if lang eq it
+    if lang eq it_IT
         label 160,200,'Hai vinto!',cl_Green+font_Big
         label 130,220,'Punteggio:',cl_Green+font_Big
-    else
+    else ; Default to en_US
         label 160,200,'You Win!',cl_Green+font_Big
-        label 130,220,'Youre Score:',cl_Green+font_Big
+        label 130,220,'Your Score:',cl_Green+font_Big
     end if
     outcount dword [scorea],230,220,cl_Green,5*65536
     mov ebx,150*65536+120  ;mov ebx,150*65536+80
@@ -471,15 +471,15 @@ nlev:
     mov ecx,260*65536+12
     mov edx,1
     mcall
-    if lang eq it
+    if lang eq it_IT
         label 152,244,'Prossimo Livello',cl_Red+font_Big
-    else
+    else ; Default to en_US
         label 152,244,'Next level?',cl_Red+font_Big
     end if
 elev:
-    if lang eq it
+    if lang eq it_IT
         label 178,264,'Esci',cl_Red+font_Big
-    else
+    else ; Default to en_US
         label 178,264,'Exit?',cl_Red+font_Big
     end if
 

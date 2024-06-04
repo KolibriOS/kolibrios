@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 LP_levelp:
 		mcall 40,100111b
 		inc  [drag_flag]
@@ -226,20 +228,20 @@ LP_draw_alert:
 LP_level:
 file 'loops.bin'
 
-if lang eq ru
-	LP_help mstr \
-	'Через все клетки прямоугольника необходимо',\
-	'провести замкнутую ломаную. Проходя через черный',\
-	'кружок, ломаная обязана повернуть, а проходя',\
-	'через белый кружок, ломаная поворачивать не',\
-	'может. В пустых же клетках ломаная ведет себя как',\
-	'захочет.','',\
-	'http://puzzleprograms.narod.ru'
-else
-	LP_help mstr \
-	'You have to draw closed line over every grid',\
-	'cell. On black square line must turn, and it must',\
-	'go straight when over white square. The line may',\
-	'behave anyhow elsewhere.','',\
-	'http://puzzleprograms.narod.ru'
+if lang eq ru_RU
+        LP_help mstr \
+        'Через все клетки прямоугольника необходимо',\
+        'провести замкнутую ломаную. Проходя через черный',\
+        'кружок, ломаная обязана повернуть, а проходя',\
+        'через белый кружок, ломаная поворачивать не',\
+        'может. В пустых же клетках ломаная ведет себя как',\
+        'захочет.','',\
+        'http://puzzleprograms.narod.ru' ; FIXME: Check link works
+else ; Default to en_US
+        LP_help mstr \
+        'You have to draw a closed line over every grid',\
+        'cell. On black square line must turn, and it must',\
+        'go straight when over white square. The line may',\
+        'behave anyhow elsewhere.','',\
+        'http://puzzleprograms.narod.ru' ; FIXME: Check link works
 end if

@@ -41,7 +41,7 @@ KMENUITEM_NORMAL equ 0
 KMENUITEM_SUBMENU equ 1
 KMENUITEM_SEPARATOR equ 2
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
@@ -346,7 +346,7 @@ ch2 check_box2 Otstup shl 16 + 12, (190+dy) shl 16 + 12, 6, 0xFFFFFFFF, 0xAABBCC
 
 browse db '...', 0
 
-if lang eq ru  ;RU language
+if lang eq ru_RU
 
 title   db  "Formatting Disk Utility", 0
 
@@ -372,7 +372,7 @@ unittext:
   .6 db '32 К°', 0
   .7 db '64 К°', 0
 
-else           ;EN language
+else ; Default to en_US
 
 title   db  "Formatting Disk Utility", 0
 
@@ -696,12 +696,12 @@ OpenDialog_data:
 .y:
 .y_size                 dw 320 ;+52 ; Window y size
 .y_start                dw 10  ;+54 ; Window Y position
- 
+
 default_dir db '/sys',0 ;директори€ по умолчанию
 communication_area_name: db 'FFFFFFFF_open_dialog',0
 open_dialog_name:  db 'opendial',0
 communication_area_default_path: db '/sys/File managers/',0
- 
+
 Filter:
 dd Filter.end - Filter.1
 .1:
@@ -713,7 +713,7 @@ db 0
 align 16
 @IMPORT:
 library box_lib, 'box_lib.obj'
- 
+
 import  box_lib,\
         edit_box_draw,          'edit_box_draw',\
         edit_box_key,           'edit_box_key',\
@@ -756,7 +756,7 @@ import_proclib:
 dd 0,0
         aOpenDialog_Init db 'OpenDialog_init',0
         aOpenDialog_Start db 'OpenDialog_start',0
- 
+
 system_dir0 db '/sys/lib/'
 lib0_name db 'proc_lib.obj',0
 lib1_name db 'kmenu.obj',0

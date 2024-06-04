@@ -1,5 +1,9 @@
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
+; FIXME:
+;  This translation mechanism should fallback to en_US if the language
+;  is unlisted (e.g. es_ES). Either fix the macros or use a different method.
+;  The problem doesn't manifest, as we only bundle Dungeons in the RU distro.
 struc langstr [lng, data]
 {
         if lang eq lng
@@ -62,8 +66,8 @@ end if
 MAIN_EVENT_MASK                 = EVM_REDRAW or EVM_KEY or EVM_BUTTON or EVM_MOUSE or EVM_MOUSE_FILTER
 
 MAIN_WINDOW_TITLE               langstr0            \
-                                en, 'Dungeons of Augastes 0.1', \
-                                ru, '®¤§¥¬¥«μο €γ£ αβ¥α  0.1'
+                                en_EN, 'Dungeons of Augastes 0.1', \
+                                ru_RU, '®¤§¥¬¥«μο €γ£ αβ¥α  0.1'
 
 LevelLoadingImageFile           db 'Resources/Textures/HUD/LevelLoading.png', 0
 HudPanelImageFile               db 'Resources/Textures/HUD/Panel.png', 0

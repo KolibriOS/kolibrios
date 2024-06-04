@@ -4,7 +4,7 @@
 ;   Compile with FASM
 ;
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), it_IT, de_DE, en_US.
 include '..\..\..\macros.inc' ; decreases program size (not required)
 
 StatusColor equ 0x00ffffff
@@ -419,60 +419,60 @@ conf db 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0,15
      db 1,2,3,4,12,13,14,5,11,0,15,6,10,9,8,7,9
 
 txtMoves:
-if lang eq ru
+if lang eq ru_RU
      db 'Ходов:'
-else if lang eq it
+else if lang eq it_IT
      db 'Movimenti:'
-else if lang eq de
+else if lang eq de_DE
      db 'Bewegungen:'
-else
+else ; Default to en_US
      db 'Moves:'
 end if
 lenMoves:
 
 txtSh:
-if lang eq ru
+if lang eq ru_RU
      db 'Тасовка'
-else if lang eq it
+else if lang eq it_IT
      db 'Mischia'
-else if lang eq de
+else if lang eq de_DE
      db 'Mischen'
-else
+else ; Default to en_US
      db 'Shuffle'
 end if
 lenSh:
 
 txtCnf:
-if lang eq ru
+if lang eq ru_RU
      db 'Выберите задачу и нажмите->'
-else if lang eq it
+else if lang eq it_IT
      db 'Seleziona un compito, poi premi->'
-else if lang eq de
+else if lang eq de_DE
      db 'Waehle eine Aufgabe, dann clicke au->'
-else
-     db 'Select task,  then press ->'
+else ; Default to en_US
+     db 'Select task, then press ->'
 end if
 lenCnf:
 
 txtTitle:              ; строка заголовка
-if lang eq ru
+if lang eq ru_RU
      db   'Игра 15 - задача X', 0
-else if lang eq it
+else if lang eq it_IT
      db 'Gioco del quindici - partita X', 0
-else if lang eq de
+else if lang eq de_DE
      db '15-Puzzle - Spiel X', 0
-else
+else ; Default to en_US
      db   'Game 15 - puzzle X', 0
 end if
 
 txtVictory:
-if lang eq ru
+if lang eq ru_RU
      db 'Вы решили задачу! Нажмите->'
-else if lang eq it
+else if lang eq it_IT
      db 'Gioco completato! Premi ->'
-else if lang eq de
+else if lang eq de_DE
      db 'Spiel beendet! Druecken sie auf ->'
-else
+else ; Default to en_US
      db 'Puzzle completed!   Press->'
 end if
 lenVictory:
