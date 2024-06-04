@@ -14,7 +14,7 @@ TEXT_END: db 'End',0
 TEXT_CANCEL: db 'x',0
 ;---------------------------------------------------------------------
 
-; Language support for locales: ru_RU (CP866), de_DE, it_IT,en_US
+; Language support for locales: ru_RU (CP866), de_DE, it_IT, en_US
 
 if lang eq ru_RU
     TEXT_WTITLE:  db 'Завершение работы',0

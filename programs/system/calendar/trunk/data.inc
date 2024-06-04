@@ -88,7 +88,7 @@ day_count db 3,0,3,2,3,2,3,3,2,3,2,3
 Fkeys	  db 210,211,212,213,214,215,216,217,208,209,228,159
 
 ; Multilanguage interface - configurable in lang.inc
-; Language support for locales: ru_RU (CP866), de_DE, fr_FR, fi_FI, et_ES, it_IT, en_US
+; Language support for locales: ru_RU (CP866), de_DE, fr_FR, fi_FI, et_EE, it_IT, en_US
 
 month_name:
 if lang eq ru_RU
