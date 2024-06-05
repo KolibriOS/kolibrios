@@ -2288,7 +2288,7 @@ endg
 
 iglobal
 version_inf:
-        db 0,7,7,0  ; version 0.7.7.0
+        db 0,7,7,0  ; FIXME: Get distribution version from git tag
         db 0
 .rev    dd __REV__
 .size = $ - version_inf

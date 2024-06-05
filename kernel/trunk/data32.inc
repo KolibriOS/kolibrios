@@ -45,6 +45,7 @@ keymap_alt:
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
+; Language support for locales: ru_RU (UTF-8), es_ES (data32sp.inc), et_EE (data32et.inc), en_US.
 
 if lang eq ru_RU
   boot_initirq      cp866 'Инициализация IRQ',0
@@ -92,7 +93,7 @@ else if lang eq es_ES
   include 'data32sp.inc'
 else if lang eq et_EE
   include 'data32et.inc'
-else
+else ; Default to en_US
   boot_initirq      db   'Initialize IRQ',0
   boot_picinit      db   'Initialize PIC',0
   boot_v86machine   db   'Initialize system V86 machine',0
@@ -198,27 +199,27 @@ MIN_DEFAULT_DLL_ADDR = 0x70000000
 dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 
-if lang eq en_US
+if lang eq en_US        ; English (American)
   SYSLANG = 1
-else if lang eq fi_FI
+else if lang eq fi_FI   ; Finnish
   SYSLANG = 2
-else if lang eq de_DE
+else if lang eq de_DE   ; German
   SYSLANG = 3
-else if lang eq ru_RU
+else if lang eq ru_RU   ; Russian
   SYSLANG = 4
-else if lang eq fr_FR
+else if lang eq fr_FR   ; French
   SYSLANG = 5
-else if lang eq et_EE
+else if lang eq et_EE   ; Estonian
   SYSLANG = 6
-else if lang eq uk_UA
+else if lang eq uk_UA   ; Ukrainian
   SYSLANG = 7
-else if lang eq it_IT
+else if lang eq it_IT   ; Italian
   SYSLANG = 8
-else if lang eq nl_BE
+else if lang eq nl_BE   ; Flemish
   SYSLANG = 9
-else if lang eq es_ES
+else if lang eq es_ES   ; Spanish
   SYSLANG = 10
-else if lang eq ca_ES
+else if lang eq ca_ES   ; Catalan
   SYSLANG = 11
 else
   display 'unsupported language specified',13,10
