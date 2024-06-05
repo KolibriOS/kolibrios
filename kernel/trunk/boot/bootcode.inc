@@ -315,7 +315,7 @@ end if
         int     0x10
 
 if lang eq ru_RU
- ; Load & set russian VGA font (RU.INC)
+        ; Load & set Russian VGA font 'bootfont-ru_RU'
         mov     bp, RU_FNT1             ; RU_FNT1 - First part
         mov     bx, 1000h               ; 768 bytes
         mov     cx, 30h                 ; 48 symbols
@@ -329,8 +329,8 @@ if lang eq ru_RU
         mov     dx, 0E0h                ; 224 - position of first symbol
         mov     ax, 1100h
         int     10h
- ; End set VGA russian font
 else if lang eq et_EE
+        ; Load & set Estonian VGA font 'bootfont-et_EE'
         mov     bp, ET_FNT              ; ET_FNT1
         mov     bx, 1000h               ;
         mov     cx, 255                 ; 256 symbols
