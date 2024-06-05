@@ -16,6 +16,6 @@ indent_size = 8
 [kernel/**.{asm,inc,ASM,INC}]
 charset = utf-8
 
-[*.{bat,cmd}]
+[*.{bat,cmd,BAT,CMD}]
 # Prefer Windows line endings
 end_of_line = crlf
