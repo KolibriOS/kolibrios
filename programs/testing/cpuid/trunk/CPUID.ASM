@@ -3140,7 +3140,7 @@ techlen:
 
 name:
 
-if lang eq it
+if lang eq it_IT
 
         db 'Codename:',0
 
@@ -3155,7 +3155,7 @@ namelen:
 
 vendorname:
 
-if lang eq it
+if lang eq it_IT
 
          db 'Vendor CPU              ', 0
 
@@ -3169,7 +3169,7 @@ vendornamelen:
 
 cpuname:
 
-if lang eq it
+if lang eq it_IT
 
          db 'Vendor CPU              ', 0
 
@@ -3184,7 +3184,7 @@ cpunamelen:
 
 fam:
 
-if lang eq it
+if lang eq it_IT
 
          db 'Famiglia:   std   ext', 0
 
@@ -3198,7 +3198,7 @@ famlen:
 
 mode:
 
-if lang eq it
+if lang eq it_IT
 
           db 'Modello:    std    ext', 0
 
@@ -3212,7 +3212,7 @@ modelen:
 
 step:
 
-if lang eq it
+if lang eq it_IT
 
            db 'Stepping:        ', 0
 
@@ -3296,7 +3296,7 @@ logcpuslen:
 
 speed :
 
-if lang eq it
+if lang eq it_IT
 
 ;               db 'Performance',0
 
@@ -3320,7 +3320,7 @@ kbperseclen:
 
 instruct:
 
-if lang eq it
+if lang eq it_IT
 
                 db 'Set istruzioni'
 
@@ -3354,7 +3354,7 @@ EXTCAlen:
 
 oblom:
 
-if lang eq it
+if lang eq it_IT
 
                 db 'CPUID non e disponibile'
 
@@ -3369,7 +3369,7 @@ oblomlen:
 
 other:
 
-if lang eq it
+if lang eq it_IT
 
                 db 'Questo vendor non e supportato'
 
@@ -3392,7 +3392,7 @@ cacheP4len:
 
 typen:
 
-if lang eq it
+if lang eq it_IT
 
                 db 'Tipo:'
 

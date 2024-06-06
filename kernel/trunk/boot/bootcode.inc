@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
@@ -10,8 +10,6 @@
 ;;                        based on bootcode for MenuetOS        ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 ;==========================================================================
@@ -316,8 +314,8 @@ end if
         mov     ax, 3
         int     0x10
 
-if lang eq ru
- ; Load & set russian VGA font (RU.INC)
+if lang eq ru_RU
+        ; Load & set Russian VGA font 'bootfont-ru_RU'
         mov     bp, RU_FNT1             ; RU_FNT1 - First part
         mov     bx, 1000h               ; 768 bytes
         mov     cx, 30h                 ; 48 symbols
@@ -331,8 +329,8 @@ if lang eq ru
         mov     dx, 0E0h                ; 224 - position of first symbol
         mov     ax, 1100h
         int     10h
- ; End set VGA russian font
-else if lang eq et
+else if lang eq et_EE
+        ; Load & set Estonian VGA font 'bootfont-et_EE'
         mov     bp, ET_FNT              ; ET_FNT1
         mov     bx, 1000h               ;
         mov     cx, 255                 ; 256 symbols
@@ -416,7 +414,7 @@ sayerr:
         test    al, 2
         loopnz  @b
 
-        mov     al, 0xf6        ; Сброс клавиатуры, разрешить сканирование
+        mov     al, 0xf6        ; Keyboard reset, enable scanning
         out     0x60, al
         xor     cx, cx
 @@:
@@ -706,7 +704,7 @@ end if
 if defined extended_primary_loader
         _ask_question bdev,'13',preboot_device  ; range accepted for answer: 1-3
 else
-        _ask_question bdev,'14',preboot_device              ; range accepted for answer: 1-4
+        _ask_question bdev,'14',preboot_device  ; range accepted for answer: 1-4
 end if
         _setcursor 14,0
 
@@ -805,7 +803,7 @@ end if
         push    word [es:bp+6]
         pop     word [number_vm]
         mov     word [preboot_graph], bp          ;save choose
-        
+
         jmp     .d
 
 .change_b:                      ; b) preboot_biosdisk  = use BIOS disks through V86 emulation?
@@ -876,8 +874,8 @@ end if
         mov     bx, 18
         xor     dx, dx
         div     bx
-if lang eq ru
-; подождите 5 секунд, 4/3/2 секунды, 1 секунду
+if lang eq ru_RU
+; подождите 5 секунд, 4/3/2 секундЫ, 1 секундУ
         cmp     al, 5
         mov     cl, ' '
         jae     @f
@@ -887,14 +885,14 @@ if lang eq ru
         mov     cl, 0xEB ; 'ы' in cp866
 @@:
         mov     [time_str+9], cl
-else if lang eq et
+else if lang eq et_EE
         cmp     al, 1
         ja      @f
         mov     byte [time_str+9], ' '
         mov     byte [time_str+10], ' '
 @@:
-else if lang eq sp
-; esperar 5/4/3/2 segundos, 1 segundo
+else if lang eq es_ES
+; esperar 5/4/3/2 segundo_s_, 1 segundo
         cmp     al, 1
         mov     cl, 's'
         ja      @f
@@ -902,7 +900,7 @@ else if lang eq sp
 @@:
         mov     [time_str+10], cl
 else
-; wait 5/4/3/2 seconds, 1 second
+; wait 5/4/3/2 second_s_, 1 second
         cmp     al, 1
         mov     cl, 's'
         ja      @f
@@ -955,7 +953,7 @@ if ~ defined extended_primary_loader
         or      al, 20h
         cmp     al, 'n'
         jz      .loadc
-        if lang eq sp
+        if lang eq es_ES
         cmp     al, 's'
         else
         cmp     al, 'y'
@@ -1012,7 +1010,7 @@ end if
 
 ; Start the first app (right now it's LAUNCHER) after kernel is loaded?
         mov     al, [preboot_launcher]
-        mov     [es:BOOT_LO.launcher_start], al    ;// 0x901D        
+        mov     [es:BOOT_LO.launcher_start], al    ;// 0x901D
 
 ; BOOT DEVICE
 
@@ -1075,7 +1073,7 @@ include '../detect/biosmem.inc'
 
 ; TODO: !!!! read only first sector and set variables !!!!!
 ; ...
-; TODO: !!! then read flippy image track by track
+; TODO: !!! then read floppy image track by track
 
         mov     cx, 0x0001      ; startcyl,startsector
 .a1:
@@ -1168,7 +1166,7 @@ include '../detect/biosmem.inc'
 ; and copy them to extended memory
         mov     si, movedesc
         mov     [si+8*2+3], bh          ; from
-        
+
         mov     ax, word [BPB_BytsPerSec]
         shr     ax, 1                   ; words per sector
         mov     cx, word [BPB_RsvdSecCnt]
@@ -1176,7 +1174,7 @@ include '../detect/biosmem.inc'
         mul     cx
         push    ax                      ; save to stack count of words in boot+FAT
         xchg    ax, cx
-        
+
         push    es
         push    ds
         pop     es
@@ -1202,7 +1200,7 @@ sayerr_memmove:
 ; TODO: BPB_NumFATs !!!!!
         add     bx, word [BPB_BytsPerSec]       ; !!! TODO: may be need multiply by BPB_RsvdSecCnt !!!
         mov     byte [si+8*2+3], bh     ; bx - begin of FAT
-        
+
         mov     ax, word [BPB_BytsPerSec]
         shr     ax, 1                   ; words per sector
         mov     cx, word [BPB_FATSz16]
@@ -1217,12 +1215,12 @@ sayerr_memmove:
         pop     es
         test    ah, ah
         jnz     sayerr_floppy
-        
+
         mov     ax, cx
         shl     ax, 1
         and     eax, 0ffffh             ; ax - count of bytes in FAT
         add     dword [si+8*3+2], eax
-        
+
 ; reading RootDir
 ; TODO: BPB_NumFATs
         add     bx, ax
@@ -1247,7 +1245,7 @@ sayerr_memmove:
         pop     bx
         push    bx
         add     word [FirstDataSector], bx      ; Begin of data region of floppy
-        
+
 ; read RootDir
         call    conv_abs_to_THS
         pop     ax
@@ -1427,22 +1425,22 @@ setgr:
         mov     al, 0x05
         mov     dx, 0x03ce
         push    dx
-        out     dx, al      ; select GDC mode register
+        out     dx, al          ; select GDC mode register
         mov     al, 0x02
         inc     dx
-        out     dx, al      ; set write mode 2
+        out     dx, al          ; set write mode 2
 
         mov     al, 0x02
         mov     dx, 0x03c4
-        out     dx, al      ; select VGA sequencer map mask register
+        out     dx, al          ; select VGA sequencer map mask register
         mov     al, 0x0f
         inc     dx
-        out     dx, al      ; set mask for all planes 0-3
+        out     dx, al          ; set mask for all planes 0-3
 
         mov     al, 0x08
         pop     dx
-        out     dx, al      ; select GDC bit mask register
-                           ; for writes to 0x03cf
+        out     dx, al          ; select GDC bit mask register
+                                ; for writes to 0x03cf
 gmok2:
         push    ds
         pop     es

@@ -1,5 +1,5 @@
 ;**************************************************************
-; ScrollBar Macro for Kolibri OS
+; ScrollBar Macro for KolibriOS
 ; Copyright (c) 2009-2012, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;

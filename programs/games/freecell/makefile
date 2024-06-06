@@ -9,15 +9,15 @@ SOURCE=${FILE}.asm
 OUT=${FILE}.bin
 
 en:
-	echo "lang fix en" > lang.inc
+	echo "lang fix en_US" > lang.inc
 	${FASM} ${SOURCE} ${OUT}
 
 ru:
-	echo "lang fix ru" > lang.inc
+	echo "lang fix ru_RU" > lang.inc
 	${FASM} ${SOURCE} ${OUT}
 
 it:
-	echo "lang fix it" > lang.inc
+	echo "lang fix it_IT" > lang.inc
 	${FASM} ${SOURCE} ${OUT}
 
 clean:

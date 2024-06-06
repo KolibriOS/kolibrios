@@ -345,7 +345,7 @@ window_title:
 	db APP_NAME, ' ', APP_VERSION, 0
 
 ;; Messages
-if lang eq it
+if lang eq it_IT
 	message_dbg_not_found:
 		db '%s non trovato', 10, 0
 

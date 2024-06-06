@@ -355,14 +355,14 @@ void draw_grid()
 
 	// column headers + vertical lines
 	cell_x[0] = 0;
-	x = cell_w[0]; 
+	x = cell_w[0];
 	nx = 1;
 	for (i = 1; i < col_count && x-x0 < grid.w; i++)
 	{
 		cell_x[i] = -1;
 		if (i >= grid.firstx)
 		{
-			{				
+			{
 				//if (!sel_moved || (is_x_changed(i))) {
 					if (is_between(i,sel_x,sel_end_x)) bg_color = HEADER_CELL_COLOR_ACTIVE; else bg_color = HEADER_CELL_COLOR;
 					kos_DrawBar(x-x0, 0, 1, grid.h, GRID_COLOR);
@@ -404,7 +404,7 @@ void draw_grid()
 		y += cell_h[i];
 		ny++;
 	}
-	
+
 	// cells itself
 	y = cell_h[0];
 	for (i = grid.firsty; i < ny; i++)
@@ -449,7 +449,7 @@ void draw_grid()
 				else if (error) kos_DrawRegion(x+1, y+1, cell_w[j]-1, cell_h[i]-1, 0xff0000, 0);
 			}
 			x += cell_w[j];
-		} 
+		}
 		y += cell_h[i];
 	}
 	DrawScrolls();
@@ -464,7 +464,7 @@ void draw_size_grid()
 	{
 		int x, x0, i;
 
-		x = cell_w[0]; 
+		x = cell_w[0];
 		x0 = 0;
 		for (i = 1; i < col_count && x - x0 + cell_w[i] < grid.w - 10; i++)
 		{
@@ -483,7 +483,7 @@ void draw_size_grid()
 	{
 		int y, y0, i;
 
-		y = cell_h[0]; 
+		y = cell_h[0];
 		y0 = 0;
 		for (i = 1; i < col_count && y - y0 + cell_h[i] < grid.h - 10; i++)
 		{
@@ -516,7 +516,7 @@ void draw_drag()
 
 	DWORD x0 = cell_x[k0] - 1;
 	DWORD x1 = cell_x[k1] + cell_w[k1] + 1;
-	DWORD y0 = cell_y[n0] - 1;	
+	DWORD y0 = cell_y[n0] - 1;
 	DWORD y1 = cell_y[n1] + cell_h[n1] + 1;
 	if (x0 > grid.w - 1) x0 = grid.w - 1;
 	if (x1 > grid.w - 1) x1 = grid.w - 1;
@@ -536,7 +536,7 @@ void draw_window()
 {
 	kos_WindowRedrawStatus(1);
 	kos_DefineAndDrawWindow(110,40,WND_W,WND_H,0x73,0x40FFFFFF,0,0,(Dword)"Table v" TABLE_VERSION);
-	kos_WindowRedrawStatus(2); 
+	kos_WindowRedrawStatus(2);
 
 	kos_GetSystemColors(&sc);
 
@@ -560,8 +560,8 @@ void draw_window()
 
 	int panel_y = cHeight - MENU_PANEL_HEIGHT + 1;
 	kos_DrawBar(0, panel_y, cWidth, MENU_PANEL_HEIGHT-1, sc.work);
-	kos_WriteTextToWindow(3 + 1, panel_y + 14, 0x90, sc.work_text, (char*)sFilename, 0);	
-	
+	kos_WriteTextToWindow(3 + 1, panel_y + 14, 0x90, sc.work_text, (char*)sFilename, 0);
+
 	file_box.top = panel_y + 10;
 	file_box.width = cWidth - 265;
 	int BTX = cWidth - 190;
@@ -589,7 +589,7 @@ void process_mouse()
 	Dword mouse_btn, ckeys, shift, ctrl;
 
 	int vert, hor;
-	kos_GetScrollInfo(vert, hor);	
+	kos_GetScrollInfo(vert, hor);
 	if (vert != 0)
 	{
 		stop_edit();
@@ -628,7 +628,7 @@ void process_mouse()
 	mouse_x -= 5;
 	mouse_y -= kos_GetSkinHeight();
 
-	if (is_edit && mouse_x>=cell_box.left && mouse_x<=cell_box.left+cell_box.width 
+	if (is_edit && mouse_x>=cell_box.left && mouse_x<=cell_box.left+cell_box.width
 		&& mouse_y>=cell_box.top && mouse_y<=cell_box.top+22) return;
 
 	mouse_btn &= 0x0001;
@@ -644,7 +644,7 @@ void process_mouse()
 
 	if (!size_state && !mouse_btn)
 		return;
-	if (mouse_btn && !size_state)		// LMB down				
+	if (mouse_btn && !size_state)		// LMB down
 	{
 		//rtlDebugOutString("lmb down and not resize");
 
@@ -707,7 +707,7 @@ void process_mouse()
 			}
 			if (kx != -1 && ky != -1)
 			{
-				if (!shift) 
+				if (!shift)
 				{
 					move_selection(kx, ky);
 					//return;
@@ -795,13 +795,13 @@ void process_mouse()
 			}
 		}
 		draw_drag();
-	}         
+	}
 	size_mouse_x = mouse_x;
-	size_mouse_y = mouse_y; 
+	size_mouse_y = mouse_y;
 }
 
 
-void shift_selection(int dx, int dy, Dword shift) 
+void shift_selection(int dx, int dy, Dword shift)
 {
 	if (dx != 0)
 	{
@@ -874,13 +874,13 @@ void process_key()
 	dword key_editbox;
 	Byte key_ascii, key_scancode;
 
-	// key pressed, read it 
+	// key pressed, read it
 	ckeys = kos_GetSpecialKeyState();
 	shift = ckeys & 0x3;
 	ctrl = ckeys & 0x0c;
 	sel_moved = 0;
 	sel_end_move = 0;
-	
+
 	kos_GetKeys(key_editbox, key_ascii, key_scancode);
 
 	if (cell_box.flags & ed_focus) {
@@ -896,7 +896,7 @@ void process_key()
 			{
 				mov eax, key_editbox
 			}
-			edit_box_key((dword)&cell_box);			
+			edit_box_key((dword)&cell_box);
 		}
 	}
 	else if (file_box.flags & ed_focus) {
@@ -961,7 +961,7 @@ void process_key()
 
 					//sprintf(debuf, "%U %U %U %U", buf_col, buf_row, x0, y0);
 					//rtlDebugOutString(debuf);
-				
+
 					buffer = (char***)allocmem(buf_col * sizeof(char**));
 					for (i = 0; i < buf_col; i++)
 					{
@@ -985,7 +985,7 @@ void process_key()
 								buffer[i][j] = NULL;
 						}
 					}
-					if (key_ascii == 24)     ///////WTF???? 
+					if (key_ascii == 24)     ///////Unexpected!????
 						calculate_values();
 					draw_grid();
 					break;
@@ -1149,7 +1149,7 @@ void kos_Main()
 		file_box.size = file_box.pos = strlen(fname);
 		EventLoadFile();
 	}
-	kos_SetMaskForEvents(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);	
+	kos_SetMaskForEvents(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	for (;;)
 	{
 		switch (kos_WaitForEvent())
@@ -1165,7 +1165,7 @@ void kos_Main()
 		case EM_BUTTON_CLICK:
 			process_button();
 			break;
-		
+
 		case EM_WINDOW_REDRAW:
 			draw_window();
 			break;

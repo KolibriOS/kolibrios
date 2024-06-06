@@ -378,7 +378,7 @@ draw_window:
 ;---------------------------------------------------------------------
 ;---  Data  ----------------------------------------------------------
 ;---------------------------------------------------------------------
-if lang eq ru
+if lang eq ru_RU
 save		db 'Сохранить',0
 cancel		db 'Отмена',0
 select		db 'Изменить',0
@@ -400,7 +400,7 @@ aUnknownError	db 'Неизвестная ошибка',0
 rdError 	db 'Нельзя сохранять образ в самого себя',0
 error		db 'Ошибка: ',0
 ;---------------------------------------------------------------------
-else if lang eq et
+else if lang eq et_EE
 save		db 'Salvesta',0
 cancel		db 'Cancel',0
 select		db ' Valige',0
@@ -422,7 +422,7 @@ aUnknownError	db 'Tundmatu viga',0
 rdError 	db "You can't save image on itself",0
 error		db 'Viga: ',0
 ;---------------------------------------------------------------------
-else if lang eq it
+else if lang eq it_IT
 save		db '  Salva',0
 cancel		db 'Cancel',0
 select		db 'Seleziona',0

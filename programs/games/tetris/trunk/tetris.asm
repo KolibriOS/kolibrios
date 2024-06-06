@@ -818,14 +818,14 @@ block_table:
     dd k_block_0
     dd k_block_1
 
-if lang eq ru
+if lang eq ru_RU
 
   title          db 'Тетрис 1.62',0
   labe           db 'ПАУЗА',0
   text           db 'Очки:',0
   game_finished: db '  НОВАЯ',0
 
-else if lang eq et
+else if lang eq et_EE
 
   title          db 'Tetris 1.62',0
   labe           db 'PAUS',0

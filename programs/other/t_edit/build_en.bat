@@ -2,7 +2,7 @@ if not exist bin mkdir bin
 if not exist bin\info mkdir bin\info
 
 @erase lang.inc
-@echo lang fix en >lang.inc
+@echo lang fix en_US >lang.inc
 @fasm.exe -m 16384 t_edit.asm bin\t_edit.kex
 @kpack bin\t_edit.kex
 

@@ -31,7 +31,7 @@
  }
 
 ;-----------------------------------
-; Shell`s initialization
+; Shell's initialization
 ; without arguments
 ;-----------------------------------
 
@@ -105,7 +105,7 @@
     ret
 
 ;-----------------------------------
-; Wait answer from shell
+; Wait for answer from the shell
 ;
 ; INPUT:
 ; edi - shell-buffer
@@ -259,7 +259,7 @@
 ; Get string from shell
 ;
 ; INPUT:
-; eax - addres of memory for str
+; eax - address of memory for str
 ;-----------------------------------
 
  shell.get_string:
@@ -380,7 +380,7 @@
 ; Print string to shell
 ;
 ; INPUT:
-; arg1 - addres of string
+; arg1 - address of string
 ;-----------------------------------
 
  macro shpsa [addr] {
@@ -420,7 +420,7 @@
 ; Get string from shell
 ;
 ; INPUT:
-; arg1 - addres of memory for str
+; arg1 - address of memory for str
 ;-----------------------------------
 
  macro shgs [addr] {
@@ -432,7 +432,7 @@
 ; Get number from shell
 ;
 ; INPUT:
-; arg1 - addres of memory for num
+; arg1 - address of memory for num
 ;-----------------------------------
 
  macro shgn [addr] {

@@ -33,7 +33,7 @@ align 4
 open_b rb 560
 
 txt_err_img_file:
-if lang eq ru
+if lang eq ru_RU
 	db 'Ошибка N'
 .n: db '* при открытии файла '
 else

@@ -240,7 +240,7 @@ draw_magnify:
         ret
 
 ;------------------------- Data area
-        if      lang eq ru
+        if      lang eq ru_RU
 labelt:
         db      3, 'Измеритель', 0
 start_pix:

@@ -1,7 +1,7 @@
 
 include 'lang.inc'
 
-if lang eq ru
+if lang eq ru_RU
 
 text		db ' ВхФайл:','ВыхФайл:','   Путь:'
 	.line_size = ($-text)/3

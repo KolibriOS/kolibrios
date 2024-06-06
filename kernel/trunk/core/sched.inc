@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,8 +84,8 @@ updatecputimes:
         loop    .newupdate
         ret
 
-;TODO: Надо бы убрать использование do_change_task из V86...
-; и после этого перенести обработку APPDATA.counter_add/sum в do_change_task
+; TODO: We should remove the use of do_change_task from V86...
+; and then move the processing of APPDATA.counter_add/sum to do_change_task
 
 align 4
 do_change_task:

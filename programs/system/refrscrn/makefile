@@ -9,7 +9,7 @@ SOURCE=${FILE}.asm
 OUT=${FILE}.bin
 
 en:
-	echo "lang fix en" > ${LANG}
+	echo "lang fix en_US" > ${LANG}
 	${FASM} ${SOURCE} ${OUT}
 
 clean:

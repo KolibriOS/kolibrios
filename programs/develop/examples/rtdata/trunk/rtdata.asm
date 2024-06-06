@@ -202,7 +202,7 @@ ret
 ; DATA AREA
 
 
-if lang eq ru
+if lang eq ru_RU
    text mstr "‚‚Ž„ˆŒ›… ‘ˆŒ‚Ž‹› ……„€ž’‘Ÿ ŒŽ„…Œ“.",\
              "„€›… Ž’ ŒŽ„…Œ€ ‘—ˆ’›‚€ž’‘Ÿ Ž",\
              "…›‚€ˆž IRQ4 ˆ Ž’Ž€†€ž’‘Ÿ ˆ†…."

@@ -1,12 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2020-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2020-2024. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;      Version 2, or (at your option) any later version.       ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 unicode.utf8.decode:
         test    ecx, ecx

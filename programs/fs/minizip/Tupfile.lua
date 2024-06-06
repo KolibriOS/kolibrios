@@ -11,7 +11,7 @@ CFLAGS = CFLAGS .. " -U__WIN32__ -U_Win32 -U_WIN32 -U__MINGW32__ -UWIN32 -Dunix 
 LDFLAGS = LDFLAGS .. " --subsystem console -L../../../contrib/sdk/sources/zlib"
 
 table.insert(LIBDEPS,"../../../contrib/sdk/lib/<libz.dll.a>")
-LIBS = LIBS .. " -lz.dll" 
+LIBS += " -lz.dll" 
 
 -- Compile --
 compile_gcc{ 

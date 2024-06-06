@@ -100,7 +100,7 @@ MEMS: 	dd     EM       ; memory for app
 	dd     params
 	dd     cur_dir_path
 
- lang fix ru
+ lang fix ru_RU
  include 'macros.inc'
  include 'proc32.inc'
 

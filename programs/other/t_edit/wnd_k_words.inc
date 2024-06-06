@@ -10,7 +10,7 @@ IMAGE_TOOLBAR_ICON_SIZE equ 20*20*3
 
 wnd_k_words_run dd 0 ;переменная следящая за тем что-бы не запускать больше 1-го окна одновременно
 
-if lang eq ru
+if lang eq ru_RU
 txt_caption db 'Поиск в ключевых словах',0
 else
 txt_caption db 'Search in keywords',0

@@ -1,11 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2021-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2021-2024. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 ; exFAT external functions
 ;   in:
@@ -267,7 +266,7 @@ exFAT_create_partition:
 ;        movsd
 ;        popa
 ;------------------------------------------------------------------------------
-; offset +96 = First cluster of root directory 
+; offset +96 = First cluster of root directory
         mov     eax, [ebx+0x60]         ; rootdir cluster
         mov     [ebp+exFAT.ROOT_CLUSTER], eax
 ; DEBUGF  1, "K : exFAT.ROOT_CLUSTER EAX: %x\n", eax
@@ -361,12 +360,12 @@ exFAT_get_name:
 ; DEBUGF  1, "K : exFAT_get_name.label \n"
         add     esi, 2
         lea     edi, [ebp+exFAT.volumeLabel]
-        
+
         push    ecx
         mov     ecx, 12
         call    UTF16to8_string
         pop     ecx
-        
+
 ;        push    edi
 ;        lea     edi, [ebp+exFAT.volumeLabel]
 ; DEBUGF  1, "K : exFAT Volume label: %s\n", edi
@@ -462,7 +461,7 @@ exFAT_get_name:
 ;        mov     ebp,[esp+12+8+4+4+7*4+262*2+4+4]
 ; DEBUGF  1, "K : exFAT_get_name.longname Input FS EBP:%x\n", ebp
 ;        pop     ebp
-        call    .save_curr_sector_number 
+        call    .save_curr_sector_number
         mov     eax, [ebp+exFAT.hash_flag]
         test    eax, eax
         jnz     .no
@@ -485,7 +484,7 @@ exFAT_get_name:
         movsd
         mov     [ebp+exFAT.fname_extdir_offset], edi
         pop     esi edi
-; copy name        
+; copy name
         push    edi esi
         xchg    esi, edi
         add     esi, 2
@@ -502,7 +501,7 @@ exFAT_get_name:
         xor     eax, eax
         stosw
         pop     esi edi
-        
+
 ;        push    ebp
 ;        mov     ebp,[esp+12+8+4+4+7*4+262*2+4+4]
 ; DEBUGF  1, "K : exFAT_get_name.longname Output FS EBP:%x\n", ebp
@@ -934,14 +933,14 @@ align 4
 ; DEBUGF 1, "+ (Hash>>1)) EAX:%x\n", eax
         movzx   bx, byte [esi]
         add     ax, bx
-; DEBUGF 1, "+ (UInt16)Buffer[Index] EAX:%x\n", eax        
+; DEBUGF 1, "+ (UInt16)Buffer[Index] EAX:%x\n", eax
         inc     esi
         dec     ecx
         jnz     .start
 ;--------------------------------------
         pop     ecx ebx
         mov     [ebp+exFAT.current_hash], eax
-; DEBUGF  1, "K : exFAT current hash :%x\n", eax        
+; DEBUGF  1, "K : exFAT current hash :%x\n", eax
         pop     edi esi
 .l1:
 ;        push    esi
@@ -1044,7 +1043,7 @@ exFAT_ReadFile:
 ; DEBUGF  1, "K : exFAT F70 +16: %x\n", [ebx+16]
 ; DEBUGF  1, "K : exFAT F70 +20: %x\n", [ebx+20]
 ; DEBUGF  1, "K : exFAT Path: %s\n", esi
-        
+
 ;        push    eax
 ;        pushfd
 ;        pop     eax
@@ -1115,7 +1114,7 @@ exFAT_ReadFile:
         sub     eax, edx ; low dword file size - file offset low = rest of file
         push    eax
         mov     eax, [ebp+exFAT.RDX_high]
-        sbb     [ebp+exFAT.RAX_high], eax 
+        sbb     [ebp+exFAT.RAX_high], eax
         pop     eax
         jb      .fileEnd
 ; DEBUGF  1, "K : exFAT_ReadFile Hdword rest of file RAX:%x\n", [ebp+exFAT.RAX_high]
@@ -1344,7 +1343,7 @@ exFAT_ReadFile:
         sbb     [ebp+exFAT.RCX_high], eax
         pop     eax
         jbe     .readEnd
-        
+
 ;        push    edi
 ;        lea     edi, [ebp+exFAT.file_dir_entry]
 ; Check - General Secondary Flags
@@ -1389,14 +1388,14 @@ exFAT_ReadFile:
         adc     edx, ebx
         mov     [ebp+exFAT.RAX_high], edx
         pop     edx ebx
-        
+
         push    dword [ebp+exFAT.RCX_high]
         push    ecx ; requested size low
-        
+
         mov     ecx, [ebp+exFAT.RAX_high]
         mov     [ebp+exFAT.RCX_high], ecx
         mov     ecx, eax ; ecx << RFile_start_sector_low
-        
+
         xor     eax, eax
         mov     [ebp+exFAT.RAX_high], eax
         mov     eax, esi ; eax << custer
@@ -1521,7 +1520,7 @@ exFAT_ReadFile:
         pop     eax edx
         sub     ebx, edx
 ; DEBUGF  1, "K : exFAT_ReadFile Return EBX:%x\n", ebx
-           
+
 ;        push    eax
 ;        pushfd
 ;        pop     eax
@@ -1582,7 +1581,7 @@ exFAT_ReadFolder:
 ; DEBUGF  1, "K : exFAT.ROOT_CLUSTER: %x\n", eax
         cmp     byte [esi], 0
         jz      .doit
-        
+
 ;        push    ebp
 ;        mov     ebp,[esp+12+8+4+4]
 ; DEBUGF  1, "K : exFAT Input FS EBP:%x\n", ebp
@@ -2046,7 +2045,7 @@ exFAT_SetFileInfo:
         call    calculate_SetChecksum_field
         mov     [edi+2], ax
         pop     eax
-        
+
         lea     ebx, [ebp+exFAT.buffer]
         call    fs_write32_sys
         call    exFAT_update_disk
@@ -2376,7 +2375,7 @@ align 4
         movzx   bx, byte [esi]
         add     ax, bx
 ; DEBUGF 1, "+ (UInt16)Entries[Index] EAX:%x\n", eax
-.continue:       
+.continue:
         inc     esi
         dec     ecx
         jnz     .start

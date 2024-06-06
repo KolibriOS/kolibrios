@@ -1,12 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2013-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2013-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;; RAMDISK functions                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 iglobal
 align 4
@@ -42,8 +41,8 @@ endg
         mov     ebx, eax
         stdcall disk_media_changed, eax, 1
 ; 2. We don't know actual size of loaded image,
-; so try to calculate it using partition structure,
-; assuming that file systems fill the real size based on contents of the partition.
+; so try to calculate it using partition structure, assuming
+; that file systems fill the real size based on contents of the partition.
 ; 2a. Prepare for loop over partitions.
         xor     eax, eax
         xor     ecx, ecx

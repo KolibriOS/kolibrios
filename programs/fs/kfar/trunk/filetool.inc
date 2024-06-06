@@ -1502,7 +1502,7 @@ filesearch_done:
         ret
 
 filesearch_getname:
-if lang eq ru
+if lang eq ru_RU
         mov     eax, 'Диал'
         stosd
         mov     eax, 'ог п'

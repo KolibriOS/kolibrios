@@ -113,7 +113,7 @@ MAR_drawm:
 MAR_level:
 file 'marble.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	MAR_help mstr \
 	'Несколько красных и черных плашек лежат на доске,',\
 	'дырка обозначена серой клеткой. Когда плашка',\

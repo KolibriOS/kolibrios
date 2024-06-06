@@ -516,7 +516,7 @@ no_ummio_here:
 
 .find:
 	mov	edx, [edx - 4]
-	mcall	SF_DRAW_TEXT,, 0x80000000		; lets print the vendor Name
+	mcall	SF_DRAW_TEXT,, 0x80000000		; let's print the vendor Name
 
 	mov	[store_text_size],42
 	call	store_text
@@ -743,7 +743,7 @@ Form:	dw 800 ; window width (no more, special for 800x600)
 
 title	db 'PCI Device Enumerator v 2.3', 0
 
-if lang eq it
+if lang eq it_IT
 PCIWin mls \
 	'   Don`t forget to enable PCI Access to Applications in Setup Menu.',\
 	'',\

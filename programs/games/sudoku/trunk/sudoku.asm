@@ -1077,7 +1077,7 @@ func_70:
  .rezerv db 0
  .name dd ?
 
-if lang eq ru
+if lang eq ru_RU
 title db 'Судоку',0
 txt:
 .dif db "Сложность (+/-):",0

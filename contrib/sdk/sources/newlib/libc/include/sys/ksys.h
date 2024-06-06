@@ -406,7 +406,7 @@ KOSAPI int __strcmp(const char* s1, const char* s2)
 }
 
 /* ####################################################################### */
-/* ############### С wrappers for system calls Kolibri OS ################ */
+/* ############### С wrappers for system calls KolibriOS ################# */
 /* ####################################################################### */
 
 /*=============== Function -1 - terminate thread/process ===============*/

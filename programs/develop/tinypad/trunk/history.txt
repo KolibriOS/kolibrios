@@ -48,7 +48,7 @@ HISTORY:
     - function 70 for *all* file operations (including diamond's fixes)
     - use memory manager instead of statically allocated region
     - case-insensitive filenames input, to be able to open/save files with
-      non-latin chars in name (russian etc.)
+      non-latin chars in name (Russian etc.)
     - reduced flickering (changes checker)
     - overall code cleanup
   new features:
@@ -71,7 +71,7 @@ HISTORY:
   changes:
     - function 70 instead of 58 for files loading/saving
     - clientarea-relative drawing (less code)
-    - every line's dword is now splitted into 2 words;
+    - every line's dword is now split into 2 words;
       low word - line block length, so max line length is 64KB now
       high word - various flags. for now, only 2 of 16 bits are used:
 	if bit #0 is set, line was modified since file open
@@ -113,9 +113,9 @@ HISTORY:
 4.0 beta 1 (mike.dld)
   menu bar and popup menu;
     removed buttons from the top and input fields from the bottom since
-    now they're accesible through main/popup menu;
+    now they're accessible through main/popup menu;
   improved keyboard handling (using 66th function);
-    support for almost all FASMW keyboard shourtcuts;
+    support for almost all FASMW keyboard shortcuts;
   added text selection ability, standard selection operations
     (copy,cut,paste);
   new integrated dialogs (open, save, find)
@@ -162,10 +162,10 @@ HISTORY:
   rewrote save_file from scratch; bugfix in loadfile;
 
 3.74
-  optimisation
+  optimization
 
 3.73
-  completly new load_file function
+  completely new load_file function
 
 3.72
   speed++

@@ -1,5 +1,5 @@
 ;**************************************************************
-; Path Show Macro for Kolibri OS
+; Path Show Macro for KolibriOS
 ; Copyright (c) 2010, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;

@@ -205,7 +205,7 @@ file  'omaze.bin'
 OR_level:
 file 'or2.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	OR_help mstr \
 	'Щелчок на выделенной клетке передвигает или',\
 	'вращает красную стрелку. Синий блок действует',\

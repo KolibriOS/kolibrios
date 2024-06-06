@@ -1,11 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2013-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2013-2024. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License   ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 ; file types from stat.h
 S_IFMT      = 0170000o  ; These bits determine file type
@@ -259,7 +258,7 @@ struct xfs_dir2_sf_hdr
         count           db ?
         i8count         db ?
         parent          DQ ?            ; parent inode number, 4 or 8 bytes
-ends         
+ends
 
 struct xfs_dir2_sf_entry
         namelen         db ?            ; actual name length (ASCII)

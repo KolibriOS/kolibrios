@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -14,7 +14,6 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 align 4
 iglobal
@@ -62,7 +61,7 @@ macro   tcp_checksum IP1, IP2 {
 
 macro   tcp_sendseqinit ptr {
 
-        push    edi                     ;;;; FIXME: i dont like this static use of edi
+        push    edi                     ;;;; FIXME: I don't like this static use of edi
         mov     edi, [ptr + TCP_SOCKET.ISS]
         mov     [ptr + TCP_SOCKET.SND_UP], edi
         mov     [ptr + TCP_SOCKET.SND_MAX], edi
@@ -78,7 +77,7 @@ macro   tcp_rcvseqinit ptr {
 
         push    edi
         mov     edi, [ptr + TCP_SOCKET.IRS]
-        inc     edi                             ; SYN ocupies a sequence number
+        inc     edi                             ; SYN occupies a sequence number
         mov     [ptr + TCP_SOCKET.RCV_NXT], edi
         mov     [ptr + TCP_SOCKET.RCV_ADV], edi
         pop     edi
@@ -183,7 +182,7 @@ tcp_disconnect:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_disconnect: %x\n", eax
 
         cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
-        jb      tcp_close       ; Connection not yet synchronised, just get rid of the socket
+        jb      tcp_close       ; Connection not yet synchronized, just get rid of the socket
 
         test    [eax + SOCKET.options], SO_LINGER
         jz      .nolinger

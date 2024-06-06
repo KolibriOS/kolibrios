@@ -74,7 +74,7 @@ struc mstr [sstring]
 
 
 ; language for programs
-lang fix ru ; ru en fr ge fi
+lang fix ru_RU ; ru_RU en_US fr_FR de_DE fi_FI
 
 
 ; code profiling

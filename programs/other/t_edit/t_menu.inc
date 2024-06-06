@@ -1,5 +1,5 @@
 
-if lang eq ru
+if lang eq ru_RU
 
 sz_main_menu_File db 'Файл', 0
 sz_main_menu_File_New  db 'Новый', 0

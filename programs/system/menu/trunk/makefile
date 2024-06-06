@@ -8,19 +8,19 @@ FILE=menu
 SOURCE=${FILE}.asm
 
 en:
-	echo "lang fix de" > lang.inc
+	echo "lang fix en_US" > lang.inc
 	${FASM} ${SOURCE} @menu
 	${KPACK} @menu
 	rm ${LANG}
 
 ru:
-	echo "lang fix ru" > lang.inc
+	echo "lang fix ru_RU" > lang.inc
 	${FASM} ${SOURCE} @menu
 	${KPACK} @menu
 	rm ${LANG}
 
 it:
-	echo "lang fix it" > lang.inc
+	echo "lang fix it_IT" > lang.inc
 	${FASM} ${SOURCE} @menu
 	${KPACK} @menu
 	rm ${LANG}

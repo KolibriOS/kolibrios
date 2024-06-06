@@ -1,12 +1,8 @@
-
 /contrib/sdk/lib/
 
-
-#C_Layer gitignore
+#C_Layer
 /contrib/C_Layer/Docs/html/
-## C_Layer vscode
 /contrib/C_Layer/.vscode/
-## C_Layer OBJ
 /contrib/C_Layer/OBJ/*.obj
 
 # freetype o
@@ -14,3 +10,13 @@
 
 # buf2d examples bin
 /programs/develop/libraries/buf2d/trunk/examples/bin/
+
+### Windows ###
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+
+### macOS ###
+.DS_Store
+._*

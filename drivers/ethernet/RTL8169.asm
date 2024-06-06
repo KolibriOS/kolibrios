@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2021. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  RTL8169 driver for KolibriOS                                   ;;
@@ -426,7 +426,7 @@ proc service_proc stdcall, ioctl:dword
 
         mov     eax, [edx + IOCTL.input]
         cmp     byte [eax], 1                           ; 1 means device number and bus number (pci) are given
-        jne     .fail                                   ; other types arent supported for this card yet
+        jne     .fail                                   ; other types aren't supported for this card yet
 
 ; check if the device is already listed
 
@@ -442,13 +442,13 @@ proc service_proc stdcall, ioctl:dword
         cmp     al, byte[ebx + device.pci_bus]
         jne     @f
         cmp     ah, byte[ebx + device.pci_dev]
-        je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+        je      .find_devicenum                         ; Device is already loaded, let's find its device number
        @@:
         add     esi, 4
         loop    .nextdevice
 
 
-; This device doesnt have its own eth_device structure yet, lets create one
+; This device doesn't have its own eth_device structure yet, let's create one
   .firstdevice:
         cmp     [devices], MAX_DEVICES                  ; First check if the driver can handle one more card
         jae     .fail
@@ -470,7 +470,7 @@ proc service_proc stdcall, ioctl:dword
         movzx   ecx, byte[eax+2]
         mov     [ebx + device.pci_dev], ecx
 
-; Now, it's time to find the base io addres of the PCI device
+; Now, it's time to find the base io address of the PCI device
 
         stdcall PCI_find_io, [ebx + device.pci_bus], [ebx + device.pci_dev]
         mov     [ebx + device.io_addr], eax
@@ -1187,7 +1187,7 @@ int_handler:
         push    ebx
         push    .rx_loop
         and     ecx, 0x00001FFF
-        add     ecx, -4                         ; we dont need CRC
+        add     ecx, -4                         ; we don't need CRC
         DEBUGF  1,"data length = %u\n", ecx
         mov     eax, [esi + rx_desc.buf_soft_addr]
         push    eax

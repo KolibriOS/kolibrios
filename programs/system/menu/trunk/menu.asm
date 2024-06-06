@@ -83,12 +83,12 @@ align 4
 align 4
 START:		       ; start of execution
 	mcall	68,11
-	
+
 	mcall 30, 1, default_dir
 
 	; DEBUGF DBG_INFO, "MENU START! sc.work = %x\n", [sc.work]
 
-	mov	esi,bootparam	
+	mov	esi,bootparam
 	cmp	[esi],byte 0
 	je	.no_boot_parameters
 ; boot params - hex
@@ -105,7 +105,7 @@ START:		       ; start of execution
 
 	call	conversion_ASCII_to_HEX
 	mov	[menu_button_x.start],ebx
-	
+
 ;	dps	"menu_button_x.start: "
 ;	dpd	ebx
 ;	newline
@@ -123,34 +123,34 @@ START:		       ; start of execution
 ;	dps	"menu_button_y.start: "
 ;	dpd	ebx
 ;	newline
-	
+
 	call	conversion_ASCII_to_HEX
 	mov	[menu_button_y.size],ebx
-	
+
 ;	dps	"menu_button_y.size: "
 ;	dpd	ebx
 ;	newline
-	
+
 	call	conversion_ASCII_to_HEX
 	mov	[panel_height],ebx
 
 ;	dps	"panel_height: "
 ;	dpd	ebx
 ;	newline
-	
+
 	call	conversion_ASCII_to_HEX
 	mov	[panel_attachment],ebx
-	
+
 ;	dps	"panel_attachment: "
 ;	dpd	ebx
 ;	newline
 ;--------------------------------------
-align 4	
+align 4
 .no_boot_parameters:
 	call	program_exist
 	mcall	14
 	mov	[screen_size],eax
-	
+
 	mcall	48,3,sc,sizeof.system_colors	; load system colors
 
 	; DEBUGF  DBG_INFO, "sc.work = %x\n", [sc.work]
@@ -235,7 +235,7 @@ align 4
 	jmp .for1
 .end_for1:
 .no_res:
-	
+
 ; get size of file MENU.DAT
 	mcall	70,fileinfo
 	test	eax,eax
@@ -324,7 +324,7 @@ search_end1:
 	xor	ax,ax
 	jmp	.store
 ;--------------------------------------
-align 4	
+align 4
 @@:
 	sub	ax,[panel_height]	;20
 .store:
@@ -354,7 +354,7 @@ align 4
 	mcall	40,100111b	; mouse + button + key + redraw
 ;------------------------------------------------------------------------------
 align 4
-red:	
+red:
 	call	draw_window	; redraw
 ;------------------------------------------------------------------------------
 align 4
@@ -364,7 +364,7 @@ still: ; event loop
 	mcall	23,5	; wait here for event
 	test	[close_now],1      ; is close flag set?
 	jnz	close
-	
+
 	cmp	eax,1	; redraw request ?
 	je	red
 	cmp	eax,2	; key pressed ?
@@ -375,14 +375,14 @@ still: ; event loop
 	je	mouse
 	cmp	edi,[menu_data]
 	je	still	     ; if main process-ignored
-	
+
 	movzx	ebx,[edi + parent]	 ; parent id
 	shl	ebx,4
 	add	ebx,[menu_data]      ; ebx = base of parent info
 	call	backconvert	     ; get my id in al
 	cmp	al,[ebx + child]    ; if I'm not child of my parent, I shall die :)
 	jne	close
-	
+
 	jmp	still
 ;------------------------------------------------------------------------------
 align 4
@@ -392,7 +392,7 @@ key:
 	mov	al,[edi + rows]     ; number of buttons
 	cmp	ah,178	  ; KEY_UP
 	jne	.noup
-	
+
 	mov	ah,[edi+cur_sel]
 	mov	[edi+prev_sel],ah
 	dec	byte [edi+cur_sel]
@@ -404,7 +404,7 @@ align 4
 .noup:
 	cmp	ah,177	 ; KEY_DOWN
 	jne	.nodn
-	
+
 	mov	ah,[edi + cur_sel]
 	mov	[edi + prev_sel],ah
 	inc	[edi + cur_sel]
@@ -456,7 +456,7 @@ button1:
 	mov	al,[esi + cur_sel]
 	mov	[esi + prev_sel],al
 	mov	[esi + cur_sel],ah
-	
+
 	pushad
 	mov	edi,esi
 ; dph eax
@@ -472,25 +472,25 @@ align 4
 	dec	ah
 	jnz	.next_string
 	pop	eax
-	
+
 	mov	ecx,40
 	mov	al,'|'
 	cld
 	repne	scasb
 	test	ecx,ecx	  ; if '|' not found
 	je	searchexit
-	
+
 	cmp	[edi],byte '@'     ; check for submenu
 	je	runthread
-	
+
 	cmp	[last_key],179
 	je	searchexit
-	
+
 	;dec	edi
 	push	edi			; pointer to start of filename
 	call	searchstartstring	; search for next string
 	sub	edi,2		; to last byte of string
-	
+
 	mov	ecx,edi
 	pop	esi
 	sub	ecx,esi
@@ -507,7 +507,7 @@ align 4
 	jns	close
 	mov	eax, fileinfo_start.name
 	mov [file_open.params], eax
-	mcall	70,file_open	
+	mcall	70,file_open
 	jmp	close
 ;--------------------------------------
 align 4
@@ -518,23 +518,23 @@ searchexit:
 align 4
 runthread:
 	inc	edi
-	
+
 	push	eax
 	call	get_number	     ; get number of this process
 	pop	eax
-	
+
 	test	ebx,ebx	   ; returned zero - main menu or not number
 	jz	searchexit
-	
+
 	mov	al,bl
-	
+
 	mov	ebx,[processes]
 	dec	bl
 	cmp	al,bl
-	ja	searchexit	       ; such process doesnt exist
+	ja	searchexit	       ; such process doesn't exist
 	cmp	al,[esi + child]
 	je	searchexit	       ; such process already exists
-	
+
 	mov	[esi + child],al    ; this is my child
 	mov	cx,[esi + x_start]
 	add	cx,BTN_WIDTH+1	  ; new x_start in cx
@@ -546,7 +546,7 @@ runthread:
 	mov	bl,[esi + rows]    ; number of buttons in bl
 	sub	bl,ah	  ; number of btn from bottom
 
-	; Leency: store vars for case when attachement=top 
+	; Leency: store vars for case when attachement=top
 	pusha
 	mov [prior_thread_selected_y_end], bl
 	mcall	9,procinfo,-1
@@ -571,7 +571,7 @@ runthread:
 	mov	[edx + cur_sel],al  ; clear current selected element
 	mov	[edx + prev_sel],al ; clear previous selected element
 	mov	[edx + child],0
-	
+
 	mcall	68,12,0x1000	; stack of each thread is allocated 4 KB
 	add	eax,0x1000	; set the stack pointer to the desired position
 	mov	edx,eax
@@ -629,9 +629,9 @@ align 4
 click:
 	cmp	[mousemask],0  ; not in a window (i.e. menu)
 	jne	still
-; checking for pressing 'MENU' on the taskbar	
+; checking for pressing 'MENU' on the taskbar
 	mov	eax,[screen_mouse_position]
-	
+
 	cmp	[panel_attachment],byte 1
 	je	@f
 
@@ -652,25 +652,25 @@ align 4
 	add	bx,word [menu_button_y.size]
 	cmp	bx,ax
 	jb	close
-	
+
 	shr	eax,16
-	
+
 	mov	ebx,[menu_button_x.start]
 	cmp	bx,ax	; MENU_BOTTON_X_SIZE
 	ja	close
-	
+
 	add	bx,[menu_button_x.size]
 	cmp	bx,ax	; MENU_BOTTON_X_POS
 	ja	still
 ;------------------------------------------------------------------------------
 align 4
 close:
-	
+
 	movzx	ebx,[edi+parent]       ; parent id
 	shl	ebx,4
 	add	ebx,[menu_data]          ; ebx = base of parent info
 	call	backconvert
-	cmp	[ebx + child],al       ; if i am the child of my parent...
+	cmp	[ebx + child],al       ; if I am the child of my parent...
 	jnz	@f
 	mov	[ebx + child],-1       ; ...my parent now has no children
 ;--------------------------------------
@@ -678,10 +678,10 @@ align 4
 @@:
 	or	eax,-1                 ; close this thread
 	mov	[edi + child],al       ; my child is not mine
-	
+
 	call	free_area_if_set_mutex
 	call	set_mutex_for_free_area
-	
+
 	mcall
 ;--------------------------------------
 align 4
@@ -693,7 +693,7 @@ backconvert:		  ; convert from pointer to process id
 ;------------------------------------------------------------------------------
 align 4
 set_mutex_for_free_area:
-; set mutex for free thread stack area	
+; set mutex for free thread stack area
 	push	eax ebx
 ;--------------------------------------
 align 4
@@ -732,7 +732,7 @@ align 4
 	pop	ecx ebx eax
 ;--------------------------------------
 align 4
-.end:	
+.end:
 	ret
 ;------------------------------------------------------------------------------
 ;==================================
@@ -824,13 +824,13 @@ draw_window:
 	movzx	ecx,[edi + y_end]
 	cmp	[panel_attachment],byte 1
 	je	@f
-	
-	
+
+
 	;cmp	ebp,0x000 ; if this is first started thread
 	;je .1            ; then show it at the very top
-	
+
 	push  ebx eax
-	; if attachement=top 
+	; if attachement=top
 	; then NEW_WIN_Y = PRIOR_WIN_Y + PRIOR_WIN_H - ITEM_H + 1 - SEL_ITEM_Y
 
 	mov ecx, [prior_thread_y]
@@ -842,17 +842,17 @@ draw_window:
 	mov al, [prior_thread_selected_y_end]
 	mov ebx, BTN_HEIGHT
 	mul ebx
-		
+
 	sub ecx, eax
 
 	mov	[edi + cur_sel],1 ;if attachement=top then set item=1 selected
-	
+
 	pop eax ebx
 
 	jmp	.1
 ;--------------------------------------
 align 4
-@@:	
+@@:
 	sub	ecx,eax	    ; ecx = Y_START
 ;--------------------------------------
 align 4
@@ -866,7 +866,7 @@ align 4
 	mov	bx,BTN_WIDTH	    ; ebx = [ X_START | X_SIZE ]
 	mov	edx,0x01000000       ; color of work area RRGGBB,8->color gl
 	mov	esi,edx	    ; unmovable window
-	
+
 	mov	eax,[y_working_area]
 	shr	eax,16
 	ror	ecx,16
@@ -878,14 +878,14 @@ align 4
 @@:
 	cmp	cx,ax
 	ja	@f
-	mov	cx,ax	
+	mov	cx,ax
 ;--------------------------------------
 align 4
 @@:
 	rol	ecx,16
 	xor	eax,eax	    ; function 0 : define and draw window
 	mcall
-	
+
 ;	dps	"[ Y_START | Y_SIZE ] : "
 ;	dph	ecx
 ;	newline
@@ -951,11 +951,11 @@ align 4
 				; from system close button with 0x000001 id
 				; dunkaist]
 	mcall
-	push edx 
-	
+	push edx
+
 	mov edx, esi
 	mcall 13 ; draw rect
-	
+
 	mcall , BTN_WIDTH,<[draw_y],1>,[sc.work_light]
 	add     ecx, BTN_HEIGHT-1
 	mcall , 1
@@ -963,7 +963,7 @@ align 4
 	mcall , <BTN_WIDTH,1>, , [sc.work_dark]
 	add     [draw_y], BTN_HEIGHT-1
 	mcall , BTN_WIDTH,<[draw_y],1>
-	
+
 	pop edx
 	movzx	edx,dl
 	dec	dl
@@ -987,7 +987,7 @@ align 4
 	jne	.findline
 	dec	ecx ; TODO what in ecx? button number?
 	jnz	.findline
-	
+
 	mov ecx, [sc.work_text]
 	add ecx, FONT_TYPE
 
@@ -1044,13 +1044,13 @@ align 4
  	cmp [is_icon_active], 1
  	jne .not_active_icon
  	mov ecx, [shared_icons_active_ptr]
-.not_active_icon:	
+.not_active_icon:
 	add ebx, ecx
 	mcall 65, ebx, <18,18>, [tmp], 32, 0, 0
 
 @@:
 	pop ebp edi esi ecx
-	
+
 	pop	edx
 	ret
 ;------------------------------------------------------------------------------

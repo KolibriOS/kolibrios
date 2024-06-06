@@ -1,5 +1,5 @@
 /*
-Kolibri OS port for gcc 5.4
+KolibriOS port for gcc 5.4
 
 Started by Siemargl @Nov 2016
 
@@ -150,10 +150,10 @@ int	mkdir(const char *_path, mode_t m)
 
 //debug_board_printf("mkdir start (%s)\n", _path);
     memset(di, 0, sizeof(struct fs_dirinfo));
-    //di.ppath = (char*)_path;  // dont work with 70.9
+    //di.ppath = (char*)_path;  // don't work with 70.9
     strcpy(di->path, _path);
 
-    int rc = sf_file(9, di);  // creat dir
+    int rc = sf_file(9, di);  // create dir
     if(rc) {
         fprintf(stderr, "Error %d creating dir item %s\n", rc, _path);
         errno = rc;

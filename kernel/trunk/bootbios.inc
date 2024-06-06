@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
 ;;                  16 BIT ENTRY FROM BOOTSECTOR                ;;
@@ -24,24 +24,25 @@ org 0
         ; struct kernel_header
         jmp     start_of_code   ; jump
         db      'KolibriOS '    ; signature
-        db      'v0.7.7.0+     ',13,10,13,10,0  ; version
+        db      'v0.7.7.0      ',13,10,13,10,0  ; FIXME: get distribution version from git tag
         dd      B32-KERNEL_BASE ; offset of the kernel's 32-bit entry point
 
 include "boot/bootstr.inc"      ; language-independent boot messages
 include "boot/preboot.inc"
 
-if lang eq ge
-include "boot/bootge.inc"       ; german system boot messages
-else if lang eq sp
-include "boot/bootsp.inc"       ; spanish system boot messages
-else if lang eq ru
-include "boot/bootru.inc"       ; russian system boot messages
-include "boot/ru.inc"           ; Russian font
-else if lang eq et
-include "boot/bootet.inc"       ; estonian system boot messages
-include "boot/et.inc"           ; Estonian font
+; Language support for locales: de_DE, es_ES, ru_RU (CP866), et_EE, en_US.
+if lang eq de_DE
+        include "boot/bootstr-de_DE.inc"        ; German system boot messages
+else if lang eq es_ES
+        include "boot/bootstr-es_ES.inc"        ; Spanish system boot messages
+else if lang eq ru_RU
+        include "boot/bootstr-ru_RU.inc"        ; Russian system boot messages
+        include "boot/bootfont-ru_RU.inc"       ; Russian font
+else if lang eq et_EE
+        include "boot/bootstr-et_EE.inc"        ; Estonian system boot messages
+        include "boot/bootfont-et_EE.inc"       ; Estonian font
 else
-include "boot/booten.inc"       ; english system boot messages
+        include "boot/bootstr-en_US.inc"        ; English system boot messages (default)
 end if
 
 include "boot/bootcode.inc"     ; 16 bit system boot code
@@ -115,6 +116,6 @@ code_l:
 
 include "data16.inc"
 
-if ~ lang eq sp
+if ~ lang eq es_ES
 diff16 "end of bootcode",0,$+KERNEL_BASE
 end if

@@ -57,7 +57,7 @@ b_sort dd 0 ;граница для сортированных ячеек
 osob dd 0 ;число особей
 zoom db 3 ;масштаб поля
 
-if lang eq ru
+if lang eq ru_RU
 txt_zoom db '   Масштаб:',0
 txt_gen db '  Поколение:',0
 txt_osob db '    Особей:',0

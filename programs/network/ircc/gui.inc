@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;   Written by hidnplayr@kolibrios.org                            ;;
@@ -56,7 +56,7 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
         add     edx, 0x33000000
         mov     edi, str_programname
         mcall
-                        
+
         test    [thread_info.wnd_state], 100b           ; skip if window is rolled up
         jne     .exit
 
@@ -149,7 +149,7 @@ draw_window:    ; Completely redraw the window, recalculate all coordinates and 
 
 ; draw tabs
         call    draw_window_tabs
-                
+
   .exit:
         mcall   12, 2
         popa
@@ -176,7 +176,7 @@ draw_user_list:
         ; OK, draw the scrollbar
         invoke  scrollbar_draw, scroll1
 
-        ; dont redraw scrollbar completely next time,
+        ; don't redraw scrollbar completely next time,
         ; unless draw_window asks us to by setting [scroll1.all_redraw] back to 1
         mov     [scroll1.all_redraw], 0
         jmp     .scroll_done
@@ -281,7 +281,7 @@ draw_window_tabs:
         jne     @f
         ;not     esi
         ;and     esi, 0x00ffffff
-        mov      esi,  [colors.work_light]  
+        mov      esi,  [colors.work_light]
       @@:
         mcall
         inc     edx
@@ -292,7 +292,7 @@ draw_window_tabs:
 
 ; Draw the close window button
         mov     edi, [window_active]
-        cmp     [edi + window.type], WINDOWTYPE_SERVER  ; dont let the user close server window
+        cmp     [edi + window.type], WINDOWTYPE_SERVER  ; don't let the user close server window
         je      @f
 
 ;        mov     eax, 8
@@ -365,7 +365,7 @@ highlight_updated_tabs:
   .enough_:
 
         ret
-		
+
 set_edit_box_and_scrollbar_colors:
         mov     eax, [colors.work]
         mov     [scroll1.bg_color], eax

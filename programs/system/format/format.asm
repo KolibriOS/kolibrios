@@ -346,7 +346,7 @@ ch2 check_box2 Otstup shl 16 + 12, (190+dy) shl 16 + 12, 6, 0xFFFFFFFF, 0xAABBCC
 
 browse db '...', 0
 
-if lang eq ru  ;RU language
+if lang eq ru_RU  ; Russian language
 
 title   db  "Formatting Disk Utility", 0
 
@@ -372,7 +372,7 @@ unittext:
   .6 db '32 Š¡', 0
   .7 db '64 Š¡', 0
 
-else           ;EN language
+else           ; English language
 
 title   db  "Formatting Disk Utility", 0
 

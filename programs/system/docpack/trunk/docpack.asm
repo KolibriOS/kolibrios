@@ -192,7 +192,7 @@ embedded:
 
 ; -- Start of embedding area ------
   embed_docdir_file 'CREDITS.TXT'       ;a
-if lang eq ru
+if lang eq ru_RU
   embed_docdir_file 'GNU.TXT'          ;b
 else
   embed_docdir_file 'COPYING.TXT'      ;b
@@ -200,7 +200,7 @@ end if
   embed_docdir_file 'HOT_KEYS.TXT'     ;c
   embed_local_file 'FASM.TXT'          ;d
   embed_docdir_file 'MTDBG.TXT'        ;e
-if lang eq ru
+if lang eq ru_RU
   embed_local_file 'SYSFUNCR.TXT'      ;f
 else
   embed_local_file 'SYSFUNCS.TXT'      ;f

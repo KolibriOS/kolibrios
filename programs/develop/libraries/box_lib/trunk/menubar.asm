@@ -1,5 +1,5 @@
 ;**************************************************************
-; MenuBar Macro for Kolibri OS
+; MenuBar Macro for KolibriOS
 ; Copyright (c) 2009, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;

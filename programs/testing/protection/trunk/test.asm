@@ -122,7 +122,7 @@ draw_window:
 ;-------------------------------------------------------------------------------
 ; DATA AREA
 ;-------------------------------------------------------------------------------
-if lang eq it
+if lang eq it_IT
 text:
         db 'Il programma usa 0x1000 byte di memoria '
         db '                                        '
@@ -142,7 +142,7 @@ text:
         db '                                        '
         db '     OUT 0x60,AL                        '
         db 'x'
-else if lang eq ru
+else if lang eq ru_RU
 text:
         db 'Приложение использует 0x1000 байт памяти'
         db '                                        '
@@ -184,10 +184,10 @@ text:
         db 'x'
 end if
 ;-------------------------------------------------------------------------------
-if lang eq it
+if lang eq it_IT
 tlabel:
         db 'Kolibri prova di protezione',0
-else if lang eq ru
+else if lang eq ru_RU
 tlabel:
         db 'Kolibri проверка защиты ядра',0
 else

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -9,7 +9,6 @@
 ; 26/11/2013 yogev_ezra: Added CPU speed modifier and MMX support flag detection
 ; Thanks for help to: dunkaist, eAndrew, hidnplayr, Mario
 
-$Revision$
 
 VORTEX86DEBUG = 0                       ; For testing in emulators and in non-Vortex86 CPU computers, set this to 1
 VORTEX86DEBUGVALUE = 'DMP5'             ; FAKE port output = used for testing
@@ -41,7 +40,7 @@ endg
 
 ; When in debug mode, perform SoC detection regardless of the actual CPU vendor (even for vendors other than DMP)
 ; When in normal (not debug) mode, check the CPU vendor first, and perform SoC detection only if vendor is 'Vortex86 SoC'
-if ~ VORTEX86DEBUG        
+if ~ VORTEX86DEBUG
         cmp     [cpu_vendor], 'Vort'
         jnz     .Vortex86end            ; If the CPU vendor is not 'Vortex86 SoC', skip the SoC detection
 end if
@@ -52,7 +51,7 @@ end if
 if VORTEX86DEBUG                        ; When in debug mode, pretend that we received port output equal to "VORTEX86DEBUGVALUE"
         mov     eax, VORTEX86DEBUGVALUE
 end if
-        
+
         DEBUGF  1, "K : Vortex86 SoC type register (93H~90H) returned 0x"
         test    eax, eax                ; Check whether the port output was '\0'
         jz      .nullPCIoutput          ; In case the result is '\0' (NULL), skip further testing and exit
@@ -67,7 +66,7 @@ end if
 
         sub     al, 0x30                ; Current Vortex86 CPU codes are in the range of 31h-37h, so convert them to integer (1,2,...)
         mov     [Vortex86CPUid], al     ; Save the CPUid (1=Vortex86SX, 2=Vortex86DX, ..., 7=Vortex86EX, ...)
-        
+
         mov     esi, Vortex86SoClist    ; ESI points to the start of Vortex86SoClist (used implicitly in "LODSD" command below)
         xor     ecx, ecx                ; Zero ECX (it is used as counter)
         cld                             ; Clears the DF flag in the EFLAGS register (DF=0 --> String operations increment ESI)
@@ -104,7 +103,7 @@ end if
         mov     eax, SOUTH_BRIDGE+0xCC  ; 0x800038CC = PCI Configuration Address Register to read from (8-bit register - accessed as BYTE)
         call    .Vortex86PCIreg         ; Flags of Vortex86 South Bridge Internal Peripheral Feature Control Register III (Register Offset: CCh)
         DEBUGF  1, "K : Vortex86 Internal Peripheral Feature Control Register III (CCh) returned 0x%x\n",al
-        
+
         mov     eax, NORTH_BRIDGE+0xA0  ; 0x800000A0 = PCI Configuration Address Register to read from (32-bit register - accessed as DWORD)
         call    .Vortex86PCIreg         ; Get current flags of Vortex86SoC North Bridge Host Control Register (Register Offset: A3h~A0h)
         DEBUGF  1, "K : Vortex86 Host Control Register (A3h~A0h) returned 0x%x: CPU speed is ",eax
@@ -130,7 +129,7 @@ end if
         DEBUGF  1, "ENABLED\n"          ; Print to the log that MMX is enabled
 .AfterMMXenabled:
         DEBUGF  1, "K : Vortex86 MMX report to CPUID: "                         ; Print to the log what CPUID command knowns about MMX support
-        test    al, 1000000b            ; On MMX-capable Vortex86 SoC, Bit6 = report MMX support to CPUID? (1=Yes/0=No)        
+        test    al, 1000000b            ; On MMX-capable Vortex86 SoC, Bit6 = report MMX support to CPUID? (1=Yes/0=No)
         jnz     .Vortex86MMXreported    ; MMX is already reported to CPUID (Bit6=1)
         DEBUGF  1, "OFF - turning it ON for this session\n"                     ; Print to the log that MMX will now be reported to CPUID
         or      al, 1000000b            ; Turn on MMX reporting to CPUID (don't write the value to PCI port yet)
@@ -151,7 +150,7 @@ end if
         mov     dl, 0xfc                ; CFCh = Vortex86 PCI Configuration Data port
         in      eax, dx                 ; Read data from PCI data port
         ret
-        
+
 .nullPCIoutput:                         ; Emulators and non-Vortex86 CPU computers will usually return \0 in this register
         DEBUGF  1, "0 (NULL)\n"
 

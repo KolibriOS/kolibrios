@@ -5,8 +5,8 @@
 	mkdir ./zSea_bin/buttons
 	mkdir ./zSea_bin/plugins
 
-	echo "lang fix en"
-	echo "lang fix en" > ./lang.inc
+	echo "lang fix en_US"
+	echo "lang fix en_US" > ./lang.inc
 	fasm -m 16384 ./zSea.asm ./zSea_bin/zSea
 	kpack ./zSea_bin/zSea
 

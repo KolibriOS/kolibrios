@@ -918,7 +918,7 @@ sys_reboot:
                 db      "/sys/end",0
 ;-------------------------------------------------------------------------------
 strings:
-if lang eq de
+if lang eq de_DE
         .window_caption         utf8z   "Prozesse v0.2.3 - [Ctrl+Alt+Del]"
         
         .process_name           utf8z   "NAME/BEENDEN"
@@ -941,7 +941,7 @@ if lang eq de
         .MB                     utf8z   " MB"
         .GB                     utf8z   " GB"
 ;-------------------------------------------------------------------------------
-else if lang eq et
+else if lang eq et_EE
         .window_caption         utf8z   "Protsessid v0.2.3 - [Ctrl+Alt+Del]"
         
         .process_name           utf8z   "NIMI/LÕPETA"
@@ -964,7 +964,7 @@ else if lang eq et
         .MB                     utf8z   " MB"
         .GB                     utf8z   " GB"
 ;-------------------------------------------------------------------------------
-else if lang eq ru
+else if lang eq ru_RU
         .window_caption         utf8z   "Диспетчер процессов v0.2.3 - [Ctrl+Alt+Del]"
         
         .process_name           utf8z   "ИМЯ/ЗАВЕРШИТЬ"
@@ -987,7 +987,7 @@ else if lang eq ru
         .MB                     utf8z   " МБ"
         .GB                     utf8z   " ГБ"
 ;-------------------------------------------------------------------------------
-else if lang eq it
+else if lang eq it_IT
         .window_caption         utf8z   "Gestore processi v0.2.3 - [Ctrl+Alt+Del]"
         
         .process_name           utf8z   "NOME-PROGRAMMA"

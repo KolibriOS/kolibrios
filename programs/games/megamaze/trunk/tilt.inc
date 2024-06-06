@@ -67,7 +67,7 @@ TILT_drawm:
 TILT_level:
 file 'tilt.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	TILT_help mstr \
 	'Плашка (зеленый квадрат) лежит на доске, которую',\
 	'можно наклонять по горизонтали и вертикали',\

@@ -20,8 +20,8 @@ function link_msvc(input, output)
   if not output then input,output = OBJS,input end
 
   if type(output) ~= "string" then error("output for link_msvc should be simple string") end
-  local exename = output .. ".exe"
-  local mapname = output .. ".map"
+  local exename = tup.getvariantdir() .. "/" .. output .. ".exe"
+  local mapname = tup.getvariantdir() .. "/" .. output .. ".map"
 
   tup.rule(input, "link.exe " .. LDFLAGS .. " /out:%o /Map:" .. mapname .. " %f", {exename, extra_outputs = {mapname}})
   tup.rule(exename, env_prefix .. "fasm " .. THISDIR .. "/../data/common/doexe2.asm %o " .. tup.getconfig("KPACK_CMD"), output)

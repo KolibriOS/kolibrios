@@ -220,7 +220,7 @@ test_new_ball:
 	@@:
 	ret
 
-if lang eq ru
+if lang eq ru_RU
 	szTitle  db 'Цветные линии v 0.3',0
 	szNewGame db 'F2 - новая игра',0
 	szRecord db 'Рекорд',0

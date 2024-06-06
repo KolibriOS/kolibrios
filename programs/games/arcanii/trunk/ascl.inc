@@ -1,4 +1,4 @@
-lang equ ru ; ru en fr ge fi
+lang equ ru_RU ; ru_RU en_US fr_FR de_DE fi_FI
 
 ;
 ;   Assembler

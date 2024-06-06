@@ -45,7 +45,7 @@
 ; version:	2.02
 ; last update:  15/03/2012
 ; changed by:   Marat Zakiyanov aka Mario79, aka Mario
-; changes:      some optimisations and code refactoring
+; changes:      some optimizations and code refactoring
 ;---------------------------------------------------------------------
 ; version:	2.01
 ; last update:  27/09/2011
@@ -54,7 +54,7 @@
 ;              (working to kernel r.2244 and above)
 ;---------------------------------------------------------------------
 ; Many fix's and changes created by:
-;               Halyavin, Diamond, Heavyiron, 
+;               Halyavin, Diamond, Heavyiron,
 ;               SPraid, Dunkaist
 ;---------------------------------------------------------------------
 ; version:	2.00
@@ -89,11 +89,11 @@ include '../../../load_lib.mac'
 ;------------------------------------------------------------------------------
 START:		; start of execution
 	mcall	68,11
-;---------------------------------------------------------------------	
+;---------------------------------------------------------------------
 load_libraries l_libs_start,end_l_libs
 	test	eax,eax
 	jnz	close
-	
+
 ; unpack deflate
 	mov	eax,[unpack_DeflateUnpack2]
 	mov	[deflate_unpack],eax
@@ -129,7 +129,7 @@ load_libraries l_libs_start,end_l_libs
 	mov	[strip_file],eax
 ; back memeory to system
 	mcall	68,13,[finfo.point]
-	
+
 	mov	eax,[raw_pointer]
 	mov	eax,[eax+8]
 	shr	eax,5
@@ -142,13 +142,13 @@ load_libraries l_libs_start,end_l_libs
 boot_str:
 	cmp	[I_Param],dword 'BOOT'
 	je	START2
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 ; ICON EDITOR MODE - START1 entering label
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 START1:
 	call	load_icon_list
 ;------------------------------------------------------------------------------
-align 4	
+align 4
 red:
 	call	draw_window	; at first, draw the window
 	mov	esi,[current_icon]
@@ -159,7 +159,7 @@ still:
 	mcall	10	; wait here for event
 	dec	eax	; redraw request ?
 	jz	red
-	
+
 	dec	eax	; key in buffer ?
 	jz	key
 ;------------------------------------------------------------------------------
@@ -170,11 +170,11 @@ button:
 
 	cmp	eax,1	; button id=1 ?
 	je	close
-	
+
 	mov	esi,[current_icon]
 	add	esi,12
 	mov	ebx,[cur_band]
-	
+
 	cmp	eax,11
 	jb	@f
 	cmp	eax,13
@@ -186,26 +186,26 @@ align 4
 @@:
 	cmp	eax,21	; apply changes
 	je	apply
-	
+
 	cmp	eax,22		; user pressed the 'add icon' button
 	je	add_icon
-	
+
 	cmp	eax,23	; user pressed the remove icon button
 	je	remove_icon
 
-	
+
 	cmp	eax,30	; left arrow to icons bar
 	je	arrow.left
-	
+
 	cmp	eax,31	; right arrow to icons bar
 	je	arrow.right
-	
+
 	cmp	eax,32
 	je	ico
 
 	cmp	eax,40	; user pressed button for icon position
 	jae	press_button_for_icon_position
-	
+
 	jmp	still
 ;------------------------------------------------------------------------------
 align 4
@@ -255,7 +255,7 @@ ico:
 	call	itoa
 	jmp	arrow.drwic1
 ;------------------------------------------------------------------------------
-align 4 
+align 4
 apply:
 	; (1) save list
 	mov	ebx,finfo
@@ -334,7 +334,7 @@ add_icon:
 	jb	no_f
 	mov	edi,eax
 	sub	eax,40
-	
+
 	xor	edx,edx		; bcd -> 10
 	mov	ebx,16
 	div	ebx
@@ -342,13 +342,13 @@ add_icon:
 	shl	eax,1		; multiply x2
 	lea	eax,[eax+eax*4] ; multiply x5
 	add	eax,edx
-	
+
 	mov	ebx,eax
 	add	ebx,icons_reserved
 	cmp	[ebx],byte 'x'
 	je	no_f
 	mov	[ebx],byte 'x'
-	
+
 	mov	[cur_btn],edi
 	xor	edx,edx
 	mov	ebx,10
@@ -357,13 +357,13 @@ add_icon:
 	add	edx,65
 	mov	[icon_default+0],dl
 	mov	[icon_default+1],al
-	
+
 	inc	dword [icons]
 	mov	edi,[icons]
 	dec	edi
 	imul	edi,REC_SIZE
 	add	edi,icon_data
-	
+
 	mov	[current_icon],edi
 
 	mov	esi,icon_default
@@ -382,7 +382,7 @@ align 4
 remove_icon:
 	mov	ebx,24*65536+250+8*14
 	mcall	4,,0xc0ff0000,rem_text,,0xffffff
-	
+
 	mcall	10
 	cmp	eax,3
 	jne	no_f
@@ -392,7 +392,7 @@ remove_icon:
 	cmp	eax,40
 	jb	red
 	sub	eax,40
-	
+
 	xor	edx,edx
 	mov	ebx,16
 	div	ebx
@@ -400,27 +400,27 @@ remove_icon:
 	shl	eax,1		; multiply x2
 	lea	eax,[eax+eax*4] ; multiply x5
 	add	eax,edx
-	
+
 	mov	ebx,eax
 	add	ebx,icons_reserved
 	cmp	[ebx],byte 'x'
 	jne	red
 	mov	[ebx],byte ' '
-	
+
 	xor	edx,edx
 	mov	ebx,10
 	div	ebx
 	shl	eax,8
 	mov	al,dl
-	
+
 	add	eax,65*256+65
-	
+
 	mov	esi,icon_data
 	mov	edi,REC_SIZE
 	imul	edi,[icons]
 	add	edi,icon_data
 ;--------------------------------------
-align 4 
+align 4
 news:
 	cmp	word [esi],ax
 	je	foundi
@@ -433,15 +433,15 @@ align 4
 foundi:
 	mov	ecx,edi
 	sub	ecx,esi
-	
+
 	mov	edi,esi
 	add	esi,REC_SIZE
-	
+
 	cld
 	rep	movsb
-	
+
 	dec	[icons]
-	
+
 	mov	eax,icon_data
 	mov	[current_icon],eax
 	movzx	ebx,word[eax]
@@ -667,11 +667,11 @@ draw_window:
 	mcall	,<20,280>,<135,135>	; HOROZONTAL LINE ON WINDOW AREA
 
 	mcall	8,<20,72>,<(275+1+14),(13-2)>,11,[bcolor]	;id 11 TEXT ENTER BUTTONS
-	
+
 	inc	edx
 	add	ecx,14*65536
 	mcall			; id 12
-	
+
 	inc	edx
 	add	ecx,14*65536
 	mcall			; id 13
@@ -694,7 +694,7 @@ draw_window:
 
 	add	edx,1 + 1 shl 29
 	mcall	,<(33-19),(34*8)>	; id 32
-	
+
 	mcall	4,<(23-15),(273-24)>,0,arrows,1
 
 	add	ebx,(36*7+27)shl 16
@@ -761,7 +761,7 @@ no_button:
 	inc	al
 	cmp	al,9
 	jbe	newbline
-	
+
 	mov	al,0
 	add	edx,6
 	ror	ebx,16
@@ -810,12 +810,12 @@ align 4
 	push	ecx
 	pusha
 	mov	ebp,0
-	
+
 	mov	eax,[strip_file_size]
 	add	eax,[strip_file]
 	cmp	eax,ebx
 	ja	@f
-; draw a rectangle if icon does not exist	
+; draw a rectangle if icon does not exist
 	mov	ebx,edx	; X
 	mov	ecx,edx	; Y
 	shl	ecx,16
@@ -843,14 +843,14 @@ align 4
 	lea	edx,[ebx+(8*5)shl 16]
 	pop	ecx
 	mcall	47,0x30000,,,0xff
-	
+
 	add	ecx,7
 	add	edx,(3*8+4)shl 16
 	mcall
-	
+
 	add	edx,(5*8+4)shl 16
 	mcall	,,[icon_count]
-	
+
 	pop	ecx
 	add	edx,(10*8+4)shl 16
 	mcall	,,,,0xff0000
@@ -866,17 +866,17 @@ close:
 align 4
 START2:
 	mcall	40,10000b	; only Event 5 - draw background
-	
+
 	mcall	48,5
 	mov	[warea.by_x],eax
 	mov	[warea.by_y],ebx
-	
+
 	mcall	51,1,START_mouse_thread,stack_mouse_thread
-	
+
 	xor	eax,eax
 	mov	[x_left],eax
 	mov	[y_top],eax
-	
+
 	mcall	14
 	mov	ebx,eax
 	shr	eax,16
@@ -925,7 +925,7 @@ align 4
 	dec	ecx
 	jnz	.start_new
 	jmp	still2
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 align 4
 draw_picture:
 	mov	eax,[current_X]
@@ -976,17 +976,17 @@ align 4
 	mov	ebx,32
 	cld
 ;--------------------------------------
-align 4	
+align 4
 .y:
 	mov	ecx,32
 	rep	movsd
-	
+
 	add	edi,(52-32)*4
 	dec	ebx
 	jnz	.y
 
 	call	draw_text
-	
+
 	mov	edx,[current_X]
 	shl	edx,16
 	add	edx,[current_Y]
@@ -1020,18 +1020,18 @@ align 4
 founde:
 	sub	eax,title
 	mov	[tl],eax
-	
+
 	mov	eax,[tl]
 	lea	eax,[eax+eax*2]		; eax *= char_width/2
 	shl	eax,16
-	
+
 	mov	ebx,27 shl 16+40
 	sub	ebx,eax
-	
+
 	xor	ecx,ecx		; black shade of text
 	or	ecx,0x08000000	; redirect the output to the user area
 	add	ebx,1 shl 16	;*65536+1
-	
+
 	mov	edi,[draw_area]
 	mcall	4,,,title,[tl]
 

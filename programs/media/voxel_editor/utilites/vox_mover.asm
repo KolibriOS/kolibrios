@@ -14,7 +14,7 @@ include '../trunk/str.inc'
 include 'lang.inc'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-if lang eq ru
+if lang eq ru_RU
 caption db 'Перемещение вокселей 04.05.20',0 ;подпись окна
 else
 caption db 'Voxel mover 04.05.20',0
@@ -1155,7 +1155,7 @@ dd 1 shl 30,1 shl 30,1 shl 30,1 shl 30,1 shl 30
 dd 1 shl 31,1 shl 30,1 shl 30,1 shl 30,1 shl 31
 rd 999 ;32*32-25
 
-if lang eq ru
+if lang eq ru_RU
 txt_zoom db 'Масштаб:',0
 txt_curor: db 'Курсор: '
 .size: rb 10

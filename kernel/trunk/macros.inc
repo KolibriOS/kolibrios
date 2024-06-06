@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -14,16 +14,6 @@ macro $Revision a {
     end if
   \}
 }
-
-macro ignore_empty_revision_keyword {
-  ; svn keywords are neither substituted by git-svn nor catched by $Revision
-  ; macro above, ignore them to not fail the build
-  macro $Rev#ision$ \{\}
-}
-ignore_empty_revision_keyword
-
-$Revision$
-
 
 ;// mike.dld, 2006-29-01 [
 

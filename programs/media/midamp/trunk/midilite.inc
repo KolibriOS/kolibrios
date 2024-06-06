@@ -271,21 +271,21 @@ return:
     ret
 
 sHeadInv:
-if lang eq ru
+if lang eq ru_RU
   db "Неверный заголовок",0
 else
   db "Header invalid",0
 end if
 
 sHSizeInv:
-if lang eq ru
+if lang eq ru_RU
   db 'Неверный размер заголовка',0
 else
   db 'Header size invalid',0
 end if
 
 sTypeUnsup:
-if lang eq ru
+if lang eq ru_RU
   db 'Тип MIDI не поддерживается',0
 else
   db 'MIDI type not supported',0

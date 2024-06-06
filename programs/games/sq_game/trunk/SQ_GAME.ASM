@@ -228,7 +228,7 @@ generator	dd 0
 
 header		db 'Lights',0
 
-if lang eq ru
+if lang eq ru_RU
 strMovs 	db 'ХОД',0
 strNew		db 'Новая игра',0
 else

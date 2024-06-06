@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 VKEY_LSHIFT   = 00000000_00000001b
@@ -88,7 +86,7 @@ hotkey_do_test:
         and     eax, 15
         cmp     al, hotkey_tests_num
         jae     .fail
-        
+
         xchg    eax, edx
         and     al, 3
         call    [hotkey_tests + edx*4]
@@ -111,9 +109,9 @@ set_keyboard_data:
         shl     eax, BSF sizeof.APPDATA
         mov     al, [SLOT_BASE + eax + APPDATA.keyboard_mode]
         mov     [keyboard_mode], al
-        
+
         mov     eax, ecx
-        
+
         push    ebx esi edi ebp
         call    send_scancode
         pop     ebp edi esi ebx
@@ -210,7 +208,7 @@ irq1:
         shl     eax, BSF sizeof.APPDATA
         mov     al, [SLOT_BASE + eax + APPDATA.keyboard_mode]
         mov     [keyboard_mode], al
-        
+
         in      al, 0x60
 ;--------------------------------------
 send_scancode:
@@ -224,7 +222,7 @@ send_scancode:
         mov     ch, al
         cmp     al, 0xE0
         je      @f
-        
+
         cmp     al, 0xE1
         jne     .normal_code
 @@:
@@ -241,10 +239,10 @@ send_scancode:
 @@:
         cmp     al, 0x5B
         jne     @f
-        
+
         cmp     cl, 0xE0
         jne     @f
-        
+
         mov     eax, VKEY_LWIN
         mov     bh, 0
         jmp     .modifier
@@ -252,10 +250,10 @@ send_scancode:
 @@:
         cmp     al, 0x5C
         jne     @f
-        
+
         cmp     cl, 0xE0
         jne     @f
-        
+
         mov     eax, VKEY_RWIN
         mov     bh, 0
         jmp     .modifier
@@ -263,53 +261,53 @@ send_scancode:
 @@:
         cmp     al, 0x2A
         jne     @f
-        
+
         cmp     cl, 0xE0
         je      .writekey
-        
+
         mov     eax, VKEY_LSHIFT
         jmp     .modifier
 ;--------------------------------------
 @@:
         cmp     al, 0x36
         jne     @f
-        
+
         cmp     cl, 0xE0
         je      .writekey
-        
+
         mov     eax, VKEY_RSHIFT
         jmp     .modifier
 ;--------------------------------------
 @@:
         cmp     al, 0x38
         jne     @f
-        
+
         mov     eax, VKEY_LALT
         test    cl, cl
         jz      .modifier
-        
+
         mov     al, VKEY_RALT
         jmp     .modifier
 ;--------------------------------------
 @@:
         cmp     al, 0x1D
         jne     @f
-        
+
         mov     eax, VKEY_LCONTROL
         test    cl, cl
         jz      .modifier
-        
+
         mov     al, VKEY_RCONTROL
         cmp     cl, 0xE0
         jz      .modifier
-        
+
         mov     [ext_code], cl
         jmp     .writekey
 ;--------------------------------------
 @@:
         cmp     al, 0x3A
         jne     @f
-        
+
         mov     bl, 4
         mov     eax, VKEY_CAPSLOCK
         jmp     .no_key.xor
@@ -319,7 +317,7 @@ send_scancode:
         jne     @f
         test    cl, cl
         jnz     .writekey
-        
+
         mov     bl, 2
         mov     eax, VKEY_NUMLOCK
         jmp     .no_key.xor
@@ -327,7 +325,7 @@ send_scancode:
 @@:
         cmp     al, 0x46
         jne     @f
-        
+
         mov     bl, 1
         mov     eax, VKEY_SCRLOCK
         jmp     .no_key.xor
@@ -336,44 +334,44 @@ send_scancode:
         xor     ebx, ebx
         test    ch, ch
         js      .writekey
-        
+
         movzx   eax, ch          ; plain key
         mov     bl, [keymap + eax]
         mov     edx, [kb_state]
         test    dl, VKEY_CONTROL ; ctrl alt del
         jz      .noctrlaltdel
-        
+
         test    dl, VKEY_ALT
         jz      .noctrlaltdel
-        
+
         cmp     ch, 53h
         jne     .noctrlaltdel
-        
+
         mov     [ctrl_alt_del], 1
         call    wakeup_osloop
 .noctrlaltdel:
         test    dl, VKEY_CONTROL ; ctrl on ?
         jz      @f
-        
+
         sub     bl, 0x60
 @@:
         test    dl, VKEY_CAPSLOCK        ; caps lock on ?
         jz      .no_caps_lock
-        
+
         test    dl, VKEY_SHIFT   ; shift on ?
         jz      .keymap_shif
-        
+
         jmp     @f
 ;--------------------------------------
 .no_caps_lock:
         test    dl, VKEY_SHIFT   ; shift on ?
         jz      @f
-.keymap_shif:   
+.keymap_shif:
         mov     bl, [keymap_shift + eax]
 @@:
         test    dl, VKEY_ALT     ; alt on ?
         jz      @f
-        
+
         mov     bl, [keymap_alt + eax]
 @@:
         jmp     .writekey
@@ -393,7 +391,7 @@ send_scancode:
         mov     bh, 0
         test    ch, ch
         js      .writekey
-        
+
         xor     [kb_state], eax
         xor     [kb_lights], bl
 .writekey:
@@ -403,22 +401,22 @@ send_scancode:
         cmp     bh, 1
         ja      .nohotkey
         jb      @f
-        
+
         xor     eax, eax
 @@:
         mov     eax, [hotkey_scancodes + eax*4]
 .hotkey_loop:
         test    eax, eax
         jz      .nohotkey
-        
+
         mov     cl, 0
         call    hotkey_do_test
         jc      .hotkey_cont
-        
+
         mov     cl, 2
         call    hotkey_do_test
         jc      .hotkey_cont
-        
+
         mov     cl, 4
         call    hotkey_do_test
         jnc     .hotkey_found
@@ -433,7 +431,7 @@ send_scancode:
 @@:
         cmp     dword [edi], 0
         jz      .found_free
-        
+
         add     edi, 8
         cmp     edi, hotkey_buffer+120*8
         jb      @b
@@ -444,7 +442,7 @@ send_scancode:
         movzx   eax, ch
         cmp     bh, 1
         jnz     @f
-        
+
         xor     eax, eax
 @@:
         mov     [edi+4], ax
@@ -462,10 +460,10 @@ send_scancode:
 
         cmp     [keyboard_mode], 0; return from keymap
         jne     .scancode
-        
+
         test    bh, bh
         jnz     .exit.irq1
-        
+
         test    bl, bl
         jz      .exit.irq1
 
@@ -474,28 +472,28 @@ send_scancode:
 
         cmp     ch, 53
         jne     .dowrite
-        
+
         mov     bl, '/'
         jmp     .dowrite
 @@:
 
         cmp     ch, 55
         jne     @f
-        
+
         mov     bl, '*'
         jmp     .dowrite
 @@:
 
         cmp     ch, 74
         jne     @f
-        
+
         mov     bl, '-'
         jmp     .dowrite
 @@:
 
         cmp     ch, 78
         jne     @f
-        
+
         mov     bl, '+'
         jmp     .dowrite
 @@:
@@ -505,10 +503,10 @@ send_scancode:
 
         cmp     ch, 71
         jb      .dowrite
-        
+
         cmp     ch, 83
         ja      .dowrite
-        
+
         movzx   eax, ch
         mov     bl, [numlock_map + eax - 71]
         jmp     .dowrite

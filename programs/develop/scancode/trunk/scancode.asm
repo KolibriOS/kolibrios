@@ -285,7 +285,7 @@ ext0:
 ext0end:
 
 
-if lang eq ru
+if lang eq ru_RU
   text:
       db '‘—ˆ’›‚€ „€›… ‘ Š‹€‚ˆ€’“›'
   .len = $ - text

@@ -127,7 +127,7 @@ draw_window:
 
 ; DATA AREA
 
-if lang eq ru
+if lang eq ru_RU
   text:
       db 'Эта программа создает потоки, запуская  '
       db 'один и тот же код много раз. Нам нужно  '

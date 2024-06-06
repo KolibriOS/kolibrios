@@ -24,12 +24,11 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
 format binary as "mnt"
 
 include 'macros.inc'
 include 'struct.inc'
-
-$Revision$
 
 
 USE_COM_IRQ     = 1      ; make irq 3 and irq 4 available for PCI devices
@@ -338,11 +337,11 @@ high_code:
         or      eax, 1 ; bit_0 - System Call Extension (SCE)
         wrmsr
 
-        ; !!!! It`s dirty hack, fix it !!!
+        ; !!!! FIXME: Hack, fix it !!!
         ; Bits of EDX :
-        ; Bit 31–16 During the SYSRET instruction, this field is copied into the CS register
+        ; Bit 31-16 During the SYSRET instruction, this field is copied into the CS register
         ;  and the contents of this field, plus 8, are copied into the SS register.
-        ; Bit 15–0 During the SYSCALL instruction, this field is copied into the CS register
+        ; Bit 15-0 During the SYSCALL instruction, this field is copied into the CS register
         ;  and the contents of this field, plus 8, are copied into the SS register.
 
         ; mov   edx, (os_code + 16) * 65536 + os_code
@@ -775,9 +774,9 @@ end if
         call    boot_log
 
         movzx   ecx, word [boot_y]
-        if lang eq ru
+        if lang eq ru_RU
         or      ecx, (10+30*6) shl 16
-        else if lang eq sp
+        else if lang eq es_ES
         or      ecx, (10+33*6) shl 16
         else
         or      ecx, (10+29*6) shl 16
@@ -883,9 +882,9 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         mov     ebx, eax
 
         movzx   ecx, word [boot_y]
-        if lang eq ru
+        if lang eq ru_RU
         add     ecx, (10+19*6) shl 16 - 10
-        else if lang eq sp
+        else if lang eq es_ES
         add     ecx, (10+25*6) shl 16 - 10
         else
         add     ecx, (10+17*6) shl 16 - 10
@@ -2289,7 +2288,7 @@ endg
 
 iglobal
 version_inf:
-        db 0,7,7,0  ; version 0.7.7.0
+        db 0,7,7,0  ; FIXME: Get distribution version from git tag
         db 0
 .rev    dd __REV__
 .size = $ - version_inf
@@ -2554,8 +2553,8 @@ sys_sheduler:
 ;now counter in ecx
 ;(edx:eax) esi:edi => edx:esi
         ; Fast Call MSR can't be destroy
-        ; Но MSR_AMD_EFER можно изменять, т.к. в этом регистре лиш
-        ; включаются/выключаются расширенные возможности
+        ; But MSR_AMD_EFER can be changed, because in this register only
+        ; advanced features are enabled/disabled
         cmp     edx, MSR_SYSENTER_CS
         je      @f
         cmp     edx, MSR_SYSENTER_ESP
@@ -2858,13 +2857,13 @@ newdw2:
 
         cmp     eax, [esp+4]
         je      not_this_task
-                                   ; check if window in redraw area
+                                ; check if window in redraw area
         mov     edi, eax
 
-        cmp     ecx, 1             ; limit for background
+        cmp     ecx, 1          ; limit for background
         jz      bgli
 
-        mov     eax, [esp+4]        ;if upper in z-position - no redraw
+        mov     eax, [esp+4]    ; if upper in z-position - no redraw
         test    eax, eax
         jz      @f
         mov     al, [eax + WDATA.z_modif]
@@ -4245,7 +4244,7 @@ syscall_threads:
         movzx   eax, [eax+APPDATA.def_priority]
         jmp     .end
 
-.create:        ;sysfn 51,1 
+.create:        ;sysfn 51,1
         call    new_sys_threads
 
 .end:
@@ -4459,7 +4458,7 @@ proc is_string_userspace stdcall, base:dword
         ret
 endp
 
-if ~ lang eq sp
+if ~ lang eq es_ES
 diff16 "end of .text segment",0,$
 end if
 
@@ -4467,6 +4466,6 @@ include "data32.inc"
 
 __REV__ = __REV
 
-if ~ lang eq sp
+if ~ lang eq es_ES
 diff16 "end of kernel code",0,$
 end if

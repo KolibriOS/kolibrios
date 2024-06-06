@@ -717,7 +717,7 @@ pic_o db 01111100b, \
 	 01111100b
 
 pic_plt dd 0xffffff, 0x000000
-if lang eq ru
+if lang eq ru_RU
 title db 'Гомоку',0
 txt_buttons db 'Новая   Авто',0
 txt_go db 'Игра окончена',0

@@ -9,15 +9,15 @@ SOURCE=${FILE}.asm
 OUT=${FILE}.bin
 
 en:
-	echo "lang fix en" > ${LANG}
+	echo "lang fix en_US" > ${LANG}
 	${FASM} ${SOURCE} ${OUT}
 	${KPACK} ${OUT}
-ge:
-	echo "lang fix ge" > ${LANG}
+de:
+	echo "lang fix de_DE" > ${LANG}
 	${FASM} ${SOURCE} ${OUT}
 	${KPACK} ${OUT}
 it:
-	echo "lang fix it" > ${LANG}
+	echo "lang fix it_IT" > ${LANG}
 	${FASM} ${SOURCE} ${OUT}
 	${KPACK} ${OUT}
 

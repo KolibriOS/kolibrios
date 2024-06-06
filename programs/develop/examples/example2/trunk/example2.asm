@@ -116,7 +116,7 @@ still:                          ; wait here for event
 
 draw_window_main:
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
+    mov  eax,12                    ; function 12: tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
     mcall
 
@@ -185,7 +185,7 @@ text:
     db '                                        '
     db '   OPEN CHOOSE BOX                      '
 
-    db 'x <- END MARKER, DONT DELETE            '
+    db 'x <- END MARKER, DO NOT DELETE          '
 
 labelt:
      db   'EXAMPLE APPLICATION'

@@ -1,16 +1,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;-------------------------------------------------------------------------
 ;Loading configuration from ini file
 ;    {SPraid.simba}
 ;-------------------------------------------------------------------------
-
-$Revision$
 
 iglobal
 conf_path_sect:
@@ -74,7 +73,7 @@ udev_midibase_def db '0x320',0
 endg
 
 iglobal
-if lang eq sp
+if lang eq es_ES
   include 'core/conf_lib-sp.inc'
 else
   ugui_mouse_speed db 'mouse_speed',0

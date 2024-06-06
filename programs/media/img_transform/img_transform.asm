@@ -1386,7 +1386,7 @@ db 0
 
 txt_space db ' ',0
 
-if lang eq ru
+if lang eq ru_RU
 	txt_err_save_img_file db 'Не могу сохранить *.png файл.',0
 	txt_about db '"О программе',13,10,\
 	'Данная программа сделана для преобразования изображений.',13,10,\

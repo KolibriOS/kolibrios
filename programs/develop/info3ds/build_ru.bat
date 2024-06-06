@@ -1,6 +1,6 @@
 if not exist bin mkdir bin
 @erase lang.inc
-@echo lang fix ru >lang.inc
+@echo lang fix ru_RU >lang.inc
 @copy objects.png bin\objects.png
 if not exist bin\info3ds.ini @copy info3ds.ini bin\info3ds.ini
 if not exist bin\toolbar.png @copy toolbar.png bin\toolbar.png

@@ -17,7 +17,7 @@ icon_table:
 icons_reserved:
 	times 9  db '          '
 ;------------------------------------------------------------------------------
-if lang eq ru
+if lang eq ru_RU
 text:
 	db 255,255,255,0,   '   ’…Š‘’                                       '
 	db 255,255,255,0,   ' ƒ€ŒŒ€                                     '
@@ -31,7 +31,7 @@ add_text	db '€†Œˆ’… € ‡ˆ–ˆ …ˆ‘‹œ‡“…Œ‰ ˆŠŠˆ     ',0
 rem_text	db '€†Œˆ’… € ‡ˆ–ˆ ˆ‘‹œ‡“…Œ‰ ˆŠŠˆ       ',0
 title		db 'Œ¥­¥¤¦¥à ¨ª®­®ª',0
 
-else if lang eq ge
+else if lang eq de_DE
 text:
 	db 255,255,255,0,   '   TITLE                                       '
 	db 255,255,255,0,   '  APP NAME                                     '
@@ -45,7 +45,7 @@ add_text	db 'AUF UNBENUTZTE ICONPOSITION KLICKEN          ',0
 rem_text	db 'ICON ANKLICKEN; DAS GELOESCHT WERDEN SOLL    ',0
 title		db 'Icon Manager',0
 
-else if lang eq it
+else if lang eq it_IT
 text:
 	db 255,255,255,0,   'Titolo                                         '
 	db 255,255,255,0,   'Nome app                                       '
@@ -85,9 +85,9 @@ icon_default:
 	db 13,10
 ;------------------------------------------------------------------------------
 rep_text:
-if lang eq ru
+if lang eq ru_RU
 	db '‡€—Šˆ    -     ˆ‡    , ‚›€ #'
-;else if lang eq it
+;else if lang eq it_IT
 ;	db 'Icone     -     di    , Selezionate'
 else
 	db 'ICONS     -     OF    , SELECTED'

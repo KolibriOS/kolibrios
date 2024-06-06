@@ -35,7 +35,7 @@ bool w_redraw=true;
 #endif
 
 #if LANG == RUS
-	const char windowTitle[] = "Косилка для Колибри";
+	const char windowTitle[] = "Косилка для КолибриОС";
 	const char version[]     = "Версия 1.16";
 	const char win[]         = "Вы выиграли!";
 	const char press_q[]     = "<нажмите <q> для возврата в меню>";
@@ -43,7 +43,7 @@ bool w_redraw=true;
 	const char press_r[]     = "<нажмите <r> для того, чтобы сыграть ещё раз>";
 	const char k_o_s_i_l_k[] = "К   О   С   И   Л   К   А";
 	const char k_o_s_i_l_2[] = "К  О  С  И  Л  К  А";
-	const char for_kolibri[] = "для Колибри ОС";
+	const char for_kolibri[] = "для КолибриОС";
 	const char press_enter[] = "<для начала игры нажмите ENTER>";
 	const char press_g[]     = "<нажмите <g> для переключения режима графики>";
 	const char press_a[]     = "<нажмите <a> для включения/выключения анимации>";
@@ -69,7 +69,7 @@ bool w_redraw=true;
 	const char about10[] = "Всем, кто играет в эту игру :-) !";
 	const char about11[] = "нажмите <BACKSPACE> для возврата в меню";
 #else
-	const char windowTitle[] = "Kosilka for Kolibri";
+	const char windowTitle[] = "Kosilka for KolibriOS";
 	const char version[]     = "  Ver. 1.16";
 	const char win[]         = "  You won!  ";
 	const char press_q[]     = "<press <q> to return to the menu>";
@@ -77,7 +77,7 @@ bool w_redraw=true;
 	const char press_r[]     = "<press r to try again>";
 	const char k_o_s_i_l_k[] = "K   O   S   I   L   K   A";
 	const char k_o_s_i_l_2[] = "K  O  S  I  L  K  A";
-	const char for_kolibri[] = "for Kolibri OS";
+	const char for_kolibri[] = "for KolibriOS";
 	const char press_enter[] = "press ENTER to start the game";
 	const char press_g[]     = "<press <g> to switch graphics mode>";
 	const char press_a[]     = "<press <a> to turn on/off animation>";
@@ -341,7 +341,7 @@ void draw_window(void){
 		kos_DrawBar(631-151,0,151,480,0xEEEEEE);
 
 		kos_WriteTextToWindow(500,30,0x80, 0, (char*)k_o_s_i_l_2,19);
-		kos_WriteTextToWindow(517,40,0x80, 0, (char*)for_kolibri,14);
+		kos_WriteTextToWindow(517,40,0x80, 0, (char*)for_kolibri,13);
 
 		kos_WriteTextToWindow(495,80,0x80, 0, (char*)level_label,6);
 		kos_DisplayNumberToWindow(level,3,605,80,0x0000FF,nbDecimal,false);
@@ -392,7 +392,7 @@ void draw_window(void){
 		}
 
                 kos_WriteTextToWindow(255, 200,0x80, 0xFFFFFF, (char*)k_o_s_i_l_k, 19);
-                kos_WriteTextToWindow(290, 220,0x80, 0xFFFFFF, (char*)for_kolibri, 14);
+                kos_WriteTextToWindow(290, 220,0x80, 0xFFFFFF, (char*)for_kolibri, 13);
                 kos_WriteTextToWindow(239, 240,0x80, 0xFFFFFF, (char*)press_enter, 30);
                 kos_WriteTextToWindow(30,  380,0x80, 0xFFFFFF, (char*)press_g, 53);
                 kos_WriteTextToWindow(30,  400,0x80, 0xFFFFFF, (char*)press_a, 41);
@@ -436,7 +436,7 @@ void draw_window(void){
 			}
 		}
 
-		kos_WriteTextToWindow(40,40,0x80, 0xFFFFFF, (char*)windowTitle,22);
+		kos_WriteTextToWindow(40,40,0x80, 0xFFFFFF, (char*)windowTitle,21);
 		kos_WriteTextToWindow(40,60,0x80, 0xFFFFFF, (char*)version,12);
 		kos_WriteTextToWindow(40,75,0x80, 0xFFFFFF, "________________________________________",40);
 	   

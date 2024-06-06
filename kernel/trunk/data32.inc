@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 keymap:
@@ -47,8 +45,9 @@ keymap_alt:
      db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
+; Language support for locales: ru_RU (UTF-8), es_ES (data32sp.inc), et_EE (data32et.inc), en_US.
 
-if lang eq ru
+if lang eq ru_RU
   boot_initirq      cp866 'Инициализация IRQ',0
   boot_picinit      cp866 'Инициализация PIC',0
   boot_v86machine   cp866 'Инициализация системной V86 машины',0
@@ -90,11 +89,11 @@ if lang eq ru
 if preboot_blogesc
   boot_tasking      cp866 'Все готово для запуска, нажмитре ESC для старта',0
 end if
-else if lang eq sp
+else if lang eq es_ES
   include 'data32sp.inc'
-else if lang eq et
+else if lang eq et_EE
   include 'data32et.inc'
-else
+else ; Default to en_US
   boot_initirq      db   'Initialize IRQ',0
   boot_picinit      db   'Initialize PIC',0
   boot_v86machine   db   'Initialize system V86 machine',0
@@ -141,7 +140,7 @@ start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
 
 msg_unresolved db 'unresolved ',0
 ;msg_module     db 'in module ',0
-;if ~ lang eq sp
+;if ~ lang eq es_ES
 ;msg_version    db 'incompatible driver version',13,10,0
 ;msg_www        db 'please visit www.kolibrios.org',13,10,0
 ;end if
@@ -160,10 +159,10 @@ szIMPORTS      db 'IMPORTS',0
 read_firstapp  db '/sys/'
 firstapp       db '/sys/LAUNCHER',0
 notifyapp      db '/sys/@notify',0
-if lang eq ru
+if lang eq ru_RU
 ud_user_message  cp866 'Ошибка: неподдерживаемая инструкция процессора',0
 mtrr_user_message cp866 '"Обнаружена проблема с конфигурацией MTRR.\nПроизводительность может быть пониженной" -dW',0
-else if ~ lang eq sp
+else if ~ lang eq es_ES
 ud_user_message db 'Error: unsupported processor instruction',0
 mtrr_user_message db '"There is a problem with MTRR configuration.\nPerformance can be low" -dW',0
 end if
@@ -179,7 +178,7 @@ kernel_file_load:
 dev_data_path  db '/RD/1/DRIVERS/DEVICES.DAT',0
 ; { Patch by Coldy, For DLL autoload
 dll_lib_path  db '/SYS/LIB/DLL.OBJ',0
-dll_error_msg db '"DLL.OBJ not found!\nTerminate application!" -dE',0   
+dll_error_msg db '"DLL.OBJ not found!\nTerminate application!" -dE',0
 ; } End patch by Coldy, For DLL autoload
 align 4
 
@@ -200,35 +199,34 @@ MIN_DEFAULT_DLL_ADDR = 0x70000000
 dll_cur_addr   dd MIN_DEFAULT_DLL_ADDR
 
 
-align 4
-keyboard   dd SYSLANG
-
-if lang eq en
+if lang eq en_US        ; English (American)
   SYSLANG = 1
-else if lang eq fi
+else if lang eq fi_FI   ; Finnish
   SYSLANG = 2
-else if lang eq ge
+else if lang eq de_DE   ; German
   SYSLANG = 3
-else if lang eq ru
+else if lang eq ru_RU   ; Russian
   SYSLANG = 4
-else if lang eq fr
+else if lang eq fr_FR   ; French
   SYSLANG = 5
-else if lang eq et
+else if lang eq et_EE   ; Estonian
   SYSLANG = 6
-else if lang eq ua
+else if lang eq uk_UA   ; Ukrainian
   SYSLANG = 7
-else if lang eq it
+else if lang eq it_IT   ; Italian
   SYSLANG = 8
-else if lang eq be
+else if lang eq nl_BE   ; Flemish
   SYSLANG = 9
-else if lang eq sp
+else if lang eq es_ES   ; Spanish
   SYSLANG = 10
-else if lang eq ca
+else if lang eq ca_ES   ; Catalan
   SYSLANG = 11
 else
   display 'unsupported language specified',13,10
 end if
+align 4
 syslang    dd SYSLANG
+keyboard   dd SYSLANG
 
 boot_y     dd 10
 
@@ -511,7 +509,7 @@ IncludeUGlobals
 
 uglobals_size = $ - endofcode
 
-if ~ lang eq sp
+if ~ lang eq es_ES
 diff16 "end of .bss",0,$
 end if
 

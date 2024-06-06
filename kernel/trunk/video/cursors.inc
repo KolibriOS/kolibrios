@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 LOAD_FROM_FILE  = 0
@@ -1297,9 +1295,9 @@ align 4
 ;--------------------------------------
 align 4
 @@:
-;        DEBUGF  1, "K : SHIT HAPPENS: %x %x \n", ecx,ebx
+;        DEBUGF  1, "K : ERRORS HAPPEN: %x %x \n", ecx,ebx
         pop     ebx
-        jmp     .sh   ; SORRY! SHIT HAPPENS!
+        jmp     .sh   ; SORRY! ERRORS HAPPEN!
 ;--------------------------------------
 align 4
 .ok:

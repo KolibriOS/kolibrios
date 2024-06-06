@@ -872,7 +872,7 @@ TEST_REC_SIZE = 16
 LINE_DESCRIPTION_CHARS = 58
 TESTS_NUM     = ($ - results_table) / TEST_REC_SIZE - 1
 ;---------------------------------------------------------------------
-if lang eq it
+if lang eq it_IT
 	aDrawingWindow	db 'Window Of Type #3, 325x400 px',0
 	aDrawingBar	db 'Filled Rectangle, 100x250 px',0
 	aDrawingPicture db 'Picture, 90x123, px',0
@@ -899,7 +899,7 @@ if lang eq it
 	aComment1	db 'Attuale test',0
 	aComment2	db 'previous test',0
 	aCommentT	db 'Commenti',0
-else if lang eq ru
+else if lang eq ru_RU
 	aDrawingWindow  db 'Системное окно со скином, 325x400 px',0
 	aDrawingBar     db 'Закрашенный прямоугольник, 100x250 px',0
 	aDrawingPicture db 'Картинка, 90x123, px',0
@@ -959,7 +959,7 @@ system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
 ;---------------------------------------------------------------------
 head_f_i:
-if lang eq it
+if lang eq it_IT
 	head_f_l	db 'Errore Sistema',0
 else
 	head_f_l	db 'System error',0

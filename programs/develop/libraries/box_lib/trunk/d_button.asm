@@ -1,5 +1,5 @@
 ;**************************************************************
-; Dinamic Button Macro for Kolibri OS
+; Dinamic Button Macro for KolibriOS
 ; Copyright (c) 2009, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;

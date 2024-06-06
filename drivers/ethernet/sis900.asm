@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                    ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.       ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.       ;;
 ;; Distributed under terms of the GNU General Public License          ;;
 ;;                                                                    ;;
 ;;  Ethernet driver for KolibriOS                                     ;;
@@ -321,7 +321,7 @@ service_proc:
         cmp     al, byte[ebx + device.pci_bus]
         jne     @f
         cmp     ah, byte[ebx + device.pci_dev]
-        je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+        je      .find_devicenum                         ; Device is already loaded, let's find its device number
        @@:
         add     esi, 4
         loop    .nextdevice
@@ -345,10 +345,10 @@ service_proc:
         mov     [ebx + device.unload], unload
         mov     [ebx + device.name], my_service
 
-; 4k. Now, it's time to find the base io addres of the PCI device
+; 4k. Now, it's time to find the base io address of the PCI device
 ; TODO: implement check if bus and dev exist on this machine
 
-; Now, it's time to find the base io addres of the PCI device
+; Now, it's time to find the base io address of the PCI device
         stdcall PCI_find_io, [ebx + device.pci_bus], [ebx + device.pci_dev]
         mov     [ebx + device.io_addr], eax
 
@@ -491,7 +491,7 @@ reset:
         DEBUGF  2,"Could not attach int handler!\n"
         or      eax, -1
         ret
-       @@:   
+       @@:
 
 ;--------------------------------------------
 ; Disable Interrupts and reset Receive Filter

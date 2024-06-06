@@ -40,10 +40,10 @@ flagTextSm	db 'EnFiDeRuFrEtUaItBe'
 flagTextBg	db 'ENFIDERUFRETUAITBE'
 
 lsz m_text,\
-  ru, "å•≠Ó",\
-  en, "Menu",\
-  et, "MEN‹‹",\
-  sp, "Menu"
+  ru_RU, "å•≠Ó",\
+  en_US, "Menu",\
+  et_EE, "MEN‹‹",\
+  es_ES, "Menu"
 
 bootparam_printscreen	db 'DIRECT',0
 type_lang	db 0

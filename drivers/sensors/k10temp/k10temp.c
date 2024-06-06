@@ -13,7 +13,7 @@
  *   suggest that it provides reasonable temperature values.
  */
 
-/* Ported for Kolibri OS by turbocat (Maxim Logaeav). 2021 */
+/* Ported for KolibriOS by turbocat (Maxim Logaeav). 2021 */
 /* Thanks: dunkaist, punk_joker, doczom. */
 
 #include <ddk.h>

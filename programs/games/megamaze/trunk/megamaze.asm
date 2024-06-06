@@ -24,7 +24,7 @@ macro icall lbl
   dd	 end_mem		 ; memory for app
   dd	 stack_end		  ; esp
   dd	 0x0 , 0x0		 ; I_Param , I_Icon
-lang fix ru
+lang fix ru_RU
 include "macros.inc"
 purge mov
 ;include "../../../debug.inc"

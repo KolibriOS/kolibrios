@@ -237,7 +237,7 @@ run_but txt_button 0,5,20,33,2,0,0x90000000,run_but_text,
 input_fn edit_box 0,5,5,0xffffff,0x6a9480,0,0xaaaaaa,0x90000000,511,fn,mouse_dd,ed_focus+ed_always_focus
 ;mouse_flag: dd 0x0
 input_fn_end:
-if lang eq ru
+if lang eq ru_RU
 	hello db 'Введите полный путь к файлу и нажмите Enter',0
 	bad_file_sys db 'Неизвестная файловая система',0 ; 3
 	file_not_find db 'Файл не найден',0		 ; 5
@@ -250,7 +250,7 @@ if lang eq ru
 	run_ok db 'Программа успешно запущена',0
 	grab_text db 'Запуск программы',0
 	run_but_text db 'ЗАПУСТИТЬ',0
-else if lang eq it
+else if lang eq it_IT
 	hello db 'Inserisci percorso completo al file e premi <Enter>',0
 	bad_file_sys db 'Filesysrem sconosciuto',0 	       ; 3
 	file_not_find db 'File non trovato',0		       ; 5

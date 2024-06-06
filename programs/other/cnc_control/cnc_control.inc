@@ -56,7 +56,7 @@ txt_err_no_1_point_sel db 'Выберите не больше одной точки.',0
 txt_min_x db 'min x: ',0
 txt_min_y db 'min y: ',0
 
-if lang eq ru
+if lang eq ru_RU
 ;
 ; rus
 ;

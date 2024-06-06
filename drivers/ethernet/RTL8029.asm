@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2015. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  RTL8029/ne2000 driver for KolibriOS                            ;;
@@ -234,7 +234,7 @@ proc service_proc stdcall, ioctl:dword
         cmp     al, byte[ebx + device.pci_bus]
         jne     @f
         cmp     ah, byte[ebx + device.pci_dev]
-        je      .find_devicenum                         ; Device is already loaded, let's find it's device number
+        je      .find_devicenum                         ; Device is already loaded, let's find its device number
        @@:
         add     esi, 4
         loop    .nextdevice
@@ -248,7 +248,7 @@ proc service_proc stdcall, ioctl:dword
         movzx   ecx, byte[eax+2]
         mov     [ebx + device.pci_dev], ecx
 
-; Now, it's time to find the base io addres of the PCI device
+; Now, it's time to find the base io address of the PCI device
 
         stdcall PCI_find_io, [ebx + device.pci_bus], [ebx + device.pci_dev]
         mov     [ebx + device.io_addr], eax
@@ -841,7 +841,7 @@ int_handler:
 
 ; calculate packet length in ecx
         shr     ecx, 16
-        sub     ecx, 4                                  ; CRC doesnt count as data byte
+        sub     ecx, 4                                  ; CRC doesn't count as data byte
         mov     edi, [esp+4]
         mov     [edi + NET_BUFF.length], ecx
 

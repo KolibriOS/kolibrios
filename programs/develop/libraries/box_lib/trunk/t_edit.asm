@@ -1,5 +1,5 @@
 ; макрос для системной библиотеки box_lib.obj
-; элемент TextEditor для Kolibri OS
+; элемент TextEditor для KolibriOS
 ; файл последний раз изменялся 12.01.2021 IgorA
 ; на код применена GPL2 лицензия
 
@@ -52,7 +52,7 @@ ends
 ted_symbol_space db 32 ;ascii код пробела, иногда бывает нужен в коде
 ted_symbol_tab db 26 ;ascii код стрелки вправо, используется для рисования табуляции в режиме показа невидимых символов
 
-if lang eq ru
+if lang eq ru_RU
 
 txtRow db 'Строка',0
 txtCol db 'Знак',0

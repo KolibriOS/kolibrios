@@ -168,7 +168,7 @@ but_5:
   stdcall [mb_reinit],msgbox_5_2
   jmp still
 
-if lang eq ru
+if lang eq ru_RU
   txt1 db 'простое',0
   txt2 db '3 кнопки',0
   txt3 db '3 строки',0
@@ -190,7 +190,7 @@ end if
 msgbox_1:
   dw 0
   db 'MBox',0 ;+2 = +MB_TEXT_OFFSET
-if lang eq ru
+if lang eq ru_RU
   db 'Пример',0
   db 'Вижу',0 ;button1
 else
@@ -201,7 +201,7 @@ end if
 msgbox_2:
   dw 0
   db 'MBox 3 buttons',0 ;+2 = +MB_TEXT_OFFSET
-if lang eq ru
+if lang eq ru_RU
   db 'Пример с 3-мя кнопками',0
   db 'Да',0 ;button1
   db 'Отмена',0 ;button2
@@ -219,7 +219,7 @@ msgbox_2_funct:
 msgbox_3:
   dw 0
   db 'MBox 3 lines',0 ;+2 = +MB_TEXT_OFFSET
-if lang eq ru
+if lang eq ru_RU
   db 'Строка 1',13,'Строка 2',13,'Строка 3',0
   db '2020 г.',0 ;button1
 else
@@ -229,7 +229,7 @@ end if
   db 0
 msgbox_4:
   dw 0
-if lang eq ru
+if lang eq ru_RU
   db 'Введите день',0 ;+2 = +MB_TEXT_OFFSET
 else
   db 'Select day',0 ;+2 = +MB_TEXT_OFFSET
@@ -253,7 +253,7 @@ end if
   db '       @......@....@..@....@.....@@..@',13
   db '       @......@....@..@....@.........@',13
   db '        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@',0
-if lang eq ru
+if lang eq ru_RU
   db 'Пн',0,'Вт',0,'Ср',0,'Чт',0,'Пт',0,'Сб',0,'Воскресение',0
 else
   db 'Sun',0,'Mon',0,'Tue',0,'Wed',0,'Thu',0,'Fri',0,'Sat',0
@@ -261,7 +261,7 @@ end if
   db 0
 msgbox_5:
   dw 0
-if lang eq ru
+if lang eq ru_RU
   db 'Сообщение',0 ;+2 = +MB_TEXT_OFFSET
   db 'Выполняю процесс ...',0
   db 'Остановить',0
@@ -275,7 +275,7 @@ end if
   db 0
 msgbox_5_2:
   dw 0
-if lang eq ru
+if lang eq ru_RU
   db 'Сообщение',0 ;+2 = +MB_TEXT_OFFSET
   db 'Все закончено',0
   db 'Закрыть окно',0
@@ -326,7 +326,7 @@ fun_show_help:
   call draw_square
   ret
 sh_help db 0
-if lang eq ru
+if lang eq ru_RU
 txt_help db 'Помощь...'
 else
 txt_help db 'Help...'

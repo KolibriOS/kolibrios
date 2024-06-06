@@ -2504,7 +2504,7 @@ Returned value:
 Parameters:
   * eax = 54 - function number
   * ebx = 1 - subfunction number
-  * eсx = slot number
+  * ecx = slot number
 Returned value:
   * eax = if successful - pointer to a memory with data
   * eax = 1 - error
@@ -2523,7 +2523,7 @@ Remarks:
 Parameters:
   * eax = 54 - function number
   * ebx = 2 - subfunction number
-  * eсx = the number of bytes to be copied
+  * ecx = the number of bytes to be copied
   * edx = a pointer to a buffer for data to be copied
 Returned value:
   * eax = 0 - success

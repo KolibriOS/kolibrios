@@ -134,7 +134,7 @@ TM_drawm:
 TM_level:
 file 'tam.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	TM_help mstr \
 	' Тесей (зеленый квадрат) должен убежать из',\
 	'лабиринта. За ним гонится механический Минотавр',\

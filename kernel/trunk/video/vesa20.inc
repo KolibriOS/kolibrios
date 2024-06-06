@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2023. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;  VESA20.INC                                                  ;;
@@ -11,13 +11,12 @@
 ;;  Alexey, kgaz@crosswindws.net                                ;;
 ;;  - Voodoo compatible graphics                                ;;
 ;;  Juan M. Caravaca                                            ;;
-;;  - Graphics optimimizations eg. drawline                     ;;
+;;  - Graphics optimimizations e.g. drawline                    ;;
 ;;                                                              ;;
 ;;  See file COPYING for details                                ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 uglobal
 align 4
@@ -368,7 +367,7 @@ put_image_end_16_new:
 
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel_new.1
-        cmp     ecx, -1                 ; SHIT HAPPENS?
+        cmp     ecx, -1                 ; MISTAKES HAPPEN?
         jne     .no_mouse_area
 
         mov     ecx, [esp]
@@ -505,7 +504,7 @@ put_image_end_24_new:
 
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel_new.1
-        cmp     ecx, -1         ; SHIT HAPPENS?
+        cmp     ecx, -1         ; MISTAKES HAPPEN?
         jne     .no_mouse_area
 
         mov     ecx, [esp]

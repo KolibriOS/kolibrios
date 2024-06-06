@@ -28,6 +28,7 @@
 static char **_Argv; //!!! simplest way to make your own variable
 
 unsigned char compilerstr[]="SPHINX C-- 0.239";
+char opath[4096];
 char *rawfilename;					/* file name */
 char *rawext;
 LISTCOM *listcom;
@@ -137,7 +138,7 @@ const char *usage[]={
 "-SYM  COM file symbiosis              -LST  create assembly listing",
 "-SYS  device (SYS) file               -B32  32bit binary files",
 "-MEOS executable file for MeOS        -MAP  create function map file",
-"-EXT= <ext> set file extension",
+"-EXT= <ext> set file extension        -OPATH output file path",
 "",
 "                           MISCELLANEOUS",
 "-HELP -H -? help, this info           -WORDS list of C-- reserved words",
@@ -168,7 +169,7 @@ const char *dir[]={
 #ifdef OPTVARCONST
 	"ORV",
 #endif
-   "MAP",  "WE",   "EXT",   NULL};
+   "MAP",  "WE",   "EXT",   "OPATH", NULL};
 
 enum {
 	c_me,    c_key,     c_sym,   c_lasm,   c_endinfo=c_lasm,
@@ -191,7 +192,7 @@ enum {
 #ifdef OPTVARCONST
 	c_orv,
 #endif
-	c_map,   c_we,      c_ext,   c_end};
+	c_map,   c_we,      c_ext,   c_opath, c_end};
 
 #define NUMEXT 6	//число разрешенных расширений компилируемого файла
 char extcompile[NUMEXT][4]={"c--","cmm","c","h--","hmm","h"};
@@ -1066,6 +1067,9 @@ nexpardll:
 					strcpy(outext,BackString(ptr)); //***lev***
 					extflag=FALSE; //чтобы расширение не перезабивалось другими ключами, если они идут позже
 					break;  //***lev***
+                case c_opath:
+                    strcpy(opath,BackString(ptr));
+                    break;
 			}
 			break;
 		}
@@ -1719,10 +1723,12 @@ FILE *CreateOutPut(char *ext,char *mode)
 {
 char buf[256];
 FILE *diskout;
-    if(ext && strlen(ext)) {
+    if (*opath) {
+		strcpy(buf,opath);
+    } else if(ext && strlen(ext)) {
         sprintf(buf,"%s.%s",rawfilename,ext);
     } else {
-        strcpy(buf, rawfilename);
+        strcpy(buf,rawfilename);
     }
     
 	if((diskout=fopen(buf,mode))==NULL){

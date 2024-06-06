@@ -1950,7 +1950,7 @@ _7z.decode:
         call    [SayErr]
         jmp     return.clear
 iglobal
-if lang eq ru
+if lang eq ru_RU
 aUnknownMethod  db      'Неизвестный метод:'
 else
 aUnknownMethod  db      'Unknown method:'

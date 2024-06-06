@@ -7,7 +7,7 @@ INCLUDES = string.format(" -I. -I. -I%s/include -I%s/include/linux -I%s/include/
 
 DEFINES = [[ -D__KERNEL__ -DGEODE_LOG="\"/tmp0/1/geode.log"\" -DCONFIG_X86_32 -DCONFIG_X86_L1_CACHE_SHIFT=6 -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE -DCONFIG_PRINTK -DCONFIG_PCI ]]
 CFLAGS =  " -Os -fomit-frame-pointer -fno-builtin-printf " .. DEFINES
-LDFLAGS = " -nostdlib -shared -s --image-base 0 --file-alignment 512 --section-alignment 4096 -L../../ddk "
+LDFLAGS = " -nostdlib -shared -s --image-base 0 --file-alignment 512 --section-alignment 4096 -L" .. tup.getvariantdir() .. "/../../ddk "
 
 NAME = "geode.sys"
 

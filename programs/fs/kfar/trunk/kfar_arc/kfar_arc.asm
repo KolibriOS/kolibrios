@@ -1406,7 +1406,7 @@ azError	db	'zError',0
 acalc_crc32	db	'calc_crc32',0
 
 ; common strings
-if lang eq ru
+if lang eq ru_RU
 aContinue	db	'Продолжить',0
 aCancel 	db	'Отмена',0
 aHeaderError	db	'Ошибка в заголовке архива',0

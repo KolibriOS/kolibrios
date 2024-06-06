@@ -1,11 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2022. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 GREEDY_KERNEL  = 0
@@ -772,7 +770,7 @@ common_app_entry:
         test    ebp, ebp
         jz      .exit
 ; APPDATA.exec_params have first thread only,
-; so second and next threads don't get here (they jump to .exit) 
+; so second and next threads don't get here (they jump to .exit)
         stdcall map_process_image, [ebp + APP_HDR._emem],\
                 [ebp + APP_HDR.img_base], [ebp + APP_HDR.img_size]
         mov     esi, [ebp + APP_HDR.path_string]
@@ -826,10 +824,10 @@ common_app_entry:
         mov     [tls_data_l+4], al
         mov     [tls_data_l+7], ah
         mov     dx, app_tls
-        mov     fs, dx       
-; { Patch by Coldy, For DLL autoload    
-.try_load_dll:         
-; Test app header version 
+        mov     fs, dx
+; { Patch by Coldy, For DLL autoload
+.try_load_dll:
+; Test app header version
         mov     ecx, dword[ebp + APP_HDR.img_base]
         cmp     dword[ecx+8], 2
         jne     .cleanup
@@ -838,26 +836,26 @@ common_app_entry:
         stdcall load_library, dll_lib_path, 0
         cmp     eax, 0
         jne     @f
-; Something went wrong (TODO: Next 2 line is code copy after .cleanup)  
+; Something went wrong (TODO: Next 2 line is code copy after .cleanup)
         stdcall free_kernel_space, [ebp+APP_HDR.img_base]
         stdcall kernel_free, ebp
         DEBUGF 1, 'K : DLL.OBJ not found! Terminate application!\n'
         mov     ebx, dll_error_msg
         mov     ebp, notifyapp
         call    fs_execute_from_sysdir_param
-; Terminate process (TODO: Need jump to .cleanup after sys_end ?) 
+; Terminate process (TODO: Need jump to .cleanup after sys_end ?)
         call    sys_end
-        
-@@:       
+
+@@:
 ; Find APP_STARTUP_THUNK in DLL.OBJ
         sub     eax, 4
         mov     eax, [eax]
-        
+
 ;.change_eip:
         mov     ecx, [current_slot]
         mov     ecx, [ecx + APPDATA.pl0_stack]
         mov     [ecx+REG_EIP], eax
-        
+
 ; } End patch by Coldy, For DLL autoload
 .cleanup:
         stdcall free_kernel_space, [ebp+APP_HDR.img_base]

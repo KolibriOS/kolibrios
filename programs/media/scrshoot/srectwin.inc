@@ -369,7 +369,7 @@ rect_input_labels:
 rect_input_labels_end:
 
 rect_input_labels_text:
-if lang eq ru
+if lang eq ru_RU
 .left db 'Отступ слева:',0
 .top  db 'Отступ сверху:',0
 .width  db 'Ширина:',0
@@ -386,7 +386,7 @@ use_rect_active_window check_box2 (10 shl 16)+10,(85 shl 16) +10,5,cl_white,0,0,
 riw_check_boxes_text, ch_flag_bottom
 riw_check_boxes_end:
 
-if lang eq ru
+if lang eq ru_RU
 riw_check_boxes_text db 'Использовать область активного окна',0
 riw_grab_text db 'Координаты и размеры области:',0
 else

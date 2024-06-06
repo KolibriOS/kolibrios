@@ -1,3 +1,7 @@
 if tup.getconfig("NO_FASM") ~= "" then return end
+HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../../programs" or tup.getconfig("HELPERDIR")
+tup.include(HELPERDIR .. "/use_fasm.lua")
+add_include(tup.getvariantdir())
+
 tup.rule("default.dtp.asm", 'fasm "%f" "%o"', "default.dtp")
-tup.rule({"FlowerMoon.asm", extra_inputs = {"default.dtp"}}, 'fasm "%f" "%o" ' .. tup.getconfig("KPACK_CMD"), "FlowerMoon.skn")
+tup.rule({"FlowerMoon.asm", extra_inputs = {"default.dtp"}}, FASM .. ' "%f" "%o" ' .. tup.getconfig("KPACK_CMD"), "FlowerMoon.skn")

@@ -1,11 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2016. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision$
 
 ERROR_SUCCESS        = 0
 ERROR_DISK_BASE      = 1
@@ -156,7 +155,7 @@ proc file_system_is_operation_safe stdcall, inf_struct_ptr: dword
         jnz     .case2_3
         ;mov     ecx, 32
         cmp     dword [ebx + 8], 1 ; check encoding
-        jbe     .case1_304 ; if encdoing <= 1 i.e cpp866 
+        jbe     .case1_304 ; if encdoing <= 1 i.e cpp866
         mov     ecx, 560 ; if unicode then bdvk block len is 560 bytes
         jmp     .case1_end
 .case1_304:
@@ -187,7 +186,7 @@ proc file_system_is_operation_safe stdcall, inf_struct_ptr: dword
 .switch_none:
         cmp     ecx, ecx
         jmp     .ret
-      
+
 .end_switch:
         stdcall is_region_userspace, edx, ecx
 .ret:

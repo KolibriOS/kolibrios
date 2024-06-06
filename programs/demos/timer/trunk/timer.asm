@@ -137,7 +137,7 @@ draw_window:
 
 ; DATA AREA
 
-if lang eq ru
+if lang eq ru_RU
     title   db   '’€‰Œ…',0
 else
     title   db   'TIMER',0

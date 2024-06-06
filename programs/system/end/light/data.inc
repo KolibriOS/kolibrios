@@ -13,7 +13,7 @@ TEXT_ENTER: db 'Enter',0
 TEXT_END: db 'End',0
 TEXT_CANCEL: db 'x',0
 ;---------------------------------------------------------------------
-if lang eq ru
+if lang eq ru_RU
     TEXT_WTITLE:  db 'Завершение работы',0
     TEXT_RDSAVE1: db 'Сохранить изменения, сделанные в',0
     TEXT_RDSAVE2: db 'процессе работы в системе (Ctrl+S)',0
@@ -21,7 +21,7 @@ if lang eq ru
     TEXT_REBOOT:  db 'Перезагрузка',0
     TEXT_OFF:     db 'Выключение',0
     TEXT_SAVING:  db 'Сохранение образа...',0
-else if lang eq ge
+else if lang eq de_DE
     TEXT_WTITLE:  db 'Shutdown computer',0
     TEXT_RDSAVE1: db 'Save all changes that were done',0
     TEXT_RDSAVE2: db 'during system work (Ctrl+S)',0
@@ -29,7 +29,7 @@ else if lang eq ge
     TEXT_REBOOT:  db 'Neustart',0
     TEXT_OFF:     db 'Beenden',0
     TEXT_SAVING:  db 'Saving RAM-drive...',0
-else if lang eq it
+else if lang eq it_IT
     TEXT_WTITLE:  db 'Shutdown computer',0
     TEXT_RDSAVE1: db 'Save all changes that were done',0
     TEXT_RDSAVE2: db 'during system work (Ctrl+S)',0

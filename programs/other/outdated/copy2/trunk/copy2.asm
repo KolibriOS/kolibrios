@@ -404,7 +404,7 @@ macro strtbl name,[string]
     size = $ - str
  }
 
-if lang eq ru
+if lang eq ru_RU
 strtbl errors,\
        "файл скопирован успешно",\
        "(чтение) не задана база жд",\
@@ -421,7 +421,7 @@ strtbl errors,\
        "?",\
        "(запись) файл не найден",\
        "(запись) неизвестная ошибка"
-else if lang eq en
+else if lang eq en_US
 strtbl errors,\
        "Success!",\
        "(read) no hd base or partition defined",\

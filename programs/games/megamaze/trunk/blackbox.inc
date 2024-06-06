@@ -261,7 +261,7 @@ BB_mouse:
 BB_level:
 	db 0
 
-if lang eq ru
+if lang eq ru_RU
 	BB_help mstr \
 	'Ваша цель состоит в том, чтобы обнаружить',\
 	'положение пяти атомов в черном ящике, посылая',\

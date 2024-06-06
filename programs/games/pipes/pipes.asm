@@ -322,7 +322,7 @@ or   esi,0x50000000
 mcall 47, 0x20000, [time], <60,395>
 mov  ebx,0x50000
 mov  ecx,[score]
-if lang eq et
+if lang eq et_EE
 add  edx,88 shl 16
 else
 add  edx,80 shl 16
@@ -556,7 +556,7 @@ pusha
 ;=================================================
 ; DATA - LABELS
 ;=================================================
-if lang eq et
+if lang eq et_EE
 lbl_title    db 'Torud',0
 lbl_gameover db 'M ä n g   L ä b i !',0
 lbl_new_game db 'Alusta enne uut mängu',0

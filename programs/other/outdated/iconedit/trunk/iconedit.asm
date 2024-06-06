@@ -115,7 +115,7 @@ no_lit:
   button_4:
     cmp  ah,4                   ; was it button 4 - LOAD
     jne  button_5               ; no then try button 5
-    mov  byte [editstate],0     ; dont want to be in edit mode
+    mov  byte [editstate],0     ; don't want to be in edit mode
     call draw_filename          ; update filename
     call load_file              ; load the file
     call draw_icon              ; update icon screen
@@ -124,16 +124,16 @@ no_lit:
   button_5:
     cmp  ah,5                   ; was it button 5 - SAVE
     jne  button_6               ; no then try button 6
-    mov  byte [editstate],0     ; dont want to be in edit mode
+    mov  byte [editstate],0     ; don't want to be in edit mode
     call draw_filename          ; update filename
     call save_file              ; save the file
     jmp  check_mouse            ; start loop again
   button_6:
     cmp  ah,6                   ; was it button 6 - CLEAR ICON
     jne  button_7               ; no then try button 7
-    mov  byte [editstate],0     ; dont want to be in edit mode
+    mov  byte [editstate],0     ; don't want to be in edit mode
     call draw_filename          ; update filename
-    call clear_graph_icon      ; clear the icon and edit screens
+    call clear_graph_icon       ; clear the icon and edit screens
     jmp  check_mouse
 
   button_7:
@@ -179,7 +179,7 @@ draw_window:
     mov  edx,0x14ffffff         ; color of work area 0x00RRGGBB
     mov  edi,title              ; WINDOW LABEL
     mcall
-                        
+
     mov  eax,13                 ; function 13 : draw bar
     mov  ebx,5*65536+window_x_size-9        ; [x start] *65536 + [x size]
     mov  ecx,(window_y_size-20)*65536+16    ; [y start] *65536 + [y size]
@@ -400,7 +400,7 @@ next_b_w_inner:
     jne  next_b_w_outer
 
     cmp  [first_run],0          ; is it the first window draw
-    jne  dont_load              ; no then dont reload the file
+    jne  dont_load              ; no then don't reload the file
     call load_file              ; load initial file
     mov  [first_run],1          ; first window draw done
 dont_load:

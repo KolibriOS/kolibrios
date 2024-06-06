@@ -226,7 +226,7 @@ LP_draw_alert:
 LP_level:
 file 'loops.bin'
 
-if lang eq ru
+if lang eq ru_RU
 	LP_help mstr \
 	'Через все клетки прямоугольника необходимо',\
 	'провести замкнутую ломаную. Проходя через черный',\

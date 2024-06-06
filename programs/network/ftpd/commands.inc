@@ -4,7 +4,7 @@ struct  thread_data
                         rb 1024
         stack           rb 0
 
-        home_dir        rb 1024         ; home directory in wich the user is locked, asciiz
+        home_dir        rb 1024         ; home directory in which the user is locked, asciiz
         work_dir        rb 1024         ; working directory, must at all times begin and end with a '/', asciiz
         fpath           rb 1024*3       ; file path, combination of home_dir, work_dir and filename
                                         ; Will also be used to temporarily store username
@@ -27,7 +27,7 @@ ends
 ;------------------------------------------------
 ; parse_cmd
 ;
-; Internal function wich uses the 'commands'
+; Internal function which uses the 'commands'
 ;  table to call an appropriate cmd_xx function.
 ;
 ; input: esi = ptr to ascii commands
@@ -305,7 +305,7 @@ open_datasock:
         add     esp, 4
         jmp     socketerror
 
-; If we are still in passive_wait, it's time we accept an incomming call..
+; If we are still in passive_wait, it's time we accept an incoming call...
   .not_active:
         cmp     [ebp + thread_data.mode], MODE_PASSIVE_WAIT
         jne     .socketerror
@@ -358,7 +358,7 @@ cmdCDUP:
         jz      permission_denied
 
         cmp     byte [ebp + thread_data.work_dir+1], 0  ; are we in "/" ?
-        je      .done                                   ; if so, we cant go up..
+        je      .done                                   ; if so, we can't go up.
 
 ; find the end of asciiz string work_dir
         mov     ecx, 1024

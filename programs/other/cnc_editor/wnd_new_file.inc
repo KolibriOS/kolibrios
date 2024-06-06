@@ -572,7 +572,7 @@ txt_05: db 'G0 Z'
 txt_06: db 'G0 M5 X0 Y0 Z'
 .z: rb 12
 
-if lang eq ru
+if lang eq ru_RU
 capt_n_file db 'Создать новый файл',0
 capt_sel_fig db 'Выберите фигуру:',0
 txt_circle: db 'Окружность'

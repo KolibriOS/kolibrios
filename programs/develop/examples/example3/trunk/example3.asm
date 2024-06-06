@@ -196,7 +196,7 @@ draw_data:
 x_size:       dd 381               ; window x size
 y_size:       dd 200               ; window y size
 
-if lang eq ru
+if lang eq ru_RU
 window_text   db 'Пример меню',0
 button_no     db 'Кнопка N:'
 else
@@ -210,7 +210,7 @@ main_menu_Edit dd 0
 main_menu_Test dd 0
 main_menu_Help dd 0
 
-if lang eq ru
+if lang eq ru_RU
 
 sz_File db 'Файл',0
 sz_Load db 'Открыть',0

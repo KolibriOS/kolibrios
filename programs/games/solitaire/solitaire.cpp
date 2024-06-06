@@ -23,7 +23,7 @@ struct List{
 	List_Node *foundation_head;//points first foundation list
 	List_Node *board_head;//points first board list
 	FILE *fptr;
-	
+
 	void create();// Includes create toplist, boardlists and foundlists
 	void create_toplist();
 	void create_boardlists();
@@ -97,7 +97,7 @@ int main()
 
 		if(!islem.top_head)// checking top list empty or not
 			islem.istopempty = true;
-		
+
 		List_Node *traverse;
 		traverse = islem.board_head;
 		int counter = 0;
@@ -121,7 +121,7 @@ int main()
 			break;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -156,21 +156,21 @@ void List::create_toplist(){
 
 		fscanf(fptr, " %c %s %s ", &tempsuit, tempvalue, tempisup);
 		newnode->suit = tempsuit;
-		
+
 		/*Changing type of value char array to integer*/
 		if(tempvalue[0] == 'A')	newnode->value = 1;
 		else if(tempvalue[0] == 'J')newnode->value = 11;
 		else if(tempvalue[0] == 'Q')newnode->value = 12;
 		else if(tempvalue[0] == 'K')newnode->value = 13;
-		else 
+		else
 			sscanf(tempvalue, "%d", &newnode->value);
-		
+
 		/*Changing type of isup char array to boolean*/
 		if(strcmp(tempisup, "Up") == 0)
 			newnode->isup = true;
 		if(strcmp(tempisup, "Down") == 0)
 			newnode->isup = false;
-		
+
 		if(top_head == NULL){//add first node to empty top list
 			top_head = newnode;
 			final = top_head;
@@ -188,7 +188,7 @@ void List::create_boardlists(){
 	char tempcolor, tempsuit, tempvalue[4], tempisup[8], garbage[10];
 
 	int index = 1;// This index represents nth board list
-	
+
 	newboardlist = new List_Node;// creating first boardlist node
 	board_head = newboardlist;
 	boardlist_final = newboardlist;
@@ -219,7 +219,7 @@ void List::create_boardlists(){
 		else if(tempvalue[0] == 'J')newnode->value = 11;
 		else if(tempvalue[0] == 'Q')newnode->value = 12;
 		else if(tempvalue[0] == 'K')newnode->value = 13;
-		else 
+		else
 			sscanf(tempvalue, "%d", &newnode->value);
 
 		if(strcmp(tempisup, "Up") == 0)
@@ -281,7 +281,7 @@ void List::printkart(Card_Node *kart){//prints datas of kart node
 void List::printlists(){
 	clear_screen();
 	Card_Node *ct[7];// Board List Card Node Traverser; ct[0] for 1.list, ct[1] for 2.list ....
-	Card_Node *foundct[4];//Found List Card Node Traverser, foundct[0] = Spades, foundct[1] = Hearts, foundct[2] = Diamonds, foundct[3] = Clubs 
+	Card_Node *foundct[4];//Found List Card Node Traverser, foundct[0] = Spades, foundct[1] = Hearts, foundct[2] = Diamonds, foundct[3] = Clubs
 	Card_Node *topct;// TopList Card Traverser
 	List_Node *listtraverse;// List Node Traverser
 
@@ -306,7 +306,7 @@ void List::printlists(){
 	}
 
 	/*Printing Board List's Cards*/
-	for(int i = 0; i < 19; i++){//this for loop traverses lists and goes 19 times down, a list can include cards up to 19 (6 down cards + 13 up cards) 
+	for(int i = 0; i < 19; i++){//this for loop traverses lists and goes 19 times down, a list can include cards up to 19 (6 down cards + 13 up cards)
 		for(int j = 0; j < 7; j++)
 		{
 			if(ct[j]){// if ct[j] is not null, print it and go to next node
@@ -317,7 +317,7 @@ void List::printlists(){
 			else// if ct[j] is null, print a tab
 				printf("\t");
 		}
-		if(ct[0] || ct[1] || ct[2] || ct[3] || ct[4] || ct[5] || ct[6])// After printing a line; 
+		if(ct[0] || ct[1] || ct[2] || ct[3] || ct[4] || ct[5] || ct[6])// After printing a line;
 			printf("\n");//if at least one card is not null: go new line
 		else
 			break;// if all cards in line are null: break outer for loop
@@ -343,7 +343,7 @@ void List::printlists(){
 			else// if foundct[j] is null, print a tab
 				printf("\t");
 		}
-		if(foundct[0] || foundct[1] || foundct[2] || foundct[3])// After printing a line; 
+		if(foundct[0] || foundct[1] || foundct[2] || foundct[3])// After printing a line;
 			printf("\n");//if at least one card is not null: go new line
 		else
 			break;// if all cards in line are null: break outer for loop
@@ -458,7 +458,7 @@ void List::goster_TopToFoundation(){// wants input from use
 	else if(tempvalue[0] == 'J')Symbol_of_numbers = 11;
 	else if(tempvalue[0] == 'Q')Symbol_of_numbers = 12;
 	else if(tempvalue[0] == 'K')Symbol_of_numbers = 13;
-	else 
+	else
 		sscanf(tempvalue, "%d", &Symbol_of_numbers);
 
 	TopToFoundation(Symbol_of_colors, Symbol_of_suits, Symbol_of_numbers);
@@ -472,7 +472,7 @@ void List::TopToFoundation(char s_color, char s_suit, int s_value){
 		cout << "Top list is empty, you cannot make this move." << endl;
 		return;
 	}
-		
+
 	cardtraverse = top_head;
 	cardtail = top_head;
 
@@ -527,7 +527,7 @@ void List::goster_TopToBoard(){// wants input from user for moving card top list
 	else if(tempvalue[0] == 'J')Symbol_of_numbers = 11;
 	else if(tempvalue[0] == 'Q')Symbol_of_numbers = 12;
 	else if(tempvalue[0] == 'K')Symbol_of_numbers = 13;
-	else 
+	else
 		sscanf(tempvalue, "%d", &Symbol_of_numbers);
 
 	cout << "Select the number of the destination Board List:";
@@ -544,7 +544,7 @@ void List::TopToBoard(int listindex, char s_color, char s_suit, int s_value){
 		cout << "Top list is empty, you cannot make this move." << endl;
 		return;
 	}
-		
+
 	cardtraverse = top_head;
 	cardtail = top_head;
 
@@ -600,7 +600,7 @@ void List::goster_BoardToBoard(){
 	else if(tempvalue[0] == 'J')Symbol_of_numbers = 11;
 	else if(tempvalue[0] == 'Q')Symbol_of_numbers = 12;
 	else if(tempvalue[0] == 'K')Symbol_of_numbers = 13;
-	else 
+	else
 		sscanf(tempvalue, "%d", &Symbol_of_numbers);
 	BoardToBoard(source, destination, Symbol_of_colors, Symbol_of_suits, Symbol_of_numbers);
 }
@@ -614,10 +614,10 @@ void List::BoardToBoard(int fromwhere, int towhere, char s_color, char s_suit, i
 	temp_head = sourcelisttraverse->cards;
 	cardtraverse = temp_head;
 	cardtail = temp_head;
-	
+
 
 	while(cardtraverse){
-		if(cardtraverse->isup)// Dont move cards if the entered card is down
+		if(cardtraverse->isup)// Don't move cards if the entered card is down
 			if(cardtraverse->color == s_color && cardtraverse->suit == s_suit  && cardtraverse->value == s_value){
 				willbemoved = cardtraverse;
 				break;
@@ -651,7 +651,7 @@ void List::BoardToBoard(int fromwhere, int towhere, char s_color, char s_suit, i
 		cardtail->next = willbemoved;
 		cout << "Wrong Movement!" << endl;
 	}
-	
+
 }
 
 void List::goster_BoardToFoundation(){
@@ -754,7 +754,6 @@ void List::close(){//Deletes all linked lists and linkedlists's all nodes
 		foundation_head = foundation_head->next;
 		delete listtraverse;
 	}
-	
+
 	fclose(fptr);//Closing reading txt file
 }
-

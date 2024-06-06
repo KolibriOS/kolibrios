@@ -28,17 +28,17 @@ end if
 
  ;===============================
 
-if lang eq ru
+if lang eq ru_RU
  title db "Открыть с помощью", 0
  browse_txt db "Обзор...", 0
  notify_txt db "'Incorrect ", '"', "/sys/settings/assoc.ini", '"', " file' -tE", 0
  checkbox_txt db "Использовать всегда", 0
-else if lang eq et
+else if lang eq et_EE
  title db "Open with", 0
  browse_txt db "Browse...", 0
  notify_txt db "'Incorrect ", '"', "/sys/settings/assoc.ini", '"', " file' -tE", 0
  checkbox_txt db "Always use selected program", 0
-else if lang eq it
+else if lang eq it_IT
  title db "Open with", 0
  browse_txt db "Browse...", 0
  notify_txt db "'Incorrect ", '"', "/sys/settings/assoc.ini", '"', " file' -tE", 0
