@@ -1038,8 +1038,7 @@ def handle_file(handled_files, asm_file_name, subdir="."):
         get_declarations(asm_file_contents, asm_file_name)
 
 if __name__ == "__main__":
-    link_root = "http://websvn.kolibrios.org/filedetails.php"
-    link_root += "?repname=Kolibri+OS&path=/kernel/trunk"
+    link_root = "https://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/kernel/trunk"
 
     # Dict where an identifier is assicoated with a string
     # The string contains characters specifying flags
