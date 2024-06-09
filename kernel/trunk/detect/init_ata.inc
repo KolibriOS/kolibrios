@@ -6,6 +6,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+;      clear the DRIVE_DATA table
+;      author - Mario79
+        xor     eax, eax
+        mov     edi, DRIVE_DATA
+        mov     ecx, DRIVE_DATA_SIZE/4
+        cld
+        rep stosd
 ;-----------------------------------------------------------------------------
 ; find the IDE controller in the device list
 ;-----------------------------------------------------------------------------
@@ -46,7 +53,6 @@ align 4
         pop     eax
 @@:
         DEBUGF  1, 'K : BAR0 IDE base addr %x\n', dx
-        mov     [StandardATABases], dx
         mov     [ecx+IDE_DATA.BAR0_val], dx
 ;--------------------------------------
         mov     dx, 0x3F4
@@ -73,7 +79,6 @@ align 4
         pop     eax
 @@:
         DEBUGF  1, 'K : BAR2 IDE base addr %x\n', dx
-        mov     [StandardATABases+2], dx
         mov     [ecx+IDE_DATA.BAR2_val], dx
 ;--------------------------------------
         mov     dx, 0x374

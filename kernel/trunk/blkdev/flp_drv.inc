@@ -12,13 +12,6 @@
 ; Source code author -  Kulakov Vladimir Gennadievich.
 ; Adaptation and improvement -  Mario79.
 
-give_back_application_data_1:
-        mov     esi, FDD_BUFF;FDD_DataBuffer  ;0x40000
-        mov     ecx, 128
-        cld
-        rep movsd
-        ret
-
 take_data_from_application_1:
         mov     edi, FDD_BUFF;FDD_DataBuffer  ;0x40000
         mov     ecx, 128
@@ -717,18 +710,38 @@ endg
 ; This function is called in boot process.
 ; It creates filesystems /fd and/or /fd2, if the system has one/two floppy drives.
 proc floppy_init
+;      search for FDDs and add them to the list of disks
+;      author - Mario79
+        mov     al, 0x10
+        out     0x70, al
+        mov     cx, 0xff
+.wait_cmos:
+        dec     cx
+        test    cx, cx
+        jnz     .wait_cmos
+        in      al, 0x71
+        test    al, al
+        jz      .no_fdd
+
+        push    eax ; b[esp]=al [esp+1..3]- ??
+
+        stdcall attach_int_handler, 6, FDCInterrupt, 0
+        DEBUGF  1, "K : Set Floppy IRQ6 return code %x\n", eax
+
         mov     ecx, floppy_mutex
         call    mutex_init
-; First floppy is present if [DRIVE_DATA] and 0xF0 is nonzero.
-        test    byte [DRIVE_DATA], 0xF0
+; First floppy is present if [esp] and 0xF0 is nonzero.
+        test    byte [esp], 0xF0
         jz      .no1
         stdcall disk_add, floppy_functions, floppy1_name, 1, DISK_NO_INSERT_NOTIFICATION
 .no1:
-; Second floppy is present if [DRIVE_DATA] and 0x0F is nonzero.
-        test    byte [DRIVE_DATA], 0x0F
+; Second floppy is present if [esp] and 0x0F is nonzero.
+        test    byte [esp], 0x0F
         jz      .no2
         stdcall disk_add, floppy_functions, floppy2_name, 2, DISK_NO_INSERT_NOTIFICATION
 .no2:
+        add     esp, 4
+.no_fdd:
         ret
 endp
 
