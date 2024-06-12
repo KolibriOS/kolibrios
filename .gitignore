@@ -1,3 +1,16 @@
+/contrib/sdk/lib/
+
+#C_Layer
+/contrib/C_Layer/Docs/html/
+/contrib/C_Layer/.vscode/
+/contrib/C_Layer/OBJ/*.obj
+
+# freetype o
+/contrib/sdk/sources/freetype/src/*.o
+
+# buf2d examples bin
+/programs/develop/libraries/buf2d/trunk/examples/bin/
+
 ### Windows ###
 Thumbs.db
 Thumbs.db:encryptable

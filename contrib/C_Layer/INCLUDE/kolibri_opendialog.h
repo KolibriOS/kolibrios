@@ -5,38 +5,55 @@ char sz_com_area_name[]    = "FFFFFFFF_open_dialog";
 char sz_dir_default_path[] = "/sys";
 char sz_start_path[]       = "/sys/File managers/opendial";
 
-enum open_dialog_mode {
-    OPEN,
-    SAVE,
-    SELECT
+enum open_dialog_mode
+{
+	/// @brief Open file
+	OPEN,
+
+	/// @brief Save file
+	SAVE,
+
+	/// @brief Select files
+	SELECT
 };
 
 typedef struct __attribute__ ((__packed__)) {
 	unsigned int size;
 	unsigned char end;
-}od_filter;
+} od_filter;
 
 typedef struct __attribute__ ((__packed__)) {
-    unsigned int mode;
+	/// @brief Dialogue opening mode, value from enum open_dialog_mode
+	unsigned int mode;
     char* procinfo;
     char* com_area_name;
     unsigned int com_area;
     char* opendir_path;
     char* dir_default_path;
-    char* start_path;
+
+	/// @brief path to the file open dialog
+	char* start_path;
     void (*draw_window)();
     unsigned int status;
-    char* openfile_path;
+
+	/// @brief path to the file to open
+	char* openfile_path;
     char* filename_area;
     od_filter* filter_area;
     unsigned short x_size;
     unsigned short x_start;
     unsigned short y_size;
     unsigned short y_start;
-}open_dialog;
+} open_dialog;
 
 void fake_on_redraw(void) {}
 
+/// @brief Create new opendialog
+/// @param mode Dialogue opening mode, value from enum open_dialog_mode
+/// @param tlx coord of dialog window
+/// @param tly coord of dialog window
+/// @param x_size dialog window width
+/// @param y_size dialog window height
 open_dialog* kolibri_new_open_dialog(unsigned int mode, unsigned short tlx, unsigned short tly, unsigned short x_size, unsigned short y_size)
 {
     open_dialog *new_opendialog = (open_dialog *)malloc(sizeof(open_dialog));
@@ -65,10 +82,17 @@ open_dialog* kolibri_new_open_dialog(unsigned int mode, unsigned short tlx, unsi
 	new_opendialog -> x_start = tlx;
 	new_opendialog -> y_size = y_size;
 	new_opendialog -> y_start = tly;
+	
 	return new_opendialog;
 }
 
+/// @brief Initialize proclib
 extern void kolibri_proclib_init();
+
 extern void (*OpenDialog_init)(open_dialog *) __attribute__((__stdcall__));
-extern void (*OpenDialog_start)(open_dialog *) __attribute__((__stdcall__));
+
+/// @brief Starts a dialog
+/// @param dialog Pointer to open_dialog struct
+extern void (*OpenDialog_start)(open_dialog *dialog) __attribute__((__stdcall__));
+
 #endif /* KOLIBRI_OPENDIALOG_H */

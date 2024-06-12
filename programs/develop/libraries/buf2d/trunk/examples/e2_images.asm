@@ -83,17 +83,17 @@ start:
 	mcall 40,0x27
 	mcall 48,3,sc,sizeof.system_colors ;получаем системные цвета
 
-	load_image_file fn_foto, image_data_foto,IMAGE_FILE0_SIZE
-	stdcall [buf2d_create_f_img], buf_0,[image_data_foto] ;создаем буфер
+	load_image_file fn_foto, image_data_foto, IMAGE_FILE0_SIZE
+	stdcall [buf2d_create_f_img], buf_0, [image_data_foto] ;создаем буфер
 	stdcall mem.Free,[image_data_foto] ;освобождаем память
 
-	load_image_file 'img0.png',image_data_gray,IMAGE_FILE1_SIZE
-	stdcall [buf2d_create_f_img], buf_1,[image_data_gray] ;создаем буфер
-	stdcall mem.Free,[image_data_gray] ;освобождаем память
+	load_image_file 'img0.png', image_data_gray, IMAGE_FILE1_SIZE
+	stdcall [buf2d_create_f_img], buf_1, [image_data_gray] ;создаем буфер
+	stdcall mem.Free, [image_data_gray] ;освобождаем память
 
 	load_image_file 'img1.png',image_data_rgb, IMAGE_FILE1_SIZE
 	stdcall [buf2d_create_f_img], buf_2,[image_data_rgb] ;создаем буфер
-	stdcall mem.Free,[image_data_rgb] ;освобождаем память
+	stdcall mem.Free, [image_data_rgb] ;освобождаем память
 
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8бит
 	stdcall [buf2d_conv_24_to_32],buf_2,buf_1 ;делаем буфер rgba 32бит

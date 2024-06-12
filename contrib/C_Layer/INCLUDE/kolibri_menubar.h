@@ -41,7 +41,7 @@ typedef struct
 
 
 static inline menubar* kolibri_menubar(menubar* bar, uint32_t x_w, uint32_t y_h, uint16_t sub_w, uint16_t sub_h, char **menutext,
-                                color_t sel_font, color_t unsel_font, color_t top_bg, color_t top_select, color_t sub_bg, color_t sub_select)
+                                       color_t sel_font, color_t unsel_font, color_t top_bg, color_t top_select, color_t sub_bg, color_t sub_select)
 {
     static char procinfo[1024];
     memset(bar, 0, sizeof(menubar));
@@ -52,12 +52,14 @@ static inline menubar* kolibri_menubar(menubar* bar, uint32_t x_w, uint32_t y_h,
     // count summary length
     char *pc, **mitem;
     int len = 0;
-    for(mitem = menutext; *mitem; mitem++) len += strlen(*mitem) + 1;
+    for(mitem = menutext; *mitem; mitem++)
+        len += strlen(*mitem) + 1;
 
     // copy menu items in needed format
     bar->text_pointer = malloc(len + 1);   // need to be freed manual at closing secondary windows with menu
     for (pc = bar->text_pointer, mitem = menutext; *mitem; pc += strlen(*mitem++) + 1)
         strcpy(pc, *mitem);
+        
     *pc = 0;
     bar->text_end = pc;
     bar->pos_pointer = strchr(bar->text_pointer, 0) + 1;
@@ -80,7 +82,7 @@ static inline menubar* kolibri_menubar(menubar* bar, uint32_t x_w, uint32_t y_h,
 }
 
 static inline menubar* kolibri_new_menubar(uint32_t x_w, uint32_t y_h, uint16_t sub_w, uint16_t sub_h, char **menutext,
-                                color_t sel_font, color_t unsel_font, color_t top_bg, color_t top_select, color_t sub_bg, color_t sub_select)
+                                           color_t sel_font, color_t unsel_font, color_t top_bg, color_t top_select, color_t sub_bg, color_t sub_select)
 {
     menubar *new_bar = (menubar*)malloc(sizeof(menubar));
     return kolibri_menubar(new_bar, x_w, y_h, sub_w, sub_h, menutext, sel_font, unsel_font, top_bg, top_select, sub_bg, sub_select);
@@ -96,8 +98,8 @@ static inline menubar* kolibri_menubar_def(menubar* bar, uint32_t x_w, uint32_t 
 static inline menubar* kolibri_new_menubar_def(uint32_t x_w, uint32_t y_h, uint16_t sub_w, uint16_t sub_h, char **menutext)
 {
     return kolibri_new_menubar(x_w, y_h, sub_w, sub_h, menutext,
-                           kolibri_color_table.color_work_button_text, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area,
-                           kolibri_color_table.color_work_button, kolibri_color_table.color_grab_bar_button, kolibri_color_table.color_work_button);
+                               kolibri_color_table.color_work_button_text, kolibri_color_table.color_work_text, kolibri_color_table.color_work_area,
+                               kolibri_color_table.color_work_button, kolibri_color_table.color_grab_bar_button, kolibri_color_table.color_work_button);
 }
 
 static inline void gui_add_menubar(kolibri_window *wnd, menubar* bar)

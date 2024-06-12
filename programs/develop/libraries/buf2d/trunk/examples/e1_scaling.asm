@@ -21,13 +21,13 @@ start:
 	stdcall [buf2d_create], buf_0 ;создаем буфер
 	stdcall [buf2d_line], buf_0, 110, 20, 125, 90, 0xffff00 ;рисуем линию
 	stdcall [buf2d_line], buf_0, 60, 120, 110, 20, 0xd000 ;рисуем линию
-	stdcall [buf2d_curve_bezier], buf_0, (10 shl 16)+20,(110 shl 16)+10,(50 shl 16)+90, dword 0xff
+	stdcall [buf2d_curve_bezier], buf_0, (10 shl 16)+20, (110 shl 16)+10, (50 shl 16)+90, dword 0xff
 	stdcall [buf2d_circle], buf_0, 125, 90, 30, 0xffffff ;рисуем окружность
 	stdcall [buf2d_circle], buf_0, 25, 70, 15, 0xff0000 ;рисуем окружность
 
 	stdcall [buf2d_img_hdiv2], buf_0 ;сжимаем изображение в буфере по высоте в 2 раза
 	stdcall [buf2d_img_wdiv2], buf_0 ;сжимаем изображение в буфере по ширине в 2 раза
-	stdcall [buf2d_create_f_img], buf_1,[buf_0] ;создаем маленький буфер buf_1, на основе сжатого изображения из buf_0
+	stdcall [buf2d_create_f_img], buf_1, [buf_0] ;создаем маленький буфер buf_1, на основе сжатого изображения из buf_0
 
 	;если бы использовалась функция buf2d_create, тогда биты изображения
 	;пришлось бы копировать следущими строками:
@@ -37,7 +37,7 @@ start:
 	;imul ecx,3 ;ecx - колличество байт в маленьком буфере
 	;stdcall mem_copy, dword[buf_0],dword[buf_1],ecx
 
-	stdcall [buf2d_clear], buf_0,0xffffff
+	stdcall [buf2d_clear], buf_0, 0xffffff
 	stdcall [buf2d_bit_blt], buf_0, 15,10, buf_1
 	stdcall [buf2d_bit_blt], buf_0, 110,65, buf_1
 

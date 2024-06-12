@@ -1,7 +1,8 @@
 #ifndef KOLIBRI_PROGRESSBAR_H
 #define KOLIBRI_PROGRESSBAR_H
 
-typedef struct {
+typedef struct 
+{
 	unsigned int value;
     unsigned int left;
     unsigned int top;

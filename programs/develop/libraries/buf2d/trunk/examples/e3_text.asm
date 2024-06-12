@@ -9,7 +9,7 @@ include '../../../../../proc32.inc'
 include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
 
-@use_library mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
+@use_library mem.Alloc, mem.Free, mem.ReAlloc, dll.Load
 
 struct FileInfoBlock
 	Function dd ?
@@ -23,7 +23,7 @@ ends
 
 IMAGE_FILE1_SIZE equ 128*144*3 ;размер файла с изображением 128 x 144
 
-macro load_image_file path,buf,size { ;макрос для загрузки изображений
+macro load_image_file path, buf, size { ;макрос для загрузки изображений
 	;path - может быть переменной или строковым параметром
 	if path eqtype '' ;проверяем задан ли строкой параметр path
 		jmp @f
@@ -32,9 +32,9 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 			db 0
 		@@:
 		;32 - стандартный адрес по которому должен быть буфер с системным путем
-		copy_path .path_str,[32],file_name,0x0
+		copy_path .path_str, [32], file_name, 0x0
 	else
-		copy_path path,[32],file_name,0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
+		copy_path path,[32], file_name, 0x0 ;формируем полный путь к файлу изображения, подразумеваем что он в одной папке с программой
 	end if
 
 	stdcall mem.Alloc, dword size ;выделяем память для изображения
@@ -48,13 +48,13 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 	m2m [run_file_70.Buffer], [buf]
 	mov byte[run_file_70+20], 0
 	mov [run_file_70.FileName], file_name
-	mov ebx,run_file_70
+	mov ebx, run_file_70
 	int 0x40 ;загружаем файл изображения
-	cmp ebx,0xffffffff
+	cmp ebx, 0xffffffff
 	je @f
 		;определяем вид изображения и переводим его во временный буфер image_data
-		stdcall [img_decode], [buf],ebx,0
-		mov [image_data],eax
+		stdcall [img_decode], [buf], ebx, 0
+		mov [image_data], eax
 		;преобразуем изображение к формату rgb
 		stdcall [img_to_rgb2], [image_data],[buf]
 		;удаляем временный буфер image_data
@@ -64,34 +64,34 @@ macro load_image_file path,buf,size { ;макрос для загрузки изображений
 
 align 4
 start:
-	load_libraries l_libs_start,load_lib_end
+	load_libraries l_libs_start, load_lib_end
 
 	;проверка на сколько удачно загузилась наша либа
-	mov	ebp,lib0
-	cmp	dword [ebp+ll_struc_size-4],0
+	mov	ebp, lib0
+	cmp	dword [ebp + ll_struc_size - 4], 0
 	jz	@f
 		mcall -1 ;exit not correct
 	@@:
-	mov	ebp,lib1
-	cmp	dword [ebp+ll_struc_size-4],0
+	mov	ebp, lib1
+	cmp	dword [ebp + ll_struc_size - 4], 0
 	jz	@f
 		mcall -1 ;exit not correct
 	@@:
 
-	mcall 40,0x27
-	mcall 48,3,sc,sizeof.system_colors ;получаем системные цвета
+	mcall 40, 0x27
+	mcall 48, 3, sc, sizeof.system_colors ;получаем системные цвета
 
 	stdcall [buf2d_create], buf_0 ;создаем буфер
 
-	load_image_file 'font8x9.bmp', image_data_foto,IMAGE_FILE1_SIZE
-	stdcall [buf2d_create_f_img], buf_1,[image_data_foto] ;создаем буфер
-	stdcall mem.Free,[image_data_foto] ;освобождаем память
+	load_image_file 'font8x9.bmp', image_data_foto, IMAGE_FILE1_SIZE
+	stdcall [buf2d_create_f_img], buf_1, [image_data_foto] ;создаем буфер
+	stdcall mem.Free, [image_data_foto]                    ;освобождаем память
 
-	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит
-	stdcall [buf2d_bit_blt_alpha], buf_0, 70,10, buf_1,0x20d020 ;рисуем исходную текстовую матрицу 16*16
+	stdcall [buf2d_conv_24_to_8], buf_1,1                        ;делаем буфер прозрачности 8 бит
+	stdcall [buf2d_bit_blt_alpha], buf_0, 70,10, buf_1, 0x20d020 ;рисуем исходную текстовую матрицу 16*16
 	stdcall [buf2d_convert_text_matrix], buf_1
-	stdcall [buf2d_bit_blt_alpha], buf_0, 10,10, buf_1,0xff8080 ;рисуем преобразованную текстовую матрицу 1*256
-	stdcall [buf2d_draw_text], buf_0, buf_1,some_text,70,170,0x4040ff ;рисуем строку с текстом
+	stdcall [buf2d_bit_blt_alpha], buf_0, 10,10, buf_1, 0xff8080          ;рисуем преобразованную текстовую матрицу 1*256
+	stdcall [buf2d_draw_text], buf_0, buf_1, some_text, 70, 170, 0x4040ff ;рисуем строку с текстом
 
 align 4
 red_win:
@@ -101,11 +101,11 @@ align 4
 still: ;главный цикл
 	mcall 10
 
-	cmp al,0x1 ;изменилось положение окна
+	cmp al, 0x1 ;изменилось положение окна
 	jz red_win
-	cmp al,0x2
+	cmp al, 0x2
 	jz key
-	cmp al,0x3
+	cmp al, 0x3
 	jz button
 
 	jmp still
@@ -124,9 +124,9 @@ draw_window:
 	pushad
 	mcall 12,1
 
-	mov edx,[sc.work]
-	or  edx,0x33000000
-	mcall 0,(20 shl 16)+670,(20 shl 16)+520,,,caption ;создание окна
+	mov edx, [sc.work]
+	or  edx, 0x33000000
+	mcall 0, (20 shl 16)+670, (20 shl 16)+520,,,caption ;создание окна
 
 	stdcall [buf2d_draw], buf_0
 	
@@ -136,10 +136,10 @@ draw_window:
 
 
 system_dir0 db '/sys/lib/'
-name_buf2d db 'buf2d.obj',0
+name_buf2d db 'buf2d.obj', 0
 
 system_dir1 db '/sys/lib/'
-name_libimg db 'libimg.obj',0
+name_libimg db 'libimg.obj', 0
 
 ;library structures
 l_libs_start:
@@ -153,43 +153,43 @@ button:
 	cmp ah,1
 	jne still
 .exit:
-	stdcall [buf2d_delete],buf_0 ;удаляем буфер
-	stdcall [buf2d_delete],buf_1 ;удаляем буфер
-	mcall -1 ;выход из программы
+	stdcall [buf2d_delete], buf_0 ;удаляем буфер
+	stdcall [buf2d_delete], buf_1 ;удаляем буфер
+	mcall -1                      ;выход из программы
 
-image_data dd 0 ;память для преобразования картинки функциями libimg
+image_data dd 0      ;память для преобразования картинки функциями libimg
 image_data_gray dd 0 ;память с преобразованным изображением в формате 8-bit
-image_data_rgb dd 0 ;память с преобразованным изображением в формате rgb
+image_data_rgb dd 0  ;память с преобразованным изображением в формате rgb
 image_data_foto dd 0
 
 run_file_70 FileInfoBlock
-caption db 'Draw text 13.09.11',0 ;подпись окна
-sc system_colors  ;системные цвета
+caption db 'Draw text 13.09.11', 0 ;подпись окна
+sc system_colors                   ;системные цвета
 
 align 4
 buf_0:
-	dd 0 ;указатель на буфер изображения
-	dw 5 ;+4 left
-	dw 5 ;+6 top
-	dd 640 ;+8 w
-	dd 480 ;+12 h
+	dd 0        ;указатель на буфер изображения
+	dw 5        ;+4 left
+	dw 5        ;+6 top
+	dd 640      ;+8 w
+	dd 480      ;+12 h
 	dd 0xffffff ;+16 color
-	db 24 ;+20 bit in pixel
+	db 24       ;+20 bit in pixel
 
 align 4
 buf_1:
-	dd 0 ;указатель на буфер изображения
-	dw 25 ;+4 left
-	dw 25 ;+6 top
+	dd 0   ;указатель на буфер изображения
+	dw 25  ;+4 left
+	dw 25  ;+6 top
 	dd 128 ;+8 w
 	dd 144 ;+12 h
-	dd 0 ;+16 color
-	db 24 ;+20 bit in pixel
+	dd 0   ;+16 color
+	db 24  ;+20 bit in pixel
 
-some_text db 'Пример вывода теста в буфер, возможен вывод:',13,13
-db ' * в несколько строк',13
-db ' * можно задавать цвет текста',13,13
-db 'Сегодня 13 сентября 2011.',0
+some_text db 'Пример вывода теста в буфер, возможен вывод:', 13, 13
+db ' * в несколько строк', 13
+db ' * можно задавать цвет текста', 13, 13
+db 'Сегодня 13 сентября 2011.', 0
 
 align 4
 import_libimg:
