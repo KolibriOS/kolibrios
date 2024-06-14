@@ -19,7 +19,7 @@ use32
  dd 0x0
 
 include "..\..\..\..\macros.inc"
-include "lang.inc"
+include "lang.inc" ; Language support for locales: de_DE, en_US.
 START:
 
  call cmdexist
@@ -2780,6 +2780,7 @@ title   db 'CMD - Command line interpreter',0
 smb_cursor db '|'
 
 prompt db 'CMD>>'
+
 if lang eq de_DE
 h1  db '  CMD - Command line interpreter version 0.26 '
 h2  db '        copyleft Chemist - dmitry_gt@tut.by   '
@@ -2823,7 +2824,9 @@ mess14 db 'Datei erfolgreich umbenannt                   '
 mess15 db 'ERROR: Kann Datei nicht umbenennen!           '
 mess16 db 'Scriptname erwartet!                          '
 mess17 db 'Dieses Kommando ist nur in Scripts zulaessig! '
-else
+
+else ; Default to en_US
+
 h1  db '  CMD - Command line interpreter version 0.26 '
 h2  db '        copyleft Chemist - dmitry_gt@tut.by   '
 h3  db '  Available commands:                         '
@@ -2831,7 +2834,7 @@ h4  db '  HELP - Display this text  LS - List files   '
 h5  db '  EXIT - Exit Programm      CP - Copy file    '
 h6  db '  CLS  - Clear Screen       PS - Process info '
 h7  db '  KILL - Kill Process       RN - Rename File  '
-h8  db '        VER  - Display programm version       '
+h8  db '        VER  - Display program version        '
 h9  db '        DEL  - Delete file from ramdisk       '
 h10 db '        SHUTDOWN - Quit Menuet                '
 h11 db '        PAUSE    - Wait for keypress          '
@@ -2849,7 +2852,7 @@ proc_head db  ' PID Name      Start     Length   Proc_NUMB  '
 proc_hd11 db  '-------------------------------------------- '
 
 mess1 db 'Press any key to continue (ESC - Cancel)...   '
-mess2 db 'Plz specify a 4 byte process number (not PID) '
+mess2 db 'Specify a 4 byte process number (not PID)     '
 mess3 db 'Process with number you specified has been    '
 mess4 db 'terminated.                                   '
 mess5 db 'Usage: del [filename]                         '

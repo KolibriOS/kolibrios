@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 TILT_levelp:
     call SMZ_levelp
     mov  esi,[stepptr]
@@ -68,26 +70,26 @@ TILT_level:
 file 'tilt.bin'
 
 if lang eq ru_RU
-	TILT_help mstr \
-	'Плашка (зеленый квадрат) лежит на доске, которую',\
-	'можно наклонять по горизонтали и вертикали',\
-	' После наклона плашка скользит, пока не наткнется',\
-	'на стенку. Нельзя остановить плашку во середине',\
-	'пути.',\
-	' Ваша задача - заставить плашку посетить клетки',\
-	'с красными квадратами.','',\
-	'http://www.clickmazes.com'
-else
-	TILT_help mstr \
-  'You are to imagine that a marble (shown here as a',\
-  'green square) is on a board that you can tilt',\
-  'only to the north, south, east, or west. (You',\
-  "can't do anything tricky like tilt it southeast.)",\
-  '  Once you tilt the board, the marble will roll',\
-  '(horizontally or vertically) until it hits a',\
-  "barrier. There's no way you can stop the marble",\
-  'in the middle of its roll.',\
-  '  The object is to roll the marble onto or over',\
-  'every red square in the maze.','',\
-	'http://www.clickmazes.com'
+        TILT_help mstr \
+        'Плашка (зеленый квадрат) лежит на доске, которую',\
+        'можно наклонять по горизонтали и вертикали',\
+        ' После наклона плашка скользит, пока не наткнется',\
+        'на стенку. Нельзя остановить плашку во середине',\
+        'пути.',\
+        ' Ваша задача - заставить плашку посетить клетки',\
+        'с красными квадратами.','',\
+        'http://www.clickmazes.com'
+else ; Default to en_US
+        TILT_help mstr \
+        'You are to imagine that a marble (shown here as a',\
+        'green square) is on a board that you can tilt',\
+        'only to the north, south, east, or west. (You',\
+        "can't do anything tricky like tilt it southeast.)",\
+        '  Once you tilt the board, the marble will roll',\
+        '(horizontally or vertically) until it hits a',\
+        "barrier. There's no way you can stop the marble",\
+        'in the middle of its roll.',\
+        '  The object is to roll the marble onto or over',\
+        'every red square in the maze.','',\
+        'http://www.clickmazes.com'
 end if

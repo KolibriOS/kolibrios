@@ -7,7 +7,7 @@ include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'txtbut.inc'
 include '../../../macros.inc'
 include 'run.mac'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), it_IT, en_US.
 use32
     org 0
     db 'MENUET01'
@@ -263,7 +263,7 @@ else if lang eq it_IT
 	run_ok db 'Il programma eseguito correttamente',0
 	grab_text db 'RUN',0
 	run_but_text db 'Esegui',0
-else
+else ; Default to en_US
 	hello db 'Enter full path to file and press <Enter>',0
 	bad_file_sys db 'Unknown file system',0 	       ; 3
 	file_not_find db 'File not found',0		       ; 5

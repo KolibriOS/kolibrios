@@ -1,5 +1,9 @@
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
+; FIXME:
+;  This translation mechanism should fallback to en_US if the language
+;  is unlisted (e.g. es_ES). Either fix the macros or use a different method.
+;  The problem doesn't manifest, as we only bundle Dungeons in the RU distro.
 struc langstr [lng, data]
 {
         if lang eq lng

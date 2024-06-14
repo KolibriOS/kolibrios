@@ -33,12 +33,12 @@ include 'label.inc'
 include 'textwork.inc'
 include 'scrshoot.mac'
 
-use32		     
+use32
     org 0
     db 'MENUET01'
     dd 1, start, IM_END, i_end, stacktop, cmdstr, cur_dir_path
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include '../../dll.inc'
 
 align 4
@@ -73,7 +73,7 @@ load_libraries l_libs_start,end_l_libs
 	test	eax,eax
 	jz	close
 
-;---------------------------------------------------------------------	
+;---------------------------------------------------------------------
 	mov	edi,filename_area
 	mov	esi,start_temp_file_name
 	xor	eax,eax
@@ -94,13 +94,13 @@ load_libraries l_libs_start,end_l_libs
 	stosb
 	test	eax,eax
 	jnz	@b
-	
+
 ;OpenDialog	initialisation
 	stdcall    [OpenDialog_Init], OpenDialog_data
 
 ; prepare for PathShow
 	stdcall	[PathShow_prepare], PathShow_data_1
-;---------------------------------------------------------------------	
+;---------------------------------------------------------------------
 	;mov     al,[gs:1280*4*1024]
 		    ; устанавливаем ipc буффер
 	xor	ebx,ebx
@@ -151,7 +151,7 @@ red:
 
 	call	shoot
 	jmp	close
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 draw_window_direct:
 	mcall SF_REDRAW, SSF_BEGIN_DRAW
 	mcall SF_GET_SCREEN_SIZE
@@ -171,10 +171,10 @@ draw_window_direct:
 	mcall SF_CREATE_WINDOW,,,0x34ffffff,,grab_text
 
 	mcall SF_DRAW_TEXT, <10,30>,0x90000000,saving
-	
+
 	mcall SF_REDRAW, SSF_END_DRAW
 	ret
-;------------------------------------------------------------------------------	
+;------------------------------------------------------------------------------
 no_boot:
 	call	draw_window ; перерисовываем окно
 still:
@@ -337,7 +337,7 @@ shoot:
 
 	cmp	[autoshoot_flag],1
 	jne	.2
-	
+
 	bt	dword [ch5.flags],1  ; включено ли автосохранение ?
 	jnc	@f
 	call	save_file
@@ -357,7 +357,7 @@ shoot:
 @@:
 	bt	dword [ch5.flags],1  ; включено ли автосохранение ?
 	jnc	@f
-	
+
 	call	[OpenDialog_data.draw_window]
 ; invoke OpenDialog
 	stdcall    [OpenDialog_Start], OpenDialog_data
@@ -620,7 +620,7 @@ editboxes_end:
 ;---------------------------------------------------------------------
 buttons:
 but1 txt_button 150,5,15,65,2,0,0,but_text.1,one_shoot		   ; сделать снимок
-but2 txt_button 34,274,15,34,3,0,0,but_text.2,save_shoot	   ; "..." - выбрать путь сохранения 
+but2 txt_button 34,274,15,34,3,0,0,but_text.2,save_shoot	   ; "..." - выбрать путь сохранения
 but3 txt_button 145,160,15,65,3,0,0,but_text.3,show_scr_window    ; показать снимок
 but4 txt_button 80,205,15,163,5,0,0,but_text.4,apply_number	   ; применить номер
 but5 txt_button 150,5,15,85,6,0,0,but_text.5,start_autoshoot	   ; начать автосъёмку
@@ -638,7 +638,9 @@ use_rect check_box2 (5 shl 16+11),(180 shl 16 +11),5,cl_white,0,0x80000000,ch_te
 ; автонумерация
 check_boxes_end:
 ;---------------------------------------------------------------------
+
 if lang eq ru_RU
+
 text:
 .1 db 'Размер экрана и глубина цвета:      х     х   bit',0
 .3 db 'Путь для сохранения снимка:',0
@@ -678,7 +680,8 @@ invalid_rect db 'Недопустимые размеры области',0
 keyforexit db 'Это ваш снимок. Выход - любая клавиша.',0
 
 
-else
+else ; Default to en_US
+
 text:
 .1 db 'Screen size and color depth:        х     х   bit',0
 .3 db 'Screenshot save path:',0
@@ -713,7 +716,7 @@ bad_fat_table db 'FAT table destroyed',0
 ac_den db 'Access denied',0
 device_er db 'Device error',0
 not_shooted db 'Error: you need to make a photo first',0
-no_file_name db 'Please, enter file name.',0
+no_file_name db 'Please enter file name.',0
 invalid_rect db 'Wrong area size',0
 keyforexit db 'This is your screenshot. Press any key.',0
 
@@ -781,7 +784,7 @@ start_temp_file_name:	db '1.png',0
 
 PrintScreen	db  0
 autoshoot_flag	db  0
-	
+
 app_ipc ipc_buffer 32
 align 4
 
@@ -797,7 +800,7 @@ ed_buffer:
 	rb 6
 .3:
 	rb 10
-;---------------------------------------------------------------------	
+;---------------------------------------------------------------------
 IM_END:
 ;---------------------------------------------------------------------
 structure_of_potock:

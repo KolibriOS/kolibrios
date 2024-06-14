@@ -53,19 +53,15 @@ ted_symbol_space db 32 ;ascii код пробела, иногда бывает нужен в коде
 ted_symbol_tab db 26 ;ascii код стрелки вправо, используется для рисования табуляции в режиме показа невидимых символов
 
 if lang eq ru_RU
-
-txtRow db 'Строка',0
-txtCol db 'Знак',0
-txtOtm db 'Отмены',0
-txtBuf db 'Буфер:',0
-
-else
-
-txtRow db 'Rows',0
-txtCol db 'Cols',0
-txtOtm db 'Undo',0
-txtBuf db 'Buffer:',0
-
+        txtRow db 'Строка',0
+        txtCol db 'Знак',0
+        txtOtm db 'Отмены',0
+        txtBuf db 'Буфер:',0
+else ; Default to en_US
+        txtRow db 'Rows',0
+        txtCol db 'Cols',0
+        txtOtm db 'Undo',0
+        txtBuf db 'Buffer:',0
 end if
 
 ;EvChar - таблица для фильтрования добавляемых символов, что-бы не попали лишние знаки
@@ -1406,7 +1402,7 @@ proc ted_convert_sel_text, conv_fun:dword
 
 		call ted_iterat_next
 		cmp edx,ted_tex
-		je @f 
+		je @f
 		cmp edx,ebx
 		jne @b
 		@@:
@@ -1869,7 +1865,7 @@ ted_get_pos_by_cursor:
 ; edx = tex[1] if error
 ; ted_gp_opt = 0 if text no found
 align 16
-proc ted_get_pos_by_coords uses eax ebx 
+proc ted_get_pos_by_coords uses eax ebx
 	xor eax,eax ;Row
 	xor ebx,ebx ;Col
   mov ted_gp_opt,0
@@ -1877,7 +1873,7 @@ proc ted_get_pos_by_coords uses eax ebx
   @@:
     call ted_iterat_next
     cmp edx,ted_tex_1
-    jle @f 
+    jle @f
     cmp ebx,esi
     jne .u1_0 ;Col <> ted_cur_x
       mov ted_gp_opt,1
@@ -1922,7 +1918,7 @@ ted_strlen:
   @@:
     call ted_iterat_next
     cmp edx,ted_tex_1
-    jle @f 
+    jle @f
     inc ebx
     cmp byte [edx],13
     jne @b
@@ -2118,7 +2114,7 @@ ted_go_to_pos:
 	jge .end0
 		sub ebx,ecx ;ebx - на сколько символов нужно сдвинуть курсор
 		cmp [eax+sb_offs_position],ebx
-		jge @f 
+		jge @f
 			add ecx,[eax+sb_offs_position]
 			mov dword[eax+sb_offs_position],0
 			jmp .end0
@@ -2389,7 +2385,7 @@ align 4
 		mov byte[eax+1],0xff ;tex[eP].col=255;
 		cmp byte[find],2
 		je .if_1e
-		;return ItPoPerv(eP); // возвращаем позицию конца вхождения		
+		;return ItPoPerv(eP); // возвращаем позицию конца вхождения
 		mov edx,[endPos]
 		call ted_get_text_perv_pos
 		jmp @f
@@ -2457,7 +2453,7 @@ proc ted_show_help_f1 uses eax edx edi, edit:dword
 	@@:
 	;call ted_draw_main_cursor
 	call ted_draw_help_f1
-	ret 
+	ret
 endp
 
 ;input:
@@ -2497,7 +2493,7 @@ proc ted_find_help_id uses ebx ecx, end_pos:dword
       @@:
 	push dx
 	push word[edx]
-	pop dx 
+	pop dx
 	  .wh_0b:
 	    cmp ebx,ecx ;while(l_pos>word_n
 	    jle .wh_0e
@@ -2749,7 +2745,7 @@ proc ted_but_copy, edit:dword
 			inc ebx
 			inc ecx
 		.no_13:
-		
+
 		call ted_iterat_next
 		jmp @b
 	@@:
@@ -2820,14 +2816,14 @@ proc ted_but_paste, edit:dword
 		add	esi,12
 		jmp .buf_r
 	.no_buf_r:
-		
+
 	;если не удалось прочитать данные из системного буфера, попадаем сюда
 	mov esi,ted_buffer
 	cmp dword[esi],1 ;проверяем есть ли данные во внутреннем буфере
 	jl .no_paste ;если вообще ничего не удалось прочитать идем на выход
 	add esi,12 ;system buffer header size
 	.buf_r:
-	
+
 	mov edx,esi
 	call tl_strlen
 	cmp eax,1
@@ -3558,7 +3554,7 @@ proc ted_draw, edit:dword
 			cmp bx,ax
 			jg .no_draw_text
 			mov eax,SF_DRAW_TEXT
-			;optimized output /\        
+			;optimized output /\
 			and ebx,0xffff
 			ror ebx,16
 			add ebx,ted_wnd_l
@@ -3594,7 +3590,7 @@ align 4
 ;---------------------------------------------
 ; set all_redraw flag for draw all ScrollBar
 ; In some cases it is necessity to draw only the area
-; of moving of a "runner", for acceleration of output - 
+; of moving of a "runner", for acceleration of output -
 ; in this case the flag needs to be reset to 0 (zero).
 	mov eax,ted_scr_h
 	mov esi,ted_scr_w
@@ -3604,7 +3600,7 @@ align 4
 ; рисование полос прокрутки
 	stdcall scroll_bar_horizontal.draw,eax ;[scrollbar_hor_draw]
 	stdcall scroll_bar_vertical.draw,esi ;[scrollbar_ver_draw]
-; reset all_redraw flag 
+; reset all_redraw flag
 	mov dword[eax+sb_offs_all_redraw],0
 	mov dword[esi+sb_offs_all_redraw],0
 ;---------------------------------------------
@@ -3848,7 +3844,7 @@ proc ted_draw_help_f1
 			add edx,ted_help_text_f1
 			inc eax
 			imul eax,6 ;ширина символа в сист. шрифте
-			shl eax,16			
+			shl eax,16
 			add ebx,eax
 			mcall SF_DRAW_TEXT
 	@@:

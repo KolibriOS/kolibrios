@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 ; level format
 ; [fx|fy]..[field cells x2]..[worm_count]..[worm_len][start cell #][body dirs x2]
 
@@ -113,28 +115,28 @@ CZ_level:
 file 'colzone.bin'
 
 if lang eq ru_RU
-	CZ_help mstr \
-	'Черный блок из 2 кубиков стоит на раскрашенной',\
-	'клетчатой доске. Ваша задача - перекатить его на',\
-	'клетку с белым квадратиком. Блок начинает стоя и',\
-	'должен закончить тоже в вертикальном положении.',\
-	'Нельзя выкатывать его за пределы сетки и сверх',\
-	'того - кубики блока должны всегда ложиться на',\
-	'клетки одинакового цвета. Блок не отображен в 3D,',\
-	'поэтому Вы видите лишь его проекцию.','',\
-	'http://www.clickmazes.com'
-else
-	CZ_help mstr \
-	'A black block, made of two black cubes stuck',\
-	'together, sits on a coloured grid. Your challenge',\
-	'is to roll the black block to its target',\
-	'position, which is marked with a small white',\
-	'square. The block starts on one end (vertical)',\
-	'and must also finish in this position. The block',\
-	'is not permitted to roll off the grid and, in',\
-	'addition, the block must always lie entirely',\
-	'within one colour-zone. Note the block is not',\
-	'displayed in 3D, in effect you see only its',\
-	'shadow.','',\
-	'http://www.clickmazes.com'
+        CZ_help mstr \
+        'Черный блок из 2 кубиков стоит на раскрашенной',\
+        'клетчатой доске. Ваша задача - перекатить его на',\
+        'клетку с белым квадратиком. Блок начинает стоя и',\
+        'должен закончить тоже в вертикальном положении.',\
+        'Нельзя выкатывать его за пределы сетки и сверх',\
+        'того - кубики блока должны всегда ложиться на',\
+        'клетки одинакового цвета. Блок не отображен в 3D,',\
+        'поэтому Вы видите лишь его проекцию.','',\
+        'http://www.clickmazes.com'
+else ; Default to en_US
+        CZ_help mstr \
+        'A black block, made of two black cubes stuck',\
+        'together, sits on a coloured grid. Your challenge',\
+        'is to roll the black block to its target',\
+        'position, which is marked with a small white',\
+        'square. The block starts on one end (vertical)',\
+        'and must also finish in this position. The block',\
+        'is not permitted to roll off the grid and, in',\
+        'addition, the block must always lie entirely',\
+        'within one colour-zone. Note the block is not',\
+        'displayed in 3D, in effect you see only its',\
+        'shadow.','',\
+        'http://www.clickmazes.com'
 end if

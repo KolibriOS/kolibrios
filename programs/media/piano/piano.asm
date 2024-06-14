@@ -15,7 +15,7 @@
   dd     0
   dd     0
 
-include "lang.inc"
+include "lang.inc" ; Language support for locales: ru_RU (CP866), en_US.
 include "../../macros.inc"
 include "../../KOSfuncs.inc"
 
@@ -802,7 +802,7 @@ draw_window:
     mov   edx, [sc.work]         ; цвет фона
     or    edx, 0x33000000        ; и тип окна 3
     mcall SF_CREATE_WINDOW, <20,WHITE_W*15+9>, <200,250>, , ,caption
-        
+
     mcall SF_DEFINE_BUTTON, <WHITE_W*0,WHITE_W>, <0,100>, 0x21, 0xff7a74
     mcall , <WHITE_W*1,WHITE_W>, <0,100>, 0x23, 0x907040
     mcall , <WHITE_W*2,WHITE_W>, , 0x25, 0xa08050
@@ -894,7 +894,7 @@ if lang eq ru_RU
   message4 db 'при включении Caps Lock - клавиши V,Q,I.',0
   t_notes  db 'ДО    РЕ    МИ    ФА   СОЛЬ   ЛЯ    СИ    ДО',0
   caption  db 'Детское пианино',0
-else
+else ; Default to en_US
   message  db 'Click twice on the window header to see help.',0
   message1 db 'Press any key in English keyboard layout - ',0
   message2 db 'so you will hear the sound from the PC-speaker (Beeper)',0

@@ -6,7 +6,7 @@
 
         use32
         org     0x0
-        
+
         db      "MENUET01"              ; 8 byte id
         dd      0x01             ; header version
         dd      START           ; start of code
@@ -16,7 +16,7 @@
         dd      0x0                     ; boot parameters
         dd      cur_dir_path     ; path
 ;-------------------------------------------------------------------------------
-include "lang.inc"
+include "lang.inc" ; Language support for locales (UTF-8): de_DE, et_EE, ru_RU, it_IT, en_US.
 include "../../../macros.inc"
 include "../../../develop/libraries/box_lib/trunk/box_lib.mac"
 include "../../../KOSfuncs.inc"
@@ -43,7 +43,7 @@ EDITBOX:
         .Y = UNDERTABLE.Y + BUTTON.HEIGHT + 20
         .WIDTH = 465
         .HEIGHT = 23
-        
+
 CHECKBOX:
         .X = PROCESS_TABLE.X
         .Y = UNDERTABLE.Y + BUTTON.HEIGHT + 25
@@ -300,7 +300,7 @@ draw_next_process:
         add ebx, BUTTON.WIDTH
         mcall
 
-;create terminate process button        
+;create terminate process button
         ;mov    ecx,[curposy]
         shl     ecx,16
         mov     cx, BUTTON.HEIGHT
@@ -478,7 +478,7 @@ align 4
 ;show window y size
         movzx   eax, word [process_info_buffer.box.top]
         add     ebx, 70 shl 16
-        call    draw_ra_dec_number      
+        call    draw_ra_dec_number
         pop     edi
 ;-------------------------------------------------------------------------------
 align 4
@@ -515,36 +515,36 @@ draw_window:
 
         test    [window_status],10b             ; window is minimized to panel
         jnz     .exit
-        
+
         mov     eax, strings.process_name
         mov     ebx, 130 shl 16 + 5
         xor     ecx, ecx
         call    draw_ra_text
-        
+
         mov     eax, strings.ptid
         add     ebx, 80 shl 16
         call    draw_ra_text
-        
+
         mov     eax, strings.cpu_usage_cycles
         add     ebx, 100 shl 16
         call    draw_ra_text
-        
+
         mov     eax, strings.cpu_usage_percent
         add     ebx, 55 shl 16
         call    draw_ra_text
-        
+
         mov     eax, strings.memory_usage
         add     ebx, 60 shl 16
         call    draw_ra_text
-        
+
         mov     eax, strings.window_stack_pos
         add     ebx, 70 shl 16
         call    draw_ra_text
-        
+
         mov     eax, strings.window_position.x
         add     ebx, 70 shl 16
         call    draw_ra_text
-        
+
         mov     eax, strings.window_position.y
         add     ebx, 70 shl 16
         call    draw_ra_text
@@ -621,7 +621,7 @@ align 4
 align 4
 .exit:
         ret
-        
+
 ;-------------------------------------------------------------------------------
 
 draw_ra_dec_number:
@@ -638,13 +638,13 @@ draw_ra_dec_number:
 
         ror     ebx, 16
         mov     ebp, eax
-        
+
         test    edx, edx
         jz      .no_postfix
-        
+
         mov     eax, edx
         call    count_utf8z_chars
-        
+
         test    eax, eax
         jz      .no_postfix
         push    ecx
@@ -655,13 +655,13 @@ draw_ra_dec_number:
         mcall   SF_DRAW_TEXT
         ror     ebx, 16
         pop     ecx
-        
+
 .no_postfix:
         mov     eax, ebp
         push    edx
 
         xor     edi, edi
-        
+
         mov     esi, 10
 @@:
         xor     edx, edx
@@ -681,7 +681,7 @@ draw_ra_dec_number:
         sub     dx, ax
         rol     edx, 16
         mcall   SF_DRAW_NUMBER, (11 shl 16) or 0x80000000
-        
+
         popa
         ret
 ;-------------------------------------------------------------------------------
@@ -702,7 +702,7 @@ draw_ra_data_size:
         cmp     eax, 1024
         ja      @f
         jmp     .draw_text
-        
+
 @@:
         cmp     eax, 1024*1024
         jae     @f
@@ -710,7 +710,7 @@ draw_ra_data_size:
         div     esi
         mov     edx, strings.KB
         jmp     .draw_text
-        
+
 @@:
         cmp     eax, 1024*1024*1024
         jae     @f
@@ -718,15 +718,15 @@ draw_ra_data_size:
         div     esi
         mov     edx, strings.MB
         jmp     .draw_text
-        
+
 @@:
         mov     esi,  1024*1024*1024
         div     esi
         mov     edx, strings.GB
-        
+
 .draw_text:
         call    draw_ra_dec_number
-        
+
         popa
         ret
 ;-------------------------------------------------------------------------------
@@ -743,9 +743,9 @@ draw_ra_text:
 
         ror     ebx, 16
         mov     edx, eax
-        
+
         call    count_utf8z_chars
-        
+
         test    eax, eax
         jz      .ret
         lea     eax, [eax*8]
@@ -753,7 +753,7 @@ draw_ra_text:
         rol     ebx, 16
         or      ecx, 0xB0000000
         mcall   SF_DRAW_TEXT
-        
+
 .ret:
         popa
         ret
@@ -773,7 +773,7 @@ draw_button_with_caption:
 ;ebx = x+width shl 16 + y
 ;-------------------------------------------------------------------------------
         pusha
-        
+
         xor     ebp, ebp
         mov     edi, eax
         test    eax, eax
@@ -782,7 +782,7 @@ draw_button_with_caption:
         call    count_utf8z_chars
         mov     ebp, eax
 
-.no_caption_0:  
+.no_caption_0:
         push    ebx esi
         lea     eax, [ebp*8]
         mov     esi, edx
@@ -804,7 +804,7 @@ draw_button_with_caption:
         mov     ecx, esi
         or      ecx, 0xB0000000
         mcall   SF_DRAW_TEXT
-        
+
 .no_caption_1:
         popa
         ret
@@ -820,7 +820,7 @@ count_utf8z_chars:
         push    esi ebx
         mov     esi, eax
         xor     ebx, ebx
-        
+
 .0:
         lodsb
         test    al, al
@@ -836,25 +836,25 @@ count_utf8z_chars:
         ja      @f
         inc     esi
         jmp     .0
-        
+
 @@:
         cmp     al, 0xEF
         ja      @f
         inc     esi
         inc     esi
         jmp     .0
-        
+
 @@:
         cmp     al, 0xF7
         ja      .err
         add     esi, 3
         jmp     .0
-        
+
 .ok:
         mov     eax, ebx
         pop     ebx esi
         ret
-        
+
 .err:
         xor     eax, eax
         pop     ebx esi
@@ -920,7 +920,7 @@ sys_reboot:
 strings:
 if lang eq de_DE
         .window_caption         utf8z   "Prozesse v0.2.3 - [Ctrl+Alt+Del]"
-        
+
         .process_name           utf8z   "NAME/BEENDEN"
         .ptid                   utf8z   "PID/TID"
         .cpu_usage_cycles       utf8z   "CPU(ZYKLEN)"
@@ -929,21 +929,21 @@ if lang eq de_DE
         .window_stack_pos       utf8z   "W-STACK"
         .window_position.x      utf8z   "  WIN-X"
         .window_position.y      utf8z   "  WIN-Y"
-        
+
         .previous_page          utf8z   "SEITE ZURUECK"
         .next_page              utf8z   "SEITE VOR"
         .reboot                 utf8z   "REBOOT SYSTEM"
         .run                    utf8z   "START"
-        
+
         .checkbox_caption       utf8z   "System"
-        
+
         .KB                     utf8z   " KB"
         .MB                     utf8z   " MB"
         .GB                     utf8z   " GB"
 ;-------------------------------------------------------------------------------
 else if lang eq et_EE
         .window_caption         utf8z   "Protsessid v0.2.3 - [Ctrl+Alt+Del]"
-        
+
         .process_name           utf8z   "NIMI/LÕPETA"
         .ptid                   utf8z   "PID/TID"
         .cpu_usage_cycles       utf8z   "CPU(TSÜKLID)"
@@ -952,21 +952,21 @@ else if lang eq et_EE
         .window_stack_pos       utf8z   "W-PUHVER"
         .window_position.x      utf8z   "  WIN-X"
         .window_position.y      utf8z   "  WIN-Y"
-        
+
         .previous_page          utf8z   "EELMINE LEHT"
         .next_page              utf8z   "JÄRGMINE LEHT"
         .reboot                 utf8z   "REBOODI SÜSTEEM"
         .run                    utf8z   "START"
-        
+
         .checkbox_caption       utf8z   "System"
-                
+
         .KB                     utf8z   " KB"
         .MB                     utf8z   " MB"
         .GB                     utf8z   " GB"
 ;-------------------------------------------------------------------------------
 else if lang eq ru_RU
         .window_caption         utf8z   "Диспетчер процессов v0.2.3 - [Ctrl+Alt+Del]"
-        
+
         .process_name           utf8z   "ИМЯ/ЗАВЕРШИТЬ"
         .ptid                   utf8z   "PID/TID"
         .cpu_usage_cycles       utf8z   "CPU(ТАКТЫ)"
@@ -975,21 +975,21 @@ else if lang eq ru_RU
         .window_stack_pos       utf8z   "W-STACK"
         .window_position.x      utf8z   "  WIN-X"
         .window_position.y      utf8z   "  WIN-Y"
-        
+
         .previous_page          utf8z   "ПРЕД. СТР."
         .next_page              utf8z   "СЛЕД. СТР."
         .reboot                 utf8z   "ПЕРЕЗАГРУЗКА"
         .run                    utf8z   "ЗАПУСК"
-        
+
         .checkbox_caption       utf8z   "Системные"
-                
+
         .KB                     utf8z   " КБ"
         .MB                     utf8z   " МБ"
         .GB                     utf8z   " ГБ"
 ;-------------------------------------------------------------------------------
 else if lang eq it_IT
         .window_caption         utf8z   "Gestore processi v0.2.3 - [Ctrl+Alt+Del]"
-        
+
         .process_name           utf8z   "NOME-PROGRAMMA"
         .ptid                   utf8z   "PID/TID"
         .cpu_usage_cycles       utf8z   "CPU(CICLI)"
@@ -998,21 +998,21 @@ else if lang eq it_IT
         .window_stack_pos       utf8z   "W-STACK"
         .window_position.x      utf8z   "  WIN-X"
         .window_position.y      utf8z   "  WIN-Y"
-        
+
         .previous_page          utf8z   "INDIETRO"
         .next_page              utf8z   "AVANTI"
         .reboot                 utf8z   "RIAVVIA SISTEMA"
         .run                    utf8z   "START"
-        
+
         .checkbox_caption       utf8z   "System"
-        
+
         .KB                     utf8z   " KB"
         .MB                     utf8z   " MB"
         .GB                     utf8z   " GB"
 ;-------------------------------------------------------------------------------
-else
+else ; Default to en_US
         .window_caption         utf8z   "Process manager v0.2.3 - [Ctrl+Alt+Del]"
-        
+
         .process_name           utf8z   "NAME/TERMINATE"
         .ptid                   utf8z   "PID/TID"
         .cpu_usage_cycles       utf8z   "CPU(CYCLES)"
@@ -1021,15 +1021,15 @@ else
         .window_stack_pos       utf8z   "W-STACK"
         .window_position.x      utf8z   "  WIN-X"
         .window_position.y      utf8z   "  WIN-Y"
-        
-        
+
+
         .previous_page          utf8z   "PREV PAGE"
         .next_page              utf8z   "NEXT PAGE"
         .reboot                 utf8z   "REBOOT SYSTEM"
         .run                    utf8z   "RUN"
-        
+
         .checkbox_caption       utf8z   "System"
-        
+
         .KB                     utf8z   " KB"
         .MB                     utf8z   " MB"
         .GB                     utf8z   " GB"

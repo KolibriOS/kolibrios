@@ -4,7 +4,7 @@
 ;   Compile with FASM
 ;
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), it_IT, de_DE, en_US.
 include '..\..\..\macros.inc' ; decreases program size (not required)
 
 StatusColor equ 0x00ffffff
@@ -425,7 +425,7 @@ else if lang eq it_IT
      db 'Movimenti:'
 else if lang eq de_DE
      db 'Bewegungen:'
-else
+else ; Default to en_US
      db 'Moves:'
 end if
 lenMoves:
@@ -437,7 +437,7 @@ else if lang eq it_IT
      db 'Mischia'
 else if lang eq de_DE
      db 'Mischen'
-else
+else ; Default to en_US
      db 'Shuffle'
 end if
 lenSh:
@@ -449,8 +449,8 @@ else if lang eq it_IT
      db 'Seleziona un compito, poi premi->'
 else if lang eq de_DE
      db 'Waehle eine Aufgabe, dann clicke au->'
-else
-     db 'Select task,  then press ->'
+else ; Default to en_US
+     db 'Select task, then press ->'
 end if
 lenCnf:
 
@@ -461,7 +461,7 @@ else if lang eq it_IT
      db 'Gioco del quindici - partita X', 0
 else if lang eq de_DE
      db '15-Puzzle - Spiel X', 0
-else
+else ; Default to en_US
      db   'Game 15 - puzzle X', 0
 end if
 
@@ -472,7 +472,7 @@ else if lang eq it_IT
      db 'Gioco completato! Premi ->'
 else if lang eq de_DE
      db 'Spiel beendet! Druecken sie auf ->'
-else
+else ; Default to en_US
      db 'Puzzle completed!   Press->'
 end if
 lenVictory:

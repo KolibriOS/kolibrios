@@ -84,9 +84,11 @@ B_NS	  equ 190 shl 16+50
 
 FOCUSABLE equ 4
 
-; multilanguage interface - configuratable in lang.inc
 day_count db 3,0,3,2,3,2,3,3,2,3,2,3
 Fkeys	  db 210,211,212,213,214,215,216,217,208,209,228,159
+
+; Multilanguage interface - configurable in lang.inc
+; Language support for locales: ru_RU (CP866), de_DE, fr_FR, fi_FI, et_EE, it_IT, en_US
 
 month_name:
 if lang eq ru_RU
@@ -173,7 +175,7 @@ else if lang eq it_IT
      db   'Ottobre  '
      db   'Novembre '
      db   'Dicembre '
-else
+else ; Default to en_US
      db   9
      db   'January  '
      db   'February '
@@ -249,7 +251,7 @@ else if lang eq it_IT
      db   'Gio'
      db   'Ven'
      db   'Sab'
-else
+else ; Default to en_US
      db   3
      db   7
      db   'Sun'
@@ -272,7 +274,7 @@ else if lang eq et_EE
      db   'Kalender',0
 else if lang eq it_IT
      db   'Calendario',0
-else
+else ; Default to en_US
      db   'Calendar',0
 end if
 
@@ -287,7 +289,7 @@ else if lang eq et_EE
      db   'T‰na'
 else if lang eq it_IT
      db   'Oggi'
-else
+else ; Default to en_US
      db   'Today'
 end if
 today_end:
@@ -297,25 +299,25 @@ dropped db 0
 
 sys_text:
 if lang eq ru_RU
-		db  'Ç‡•¨Ô',0
+        db  'Ç‡•¨Ô',0
 else if lang eq it_IT
-		db  '  Ora',0
+        db  '  Ora',0
 else if lang eq et_EE
-		db  ' Aeg ',0
-else
-		db  ' Time',0
+        db  ' Aeg ',0
+else ; Default to en_US
+        db  ' Time',0
 end if
 separator  db ':',0
 plus  db  '+',0
 minus db  '-',0
+
 set_date_t:
 if lang eq ru_RU
-		db  'ì·‚†≠Æ¢®‚Ï §†‚„',0
+        db  'ì·‚†≠Æ¢®‚Ï §†‚„',0
 else if lang eq it_IT
-		db   ' Impostazioni ',0
+        db   ' Impostazioni ',0
 else if lang eq et_EE
-		db   ' M‰‰ra kuup‰ev ',0
-else
-		db  '   Set date    ',0
+        db   ' M‰‰ra kuup‰ev ',0
+else ; Default to en_US
+        db  '   Set date    ',0
 end if
-

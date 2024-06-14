@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 ; level format
 ; [fx|fy][blue xy][red xy][blue point xy][red point xy]..[maze walls]
 
@@ -87,19 +89,19 @@ TILT2_level:
 file 'tilt2.bin'
 
 if lang eq ru_RU
-	TILT2_help mstr \
-	'Красный и синий блоки должны достичь клеток',\
-	'соответствующего цвета. Внимание! Блоки сделаны',\
-	'из агрессивного материала, и при столкновении',\
-	'мгновенно испаряются. В этом случае Вам придется',\
-	'начать уровень сначала.','',\
-	'http://www.clickmazes.com'
-else
-	TILT2_help mstr \
-  'The red block must reach the red target and the',\
-  'blue block the blue target. Beware! The two',\
-  'blocks are made of highly reactive material and,',\
-  'if they collide, will instantly evaporate. At',\
-  'this point you must start all over again.','',\
-	'http://www.clickmazes.com'
+        TILT2_help mstr \
+        'Красный и синий блоки должны достичь клеток',\
+        'соответствующего цвета. Внимание! Блоки сделаны',\
+        'из агрессивного материала, и при столкновении',\
+        'мгновенно испаряются. В этом случае Вам придется',\
+        'начать уровень сначала.','',\
+        'http://www.clickmazes.com'
+else ; Default to en_US
+        TILT2_help mstr \
+        'The red block must reach the red target and the',\
+        'blue block the blue target. Beware! The two',\
+        'blocks are made of highly reactive material and,',\
+        'if they collide, will instantly evaporate. At',\
+        'this point you must start all over again.','',\
+        'http://www.clickmazes.com'
 end if

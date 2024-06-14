@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 ; level format
 ; [fx|fy]..[field cells x2]..[worm_count]..[worm_len][start cell #][body dirs x2]
 
@@ -206,22 +208,22 @@ OR_level:
 file 'or2.bin'
 
 if lang eq ru_RU
-	OR_help mstr \
-	'Щелчок на выделенной клетке передвигает или',\
-	'вращает красную стрелку. Синий блок действует',\
-	'как препятствие, скрывая одну клетку. При',\
-	'переходе стрелки на клетку синего блока они',\
-	'поменяются местами. Задача - провести красную',\
-	'стрелку из нижней клетки в верхнюю.','',\
-	'http://www.clickmazes.com'
-else
-	OR_help mstr \
-	'Click on a highlighted square to move or rotate',\
-	'the red pointer. The blue switcher acts as an',\
-	'obstacle, hiding one square. The red pointer and',\
-	'blue switcher will swap places if the red pointer',\
-	'is pushed onto a square occupied by a blue',\
-	'switcher. Your challenge is to negotiate the red',\
-	'arrow from the bottom to the top square.','',\
-	'http://www.clickmazes.com'
+        OR_help mstr \
+        'Щелчок на выделенной клетке передвигает или',\
+        'вращает красную стрелку. Синий блок действует',\
+        'как препятствие, скрывая одну клетку. При',\
+        'переходе стрелки на клетку синего блока они',\
+        'поменяются местами. Задача - провести красную',\
+        'стрелку из нижней клетки в верхнюю.','',\
+        'http://www.clickmazes.com' ; FIXME: Check link works
+else ; Default to en_US
+        OR_help mstr \
+        'Click on a highlighted square to move or rotate',\
+        'the red pointer. The blue switcher acts as an',\
+        'obstacle, hiding one square. The red pointer and',\
+        'blue switcher will swap places if the red pointer',\
+        'is pushed onto a square occupied by a blue',\
+        'switcher. Your challenge is to negotiate the red',\
+        'arrow from the bottom to the top square.','',\
+        'http://www.clickmazes.com' ; FIXME: Check link works
 end if
