@@ -24,7 +24,7 @@ dd PARAMS	 ; адрес буфера для параметров
 dd cur_dir_path
 
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), et_EE, it_IT, en_US.
 include '../../../macros.inc'
 if debug eq yes
 include '../../../debug.inc'
@@ -365,7 +365,7 @@ draw_window:
 	m2m dword [frame_data.font_color],[sc.work_text]
 	m2m dword [frame_data.ext_fr_col],[sc.work_graph]
 	m2m dword [frame_data.int_fr_col],[sc.work_light]
-	
+
 	push	dword frame_data
 	call	[Frame_draw]
 
@@ -444,7 +444,7 @@ aUnknownError	db 'Errore sconosciuto',0
 rdError 	db "You can't save image on itself",0
 error		db 'Errore: ',0
 ;---------------------------------------------------------------------
-else
+else ; Default to en_US
 save		db '  Save',0
 cancel		db 'Cancel',0
 select		db ' Select',0

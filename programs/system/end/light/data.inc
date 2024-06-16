@@ -13,6 +13,9 @@ TEXT_ENTER: db 'Enter',0
 TEXT_END: db 'End',0
 TEXT_CANCEL: db 'x',0
 ;---------------------------------------------------------------------
+
+; Language support for locales: ru_RU (CP866), de_DE, it_IT, en_US
+
 if lang eq ru_RU
     TEXT_WTITLE:  db 'Завершение работы',0
     TEXT_RDSAVE1: db 'Сохранить изменения, сделанные в',0
@@ -37,7 +40,7 @@ else if lang eq it_IT
     TEXT_REBOOT:  db 'Riavvio',0
     TEXT_OFF:     db 'Spegni',0
     TEXT_SAVING:  db 'Saving RAM-drive...',0
-else
+else ; Default to en_US
     TEXT_WTITLE:  db 'Shutdown computer',0
     TEXT_RDSAVE1: db 'Save all changes that were done',0
     TEXT_RDSAVE2: db 'during system work (Ctrl+S)',0
@@ -55,13 +58,13 @@ asettings   db 'settings',0
 aautosave   db 'autosave',0
 ini_file db  '/sys/settings/rdsave.ini',0
 ;---------------------------------------------------------------------
-importLib:          
-library                                                 \          
-        libini, 'libini.obj'          
-          
-import  libini, \          
-        ini_set_int  ,'ini_set_int', \          
-        ini_get_int  ,'ini_get_int'   
+importLib:
+library                                                 \
+        libini, 'libini.obj'
+
+import  libini, \
+        ini_set_int  ,'ini_set_int', \
+        ini_get_int  ,'ini_get_int'
 ;---------------------------------------------------------------------
 checkbox_sharedname db 'CHECKBOX',0
 checkbox_img dd ?

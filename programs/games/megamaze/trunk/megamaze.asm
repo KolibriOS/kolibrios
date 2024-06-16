@@ -17,14 +17,14 @@ macro icall lbl
   use32
   org	  0x0
 
-  db	 'MENUET01'		 ; 8 byte id
-  dd	 0x01			 ; header version
-  dd	 run			 ; start of code
-  dd	 I_END			 ; size of image
-  dd	 end_mem		 ; memory for app
-  dd	 stack_end		  ; esp
-  dd	 0x0 , 0x0		 ; I_Param , I_Icon
-lang fix ru_RU
+  db    'MENUET01'     ; 8 byte id
+  dd    0x01           ; header version
+  dd    run            ; start of code
+  dd    I_END          ; size of image
+  dd    end_mem        ; memory for app
+  dd    stack_end      ; esp
+  dd    0x0 , 0x0      ; I_Param , I_Icon
+lang fix ru_RU ; TODO: Include lang.inc here? Currently in game text (below) is en_US.
 include "macros.inc"
 purge mov
 ;include "../../../debug.inc"
@@ -299,19 +299,19 @@ draw_window:
     mov   ecx,[fy]
     imul  ecx,[Ces]
     add   ecx,10 shl 16+YFOFS+30
-	mov edx, WNDCOLOR 
+	mov edx, WNDCOLOR
 	mov edi, header
     mcall 0
-    
+
 	mov esi, edx
 	and	esi,0xffffff
 	mcall 9,prc_info,-1
 	pop	ebx
-    
+
 	mov	eax,[prc_info+70] ;status of window
 	test	eax,100b
 	jne	.end
-    
+
     add   ebx,XFOFS shl 16
 
     mcall 8,,<25,12>,2
@@ -791,24 +791,34 @@ header db 'Mega Maze', 0
 
 next_msg db '< >'
 
+; TODO: Translate in game text and support 'lang.inc'. Defaults to en_US.
 game_names mstr \
-	'Teseus & Minotaur #',\
-	'1-2-3 Maze #',\
-	'Tilt Maze #',\
-	'Double Tilt #',\
-	'Full-house #',\
-	'Loops #',\
-	'Wriggle #',\
-	'BlackBox #',\
-	'Marble #',\
-	'Counter Step #',\
-	'Orientation #',\
-	'No left turn #',\
-	'Colour-zone #'
+        'Teseus & Minotaur #',\
+        '1-2-3 Maze #',\
+        'Tilt Maze #',\
+        'Double Tilt #',\
+        'Full-house #',\
+        'Loops #',\
+        'Wriggle #',\
+        'BlackBox #',\
+        'Marble #',\
+        'Counter Step #',\
+        'Orientation #',\
+        'No left turn #',\
+        'Colour-zone #'
 
-msgs mstr ' ','You win!!!','Game over.','Start cell?','Dead end!',\
-	"  atoms hidden.",'Ray emerged.','Ray absorbed.','Ray reflected.',\
-	'Mark exactly    guesses','Your score is','Guess mark toggled'
+msgs mstr ' ',\
+        'You win!!!',\
+        'Game over.',\
+        'Start cell?',\
+        'Dead end!',\
+        "  atoms hidden.",\
+        'Ray emerged.',\
+        'Ray absorbed.',\
+        'Ray reflected.',\
+        'Mark exactly    guesses',\
+        'Your score is',\
+        'Guess mark toggled'
 
 I_END:
 main_pid dd ?

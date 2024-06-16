@@ -9,7 +9,7 @@ include '../../../KOSfuncs.inc'
 include '../../../load_img.inc'
 include '../../../load_lib.mac'
 include '../trunk/str.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
 vox_offs_tree_table equ 4
 vox_offs_data equ 12
@@ -19,7 +19,7 @@ include '../trunk/vox_rotate.inc'
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 if lang eq ru_RU
 caption db 'Создатель вокселей 04.05.20',0 ;подпись окна
-else
+else ; Default to en_US
 caption db 'Voxel creator 04.05.20',0
 end if
 
@@ -38,7 +38,7 @@ txt_space db ' ',0
 if lang eq ru_RU
 txt_pref db ' б ',0,' Кб',0,' Мб',0,' Гб',0 ;приставки: кило, мега, гига
 txt_f_size: db 'Размер: '
-else
+else ; Default to en_US
 txt_pref db ' b ',0,' Kb',0,' Mb',0,' Gb',0 ;приставки: кило, мега, гига
 txt_f_size: db 'Size: '
 end if
@@ -607,7 +607,7 @@ pushad
 		stdcall buf2d_vox_obj_get_size,[open_file_vox]
 		mov [vox_obj_size],eax
 		call draw_object
-		
+
 		jmp .end_open_file
 	.err_open:
 		call but_new_file
@@ -687,7 +687,7 @@ push eax ebx edi
 		mov buf2d_l,ax
 		add buf2d_l,bx
 		add buf2d_l,4
-	@@:	
+	@@:
 pop edi ebx eax
 	ret
 
@@ -769,7 +769,7 @@ proc set_borders uses eax ebx ecx edx edi
 		cmp ebx,[btx_min]
 		jg .cycle_4
 	@@:
-	
+
 	;stdcall [buf2d_line], edi, 0,[bby_min],50,[bby_min],255
 	ret
 endp
@@ -923,7 +923,7 @@ coord_x:dword,coord_y:dword,coord_z:dword,k_scale:dword
 	sub edi,[v_obj]
 	sub edi,vox_offs_tree_table
 	mov eax,edi
-	
+
 	ret
 endp
 
@@ -1001,7 +1001,7 @@ coord_x:dword,coord_y:dword,coord_z:dword,k_scale:dword
 	jz @f
 		shl eax,cl ;сдвигаем бит
 	@@:
-	
+
 	ret
 endp
 
@@ -1475,7 +1475,7 @@ buf_i2: dd 0
 .color: dd 0 ;+16 color
 	db 24 ;+20 bit in pixel
 
-;алгоритм создания модели использует 3 сечения: 
+;алгоритм создания модели использует 3 сечения:
 ; предыдущее, текущее, последующее (это необходимо для отсеивания вокселей внутри объекта)
 
 ;предыдущее сечение
@@ -1537,7 +1537,7 @@ i_end:
 		rb 2048
 stacktop:
 	sys_path rb 1024
-	file_name rb 2048 ;4096 
+	file_name rb 2048 ;4096
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256

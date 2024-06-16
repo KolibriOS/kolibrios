@@ -3,6 +3,8 @@
 ; работы окна с поиском в ключевых словах
 ;
 
+; Language support for locales: ru_RU (CP866), en_US.
+
 prop_wnd_width equ 350 ;ширина окна с поиском
 SIZE_ONE_FLOAT equ 14
 
@@ -12,7 +14,7 @@ wnd_k_words_run dd 0 ;переменная следящая за тем что-бы не запускать больше 1-го
 
 if lang eq ru_RU
 txt_caption db 'Поиск в ключевых словах',0
-else
+else ; Default to en_US
 txt_caption db 'Search in keywords',0
 end if
 
@@ -100,7 +102,7 @@ prop_still:
 		call prop_button
 	@@:
 	cmp al,6
-	jne @f 
+	jne @f
 		call prop_mouse
 	@@:
 	jmp prop_still

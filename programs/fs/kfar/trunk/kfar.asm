@@ -17,7 +17,7 @@ max_height = 255
 
 include '../../../KOSfuncs.inc'
 include '../../../macros.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include 'font.inc'
 include 'sort.inc'
 include 'kglobals.inc'
@@ -1024,7 +1024,7 @@ get_keybar_ind:
         jmp     .l
 .ret:
         lea     eax, [esi+ecx-1]
-        pop     edi esi edx ecx ebx   
+        pop     edi esi edx ecx ebx
         ret
 
 align 16
@@ -2577,7 +2577,7 @@ if lang eq ru_RU
         mov     word [edi-1], 'ов'
         inc     edi
 @@:
-else
+else ; Default to en_US
         mov     dword [edi], ' ite'
         mov     byte [edi+4], 'm'
         add     edi, 5
@@ -2948,7 +2948,7 @@ if lang eq ru_RU
         mov     dword [edi-4], 'мент'
         mov     dword [edi-8], ' эле'
         sub     edi, 8
-else
+else ; Default to en_US
         cmp     eax, 1
         jz      @f
         dec     edi
@@ -3796,7 +3796,7 @@ if lang eq ru_RU
         mov     eax, '    '
         stosd
         stosb
-else
+else ; Default to en_US
         mov     eax, 'Pane'
         stosd
         mov     eax, 'ls  '
@@ -4960,7 +4960,7 @@ if lang eq ru_RU
         mov     dword [edi-4], 'файл'
         mov     byte [edi-5], ' '
         sub     edi, 5
-else
+else ; Default to en_US
         cmp     eax, 1
         jz      @f
         dec     edi
@@ -4985,7 +4985,7 @@ if lang eq ru_RU
         mov     dword [edi-4], 'т в '
         mov     dword [edi-8], ' бай'
         sub     edi, 8
-else
+else ; Default to en_US
         mov     dword [edi-4], ' in '
         mov     dword [edi-8], 'ytes'
         mov     word [edi-10], ' b'
@@ -5255,7 +5255,7 @@ if lang eq ru_RU
         mov     al, 'В'
         stosw
         sub     ecx, 5
-else
+else ; Default to en_US
         mov     al, ' '
         stosw
         stosw
@@ -5281,7 +5281,7 @@ if lang eq ru_RU
         mov     al, 'П'
         stosw
         sub     ecx, 5
-else
+else ; Default to en_US
         mov     al, 'r'
         stosw
         mov     al, 'e'
@@ -6857,7 +6857,7 @@ aUp             db      'Вверх'
 .size = $-aUp
 aDrive          db      'Диск',0
 aScreens        db      'Экраны',0
-else
+else ; Default to en_US
 aFolder         db      'Folder'
 .size = $-aFolder
 aUp             db      'Up'
@@ -6959,7 +6959,8 @@ if lang eq ru_RU
 times 12 db     '      '
 ; Alt+Ctrl+Shift
 times 12 db     '      '
-else
+
+else ; Default to en_US
 ; No modificators
         db      'Help  '
         db      'UserMn'
@@ -7129,7 +7130,8 @@ keybar_cp:
 times 12 db     '      '
 ; Alt+Ctrl+Shift
 times 12 db     '      '
-else
+
+else ; Default to en_US
 ; No modificators
         db      'Help  '
         db      'Unwrap'
@@ -7300,7 +7302,8 @@ keybar_cp2:
 times 12 db     '      '
 ; Alt+Ctrl+Shift
 times 12 db     '      '
-else
+
+else ; Default to en_US
 ; No modificators
         db      'Help  '
         db      'Save  '
@@ -7547,27 +7550,27 @@ encodings:
         dd      .menu.2
         dd      0
 if lang eq ru_RU
-        db      '&DOS текст (cp866)',0
-else
-        db      '&DOS text (cp866)',0
+        db      '&DOS текст (CP866)',0
+else ; Default to en_US
+        db      '&DOS text (CP866)',0
 end if
         db      .cp1251
 .menu.2:
         dd      .menu.3
         dd      .menu.1
 if lang eq ru_RU
-        db      '&Windows текст (cp1251)',0
-else
-        db      '&Windows text (cp1251)',0
+        db      '&Windows текст (CP1251)',0
+else ; Default to en_US
+        db      '&Windows text (CP1251)',0
 end if
         db      .koi8r
 .menu.3:
         dd      .menu.4
         dd      .menu.2
 if lang eq ru_RU
-        db      '&Linux текст (koi8-r)',0
-else
-        db      '&Linux text (koi8-r)',0
+        db      '&Linux текст (KOI8-R)',0
+else ; Default to en_US
+        db      '&Linux text (KOI8-R)',0
 end if
         db      .unicode
 .menu.4:
@@ -7932,7 +7935,7 @@ mkdirinfo:
 
 if lang eq ru_RU
 compare_names   db      'иИрРмМаАнНсСдД'
-else
+else ; Default to en_US
 compare_names   db      'nNxXmMsSuUcCaA'
 end if
 
@@ -8429,7 +8432,8 @@ aCannotSaveToPlugin     db      'Сохранение файлов на панелях плагинов не поддер
 aCannotSearchOnPlugin   db      'Поиск на панелях плагинов не поддерживается',0
 aCancelled              db      'Действие было прервано',0
 aConfirmCancel          db      'Вы действительно хотите отменить действие?',0
-else
+
+else ; Default to en_US
 aDeleteCaption          db      'Delete',0
 aConfirmDeleteText      db      'Do you wish to delete',0
 aDeleteFolder           db      ' the folder',0
@@ -8466,7 +8470,7 @@ error3msg               db      'Unknown file system',0
 error4msg               db      'Strange... Error 4',0
 error5msg               db      'File not found',0
 error6msg               db      'End of file',0
-error7msg               db      'Strange... Pointer lies outside of application memory',0
+error7msg               db      'Strange... Pointer is outside of application memory',0
 error8msg               db      'Disk is full',0
 error9msg               db      'File structure is destroyed',0
 error10msg              db      'Access denied',0

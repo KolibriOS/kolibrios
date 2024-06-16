@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 idbChange	equ 2
 idbCreate	equ 3
 idbLeft 	equ 4
@@ -479,7 +481,7 @@ if lang eq ru_RU
 	mpack	ebx,272,35+END_ICONS_AREAH
 	mov	edx,DCaptProperties
      .DRD1:
-else
+else ; Default to en_US
 	mov	ecx,[sc.work_button_text]
 	or	ecx,90000000h
 	mcall	 ,<372,35+END_ICONS_AREAH>,,DCaptCancel

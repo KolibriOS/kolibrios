@@ -26,7 +26,7 @@
 M01header.params:
 	dd app_param	; parameters
 	dd cur_dir_path	; path to file
- 
+
 include 'lang.inc'
 include '../../../proc32.inc'
 include '../../../config.inc'		;for nightbuild
@@ -85,7 +85,7 @@ frame_1:
   .y      = area.y + area.height + 20
   .w  = area.w + 217
   .height = 65
-;--------------------------------------  
+;--------------------------------------
 frame_2:
   .x      = frame_1.x
   .y      = frame_1.y + frame_1.height + 20
@@ -99,11 +99,11 @@ win:
 START:		; start of execution
 ;---------------------------------------------------------------------
 	mcall	SF_SYS_MISC,SSF_HEAP_INIT
-	
-	test	eax,eax
-	jz	close	
 
-stdcall dll.Load,LibIniImportTable 
+	test	eax,eax
+	jz	close
+
+stdcall dll.Load,LibIniImportTable
 load_libraries l_libs_start,end_l_libs
 
 ;if return code =-1 then exit, else nornary work
@@ -125,7 +125,7 @@ load_libraries l_libs_start,end_l_libs
 	cmp ecx, '.dtp'
 	je load_dtp_from_param
 	jmp no_param
-	
+
 load_dtp_from_param:
 	stdcall string.copy, [M01header.params], dtp_name
 	call   load_dtp_file.1
@@ -139,8 +139,8 @@ load_skin_from_param:
 no_param:
 	mcall	SF_STYLE_SETTINGS,SSF_GET_COLORS,color_table,4*10	; get current colors
 	call	load_skin_file.2
-	
-skin_path_ready:	
+
+skin_path_ready:
 ;---------------------------------------------------------------------
 ;OpenDialog	initialisation
 	push	dword OpenDialog_data
@@ -156,13 +156,13 @@ skin_path_ready:
 ; prepare for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_prepare]
-	
+
 	push	dword PathShow_data_2
 	call	[PathShow_prepare]
-;---------------------------------------------------------------------	
+;---------------------------------------------------------------------
 red:
 	call	draw_window		; at first, draw the window
-;---------------------------------------------------------------------	
+;---------------------------------------------------------------------
 still:
 	mcall	SF_WAIT_EVENT
 
@@ -250,19 +250,19 @@ no_apply_skin:
 
 	cmp	ah,41
 	jg	no_new_colour
-	
-;---------------------------------------------------------------------	
+
+;---------------------------------------------------------------------
 .start_ColorDialog:
 	push    dword ColorDialog_data
 	call    [ColorDialog_Start]
 ; 2 - use another method/not found program
 	cmp	[ColorDialog_data.status],2
 	je	still
-; 1 - OK, color selected	
+; 1 - OK, color selected
 	cmp	[ColorDialog_data.status],1
 	jne	still
-;---------------------------------------------------------------------	
-	
+;---------------------------------------------------------------------
+
 	shr	eax,8
 	sub	eax,31
 	shl	eax,2
@@ -449,9 +449,9 @@ newcol:
 	add	bx,4
 	sub	ecx,2 shl 16
 	add	cx,4
-	
+
 	mov	[frame_data.x],ebx
-	mov	[frame_data.y],ecx	
+	mov	[frame_data.y],ecx
 
 	push	dword frame_data
 	call	[Frame_draw]
@@ -473,7 +473,7 @@ draw_PathShow:
 ; draw for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_draw]
-	
+
 	push	dword PathShow_data_2
 	call	[PathShow_draw]
 	popa
@@ -498,7 +498,7 @@ draw_window:
 	mcall	,<110, win.w>,,,,title
 
 	mcall	SF_THREAD_INFO,procinfo,-1
-	
+
 	mov	eax,[procinfo+70] ;status of window
 	test	eax,100b
 	jne	.end
@@ -527,8 +527,8 @@ draw_window:
 	mcall	SF_DEFINE_BUTTON,,,16	; button 17
 ; select color DTP button text
 	mcall	SF_DRAW_TEXT,<frame_1.x+16,frame_1.y+44>,[w_work_button_text],t1,t1.size
-;-----------------------------------	
-; select skin frame	
+;-----------------------------------
+; select skin frame
 ; LOAD SKIN BUTTON	; button 17
 	mcall	SF_DEFINE_BUTTON,<frame_2.x+10,load_w>,<frame_2.y+38,18>,17,[w_work_button]
 ; 3D
@@ -543,7 +543,7 @@ draw_window:
 	mcall	,,,18		; button 18
 ; select skin button text
 	mcall	SF_DRAW_TEXT,<frame_2.x+16,frame_2.y+44>,[w_work_button_text],t2,t2.size
-;-----------------------------------		
+;-----------------------------------
 	call	draw_button_row
 	call	draw_button_row_of_texts
 	call	draw_colours
@@ -556,7 +556,7 @@ draw_window:
 	mov	eax,[w_work_text]
 	mov	[frame_data.font_color],eax
 	mov	[frame_data.draw_text_flag],dword 1
-	
+
 	push	dword frame_data
 	call	[Frame_draw]
 ;-----------------------------------

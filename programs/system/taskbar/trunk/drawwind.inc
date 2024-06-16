@@ -35,7 +35,7 @@ no_def_width:
 
         cmp     [place_attachment],1
         je      @f
-        
+
         xor     ecx,ecx
         mov     cx,[height]
         dec     cx
@@ -51,19 +51,19 @@ align 4
 ;--------------------------------------
 align 4
 .attachment_selected:
-        xor     eax,eax                     ; DEFINE AND DRAW WINDOW
+        xor     eax,eax         ; DEFINE AND DRAW WINDOW
         mov     edx, [wcolor]
         or      edx, 0x01000000 ; do not draw the window
         mov     esi, [wcolor]
         or      esi, 0x01000000 ; unmovable window
         mov     edi, [wcolor]
         mov     [panel_x_pos], ebx
-        mov     [panel_y_pos], ecx       ; Пока что так.
+        mov     [panel_y_pos], ecx       ; So far ok
         mcall
 
         movzx   eax,word [screenxy+2]
         mov     [max_x],eax
-        
+
         call    fill_window
         call    minimize_left_button
         call    minimize_right_button
@@ -78,7 +78,7 @@ align 4
         ret
 ;------------------------------------------------------------------------------
 align 4
-fill_window:    
+fill_window:
         movzx   ebx,word [screenxy+2]
         xor     ecx,ecx
         mov     edx,[wcolor]
@@ -192,7 +192,7 @@ align 4
 .exit:
         ret
 ;------------------------------------------------------------------------------
-align 4 
+align 4
 minimize_right_button:
         cmp     [minimize_right],dword 0
         je      .exit
@@ -247,19 +247,19 @@ align 4
         mov     ecx, [height]
         mov     edx, 0x60d1ff01
         mcall   8,,,,[wcolor]   ; MENU BUTTON
-        
+
         mov     eax,ebx
         shr     eax,16
         mov     [menu_button_x.start],eax
-        
+
         mov     eax,ebx
         and     eax,0xffff
         mov     [menu_button_x.size],eax
-        
+
         mov     eax,ecx
         shr     eax,16
         mov     [menu_button_y.start],eax
-        
+
         mov     eax,ecx
         and     eax,0xffff
         mov     [menu_button_y.size],eax
@@ -268,7 +268,7 @@ align 4
         mov     edx,[MenuButton_color]  ;0x44aa44
         mov     esi,[wcolor]
         add     ebx,3 shl 16 - 5
-        call    draw_appl_button        
+        call    draw_appl_button
 
         add     ebx, 4*65536
         mov     bx,[height]
@@ -276,7 +276,7 @@ align 4
         sub     bx,7
         mov     ecx,[PanelText_color]
         or      ecx,0x10000000
-        if lang eq et_EE
+        if lang eq et_ET
         mcall   4,,,m_text,5
         else
         mcall   4,,,m_text,4
@@ -289,7 +289,7 @@ no_menu:
         je      .exit
 ; calculate and draw clean desktop button
         mov     ebx, (0 shl 16) + CLD_SIZE-5
-; check for left minimize button enabled        
+; check for left minimize button enabled
         cmp     [minimize_left],dword 0
         je      @f
 
@@ -300,7 +300,7 @@ align 4
 ; check for menu button enabled
         cmp     [menu_enable],dword 0
         je      @f
-        
+
         add     ebx, MENU_SIZE shl 16
 ;--------------------------------------
 align 4
@@ -311,7 +311,7 @@ align 4
         mov     edx, 0x60000000 + 103
         mov     ecx, [height]
         mcall   8       ;,,<3,13>
-        
+
         call    calculate_button_y_coordinate_and_size
         mov     edx,[CleanDesktopButton_color]  ;time_bgr_color
         mov     esi,[wcolor]
@@ -354,31 +354,31 @@ align 4
 @@:
         cmp     [clock_enable],dword 0
         je      @f
-        
+
         sub     eax,CLOCK_SIZE
 ;--------------------------------------
-align 4 
+align 4
 @@:
         cmp     [cpu_usage_enable],dword 0
         je      @f
-        
+
         sub     eax,CPU_USAGE_SIZE
 ;--------------------------------------
-align 4 
+align 4
 @@:
         cmp     [chlang_enable],dword 0
         je      @f
-        
+
         sub     eax,CHLANG_SIZE
 ;--------------------------------------
-align 4 
+align 4
 @@:
         cmp     [page_list_enable],dword 0
         je      @f
-        
+
         sub     eax,PAGE_LIST_SIZE
 ;--------------------------------------
-align 4 
+align 4
 @@:
         mov     ebx, TAB_SIZE
         xor     edx,edx
@@ -419,11 +419,11 @@ calculate_offset_X:
         add     eax, ML_SIZE
 ;--------------------------------------
 align 4
-@@:     
+@@:
 ; check for menu button enabled
         cmp     [menu_enable],dword 0
         je      @f
-        
+
         add     eax, MENU_SIZE
 ;--------------------------------------
 align 4

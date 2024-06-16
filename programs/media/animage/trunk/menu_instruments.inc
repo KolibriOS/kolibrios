@@ -347,12 +347,16 @@ no_signum_fill_r_y_copy:
 	mov	edx,[PointerToEditBufer]
 	mov	eax,[rectangular_shade_x]
 	sub eax,[crossing_old_x]
-	mov [edx],eax ;image.w
+	mov dword[edx+4],1 ;type image
+	mov [edx+8],eax ;image.w
 	mov	eax,[rectangular_shade_y]
 	sub eax,[crossing_old_y]
-	mov [edx+4],eax ;image.h
-	mov dword[edx+8],24 ;bit in pixel
-	add edx,12 ;copy image parametrs
+	mov [edx+12],eax ;image.h
+	mov dword[edx+16],24 ;bit in pixel
+	xor eax,eax
+	mov dword[edx+20],eax ;palette
+	mov dword[edx+24],eax ;palette size
+	add edx,28 ;copy image parametrs
 	mov	[y],edi
 
 loop_fill_rectangle_y_copy:
@@ -385,8 +389,14 @@ loop_fill_rectangle_x_copy:
 	cmp	eax,[rectangular_shade_y]
 	jl	loop_fill_rectangle_y_copy
 
-	;...todo use system buffer...
-	;mcall SF_CLIPBOARD,SSF_WRITE_CB,,[PointerToEditBufer]
+	;use system buffer
+	mov	edx,[PointerToEditBufer]
+	mov ecx,[edx+8] ;image.w
+	imul ecx,[edx+12] ;image.h
+	lea ecx,[ecx+ecx*2]
+	add ecx,28
+	mov [edx],ecx ;buffer size
+	mcall SF_CLIPBOARD,SSF_WRITE_CB
 
 	call	MovePictureToWorkScreen
 	mov	[DrawSprite_flag],1
@@ -396,6 +406,10 @@ no_copy:
 ; <<< Paste >>>
 	cmp	[number_menu],4
 	jne	no_paste
+
+	call ReadCB_Img
+	or eax,eax
+	jz no_paste
 
 	mov	eax,[crossing_old_x]
 	mov	ebx,[crossing_old_y]
@@ -445,15 +459,15 @@ no_signum_fill_r_x_paste:
 
 no_signum_fill_r_y_paste:
 	mov	edx,[PointerToEditBufer]
-	cmp dword[edx+8],24
+	cmp dword[edx+16],24 ;bit in pixel
 	jne	end_menu
-	mov eax,[edx]
+	mov eax,[edx+8] ;image.w
 	add eax,[crossing_old_x]
 	mov [paste_img_w],eax
-	mov eax,[edx+4]
+	mov eax,[edx+12] ;image.h
 	add eax,[crossing_old_y]
 	mov [paste_img_h],eax
-	add edx,12 ;copy image parametrs
+	add edx,28 ;copy image parametrs
 	mov	[y],edi
 
 loop_fill_rectangle_y_paste:
@@ -479,6 +493,12 @@ loop_fill_rectangle_x_paste:
 	mov	[x],eax
 	cmp	eax,[rectangular_shade_x]
 	jl	loop_fill_rectangle_x_paste
+
+	sub eax,[paste_img_w]
+	jge no_paste_data_x
+	neg eax
+	lea	eax,[eax+eax*2]
+	add	edx,eax ;пропуск пикселей изображения которые не влазят в rectangle
 no_paste_data_x:
 
 	mov	eax,[y]
@@ -637,3 +657,48 @@ end_menu:
 	and	[number_menu],0
 	jmp	still
 ;---------------------------------------------------------------------
+;output:
+; eax - 0 если изображение не прочитано, 1 если успешно прочитано
+align 16
+proc ReadCB_Img uses ebx ecx edi esi
+	mcall SF_CLIPBOARD,SSF_GET_SLOT_COUNT
+	cmp eax,1
+	jl .no_buf_r
+
+	mov esi,eax
+	.cycle: ;обратный цикл по слотам
+	dec esi ;номер текущего, проверяемого слота
+	mcall SF_CLIPBOARD,SSF_READ_CB,esi
+	cmp eax,1
+	je .no_buf_r
+	cmp eax,-1
+	je .no_buf_r
+		mov ecx,[eax]
+		cmp ecx,1 ;size
+		jl .no_buf_r
+		cmp dword[eax+4],1 ;image
+		je @f
+			cmp esi,1
+			jge .cycle ;если в буфере не изображение, а слотов в буфере несколько, пробуем перейти к верхнему слоту
+			jmp .no_buf_r
+		@@:
+		cmp dword[eax+16],24 ;bit in pixel
+		je @f
+			cmp esi,1
+			jge .cycle ;если в буфере не 24 битное изображение
+			jmp .no_buf_r
+		@@:
+		;копирование изображения из системного буфера во внутренний
+		mov edi,[PointerToEditBufer]
+		mov esi,eax
+		mov ecx,[eax]
+		shr	ecx,2
+		rep movsd
+		xor eax,eax
+		inc eax
+		jmp .end_f
+	.no_buf_r:
+		xor eax,eax
+	.end_f:
+	ret
+endp

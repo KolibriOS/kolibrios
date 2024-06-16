@@ -1,22 +1,24 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 ;-----------------------------------------------------------------------------
 s_text:
 if lang eq ru_RU
 	db 'Выбор файла',0
-else
+else ; Default to en_US
 	db 'Select file',0
 end if
 ;-----------------------------------------------------------------------------
 r_text:
 if lang eq ru_RU
 	db 'Пуск',0
-else
+else ; Default to en_US
 	db 'Start',0
 end if
 ;-----------------------------------------------------------------------------
 result_table_text:
 if lang eq ru_RU
 	db 'Размер   Чтение (КБ/с)   Запись (КБ/с)',0
-else
+else ; Default to en_US
 	db 'Size     Read (KB/s)     Write (KB/s)',0
 end if
 ;-----------------------------------------------------------------------------
@@ -170,15 +172,15 @@ check1 check_box2 (100 shl 16)+12,(27 shl 16)+12,6,0xFFFFFF,0,0xffffff,\
 check_text1:
 if lang eq ru_RU
 	db 'Тестировать запись',0
-else
+else ; Default to en_US
 	db 'Use testing of write',0
 end if
 
 check_box_warning_text:
 if lang eq ru_RU
 	db 'ВНИМАНИЕ! Проверка скорости записи уничтожает содержимое файла!',0
-else
-	db 'WARNING! Testing of write speed is destroy contents of file!',0
+else ; Default to en_US
+	db 'WARNING! Testing of write speed will destroy file contents!',0
 end if
 ;-----------------------------------------------------------------------------
 OpenDialog_data:
@@ -203,7 +205,7 @@ OpenDialog_data:
 
 communication_area_name:
 	db 'FFFFFFFF_open_dialog2',0
-	
+
 open_dialog_path:
 if __nightbuild eq yes
 	db '/sys/MANAGERS/opendial',0

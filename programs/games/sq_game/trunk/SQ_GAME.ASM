@@ -5,7 +5,7 @@
 ; slightly updated by leency and renamed to Lights
 ; https://en.wikipedia.org/wiki/Lights_Out_(game)
 ; slightly optimized by diamond
-; english translation by diamond (two strings in end of source)
+; English translation by diamond (two strings in end of source)
 
 
 	BtnSize     equ 36	; размер кнопки
@@ -33,6 +33,7 @@
 
 include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
 
+; Language support for locales: ru_RU (CP866), en_US.
 
 START:
     call Game_Init
@@ -231,7 +232,7 @@ header		db 'Lights',0
 if lang eq ru_RU
 strMovs 	db 'ХОД',0
 strNew		db 'Новая игра',0
-else
+else ; Default to en_US
 strMovs 	db 'MOVE',0
 strNew		db ' New game',0
 end if

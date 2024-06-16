@@ -12,12 +12,12 @@ include '../../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include '../../../develop/libraries/TinyGL/asm_fork/zbuffer.inc'
 include 'vox_3d.inc'
 include '../trunk/str.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 if lang eq ru_RU
 caption db 'Просмотр вокселей 11.11.20',0 ;подпись окна
-else
+else ; Default to en_US
 caption db 'Voxel viewer 11.11.20',0
 end if
 
@@ -93,7 +93,7 @@ still:
 	cmp al,3
 	jz button
 	cmp al,6
-	jne @f 
+	jne @f
 		call mouse
 	@@:
 
@@ -446,7 +446,7 @@ pushad
 	mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
 	stdcall mem.ReAlloc,[open_file_data],ecx
 	mov [open_file_data],eax
-	
+
 	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
@@ -498,7 +498,7 @@ draw_cadr_8:
 	call draw_3d
 	call draw_cadr
 	stdcall [buf2d_bit_blt], buf_0, 0, 128, buf_1
-	
+
 	fild dword[rot_angles+12]
 	fstp dword[angle_y]
 	call draw_3d
@@ -510,7 +510,7 @@ draw_cadr_8:
 	call draw_3d
 	call draw_cadr
 	stdcall [buf2d_bit_blt], buf_0, 0, 256, buf_1
-	
+
 	fild dword[rot_angles+20]
 	fstp dword[angle_y]
 	call draw_3d
@@ -522,7 +522,7 @@ draw_cadr_8:
 	call draw_3d
 	call draw_cadr
 	stdcall [buf2d_bit_blt], buf_0, 0, 384, buf_1
-	
+
 	fild dword[rot_angles+28]
 	fstp dword[angle_y]
 	call draw_3d
@@ -535,7 +535,7 @@ draw_cadr_8:
 	call draw_3d
 	call draw_cadr
 	stdcall [buf2d_bit_blt], buf_0, 0, 0, buf_1
-	
+
 	call draw_3d
 	; ***
 
@@ -714,11 +714,13 @@ if lang eq ru_RU
 .v: rb 70
 txt_stat_m2:
 	db 13,10,'Отображаемых граней: '
-else
+
+else ; Default to en_US
 	db 'Statistics',13,10,'Voxels: '
 .v: rb 70
 txt_stat_m2:
 	db 13,10,'Facets displayed: '
+
 end if
 .v: rb 20
 
@@ -775,10 +777,10 @@ proc SetLight
     stdcall [glMaterialfv], GL_FRONT, GL_SPECULAR, mat_specular
     stdcall [glMaterialf], GL_FRONT, GL_SHININESS, mat_shininess
     stdcall [glLightModelfv], GL_LIGHT_MODEL_AMBIENT, lmodel_ambient
-  
+
     stdcall [glEnable], GL_LIGHTING
     stdcall [glEnable], GL_LIGHT0
-    
+
     ;;;stdcall [glLightModeli], GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE
     ret
 endp
@@ -1043,7 +1045,7 @@ i_end:
 	rb 4096
 stacktop:
 	sys_path rb 1024
-	file_name rb 2048 
+	file_name rb 2048
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256

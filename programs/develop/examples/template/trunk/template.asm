@@ -5,10 +5,10 @@
 ; last update:  1/03/2007
 ; written by:   Ivan Poddubny
 ; e-mail:       ivan-yar@bk.ru
-;modified by: Heavyiron, maxcodehack
+; modified by:  Heavyiron, maxcodehack
 
 ; <--- include all KolibriOS stuff --->
-include "lang.inc"
+include "lang.inc" ; Language support for locales: ru_RU (CP866), fr_FR, en_US.
 include "..\..\..\..\macros.inc"
 
 
@@ -62,7 +62,7 @@ CODE
     xor       eax, eax                      ; create and draw the window
     mov     ebx, 100*65536+200 ; (window_cx)*65536+(window_sx)
     mov     ecx, 100*65536+100  ; (window_cy)*65536+(window_sy)
-    mov     edx, [sc.work]              ; work area color 
+    mov     edx, [sc.work]              ; work area color
     or         edx, 0x33000000        ; & window type 3
     mov     edi, title                    ; window title
     int        0x40
@@ -80,7 +80,7 @@ if lang eq ru_RU
 title db 'Шаблон программы',0
 else if lang eq fr_FR
 title db 'La programme poncive',0
-else
+else ; Default to en_US
 title db 'Template program',0
 end if
 

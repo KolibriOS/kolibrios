@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 ; level format
 ; [fx|fy][hole xy][balls #]..[1-red,0-black xy]..[maze walls]
 
@@ -114,25 +116,25 @@ MAR_level:
 file 'marble.bin'
 
 if lang eq ru_RU
-	MAR_help mstr \
-	'Несколько красных и черных плашек лежат на доске,',\
-	'дырка обозначена серой клеткой. Когда плашка',\
-	'проходит над дыркой, она падает туда и исчезает.',\
-	'Используйте стрелки для наклона доски.',\
-	' Ваша задача - сбросить все красные плашки.',\
-	'Количество упавших черных плашек роли не играет.','',\
-	'http://www.clickmazes.com'
-else
-	MAR_help mstr \
-  'Several red and black marbles sit on a flat tray,',\
-  'a grey square indicate a hole in the tray. If a',\
-  'marble rolls onto or over the hole it drops',\
-  'through and disappears. Use the cursor keys to',\
-  'tilt the tray and start the marbles rolling, the',\
-  'marbles roll in a straight line until they come',\
-  'to rest, you can then roll again. Your challenge',\
-  'is to drop all the red marbles, it does not',\
-  'matter how many black marbles you lose in the',\
-  'process.','',\
-	'http://www.clickmazes.com'
+        MAR_help mstr \
+        'Несколько красных и черных плашек лежат на доске,',\
+        'дырка обозначена серой клеткой. Когда плашка',\
+        'проходит над дыркой, она падает туда и исчезает.',\
+        'Используйте стрелки для наклона доски.',\
+        ' Ваша задача - сбросить все красные плашки.',\
+        'Количество упавших черных плашек роли не играет.','',\
+        'http://www.clickmazes.com'
+else ; Default to en_US
+        MAR_help mstr \
+        'Several red and black marbles sit on a flat tray,',\
+        'a grey square indicate a hole in the tray. If a',\
+        'marble rolls onto or over the hole it drops',\
+        'through and disappears. Use the cursor keys to',\
+        'tilt the tray and start the marbles rolling, the',\
+        'marbles roll in a straight line until they come',\
+        'to rest, you can then roll again. Your challenge',\
+        'is to drop all the red marbles, it does not',\
+        'matter how many black marbles you lose in the',\
+        'process.','',\
+        'http://www.clickmazes.com'
 end if

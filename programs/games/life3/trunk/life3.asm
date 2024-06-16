@@ -9,7 +9,7 @@ include '../../../KOSfuncs.inc'
 include '../../../load_img.inc'
 include '../../../load_lib.mac'
 
-;include 'lang.inc'
+;include 'lang.inc'  ; Language support for locales: ru_RU (CP866), en_US.
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 hed db 'Life 18.11.20',0 ;подпись окна
@@ -61,7 +61,7 @@ if lang eq ru_RU
 txt_zoom db '   Масштаб:',0
 txt_gen db '  Поколение:',0
 txt_osob db '    Особей:',0
-else
+else ; Default to en_US
 txt_zoom db '      Zoom:',0
 txt_gen db  'Generation:',0
 txt_osob db 'Population:',0
@@ -1000,7 +1000,7 @@ pushad
 		stdcall [buf2d_clear], buf_0, [buf_0.color]
 		call pole_paint
 	.end0:
-	
+
 	mov edx,[sc.work]
 	mov ebx, 0 shl 16
 	add ebx, [buf_0.w]
@@ -1051,7 +1051,7 @@ pushad
 	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mov edx,(60 shl 16)+5 ;run auto
-	int 0x40	
+	int 0x40
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mov edx,(85 shl 16)+5 ;stop
 	int 0x40
@@ -1075,7 +1075,7 @@ pushad
 	add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	mov edx,(245 shl 16)+5 ;move right
 	int 0x40
-	
+
 	; add ebx,IMAGE_TOOLBAR_ICON_SIZE
 	; mov edx,(270 shl 16)+5
 	; int 0x40
@@ -1096,7 +1096,7 @@ pushad
 	add bx,9
 	mov edx,txt_osob
 	int 0x40
-	
+
 	call draw_pok
 
 	stdcall [buf2d_draw], buf_0
@@ -1239,7 +1239,7 @@ but_open_file:
 	mov [open_file_lif],eax
 	dec ecx ;for text files
 	mov byte[eax+ecx],0 ;for text files
-	
+
 	mov [run_file_70.Function], SSF_READ_FILE
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0

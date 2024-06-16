@@ -16,7 +16,7 @@ use_new_logic equ 1	;добавл€ет проверку клетки на "окружЄнность", программа выби
 use_ext_logic equ 1	;к use_new_logic, дополнительна€ проверка €чеек вокруг заданной клетки
 
 include '../../../macros.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
 ;include 'debug.inc'
 
@@ -834,7 +834,7 @@ endf
 	bts	[flags],6
 	call	find_near
 ;	test	bl,bl
-;	jnz	.cpu	
+;	jnz	.cpu
 	jc	.cpu;20
 
 .20:
@@ -1332,7 +1332,7 @@ title db 'МЃаб™Ѓ© °Ѓ© 0.4',0
 but_auto db 'Р†ббв†Ґ®вм',0
 but_new db 'НЃҐ†п',0
 text_win db 'Вл®£а†Ђ!',0
-else
+else ; Default to en_US
 title db 'Sea war 0.4',0
 but_auto db 'Auto fill',0
 but_new db 'New',0
