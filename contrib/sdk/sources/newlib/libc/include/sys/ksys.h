@@ -1223,7 +1223,7 @@ KOSAPI void _ksys_debug_puts(const char* s)
 KOSAPI void ksys_draw_bitmap_palette(void* bitmap, int x, int y, int w, int h, int bpp, void* palette, int offset)
 {
     asm_inline(
-        "pushl %%ebp,\n\t"            // save EBP register
+        "pushl %%ebp\n\t"            // save EBP register
         "movl 0x24(%%ebp), %%ebp\n\t" // 0x24 - "offset" param
         "int $0x40\n\t"
         "popl %%ebp" // restore EBP register
