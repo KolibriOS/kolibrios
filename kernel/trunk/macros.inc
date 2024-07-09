@@ -5,16 +5,6 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-__REV = 0
-
-macro $Revision a {
-  match =: Num =$,a \{
-    if __REV < Num
-      __REV = Num
-    end if
-  \}
-}
-
 ;// mike.dld, 2006-29-01 [
 
 ; macros definition

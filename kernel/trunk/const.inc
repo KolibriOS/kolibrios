@@ -227,6 +227,33 @@ struct kernel_header
 ; KERNEL.MNT file can be booted on BIOS as well as on UEFI.
 ends
 
+struct kernel_version
+        ; OS release number, e.g. 0,7,7,0. Distro-specific.
+        osrel    rb 4
+        ; A single char like 'a' to append to the version, or 0 to omit it.
+        ; 0 means 0.7.7.0+1234, 'a' means 0.7.7.0+1234-a, etc.
+        ; This allows developers to determine the debug build by its log.
+        ; Unfortunately, users sometimes mess things and test not the build they
+        ; were asked to test.
+        dbgtag   db ?
+        ; The kernel itself doesn't have any version other than its ABI version.
+        ; The minor and major parts were meant to mean significant compatible
+        ; and incompatible changes correspondingly. It is for a developer to
+        ; decide on what is a significant change.
+        abimin   db ?
+        ; The major ABI version must be at least 0x28 for backward compatibility
+        ; with the old revision number: 0x2800 = 10240 > the last SVN revision.
+        abimaj   dw ?
+        ; In binary, e.g. a short git hash. A single dword is 8 digits which
+        ; should be enough for the foreseeable future. We always can get space
+        ; for four more digits from the two reserved bytes below if needed.
+        cmtid    dd ?
+        reserved dw ?
+        ; The number of commits from the last release.
+        offset   dw ?
+ends
+assert sizeof.kernel_version = 16
+
 DRIVE_DATA_SIZE     = 16
 
 OS_BASE             = 0x80000000

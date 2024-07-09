@@ -28,36 +28,42 @@ macro line_space {
         db      186
 }
 d80x25_top:
-                line_full_top
-if __REV__ > 0
+        line_full_top
+; draw seven digits of the git hash
+__x = BUILD_CMTID
+if __x > 0
+  __x = __x SHR 4
   cur_line_pos = 75
-        store byte ' ' at d80x25_top+cur_line_pos+1
-  rev_var = __REV__
-  while rev_var > 0
-        store byte rev_var mod 10 + '0' at d80x25_top+cur_line_pos
-        cur_line_pos = cur_line_pos - 1
-        rev_var = rev_var / 10
-  end while
-        store byte ' ' at d80x25_top+cur_line_pos
-        store dword ' SVN' at d80x25_top+cur_line_pos-4
+  store byte ' ' at d80x25_top+cur_line_pos+1
+  repeat 7
+    digit = __x AND 0xf
+    if digit > 9
+      digit = digit - 10 + 'a'
+    else
+      digit = digit + '0'
+    end if
+    store byte digit at d80x25_top+cur_line_pos
+    cur_line_pos = cur_line_pos - 1
+    __x = __x SHR 4
+  end repeat
+  store byte ' ' at d80x25_top+cur_line_pos
+  store dword ' GIT' at d80x25_top+cur_line_pos-4
 end if
-
 space_msg:
-                line_space
+        line_space
 verstr:
-;               line_space
 ; version string
-        db 186,32
-        repeat 78
-                load a byte from kernel_header.signature+%-1
-                if a = 13
-                        break
-                end if
-                db a
-        end repeat
-        repeat 78 - ($-verstr)
-                db      ' '
-        end repeat
-        db 32,186
-                line_half
+db 186,32
+repeat 78
+  load a byte from kernel_header.signature+%-1
+  if a = 13
+    break
+  end if
+  db a
+end repeat
+repeat 78 - ($-verstr)
+  db ' '
+end repeat
+db 32,186
+        line_half
 d80x25_top_num = 4

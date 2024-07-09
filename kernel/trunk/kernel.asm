@@ -30,6 +30,8 @@ format binary as "mnt"
 include 'macros.inc'
 include 'struct.inc'
 
+ABI_MAJOR = 0x28
+ABI_MINOR = 0
 
 USE_COM_IRQ     = 1      ; make irq 3 and irq 4 available for PCI devices
 VESA_1_2_VIDEO  = 0      ; enable vesa 1.2 bank switch functions
@@ -711,10 +713,33 @@ end if
 
 
 ;-----------------------------------------------------------------------------
-; show SVN version of kernel on the message board
+; show OS version, offset, debug tag and commit id on the message board
 ;-----------------------------------------------------------------------------
-        mov     eax, [version_inf.rev]
-        DEBUGF  1, "K : kernel SVN r%d\n", eax
+        mov     eax, version_inf.osrel
+        DEBUGF  1, "K : OS version: %u.%u.%u.%u", [eax+0]:1, [eax+1]:1, \
+                [eax+2]:1, [eax+3]:1, ecx
+        movzx   ecx, [version_inf.offset]
+        jecxz   @f
+        DEBUGF  1, "+%u", ecx
+@@:
+        movzx   ecx, [version_inf.dbgtag]
+        jecxz   @f
+        push    ecx
+        mov     ecx, esp
+        DEBUGF  1, "-%s", ecx
+        pop     ecx
+@@:
+        DEBUGF  1, "\n"
+        mov     ecx, [version_inf.cmtid]
+        jecxz   @f
+        DEBUGF  1, "K : Commit ID: %x\n", ecx
+@@:
+;-----------------------------------------------------------------------------
+; show kernel ABI
+;-----------------------------------------------------------------------------
+        movzx   eax, [version_inf.abimaj]
+        movzx   ecx, [version_inf.abimin]
+        DEBUGF  1, "K : Kernel ABI: %u.%u\n", eax, ecx
 ;-----------------------------------------------------------------------------
 ; show CPU count on the message board
 ;-----------------------------------------------------------------------------
@@ -2102,12 +2127,12 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
 ;------------------------------------------------------------------------------
 sysfn_getversion:       ; 18.13 = get kernel ID and version
         ; if given memory address belongs to kernel then error
-        stdcall is_region_userspace, ecx, version_inf.size
+        stdcall is_region_userspace, ecx, sizeof.kernel_version
         jnz     .addr_error
 
         mov     edi, ecx
         mov     esi, version_inf
-        mov     ecx, version_inf.size
+        mov     ecx, sizeof.kernel_version
         rep movsb
         ret
 .addr_error:    ; if given memory address is illegal
@@ -2287,11 +2312,18 @@ sound_flag      db 0
 endg
 
 iglobal
-version_inf:
-        db 0,7,7,0  ; FIXME: Get distribution version from git tag
-        db 0
-.rev    dd __REV__
-.size = $ - version_inf
+if ~ definite BUILD_DBGTAG
+  BUILD_DBGTAG = 0
+end if
+if ~ definite BUILD_CMTID
+  BUILD_CMTID = 0
+end if
+if ~ definite BUILD_OFFSET
+  BUILD_OFFSET = 0
+end if
+align 4
+version_inf kernel_version <0,7,7,0>, BUILD_DBGTAG, ABI_MINOR, ABI_MAJOR, \
+                           BUILD_CMTID, 0, BUILD_OFFSET
 endg
 ;------------------------------------------------------------------------------
 align 4
@@ -4456,8 +4488,6 @@ diff16 "end of .text segment",0,$
 end if
 
 include "data32.inc"
-
-__REV__ = __REV
 
 if ~ lang eq es_ES
 diff16 "end of kernel code",0,$

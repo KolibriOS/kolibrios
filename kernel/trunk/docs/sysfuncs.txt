@@ -962,13 +962,21 @@ Remarks:
     16 byte buffer for the future compatibility, in the future
     some fields can be added.
 Structure of the buffer:
-db a,b,c,d for version a.b.c.d
-db 0: reserved
-dd REV - kernel SVN revision number
-For Kolibri 0.7.7.0+ kernel:
+db a,b,c,d for os version a.b.c.d
+db debug tag, 0 for release, any ASCII char otherwise
+db kernel ABI minor
+dw kernel ABI major
+dd commit id, e.g. short git hash in binary
+dw reserved
+dw the number of commits since the latest release
+For Kolibri 0.7.7.0+ the structure is like this:
 db 0,7,7,0
 db 0
-dd 1675
+db 0
+dw 40
+dd 0xf26d5b28
+dw 0
+dw 1675
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYSTEM (18)

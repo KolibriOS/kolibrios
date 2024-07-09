@@ -24,8 +24,37 @@ org 0
         ; struct kernel_header
         jmp     start_of_code   ; jump
         db      'KolibriOS '    ; signature
-        db      'v0.7.7.0      ',13,10,13,10,0  ; FIXME: get distribution version from git tag
+        db      'v0.7.7.0'      ; FIXME: get distribution version from git tag?
+.offset db      '        ',13,10,0
         dd      B32-KERNEL_BASE ; offset of the kernel's 32-bit entry point
+
+cur_line_pos = 0
+offset_len = 0
+__x = BUILD_OFFSET
+if __x > 0
+  store byte '+' at .offset+cur_line_pos
+  if __x < 10
+    offset_len = 2  ; '+' and a digit
+  else if __x < 100
+    offset_len = 3
+  else if __x < 1000
+    offset_len = 4
+  else if __x < 10000
+    offset_len = 5
+  else
+    offset_len = 6
+  end if
+  cur_line_pos = cur_line_pos + offset_len - 1
+  while __x > 0
+    store byte __x mod 10 + '0' at .offset+cur_line_pos
+    cur_line_pos = cur_line_pos - 1
+    __x = __x / 10
+  end while
+end if
+if BUILD_DBGTAG > 0
+  store byte '-' at .offset+offset_len
+  store byte BUILD_DBGTAG at .offset+offset_len+1
+end if
 
 include "boot/bootstr.inc"      ; language-independent boot messages
 include "boot/preboot.inc"

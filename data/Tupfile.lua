@@ -890,10 +890,6 @@ for i,v in ipairs(img_files) do
       str = string.gsub(str, "%%", "%%%%") -- escape % as %%
       cmd += " && str=" .. str
       cmd += ' && echo -n $str | dd status=none of=%o bs=1 seek=`expr 274 - length "$str"` conv=notrunc'
-      str2='$(get-current-cmtid|grep -oE "\\+[0-9]+")'
-      str2 = string.gsub(str2, "%$", "\\$") -- escape $ as \$
-      cmd += " && str2=" .. str2
-      cmd += ' && echo -n $str2 | dd status=none of=%o bs=1 seek=216 conv=notrunc'
     end
     local_file = VAR_KERNEL .. "/.kernel.mnt"
     tup.definerule{inputs = {v[2]}, command = cmd, outputs = {local_file}}
