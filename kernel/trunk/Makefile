@@ -1,6 +1,6 @@
 FASM=fasm
 FLAGS=-m 65536
-languages=en|ru|ge|et|sp
+languages=en_US|ru_RU|de_DE|et_EE|es_ES
 
 .PHONY: all kernel bootloader clean
 
