@@ -17,6 +17,9 @@ icon_table:
 icons_reserved:
 	times 9  db '          '
 ;------------------------------------------------------------------------------
+
+; Language support for locales: ru_RU (CP866), de_DE, it_IT, en_US
+
 if lang eq ru_RU
 text:
 	db 255,255,255,0,   '   ’…Š‘’                                       '
@@ -25,7 +28,7 @@ text:
 	db 255,255,255,0,   '                 ˆŒ…ˆ’œ                     '
 	db 255,255,255,0,   '      „€‚ˆ’œ              “„€‹ˆ’œ            '
 	db 0,0,0,0,         '€†Œˆ’… € ‡ˆ–ˆ ˆŠŠˆ „‹Ÿ …„€Š’ˆ‚€ˆŸ   '
-	db                  'x' ; <- END MARKER, DONT DELETE
+	db                  'x' ; <- END MARKER, DO NOT DELETE
 
 add_text	db '€†Œˆ’… € ‡ˆ–ˆ …ˆ‘‹œ‡“…Œ‰ ˆŠŠˆ     ',0
 rem_text	db '€†Œˆ’… € ‡ˆ–ˆ ˆ‘‹œ‡“…Œ‰ ˆŠŠˆ       ',0
@@ -39,7 +42,7 @@ text:
 	db 255,255,255,0,   '                ANWENDEN                       '
 	db 255,255,255,0,   '     HINZUFUEGEN              ENTFERNEN        '
 	db 0,0,0,0,         'AUF BUTTON KLICKEN, UM ICON ZU EDITIEREN       '
-	db                  'x' ; <- END MARKER, DONT DELETE
+	db                  'x' ; <- END MARKER, DO NOT DELETE
 
 add_text	db 'AUF UNBENUTZTE ICONPOSITION KLICKEN          ',0
 rem_text	db 'ICON ANKLICKEN; DAS GELOESCHT WERDEN SOLL    ',0
@@ -53,13 +56,13 @@ text:
 	db 255,255,255,0,   '           Applica modifiche                   '
 	db 255,255,255,0,   '      Aggiungi               Rimuovi           '
 	db 0,0,0,0,         'Clicca sull icona per effettuare modifiche     '
-	db                  'x' ; <- END MARKER, DONT DELETE
+	db                  'x' ; <- END MARKER, DO NOT DELETE
 
 add_text	db 'Clicca su una posizione non usata            ',0
 rem_text	db 'Cliccare sull icona da rimuovere             ',0
 title		db 'Gestore Icone',0
 
-else
+else ; Default to en_US
 text:
 	db 255,255,255,0,   '   TITLE                                       '
 	db 255,255,255,0,   '  APP NAME                                     '
@@ -67,7 +70,7 @@ text:
 	db 255,255,255,0,   '                APPLY CHANGES                  '
 	db 255,255,255,0,   '      ADD ICON              REMOVE ICON        '
 	db 0,0,0,0,         'CLICK BUTTON ON ICON POSITION FOR EDIT         '
-	db                  'x' ; <- END MARKER, DONT DELETE
+	db                  'x' ; <- END MARKER, DO NOT DELETE
 add_text	db 'CLICK ON A NOT USED POSITION                 ',0
 rem_text	db 'CLICK ICON POSITION; YOU WANT TO DELETE      ',0
 title		db 'Icon Manager',0
@@ -89,7 +92,7 @@ if lang eq ru_RU
 	db '‡€—Šˆ    -     ˆ‡    , ‚›€ #'
 ;else if lang eq it_IT
 ;	db 'Icone     -     di    , Selezionate'
-else
+else ; Default to en_US
 	db 'ICONS     -     OF    , SELECTED'
 end if
 

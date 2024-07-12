@@ -56,7 +56,7 @@ still_n_file:
 	cmp al,3
 	jz button_n_file
 	cmp al,6
-	jne @f 
+	jne @f
 		call mouse_n_file
 	@@:
 .end:
@@ -258,7 +258,7 @@ button_n_file:
 		stdcall str_cat, txt_05.z, txt_nl
 		stdcall str_cat, txt_05.z, txt_nl
 		stdcall str_cat, txt_06.z, Data_String
-		
+
 		fld qword[NOptCoordZ0]
 		fstp qword[Data_Double]
 		call DoubleFloat_to_String
@@ -379,7 +379,7 @@ pushad
 		fldz
 		;st0 - angle (=0)
 		;st1 - delta angle (=pi/slices)
-		
+
 		mov ecx,[edx+Figure.PoiCount]
 		cmp ecx,3
 		jge @f
@@ -390,7 +390,7 @@ pushad
 		.cycle0:
 			add edx,sizeof.Point
 			fadd st0,st1 ;angle += delta angle
-		
+
 			fld st0
 			fcos
 			fmul qword[NOptCoordX1] ;st0 = cos(angle) * radius
@@ -579,7 +579,7 @@ txt_circle: db 'Окружность'
 .end: db 0
 txt_rect: db 'Прямоугольник'
 .end: db 0
-else
+else ; Default to en_US
 capt_n_file db 'Create new file',0
 capt_sel_fig db 'Select figure:',0
 txt_circle: db 'Circle'

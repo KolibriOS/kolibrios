@@ -32,11 +32,12 @@ include 'develop/libraries/libs-dev/libio/libio.inc'
 align 4
 open_b rb 560
 
+; Language support for locales: ru_RU (CP866), en_US.
 txt_err_img_file:
 if lang eq ru_RU
 	db 'Ошибка N'
 .n: db '* при открытии файла '
-else
+else ; Default to en_US
 	db 'Error N'
 .n: db '*. Can',39,'t open file '
 end if

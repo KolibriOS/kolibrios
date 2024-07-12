@@ -4,7 +4,7 @@
 ;   contact: 4nic8@casiocalc.org
 ;----------------------------------------
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: it_IT, en_US.
 include '../../../macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
@@ -142,7 +142,7 @@ still:
 ;   *********************************************
 
 show_screen:  ; flips the virtual screen to the window
-    push_abc	
+    push_abc
     mcall 7, screen, <X_SIZE, Y_SIZE>, 0
     pop_abc
 ret
@@ -389,7 +389,7 @@ grad_fill_screen: ; eax - screen color ( 0x00RRGGBB ), ebx - mack
        .no_ch:
        pop ecx
     loop .lab1
-	
+
     pop_abc
 ret
 
@@ -409,7 +409,7 @@ intro:  ; INTRO    ;
     jne  @f
     ret
   @@:
-  
+
     mcall 4,<115,150>,0x82050505,VERSION
     mcall  ,<125,180>,0x80050505,AUTHOR
     mcall  ,<90,210>,0x81EE0800,PRESS_SPACE
@@ -468,13 +468,13 @@ fast_gfx:
     mov  ebx,0xFFFF
     .g_ok:
     call grad_fill_screen
-	
+
     ;black_bg
     ;mov  eax,0
     ;mov  ebx,0
     ;call fill_screen
 
-	
+
     mov  eax,37  ; get mouse position
     mov  ebx,1
     mcall
@@ -805,7 +805,7 @@ draw_window:
     mcall 48,4
 	lea	ecx, [100*65536+Y_SIZE+4+eax]; [y start] *65536 + [y size] + [skin_height]
     mcall 0,<100,X_SIZE+9>,,0x74ffffff,,0
-	
+
 	mov eax, [lives]
 	add eax, '0'
 	mov esi, HEADER
@@ -836,7 +836,7 @@ if lang eq it_IT
 THANKS_FOR_PLAYING db 'Grazie per aver giocato', 0
 PRESS_SPACE db 'Premi spazio per iniziare',0
 LEVEL db 'LIVELLO',0
-else
+else ; Default to en_US
 THANKS_FOR_PLAYING db 'Thanks for playing', 0
 PRESS_SPACE db 'press SPACE to start',0
 LEVEL db 'LEVEL',0

@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 ; level format
 ; [fx|fy][blue xy][red xy]..[maze walls]
 
@@ -48,19 +50,19 @@ CSTEP_level:
 file 'cstep.bin'
 
 if lang eq ru_RU
-	CSTEP_help mstr \
-	'Соедините красный и синий блоки путем управления',\
-	'одним красным блоком. Синий блок следует за',\
-	'красным, но движется в прямо противоположном',\
-	'направлении. Ход разрешен только в случае',\
-	'отсутствия препятствий для обоих блоков.','',\
-	'http://www.clickmazes.com'
-else
-	CSTEP_help mstr \
-  'Unite the red and blue dots by moving just the',\
-  'red dot. The blue dot follows the red dot, but',\
-  'moves in exactly in the opposite direction. A',\
-  'move is only permitted if the path is clear for',\
-  'both dots.','',\
-	'http://www.clickmazes.com'
+        CSTEP_help mstr \
+        'Соедините красный и синий блоки путем управления',\
+        'одним красным блоком. Синий блок следует за',\
+        'красным, но движется в прямо противоположном',\
+        'направлении. Ход разрешен только в случае',\
+        'отсутствия препятствий для обоих блоков.','',\
+        'http://www.clickmazes.com'
+else ; Default to en_US
+        CSTEP_help mstr \
+        'Unite the red and blue dots by moving just the',\
+        'red dot. The blue dot follows the red dot, but',\
+        'moves in exactly in the opposite direction. A',\
+        'move is only permitted if the path is clear for',\
+        'both dots.','',\
+        'http://www.clickmazes.com'
 end if

@@ -3,6 +3,7 @@
 ; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
 ; All Right Reserved
 
+; Language support for locales: it_IT, en_US.
 
 	mov	edx, msg_about
 	mov	ebx, 17 * 65536 + 285
@@ -25,7 +26,7 @@ if lang eq it_IT
 		'Mailto : ghost.nsk@mail.ru',\
 		'',\
 		'      *** Usare a prioprio rischio ***'
-else
+else ; Default to en_US
 	msg_about mls \	; должна быть хотябы одна строка
 		'               Ghost Monitor',\
 		'',\
@@ -40,5 +41,5 @@ else
 		'',\
 		'Mailto : ghost.nsk@mail.ru',\
 		'',\
-		'       *** Use at YOUR own RISK ***'
+		'       *** Use at your own risk ***'
 end if

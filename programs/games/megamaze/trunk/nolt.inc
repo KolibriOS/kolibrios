@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 NLT_levelp:
 		mov  eax,OR_strip
 		call need_image
@@ -74,19 +76,19 @@ NLT_level:
 file 'nolt.bin'
 
 if lang eq ru_RU
-	NLT_help mstr \
-	'Ваша задача - провести зеленый квадрат к красному',\
-	'без поворота налево и движения назад. Это труднее',\
-	'чем кажется. Внимание: если Вы примете плохое',\
-	'решение, можете попасть в тупик и будете',\
-	'вынуждены начать сначала.','',\
-  'http://puzzleprograms.narod.ru'
-else
-	NLT_help mstr \
-  'Your challenge is to manouvre the green dot to',\
-  'the red square without ever turning left, or',\
-  'making a U-turn. Harder than it looks. Beware, if',\
-  'you make a bad decision in this maze you may get',\
-  'completely stuck and have to restart.','',\
-	'http://www.clickmazes.com'
+        NLT_help mstr \
+        'Ваша задача - провести зеленый квадрат к красному',\
+        'без поворота налево и движения назад. Это труднее',\
+        'чем кажется. Внимание: если Вы примете плохое',\
+        'решение, можете попасть в тупик и будете',\
+        'вынуждены начать сначала.','',\
+        'http://puzzleprograms.narod.ru' ; FIXME: Check link works
+else ; Default to en_US
+        NLT_help mstr \
+        'Your challenge is to manouvre the green dot to',\
+        'the red square without ever turning left, or',\
+        'making a U-turn. Harder than it looks. Beware, if',\
+        'you make a bad decision in this maze you may get',\
+        'completely stuck and have to restart.','',\
+        'http://www.clickmazes.com' ; FIXME: Why are links different?
 end if

@@ -31,10 +31,11 @@ A1. Fine. You will need a corresponding compiler, obviously.
     If the compiler produces an error "file not found" regarding 'lang.inc',
     the program can be compiled using different languages of interface.
     Create a file 'lang.inc' in the same folder as <input.asm> like follows:
-        lang fix en
+        lang fix en_US
     Here the last word selects the language. Valid languages are
-    en, ru, et, it, sp. Not all programs provide all translations,
-    en should always be available, ru is the most frequent after en.
+    en_US, ru_RU, et_EE, it_IT, es_ES, ca_ES. Not all programs provide all
+    translations, en_US should always be available, ru_RU is the most frequent
+    after en_US.
 
   * For a NASM program, get NASM at http://www.nasm.us/.
     To compile, find the main .asm file of the program and run
@@ -42,7 +43,7 @@ A1. Fine. You will need a corresponding compiler, obviously.
     Multi-language is rarely supported in this category, but you could still
     see sometimes an error "file not found" regarding 'lang_nasm.inc'. If so,
     create a file 'lang_nasm.inc' in the same folder as <input.asm> like follows:
-        %define lang 'en'
+        %define lang 'en_US'
     Read the entry about fasm for description of valid languages.
 
   * For a c-- program, try to avoid compiling it and instead rewrite the code

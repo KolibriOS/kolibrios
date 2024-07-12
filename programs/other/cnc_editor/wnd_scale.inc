@@ -3,6 +3,8 @@
 ; работы окна с настройками
 ;
 
+; Language support for locales: ru_RU (CP866), en_US.
+
 wnd_scale_width  equ 320 ;ширина окна с настройками
 wnd_scale_height equ 150 ;высота окна с настройками
 
@@ -46,7 +48,7 @@ still_scale:
 	cmp al,3
 	jz button_scale
 	cmp al,6
-	jne @f 
+	jne @f
 		call mouse_scale
 	@@:
 .end:
@@ -170,7 +172,7 @@ align 4
 if lang eq ru_RU
 capt_opt db 'Настройки',0
 capt_sc db 'Масштаб:',0
-else
+else ; Default to en_US
 capt_opt db 'Options',0
 capt_sc db 'Scale:',0
 end if

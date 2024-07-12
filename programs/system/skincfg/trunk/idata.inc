@@ -1,10 +1,12 @@
+ ; Language support for locales: ru_RU (CP866), et_EE, en_US.
+
 ;-----------------------------------------------------------------------------
 text:
+        db ' Unused1                        '
+        db ' Unused2                        '
 if lang eq ru_RU
-	db ' Unused1                        '
-	db ' Unused2                        '
-	db ' 3d темная сторона              '
-	db ' 3d светлая сторона             '
+	db ' 3D темная сторона              '
+	db ' 3D светлая сторона             '
 	db ' Заголовок окна                 '
 	db ' Фон окна                       '
 	db ' Кнопка                         '
@@ -13,10 +15,8 @@ if lang eq ru_RU
 	db ' Графика в окне                 '
 	db 'x'
 else if lang eq et_EE
-	db ' Unused1                        '
-	db ' Unused2                        '
-	db ' 3d dark                        '
-	db ' 3d light                       '
+	db ' 3D dark                        '
+	db ' 3D light                       '
 	db ' Akna pealkiri                  '
 	db ' Akna tЎЎpiirkond               '
 	db ' Akna tЎЎpiirkonna nupp         '
@@ -24,11 +24,9 @@ else if lang eq et_EE
 	db ' Akna tЎЎpiirkonna tekst        '
 	db ' Akna tЎЎpiirkonna graafika     '
 	db 'x'
-else
-	db ' Unused1                        '
-	db ' Unused2                        '
-	db ' 3d dark                        '
-	db ' 3d light                       '
+else ; Default to en_US
+	db ' 3D dark                        '
+	db ' 3D light                       '
 	db ' Window title                   '
 	db ' Window background              '
 	db ' Button                         '
@@ -42,7 +40,7 @@ if lang eq ru_RU
 	sz t1,'ЗАГРУЗИТЬ  СОХРАНИТЬ                                       ПРИМЕНИТЬ'
 else if lang eq et_EE
 	sz t1,'  LAADI     SALVESTA                                        KINNITA'
-else
+else ; Default to en_US
 	sz t1,'  LOAD       SAVE                                            APPLY'
 end if
 ;-----------------------------------------------------------------------------
@@ -50,7 +48,7 @@ if lang eq ru_RU
 	sz t2,'ЗАГРУЗИТЬ                3D   ПЛОСКИЕ                      ПРИМЕНИТЬ'
 else if lang eq et_EE
 	sz t2,'  LAADI                  3D    LAME                         KINNITA'
-else
+else ; Default to en_US
 	sz t2,'  LOAD                   3D    FLAT                          APPLY'
 end if
 ;-----------------------------------------------------------------------------
@@ -59,7 +57,7 @@ if lang eq ru_RU
 	db ' Выбор цветового оформления: ',0
 else if lang eq et_EE
 	db ' Valik varviskeeme: ',0
-else
+else ; Default to en_US
 	db ' Choice of color schemes: ',0
 end if
 ;-----------------------------------------------------------------------------
@@ -68,7 +66,7 @@ if lang eq ru_RU
 	db ' Выбор скина: ',0
 else if lang eq et_EE
 	db ' Valik nahad: ',0
-else
+else ; Default to en_US
 	db ' Choice of skins: ',0
 end if
 ;-----------------------------------------------------------------------------
@@ -76,7 +74,7 @@ if lang eq ru_RU
 	sz caption_text,'Заголовок'
 else if lang eq et_EE
 	sz caption_text,'Pealkiri'
-else
+else ; Default to en_US
 	sz caption_text,'Caption'
 end if
 ;-----------------------------------------------------------------------------
@@ -86,7 +84,7 @@ if lang eq ru_RU
 	sz window_text,'Текст в окне'
 else if lang eq et_EE
 	sz window_text,'Akna tekst'
-else
+else ; Default to en_US
 	sz window_text,'Window text'
 end if
 ;-----------------------------------------------------------------------------
@@ -94,7 +92,7 @@ if lang eq ru_RU
 	sz button_text,'Текст на кнопке'
 else if lang eq et_EE
 	sz button_text,'Nupu tekst'
-else
+else ; Default to en_US
 	sz button_text,'Button text'
 end if
 ;-----------------------------------------------------------------------------
@@ -104,18 +102,18 @@ else if lang eq et_EE
   title db 'Akna seaded',0
 else if lang eq it_IT
   title db 'Impostazioni',0
-else
+else ; Default to en_US
   title db 'Windows settings',0
 end if
 ;---------------------------------------------------------------------
 LibIniImportTable:
-library                                                 \          
-        libini, 'libini.obj'          
-          
-import  libini, \        
-        ini_set_int  ,'ini_set_int' 
+library                                                 \
+        libini, 'libini.obj'
 
-aIni          db  '/sys/settings/system.ini',0 
+import  libini, \
+        ini_set_int  ,'ini_set_int'
+
+aIni          db  '/sys/settings/system.ini',0
 aSectionSkn   db  'style',0
 aButtonStyle  db  'buttons_gradient',0
 ;---------------------------------------------------------------------

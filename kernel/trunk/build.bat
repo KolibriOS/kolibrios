@@ -11,8 +11,8 @@ pause
 goto :eof
 
 :Target_kernel
-   rem valid languages: en ru ge et sp
-   set lang=en
+   rem valid languages: en_US ru_RU de_DE et_EE es_ES
+   set lang=en_US
 
    echo *** building kernel with language '%lang%' ...
 

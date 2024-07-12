@@ -11,12 +11,12 @@ include '../../../load_lib.mac'
 include '../trunk/vox_draw.inc'
 include '../trunk/vox_rotate.inc'
 include '../trunk/str.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 if lang eq ru_RU
 caption db 'Перемещение вокселей 04.05.20',0 ;подпись окна
-else
+else ; Default to en_US
 caption db 'Voxel mover 04.05.20',0
 end if
 
@@ -699,7 +699,7 @@ popad
 align 4
 but_save_file:
 		copy_path open_dialog_name,communication_area_default_path,file_name,0
-	pushad		
+	pushad
 		mov [OpenDialog_data.type],1
 		stdcall [OpenDialog_Start],OpenDialog_data
 		cmp [OpenDialog_data.status],2
@@ -1162,7 +1162,8 @@ txt_curor: db 'Курсор: '
 txt_n_plane db 'Сечение:',0
 txt_color db 'Цвет:',0
 txt_mov_offs: db 'Смещение: '
-else
+
+else ; Default to en_US
 txt_zoom db 'Scale:',0
 txt_curor: db 'Cursor: '
 .size: rb 10
@@ -1170,6 +1171,7 @@ txt_n_plane db 'Section:',0
 txt_color db 'Color:',0
 txt_mov_offs: db 'Offset: '
 end if
+
 .size: rb 30
 txt_mull db '*',0
 txt_space db ' ',0
@@ -1550,7 +1552,7 @@ i_end:
 	rb 4096 ;2048
 stacktop:
 	sys_path rb 1024
-	file_name rb 2048 ;4096 
+	file_name rb 2048 ;4096
 	plugin_path rb 1024 ;4096
 	openfile_path rb 1024 ;4096
 	filename_area rb 256

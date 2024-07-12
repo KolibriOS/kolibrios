@@ -20,7 +20,7 @@ M01header.params:
     include "../../string.inc"
     include "../../develop/libraries/box_lib/trunk/box_lib.mac"
 
-    include "lang.inc"
+    include "lang.inc" ; Language support for locales: ru_RU (CP866), et_EE, it_IT, en_US.
 
 if DEBUG eq 1
     include "../../debug.inc"
@@ -43,7 +43,7 @@ else if lang eq it_IT
  browse_txt db "Browse...", 0
  notify_txt db "'Incorrect ", '"', "/sys/settings/assoc.ini", '"', " file' -tE", 0
  checkbox_txt db "Always use selected program", 0
-else
+else ; Default to en_US
  title db "Open with", 0
  browse_txt db "Browse...", 0
  notify_txt db "'Incorrect ", '"', "/sys/settings/assoc.ini", '"', " file' -tE", 0
@@ -587,7 +587,7 @@ end if
 
     stdcall string.length, buffer
         mov     edi, eax
-        
+
     invoke  libini.set_str, assoc_ini, assoc_ini.sec, [param_e], buffer, edi
     jmp     exit
 

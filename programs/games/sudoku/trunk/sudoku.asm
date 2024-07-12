@@ -52,7 +52,7 @@ popad
 include '../../../macros.inc'
 ;include 'debug.inc'
 include 'editbox_ex.mac'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include 'SudokuSolve.pas'
 
 
@@ -1095,7 +1095,7 @@ txt:
 .error db 'Ошибка',0
 .load db 'Загрузить (L)',0
 .enter db 'Enter',0
-else
+else ; Default to en_US
 title db 'Sudoku',0
 txt:
 .dif db "Difficult (+/-)",0

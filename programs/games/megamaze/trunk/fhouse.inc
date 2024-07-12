@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 FH_levelp:
 		mcall 40,100111b
     call get_xy_sf
@@ -176,22 +178,22 @@ FH_level:
 file 'fhouse.bin'
 
 if lang eq ru_RU
-	FH_help mstr \
-	'В задании найдите начальную клетку и проведите',\
-	'линию, которая проходит через пустые клетки по',\
-	'одному разу.',\
-	' Каждый раз красный квадрат двигается прямо,',\
-	'останавливаясь только у края, перед черными',\
-	'квадратами или уже посещенными клетками.','',\
-	'http://www.clickmazes.com'
-else
-	FH_help mstr \
-	'For each puzzle find the starting square and draw',\
-	'a path moving horizontally and vertically that',\
-	'passes through each open square exactly once.','',\
-	'At each move the red runner will always run',\
-	'straight, as far as possible, stopping only when',\
-	"blocked by the grid's edge, a black square, or a",\
-	'square already visited.','',\
-	'http://www.clickmazes.com'
+        FH_help mstr \
+        'В задании найдите начальную клетку и проведите',\
+        'линию, которая проходит через пустые клетки по',\
+        'одному разу.',\
+        ' Каждый раз красный квадрат двигается прямо,',\
+        'останавливаясь только у края, перед черными',\
+        'квадратами или уже посещенными клетками.','',\
+        'http://www.clickmazes.com'
+else ; Default to en_US
+        FH_help mstr \
+        'For each puzzle find the starting square and draw',\
+        'a path moving horizontally and vertically that',\
+        'passes through each open square exactly once.','',\
+        'At each move the red runner will always run',\
+        'straight, as far as possible, stopping only when',\
+        "blocked by the grid's edge, a black square, or a",\
+        'square already visited.','',\
+        'http://www.clickmazes.com'
 end if

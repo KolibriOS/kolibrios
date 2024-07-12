@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 ; level format
 ; [fx|fy]..[field cells x2]..[worm_count]..[worm_len][start cell #][body dirs x2]
 
@@ -241,7 +243,7 @@ if lang eq ru_RU
 	'Червяки не могут перекрывать и пересекать друг',\
 	'друга.','',\
 	'http://www.clickmazes.com'
-else
+else ; Default to en_US
 	WG_help mstr \
 	'Your aim is to drag the wriggley worms by head or',\
 	'tail until each worm covers the squares of its',\

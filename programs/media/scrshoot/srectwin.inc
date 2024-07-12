@@ -1,3 +1,5 @@
+; Language support for locales: ru_RU (CP866), en_US.
+
 align 4
 set_rect_window:
         mov     ebx,set_rect_window_procinfo
@@ -258,7 +260,7 @@ aOpenDialog_Start	db 'OpenDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
 ;---------------------------------------------------------------------
 align 4
-Box_lib_import:	
+Box_lib_import:
 ;init_lib		dd a_init
 ;version_lib		dd a_version
 
@@ -374,7 +376,7 @@ if lang eq ru_RU
 .top  db 'Отступ сверху:',0
 .width  db 'Ширина:',0
 .height db 'Высота:',0
-else
+else ; Default to en_US
 .left db 'Left:',0
 .top  db 'Top:',0
 .width  db 'Width:',0
@@ -389,7 +391,7 @@ riw_check_boxes_end:
 if lang eq ru_RU
 riw_check_boxes_text db 'Использовать область активного окна',0
 riw_grab_text db 'Координаты и размеры области:',0
-else
+else ; Default to en_US
 riw_check_boxes_text db 'Use area of the active window',0
 riw_grab_text db 'Coordinates and size of the field:',0
 end if

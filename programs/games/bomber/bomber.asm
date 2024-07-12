@@ -52,7 +52,7 @@ use32			   ; транслятор, использующий 32 разрядных команды
 ;Область кода
 
 ;----------------- include -------------------------------------
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include 'ssmix.inc'
 
 ;---------------------------------------------------------------------------
@@ -2344,9 +2344,9 @@ file_info:	      ; информационная структура для работы с файлами
   _fi_pfilename dd ?
 
 if lang eq ru_RU
-	include 'ruslang.inc'
-else
-	include 'englang.inc'
+	include 'lang-ru_RU.inc' ; Encoded as CP866
+else ; Default to en_US
+	include 'lang-en_US.inc'
 end if
 
 bmp_plane:

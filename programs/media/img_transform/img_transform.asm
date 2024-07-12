@@ -3,7 +3,7 @@ use32
 	db 'MENUET01'
 	dd 1,start,i_end,mem,stacktop,openfile_path,sys_path
 
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
@@ -223,7 +223,7 @@ pushad
 		shr dx,cl
 		mov ecx,edx
 		mcall ,,,0x404080 ;часть изображения попадающая в окно
-		
+
 		mov edi,sel_pt
 		@@:
 			mov ecx,[nav_wnd_zoom]
@@ -590,7 +590,7 @@ pushad
 		mov [mouse_down_y],ebx
 		sub eax,[nav_x]
 		sub ebx,[nav_y]
-		
+
 		mov edi,sel_pt
 		xor ecx,ecx
 		.cycle0:
@@ -873,7 +873,7 @@ proc but_open_file
 		or eax,eax
 		jz .end_0 ;если нарушен формат файла
 		mov ebx,eax
-		
+
 		mov ecx,[ebx+4] ;+4 = image width
 		mov dword[buf_cop.w],ecx
 		imul ecx,[ebx+8] ;+8 = image height
@@ -948,7 +948,7 @@ proc but_open_file
 			mov [buf_cop.t],dx
 			stdcall [buf2d_bit_blt], edi, ecx,edx, buf_cop
 		.end_1:
-		
+
 		;создаем буфер для преобразованного изображения
 		mov edi,buf_ogl
 		mov eax,[buf_i0.w]
@@ -976,7 +976,7 @@ proc but_open_file
 
 		;* Setup texturing *
 		stdcall [glTexEnvi], GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL
-  
+
 		;* generate texture object IDs *
 		stdcall [glGenTextures], 1, TexObj
 		stdcall [glBindTexture], GL_TEXTURE_2D, [TexObj]
@@ -994,7 +994,7 @@ proc but_open_file
 
 		;удаляем временный буфер в ebx
 		stdcall [img_destroy], ebx
-		
+
 		movzx eax,word[buf_cop.l]
 		movzx ebx,word[buf_cop.t]
 		stdcall points_init_2,eax,ebx
@@ -1398,13 +1398,13 @@ if lang eq ru_RU
 	txt_img_w db 'Ширина: '
 .size: rb 16
 	txt_img_h db 'Высота: '
-else
+else ; Default to en_US
 	txt_err_save_img_file db 'Can',39,'t save *.png file.',0
 	txt_about db '"About',13,10,\
 	'This program is designed to convert images.',13,10,\
 	'After opening the image file, you need to specify 4 points',13,10,\
 	'that will become the corners of the converted image." -tI',0
-	txt_pref db ' b ',0,' Kb',0,' Mb',0,' Gb',0 ;приставки: кило, мега, гига
+	txt_pref db ' b ',0,' Kb',0,' Mb',0,' Gb',0 ; Prefixes: Kilo, Mega, Giga
 	txt_f_size db 'Size: '
 .size: rb 16
 	txt_img_w db 'Width: '
@@ -1622,8 +1622,8 @@ last_time dd 0
 u_line_v dd 0 ;вертикальная линия
 u_line_h dd 0 ;горизонтальная линия
 txt_buf rb 8
-procinfo process_information 
-sc system_colors 
+procinfo process_information
+sc system_colors
 run_file_70 FileInfoBlock
 		rb 4096
 align 16

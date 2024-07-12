@@ -13,7 +13,7 @@ include '../../load_img.inc'
 include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
-include 'lang.inc'
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include 'info_fun_float.inc'
 include 'info_menu.inc'
 include 'data.inc'
@@ -686,7 +686,7 @@ but_open_file:
     mov ecx,dword[open_b+32] ;+32 qword: размер файла в байтах
     stdcall mem.ReAlloc,[open_file_data],ecx
     mov [open_file_data],eax
-    
+
     mov [run_file_70.Function], SSF_READ_FILE
     mov [run_file_70.Position], 0
     mov [run_file_70.Flags], 0
@@ -758,7 +758,7 @@ init_tree:
 	.cycle_main:
 		cmp dword[level_stack],0
 		jle .end_cycle
-		
+
 		cmp esi,edi ;если конец файла
 		jge .end_cycle
 
@@ -856,7 +856,7 @@ proc block_analiz_data uses ebx ecx edx edi
 		sub ecx,2
 		sub esi,8 ;восстановление esi
 		call block_next
-		jmp .end_f		
+		jmp .end_f
 	@@:
 	cmp dx,CHUNK_FACELIST ;список граней
 	jne @f
@@ -884,7 +884,7 @@ end if
 		sub esi,8 ;восстановление esi
 		pop eax
 		call block_next
-		jmp .end_f		
+		jmp .end_f
 	@@:
 	cmp dx,CHUNK_FACEMAT ;материалы граней
 	jne @f
@@ -1153,7 +1153,7 @@ l_libs_start:
 	lib_3 l_libs lib_name_3, file_name, system_dir_3, import_buf2d
 	lib_4 l_libs lib_name_4, file_name, system_dir_4, import_libkmenu
 	lib_5 l_libs lib_name_5, file_name, system_dir_5, import_lib_tinygl
-	lib_6 l_libs lib_name_6, file_name, system_dir_6, import_libini	
+	lib_6 l_libs lib_name_6, file_name, system_dir_6, import_libini
 l_libs_end:
 
 align 4
@@ -1427,9 +1427,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru_RU
-capt db 'info 3ds [user] версия 29.09.20',0 ;подпись окна
-else
-capt db 'info 3ds [user] version 29.09.20',0 ;window caption
+capt db 'info 3ds [user] версия 29.09.20',0 ; подпись окна
+else ; Default to en_US
+capt db 'info 3ds [user] version 29.09.20',0 ; Window caption
 end if
 
 align 16
