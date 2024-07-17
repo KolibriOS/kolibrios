@@ -168,7 +168,7 @@ fail:
 download_1:
         DEBUGF  1, "Starting download\n"
 
-        invoke  HTTP_get, 0, 0, params, 0
+        invoke  HTTP_get, document_user, 0, params, 0
         test    eax, eax
         jz      fail
         mov     [identifier], eax
