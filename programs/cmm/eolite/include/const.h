@@ -62,6 +62,7 @@ char *actions[] = {
 #define T_FD   "Дискета "
 #define T_HD   "Жесткий диск "
 #define T_SATA "SATA диск "
+#define T_NVME "NVMe disk "
 #define T_USB  "USB диск "
 #define T_RAM  "RAM диск "
 #define T_UNC  "Неизвестно "
@@ -160,6 +161,7 @@ char *actions[] = {
 #define T_FD   "Floppy disk "
 #define T_HD   "Hard disk "
 #define T_SATA "SATA disk "
+#define T_NVME "NVMe disk "
 #define T_USB  "USB disk "
 #define T_RAM  "RAM disk "
 #define T_UNC  "Unknown "
@@ -252,6 +254,7 @@ char *devinfo = {
 	"hd", 4, T_HD,
 	"bd", 4, T_HD,
 	"sd", 4, T_SATA,
+	"nv", 4, T_NVME,
 	"tm", 5, T_RAM,
 	"us", 6, T_USB,
 	0
