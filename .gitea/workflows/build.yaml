@@ -1,0 +1,317 @@
+name: 'Build system'
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  codestyle:
+    name: "Check codestyle"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup dependencies
+        run: |
+          sudo apt update && sudo apt install perl -y
+
+      - name: Check codestyle
+        run: |
+          wget https://gist.githubusercontent.com/VerySweetBread/d207dd2c7efbd3cdd18dc8322b194816/raw/bf21c89d7eb1df71e253dc72bcde86ea854df19f/checker.pl
+          find kernel/trunk -iname '*.asm' -or -iname '*.inc' -exec bash -c "echo {}; cat {} | perl checker.pl" \;
+
+  build-en-system:
+    name: 'Build en_US system'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup dependencies
+        run: |
+          sudo apt update && sudo apt install p7zip-full nasm make gcc sudo mtools mkisofs parted gdisk gcc-multilib git ccache libfuse3-dev build-essential flex bison gperf libncurses5-dev libncursesw5-dev gawk libmpfr-dev libgpm-dev zlib1g-dev yasm graphviz -y
+
+      - name: Restore toolchain
+        id: cache-toolchain
+        uses: actions/cache/restore@v4
+        with:
+          path: /home/autobuild
+          key: kolibri-toolchain
+
+      - name: Install toolchain
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          # wget "http://board.kolibrios.org/download/file.php?id=9919&sid=bc8412934004a60f831b1b92eae0ad34" -O install_kgcc
+          chmod +x ${{ gitea.workspace }}/.gitea/workflows/install_kgcc
+          ${{ gitea.workspace }}/.gitea/workflows/install_kgcc
+
+          echo 'exec ${{ gitea.workspace }}/programs/cmm/c--/c--.elf $*' > /home/autobuild/tools/win32/bin/c--
+          chmod +x ${{ gitea.workspace }}/programs/cmm/c--/c--.elf
+          chmod +x /home/autobuild/tools/win32/bin/c--
+
+          cp ${{ gitea.workspace }}/programs/develop/ktcc/trunk/bin/kos32-tcc /home/autobuild/tools/win32/bin/kos32-tcc
+          chmod +x /home/autobuild/tools/win32/bin/kos32-tcc
+
+      - name: Compile objconv
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          source ~/.bashrc
+          cd ${{ gitea.workspace }}/programs/develop/objconv/
+          g++ -o objconv -O2 *.cpp
+          chmod +x objconv
+          mv objconv /home/autobuild/tools/win32/bin/.
+
+      - name: Compile kerpack
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          export PATH=/home/autobuild/tools/win32/bin:$PATH
+          source ~/.bashrc
+          cd ${{ gitea.workspace }}/programs/other/kpack/kerpack_linux/
+          make
+          chmod +x kerpack
+          mv kerpack /home/autobuild/tools/win32/bin/.
+
+      - name: Compile kpack
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          export PATH=/home/autobuild/tools/win32/bin:$PATH
+          source ~/.bashrc
+          cd ${{ gitea.workspace }}/programs/other/kpack/linux/
+          bash build.sh
+          chmod +x kpack
+          mv kpack /home/autobuild/tools/win32/bin/.
+
+      - name: Compile clink
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          cd ${{ gitea.workspace }}/programs/develop/clink 
+          gcc main.c -o clink
+          chmod a+x clink
+          mv clink /home/autobuild/tools/win32/bin/.
+
+      - name: Build tup
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/gittup/tup /home/autobuild/tup
+          cd /home/autobuild/tup
+          sh bootstrap-nofuse.sh
+          ./tup -v
+          pwd
+          cd ${{ gitea.workspace }}
+
+      - run: |
+          rm /home/autobuild
+          mv /root/autobuild /home/autobuild
+          ls -l /home/autobuild
+          ls -l ${{ gitea.workspace }}
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+
+      - name: Save toolchain
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /home/autobuild
+          key: kolibri-toolchain
+
+      - name: Configure tup
+        run: |
+          source ~/.bashrc
+          export ROOT=${{ gitea.workspace }}
+          cd $ROOT
+ 
+          echo "CONFIG_LANG=en_US"                                                         > tup.config
+          echo "CONFIG_BUILD_TYPE=en_US"                                                  >> tup.config
+          echo "CONFIG_KPACK_CMD=&& kpack --nologo %o"                                    >> tup.config
+          echo "CONFIG_KERPACK_CMD=&& kerpack %o"                                         >> tup.config
+          echo "CONFIG_PESTRIP_CMD=&& EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o"   >> tup.config
+          echo "CONFIG_NO_CMM=full"                                                       >> tup.config
+          echo "CONFIG_NO_GCC=full"                                                       >> tup.config
+          echo "CONFIG_NO_JWASM=full"                                                     >> tup.config
+          echo "CONFIG_NO_MSVC=full"                                                      >> tup.config
+          echo "CONFIG_INSERT_REVISION_ID=1"                                              >> tup.config
+
+          rm $ROOT/programs/develop/libraries/kos_mbedtls/library/Tupfile.lua
+          rm $ROOT/programs/develop/libraries/kos_mbedtls/programs/ssl/Tupfile.lua
+
+          cat tup.config
+          /home/autobuild/tup/tup init
+          /home/autobuild/tup/tup generate build.sh
+
+      - name: Build
+        run: |
+          export PATH=/home/autobuild/tools/win32/bin:$PATH
+          sh build.sh
+
+      - name: Get describe
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Upload floppy image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-eng-${{ steps.vars.outputs.sha_short }}.img
+          path: data/kolibri.img
+
+      - name: Upload CD image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-eng-${{ steps.vars.outputs.sha_short }}.iso
+          path: data/kolibri.iso
+
+      - name: Upload raw image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-eng-${{ steps.vars.outputs.sha_short }}.raw
+          path: data/kolibri.raw
+
+  build-ru-system:
+    name: 'Build ru_RU system'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup dependencies
+        run: |
+          sudo apt update && sudo apt install p7zip-full nasm make gcc sudo mtools mkisofs parted gdisk gcc-multilib git ccache libfuse3-dev build-essential flex bison gperf libncurses5-dev libncursesw5-dev gawk libmpfr-dev libgpm-dev zlib1g-dev yasm graphviz -y
+
+      - name: Restore toolchain
+        id: cache-toolchain
+        uses: actions/cache/restore@v4
+        with:
+          path: /home/autobuild
+          key: kolibri-toolchain
+
+      - name: Install toolchain
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          # wget "http://board.kolibrios.org/download/file.php?id=9919&sid=bc8412934004a60f831b1b92eae0ad34" -O install_kgcc
+          chmod +x ${{ gitea.workspace }}/.gitea/workflows/install_kgcc
+          ${{ gitea.workspace }}/.gitea/workflows/install_kgcc
+
+          echo 'exec ${{ gitea.workspace }}/programs/cmm/c--/c--.elf $*' > /home/autobuild/tools/win32/bin/c--
+          chmod +x ${{ gitea.workspace }}/programs/cmm/c--/c--.elf
+          chmod +x /home/autobuild/tools/win32/bin/c--
+
+          cp ${{ gitea.workspace }}/programs/develop/ktcc/trunk/bin/kos32-tcc /home/autobuild/tools/win32/bin/kos32-tcc
+          chmod +x /home/autobuild/tools/win32/bin/kos32-tcc
+
+      - name: Compile objconv
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          source ~/.bashrc
+          cd ${{ gitea.workspace }}/programs/develop/objconv/
+          g++ -o objconv -O2 *.cpp
+          chmod +x objconv
+          mv objconv /home/autobuild/tools/win32/bin/.
+
+      - name: Compile kerpack
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          export PATH=/home/autobuild/tools/win32/bin:$PATH
+          source ~/.bashrc
+          cd ${{ gitea.workspace }}/programs/other/kpack/kerpack_linux/
+          make
+          chmod +x kerpack
+          mv kerpack /home/autobuild/tools/win32/bin/.
+
+      - name: Compile kpack
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          export PATH=/home/autobuild/tools/win32/bin:$PATH
+          source ~/.bashrc
+          cd ${{ gitea.workspace }}/programs/other/kpack/linux/
+          bash build.sh
+          chmod +x kpack
+          mv kpack /home/autobuild/tools/win32/bin/.
+
+      - name: Compile clink
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          cd ${{ gitea.workspace }}/programs/develop/clink 
+          gcc main.c -o clink
+          chmod a+x clink
+          mv clink /home/autobuild/tools/win32/bin/.
+
+      - name: Build tup
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/gittup/tup /home/autobuild/tup
+          cd /home/autobuild/tup
+          sh bootstrap-nofuse.sh
+          ./tup -v
+          pwd
+          cd ${{ gitea.workspace }}
+
+      - run: |
+          rm /home/autobuild
+          mv /root/autobuild /home/autobuild
+          ls -l /home/autobuild
+          ls -l ${{ gitea.workspace }}
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+
+      - name: Save toolchain
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /home/autobuild
+          key: kolibri-toolchain
+
+      - name: Configure tup
+        run: |
+          source ~/.bashrc
+          export ROOT=${{ gitea.workspace }}
+          cd $ROOT
+
+          echo "CONFIG_LANG=ru_RU"                                                         > tup.config
+          echo "CONFIG_BUILD_TYPE=ru_RU"                                                  >> tup.config
+          echo "CONFIG_KPACK_CMD=&& kpack --nologo %o"                                    >> tup.config
+          echo "CONFIG_KERPACK_CMD=&& kerpack %o"                                         >> tup.config
+          echo "CONFIG_PESTRIP_CMD=&& EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o"   >> tup.config
+          echo "CONFIG_NO_CMM=full"                                                       >> tup.config
+          echo "CONFIG_NO_GCC=full"                                                       >> tup.config
+          echo "CONFIG_NO_JWASM=full"                                                     >> tup.config
+          echo "CONFIG_NO_MSVC=full"                                                      >> tup.config
+          echo "CONFIG_INSERT_REVISION_ID=1"                                              >> tup.config
+
+          rm $ROOT/programs/develop/libraries/kos_mbedtls/library/Tupfile.lua
+          rm $ROOT/programs/develop/libraries/kos_mbedtls/programs/ssl/Tupfile.lua
+
+          cat tup.config
+          /home/autobuild/tup/tup init
+          /home/autobuild/tup/tup generate build.sh
+
+      - name: Build
+        run: |
+          export PATH=/home/autobuild/tools/win32/bin:$PATH
+          sh build.sh
+
+      - name: Get describe
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Upload floppy image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-rus-${{ steps.vars.outputs.sha_short }}.img
+          path: data/kolibri.img
+
+      - name: Upload CD image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-rus-${{ steps.vars.outputs.sha_short }}.iso
+          path: data/kolibri.iso
+
+      - name: Upload raw image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-rus-${{ steps.vars.outputs.sha_short }}.raw
+          path: data/kolibri.raw
