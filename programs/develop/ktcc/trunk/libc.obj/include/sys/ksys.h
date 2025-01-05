@@ -842,6 +842,19 @@ KOSAPI uint32_t _ksys_wait_event_timeout(uint32_t timeout)
     return val;
 }
 
+/*=== Function 26, subfunction 2 - get keynoard layout. ==*/
+
+typedef enum KSYS_KEYBOARD_LAYOUT {
+    KSYS_KEYBOARD_LAYOUT_NORMAL = 1,
+    KSYS_KEYBOARD_LAYOUT_SHIFT = 2,
+    KSYS_KEYBOARD_LAYOUT_ALT = 3
+} ksys_keyboard_layout_t;
+
+KOSAPI uint32_t _ksys_keyboard_layout(ksys_keyboard_layout_t layout, unsigned char *buf)
+{
+    asm_inline("int $0x40" ::"a"(26), "b"(2), "c"(layout), "d"(buf) : "memory");
+}
+
 /*=== Function 26, subfunction 9 - get the value of the time counter. ==*/
 
 KOSAPI uint32_t _ksys_get_tick_count(void)
