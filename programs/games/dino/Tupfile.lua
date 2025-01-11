@@ -11,13 +11,13 @@ SRCS = {
     "horizon.c"
     "main.c"
     "obstacle.c"
-    "trex.c
+    "trex.c"
     "distance_meter.c"
     "graphics.c"
     "horizon_line.c"
     "misc.c"
     "runner.c"
-    "ulist.c
+    "ulist.c"
 }
 
 LIBS = " -limg"
