@@ -590,6 +590,7 @@ tup.append_table(extra_files, {
  {"kolibrios/demos/life3", VAR_PROGS .. "/games/life3/trunk/life3"},
  {"kolibrios/demos/qjulia", VAR_PROGS .. "/demos/qjulia/trunk/qjulia"},
  {"kolibrios/develop/utils/koldbg", VAR_PROGS .. "/develop/koldbg/koldbg"},
+ {"kolibrios/develop/utils/charset_checker", VAR_PROGS .. "/other/charset_checker/charchck"},
  {"kolibrios/games/Almaz", VAR_PROGS .. "/games/almaz/almaz"},
  {"kolibrios/games/arcanii", VAR_PROGS .. "/games/arcanii/trunk/arcanii"},
  {"kolibrios/games/bomber/bomber", VAR_PROGS .. "/games/bomber/bomber"},

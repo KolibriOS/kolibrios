@@ -14,7 +14,7 @@ dd 0, 0
 
 ; ================================================================
 
-include '../macros.inc'
+include '../../macros.inc'
 
 START:                                  ; start of execution
         call    draw_window             ; draw the window
