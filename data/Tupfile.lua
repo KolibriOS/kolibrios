@@ -39,6 +39,7 @@ img_files = {
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
  {"GAMES/FLPYBIRD", SRC_PROGS .. "/games/flappybird/Release/flappybird"},
+ {"GAMES/DINO", SRC_PROGS .. "/games/dino/dino"},
  {"FONTS/TAHOMA.KF", "common/fonts/tahoma.kf"},
  -- {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},
  {"LIB/KMENU.OBJ", "common/lib/kmenu.obj"},
