@@ -31,6 +31,8 @@
 #define ATLAS_STAR_X 645
 #define ATLAS_STAR_Y 2
 
+extern Image* screenImage;
+
 void graphicsInit();
 void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w, int h, bool center);
 void graphicsFillBackground(unsigned r, unsigned g, unsigned b);

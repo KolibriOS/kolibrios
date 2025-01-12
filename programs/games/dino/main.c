@@ -16,25 +16,28 @@
 #include "trex.h"
 #include "runner.h"
 
-uint8_t keyboard_layout[128];
-
-extern ksys_colors_table_t sys_color_table;
-			extern ksys_pos_t win_pos;
-			extern Image* screenImage;
-			extern Image* spriteAtlas;
+static uint8_t keyboard_layout[128];
 
 int main(int argc, char* args[]) {
 	srand((unsigned int)time(NULL)); // Seed the random number generator
+
+	ksys_pos_t win_pos = _ksys_screen_size();
+	win_pos.x /= 2;
+	win_pos.x -= DEFAULT_WIDTH/2;
+	win_pos.y /= 2;
+	win_pos.y -= DEFAULT_HEIGHT/2;
+	dbg_printf("wx = %d, wy = %d\n", win_pos.x, win_pos.y);
+	ksys_colors_table_t sys_color_table;
+    _ksys_get_system_colors(&sys_color_table);
+	_ksys_set_event_mask(0xC0000027); // !
+	_ksys_set_key_input_mode(KSYS_KEY_INPUT_MODE_SCANC);
+	_ksys_keyboard_layout(KSYS_KEYBOARD_LAYOUT_NORMAL, keyboard_layout);
 
 	graphicsInit();
 
 	runnerInit();
 
 	dbg_printf("dino started\n");
-
-	_ksys_set_event_mask(0xC0000027); // !
-	_ksys_set_key_input_mode(KSYS_KEY_INPUT_MODE_SCANC);
-	_ksys_keyboard_layout(KSYS_KEYBOARD_LAYOUT_NORMAL, keyboard_layout);
 
 	int ext_code = 0;
     uint8_t old_mode = 0;

@@ -7,7 +7,7 @@ KTCC = $(KTCC_DIR)/bin/kos32-tcc
 KPACK = kpack
 
 SRC = $(wildcard *.c)
-FLAGS= -B$(KTCC_DIR)/bin -I $(KLIBC)/include -Wall -stack=20480
+FLAGS= -B$(KTCC_DIR)/bin -I $(KLIBC)/include -Wall# -stack=20480
 LIBS = -limg
 
 all: $(SRC)

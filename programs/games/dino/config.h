@@ -2,6 +2,7 @@
 #define CONFIG_H
 
 #define DEFAULT_WIDTH 600
+#define DEFAULT_HEIGHT 200
 #define FPS 60
 
 #define DELTA_MS_DEFAULT 20
