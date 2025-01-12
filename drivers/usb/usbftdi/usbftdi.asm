@@ -27,6 +27,7 @@ include '../../proc32.inc'
 include '../../peimport.inc'
 include '../../fdo.inc'
 include '../../struct.inc'
+include '../../serial/common.inc'
 
 ; USB constants
 DEVICE_DESCR_TYPE           = 1
@@ -59,6 +60,9 @@ LIBUSB_RECIPIENT_OTHER = 0x03
 
 LIBUSB_ENDPOINT_IN = 0x80
 LIBUSB_ENDPOINT_OUT = 0x00
+
+H_CLK = 120000000
+C_CLK = 48000000
 
 ; FTDI Constants
 FTDI_DEVICE_OUT_REQTYPE = (LIBUSB_REQUEST_TYPE_VENDOR or LIBUSB_RECIPIENT_DEVICE or LIBUSB_ENDPOINT_OUT)
@@ -119,6 +123,7 @@ TYPE_230X=7
 
 ;strings
 my_driver       db      'usbother',0
+serial_driver   db      'SERIAL',0
 nomemory_msg    db      'K : no memory',13,10,0
 
 ; Structures
@@ -130,8 +135,8 @@ readBufChunkSize        dd      ?
 writeBufChunkSize       dd      ?
 readBufPtr              dd      ?
 writeBufPtr             dd      ?
-readBufSize             dd      ?
-writeBufSize            dd      ?
+readBufLock             dd      ?
+writeBufLock            dd      ?
 maxPacketSize           dd      ?
 interface               dd      ?
 index                   dd      ?
@@ -140,6 +145,8 @@ outEP                   dd      ?
 nullP                   dd      ? 
 lockPID                 dd      ?
 next_context            dd      ?
+port_handle             dd      ?
+rx_timer                dd      ?
 ends
 
 struct IOCTL
@@ -182,7 +189,9 @@ proc START c, .reason:DWORD, .cmdline:DWORD
 
         xor     eax, eax        ; initialize return value
         cmp     [.reason], 1    ; compare the argument
-        jnz     .nothing                
+        jnz     .nothing     
+        invoke  GetService, serial_driver
+        mov     [serial_drv_entry], eax
         invoke  RegUSBDriver, my_driver, service_proc, usb_functions
 
 .nothing:
@@ -215,6 +224,10 @@ proc AddDevice stdcall uses ebx esi edi, .config_pipe:DWORD, .config_descr:DWORD
         mov     [eax + ftdi_context.maxPacketSize], 64       
         mov     [eax + ftdi_context.readBufChunkSize], 64
         mov     [eax + ftdi_context.writeBufChunkSize], 64
+        mov     [eax + ftdi_context.readBufPtr], 0
+        mov     [eax + ftdi_context.writeBufPtr], 0
+        mov     [eax + ftdi_context.readBufLock], 0
+        mov     [eax + ftdi_context.writeBufLock], 0
 
         mov     [eax + ftdi_context.chipType], TYPE_R
         jmp     .slow
@@ -270,6 +283,15 @@ proc AddDevice stdcall uses ebx esi edi, .config_pipe:DWORD, .config_descr:DWORD
         test    eax, eax
         jz      .nothing
         mov     [ebx + ftdi_context.inEP], eax
+
+        mov     eax, [serial_drv_entry]
+        test    eax, eax
+        jz      @f
+        stdcall serial_add_port, uart_drv, ebx
+        DEBUGF  1, "usbftdi: add serial port with result %x\n", eax
+   @@:
+        mov     [ebx + ftdi_context.port_handle], eax
+
         mov     eax, ebx
         ret        
            
@@ -1013,10 +1035,338 @@ endp
 proc DeviceDisconnected stdcall uses  ebx esi edi, .device_data:DWORD
 
         DEBUGF 1, 'K : FTDI deleting device data 0x%x\n', [.device_data]
-        mov     eax, [.device_data] 
+        mov     esi, [.device_data]
+        mov     eax, [esi + ftdi_context.readBufPtr]
+        test    eax, eax
+        jz      @f
+        invoke  Kfree
+  @@:
+        mov     eax, [esi + ftdi_context.writeBufPtr]
+        test    eax, eax
+        jz      @f
+        invoke  Kfree
+  @@:
+        mov     eax, [esi + ftdi_context.port_handle]
+        test    eax, eax
+        jz      @f
+        stdcall serial_remove_port, eax
+  @@:
+        mov     eax, esi
         call    linkedlist_unlink
         invoke  Kfree
         ret           
+endp
+
+proc bulk_in_complete stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, \
+                            .buffer:DWORD, .length:DWORD, .calldata:DWORD
+        mov     eax, [.status]
+        test    eax, eax
+        jz      @f
+        DEBUGF  2, 'ftdi: bulk in error %x\n', eax
+  @@:
+        mov     ebx, [.calldata]
+        btr     dword [ebx + ftdi_context.writeBufLock], 0
+        stdcall uart_tx, ebx
+        ret
+endp
+
+proc bulk_out_complete stdcall uses ebx edi esi, .pipe:DWORD, .status:DWORD, \
+                            .buffer:DWORD, .length:DWORD, .calldata:DWORD
+        mov     eax, [.status]
+        test    eax, eax
+        jz      @f
+        DEBUGF  2, 'ftdi: bulk out error %x\n', eax
+  @@:
+        mov     ebx, [.calldata]
+        mov     ecx, [.length]
+        cmp     ecx, 2
+        jb      @f
+        mov     esi, [.buffer]
+        add     esi, 2
+        sub     ecx, 2
+        stdcall serial_handle_event, [ebx + ftdi_context.port_handle], \
+                                     SERIAL_EVT_RXNE, ecx, esi
+  @@:
+        btr     dword [ebx + ftdi_context.readBufLock], 0
+        ret
+endp
+
+proc uart_startup stdcall uses ebx, data:dword, conf:dword
+        DEBUGF  1, "ftdi: startup %x %x\n", [data], [conf]
+        stdcall uart_reconf, [data], [conf]
+        test    eax, eax
+        jz      @f
+        DEBUGF  2, "ftdi: uart reconf error %x\n", eax
+        jmp     .exit
+  @@:
+        mov     ebx, [data]
+        invoke  TimerHS, 2, 2, uart_rx, ebx
+        test    eax, eax
+        jnz     @f
+        DEBUGF  2, "ftdi: timer creation error\n"
+        or      eax, -1
+        jmp     .exit
+  @@:
+        mov     [ebx + ftdi_context.rx_timer], eax
+        xor     eax, eax
+  .exit:
+        ret
+endp
+
+proc uart_shutdown stdcall uses ebx, data:dword
+        DEBUGF  1, "ftdi: shutdown %x\n", [data]
+        mov     ebx, [data]
+        cmp     [ebx + ftdi_context.rx_timer], 0
+        jz      @f
+        invoke  CancelTimerHS, [ebx + ftdi_context.rx_timer]
+  @@:
+        ret
+endp
+
+proc uart_reconf stdcall uses ebx esi, dev:dword, conf:dword
+        mov     ebx, [dev]
+        mov     esi, [conf]
+        stdcall ftdi_set_baudrate, ebx, [esi + SP_CONF.baudrate]
+        ; TODO set word_size, parity, etc.
+        ret
+endp
+
+proc uart_tx stdcall uses ebx esi, data:dword
+        xor     eax, eax
+        mov     ebx, [data]
+        bts     dword [ebx + ftdi_context.writeBufLock], 0
+        jc      .exit
+
+        mov     esi, [ebx + ftdi_context.writeBufPtr]
+        test    esi, esi
+        jnz     .read
+
+        ; allocate buffer for bulk_in transfer if not yet
+        mov     eax, [ebx + ftdi_context.writeBufChunkSize]
+        invoke  Kmalloc
+        test    eax, eax
+        jz      .error
+        mov     [ebx + ftdi_context.writeBufPtr], eax
+        mov     esi, eax
+
+  .read:
+        mov     eax, [ebx + ftdi_context.writeBufChunkSize]
+        stdcall serial_handle_event, [ebx + ftdi_context.port_handle], \
+                                     SERIAL_EVT_TXE, eax, esi
+        test    eax, eax
+        jz      .unlock
+        invoke  USBNormalTransferAsync, [ebx + ftdi_context.inEP], esi, eax, \
+                                        bulk_in_complete, ebx, 1
+        test    eax, eax
+        jz      .error
+        xor     eax, eax
+        jmp     .exit
+
+  .error:
+        or      eax, -1
+  .unlock:
+        btr     dword [ebx + ftdi_context.writeBufLock], 0
+
+  .exit:
+        ret
+endp
+
+proc uart_rx stdcall uses ebx esi, data:dword
+        xor     eax, eax
+        mov     ebx, [data]
+        bts     dword [ebx + ftdi_context.readBufLock], 0
+        jc      .exit
+
+        mov     esi, [ebx + ftdi_context.readBufPtr]
+        test    esi, esi
+        jnz     .read
+
+        ; allocate buffer for bulk_out transfer if not yet
+        mov     eax, [ebx + ftdi_context.readBufChunkSize]
+        invoke  Kmalloc
+        test    eax, eax
+        jz      .error
+        mov     [ebx + ftdi_context.readBufPtr], eax
+        mov     esi, eax
+
+  .read:
+        mov     edx, [ebx + ftdi_context.readBufChunkSize]
+        invoke  USBNormalTransferAsync, [ebx + ftdi_context.outEP], esi, edx, \
+                                        bulk_out_complete, ebx, 1
+        test    eax, eax
+        jz      .error
+        xor     eax, eax
+        jmp     .exit
+  .error:
+        btr     dword [ebx + ftdi_context.readBufLock], 0
+        or      eax, -1
+  .exit:
+        ret
+endp
+
+proc ftdi_set_baudrate stdcall uses ebx esi edi, dev:dword, baud:dword
+locals
+ConfPacket  rb  10
+EventData   rd  3
+endl
+        xor     esi, esi
+        xor     ecx, ecx
+        invoke  CreateEvent
+        mov     [EventData], eax
+        mov     [EventData + 4], edx
+
+        mov     ebx, [dev]
+        cmp     [ebx + ftdi_context.chipType], TYPE_2232H
+        jl      .c_clk
+        imul    eax, [baud], 10
+        cmp     eax, H_CLK / 0x3FFF
+        jle     .c_clk
+  .h_clk:
+        cmp     dword [baud], H_CLK / 10
+        jl      .h_nextbaud1
+        xor     edx, edx
+        mov     ecx, H_CLK / 10
+        jmp     .calcend
+
+  .c_clk:
+        cmp     dword [baud], C_CLK / 16
+        jl      .c_nextbaud1
+        xor     edx, edx
+        mov     ecx, C_CLK / 16
+        jmp     .calcend
+
+  .h_nextbaud1:
+        cmp     dword [baud], H_CLK / (10 + 10 / 2)
+        jl      .h_nextbaud2
+        mov     edx, 1
+        mov     ecx, H_CLK / (10 + 10 / 2)
+        jmp     .calcend
+
+  .c_nextbaud1:
+        cmp     dword [baud], C_CLK / (16 + 16 / 2)
+        jl      .c_nextbaud2
+        mov     edx, 1
+        mov     ecx, C_CLK/(16 + 16 / 2)
+        jmp     .calcend
+
+  .h_nextbaud2:
+        cmp     dword [baud], H_CLK / (2 * 10)
+        jl      .h_nextbaud3
+        mov     edx, 2
+        mov     ecx, H_CLK / (2 * 10)
+        jmp     .calcend
+
+  .c_nextbaud2:
+        cmp     dword [edi + 8], C_CLK / (2 * 16)
+        jl      .c_nextbaud3
+        mov     edx, 2
+        mov     ecx, C_CLK / (2 * 16)
+        jmp     .calcend
+
+  .h_nextbaud3:
+        mov     eax, H_CLK * 16 / 10 ; eax - best_divisor
+        xor     edx, edx
+        div     dword [baud]
+        push    eax
+        and     eax, 1
+        pop     eax
+        shr     eax, 1
+        jz      .h_rounddowndiv ; jump by result of and eax, 1
+        inc     eax
+  .h_rounddowndiv:
+        cmp     eax, 0x20000
+        jle     .h_best_divok
+        mov     eax, 0x1FFFF
+  .h_best_divok:
+        mov     ecx, eax
+        mov     eax, H_CLK * 16 / 10
+        xor     edx, edx
+        div     ecx
+        xchg    ecx, eax ; ecx - best_baud
+        push    ecx
+        and     ecx, 1
+        pop     ecx
+        shr     ecx, 1
+        jz      .rounddownbaud
+        inc     ecx
+        jmp     .rounddownbaud
+
+  .c_nextbaud3:
+        mov     eax, C_CLK ; eax - best_divisor
+        xor     edx, edx
+        div     dword [baud]
+        push    eax
+        and     eax, 1
+        pop     eax
+        shr     eax, 1
+        jnz     .c_rounddowndiv ; jump by result of and eax, 1
+        inc     eax
+  .c_rounddowndiv:
+        cmp     eax, 0x20000
+        jle     .c_best_divok
+        mov     eax, 0x1FFFF
+  .c_best_divok:
+        mov     ecx, eax
+        mov     eax, C_CLK
+        xor     edx, edx
+        div     ecx
+        xchg    ecx, eax ; ecx - best_baud
+        push    ecx
+        and     ecx, 1
+        pop     ecx
+        shr     ecx, 1
+        jnz     .rounddownbaud
+        inc     ecx
+
+  .rounddownbaud:
+        mov     edx, eax ; edx - encoded_divisor
+        shr     edx, 3
+        and     eax, 0x7
+        push    7 6 5 1 4 2 3 0
+        mov     eax, [esp + eax * 4]
+        shl     eax, 14
+        or      edx, eax
+        add     esp, 32
+
+  .calcend:
+        mov     eax, edx ; eax - *value
+        mov     ecx, edx ; ecx - *index
+        and     eax, 0xFFFF
+        cmp     [ebx + ftdi_context.chipType], TYPE_2232H
+        jge     .foxyindex
+        shr     ecx, 16
+        jmp     .preparepacket
+  .foxyindex:
+        shr     ecx, 8
+        and     ecx, 0xFF00
+        or      ecx, [ebx + ftdi_context.index]
+
+  .preparepacket:
+        mov     word [ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                   + (SIO_SET_BAUDRATE_REQUEST shl 8)
+        mov     word [ConfPacket + 2], ax
+        mov     word [ConfPacket + 4], cx
+        mov     word [ConfPacket + 6], 0
+
+        lea     esi, [ConfPacket]
+        lea     edi, [EventData]
+        invoke  USBControlTransferAsync, [ebx + ftdi_context.nullP], esi, 0,\
+                                         0, control_callback, edi, 0
+        test    eax, eax
+        jz      .error
+        mov     eax, [EventData]
+        mov     ebx, [EventData + 4]
+        invoke  WaitEvent
+
+        mov     eax, [EventData]
+        mov     ebx, [EventData + 4]
+        invoke  DestroyEvent
+        xor     eax, eax
+        ret
+
+  .error:
+        or      eax, -1
+        ret
 endp
 
 include 'linkedlist.inc'
@@ -1028,6 +1378,17 @@ usb_functions:
         dd      12
         dd      AddDevice
         dd      DeviceDisconnected
+
+align 4
+uart_drv:
+        dd      uart_drv_end - uart_drv
+        dd      uart_startup
+        dd      uart_shutdown
+        dd      uart_reconf
+        dd      uart_tx
+uart_drv_end:
+
+serial_drv_entry dd 0
 
 data fixups
 end data        
