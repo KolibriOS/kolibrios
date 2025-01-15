@@ -5,8 +5,12 @@
 #include "../lib/list_box.h"
 #include "../lib/fs.h"
 
-#define ITEM_H 19
+#define ITEM_H 24
 #define SEP_H 4
+#define TEXT_FONT_TYPE 0x90
+#define TEXT_MARGIN 13
+#define FONT_WIDTH 8
+#define FONT_HEIGHT 16
 
 llist menu1;
 collection names=0;
@@ -43,9 +47,9 @@ void GetMenuWidths()
 	for (i=0; i<hotkeys.count; i++) {
 		max_hotkey_len = math.max(max_hotkey_len, strlen(hotkeys.get(i)));
 	}
-	max_name_len = max_name_len * 6;
-	max_hotkey_len *= 6;
-	if (max_hotkey_len) max_name_len += 12;
+	max_name_len = max_name_len * FONT_WIDTH;
+	max_hotkey_len *= FONT_WIDTH;
+	if (max_hotkey_len) max_name_len += FONT_WIDTH*2;
 }
 
 void GetMenuItems(dword current_name)
@@ -108,12 +112,14 @@ void main()
 	GetMenuItems(#param);
 	GetMenuWidths();
 
-	menu_w = max_name_len + max_hotkey_len + 23;
+	menu_w = max_name_len + max_hotkey_len + TEXT_MARGIN + TEXT_MARGIN;//23;
 	menu_h = GetSeparatorsCount() * SEP_H 
 		+ calc(names.count - GetSeparatorsCount() * ITEM_H);
 
 	menu1.count = names.count;
-	menu1.SetFont(6, 9, 0x80);
+	// menu1.SetFont(8, 14, 10011000b);
+	menu1.SetFont(8, 16, 0x80); // TODO what is third par
+	// menu1.SetFont(6, 9, 0x80);
 	menu1.SetSizes(2,2, menu_w, menu_h, ITEM_H);
 	menu1.cur_y = -1;
 
@@ -231,17 +237,17 @@ void draw_list()
 				name_color = sc.work_text;
 				hotkey_color = sc.line;
 				DrawBar(menu1.x, item_y, menu1.w, ITEM_H, inactive_background_color);
-				if (!skin_dark) WriteText(13+1, item_y + menu1.text_y +1, 0x80, 
+				if (!skin_dark) WriteText(TEXT_MARGIN+1, item_y + menu1.text_y +1, TEXT_FONT_TYPE, 
 					inactive_text_shadow_color, names.get(i));
 			}
-			WriteText(-strlen(hotkeys.get(i))*6 + 13 + max_name_len + max_hotkey_len, 
-				item_y + menu1.text_y, 0x80, hotkey_color, hotkeys.get(i));
-			WriteText(13, item_y + menu1.text_y, 0x80, name_color, names.get(i));
+			WriteText(-strlen(hotkeys.get(i))*FONT_WIDTH + menu_w - TEXT_MARGIN, 
+				item_y + menu1.text_y, TEXT_FONT_TYPE, hotkey_color, hotkeys.get(i));
+			WriteText(TEXT_MARGIN, item_y + menu1.text_y, TEXT_FONT_TYPE, name_color, names.get(i));
 			item_y += ITEM_H;
 			item_i++;		
 		}
 	}
-	if (selected) WriteText(5, selected-1*ITEM_H + menu1.y + menu1.text_y, 0x80, 0xEE0000, "\x10");
+	if (selected) WriteText(5, selected-1*ITEM_H + menu1.y + menu1.text_y, TEXT_FONT_TYPE, 0xEE0000, "\x10"); // ?
 }
 
 void click()

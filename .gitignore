@@ -7,3 +7,5 @@ ehthumbs_vista.db
 ### macOS ###
 .DS_Store
 ._*
+programs/cmm/cmm.code-workspace
+programs/cmm/menu/.gitignore
