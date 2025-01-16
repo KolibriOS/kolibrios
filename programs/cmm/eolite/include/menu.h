@@ -2,17 +2,17 @@
 
 char file_actions[]= 
 "Открыть           |Enter
-Открыть с помощью  |CrlEnt
+Открыть с помощью  |Ctrl+Ent
 -
-Копировать         |Crl+C
-Вырезать           |Crl+X
-Вставить           |Crl+V
+Копировать         |Ctrl+C
+Вырезать           |Ctrl+X
+Вставить           |Ctrl+V
 -
 Переименовать      |F2
 Удалить            |Del
 Свойства           |F1";
 char empty_folder_actions[]=
-"Вставить      |Crl+V";
+"Вставить      |Ctrl+V";
 char burger_menu_items[] = 
 "Новое окно|Ctrl+N
 Открыть консоль|Ctrl+G
@@ -23,17 +23,17 @@ char burger_menu_items[] =
 #elif LANG_EST
 char file_actions[]= 
 "Ava           |Enter
-Ava ...        |CrlEnt
+Ava ...        |Ctrl+Ent
 -
-Kopeeri        |Crl+C
-Lїika          |Crl+X
-Aseta          |Crl+V
+Kopeeri        |Ctrl+C
+Lїika          |Ctrl+X
+Aseta          |Ctrl+V
 -
 Nimeta №mber   |F2
 Kustuta        |Del
 Properties     |F1";
 char empty_folder_actions[]=
-"Aseta         |Crl+V";
+"Aseta         |Ctrl+V";
 char burger_menu_items[] = 
 "New window|Ctrl+N
 Open console here|Ctrl+G
@@ -43,18 +43,18 @@ About";
 
 #else
 char file_actions[]= 
-"Open         |Enter 
-Open with...  |CrlEnt
+"Open         |Enter
+Open with...  |Ctrl+Ent
 -
-Copy          |Crl+C
-Cut           |Crl+X
-Paste         |Crl+V
+Copy          |Ctrl+C
+Cut           |Ctrl+X
+Paste         |Ctrl+V
 -
 Rename        |F2
 Delete        |Del
 Properties    |F1";
 char empty_folder_actions[]=
-"Paste        |Crl+V";
+"Paste        |Ctrl+V";
 char burger_menu_items[] = 
 "New window|Ctrl+N
 Open console here|Ctrl+G
