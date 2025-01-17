@@ -14,7 +14,7 @@ dd 0, 0
 
 ; ================================================================
 
-include '../../macros.inc'
+include '../macros.inc'
 
 START:                                  ; start of execution
         call    draw_window             ; draw the window
@@ -23,13 +23,13 @@ event_wait:
         mov     eax, 10                 ; function 10 : wait until event
         mcall                           ; event type is returned in eax
 
-        cmp     eax, 1                  ; Event redraw request ˜
+        cmp     eax, 1                  ; Event redraw request
         je      red                     ; Expl.: there has been activity on screen and
                                         ; parts of the applications has to be redrawn.
-        cmp     eax, 2                  ; Event key in buffer ˜
+        cmp     eax, 2                  ; Event key in buffer
         je      key                     ; Expl.: User has pressed a key while the
                                         ; app is at the top of the window stack.
-        cmp     eax, 3                  ; Event button in buffer ˜
+        cmp     eax, 3                  ; Event button in buffer
         je      button                  ; Expl.: User has pressed one of the
                                         ; applications buttons.
         jmp     event_wait
@@ -41,75 +41,127 @@ red:                                    ; Redraw event handler
 key:                                    ; Keypress event handler
         mov     eax, 2                  ; The key is returned in ah. The key must be
         mcall                           ; read and cleared from the system queue.
-        jmp     event_wait              ; Just read the key, ignore it and jump to event_wait.
+        cmp     eax, 1                  ; Just read the key, ignore it and jump to event_wait.
+        je      event_wait
+        mov     cl, [reading]
+        cmp     cl, 0x00
+        je      event_wait
+        mov     [char], ah
+        mov     [page], 0x00
+        push    eax
+        shr     ax, 8
+        xor     ah, ah
+        mov     [char_ascii], ax
+        pop     eax
+        shr     eax, 16
+        mov     [char_scan], ax
+        mov     [letter], 0x0000
+        call    draw_update
+        jmp     event_wait
 
 button:                                  ; Buttonpress event handler
         mov     eax, 17                  ; The button number defined in window_draw
-		mcall
+        mcall
 
         .close:
-		        cmp     ah, 1
-		        jne     .button_b
-		        mov     eax, -1
-		        mcall
+                cmp     ah, 1
+                jne     .button_a
+                mov     eax, -1
+                mcall
 
-		.button_b:
-		        cmp     ah, 0x0B
-		        jne     .button_c
-		        mov     [charset], 0x80
-		        mov     [curr_cs], cp6x9
-		        call    draw_update
-		        jmp     event_wait
+        .button_a:                        ; select character
+                cmp     ah, 0x0A
+                jne     .button_b
+                mcall   37, 1
+                push    eax
+                sub     ax, 34
+                mov     bl, 24
+                div     bl
+                mov     cl, al
+                shl     cl, 4
+                pop     eax
+                shr     eax, 16
+                sub     ax, 34
+                div     bl
+                add     cl, al
+                mov     [char], cl
+                mov     [char_scan], 0x0000
+                call    logic_update
+                call    draw_update
+                jmp     event_wait
 
-        .button_c:
-		        cmp     ah, 0x0C
-		        jne     .button_d
-		        mov     [charset], 0x90
-		        mov     [curr_cs], cp8x16
-		        call    draw_update
-		        jmp     event_wait
+        .button_b:                        ; charset CP866 6x9
+                cmp     ah, 0x0B
+                jne     .button_c
+                mov     [charset], 0x80
+                mov     [lb_curr], lb_cp6x9
+                call    draw_update
+                jmp     event_wait
 
-        .button_d:
+        .button_c:                        ; charset CP866 8x16
+                cmp     ah, 0x0C
+                jne     .button_d
+                mov     [charset], 0x90
+                mov     [lb_curr], lb_cp8x16
+                call    draw_update
+                jmp     event_wait
+
+        .button_d:                        ; charset UTF-16 8x16
                 cmp     ah, 0x0D
-		        jne     .button_e
-		        mov     [charset], 0xA0
-		        mov     [curr_cs], utf16le
-		        call    draw_update
-		        jmp     event_wait
+                jne     .button_e
+                mov     [charset], 0xA0
+                mov     [lb_curr], lb_utf16
+                call    draw_update
+                jmp     event_wait
 
-        .button_e:
+        .button_e:                        ; charset UTF-8 8x16
                 cmp     ah, 0x0E
-		        jne     .button_f
-		        mov     [charset], 0xB0
-		        mov     [curr_cs], utf8
-		        call    draw_update
-		        jmp     event_wait
+                jne     .button_f
+                mov     [charset], 0xB0
+                mov     [lb_curr], lb_utf8
+                call    draw_update
+                jmp     event_wait
 
-        .button_f:
+        .button_f:                        ; charpage reset
                 cmp     ah, 0x0F
-		        jne     .button_10
-		        mov     bl, [page]
-		        dec     bl
-		        mov     [page], bl
-		        mov     cx, [letter]
-		        mov     ch, bl
-		        mov     [letter], cx
-		        call    draw_update
-		        jmp     event_wait
+                jne     .button_10
+                mov     [page], 0x00
+                call    logic_update
+                call    draw_update
+                jmp     event_wait
 
-        .button_10:
+        .button_10:                        ; charpage decrement
                 cmp     ah, 0x10
-		        jne     event_wait
-		        mov     bl, [page]
-		        inc     bl
-		        mov     [page], bl
-		        mov     cx, [letter]
-		        mov     ch, bl
-		        mov     [letter], cx
-		        call    draw_update
-		        jmp     event_wait
+                jne     .button_11
+                mov     ch, [page]
+                dec     ch
+                mov     [page], ch
+                call    logic_update
+                call    draw_update
+                jmp     event_wait
+
+        .button_11:                        ; charpage increment
+                cmp     ah, 0x11
+                jne     .button_12
+                mov     ch, [page]
+                inc     ch
+                mov     [page], ch
+                call    logic_update
+                call    draw_update
+                jmp     event_wait
+
+        .button_12:                        ; read/stop keyboard input
+                cmp     ah, 0x12
+                jne     event_wait
+                mov     al, 0x01
+                sub     al, [reading]
+                mov     [reading], al
+                call    draw_toggle
+
 
         jmp     event_wait
+
+; ================================================================
 
 draw_window:
 
@@ -118,13 +170,10 @@ draw_window:
         mcall   48, 3, window_colors, 40
 
         mcall     , 4
-		push    eax
-		; push    eax
+        push    eax
 
         mov     eax, 0
-        mov     ebx, 100 * 65536 + 436
-        ; pop     ecx
-        ; add     ecx, 100 * 65536 + 495
+        mov     ebx, 100 * 65536 + 685
         mov     ecx, 100 * 65536 + 518
         mov     edx, [window_colors.work]
         add     edx, 0x34000000
@@ -137,6 +186,7 @@ draw_window:
 
         call    draw_base
         call    draw_update
+        call    draw_toggle
 
         mcall   12, 2
 
@@ -147,244 +197,425 @@ draw_window:
 ; unchangeble base - table, headers and buttons
 draw_base:
 
-		.table:
-				;light table background
-        		; mcall   13, 0x0009019A, 0x0009019A, [window_colors.work]
+        .tables:
+                ; both tables background
+                mcall   13, 65536 *   9 + 410, 65536 *   9 + 410, [window_colors.work_light]
+                mcall     , 65536 * 428 + 240, 65536 *   9 + 442,
 
-        		; table borders lines
-		        mcall     13, 0x0008019B, 0x00080001, [window_colors.work_text]
-		        mcall       ,           , 0x00210001,
-		        mcall       ,           , 0x01A20001,
-		        mcall       , 0x00080001, 0x0008019A,
-		        mcall       , 0x00210001,           ,
-		        mcall       , 0x01A20001,           ,
+                ; 16x16 characters table
+                mcall     , 65536 *   8 + 411, 65536 *   8 +   1, [window_colors.work_text]
+                mcall     ,                  , 65536 *  33 +   1,
+                mcall     ,                  , 65536 * 418 +   1,
+                mcall     , 65536 *   8 +   1, 65536 *   8 + 410,
+                mcall     , 65536 *  33 +   1,                  ,
+                mcall     , 65536 * 418 +   1,                  ,
 
-		.headers:
-				; horizontal table headers
-				mov     eax, 4
-				mov     ebx, 0x0026000E
-				mov     ecx, [window_colors.work_text]
-				add     ecx, 0x90000000
-				mov     esi, 16
+                ; single character table
+                mcall     , 65536 * 427 +   1, 65536 *   8 + 443,
+                mcall     , 65536 * 668 +   1,                  ,
+                mcall     , 65536 * 427 + 242, 65536 *   8 +   1,
+                mcall     ,                  , 65536 * 376 +   1,
+                mcall     ,                  , 65536 * 401 +   1,
+                mcall     ,                  , 65536 * 426 +   1,
+                mcall     ,                  , 65536 * 451 +   1,
+                mcall     , 65536 * 562 +   1, 65536 * 377 +  75,
+                mcall     , 65536 * 619 +   1,                  ,
 
-				.loop_hx:
-				        mov     edx, header
-				        mcall
+        .headers:
+                ; horizontal table headers
+                mov     eax, 4
+                mov     ebx, 65536 * 38 + 14
+                mov     ecx, [window_colors.work_text]
+                add     ecx, 0x90000000
+                mov     esi, 16
 
-				        mov     dx, [header]
-				        add     dx, 0x0100
+                .loop_hx:
+                        mov     edx, header
+                        mcall
 
-				        cmp     dx, 0x3A2D
-				        jne     .hx_af
-				        add     dx, 0x0700
+                        mov     dx, [header]
+                        add     dx, 0x0100
 
-				        .hx_af:
-				        mov     [header], dx
-				        add     ebx, 0x00180000
-				        dec     esi
-				        jnz     .loop_hx
+                        cmp     dx, 0x3A2D
+                        jne     .hx_af
+                        add     dx, 0x0700
 
-				; vertical headers
-				mov     ebx, 0x000D0027
-				mov     esi, 16
-				mov     [header], 0x2D30
+                        .hx_af:
+                        mov     [header], dx
+                        add     ebx, 65536 * 24
+                        dec     esi
+                        jnz     .loop_hx
 
-				.loop_hy:
-				        mov     edx, header
-				        mcall
+                ; vertical headers
+                mov     ebx, 65536 * 13 + 39
+                mov     esi, 16
+                mov     [header], 0x2D30
 
-				        mov     dx, [header]
-				        add     dx, 0x0001
+                .loop_hy:
+                        mov     edx, header
+                        mcall
 
-				        cmp     dx, 0x2D3A
-				        jne     .hy_af
-				        add     dx, 0x0007
+                        mov     dx, [header]
+                        add     dx, 0x0001
 
-				        .hy_af:
-				        mov     [header], dx
-				        add     ebx, 0x00000018
-				        dec     esi
-				        jnz     .loop_hy
+                        cmp     dx, 0x2D3A
+                        jne     .hy_af
+                        add     dx, 0x0007
 
-		        ; reset headers
-		        mov     [header], 0x302D
+                        .hy_af:
+                        mov     [header], dx
+                        add     ebx, 24
+                        dec     esi
+                        jnz     .loop_hy
 
-		.buttons:
-				; charsets change buttons
-		        mcall    8, 0x0008005F, 0x01AB0017, 0x0000000B, [window_colors.work_button]
-		        mcall     , 0x0071005F,           , 0x0000000C,
-		        mcall     , 0x00DA005F,           , 0x0000000D,
-		        mcall     , 0x0143005F,           , 0x0000000E,
+                ; reset headers
+                mov     [header], 0x302D
 
-				; page swap buttons
-		        mcall     , 0x016B0017, 0x01CB0017, 0x0000000F,
-		        mcall     , 0x018B0017,           , 0x00000010,
+                ; single character table headers
+                mcall     , 65536 * 579 + 382, ,  lb_dec,
+                mcall     , 65536 * 632 + 382, ,  lb_hex,
+                mcall     , 65536 * 436 + 407, , lb_asci,
+                mcall     , 65536 * 436 + 432, , lb_scan,
 
-		        ; charsets change buttons subscriptions
-		        mov      ecx, [window_colors.work_button_text]
-		        add      ecx, 0xB0000000
-		        mcall    4, 0x001401B0, , cp6x9
-		        mcall     , 0x007901B0, , cp8x16
-		        mcall     , 0x00DE01B0, , utf16le
-		        mcall     , 0x014B01B0, , utf8
+        .buttons:
+                ; button on table to pick single character
+                mcall    8, 65536 *  34 + 384, 65536 *  34 + 384, 0x6000000A,
 
-		        ; page swap buttons subscriptions
-		        mcall     , 0x017201D0, , left
-		        mcall     , 0x019301D0, , right
+                ; charsets change buttons
+                mcall     , 65536 *   8 +  95, 65536 * 459 +  23, 0x0000000B, [window_colors.work_button]
+                mcall     , 65536 * 113 +  95,                  , 0x0000000C,
+                mcall     , 65536 * 218 +  95,                  , 0x0000000D,
+                mcall     , 65536 * 323 +  95,                  , 0x0000000E,
 
-		ret
+                ; page swap buttons
+                mcall     , 65536 * 323 +  31, 65536 * 427 +  23, 0x0000000F,
+                mcall     , 65536 * 363 +  23,                  , 0x00000010,
+                mcall     , 65536 * 395 +  23,                  , 0x00000011,
 
-; changable data: current charset, page and letters
+                ; charsets change buttons subscriptions
+                mov      ecx, [window_colors.work_button_text]
+                add      ecx, 0xB0000000
+                mcall    4, 65536 *  20 + 464, , lb_cp6x9
+                mcall     , 65536 * 121 + 464, , lb_cp8x16
+                mcall     , 65536 * 222 + 464, , lb_utf16
+                mcall     , 65536 * 331 + 464, , lb_utf8
+
+                ; page swap buttons subscriptions
+                mcall     , 65536 * 331 + 432, , bt_res
+                mcall     , 65536 * 370 + 432, , bt_dec
+                mcall     , 65536 * 403 + 432, , bt_inc
+
+        ret
+
+; changable data: current charset, charpage, chars, single char and it's codes
 draw_update:
-		; current charset and charpage
-		.charpage:
-				; temporary, background for letters
-				mcall   13, 0x00220180, 0x00220180, [window_colors.work]
 
-				; current charpage
-		        mov     esi, [window_colors.work_text]
-		        add     esi, 0x50000000
-		        mcall   47, 0x00020101, page, 0x000D000E, , [window_colors.work]
+        ; background for letters
+        mcall   13, 65536 * 34 + 384, 65536 * 34 + 384, [window_colors.work_light]
 
-				; current charset
-				mov     ecx, [window_colors.work_text]
-				add     ecx, 0xD0000000
-		        mcall   4, 0x000801D0, , [curr_cs], , [window_colors.work]
+        ; current charset and charpage
+        .charpage:
+                ; current charpage
+                mov     esi, [window_colors.work_text]
+                add     esi, 0x50000000
+                mcall   47, 65536 * 2 + 257, page, 0x000D000E, , [window_colors.work_light]
 
-		.letters:
-				; 16x16 table of letters
-				; mov     eax, 4
+                ; current charset
+                mov     ecx, [window_colors.work_text]
+                add     ecx, 0xD0000000
+                mcall   4, 65536 * 8 + 432, , [lb_curr], , [window_colors.work]
 
-				;different coordinates for 6x9 charset
-				mov     bl, [charset]
-				cmp     bl, 0x80
+        ; 16x16 table of letters
+        .letters:
+                ;different coordinates for 6x9 charset
+                mov     bl, [charset]
+                cmp     bl, 0x80
                 jne     .char_big
 
-				.char_sm:
-				        mov     ebx, 0x002C002A
-				        jmp     .char_draw
+                .char_sm:
+                        mov     ebx, 65536 * 44 + 42
+                        jmp     .char_draw
 
-				.char_big:
-				        mov     ebx, 0x002A0027
+                .char_big:
+                        mov     ebx, 65536 * 42 + 39
 
-				.char_draw:
-						mov     cl,  [charset]
-						shl     ecx, 24
-						add     ecx, [window_colors.work_text]
-						mov     esi, 16
+                .char_draw:
+                        mov     cl,  [charset]
+                        shl     ecx, 24
+                        add     ecx, [window_colors.work_text]
+                        mov     esi, 16
 
-				; letters draw loop
+                ; letters draw loop
                 .loop_ly:
-				        mov     edi, 16
+                        mov     edi, 16
 
-				        .loop_lx:
-						        mov     edx, letter
+                        .loop_lx:
+                                mov     edx, letter
 
-						        cmp     [curr_cs], utf8
-						        jne     .skip_lx
+                                cmp     [charset], 0xB0
+                                jne     .skip_lx
 
-						        ;utf 8 to 16
-						        xor     edx, edx
-						        mov     dx, [letter]
-						        push    esi
-						        mov     esi, letutf
-						        call    utf16to8
-						        pop     esi
-						        mov     edx, letutf
+                                ;utf 8 to 16
+                                xor     edx, edx
+                                mov     dx, [letter]
+                                push    esi
+                                mov     esi, letutf
+                                call    logic_utf16to8
+                                pop     esi
+                                mov     edx, letutf
 
-						        .skip_lx:
+                                .skip_lx:
 
-						        mcall
+                                mcall
 
-						        mov     dx, [letter]
-						        add     dx, 0x01
-						        mov     [letter], dx
+                                mov     dx, [letter]
+                                add     dx, 0x01
+                                mov     [letter], dx
 
-						        add     ebx, 0x00180000
+                                add     ebx, 65536 * 24
 
-						        dec     edi
-						        jnz     .loop_lx
+                                dec     edi
+                                jnz     .loop_lx
 
-				        ; start new row of letters
-						sub     ebx, 0x017FFFE8
+                        ; start new row of letters
+                        sub     ebx, 65536 * 383 + 65512
 
-						dec     esi
-						jnz     .loop_ly
+                        dec     esi
+                        jnz     .loop_ly
 
-				; reset letter from 0x0100 to 0x0000
-				mov     dx, [letter]
-				dec     dh
-				mov     [letter], dx
+                ; reset letter from 0x0100 to 0x0000
+                mov     dx, [letter]
+                dec     dh
+                mov     [letter], dx
 
-		ret
+        ; highlight of current character in table
+        .highlight:
+                mov     al, [char]
+                shr     al, 4
+                mov     bl, 24
+                mul     bl
+                add     ax, 34
+                shl     eax, 16
+                mov     al, 0x01
+                mov     ecx, eax
+                push    ecx
+                mcall   13, 65536 * 34 + 384, , [window_colors.work_button]
+                add     ecx, 65536 * 23
+                mcall
 
-; edx = num
-; esi -> buffer, size 4
-utf16to8:
-		push    eax ecx edx
-		xor     ecx, ecx
-		mov     dword [esi], 0
-		or      ecx, 3
-		mov     eax, 0x80808000 + 11110000b
+                mov     al, [char]
+                and     al, 0x0F
+                mov     bl, 24
+                mul     bl
+                add     ax, 34
+                shl     eax, 16
+                mov     al, 0x01
+                mov     ebx, eax
+                mcall   13, , 65536 * 34 + 384, [window_colors.work_button]
+                add     ebx, 65536 * 23
+                mcall
 
-		cmp     edx, 0x00010000
-		jae     @f
-		mov     eax, 0x00808000 + 11100000b
-		dec     ecx
+                pop     ecx
+                add     ecx, 23
+                sub     ebx, 65535 * 23
+                mcall
 
-		cmp     edx, 0x00000800
-		jae     @f
-		mov     eax, 0x00008000 + 11000000b
-		dec     ecx
+                shr     ecx, 16
+                mov     bx, cx
+                add     ebx, 65536 * 8 + 5
 
-		cmp     edx, 0x00000080
-		jae     @f
-		mov     eax, edx
-		dec     ecx
+                mov     cl, [charset]
+                cmp     cl, 0xB0
+                jne     .check_80
+                mov     cl, 0xA0
+                jmp     .process
 
-		@@:
-				mov     [esi], eax
+                .check_80:
+                cmp     cl, 0x80
+                jne     .process
+                add     ebx, 65536 * 2 + 3
 
-		@@:
-		        mov     eax, edx
-		        and     eax, 0x3F
-		        shr     edx, 6
-		        or      byte[esi + ecx], al
-		        dec     ecx
-		        jns     @b
+                .process:
+                shl     ecx, 24
+                add     ecx, [window_colors.work_button_text]
+                mcall   4, , , char_ascii
 
-		pop     edx ecx eax
+        ; single character big display
+        .single:
 
-		ret
+                mcall   13, 65536 * 452 + 192, 65536 * 24 + 336, [window_colors.work_light]
+                mov     ah, [page]
+                mov     al, [char]
+                mov     [char_ascii], ax
+
+                cmp     [charset], 0xB0
+
+                jne     .skip_sn
+                        ;utf 8 to 16
+                        xor     edx, edx
+                        mov     dx, [char_ascii]
+                        push    esi
+                        mov     esi, char_utf
+                        call    logic_utf16to8
+                        pop     esi
+
+                        mov     ecx, 0xF7000000
+                        add     ecx, [window_colors.work_text]
+                        mcall   4, 65536 * 516 + 136, , char_utf, 0, [window_colors.work_light]
+                        jmp     .codes
+
+                .skip_sn:
+                        mov     ebx, 65536 * 516 + 136
+                        mov     cl, [charset]
+
+                        cmp     cl, 0x80
+                        jne     .not_80
+                        add     ebx, 65536 * 12 + 29
+
+                        .not_80:
+                        add     cl, 0x07
+                        shl     ecx, 24
+                        add     ecx, [window_colors.work_text]
+                        mcall   4, , , char_ascii, 1, [window_colors.work_light]
+
+        ; singe character codes
+        .codes:
+
+                mov     esi, [window_colors.work_text]
+                add     esi, 0x50000000
+
+                xor     ecx, ecx
+
+                mov     cx, [char_ascii]
+                mcall   47, 0x00050000, , 65536 * 571 + 407, , [window_colors.work_light]
+                mov     cx, [char_scan]
+                mcall     ,           , , 65536 * 571 + 432,
+
+                mov     cx, [char_ascii]
+                mcall     , 0x00040100, , 65536 * 628 + 407,
+                mov     cx, [char_scan]
+                mcall     ,           , , 65536 * 628 + 432,
+
+        ret
+
+; redraw keyboard input toggle button
+draw_toggle:
+
+        mcall   8, 65536 * 427 + 241, 65536 * 459 +  23, 0x00000012, [window_colors.work_button]
+
+        mov     ecx, [window_colors.work_button_text]
+        add     ecx, 0xB0000000
+
+        mov     al, [reading]
+        cmp     al, 0x01
+
+        je      .stop
+                mcall     4, 65536 * 472 + 464, , bt_read
+                ret
+        .stop:
+                mcall     4, 65536 * 472 + 464, , bt_stop
+                ret
 
 ; ================================================================
 
-title   db "Charset Checker 0.2.5", 0
+; update all dependant values
+logic_update:
 
-cp6x9   db "CP866 6x9  ", 0
-cp8x16  db "CP866 8x16 ", 0
-utf16le db "UTF-16 8x16", 0
-utf8    db "UTF-8 8x16 ", 0
+        ; update [letter] value (first char on current page)
+        mov     ax, [letter]
+        mov     ah, [page]
+        mov     [letter], ax
 
-left    db "<", 0
-right   db ">", 0
+        ; update [char_ascii] value (selected single char)
+        mov     ah, [page]
+        mov     al, [char]
+        mov     [char_ascii], ax
+
+        ret
+
+; edx = num, esi -> buffer of size 4
+logic_utf16to8:
+
+        push    eax ecx edx
+        xor     ecx, ecx
+        mov     dword [esi], 0
+        or      ecx, 3
+        mov     eax, 0x80808000 + 11110000b
+
+        cmp     edx, 0x00010000
+        jae     @f
+        mov     eax, 0x00808000 + 11100000b
+        dec     ecx
+
+        cmp     edx, 0x00000800
+        jae     @f
+        mov     eax, 0x00008000 + 11000000b
+        dec     ecx
+
+        cmp     edx, 0x00000080
+        jae     @f
+        mov     eax, edx
+        dec     ecx
+
+        @@:
+                mov     [esi], eax
+
+        @@:
+                mov     eax, edx
+                and     eax, 0x3F
+                shr     edx, 6
+                or      byte[esi + ecx], al
+                dec     ecx
+                jns     @b
+
+        pop     edx ecx eax
+
+        ret
+
+; ================================================================
+
+title   db "Charset Checker 0.3.1", 0
+
+lb_cp6x9        db "CP866 6x9  ", 0
+lb_cp8x16       db "CP866 8x16 ", 0
+lb_utf16        db "UTF-16 8x16", 0
+lb_utf8         db "UTF-8 8x16 ", 0
+
+lb_curr         dd lb_utf8
+
+lb_hex  db "HEX", 0
+lb_dec  db "DEC", 0
+lb_asci db "ASCII-code", 0
+lb_scan db "Scan-code", 0
+
+bt_res  db "00", 0
+bt_dec  db "<", 0
+bt_inc  db ">", 0
+
+bt_read db "Read keyboard input", 0
+bt_stop db "Stop keyboard input", 0
+
+reading db 0x00
 
 header  dw 0x302D, 0        ; "-0" symbols
 letter  dw 0x0000, 0
 letutf  dd 0x00000000, 0
+
 charset db 0xB0
 page    db 0x00
+char    db 0x00
 
-curr_cs dd utf8
+char_ascii      dw 0x0000, 0
+char_scan       dw 0x0000, 0
+char_utf        dd 0x00000000, 0
 
 window_colors system_colors
-;window_height dd 0x00000000
 
 ; ================================================================
 
 I_END:
-        rb 4096
-align 16
+        rb      4096
+        align   16
 STACKTOP:
 
 MEM:
