@@ -1,6 +1,6 @@
 /*
  * System Monitor
- * version 1.41
+ * version 1.42
  * Author: Leency
 */
 
@@ -38,7 +38,7 @@
 #define BOTPANEL_H 36
 
 #ifdef LANG_RUS
-	#define T_APP_TITLE      "Системный монитор"
+	#define T_APP_TITLE      "Системный Монитор 1.42"
 	#define T_SHOW_SYSTEM    "Системные"
 	#define T_DETAILS        "Подробнее"
 	#define T_PROC_KILL      "Снять задачу"
@@ -49,7 +49,7 @@
 	#define T_RD_USAGE       "Системный диск: %i Кб свободно из 1.4 Мб"
 	#define T_TMP_USAGE      "TMP%i диск: %i Мб свободно из %i Мб"
 #else
-	#define T_APP_TITLE      "System Monitor"
+	#define T_APP_TITLE      "System Monitor 1.42"
 	#define T_SHOW_SYSTEM    "System"
 	#define T_DETAILS        "Details"
 	#define T_PROC_KILL      "Terminate"
@@ -57,7 +57,7 @@
 	#define T_PROC_HEADER    "Process        RAM KB   CPU %"
 	#define T_CPU_LOAD       "CPU load %i%%   "
 	#define T_RAM_USAGE      "RAM usage: %i MB free of %i MB"
-	#define T_RD_USAGE       "System disk usage: %i MB free of 1.4 MB"
+	#define T_RD_USAGE       "System disk usage: %i KB free of 1.4 MB"
 	#define T_TMP_USAGE      "TMP%i usage: %i MB free of %i MB"
 #endif
 
@@ -156,7 +156,7 @@ void main()
 			break;
 		case evReDraw:
 			sc.get();
-			DefineAndDrawWindow(Form.left, Form.top, Form.width, Form.height, 0x33, sc.work, T_APP_TITLE,0);
+			DefineAndDrawWindow(Form.left, Form.top, Form.width, Form.height, 0x33, sc.work, T_APP_TITLE, 0);
 			_DRAW_WINDOW:
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window&ROLLED_UP) break;
@@ -281,7 +281,7 @@ void SelectList_DrawLine(dword i)
 	}
 
 	sprintf(#cpu_use, "%i", Process.use_cpu*100/maxcpu);
-	if (maxcpu) WriteText(GAP+203 - calc(strlen(#cpu_use)-4*8), 
+	if (maxcpu) WriteText(GAP+205 - calc(strlen(#cpu_use)-4*8), 
 		posy+select_list.text_y, 0x90, 0x444444, #cpu_use);
 }
 
@@ -311,6 +311,7 @@ dword GetTmpDiskFreeSpace(int _id)
 	sprintf(#param, "/tmp%i/1", _id);
 	dir_size.get(#param);
 	dir_size.sizelo += dir_size.files/2 + 32 * 512; //file attr size + FAT table size
+	dir_size.sizelo += 1024*1024 - 1; // add this line to round up
 	dir_size.sizelo /= 1024*1024; //convert to MiB
 	return dir_size.sizelo;	
 }

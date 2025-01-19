@@ -1,5 +1,5 @@
 @del sysmon
-@c-- /D=LANG_RUS sysmon.c
+@c-- /D=LANG_ENG sysmon.c
 @rename sysmon.com sysmon
 @del warning.txt
 if not exist sysmon ( @pause )
