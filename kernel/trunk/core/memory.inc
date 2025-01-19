@@ -1333,7 +1333,7 @@ f68call:   ; keep this table closer to main code
 
 align 4
 proc load_pe_driver stdcall, file:dword, cmdline:dword
-        push    esi
+        push    ebx esi
 
         stdcall load_PE, [file]
         test    eax, eax
@@ -1352,13 +1352,13 @@ proc load_pe_driver stdcall, file:dword, cmdline:dword
 
         mov     [eax + SRV.base], ebx
         mov     [eax + SRV.entry], esi
-        pop     esi
+        pop     esi ebx
         ret
 .fail_init:
         stdcall kernel_free, ebx  ;clear memory driver
 .fail:
         xor     eax, eax
-        pop     esi
+        pop     esi ebx
         ret
 endp
 

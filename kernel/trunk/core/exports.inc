@@ -81,7 +81,7 @@ __exports:
           pci_write32,           'PciWrite32',         \      ; stdcall
 \
           get_pid,               'GetPid',             \
-          get_service,           'GetService',         \      ;
+          get_service,           'GetService',         \      ; stdcall
           reg_service,           'RegService',         \      ; stdcall
           attach_int_handler,    'AttachIntHandler',   \      ; stdcall
           user_alloc,            'UserAlloc',          \      ; stdcall
