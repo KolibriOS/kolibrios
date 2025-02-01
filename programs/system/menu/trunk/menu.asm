@@ -42,6 +42,7 @@
 	dd 0x0         ; path
 ;------------------------------------------------------------------------------
 include "..\..\..\macros.inc"
+include "..\..\..\struct.inc"
 include "..\..\..\gui_patterns.inc"
 ; Formatted debug output:
 include "..\..\..\debug-fdo.inc"
@@ -241,7 +242,7 @@ align 4
 	test	eax,eax
 	jnz	close
 ; get memory for MENU.DAT
-	mov	ecx,[procinfo+32]
+	mov	ecx,dword[fileinfo_buf+FILEINFO.Size]   ; low dword
 	mov	[fileinfo.size],ecx
 	mcall	68,12
 	mov	[fileinfo.return],eax
@@ -550,8 +551,8 @@ runthread:
 	pusha
 	mov [prior_thread_selected_y_end], bl
 	mcall	9,procinfo,-1
-	m2m     [prior_thread_y], dword[procinfo+38]
-	m2m     [prior_thread_h], dword[procinfo+46]
+	m2m     [prior_thread_y], [procinfo.box.top]
+	m2m     [prior_thread_h], [procinfo.box.height]
 	popa
 
 	movzx	eax,al
@@ -767,7 +768,7 @@ align 4
 get_process_ID:
 	mcall	9,procinfo,-1
 	mov	edx,eax
-	mov	ecx,[ebx+30]	; PID
+	mov	ecx,[ebx+process_information.PID]
 	ret
 ;------------------------------------------------------------------------------
 align 4
@@ -783,13 +784,13 @@ align 4
 .loop:
 	push	ecx
 	mcall	9,procinfo
-        cmp     word[ebx+50], TSTATE_FREE
+        cmp     word[ebx+process_information.slot_state], TSTATE_FREE
         je      @f
 	mov	eax,[menu_mame]
-	cmp	[ebx+10],eax
+	cmp	dword[ebx+process_information.process_name],eax
 	jne	@f
 	mov	ax,[menu_mame+4]
-	cmp	[ebx+14],ax
+	cmp	word[ebx+process_information.process_name+4],ax
 	jne	@f
 	cmp	ecx,[active_process]
 	je	@f
@@ -1092,7 +1093,7 @@ fileinfo:
  .start 	 dd 0		; start byte
  .size_high	 dd 0		; rezerved
  .size		 dd 0		; bytes to read
- .return	 dd procinfo	; return data pointer
+ .return	 dd fileinfo_buf; return data pointer
  .name:
      db   'SETTINGS/MENU.DAT',0   ; ASCIIZ dir & filename
 ;--------------------------------------
@@ -1182,8 +1183,8 @@ work_color dd ?
 ;------------------------------------------------------------------------------
 align 4
 bootparam:
-procinfo:
-	rb 1024
+fileinfo_buf:
+procinfo process_information
 ;------------------------------------------------------------------------------
 align 4
 	rb 0x1000
