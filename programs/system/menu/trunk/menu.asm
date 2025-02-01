@@ -783,13 +783,14 @@ align 4
 .loop:
 	push	ecx
 	mcall	9,procinfo
+        cmp     word[ebx+50], TSTATE_FREE
+        je      @f
 	mov	eax,[menu_mame]
 	cmp	[ebx+10],eax
 	jne	@f
-	; temporary to fit into 3 IMG sectors
-	;mov	ax,[menu_mame+4]
-	;cmp	[ebx+14],ax
-	;jne	@f
+	mov	ax,[menu_mame+4]
+	cmp	[ebx+14],ax
+	jne	@f
 	cmp	ecx,[active_process]
 	je	@f
 ; dph ecx

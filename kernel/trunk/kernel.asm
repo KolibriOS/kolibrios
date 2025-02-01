@@ -2320,23 +2320,16 @@ sys_cpuusage:
         jne     .no_who_am_i
         mov     ecx, [current_slot_idx]
 .no_who_am_i:
-        jecxz   .empty_slot
+        ; default value for (slot == 0) and (slot > 255)
+        mov     [ebx+process_information.slot_state], TSTATE_FREE
+        test    ecx, ecx
+        jz      .nofillbuf
         cmp     ecx, max_processes
-        ja      .empty_slot
+        ja      .nofillbuf
         mov     edx, ecx
         shl     edx, BSF sizeof.APPDATA
         cmp     [SLOT_BASE+edx+APPDATA.state], TSTATE_FREE
-        jnz     .thread_found
-.empty_slot:
-        ; zero buffer for an empty slot
-        push    edi
-        xor     eax, eax
-        mov     edi, ebx
-        movi    ecx, sizeof.process_information
-        rep stosb
-        pop     edi
-        jmp     .nofillbuf
-.thread_found:
+        jz      .nofillbuf
 ; +4: word: position of the window of thread in the window stack
         mov     ax, [WIN_STACK + ecx * 2]
         mov     [ebx+process_information.window_stack_position], ax

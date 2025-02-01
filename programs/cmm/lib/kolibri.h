@@ -79,6 +79,7 @@ dword  I_Path       =   #__path;
 
 #define CLOSE_BTN 1
 
+#define TSTATE_FREE 9
 //-------------------------------------------------------------------------
 
 #include "../lib/system.h"

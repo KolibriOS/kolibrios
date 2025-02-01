@@ -28,6 +28,8 @@ align 4
 need_window_tab:
 ; in: ebx->process info
 ; out: ZF set <=> do not draw
+        cmp     byte [ebx + process_information.slot_state], TSTATE_FREE
+        jz      .nodraw
         cmp     byte [ebx + process_information.process_name], '@'
         jz      .nodraw
 ; do not draw undefined (zero-sized) windows

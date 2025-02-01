@@ -15,10 +15,12 @@ enum {
 :bool CheckProcessExists(dword proc_name) {
 	int i;
 	proc_info Process;
-	for (i=0; i<MAX_PROCESS_COUNT; i++;)
+	for (i=0; i<MAX_PROCESS_COUNT; i++)
 	{
 		GetProcessInfo(#Process, i);
-		if (strcmpi(#Process.name, proc_name)==0) return 1;
+		if (Process.status_slot != TSTATE_FREE)
+		&& (strcmpi(#Process.name, proc_name)==0)
+			return 1;
 	}
 	return 0;
 }
@@ -26,12 +28,13 @@ enum {
 :void KillProcessByName(dword proc_name, byte multiple) {
 	int i;
 	proc_info Process;
-	for (i=0; i<MAX_PROCESS_COUNT; i++;)
+	for (i=0; i<MAX_PROCESS_COUNT; i++)
 	{
 		GetProcessInfo(#Process, i);
-		if (strcmpi(#Process.name, proc_name)==0) 
-		{ 
-			KillProcess(Process.ID); 
+		if (Process.status_slot != TSTATE_FREE)
+		&& (strcmpi(#Process.name, proc_name)==0)
+		{
+			KillProcess(Process.ID);
 			if (multiple==SINGLE) break;
 		}
 	}
@@ -40,10 +43,12 @@ enum {
 :int GetProcessesCount(dword proc_name) {
 	int i, count=0;
 	proc_info Process;
-	for (i=0; i<MAX_PROCESS_COUNT; i++;)
+	for (i=0; i<MAX_PROCESS_COUNT; i++)
 	{
 		GetProcessInfo(#Process, i);
-		if (strcmpi(#Process.name, proc_name)==0) count++;
+		if (Process.status_slot != TSTATE_FREE)
+		&& (strcmpi(#Process.name, proc_name)==0)
+			count++;
 	}
 	return count;
 }
@@ -57,7 +62,7 @@ enum {
 	int i;
 	proc_info Process, Self;
 	GetProcessInfo(#Self, -1);
-	for (i=0; i<MAX_PROCESS_COUNT; i++;)
+	for (i=0; i<MAX_PROCESS_COUNT; i++)
 	{
 		GetProcessInfo(#Process, i);
 		if (Process.name) 

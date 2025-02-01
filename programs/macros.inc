@@ -450,6 +450,15 @@ struct BOX
   height dd ?
 ends
 
+; Thread states:
+TSTATE_RUNNING        = 0
+TSTATE_RUN_SUSPENDED  = 1
+TSTATE_WAIT_SUSPENDED = 2
+TSTATE_ZOMBIE         = 3
+TSTATE_TERMINATING    = 4
+TSTATE_WAITING        = 5
+TSTATE_FREE           = 9
+
 ; structures used in KolibriOS
 struct process_information
   cpu_usage               dd ?  ; +0
@@ -461,7 +470,7 @@ struct process_information
   used_memory             dd ?  ; +26
   PID                     dd ?  ; +30
   box                     BOX   ; +34
-  slot_state              dw ?  ; +50
+  slot_state              dw ?  ; +50   TSTATE_*
                           dw ?  ; +52
   client_box              BOX   ; +54
   wnd_state               db ?  ; +70
