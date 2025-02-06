@@ -38,16 +38,16 @@
 #define BOTPANEL_H 36
 
 #ifdef LANG_RUS
-	#define T_APP_TITLE      "я┐╜я┐╜я┐╜темя┐╜я┐╜ я┐╜я┐╜я┐╜я┐╜я┐╜я┐╜ 1.42"
-	#define T_SHOW_SYSTEM    "я┐╜я┐╜я┐╜темя┐╜я┐╜"
-	#define T_DETAILS        "я┐╜я┐╜я┐╜робя┐╜я┐╜я┐╜"
-	#define T_PROC_KILL      "я┐╜я┐╜я┐╜я┐╜я┐╜ я┐╜я┐╜я┐╜я┐╜я┐╜я┐╜"
-	#define T_PROC_INFO      "я┐╜я┐╜я┐╜"
-	#define T_PROC_HEADER    "я┐╜я┐╜я┐╜я┐╜я┐╜        я┐╜я┐╜я┐╜ я┐╜я┐╜    я┐╜я┐╜ %"
-	#define T_CPU_LOAD       "я┐╜я┐╜я┐╜я┐╜узкя┐╜ я┐╜я┐╜я┐╜я┐╜я┐╜я┐╜ %i%%   "
-	#define T_RAM_USAGE      "я┐╜я┐╜я┐╜я┐╜я┐╜я┐╜ я┐╜я┐╜я┐╜: %i я┐╜я┐╜ своя┐╜я┐╜я┐╜я┐╜я┐╜ я┐╜я┐╜ %i я┐╜я┐╜"
-	#define T_RD_USAGE       "я┐╜я┐╜я┐╜темя┐╜я┐╜ я┐╜я┐╜я┐╜: %i я┐╜я┐╜ своя┐╜я┐╜я┐╜я┐╜я┐╜ я┐╜я┐╜ 1.4 я┐╜я┐╜"
-	#define T_TMP_USAGE      "TMP%i я┐╜я┐╜я┐╜: %i я┐╜я┐╜ своя┐╜я┐╜я┐╜я┐╜я┐╜ я┐╜я┐╜ %i я┐╜я┐╜"
+	#define T_APP_TITLE      "Системный Монитор 1.42"
+	#define T_SHOW_SYSTEM    "Системные"
+	#define T_DETAILS        "Подробнее"
+	#define T_PROC_KILL      "Снять задачу"
+	#define T_PROC_INFO      "Инфо"
+	#define T_PROC_HEADER    "Процесс        ОЗУ Кб    ЦП %"
+	#define T_CPU_LOAD       "Загрузка процессора %i%%   "
+	#define T_RAM_USAGE      "Память ОЗУ: %i Мб свободно из %i Мб"
+	#define T_RD_USAGE       "Системный диск: %i Кб свободно из 1.4 Мб"
+	#define T_TMP_USAGE      "TMP%i диск: %i Мб свободно из %i Мб"
 #else
 	#define T_APP_TITLE      "System Monitor 1.42"
 	#define T_SHOW_SYSTEM    "System"
@@ -230,7 +230,7 @@ void Processes__GetProcessList()
 		GetProcessInfo(#Process, i);
 		if (Process.status_slot != TSTATE_FREE)
 		{
-			if (show_system.checked==false)
+			if (!show_system.checked)
 			{
 				//do not show system process
 				if (Process.name[0]=='@') continue;
