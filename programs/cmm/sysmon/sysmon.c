@@ -38,16 +38,16 @@
 #define BOTPANEL_H 36
 
 #ifdef LANG_RUS
-	#define T_APP_TITLE      "Системный Монитор 1.42"
-	#define T_SHOW_SYSTEM    "Системные"
-	#define T_DETAILS        "Подробнее"
-	#define T_PROC_KILL      "Снять задачу"
-	#define T_PROC_INFO      "Инфо"
-	#define T_PROC_HEADER    "Процесс        ОЗУ Кб    ЦП %"
-	#define T_CPU_LOAD       "Загрузка процессора %i%%   "
-	#define T_RAM_USAGE      "Память ОЗУ: %i Мб свободно из %i Мб"
-	#define T_RD_USAGE       "Системный диск: %i Кб свободно из 1.4 Мб"
-	#define T_TMP_USAGE      "TMP%i диск: %i Мб свободно из %i Мб"
+	#define T_APP_TITLE      "я┐╜я┐╜я┐╜темя┐╜я┐╜ я┐╜я┐╜я┐╜я┐╜я┐╜я┐╜ 1.42"
+	#define T_SHOW_SYSTEM    "я┐╜я┐╜я┐╜темя┐╜я┐╜"
+	#define T_DETAILS        "я┐╜я┐╜я┐╜робя┐╜я┐╜я┐╜"
+	#define T_PROC_KILL      "я┐╜я┐╜я┐╜я┐╜я┐╜ я┐╜я┐╜я┐╜я┐╜я┐╜я┐╜"
+	#define T_PROC_INFO      "я┐╜я┐╜я┐╜"
+	#define T_PROC_HEADER    "я┐╜я┐╜я┐╜я┐╜я┐╜        я┐╜я┐╜я┐╜ я┐╜я┐╜    я┐╜я┐╜ %"
+	#define T_CPU_LOAD       "я┐╜я┐╜я┐╜я┐╜узкя┐╜ я┐╜я┐╜я┐╜я┐╜я┐╜я┐╜ %i%%   "
+	#define T_RAM_USAGE      "я┐╜я┐╜я┐╜я┐╜я┐╜я┐╜ я┐╜я┐╜я┐╜: %i я┐╜я┐╜ своя┐╜я┐╜я┐╜я┐╜я┐╜ я┐╜я┐╜ %i я┐╜я┐╜"
+	#define T_RD_USAGE       "я┐╜я┐╜я┐╜темя┐╜я┐╜ я┐╜я┐╜я┐╜: %i я┐╜я┐╜ своя┐╜я┐╜я┐╜я┐╜я┐╜ я┐╜я┐╜ 1.4 я┐╜я┐╜"
+	#define T_TMP_USAGE      "TMP%i я┐╜я┐╜я┐╜: %i я┐╜я┐╜ своя┐╜я┐╜я┐╜я┐╜я┐╜ я┐╜я┐╜ %i я┐╜я┐╜"
 #else
 	#define T_APP_TITLE      "System Monitor 1.42"
 	#define T_SHOW_SYSTEM    "System"
@@ -183,11 +183,11 @@ void main()
 			//if (menu_id == OPEN_FILE) burger_active = true;
 			//DrawTopPanelButton(BTN_MENU, Form.cwidth-GAP-3, GAP, -1, burger_active);
 
-			SelectList_Init(GAP, WIN_CONTENT_Y, PROCESS_LIST_W, 
+			SelectList_Init(GAP, WIN_CONTENT_Y, PROCESS_LIST_W,
 				Form.cheight-BOTPANEL_H-WIN_CONTENT_Y);
 			SelectList_DrawBorder();
 
-			DrawBar(select_list.x-2, select_list.y+select_list.h+2, 
+			DrawBar(select_list.x-2, select_list.y+select_list.h+2,
 				select_list.w+scroll1.size_x+4, BOTPANEL_H, sc.work);
 			DrawCaptButton(PROCESS_LIST_W+GAP-110+18, select_list.y+select_list.h+5,
 				110,23,BTN_PROC_KILL,0xF38181, 0xFFFfff, T_PROC_KILL);
@@ -199,7 +199,7 @@ void main()
 			if (show_sensors) {
 				cpu.set_size(RIGHT_X, WIN_CONTENT_Y+25, right_w, 100);
 				ram.set_size(RIGHT_X, WIN_CONTENT_Y+170, right_w, 23);
-				rd.set_size(RIGHT_X, WIN_CONTENT_Y+240, right_w, 23);				
+				rd.set_size(RIGHT_X, WIN_CONTENT_Y+240, right_w, 23);
 			}
 		default:
 			SelectList_LineChanged();
@@ -207,7 +207,7 @@ void main()
 				MonitorCpu();
 				MonitorRam();
 				MonitorRd();
-				MonitorTmp();				
+				MonitorTmp();
 			}
 	}
 }
@@ -216,7 +216,7 @@ void EventKillCurrentProcess()
 {
 	KillProcess(current_process_id);
 	pause(10);
-	SelectList_LineChanged(); 
+	SelectList_LineChanged();
 }
 
 void Processes__GetProcessList()
@@ -228,19 +228,17 @@ void Processes__GetProcessList()
 	for (i=0; i<MAX_PROCESS_COUNT; i++)
 	{
 		GetProcessInfo(#Process, i);
-		if (Process.name) 
+		if (Process.status_slot != TSTATE_FREE)
 		{
-			for (j=0; j<11; j++) if (Process.name[j]!=' ') { 
-				if (show_system.checked==false) {
-					//do not show system process
-					if (Process.name[0]=='@') break;
-					if (!strcmp(#Process.name, "IDLE")) break;
-					if (!strcmp(#Process.name, "OS")) break;
-				}
-				proc_list[select_list.count] = i;
-				select_list.count++;
-				break; 
+			if (show_system.checked==false)
+			{
+				//do not show system process
+				if (Process.name[0]=='@') continue;
+				if (!strcmp(#Process.name, "IDLE")) continue;
+				if (!strcmp(#Process.name, "OS")) continue;
 			}
+			proc_list[select_list.count] = i;
+			select_list.count++;
 		}
 	}
 }
@@ -259,12 +257,13 @@ void SelectList_DrawLine(dword i)
 	posy = i *select_list.item_h + select_list.y;
 	if (i % 2) bg_color = 0xFFFfff; else bg_color = 0xF0F0F0;
 	if (i+select_list.first == select_list.cur_y) {
-		current_process_id = Process.ID; 
+		current_process_id = Process.ID;
 		bg_color = 0x67CCEB;
 	}
 	DrawBar(select_list.x, posy, select_list.w, select_list.item_h, bg_color);
 
 	WriteText(GAP+5, posy+select_list.text_y, 0x90, 0, #Process.name);
+	// WriteNumber(GAP+95, posy+select_list.text_y, 0x90, 0x444444, 0x80020000, Process.status_slot);
 
 	if (Process.use_memory < 3670016000) 
 	{
@@ -281,7 +280,7 @@ void SelectList_DrawLine(dword i)
 	}
 
 	sprintf(#cpu_use, "%i", Process.use_cpu*100/maxcpu);
-	if (maxcpu) WriteText(GAP+205 - calc(strlen(#cpu_use)-4*8), 
+	if (maxcpu) WriteText(GAP+205 - calc(strlen(#cpu_use)-4*8),
 		posy+select_list.text_y, 0x90, 0x444444, #cpu_use);
 }
 
@@ -302,7 +301,7 @@ void MonitorRd()
 	sprintf(#param, T_RD_USAGE, rdempty);
 	DrawIconWithText(RIGHT_X, rd.y - 25, 5, #param);
 
-	rd.draw_progress(rdempty * rd.w / 1440);	
+	rd.draw_progress(rdempty * rd.w / 1440);
 }
 
 dword GetTmpDiskFreeSpace(int _id)
@@ -313,7 +312,7 @@ dword GetTmpDiskFreeSpace(int _id)
 	dir_size.sizelo += dir_size.files/2 + 32 * 512; //file attr size + FAT table size
 	dir_size.sizelo += 1024*1024 - 1; // add this line to round up
 	dir_size.sizelo /= 1024*1024; //convert to MiB
-	return dir_size.sizelo;	
+	return dir_size.sizelo;
 }
 
 void MonitorTmp()
@@ -405,8 +404,8 @@ void ReadIni()
 	Form.top     = ini.GetInt("y", 100); 
 	Form.width   = ini.GetInt("w", 700); 
 	Form.height  = ini.GetInt("h", 490); 
-	show_sensors = ini.GetInt("show_sensors", true); 
-	show_system.checked = ini.GetInt("show_system", false); 
+	show_sensors = ini.GetInt("show_sensors", true);
+	show_system.checked = ini.GetInt("show_system", false);
 }
 
 void EventExit()
