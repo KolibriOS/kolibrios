@@ -531,6 +531,7 @@ CLEAN_ZONE = _CLEAN_ZONE - OS_BASE
 BgrAuxTable     rb  32768
 align 65536
 SB16Buffer      rb  65536
+CDDataBuf:      rb 0x1000
 
 align 4096
 BUTTON_INFO     rb  64*1024
@@ -538,6 +539,3 @@ RESERVED_PORTS:
         rb  64*1024
 sys_pgmap:
         rb  1024*1024/8
-
-
-CDDataBuf: rb 0x1000

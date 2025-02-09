@@ -596,29 +596,29 @@ CONTROL_EXCEPTION  = 'EXPT'
 
 ; Window structure:
 struct  WDATA
-        box             BOX
-        cl_workarea     dd ?
-        cl_titlebar     dd ?
-        cl_frames       dd ?
-        z_modif         db ?
-        fl_wstate       db ?
-        fl_wdrawn       db ?
-        fl_redraw       db ?
-        clientbox       BOX
-        shape           dd ?
-        shape_scale     dd ?
-        caption         dd ?
-        captionEncoding db ?
-                        rb 3
-        saved_box       BOX
-        cursor          dd ?
-        temp_cursor     dd ?   ;?
-        draw_bgr_x      dd ?
-        draw_bgr_y      dd ?
-        draw_data       RECT
-        thread          dd ? ; ptr APPDATA
-        buttons         rd 1 ; ptr array buttons
-                        rb 12 - 4
+        box             BOX     ; +0
+        cl_workarea     dd ?    ; +16
+        cl_titlebar     dd ?    ; +20
+        cl_frames       dd ?    ; +24
+        z_modif         db ?    ; +28
+        fl_wstate       db ?    ; +29
+        fl_wdrawn       db ?    ; +30
+        fl_redraw       db ?    ; +31
+        clientbox       BOX     ; +32
+        shape           dd ?    ; +48
+        shape_scale     dd ?    ; +52
+        caption         dd ?    ; +56
+        captionEncoding db ?    ; +60
+                        rb 3    ; +61
+        saved_box       BOX     ; +64
+        cursor          dd ?    ; +80
+        temp_cursor     dd ?    ; +84   ?
+        draw_bgr_x      dd ?    ; +88
+        draw_bgr_y      dd ?    ; +92
+        draw_data       RECT    ; +96
+        thread          dd ?    ; +112  ptr APPDATA
+        buttons         rd 1    ; +116  ptr array buttons
+                        rb 12 - 4 ; +120
 ends
 
 label WDATA.fl_wstyle byte at WDATA.cl_workarea + 3
