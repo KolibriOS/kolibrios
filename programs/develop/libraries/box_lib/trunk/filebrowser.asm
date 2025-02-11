@@ -777,8 +777,13 @@ fb_get_icon_number:
 .search_association:
 	cmp	edx,eax
 	jbe	.end
-	mov	esi,fb_extension_start
 	inc	eax
+	cmp	byte[eax], 0xa
+	jne	.search_association
+	inc	eax
+	cmp	edx,eax
+	jbe	.end
+	mov	esi,fb_extension_start
 	mov	ecx,eax
 	mov	ebx,eax
 	cld
