@@ -139,7 +139,7 @@ a named subitem "group=path/<groupname>" and the file should be put in <groupnam
 --]]
 extra_files = {
  {"/", "common/distr_data/autorun.inf"},
- {"/", "common/distr_data/KolibriOS_icon.ico"},
+ {"/", "common/distr_data/kolibrios.ico"},
  {"Docs/stack.txt", "../kernel/trunk/docs/stack.txt"},
  {"HD_Load/9x2klbr/", "common/HD_load/9x2klbr/LDKLBR.VXD"},
  {"HD_Load/MeOSLoad/", SRC_PROGS .. "/hd_load/meosload/AUTOEXEC.BAT"},
@@ -370,6 +370,9 @@ distr_extra_files = {
  {"/readme.txt", build_type .. "/distr_data/readme_distr.txt"},
 }
 end
+tup.append_table(distr_extra_files, {
+ {"distribution_kit/kolibri.img", VAR_DATA .. "/kolibri.img"},
+})
 --[[
 Files to be included in kolibri.iso outside of kolibri.img, but not distribution kit.
 Same syntax as extra_files.
@@ -384,6 +387,12 @@ iso_extra_files = {
  {"/readme.txt", build_type .. "/distr_data/readme.txt"},
 }
 end
+tup.append_table(iso_extra_files, {
+-- files for native CD boot
+ {"cdboot.bin", VAR_KERNEL .. "/bootloader/extended_primary_loader/cdfs/bootsect.bin"},
+ {"kernel.mnt", VAR_KERNEL .. "/kernel.mnt.ext_loader"},
+ {"kolibri.img", VAR_DATA .. "/kolibri.img"},
+})
 
 -- Programs that require FASM to compile.
 if tup.getconfig('NO_FASM') ~= 'full' then
@@ -909,7 +918,6 @@ end
 tup.definerule{inputs = input_deps, command = make_img_command1, outputs = {"kolibri.img"}}
 
 -- generate command and dependencies for mkisofs
-input_deps = {VAR_DATA .. "/kolibri.img"}
 iso_files_list = ""
 for i,v in ipairs(iso_extra_files) do
   iso_files_list = iso_files_list .. ' "' .. v[1] .. '=' .. v[2] .. '"'
@@ -923,14 +931,16 @@ else volume_id = "KolibriOS"
 end
 tup.definerule{inputs = input_deps, command =
   '^ MKISOFS kolibri.iso^ ' .. -- for tup: don't write full command to logs
-  'mkisofs -U -J -pad -b kolibri.img -c boot.catalog -hide-joliet boot.catalog -graft-points ' ..
-  '-A "KolibriOS AutoBuilder" -p "CleverMouse" -publisher "KolibriOS Team" -V "' .. volume_id .. '" -sysid "KOLIBRI" ' ..
-  '-iso-level 3 -o %o ' .. VAR_DATA .. '/kolibri.img' .. iso_files_list .. ' 2>&1',
+  'mkisofs -U -J -pad -b cdboot.bin -no-emul-boot -c boot.catalog'
+  .. ' -hide-joliet boot.catalog -hide-joliet cdboot.bin'
+  .. ' -hide-joliet kernel.mnt -graft-points'
+  .. ' -A "KolibriOS AutoBuilder" -p "CleverMouse"'
+  .. ' -publisher "KolibriOS Team" -V "' .. volume_id .. '" -sysid "KOLIBRI"'
+  .. ' -iso-level 3 -o %o ' .. iso_files_list .. ' 2>&1',
   outputs = {"kolibri.iso"}}
 
 -- generate command and dependencies for distribution kit
 cp = 'cp "%f" "%o"'
-tup.definerule{inputs = {VAR_DATA .. "/kolibri.img"}, command = cp, outputs = {"distribution_kit/kolibri.img"}}
 for i,v in ipairs(distr_extra_files) do
   cmd = cp:gsub("%%f", string.gsub(v[2], "%%", "%%%%")) -- input can be a group, we can't rely on tup's expansion of %f in this case
   if string.sub(v[1], -1) == "/"
@@ -1019,9 +1029,15 @@ for i,v in ipairs(raw_files) do
   table.insert(input_deps, v.group or local_file)
 end
 
-tup.definerule{inputs = {}, command = "echo '" .. make_raw_command1 .. "' > %o", outputs = {'make_raw_command1_file'}}
-tup.definerule{inputs = {}, command = "echo '" .. make_raw_command2 .. "' > %o", outputs = {'make_raw_command2_file'}}
-tup.definerule{inputs = {}, command = "echo '" .. make_raw_command3 .. "' > %o", outputs = {'make_raw_command3_file'}}
+tup.definerule{inputs = {}, command = "^ Prepare command file #1 for the raw image^"
+                                      .. "echo '" .. make_raw_command1 .. "' > %o",
+               outputs = {'make_raw_command1_file'}}
+tup.definerule{inputs = {}, command = "^ Prepare command file #2 for the raw image^"
+                                      .. "echo '" .. make_raw_command2 .. "' > %o",
+               outputs = {'make_raw_command2_file'}}
+tup.definerule{inputs = {}, command = "^ Prepare command file #3 for the raw image^"
+                                      .. "echo '" .. make_raw_command3 .. "' > %o",
+               outputs = {'make_raw_command3_file'}}
 
 table.insert(input_deps, 'make_raw_command1_file')
 table.insert(input_deps, 'make_raw_command2_file')
