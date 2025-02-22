@@ -170,9 +170,10 @@ read_sectors:
 do_read_sectors:
         push    ax
         push    cx
-        cmp     cx, 0x7F
+; read no more than 64kB at once, i.e. 0x20 sectors
+        cmp     cx, 0x20
         jbe     @f
-        mov     cx, 0x7F
+        mov     cx, 0x20
 @@:
 ; create disk address packet on the stack
 ; dq starting LBA
@@ -182,7 +183,7 @@ do_read_sectors:
 ; dd buffer
         push    es
         push    bx
-; dw number of blocks to transfer (no more than 0x7F)
+; dw number of blocks to transfer (no more than 0x20)
         push    cx
 ; dw packet size in bytes
         push    10h
