@@ -56,8 +56,8 @@ char *actions[] = {
 	60, "Настройки", "F10",
 	0,0,0
 };
-#define T_PROG "Программы "
 #define T_SYS  "Система "
+#define T_PROG "Система2 "
 #define T_CD   "CD-Rom "
 #define T_FD   "Дискета "
 #define T_HD   "Жесткий диск "
@@ -155,8 +155,8 @@ char *actions[] = {
 	60, "Settings", "F10",
 	0,0,0
 };
-#define T_PROG "Programs "
 #define T_SYS  "System "
+#define T_PROG "System2 "
 #define T_CD   "CD-Rom "
 #define T_FD   "Floppy disk "
 #define T_HD   "Hard disk "

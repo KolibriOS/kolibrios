@@ -27,7 +27,7 @@ dword unimg_id;
 #define T_UNPACKING "Распаковываю и копирую файлы..."
 #define T_COMPLETE "Обновление успешно завершено."
 #define T_EXIT "Выход"
-#define IMG_URL "http://builds.kolibrios.org/rus/data/data/kolibri.img"
+#define IMG_URL "http://builds.kolibrios.org/ru_RU/data/data/kolibri.img"
 #define KS "Сохранить настройки"
 #else
 #define T_WINDOW_TITLE "KolibriOS Online Updater"
@@ -40,7 +40,7 @@ Note that all changes on RAM-disk will be lost.";
 #define T_UNPACKING "Unpacking and copying files..."
 #define T_COMPLETE "Update complete successfully."
 #define T_EXIT "Exit"
-#define IMG_URL "http://builds.kolibrios.org/eng/data/data/kolibri.img"
+#define IMG_URL "http://builds.kolibrios.org/en_US/data/data/kolibri.img"
 #define KS "Keep settings folder"
 #endif
 char accept_language[]="en"; //not used, necessary for http.get()

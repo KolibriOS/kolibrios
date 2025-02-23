@@ -53,7 +53,8 @@
 16 Flat Assembler        |develop/fasm
 16 Diff Tool             |develop/diff
 16 Debug Board           |develop/board
-16 Debugger              |develop/mtdbg
+49 Debugger mtdbg        |develop/mtdbg
+49 Debugger koldbg    *  |/kolibrios/develop/koldbg
 16 Hex2Dec2Bin           |develop/h2d2b
 16 Tabla de caracteres   |ASCIIVju
 16 C¢digos ASCII         |develop/keyascii

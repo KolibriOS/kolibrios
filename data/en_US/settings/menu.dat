@@ -50,7 +50,8 @@
 #5 **** DEV
 54 Flat Assembler       |develop/fasm
 27 Example.asm          |example.asm
-49 Debugger             |develop/mtdbg
+49 Debugger mtdbg       |develop/mtdbg
+49 Debugger koldbg    * |/kolibrios/develop/koldbg
 13 Debug Board          |develop/board
 09 KPack Archiver       |kpack
 20 Diff Tool            |develop/diff
