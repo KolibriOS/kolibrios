@@ -3506,6 +3506,22 @@ Remarks:
     Also user handler is responsible for clearing exceptions flags in
     FPU and/or SSE.
 
+Attention:
+  1) If the user handler gets a stack overflow exception (#SS), then the 
+     starting address of the backup stack must be set in the ESI register.
+     If an exception (#SS) occurs, additional data will be written to this 
+     reserve stack (see the EXCEPT_STACK structure in sys32.inc).
+     Upon completion of processing of this exception, the user handler must 
+     additionally reset the busy bit (bit number 0) of the reserve stack in 
+     the LockAccess field of the EXCEPT_STACK structure.
+
+  2) You can use the "controlled exception" mode to check the correctness
+     of memory addresses when reading/writing data.
+     For the cases like this:
+     - In the ESI register, the address where code execution should go
+       when an exception occurs is entered.
+     - The signature - the text 'EXPT' - is entered in the EDI register.
+
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
   ebx - SSF_SET_EXCEPTION_HANDLER (24)
