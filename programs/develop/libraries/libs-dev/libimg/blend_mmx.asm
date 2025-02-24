@@ -17,6 +17,56 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 
+;;============================================================================;;
+proc img.blend uses ebx esi edi, _bottom, _top, _xbottom, _ybottom, \ ;///////;;
+                                 _xtop, _ytop, _width, _height ;//////////////;;
+;;----------------------------------------------------------------------------;;
+;? Alpha blend _top image to _bottom one (both must be of type Image.bpp32)   ;;
+;;----------------------------------------------------------------------------;;
+;> _bottom = pointer to bottom image (will be changed)                        ;;
+;> _top = pointer to top image (unchanged)                                    ;;
+;> _xbottom = x coord inside _bottom image where to put _top image            ;;
+;> _ybottom = y coord inside _bottom image where to put _top image            ;;
+;> _xtop = x coord inside _top image to start from                            ;;
+;> _ytop = y coord inside _top image to start from                            ;;
+;> _width = width of _top image area to put to _bottom image                  ;;
+;> _height = height of _top image area to put to _bottom image                ;;
+;;----------------------------------------------------------------------------;;
+;< eax = 0 (fail) / _bottom (ok)                                              ;;
+;;============================================================================;;
+        mov     esi, [_top]
+        mov     edi, [_bottom]
+
+        mov     eax, [esi+Image.Width]
+        sub     eax, [_width]
+        shl     eax, 2
+        push    eax
+
+        mov     eax, [edi+Image.Width]
+        sub     eax, [_width]
+        shl     eax, 2
+        push    eax
+
+        mov     eax, [_ytop]
+        imul    eax, [esi+Image.Width]
+        add     eax, [_xtop]
+        shl     eax, 2
+        mov     esi, [esi+Image.Data]
+        add     esi, eax
+
+        mov     eax, [_ybottom]
+        imul    eax, [edi+Image.Width]
+        add     eax, [_xbottom]
+        shl     eax, 2
+        mov     edi, [edi+Image.Data]
+        add     edi, eax
+	stdcall	img._.composite_rgb_00, [_width], [_height]
+        mov     eax, [_bottom]
+        emms
+        ret
+endp
+
+
 proc	xcf._.blend_rgb
 
 	xchg		al, bh
@@ -158,7 +208,7 @@ proc	xcf._.merge_8a _copy_width, _copy_height, _img_total_bpl, _bottom_total_bpl
 endp
 
 
-proc	xcf._.composite_rgb_00 _copy_width, _copy_height, _bottom_total_bpl, _img_total_bpl
+proc	img._.composite_rgb_00 _copy_width, _copy_height, _bottom_total_bpl, _img_total_bpl
 
   .line:
 	mov		ecx, [_copy_width]
@@ -219,7 +269,7 @@ proc	xcf._.composite_rgb_00 _copy_width, _copy_height, _bottom_total_bpl, _img_t
 endp
 
 
-proc	xcf._.composite_gray_00 _copy_width, _copy_height, _bottom_total_bpl, _img_total_bpl
+proc	img._.composite_gray_00 _copy_width, _copy_height, _bottom_total_bpl, _img_total_bpl
 
   .line:
 	mov		ecx, [_copy_width]
@@ -277,7 +327,7 @@ proc	xcf._.composite_gray_00 _copy_width, _copy_height, _bottom_total_bpl, _img_
 endp
 
 
-proc	xcf._.composite_indexed_00 _copy_width, _copy_height, _bottom_total_bpl, _img_total_bpl
+proc	img._.composite_indexed_00 _copy_width, _copy_height, _bottom_total_bpl, _img_total_bpl
 
   .line:
 	mov		ecx, [_copy_width]
@@ -302,7 +352,7 @@ proc	xcf._.composite_indexed_00 _copy_width, _copy_height, _bottom_total_bpl, _i
 endp
 
 
-proc	xcf._.composite_rgb_01 _copy_width, _copy_height, _bottom_total_bpl, _img_total_bpl
+proc	img._.composite_rgb_01 _copy_width, _copy_height, _bottom_total_bpl, _img_total_bpl
 	pushad
 
 	pxor		mm4, mm4
@@ -349,7 +399,7 @@ proc	xcf._.composite_rgb_01 _copy_width, _copy_height, _bottom_total_bpl, _img_t
 endp
 
 
-proc	xcf._.composite_gray_01 _copy_width, _copy_height, _bottom_total_bpl, _img_total_bpl
+proc	img._.composite_gray_01 _copy_width, _copy_height, _bottom_total_bpl, _img_total_bpl
 	pushad
 
 	pxor		mm4, mm4
@@ -394,7 +444,7 @@ proc	xcf._.composite_gray_01 _copy_width, _copy_height, _bottom_total_bpl, _img_
 endp
 
 
-proc	xcf._.composite_rgb_03			; Multiply
+proc	img._.composite_rgb_03			; Multiply
 
 	punpcklbw	mm2, mm0
 	punpcklbw	mm3, mm0
@@ -405,7 +455,7 @@ proc	xcf._.composite_rgb_03			; Multiply
 endp
 
 
-proc	xcf._.composite_rgb_04			; Screen
+proc	img._.composite_rgb_04			; Screen
 
 	punpcklbw	mm2, mm0
 	punpcklbw	mm3, mm0
@@ -422,7 +472,7 @@ proc	xcf._.composite_rgb_04			; Screen
 endp
 
 
-proc	xcf._.composite_rgb_05			; Overlay
+proc	img._.composite_rgb_05			; Overlay
 
 	punpcklbw	mm2, mm0
 	punpcklbw	mm3, mm0
@@ -438,7 +488,7 @@ proc	xcf._.composite_rgb_05			; Overlay
 endp
 
 
-proc	xcf._.composite_rgb_06			; Difference
+proc	img._.composite_rgb_06			; Difference
 
 	movq		mm4, mm3
 	pminub		mm4, mm2
@@ -451,7 +501,7 @@ proc	xcf._.composite_rgb_06			; Difference
 endp
 
 
-proc	xcf._.composite_rgb_07			; Addition
+proc	img._.composite_rgb_07			; Addition
 
 	paddusb		mm3, mm2
 	punpcklbw	mm2, mm0
@@ -461,7 +511,7 @@ proc	xcf._.composite_rgb_07			; Addition
 endp
 
 
-proc	xcf._.composite_rgb_08			; Subtract
+proc	img._.composite_rgb_08			; Subtract
 
 	movq		mm4, mm2
 	psubusb		mm4, mm3
@@ -473,7 +523,7 @@ proc	xcf._.composite_rgb_08			; Subtract
 endp
 
 
-proc	xcf._.composite_rgb_09			; Darken Only
+proc	img._.composite_rgb_09			; Darken Only
 
 	pminub		mm3, mm2
 	punpcklbw	mm2, mm0
@@ -483,7 +533,7 @@ proc	xcf._.composite_rgb_09			; Darken Only
 endp
 
 
-proc	xcf._.composite_rgb_10			; Lighten Only
+proc	img._.composite_rgb_10			; Lighten Only
 
 	pmaxub		mm3, mm2
 	punpcklbw	mm2, mm0
@@ -493,7 +543,7 @@ proc	xcf._.composite_rgb_10			; Lighten Only
 endp
 
 
-proc	xcf._.composite_rgb_11			; Hue (H of HSV)
+proc	img._.composite_rgb_11			; Hue (H of HSV)
 	push		eax ebx ecx edx
 
 	movd		eax, mm3
@@ -527,7 +577,7 @@ proc	xcf._.composite_rgb_11			; Hue (H of HSV)
 endp
 
 
-proc	xcf._.composite_rgb_12			; Saturation (S of HSV)
+proc	img._.composite_rgb_12			; Saturation (S of HSV)
 	push		eax ebx ecx edx
 
 	movd		eax, mm3
@@ -559,7 +609,7 @@ proc	xcf._.composite_rgb_12			; Saturation (S of HSV)
 endp
 
 
-proc	xcf._.composite_rgb_13			; Color (H and S of HSL)
+proc	img._.composite_rgb_13			; Color (H and S of HSL)
 	push		eax ebx ecx edx
 
 	movd		eax, mm3
@@ -586,7 +636,7 @@ proc	xcf._.composite_rgb_13			; Color (H and S of HSL)
 endp
 
 
-proc	xcf._.composite_rgb_14			; Value (V of HSV)
+proc	img._.composite_rgb_14			; Value (V of HSV)
 	push		eax ebx ecx edx
 
 	movd		eax, mm3
@@ -617,7 +667,7 @@ proc	xcf._.composite_rgb_14			; Value (V of HSV)
 endp
 
 
-proc	xcf._.composite_rgb_15			; Divide
+proc	img._.composite_rgb_15			; Divide
 	push		eax ebx ecx
 
 	movd		eax, mm3
@@ -665,7 +715,7 @@ proc	xcf._.composite_rgb_15			; Divide
 endp
 
 
-proc	xcf._.composite_rgb_16			; Dodge
+proc	img._.composite_rgb_16			; Dodge
 	push		eax ebx ecx
 
 	movd		eax, mm3
@@ -715,7 +765,7 @@ proc	xcf._.composite_rgb_16			; Dodge
 endp
 
 
-proc	xcf._.composite_rgb_17			; Burn
+proc	img._.composite_rgb_17			; Burn
 	push		eax ebx ecx
 
 	movd		eax, mm3
@@ -767,7 +817,7 @@ proc	xcf._.composite_rgb_17			; Burn
 endp
 
 
-proc	xcf._.composite_rgb_18			; Hard Light
+proc	img._.composite_rgb_18			; Hard Light
 	push		eax ebx ecx
 
 	movd		eax, mm3
@@ -809,7 +859,7 @@ proc	xcf._.composite_rgb_18			; Hard Light
 endp
 
 
-proc	xcf._.composite_rgb_20			; Grain Extract
+proc	img._.composite_rgb_20			; Grain Extract
 
 	punpcklbw	mm2, mm0
 	punpcklbw	mm3, mm0
@@ -823,7 +873,7 @@ proc	xcf._.composite_rgb_20			; Grain Extract
 endp
 
 
-proc	xcf._.composite_rgb_21			; Grain Merge
+proc	img._.composite_rgb_21			; Grain Merge
 
 	punpcklbw	mm2, mm0
 	punpcklbw	mm3, mm0
