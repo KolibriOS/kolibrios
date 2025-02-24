@@ -1631,7 +1631,7 @@ proc generate_window_header
         push    eax ebx esi edi
         mov     esi, [last_name_component]
         mov     edi, window_header
-        mov     [window_header_len], 4    ; [,/,],
+        mov     [window_header_len], 8    ; [,/,],
 
         mov     byte[edi], '['
         inc     edi

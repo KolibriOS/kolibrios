@@ -1,6 +1,6 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flappybird", "flappybird.vcxproj", "{0556BA3E-9447-4000-8613-91AD1CD750D7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "floppybird", "floppybird.vcxproj", "{0556BA3E-9447-4000-8613-91AD1CD750D7}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0D291390-1953-4E1F-BBE2-57F12AFF3214} = {0D291390-1953-4E1F-BBE2-57F12AFF3214}
 	EndProjectSection

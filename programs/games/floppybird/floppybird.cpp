@@ -3,7 +3,7 @@
 #include "images.hpp"
 
 //Global const strings
-const char HEADER_STRING[] = "Flappy bird";
+const char HEADER_STRING[] = "Floppy bird";
 const char CONTROL_STRING[] = "SPACEBAR TO JUMP";
 const char GAMEOVER_STRING[] = "GAMEOVER";
 const char ANY_KEY_STRING[] = "Press any key for restart";

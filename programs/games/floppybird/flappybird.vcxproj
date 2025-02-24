@@ -8,7 +8,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0556BA3E-9447-4000-8613-91AD1CD750D7}</ProjectGuid>
-    <RootNamespace>flappybird</RootNamespace>
+    <RootNamespace>floppybird</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -57,7 +57,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="flappybird.cpp" />
+    <ClCompile Include="floppybird.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="smalllibc\smalllibc.vcxproj">
