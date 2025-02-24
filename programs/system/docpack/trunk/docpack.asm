@@ -179,7 +179,7 @@ fileinfo:
         dd      0
         dd      param
         dd      0 ,0
-        db      '/sys/TINYPAD',0
+        db      '/sys/develop/cedit',0
 
 param  db '*'
 fsize:
@@ -191,24 +191,21 @@ embedded:
 ; Please use only filenames w/o path!
 
 ; -- Start of embedding area ------
-  embed_docdir_file 'CREDITS.TXT'       ;a
+
+  embed_docdir_file 'Copying.txt'      ;a
+  embed_docdir_file 'Hot_Keys.txt'     ;b
+  embed_local_file 'Fasm.txt'          ;c
+  embed_docdir_file 'Mtdbg.txt'        ;d
 if lang eq ru_RU
-  embed_docdir_file 'GNU.TXT'          ;b
+  embed_local_file 'SysFuncr.txt'      ;e
 else ; Default to en_US
-  embed_docdir_file 'COPYING.TXT'      ;b
+  embed_local_file 'SysFuncs.txt'      ;e
 end if
-  embed_docdir_file 'HOT_KEYS.TXT'     ;c
-  embed_local_file 'FASM.TXT'          ;d
-  embed_docdir_file 'MTDBG.TXT'        ;e
-if lang eq ru_RU
-  embed_local_file 'SYSFUNCR.TXT'      ;f
-else ; Default to en_US
-  embed_local_file 'SYSFUNCS.TXT'      ;f
-end if
-  embed_local_file 'STACK.TXT'        ;g
-  embed_docdir_file 'KFAR_KEYS.TXT'    ;h
-  embed_docdir_file 'INI.TXT'          ;i
-  embed_docdir_file 'OPENDIAL.TXT'     ;j
+  embed_local_file 'Stack.txt'         ;f
+  embed_docdir_file 'KFAR_Keys.txt'    ;g
+  embed_docdir_file 'INI.txt'          ;h
+  embed_docdir_file 'OpenDial.txt'     ;i
+  embed_docdir_file 'Credits.txt'      ;j
 ; -- End of embedding area  -------
 
   dd 0

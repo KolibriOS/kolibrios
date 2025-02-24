@@ -11,14 +11,14 @@ else env_prefix = "DOCDIR=$(DOCDIR) "; cp_cmd = "cp %f %o"
 end
 if tup.getconfig("LANG") == "ru_RU"
 then tup.append_table(deps,
-  tup.rule("../../../../kernel/trunk/docs/sysfuncr.txt", "iconv -f utf-8 -t cp866 %f > %o", "SYSFUNCR.TXT"))
+  tup.rule("../../../../kernel/trunk/docs/sysfuncr.txt", "iconv -f utf-8 -t cp866 %f > %o", "SysFuncr.txt"))
 else tup.append_table(deps,
-  tup.rule("../../../../kernel/trunk/docs/sysfuncs.txt", cp_cmd, "SYSFUNCS.TXT"))
+  tup.rule("../../../../kernel/trunk/docs/sysfuncs.txt", cp_cmd, "SysFuncs.txt"))
 end
 tup.append_table(deps,
-  tup.rule("../../../develop/fasm/1.73/fasm.txt", cp_cmd, "FASM.TXT")
+  tup.rule("../../../develop/fasm/1.73/fasm.txt", cp_cmd, "Fasm.txt")
 )
 tup.append_table(deps,
-  tup.rule("../../../../kernel/trunk/docs/stack.txt", cp_cmd, "STACK.TXT")
+  tup.rule("../../../../kernel/trunk/docs/stack.txt", cp_cmd, "Stack.txt")
 )
 tup.rule({"docpack.asm", extra_inputs = deps}, env_prefix .. FASM .. " %f %o " .. tup.getconfig("KPACK_CMD"), "docpack")
