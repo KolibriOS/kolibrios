@@ -57,10 +57,11 @@ include 'xbm/xbm.asm'
 include 'scale.asm'
 include 'convert.asm'
 
-COMPOSITE_MODE equ MMX
 ; MMX | pretty fast and compatible
 ; SSE | a bit faster, but may be unsupported by some CPUs
-include 'blend.asm'
+COMPOSITE_MODE equ MMX
+match =MMX, COMPOSITE_MODE {include 'blend_mmx.asm'}
+match =SSE, COMPOSITE_MODE {include 'blend_sse.asm'}
 
 ;;============================================================================;;
 proc lib_init ;///////////////////////////////////////////////////////////////;;

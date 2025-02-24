@@ -22,7 +22,6 @@ void graphicsInit() {
     }
     dbg_printf("spriteAtlas->Type = %d\n", spriteAtlas->Type);
     screenImage = img_create(DEFAULT_WIDTH, DEFAULT_HEIGHT, IMAGE_BPP32);
-    // asm_inline("emms"); // doenst need bec. libimg functions used here does not use mmx (=> does not currept fpu state)
 }
 
 void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w, int h, bool center) {
@@ -63,7 +62,6 @@ void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w,
     //printf("start graphicsBlitAtlasImage ax = %d ay = %d dx = %d dy = %d w = %d h = %d %x %x\n\n", atlasX, atlasY, destX, destY, w, h, screenImage, spriteAtlas);
 
     img_blend(screenImage, spriteAtlas, destX, destY, atlasX, atlasY, w, h);
-    asm_inline("emms");
 
     // dbg_printf("end graphicsBlitAtlasImage\n\n");
 }

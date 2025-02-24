@@ -963,8 +963,8 @@ endl
     @@:
 	mov	edx, 12
   .type_defined:
-	mov	ecx, (xcf._.composite_table.end - xcf._.composite_table.begin) / 8
-	mov	edi, xcf._.composite_table.begin
+	mov	ecx, (img._.composite_table.end - img._.composite_table.begin) / 8
+	mov	edi, img._.composite_table.begin
 
   .still:
 	cmp	eax, [edi]
@@ -1628,3 +1628,28 @@ xcf._.prop_table_begin:
 		dd	11, xcf._.parse_properties.11
 		dd	15, xcf._.parse_properties.15
 xcf._.prop_table_end:
+
+img._.composite_table.begin:
+  .p00	dd 00, img._.composite_rgb_00, img._.composite_gray_00, img._.composite_indexed_00	; Normal
+  .p01	dd 01, img._.composite_rgb_01, img._.composite_gray_01, img._.composite_gray_01		; Dissolve	: random dithering to discrete alpha
+;  .p02	dd 02, img._.composite_rgb_02, 0,			img._.composite_indexed_02	; Behind	: not selectable in the GIMP UI. not implemented
+  .p03	dd 03, img._.composite_rgb_03, img._.composite_rgb_03, img._.composite_indexed_00	; Multiply
+  .p04	dd 04, img._.composite_rgb_04, img._.composite_rgb_04, img._.composite_indexed_00	; Screen
+  .p05	dd 05, img._.composite_rgb_05, img._.composite_rgb_05, img._.composite_indexed_00	; Overlay
+  .p06	dd 06, img._.composite_rgb_06, img._.composite_rgb_06, img._.composite_indexed_00	; Difference
+  .p07	dd 07, img._.composite_rgb_07, img._.composite_rgb_07, img._.composite_indexed_00	; Addition
+  .p08	dd 08, img._.composite_rgb_08, img._.composite_rgb_08, img._.composite_indexed_00	; Subtract
+  .p09	dd 09, img._.composite_rgb_09, img._.composite_rgb_09, img._.composite_indexed_00	; Darken Only
+  .p10	dd 10, img._.composite_rgb_10, img._.composite_rgb_10, img._.composite_indexed_00	; Lighten Only
+  .p11	dd 11, img._.composite_rgb_11, img._.composite_gray_00, img._.composite_indexed_00	; Hue (H of HSV)
+  .p12	dd 12, img._.composite_rgb_12, img._.composite_gray_00, img._.composite_indexed_00	; Saturation (S of HSV)
+  .p13	dd 13, img._.composite_rgb_13, img._.composite_gray_00, img._.composite_indexed_00	; Color (H and S of HSL)
+  .p14	dd 14, img._.composite_rgb_14, img._.composite_gray_00, img._.composite_indexed_00	; Value (V of HSV)
+  .p15	dd 15, img._.composite_rgb_15, img._.composite_rgb_15, img._.composite_indexed_00	; Divide
+  .p16	dd 16, img._.composite_rgb_16, img._.composite_rgb_16, img._.composite_indexed_00	; Dodge
+  .p17	dd 17, img._.composite_rgb_17, img._.composite_rgb_17, img._.composite_indexed_00	; Burn
+  .p18	dd 18, img._.composite_rgb_18, img._.composite_rgb_18, img._.composite_indexed_00	; Hard Light
+  .p19	dd 19, img._.composite_rgb_05, img._.composite_rgb_05, img._.composite_indexed_00	; Soft Light	: XCF >= 2 only ('soft light' == 'overlay')
+  .p20	dd 20, img._.composite_rgb_20, img._.composite_rgb_20, img._.composite_indexed_00	; Grain Extract	: XCF >= 2 only
+  .p21	dd 21, img._.composite_rgb_21, img._.composite_rgb_21, img._.composite_indexed_00	; Grain Merge	: XCF >= 2 only
+img._.composite_table.end:
