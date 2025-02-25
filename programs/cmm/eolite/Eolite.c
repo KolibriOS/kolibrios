@@ -11,9 +11,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.26"
-#define TITLE_EOLITE "Eolite File Manager 5.26"
-#define TITLE_KFM "Kolibri File Manager 2.26";
+#define ABOUT_TITLE "EOLITE 5.26a"
+#define TITLE_EOLITE "Eolite File Manager 5.26a"
+#define TITLE_KFM "Kolibri File Manager 2.26a";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -211,6 +211,12 @@ void main()
 
 			mouse.get();
 
+			if (scroll_used) && (mouse.up) { 
+				scroll_used=false; 
+				DrawScroll(scroll_used); 
+				break;
+			}
+
 			ProceedMouseGestures();
 
 			if (mouse.vert)
@@ -278,7 +284,7 @@ void main()
 			//Scrooll
 			if (mouse.x>=files.x+files.w) && (mouse.x<=files.x+files.w+18) && (mouse.y>files.y)
 				&& (mouse.y<files.y+files.h-18) && (mouse.lkm) && (!scroll_used) {scroll_used=true; DrawScroll(scroll_used);}
-			if (scroll_used) && (!mouse.key&MOUSE_LEFT) { scroll_used=false; DrawScroll(scroll_used); }
+
 
 			if (scroll_used)
 			{
