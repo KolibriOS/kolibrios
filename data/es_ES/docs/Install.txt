@@ -16,10 +16,11 @@ I. Install to floppy.
   2) Write to it kolibri.img image with any available methods:
     a) (if you have already loaded Kolibri by any method) run the program
        rdsave and select the variant corresponding to floppy
-    b) (for DOS and Windows) run subjoined install.bat
-    c) with program WinImage or its analogue (e.g. DiskExplorer)
-    d) (for Linux) set "executable" attribute to subjoined script install.sh
-       and run it
+    b) for DOS use DskImage;
+    c) for Windows use WinImage, RawWrite for Windows or its analogue;
+    d) if you have Linux then try smth like 
+       `dd if=/pathto/kolibri.img of=/dev/fd0 bs=512 count=2880` 
+       Wait. And make sure to umount the drive before ejecting the disk.
 Now you can boot from floppy (keep it in drive, reboot, set in BIOS option
 of floppy booting).
 

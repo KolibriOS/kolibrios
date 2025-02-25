@@ -30,12 +30,13 @@ Installation: BIOS mode
   * (if you have already loaded KolibriOS by any method) run the program
     `rdsave` and select the variant corresponding to floppy;
 
-  * (for DOS and Windows) run subjoined install.bat;
+  * for DOS use DskImage;
+  
+  * for Windows use WinImage, RawWrite for Windows or its analogue;
 
-  * with program WinImage or its analogue (e.g. DiskExplorer);
-
-  * (for Linux) set "executable" attribute to subjoined script install.sh
-    and run it.
+  * if you have Linux then try smth like 
+    `dd if=/pathto/kolibri.img of=/dev/fd0 bs=512 count=2880` 
+    Wait. And make sure to umount the drive before ejecting the disk.
 
 Now you can boot from floppy (keep it in drive, reboot, set in BIOS option of
 floppy booting).
