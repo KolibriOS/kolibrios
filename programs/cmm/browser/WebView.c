@@ -222,7 +222,7 @@ void main()
 			http.receive();
 
 			if (http_get_type==PAGE) {
-				CheckContentType();				
+				CheckContentType();	
 				prbar.max = http.content_length;
 				if (prbar.value != http.content_received) {
 					prbar.value = http.content_received;	
@@ -946,8 +946,10 @@ void CheckContentType()
 		StopLoading();
 	}
 	else if (content_type[0] == 'a') { 
-		EventOpenDownloader(http.cur_url);
+		http_get_type = FILE;
 		StopLoading();
+		if (!canvas.bufw) OpenPage(DEFAULT_URL); //Fixed: Browser was launched with file param
+		EventOpenDownloader(http.cur_url);
 	}
 	else {
 		WB1.custom_encoding = -1;

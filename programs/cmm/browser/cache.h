@@ -1,5 +1,5 @@
 enum {
-	PAGE=1, IMG
+	PAGE=1, IMG, FILE
 };
 
 struct _cache
