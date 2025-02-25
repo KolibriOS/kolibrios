@@ -13,7 +13,8 @@
 #define FONT_HEIGHT 16
 
 llist menu1;
-collection names=0;
+collection names=0;        //contains all items: real items + separators
+collection real_names=0;   //contains only real items without separators
 collection hotkeys=0;
 
 int selected, win_x, win_y;
@@ -69,8 +70,11 @@ void GetMenuItems(dword current_name)
 		}
 	}
 
-	hotkeys.add(hotkey+1);
 	names.add(current_name);
+	if (!streq(current_name, "-")) {
+		real_names.add(current_name);
+		hotkeys.add(hotkey+1);
+	}
 
 	if (next_name) GetMenuItems(next_name+2);
 }
@@ -84,6 +88,8 @@ int GetSeparatorsCount()
 	return count;
 }
 
+//this is a very dirty hack because I change
+//the real position of mouse.y to fictive one that handles separators
 int MoveMouseToHandleSeparators(int _mouse_y)
 {
 	int i, item_y=menu1.y;
@@ -103,11 +109,28 @@ int MoveMouseToHandleSeparators(int _mouse_y)
 	return _mouse_y;
 }
 
+dword inactive_background_color;
+dword active_background_color;
+dword active_top_border_color;
+dword inactive_text_shadow_color;
+bool skin_dark;
+void GetColors()
+{
+	sc.get();
+	inactive_background_color = MixColors(sc.work, 0xFFFfff,230);
+	active_background_color = MixColors(sc.button, sc.work,230);
+	active_top_border_color = MixColors(sc.line, sc.button,240);
+	inactive_text_shadow_color = MixColors(sc.work,0xFFFfff,120);
+	skin_dark = skin_is_dark();
+}
+
 void main()
 {
 	proc_info Form;
 
 	if (!param) RunProgram("/sys/network/WebView", "http://board.kolibrios.org/viewtopic.php?f=24&t=4233#p74599");
+	
+	GetColors();
 
 	GetMenuItems(#param);
 	GetMenuWidths();
@@ -145,7 +168,6 @@ void main()
 
 		case evReDraw:
 			DefineAndDrawWindow(win_x, win_y, menu1.w+4, menu1.h+4, 0x01, 0, 0, 0x01fffFFF);
-			sc.get();
 			Draw3DPopup(0,0,menu1.w+2,menu1.h+2);
 			draw_list();
 	}
@@ -194,59 +216,63 @@ inline ProcessKeys()
 	}
 }
 
+void draw_item(int item_y, i, bool active) 
+{
+	dword name_color;
+	dword hotkey_color;
+	if (active) {
+		hotkey_color = name_color = sc.button_text;
+		DrawBar(menu1.x, item_y+1,        menu1.w, ITEM_H-2, active_background_color);
+		DrawBar(menu1.x, item_y,          menu1.w, 1, active_top_border_color);
+		DrawBar(menu1.x, item_y+ITEM_H-1, menu1.w, 1, sc.light);
+	} else {
+		name_color = sc.work_text;
+		hotkey_color = sc.line;
+		DrawBar(menu1.x, item_y, menu1.w, ITEM_H, inactive_background_color);
+		if (!skin_dark) WriteText(TEXT_MARGIN+1, item_y + menu1.text_y +1, TEXT_FONT_TYPE, 
+			inactive_text_shadow_color, real_names.get(i));
+	}
+	WriteText(-strlen(hotkeys.get(i))*FONT_WIDTH + menu_w - TEXT_MARGIN, 
+		item_y + menu1.text_y, TEXT_FONT_TYPE, hotkey_color, hotkeys.get(i));
+	WriteText(TEXT_MARGIN, item_y + menu1.text_y, TEXT_FONT_TYPE, name_color, real_names.get(i));
+}
+
+
 void draw_list()
 {
 	int i, item_y=menu1.y, item_i=0;
-	dword name_color;
-	dword hotkey_color;
+	#define MAX_ITEMS 128
+	static int item_y_mas[MAX_ITEMS];
+	static int init = true;
+	static int old_y;
 
-	static dword inactive_background_color;
-	static dword active_background_color;
-	static dword active_top_border_color;
-	static dword inactive_text_shadow_color;
-	static bool skin_dark;
-
-	static bool colors_set;
-	if (!colors_set) {
-		colors_set = true;
-		inactive_background_color = MixColors(sc.work, 0xFFFfff,230);
-		active_background_color = MixColors(sc.button, sc.work,230);
-		active_top_border_color = MixColors(sc.line, sc.button,240);
-		inactive_text_shadow_color = MixColors(sc.work,0xFFFfff,120);
-		skin_dark = skin_is_dark();
-	}
-
-	for (i=0; i<menu1.count; i++;)
+	if (init) for (i=0; (i<names.count) && (i<MAX_ITEMS); i++)
 	{
+		//here we init the list of "item_y_mas" and draw ALL items
 		if (streq(names.get(i), "-")) {
 			DrawBar(menu1.x, item_y+0, menu1.w, 1, inactive_background_color);
 			DrawBar(menu1.x-1, item_y+1, menu1.w+1, 1, sc.dark);
 			DrawBar(menu1.x, item_y+2, menu1.w, 1, sc.light);
 			DrawBar(menu1.x, item_y+3, menu1.w, 1, inactive_background_color);
-			//DrawBar(menu1.x, item_y+0, menu1.w, 4, inactive_background_color);
-			//DrawBar(13, item_y+1, menu1.w-24, 1, sc.dark);
-			//DrawBar(13, item_y+2, menu1.w-24, 1, sc.light);
 			item_y += SEP_H;
 		} else {
+			item_y_mas[item_i] = item_y;
 			if (item_i==menu1.cur_y) {
-				hotkey_color = name_color = sc.button_text;
-				DrawBar(menu1.x, item_y+1,        menu1.w, ITEM_H-2, active_background_color);
-				DrawBar(menu1.x, item_y,          menu1.w, 1, active_top_border_color);
-				DrawBar(menu1.x, item_y+ITEM_H-1, menu1.w, 1, sc.light);
+				draw_item(item_y, item_i, true);
 			} else {
-				name_color = sc.work_text;
-				hotkey_color = sc.line;
-				DrawBar(menu1.x, item_y, menu1.w, ITEM_H, inactive_background_color);
-				if (!skin_dark) WriteText(TEXT_MARGIN+1, item_y + menu1.text_y +1, TEXT_FONT_TYPE, 
-					inactive_text_shadow_color, names.get(i));
+				draw_item(item_y, item_i, false);
 			}
-			WriteText(-strlen(hotkeys.get(i))*FONT_WIDTH + menu_w - TEXT_MARGIN, 
-				item_y + menu1.text_y, TEXT_FONT_TYPE, hotkey_color, hotkeys.get(i));
-			WriteText(TEXT_MARGIN, item_y + menu1.text_y, TEXT_FONT_TYPE, name_color, names.get(i));
 			item_y += ITEM_H;
 			item_i++;		
 		}
+	} else {	
+		//here we use "item_y_mas" and draw only changed items
+		draw_item(item_y_mas[old_y], old_y, false);
+		draw_item(item_y_mas[menu1.cur_y], menu1.cur_y, true);
+		old_y = menu1.cur_y;		
 	}
+
+	init = false;
 	if (selected) WriteText(5, selected-1*ITEM_H + menu1.y + menu1.text_y, TEXT_FONT_TYPE, 0xEE0000, "\x10"); // ?
 }
 
