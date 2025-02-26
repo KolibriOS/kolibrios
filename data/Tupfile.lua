@@ -498,6 +498,7 @@ tup.append_table(img_files, {
  {"GAMES/SW", VAR_PROGS .. "/games/sw/sw"},
  {"GAMES/TANKS", VAR_PROGS .. "/games/tanks/tanks"},
  {"GAMES/TETRIS", VAR_PROGS .. "/games/tetris/tetris"},
+ {"GAMES/C4", VAR_PROGS .. "/games/c4/c4"},
  {"LIB/ARCHIVER.OBJ", VAR_PROGS .. "/fs/kfar/trunk/kfar_arc/kfar_arc.obj"},
  {"LIB/BOX_LIB.OBJ", VAR_PROGS .. "/develop/libraries/box_lib/trunk/box_lib.obj"},
  {"LIB/BUF2D.OBJ", VAR_PROGS .. "/develop/libraries/buf2d/trunk/buf2d.obj"},
@@ -648,7 +649,6 @@ tup.append_table(img_files, {
  {"TINFO", VAR_PROGS .. "/system/tinfo/tinfo"},
  {"DEVELOP/MSTATE", VAR_PROGS .. "/develop/mstate/mstate"},
  {"DEVELOP/GENFILES", VAR_PROGS .. "/testing/genfiles/GenFiles"},
- {"GAMES/C4", VAR_PROGS .. "/games/c4/c4"},
  {"MEDIA/FILLSCR", VAR_PROGS .. "/media/FillScr/fillscr"},
 })
 tup.append_table(extra_files, {
