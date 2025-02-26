@@ -16,63 +16,52 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-%ifndef _WINDOWS_INC
-%define _WINDOWS_INC
 
-
-WND_CENTER			equ	(1 << 0)
-WND_DEFAULT_WORKCOLOR		equ	(1 << 1)
-WND_DEFAULT_GRABCOLOR		equ	(1 << 2)
-WND_DEFAULT_FRAMECOLOR		equ	(1 << 3)
-WND_DEFAULT_CAPTIONCOLOR	equ	(1 << 4)
+WND_CENTER			equ	(1 shl 0)
+WND_DEFAULT_WORKCOLOR		equ	(1 shl 1)
+WND_DEFAULT_GRABCOLOR		equ	(1 shl 2)
+WND_DEFAULT_FRAMECOLOR		equ	(1 shl 3)
+WND_DEFAULT_CAPTIONCOLOR	equ	(1 shl 4)
 WND_DEFAULT_COLORS		equ	(WND_DEFAULT_WORKCOLOR | WND_DEFAULT_GRABCOLOR | WND_DEFAULT_FRAMECOLOR | WND_DEFAULT_CAPTIONCOLOR)
 
 
-struc WND
-	.xposandsize	resd	1	; x position and size (like syscall)
-	.yposandsize	resd	1	; y position and size (like syscall)
-	.workcolor	resd	1	; work area color (like syscall)
-	.grabcolor	resd	1	; grab bar color (like syscall)
-	.framecolor	resd	1	; frame color (like syscall)
-	.caption	resd	1	; pointer to caption (zero terminated)
+struct WND
+	xposandsize	rd	1	; x position and size (like syscall)
+	yposandsize	rd	1	; y position and size (like syscall)
+	workcolor	rd	1	; work area color (like syscall)
+	grabcolor	rd	1	; grab bar color (like syscall)
+	framecolor	rd	1	; frame color (like syscall)
+	caption	rd	1	; pointer to caption (zero terminated)
 					; can be zero, if no caption is desired.
-	.captioncolor	resd	1	; caption color
-	.flags		resd	1	; combination of WND_xxx flags, or zero.
-endstruc
+	captioncolor	rd	1	; caption color
+	flags		rd	1	; combination of WND_xxx flags, or zero.
+ends
+
+USE_SYSTEM_COLORS		equ 0 ;0 or 1
+BUTTON_COLOR_WORK		equ	0x505050
 
 
-BUTTON_COLOR_GRAB		equ	0x01000000
-BUTTON_COLOR_WORK		equ	0x02000000
-
-
-struc BUTTON
-	.xposandsize	resd	1	; x position and size (like syscall)
-	.yposandsize	resd	1	; y position and size (like syscall)
-	.id		resd	1	; button id
-	.color		resd	1	; button color. can be a real color
+struct BUTTON
+	xposandsize	rd	1	; x position and size (like syscall)
+	yposandsize	rd	1	; y position and size (like syscall)
+	id		rd	1	; button id
+	color		rd	1	; button color. can be a real color
 					; or one of the BUTTON_COLOR_xxx constants
-endstruc
+ends
 
 
-LABEL_COLOR_GRABBUTTON	equ	0x01000000	; use grab button text default color
-LABEL_COLOR_GRAB	equ	0x02000000	; use grab text default color
-LABEL_COLOR_WORKBUTTON	equ	0x03000000	; use work button text default color
-LABEL_COLOR_WORK	equ	0x04000000	; use work text default color
+LABEL_COLOR_WORKBUTTON	equ	0xffffff	; use work button text default color
 LABEL_BGCOLOR_TRANSPARENT equ	0x01000000	; transparent
-LABEL_BGCOLOR_WORK	equ	0x02000000	; use work area color
 
 
-struc LABEL
-	.position	resd	1	; position, x in upper word, y in lower word
-	.caption	resd	1	; pointer to caption (zero terminated)
+struct LABEL
+	position	rd	1	; position, x in upper word, y in lower word
+	caption	rd	1	; pointer to caption (zero terminated)
 					; if this is field is zero, the label will
 					; not be drawn.
-	.color		resd	1	; text color, or a LABEL_COLOR_xxx constant
-	.bgcolor	resd	1	; background color, or a LABEL_BGCOLOR_xxx constant
-endstruc
-
-
-	section .text
+	color		rd	1	; text color, or a LABEL_COLOR_xxx constant
+	bgcolor	rd	1	; background color, or a LABEL_BGCOLOR_xxx constant
+ends
 
 
 ;***********************************************************
@@ -87,61 +76,47 @@ endstruc
 ;***********************************************************
 	
 drawWindow:
-
-%define WNDCOLORS ebp-MOS_WNDCOLORS_size
-
-	enter MOS_WNDCOLORS_size,0
 	pushfd
 	pushad
 
 	; get default window colors
-	mov ebx,3
-	lea ecx,[WNDCOLORS]
-	mov edx,MOS_WNDCOLORS_size
-	mov eax,MOS_SC_WINDOWPROPERTIES
-	int 0x40
+	mcall SF_STYLE_SETTINGS,3,sc,sizeof.system_colors
 
 	;
 	; window position
 	;
 	test dword [edi + WND.flags],WND_CENTER		; center window ?
-	jnz short .center
+	jnz .center
 	mov ebx,[edi + WND.xposandsize]			; nope -> just load dimensions
 	mov ecx,[edi + WND.yposandsize]
-	jmp short .positionok
+	jmp .positionok
 .center:						; so let's center this window...
-	MOS_GETSCREENMAX				; get screen dimensions
+	mcall SF_GET_SCREEN_SIZE	; get screen dimensions
 	mov ebx,eax					; xpos = (screenx-width)/2
 	shr ebx,16
-	sub bx,[edi + WND.xposandsize]
-	jns short .xok
+	sub bx,word[edi + WND.xposandsize]
+	jns .xok
 	xor ebx,ebx
 .xok:
 	shl ebx,15					; / 2, move result to hi-word
-	mov bx,[edi + WND.xposandsize]
+	mov bx,word[edi + WND.xposandsize]
 	movzx ecx,ax					; same for ypos
-	sub cx,[edi + WND.yposandsize]
-	jns short .yok
+	sub cx,word[edi + WND.yposandsize]
+	jns .yok
 	xor ecx,ecx
 .yok:
 	shl ecx,15
-	mov cx,[edi + WND.yposandsize]
+	mov cx,word[edi + WND.yposandsize]
 .positionok:						; ebx/ecx contain dimensions
 
-	push edi
-
 	; define window
-	mov eax,MOS_SC_DEFINEWINDOW
 	mov edx,[edi + WND.workcolor]
 	mov edi,windowtitle
-	int 0x40
-	pop edi
+	mcall SF_CREATE_WINDOW
 
 	popad
 	popfd
-	leave
 	ret
-%undef WNDCOLORS
 
 
 ;***********************************************************
@@ -153,53 +128,40 @@ drawWindow:
 ; destroys:	nothing
 ; notes:	you must call begin redraw/end redraw yourself
 ;***********************************************************
-
+align 4
 drawButtons:
-
-%define WNDCOLORS ebp-MOS_WNDCOLORS_size
-
 	or ecx,ecx
-	jnz short .ok
+	jnz .ok
 	ret
 .ok:
-	enter MOS_WNDCOLORS_size,0
 	pushfd
 	pushad
 	
 	; get default window colors
+	if USE_SYSTEM_COLORS eq 1
 	push ecx
-	mov ebx,3
-	lea ecx,[WNDCOLORS]
-	mov edx,MOS_WNDCOLORS_size
-	mov eax,MOS_SC_WINDOWPROPERTIES
-	int 0x40
+	mcall SF_STYLE_SETTINGS,3,sc,sizeof.system_colors
 	pop ecx
-	
+	end if
+align 4
 .drawall:
 	push ecx
 	mov ebx,[edi + BUTTON.xposandsize]
 	mov ecx,[edi + BUTTON.yposandsize]
 	mov edx,[edi + BUTTON.id]
-	mov esi,[edi + BUTTON.color]	
-	cmp esi,BUTTON_COLOR_GRAB			; use a default color ?
-	jne .ok1
-	mov esi,[WNDCOLORS + MOS_WNDCOLORS.grabButton]
-.ok1:
-	cmp esi,BUTTON_COLOR_WORK
-	jne .ok2
-	mov esi,[WNDCOLORS + MOS_WNDCOLORS.workButton]
-.ok2:	
-	mov eax,MOS_SC_DEFINEBUTTON
-	int 0x40
-	add edi,BUTTON_size
+	if USE_SYSTEM_COLORS eq 1
+	mov esi,[sc.work_button] ; use a system color
+	else
+	mov esi,[edi + BUTTON.color] ; use a default color
+	end if
+	mcall SF_DEFINE_BUTTON
+	add edi,sizeof.BUTTON
 	pop ecx
 	loop .drawall
 	
 	popad
 	popfd
-	leave
 	ret
-%undef WNDCOLORS
 
 
 ;***********************************************************
@@ -210,33 +172,27 @@ drawButtons:
 ; output:	nothing
 ; destroys:	nothing
 ;***********************************************************
-
+align 4
 drawLabels:
-
-%define WNDCOLORS ebp-MOS_WNDCOLORS_size
-
 	or ecx,ecx
-	jnz short .ok
+	jnz .ok
 	ret
 .ok:
-	enter MOS_WNDCOLORS_size,0
 	pushfd
 	pushad
 	
 	; get default window colors
+	if USE_SYSTEM_COLORS eq 1
 	push ecx
-	mov ebx,3
-	lea ecx,[WNDCOLORS]
-	mov edx,MOS_WNDCOLORS_size
-	mov eax,MOS_SC_WINDOWPROPERTIES
-	int 0x40
+	mcall SF_STYLE_SETTINGS,3,sc,sizeof.system_colors
 	pop ecx
+	end if
 	
 .drawall:
 	push ecx
 	
 	cmp dword [edi + LABEL.caption],0
-	jne short .notnull
+	jne .notnull
 	jmp .next
 .notnull:
 	
@@ -261,41 +217,28 @@ drawLabels:
 	mov bx,ax
 	mov ecx,[edi + LABEL.position]		; ecx = ystart/height
 	shl ecx,16
-	mov cx,8	
+	mov cx,8
+	if USE_SYSTEM_COLORS eq 1
+	mov edx,[sc.work]
+	else
 	mov edx,[edi + LABEL.bgcolor]
-	cmp edx,LABEL_BGCOLOR_WORK
-	jne short .bgcolorok
-	mov edx,[WNDCOLORS + MOS_WNDCOLORS.work]
-.bgcolorok:
-	mov eax,MOS_SC_DRAWBAR
-	int 0x40
+	end if	
+	mcall SF_DRAW_RECT
 .clearok:	
 
 	; draw label	
 	mov ebx,[edi + LABEL.position]		; ebx = label position
 	mov edx,[edi + LABEL.caption]		; edx -> caption
+
+	if USE_SYSTEM_COLORS eq 1
+	mov ecx,[sc.work_button_text]
+	else
 	mov ecx,[edi + LABEL.color]		; ecx = color
-	cmp ecx,LABEL_COLOR_GRABBUTTON
-	jne short .ok1
-	mov ecx,[WNDCOLORS + MOS_WNDCOLORS.grabButtonText]
-.ok1:
-	cmp ecx,LABEL_COLOR_GRAB
-	jne short .ok2
-	mov ecx,[WNDCOLORS + MOS_WNDCOLORS.grabText]
-.ok2:
-	cmp ecx,LABEL_COLOR_WORKBUTTON
-	jne short .ok3
-	mov ecx,[WNDCOLORS + MOS_WNDCOLORS.workButtonText]
-.ok3:
-	cmp ecx,LABEL_COLOR_WORK
-	jne short .ok4
-	mov ecx,[WNDCOLORS + MOS_WNDCOLORS.workText]
-.ok4:
-	mov eax,MOS_SC_WRITETEXT
-	int 0x40
+	end if
+	mcall SF_DRAW_TEXT
 
 .next:
-	add edi,LABEL_size			; next label
+	add edi,sizeof.LABEL			; next label
 	pop ecx
 	dec ecx
 	jz .done
@@ -304,9 +247,5 @@ drawLabels:
 
 	popad
 	popfd
-	leave
 	ret
-%undef WNDCOLORS
 
-
-%endif

@@ -18,9 +18,6 @@
 ; along with C4; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-%ifndef _BOARD_INC
-%define _BOARD_INC
-
 
 ;**********************************************************
 ; magic numbers
@@ -36,27 +33,15 @@ BHEIGHT		equ	8
 
 
 
-;**********************************************************
-; uninitialized data
-;**********************************************************
-
-	section .bss
-	
-board		resd	BHEIGHT*BWIDTH		; the board
-free		resd	BWIDTH			; # of free fields for each column
-totalfree	resd	1			; total # of free fields
-currentplayer	resd	1			; player to make next move
-lastmove	resd	1			; last move done on the board
+board		rd	BHEIGHT*BWIDTH		; the board
+free		rd	BWIDTH			; # of free fields for each column
+totalfree	rd	1			; total # of free fields
+currentplayer	rd	1			; player to make next move
+lastmove	rd	1			; last move done on the board
 						; (0 if no last move available)
 
 
 
-;**********************************************************
-; code
-;**********************************************************
-	
-	section .text
-	
 
 ;**********************************************************
 ; boardReset
@@ -102,9 +87,9 @@ boardReset:
 ;			zero flag clear -> move is valid
 ; destroys	:	nothing
 ;**********************************************************
-%macro BOARDISVALIDMOVE 1
-	cmp dword [free+%1*4],0
-%endmacro
+macro BOARDISVALIDMOVE p1 {
+	cmp dword [free+p1*4],0
+}
 
 
 
@@ -160,9 +145,9 @@ boardUndoMove:
 ; output	:	current player is switched
 ; destroys	:	flags
 ;**********************************************************
-%macro BOARDSWITCHPLAYERS 0
-	xor dword [currentplayer],(PLAYER1 ^ PLAYER2)
-%endmacro
+macro BOARDSWITCHPLAYERS {
+	xor dword [currentplayer],(PLAYER1 xor PLAYER2)
+}
 
 
 
@@ -174,9 +159,9 @@ boardUndoMove:
 ; output	:	player changed
 ; destroys	:	flags
 ;**********************************************************
-%macro BOARDGETOTHERPLAYER 1
-	xor %1,(PLAYER1 ^ PLAYER2)
-%endmacro
+macro BOARDGETOTHERPLAYER r1 {
+	xor r1,(PLAYER1 xor PLAYER2)
+}
 
 
 
@@ -188,9 +173,9 @@ boardUndoMove:
 ; output	:	zero flag set -> board is full
 ;			zero flag clear -> board isn't full
 ;**********************************************************
-%macro BOARDISFULL 0
+macro BOARDISFULL {
 	cmp dword [totalfree],0
-%endmacro
+}
 
 
 
@@ -313,6 +298,3 @@ boardIsWin:
 	; no win for this player
 	xor eax,eax
 	ret
-
-
-%endif

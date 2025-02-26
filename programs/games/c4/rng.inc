@@ -18,18 +18,11 @@
 ; along with C4; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-%ifndef _RNG_INC
-%define _RNG_INC
-
-	section .data
 
 
 ; random seed
 seed		dd	0
 
-
-
-	section .text
 
 
 ;**********************************************************
@@ -43,8 +36,7 @@ seed		dd	0
 ;**********************************************************
 randomize:
 	push eax
-	mov eax,MOS_SC_GETSYSCLOCK
-	int 0x40
+	mcall SF_GET_SYS_TIME
 	mov [seed],eax
 	pop eax
 	ret
@@ -72,5 +64,3 @@ rand:
 	pop edx
 	popfd
 	ret
-	
-%endif	

@@ -18,14 +18,15 @@
 ; along with C4; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-	bits 32
-	%include 'mos.inc'
-	section .text
-	%include 'lang_nasm.inc' ;fedesco
+use32
+	org 0
+	db 'MENUET01'
+	dd 1,start,i_end,mem,stacktop,0,0
 
-
-	MOS_HEADER01 start,end
-
+include '../../macros.inc'
+include '../../proc32.inc'
+include '../../KOSfuncs.inc'
+include 'lang.inc' ;fedesco
 
 
 ;**********************************************************
@@ -46,11 +47,20 @@ BUTTON_HEIGHT		equ	12
 
 BUTTON_NEW_X		equ	14
 BUTTON_NEW_Y		equ	30
-%ifidn lang, 'it_IT'
-	BUTTON_NEW_WIDTH equ 56 + 28
-%else
-	BUTTON_NEW_WIDTH equ 56
-%endif
+BUTTON_NEW_HEIGHT	equ	32
+if lang eq it_IT
+	BUTTON_NEW_WIDTH = 56 + 28
+	LABEL_PL1_X      =   90 + 10
+	LABEL_PL1TYPE_X      =   (LABEL_PL1_X + 10*6 - 4)
+else if lang eq ru_RU
+	BUTTON_NEW_WIDTH = 56 + 12
+	LABEL_PL1_X      =   90
+	LABEL_PL1TYPE_X      =   (LABEL_PL1_X + 10*6)
+else
+	BUTTON_NEW_WIDTH = 56
+	LABEL_PL1_X      =   90
+	LABEL_PL1TYPE_X      =   (LABEL_PL1_X + 10*6)
+end if
 
 BUTTON_SPIN_WIDTH	equ	8
 BUTTON_PL1DN_X		equ	228
@@ -64,19 +74,9 @@ BUTTON_PL2UP_X		equ	(BUTTON_PL2DN_X + BUTTON_SPIN_WIDTH + 1)
 BUTTON_PL2UP_Y		equ	BUTTON_PL2DN_Y
 
 ; label dimensions
-%ifidn lang, 'it_IT'
-	LABEL_PL1_X      equ   90 + 10
-%else
-	LABEL_PL1_X      equ   90
-%endif
 LABEL_PL1_Y		equ	(1 + BUTTON_PL1DN_Y + (BUTTON_HEIGHT-8)/2)
 LABEL_PL2_X		equ	LABEL_PL1_X
 LABEL_PL2_Y		equ	(1 + BUTTON_PL2DN_Y + (BUTTON_HEIGHT-8)/2)
-%ifidn lang, 'it_IT'
-        LABEL_PL1TYPE_X      equ   (LABEL_PL1_X + 10*6 - 4)
-%else
-        LABEL_PL1TYPE_X      equ   (LABEL_PL1_X + 10*6)
-%endif
 LABEL_PL1TYPE_Y		equ	LABEL_PL1_Y
 LABEL_PL2TYPE_X		equ	LABEL_PL1TYPE_X
 LABEL_PL2TYPE_Y		equ	LABEL_PL2_Y
@@ -94,9 +94,7 @@ GRIDY			equ	70
 GRIDSPACING		equ	(STONESIZE + 1)		; space between lines
 GRIDHEIGHT		equ	(6*GRIDSPACING+1)	; total grid width and height
 GRIDWIDTH		equ	(7*GRIDSPACING+1)
-GRIDCOLOR		equ	MOS_RGB(128,128,128)
-
-
+GRIDCOLOR		equ	0x808080
 
 ; button id's
 BT_QUIT			equ	1
@@ -106,55 +104,170 @@ BT_PLAYER1UP		equ	4
 BT_PLAYER2DN		equ	5
 BT_PLAYER2UP		equ	6
 
+include "pcx.inc"
+include "windows.inc"
+include "board.inc"
+include "rng.inc"
+;include "randomai.inc"
+include "ai.inc"
 
+;
+; label table
+;
+
+if lang eq it_IT
+	newgame db   "Nuova partita",0
+	down		db	"<",0
+	up		db	">",0
+	pl1		db	"Giocatore 1:",0
+	pl2		db	"Giocatore 2:",0
+	   
+	playertypes:
+		db	"Umano ",0
+	.e1:
+		db	"CPU 1 ",0
+		db	"CPU 2 ",0
+		db	"CPU 3 ",0
+		db	"CPU 4 ",0
+		db	"CPU 5 ",0
+		db	"CPU 6 ",0
+		db	"CPU 7 ",0
+		db	"CPU 8 ",0
+else if lang eq ru_RU
+	newgame db   "Новая игра",0
+	down		db	"<",0
+	up		db	">",0
+	pl1		db	"Игрок 1:",0
+	pl2		db	"Игрок 2:",0
+
+	playertypes:
+		db	"Человек     ",0
+	.e1:
+		db	"Процессор 1 ",0
+		db	"Процессор 2 ",0
+		db	"Процессор 3 ",0
+		db	"Процессор 4 ",0
+		db	"Процессор 5 ",0
+		db	"Процессор 6 ",0
+		db	"Процессор 7 ",0
+		db	"Процессор 8 ",0
+else
+	newgame db   "New game",0
+	down		db	"<",0
+	up		db	">",0
+	pl1		db	"Player 1:",0
+	pl2		db	"Player 2:",0
+
+	playertypes:
+		db	"Human       ",0
+	.e1:
+		db	"CPU level 1 ",0
+		db	"CPU level 2 ",0
+		db	"CPU level 3 ",0
+		db	"CPU level 4 ",0
+		db	"CPU level 5 ",0
+		db	"CPU level 6 ",0
+		db	"CPU level 7 ",0
+		db	"CPU level 8 ",0
+end if
+playertypes_end:
+
+PLAYERTYPELEN	equ	(playertypes.e1 - playertypes)
+NPLAYERTYPES	equ	((playertypes_end-playertypes)/PLAYERTYPELEN)
+
+;
+; button table
+;
+align 4
+buttons:
+; new
+BUTTON (BUTTON_NEW_X shl 16) + BUTTON_NEW_WIDTH, (BUTTON_NEW_Y shl 16) + BUTTON_NEW_HEIGHT, BT_NEW, BUTTON_COLOR_WORK
+; player 1 down
+BUTTON (BUTTON_PL1DN_X shl 16) + BUTTON_SPIN_WIDTH, (BUTTON_PL1DN_Y shl 16) + BUTTON_HEIGHT, BT_PLAYER1DN, BUTTON_COLOR_WORK
+; player 1 up
+BUTTON (BUTTON_PL1UP_X shl 16) + BUTTON_SPIN_WIDTH, (BUTTON_PL1UP_Y shl 16) + BUTTON_HEIGHT, BT_PLAYER1UP, BUTTON_COLOR_WORK
+; player 2 down
+BUTTON (BUTTON_PL2DN_X shl 16) + BUTTON_SPIN_WIDTH, (BUTTON_PL2DN_Y shl 16) + BUTTON_HEIGHT, BT_PLAYER2DN, BUTTON_COLOR_WORK
+; player 2 up
+BUTTON (BUTTON_PL2UP_X shl 16) + BUTTON_SPIN_WIDTH, (BUTTON_PL2UP_Y shl 16) + BUTTON_HEIGHT, BT_PLAYER2UP, BUTTON_COLOR_WORK
+buttons_end:
+
+NBUTTONS	equ	((buttons_end-buttons)/sizeof.BUTTON)
+
+align 4
+labels:
+; new
+LABEL ((BUTTON_NEW_X+4) shl 16) + (1+BUTTON_NEW_Y+(BUTTON_NEW_HEIGHT-8)/2), newgame,LABEL_COLOR_WORKBUTTON,LABEL_BGCOLOR_TRANSPARENT
+; player 1 down
+LABEL ((BUTTON_PL1DN_X+(BUTTON_SPIN_WIDTH-4)/2) shl 16) + (1+BUTTON_PL1DN_Y+(BUTTON_HEIGHT-8)/2), down,LABEL_COLOR_WORKBUTTON,LABEL_BGCOLOR_TRANSPARENT
+; player 1 up
+LABEL ((1+BUTTON_PL1UP_X+(BUTTON_SPIN_WIDTH-4)/2) shl 16) + (1+BUTTON_PL1UP_Y+(BUTTON_HEIGHT-8)/2), up,LABEL_COLOR_WORKBUTTON,LABEL_BGCOLOR_TRANSPARENT
+; player 2 down
+LABEL ((BUTTON_PL2DN_X+(BUTTON_SPIN_WIDTH-4)/2) shl 16) + (1+BUTTON_PL2DN_Y+(BUTTON_HEIGHT-8)/2), down,LABEL_COLOR_WORKBUTTON,LABEL_BGCOLOR_TRANSPARENT
+; player 2 up
+LABEL ((1+BUTTON_PL2UP_X+(BUTTON_SPIN_WIDTH-4)/2) shl 16) + (1+BUTTON_PL2UP_Y+(BUTTON_HEIGHT-8)/2), up,LABEL_COLOR_WORKBUTTON,LABEL_BGCOLOR_TRANSPARENT
+; player 1
+LABEL (LABEL_PL1_X shl 16) + LABEL_PL1_Y, pl1,0xffffff,LABEL_BGCOLOR_TRANSPARENT
+; player 2
+LABEL (LABEL_PL2_X shl 16) + LABEL_PL2_Y, pl2,0xffffff,LABEL_BGCOLOR_TRANSPARENT
+; status bar
+statusbar LABEL (LABEL_STATUS_X shl 16) + LABEL_STATUS_Y, 0,0xffffff,LABEL_BGCOLOR_TRANSPARENT
+
+if lang eq it_IT
+label_pl1type LABEL ((LABEL_PL1TYPE_X + 18) shl 16) + LABEL_PL1TYPE_Y, playertypes+PL1TYPE_INIT*PLAYERTYPELEN,0xffffff,0
+label_pl2type LABEL ((LABEL_PL2TYPE_X + 18) shl 16) + LABEL_PL2TYPE_Y, playertypes+PL2TYPE_INIT*PLAYERTYPELEN,0xffffff,0
+else
+label_pl1type LABEL (LABEL_PL1TYPE_X shl 16) + LABEL_PL1TYPE_Y, playertypes+PL1TYPE_INIT*PLAYERTYPELEN,0xffffff,0
+label_pl2type LABEL (LABEL_PL2TYPE_X shl 16) + LABEL_PL2TYPE_Y, playertypes+PL2TYPE_INIT*PLAYERTYPELEN,0xffffff,0
+end if
+labels_end:
+
+NLABELS		equ	((labels_end-labels)/sizeof.LABEL)
+
+
+; button images
+redpcx:
+file "red.pcx"
+REDPCXSIZE	equ	(bluepcx - redpcx)
+bluepcx:
+file "blue.pcx"
+pcx_end:
+BLUEPCXSIZE	equ	(pcx_end - bluepcx)
+
+
+align 4
 start:
-	jmp main
-
-%include "pcx.inc"
-%include "windows.inc"
-%include "board.inc"
-%include "rng.inc"
-; %include "randomai.inc"
-%include "ai.inc"
-
-
-
-;**********************************************************
-; main program
-;**********************************************************
-main:
 	call randomize
 	call defineWindow
 	call decrunchImages
 	call newGame
 
+align 16
 .msgpump:
 	; wait for event
-	mov ebx,1
-	mov eax,MOS_SC_WAITEVENTTIMEOUT
-	int 0x40
+	mcall SF_WAIT_EVENT_TIMEOUT,1
 
 	; process events
-	cmp eax,MOS_EVT_REDRAW
-	je short .redraw
-	cmp eax,MOS_EVT_KEY
-	je short .key
-	cmp eax,MOS_EVT_BUTTON
-	je short .button
+	cmp eax,EV_REDRAW
+	je .redraw
+	cmp eax,EV_KEY
+	je .key
+	cmp eax,EV_BUTTON
+	je .button
 
 	call pollMouse
 	call gameLoop
-	jmp short .msgpump
+	jmp .msgpump
 
 .redraw:
 	call defineWindow
-	jmp short .msgpump
+	jmp .msgpump
 .key:
 	call keyboardInput
-	jmp short .msgpump
+	jmp .msgpump
 .button:
 	call handleButton
-	jmp short .msgpump
+	jmp .msgpump
 
 
 
@@ -162,28 +275,27 @@ main:
 ; button handling function
 ;**********************************************************
 handleButton:
-	mov eax,MOS_SC_GETPRESSEDBUTTON		; get button id
-	int 0x40
+	mcall SF_GET_BUTTON		; get button id
 
 	cmp al,1				; button pressed ?
-	je short .bye				; nope -> nothing to do
+	je .bye				; nope -> nothing to do
 
 	cmp ah,BT_QUIT				; which button has been pressed ?
-	je short .quit
+	je .quit
 	cmp ah,BT_NEW
-	je short .new
+	je .new
 	cmp ah,BT_PLAYER1DN
-	je short .player1dn
+	je .player1dn
 	cmp ah,BT_PLAYER1UP
-	je short .player1up
+	je .player1up
 	cmp ah,BT_PLAYER2DN
-	je short .player2dn
+	je .player2dn
 	cmp ah,BT_PLAYER2UP
-	je short .player2up
+	je .player2up
 .bye:
 	ret
 .quit:
-	MOS_EXIT
+	mcall SF_TERMINATE_PROCESS
 .new:
 	call newGame
 	ret
@@ -234,7 +346,7 @@ handleButton:
 ; window definition function
 ;**********************************************************
 defineWindow:
-	MOS_STARTREDRAW
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	mov edi,window
 	call drawWindow
@@ -250,7 +362,7 @@ defineWindow:
 	xor eax,eax
 	call drawBoard
 
-	MOS_ENDREDRAW
+	mcall SF_REDRAW,SSF_END_DRAW
 	ret
 
 
@@ -270,11 +382,10 @@ updateStatusText:
 	mov dword [statusbar + LABEL.caption],esi		; yeah -> save & redraw
 
 	; clear background
-     	mov ebx,MOS_DWORD(LABEL_STATUS_X,LABEL_STATUS_WIDTH)
-     	mov ecx,MOS_DWORD(LABEL_STATUS_Y,LABEL_STATUS_HEIGHT)
+     	mov ebx, LABEL_STATUS_X shl 16 + LABEL_STATUS_WIDTH
+     	mov ecx, LABEL_STATUS_Y shl 16 + LABEL_STATUS_HEIGHT
      	xor edx,edx
-     	mov eax,MOS_SC_DRAWBAR
-     	int 0x40
+     	mcall SF_DRAW_RECT
 
      	; redraw label
 	mov edi,statusbar
@@ -310,50 +421,50 @@ updatePlayerType:
 ; draw whole board
 ;
 ; input		:	eax nonzero = clear board background
+align 4
 drawBoard:
 
 	; clear background ?
 	or eax,eax
 	jz .noclear
-	mov ebx,MOS_DWORD(GRIDX,GRIDWIDTH)
-	mov ecx,MOS_DWORD(GRIDY,GRIDHEIGHT)
+	mov ebx, GRIDX shl 16 + GRIDWIDTH
+	mov ecx, GRIDY shl 16 + GRIDHEIGHT
 	mov edx,WND_WORKCOLOR
-	mov eax,MOS_SC_DRAWBAR
-	int 0x40
+	mcall SF_DRAW_RECT
 .noclear:
 	call drawGrid
 	call drawStones
 	ret
 
 
-
+align 4
 drawGrid:
 
 	; vertical lines
-	mov ebx,MOS_DWORD(GRIDX,GRIDX)
-	mov ecx,MOS_DWORD(GRIDY,GRIDY+GRIDHEIGHT-1)
+	mov ebx, GRIDX shl 16 + GRIDX
+	mov ecx, GRIDY shl 16 + GRIDY+GRIDHEIGHT-1
 	mov edx,GRIDCOLOR
-	mov eax,MOS_SC_DRAWLINE
+	mcall SF_DRAW_LINE
 	mov esi,8
 .vlines:
 	int 0x40
-	add ebx,MOS_DWORD(GRIDSPACING,GRIDSPACING)
+	add ebx, GRIDSPACING shl 16 + GRIDSPACING
 	dec esi
 	jnz .vlines
 
 	; horizontal lines
-	mov ebx,MOS_DWORD(GRIDX,GRIDX+GRIDWIDTH-1)
-	mov ecx,MOS_DWORD(GRIDY,GRIDY)
+	mov ebx, GRIDX shl 16 + GRIDX+GRIDWIDTH-1
+	mov ecx, GRIDY shl 16 + GRIDY
 	mov esi,7
 .hlines:
 	int 0x40
-	add ecx,MOS_DWORD(GRIDSPACING,GRIDSPACING)
+	add ecx, GRIDSPACING shl 16 + GRIDSPACING
 	dec esi
 	jnz .hlines
 
 	ret
 
-
+align 4
 drawStones:
 	mov ebx,6
 .col:
@@ -369,6 +480,7 @@ drawStones:
 
 ; ecx = column (1..7)
 ; ebx = row (1..6)
+align 4
 drawStone:
 	pushad
 
@@ -402,9 +514,8 @@ drawStone:
 
 	; put image (position is already in edx)
 	mov ebx,ebp				; image address
-	mov ecx,MOS_DWORD(STONESIZE,STONESIZE)	; image dimensions
-	mov eax,MOS_SC_PUTIMAGE
-	int 0x40
+	mov ecx, (STONESIZE shl 16) + STONESIZE	; image dimensions
+	mcall SF_PUT_IMAGE
 
 .bye:
 	popad
@@ -461,9 +572,8 @@ newGame:
 ; destroys	:	everything
 ;**********************************************************
 pollMouse:
-	mov ebx,2
-	mov eax,MOS_SC_GETMOUSEPOSITION
-	int 0x40
+	mcall SF_MOUSE_GET,SSF_BUTTON
+
 	and eax,1
 	jz .mousenotpressed
 .mousepressed:
@@ -502,10 +612,8 @@ pollMouse:
 ; destroys	:	everything
 ;**********************************************************
 getMouseCol:
-
-	mov ebx,1			; get mouse position, window relative
-	mov eax,MOS_SC_GETMOUSEPOSITION
-	int 0x40
+	
+	mcall SF_MOUSE_GET,SSF_WINDOW_POSITION ; get mouse position, window relative
 
 	movzx ebx,ax			; y clipping
 	cmp ebx,GRIDY
@@ -539,24 +647,15 @@ getMouseCol:
 ; destroys	:	everything
 ;**********************************************************
 isActiveApp:
-
-%define	PROCINFO (ebp-MOS_PROCESSINFO_size)
-
-	enter MOS_PROCESSINFO_size,0
-
 	; get process information
-	mov eax,MOS_SC_GETPROCESSINFO
-	lea ebx,[ebp-MOS_PROCESSINFO_size]
-	mov ecx,-1
-	int 0x40
+	mcall SF_THREAD_INFO,procinfo,-1
 
 	; set al to 1 if we are the active application
-	cmp ax,[PROCINFO+MOS_PROCESSINFO.windowStackPos]
+	cmp ax,[procinfo+process_information.window_stack_position]
 	sete al
 
-	leave
+	;;;leave
 	ret
-%undef PROCINFO
 
 
 
@@ -569,8 +668,7 @@ isActiveApp:
 ; destroys	:	everything
 ;**********************************************************
 keyboardInput:
-	mov eax,MOS_SC_GETKEY		; get key
-	int 0x40
+	mcall SF_GET_KEY    ; get key
 	or al,al			; key available ?
 	jnz .bye			; no -> bye
 	cmp dword [playerinput],0	; unprocessed input available ?
@@ -698,7 +796,7 @@ updatePlayerStatusText:
 	cmp dword [player1_type],0
 	je .statustextok
 	mov esi,player1cpuprmpt
-	jmp short .statustextok
+	jmp .statustextok
 .player2:
 	mov esi,player2hmnprmpt
 	cmp dword [player2_type],0
@@ -714,196 +812,11 @@ updatePlayerStatusText:
 ; initialized data
 ;**********************************************************
 
-	section .data
-
 ;
 ; window definition
 ;
 windowtitle	db	"C4",0
-window:
-istruc WND
-	at WND.xposandsize,	dd	MOS_DWORD(0,WND_WIDTH)
-	at WND.yposandsize,	dd	MOS_DWORD(0,WND_HEIGHT)
-	at WND.workcolor,	dd	0x14000000 | WND_WORKCOLOR
-	at WND.grabcolor,	dd	0
-	at WND.framecolor,	dd	0
-	at WND.caption,		dd	windowtitle
-	at WND.captioncolor,	dd	0
-	at WND.flags,		dd	WND_CENTER | WND_DEFAULT_GRABCOLOR | WND_DEFAULT_FRAMECOLOR | WND_DEFAULT_CAPTIONCOLOR
-iend
-
-;
-; button table
-;
-buttons:
-istruc BUTTON						; new
-	at BUTTON.xposandsize
-	dd MOS_DWORD(BUTTON_NEW_X,BUTTON_NEW_WIDTH)
-	dd MOS_DWORD(BUTTON_NEW_Y,BUTTON_HEIGHT)
-	dd BT_NEW
-	dd BUTTON_COLOR_WORK
-iend
-istruc BUTTON						; player 1 down
-	at BUTTON.xposandsize
-	dd MOS_DWORD(BUTTON_PL1DN_X,BUTTON_SPIN_WIDTH)
-	dd MOS_DWORD(BUTTON_PL1DN_Y,BUTTON_HEIGHT)
-	dd BT_PLAYER1DN
-	dd BUTTON_COLOR_WORK
-iend
-istruc BUTTON						; player 1 up
-	at BUTTON.xposandsize
-	dd MOS_DWORD(BUTTON_PL1UP_X,BUTTON_SPIN_WIDTH)
-	dd MOS_DWORD(BUTTON_PL1UP_Y,BUTTON_HEIGHT)
-	dd BT_PLAYER1UP
-	dd BUTTON_COLOR_WORK
-iend
-istruc BUTTON						; player 2 down
-	at BUTTON.xposandsize
-	dd MOS_DWORD(BUTTON_PL2DN_X,BUTTON_SPIN_WIDTH)
-	dd MOS_DWORD(BUTTON_PL2DN_Y,BUTTON_HEIGHT)
-	dd BT_PLAYER2DN
-	dd BUTTON_COLOR_WORK
-iend
-istruc BUTTON						; player 2 up
-	at BUTTON.xposandsize
-	dd MOS_DWORD(BUTTON_PL2UP_X,BUTTON_SPIN_WIDTH)
-	dd MOS_DWORD(BUTTON_PL2UP_Y,BUTTON_HEIGHT)
-	dd BT_PLAYER2UP
-	dd BUTTON_COLOR_WORK
-iend
-NBUTTONS	equ	(($-buttons)/BUTTON_size)
-
-
-;
-; label table
-;
-%ifidn lang, 'it_IT'
-       newgame db   "Nuova partita",0
-%else
-       newgame db   "New game",0
-%endif
-down		db	"<",0
-up		db	">",0
-%ifidn lang, 'it_IT'
-       pl1		db	"Giocatore 1:",0
-       pl2		db	"Giocatore 2:",0
-%else
-       pl1		db	"Player 1:",0
-       pl2		db	"Player 2:",0
-%endif
-
-%ifidn lang, 'it_IT'
-	playertypes:
-			db	"Umano",0
-	PLAYERTYPELEN	equ	($ - playertypes)
-			db	"CPU 1 ",0
-			db	"CPU 2 ",0
-			db	"CPU 3 ",0
-			db	"CPU 4 ",0
-			db	"CPU 5 ",0
-			db	"CPU 6 ",0
-			db	"CPU 7 ",0
-			db	"CPU 8 ",0
-%else
-	playertypes:
-			db	"Human       ",0
-	PLAYERTYPELEN	equ	($ - playertypes)
-			db	"CPU level 1 ",0
-			db	"CPU level 2 ",0
-			db	"CPU level 3 ",0
-			db	"CPU level 4 ",0
-			db	"CPU level 5 ",0
-			db	"CPU level 6 ",0
-			db	"CPU level 7 ",0
-			db	"CPU level 8 ",0
-%endif
-
-NPLAYERTYPES	equ	(($-playertypes)/PLAYERTYPELEN)
-
-
-labels:
-istruc LABEL						; new
-	at LABEL.position
-	dd MOS_DWORD(BUTTON_NEW_X+4,1+BUTTON_NEW_Y+(BUTTON_HEIGHT-8)/2)
-	dd newgame
-	dd LABEL_COLOR_WORKBUTTON
-	dd LABEL_BGCOLOR_TRANSPARENT
-iend
-istruc LABEL						; player 1 down
-	at LABEL.position
-	dd MOS_DWORD(BUTTON_PL1DN_X+(BUTTON_SPIN_WIDTH-4)/2,1+BUTTON_PL1DN_Y+(BUTTON_HEIGHT-8)/2)
-	dd down
-	dd LABEL_COLOR_WORKBUTTON
-	dd LABEL_BGCOLOR_TRANSPARENT
-iend
-istruc LABEL						; player 1 up
-	at LABEL.position
-	dd MOS_DWORD(1+BUTTON_PL1UP_X+(BUTTON_SPIN_WIDTH-4)/2,1+BUTTON_PL1UP_Y+(BUTTON_HEIGHT-8)/2)
-	dd up
-	dd LABEL_COLOR_WORKBUTTON
-	dd LABEL_BGCOLOR_TRANSPARENT
-iend
-istruc LABEL						; player 2 down
-	at LABEL.position
-	dd MOS_DWORD(BUTTON_PL2DN_X+(BUTTON_SPIN_WIDTH-4)/2,1+BUTTON_PL2DN_Y+(BUTTON_HEIGHT-8)/2)
-	dd down
-	dd LABEL_COLOR_WORKBUTTON
-	dd LABEL_BGCOLOR_TRANSPARENT
-iend
-istruc LABEL						; player 2 up
-	at LABEL.position
-	dd MOS_DWORD(1+BUTTON_PL2UP_X+(BUTTON_SPIN_WIDTH-4)/2,1+BUTTON_PL2UP_Y+(BUTTON_HEIGHT-8)/2)
-	dd up
-	dd LABEL_COLOR_WORKBUTTON
-	dd LABEL_BGCOLOR_TRANSPARENT
-iend
-istruc LABEL						; player 1
-	at LABEL.position
-	dd MOS_DWORD(LABEL_PL1_X,LABEL_PL1_Y)
-	dd pl1
-	dd MOS_RGB(255,255,255)
-	dd LABEL_BGCOLOR_TRANSPARENT
-iend
-istruc LABEL						; player 2
-	at LABEL.position
-	dd MOS_DWORD(LABEL_PL2_X,LABEL_PL2_Y)
-	dd pl2
-	dd MOS_RGB(255,255,255)
-	dd LABEL_BGCOLOR_TRANSPARENT
-iend
-statusbar:						; status bar
-istruc LABEL
-	at LABEL.position
-	dd MOS_DWORD(LABEL_STATUS_X,LABEL_STATUS_Y)
-	dd 0
-	dd MOS_RGB(255,255,255)
-	dd LABEL_BGCOLOR_TRANSPARENT
-iend
-label_pl1type:
-istruc LABEL
-	at LABEL.position
-	%ifidn lang, 'it_IT'
-		dd MOS_DWORD(LABEL_PL1TYPE_X + 18,LABEL_PL1TYPE_Y)
-	%else
-		dd MOS_DWORD(LABEL_PL1TYPE_X,LABEL_PL1TYPE_Y)
-	%endif
-	dd playertypes+PL1TYPE_INIT*PLAYERTYPELEN
-	dd MOS_RGB(255,255,255)
-	dd MOS_RGB(0,0,0)
-iend
-label_pl2type:
-istruc LABEL
-	at LABEL.position
-	%ifidn lang, 'it_IT'
-		dd MOS_DWORD(LABEL_PL2TYPE_X + 18,LABEL_PL2TYPE_Y)
-	%else
-		dd MOS_DWORD(LABEL_PL2TYPE_X,LABEL_PL2TYPE_Y)
-	%endif
-	dd playertypes+PL2TYPE_INIT*PLAYERTYPELEN
-	dd MOS_RGB(255,255,255)
-	dd MOS_RGB(0,0,0)
-iend
-NLABELS		equ	(($-labels)/LABEL_size)
+window WND WND_WIDTH, WND_HEIGHT, 0x14000000 or WND_WORKCOLOR, 0,0,windowtitle,0, WND_CENTER or WND_DEFAULT_GRABCOLOR or WND_DEFAULT_FRAMECOLOR or WND_DEFAULT_CAPTIONCOLOR
 
 
 ; player types
@@ -912,23 +825,31 @@ player2_type	dd	PL2TYPE_INIT
 
 
 ; status messages
-%ifidn lang, 'it_IT'
+if lang eq it_IT
 	player1hmnprmpt	db	"Turno del giocatore 1",0
 	player2hmnprmpt db	"Turno del giocatore 2",0
 	player1cpuprmpt	db	"Attendi, giocatore 1 sta pensando...",0
 	player2cpuprmpt	db	"Attendi, giocatore 2 sta pensando...",0
 	itisadraw	db	"Pareggio",0
 	player1wins	db	"Vince giocatore 1",0
-	player2wins	db	"Vince Giocatore 2",0
-%else
-	player1hmnprmpt	db	"Make your move, player 1.",0
-	player2hmnprmpt db	"Make your move, player 2.",0
+	player2wins	db	"Vince giocatore 2",0
+else if lang eq ru_RU
+	player1hmnprmpt	db	"Игрок 1 сделайте ход",0
+	player2hmnprmpt db	"Игрок 2 сделайте ход",0
+	player1cpuprmpt	db	"Подождите, игрок 1 думает......",0
+	player2cpuprmpt	db	"Подождите, игрок 2 думает......",0
+	itisadraw	db	"Это ничья",0
+	player1wins	db	"Игрок 1 выиграл",0
+	player2wins	db	"Игрок 2 выиграл",0
+else
+	player1hmnprmpt	db	"Make your move, player 1",0
+	player2hmnprmpt db	"Make your move, player 2",0
 	player1cpuprmpt	db	"Player 1 is thinking, please wait...",0
 	player2cpuprmpt	db	"Player 2 is thinking, please wait...",0
-	itisadraw	db	"It's a draw.",0
-	player1wins	db	"Player 1 wins.",0
-	player2wins	db	"Player 2 wins.",0
-%endif
+	itisadraw	db	"It's a draw",0
+	player1wins	db	"Player 1 wins",0
+	player2wins	db	"Player 2 wins",0
+end if
 
 
 ; pointer to ai player. future releases C4 might
@@ -936,29 +857,22 @@ player2_type	dd	PL2TYPE_INIT
 aicode		dd	aiGetMove
 
 
-; button images
-redpcx:		incbin	"red.pcx"
-REDPCXSIZE	equ	($ - redpcx)
-bluepcx:	incbin	"blue.pcx"
-BLUEPCXSIZE	equ	($ - bluepcx)
+align 16
+i_end:
+	sc system_colors
+	procinfo process_information
+	rb 1024
+align 16
+stacktop:
+	; player input
+	; 0 	:	no input available
+	; 1..7	:	column to drop stone into
+	playerinput	rd	1
 
+	mouseinput	rd	1
+	gameover	rd	1
 
+	redstone	rb	STONESIZE*STONESIZE*3
+	bluestone	rb	STONESIZE*STONESIZE*3
+mem:
 
-;**********************************************************
-; uninitialized data
-;**********************************************************
-
-	section .bss
-
-; player input
-; 0 	:	no input available
-; 1..7	:	column to drop stone into
-playerinput	resd	1
-
-mouseinput	resd	1
-gameover	resd	1
-
-redstone	resb	STONESIZE*STONESIZE*3
-bluestone	resb	STONESIZE*STONESIZE*3
-
-end:

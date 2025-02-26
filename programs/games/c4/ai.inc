@@ -18,15 +18,10 @@
 ; along with C4; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-%ifndef _AI_INC
-%define _AI_INC
-
 
 INFTY		equ	1000000000
 
 
-
-	section .data
 
 ; table used to perform some primitive move "ordering":
 ; middle columns which are usually more important are
@@ -46,18 +41,10 @@ evaltable:	dd	 0, 0, 0, 0, 0, 0, 0, 0, 0
 		dd	 0, 0, 0, 0, 0, 0, 0, 0, 0
 
 
-
-	section .bss
-
-cpulevel	resd	1	; level of current cpu player
-bestval		resd	1	; value of best move found so far
-nbestmoves	resd	1	; # of best moves found so far
-bestmoves	resd	7	; array to hold all best moves
-
-
-
-	section .text
-
+cpulevel	rd	1	; level of current cpu player
+bestval		rd	1	; value of best move found so far
+nbestmoves	rd	1	; # of best moves found so far
+bestmoves	rd	7	; array to hold all best moves
 
 
 ;**********************************************************
@@ -148,15 +135,16 @@ aiGetMove:
 ; output	:	eax = move value
 ; destroys	:	everything
 ;**********************************************************
+align 4
 alphabeta:
 
-%define ply	(ebp+20)
-%define player	(ebp+16)
-%define alpha	(ebp+12)
-%define beta	(ebp+ 8)
+ply	equ (ebp+20)
+player equ (ebp+16)
+alpha equ (ebp+12)
+beta equ (ebp+ 8)
 
-	enter 0,0
-
+	push ebp
+	mov ebp,esp
 	; win for other player -> end search
 	mov eax,[player]
 	BOARDGETOTHERPLAYER eax
@@ -262,9 +250,8 @@ alphabeta:
 	leave				; eax contains static value
 	ret 4*4
 
-%undef ply
-%undef player
-%undef alpha
-%undef beta
+purge ply
+purge player
+purge alpha
+purge beta
 
-%endif

@@ -16,38 +16,32 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-%ifndef _PCX_INC
-%define _PCX_INC
-
 
 ;**********************************************************
 ; pcx header
 ;**********************************************************
 
 PCXHEADER_SIZE	equ	128
-struc PCXHEADER
-	.id:		resb	1	; id, should be 10
-	.version:	resb	1	; pcx version
-	.encoding:	resb	1	; 1 = rle
-	.bpp:		resb	1	; bits per pixel
-	.xmin:		resw	1	; image dimensions
-	.ymin:		resw	1
-	.xmax:		resw	1
-	.ymax:		resw	1
-	.hdpi:		resw	1	; horizontal resolution in dpi
-	.vdpi:		resw	1	; verttical resolution in dpi
-	.colormap:	resb	48	; 16 color palette
-	.reserved1:	resb	1
-	.nplanes:	resb	1	; # of color planes
-	.bytesperline:	resw	1	; # of bytes per scanline. always even
-	.palinfo:	resw	1	; 1 = color/bw, 2 = grayscale
-	.hscreensize:	resw	1	; horizontal screen size
-	.vscreensize:	resw	1	; vertical screen size
-	.reserved2:	resb	54
-endstruc
-
-
-section .text
+struct PCXHEADER
+	id		rb	1	; id, should be 10
+	version	rb	1	; pcx version
+	encoding	rb	1	; 1 = rle
+	bpp		rb	1	; bits per pixel
+	xmin		rw	1	; image dimensions
+	ymin		rw	1
+	xmax		rw	1
+	ymax		rw	1
+	hdpi		rw	1	; horizontal resolution in dpi
+	vdpi		rw	1	; verttical resolution in dpi
+	colormap	rb	48	; 16 color palette
+	reserved1	rb	1
+	nplanes	rb	1	; # of color planes
+	bytesperline	rw	1	; # of bytes per scanline. always even
+	palinfo	rw	1	; 1 = color/bw, 2 = grayscale
+	hscreensize	rw	1	; horizontal screen size
+	vscreensize	rw	1	; vertical screen size
+	reserved2	rb	54
+ends
 
 
 
@@ -98,7 +92,7 @@ loadPCX:
 .decode:
 	lodsb					; read byte from input stream
 	cmp al,192				; encoded/unencoded byte ?
-	jae short .encoded
+	jae .encoded
 	lea edx,[eax*2+eax]			; read color values from
 	mov al,[ebx+edx+2]			; palette and store them
 	stosb					; in the destination image
@@ -107,7 +101,7 @@ loadPCX:
 	mov al,[ebx+edx+0]
 	stosb
 	dec ebp					; one less to go...
-	jmp short .continue	
+	jmp .continue	
 .encoded:
 	and al,00111111b			; calc # of times to repeat
 	mov cl,al
@@ -127,11 +121,8 @@ loadPCX:
 	xor ah,ah				; reset ah to 0 !
 .continue:
 	or ebp,ebp				; all pixels decoded ?
-	jnz short .decode
+	jnz .decode
 
 	popfd
 	popad
 	ret
-
-
-%endif	
