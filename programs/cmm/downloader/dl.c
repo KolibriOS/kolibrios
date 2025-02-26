@@ -7,7 +7,6 @@
 
 #include "const.h"
 
-bool exit_param = false;
 bool open_file = false;
 
 dword speed;
@@ -17,11 +16,15 @@ _http http;
 checkbox autoclose = { T_AUTOCLOSE, false }; 
 
 char uEdit[URL_SIZE];
-char filepath[URL_SIZE+96];
+char filepath[4096];
+char save_dir[4096];
 
-progress_bar pb = {0, GAPX, 58, 380, 17, 0, NULL, NULL, 0xFFFfff, 0x74DA00, NULL};
+char* active_status;
+
 edit_box ed = {WIN_W-GAPX-GAPX,GAPX,20,0xffffff,0x94AECE,0xffffff,0xffffff,
-	0x10000000, sizeof(uEdit)-2,#uEdit,0,ed_focus,19,19};
+	0x10000000, sizeof(uEdit)-2, #uEdit, 0, ed_focus + ed_always_focus, 19, 19};
+progress_bar pb = {0, GAPX, 52, WIN_W - GAPX - GAPX, 17, 0, NULL, NULL, 
+	0xFFFfff, 0, NULL};
 
 
 void main()  
@@ -30,16 +33,19 @@ void main()
 	load_dll(boxlib,  #box_lib_init,0);
 	load_dll(libHTTP, #http_lib_init,1);
 
+	strcpy(#save_dir, DEFAULT_SAVE_DIR);
 	if (!dir_exists(#save_dir)) CreateDir(#save_dir);
 	SetCurDir(#save_dir);
+	sc.get();
+	InitDownload();
 
 	if (param) {
 		if (streqrp(#param, "-e ")) {
-			exit_param = true;
+			autoclose.checked = true;
 			param += 3;
 		}
 		if (streqrp(#param, "-eo ")) {
-			exit_param = true;
+			autoclose.checked = true;
 			open_file = true;
 			param += 4;
 		}
@@ -65,7 +71,7 @@ void main()
 		case evMouse:  edit_box_mouse stdcall (#ed); break;
 		case evButton: ProcessButtonClick(@GetButtonID()); break;
 		case evKey:    ProcessKeyPress(); break;
-		case evReDraw: DrawWindow(); break;
+		case evReDraw: DefineWindow(); break;
 		default:       MonitorProgress();
 	}
 }
@@ -73,11 +79,30 @@ void main()
 void ProcessButtonClick(int id)
 {
 	autoclose.click(id);
-	if (id==BTN_EXIT) { StopDownloading(); ExitProcess(); }
-	if (id==BTN_START) StartDownloading();
-	if (id==BTN_STOP) StopDownloading();
-	if (id==BTN_DIR) { RunProgram("/sys/File managers/Eolite", #filepath); ExitProcess(); }
-	if (id==BTN_RUN) { RunProgram("/sys/@open", #filepath); ExitProcess(); }
+	switch (id) {
+		case BTN_EXIT:
+			StopDownloading(); 
+			ExitProcess();
+		case BTN_START:
+			StartDownloading();
+			break;
+		case BTN_STOP:
+			StopDownloading();
+			InitDownload();
+			DrawWindow();
+			break;
+		case BTN_NEW:
+			InitDownload();
+			EditBox_UpdateText(#ed, ed_focus + ed_always_focus);
+			DrawWindow();
+			break;
+		case BTN_DIR:
+			RunProgram("/sys/File managers/Eolite", #filepath);
+			break;
+		case BTN_RUN:
+			RunProgram("/sys/@open", #filepath);
+			break;
+	}
 }
 
 void ProcessKeyPress()
@@ -85,33 +110,53 @@ void ProcessKeyPress()
 	@GetKey(); 
 	edit_box_key stdcall(#ed); 
 	EAX >>= 16;
-	if (AL == SCAN_CODE_ENTER) StartDownloading();
-	if (AL == SCAN_CODE_ESC) StopDownloading();
+	if (AL == SCAN_CODE_ENTER) ProcessButtonClick(BTN_START);
+	if (AL == SCAN_CODE_ESC) ProcessButtonClick(BTN_STOP);
+}
+
+
+void DrawDlButton(int x, id, t)
+{
+	DrawCaptButton(x, 102, BUT_W, 24, id, sc.button, sc.button_text, t);
 }
  
-void DrawWindow()
+void DefineWindow()
 {  
 	sc.get();
-	pb.frame_color = sc.dark;
+	pb.frame_color = ed.border_color = ed.focus_border_color = sc.line;
 	DefineAndDrawWindow(110 + random(300), 100 + random(300), WIN_W+9, 
 		WIN_H + 5 + skin_h, 0x34, sc.work, DL_WINDOW_HEADER, 0);
+	DrawWindow();
+}
 
+void DrawWindow()
+{
 	#define BUT_Y 58;
-	//autoclose.draw(WIN_W-135, BUT_Y+6);
-	if (!http.transfer)
-	{
-		DrawStandartCaptButton(GAPX, BUT_Y, BTN_START, T_DOWNLOAD);   
-		if (filepath)
-		{
-			DrawStandartCaptButton(GAPX+102, BUT_Y, BTN_DIR, T_OPEN_DIR);
-			DrawStandartCaptButton(GAPX+276, BUT_Y, BTN_RUN, T_RUN);  
-		}
-	} else {
-		DrawStandartCaptButton(WIN_W - 120, BUT_Y, BTN_STOP, T_CANCEL);
+	if (!http.transfer) && (!filepath) {
+		DrawBar(GAPX, 102, WIN_W - GAPX - GAPX+1, 24+1, sc.work);
+		DeleteButton(BTN_DIR);
+		DeleteButton(BTN_NEW);
+		DrawDlButton(WIN_W-BUT_W/2, BTN_START, T_DOWNLOAD);
+		autoclose.disabled = false;
+	} else if (http.transfer) {
+		DrawDlButton(WIN_W-BUT_W/2, BTN_STOP, T_CANCEL);
 		DrawDownloadingProgress();
+	} else if (!http.transfer) && (filepath) {
+		autoclose.disabled = true;
+		DrawDlButton(GAPX, BTN_RUN, T_RUN);
+		DrawDlButton(WIN_W-BUT_W/2, BTN_DIR, T_OPEN_DIR);
+		DrawDlButton(WIN_W-BUT_W-GAPX, BTN_NEW, T_NEW);  
 	}
-	//ed.offset=0; //DEL?
-	DrawEditBox(#ed);
+
+	WriteTextWithBg(GAPX, pb.top + 22, 0xD0, sc.work_text, active_status, sc.work);
+
+	DrawBar(GAPX, WIN_H - 58, WIN_W - GAPX - GAPX, 1, sc.light);
+	DrawBar(GAPX, WIN_H - 58 + 1, WIN_W - GAPX - GAPX, 1, sc.dark);
+	WriteText(GAPX, WIN_H - 48, 0x90, sc.work_text, T_SAVE_TO);
+	WriteTextWithBg(GAPX + 108, WIN_H - 48, 0xD0, sc.work_text, #save_dir, sc.light);
+	edit_box_draw stdcall (#ed);
+	progressbar_draw stdcall(#pb);
+	autoclose.draw(GAPX, WIN_H - 24);
 }
  
 void StartDownloading()
@@ -119,34 +164,31 @@ void StartDownloading()
 	char get_url[URL_SIZE+33];
 	if (http.transfer > 0) return;
 	ResetDownloadSpeed();
-	filepath = '\0';
+	pb.back_color = 0xFFFfff;
 	if (!strncmp(#uEdit,"https:",6)) {
-		miniprintf(#get_url, "http://gate.aspero.pro/?site=%s", #uEdit);
-		//notify("'HTTPS for download is not supported, trying to download the file via HTTP' -W");
-		//miniprintf(#http_url, "http://%s", #uEdit+8);
-		//if (!downloader.Start(#http_url)) {
-		//	notify("'Download failed.' -E");
-		//	StopDownloading();
-		//}
-	} else {
-		strcpy(#get_url, #uEdit);
+		//miniprintf(#get_url, "http://gate.aspero.pro/?site=%s", #uEdit);
+		notify("'HTTPS for download temporary is not supported,\ntrying to download the file via HTTP' -W");
+		miniprintf(#uEdit, "http://%s", #uEdit+8);
 	}
+	strcpy(#get_url, #uEdit);
+
 	if (http.get(#get_url)) {
-		ed.border_color = 0xCACACA;
-		EditBox_UpdateText(#ed, ed_disabled);
 		pb.value = 0;
+		pb.progress_color = PB_COL_PROGRESS;
+		EditBox_UpdateText(#ed, ed_disabled);
 		DrawWindow();
 	} else {
+		pb.progress_color = PB_COL_ERROR;
 		notify(T_ERROR_STARTING_DOWNLOAD);
 		StopDownloading();
-		if (exit_param) ExitProcess();
+		EditBox_UpdateText(#ed, ed_focus + ed_always_focus);
+		DrawWindow();
 	}
 }
 
-
 void DrawDownloadingProgress()
 {
-	char bytes_received[70];
+	char received_status[70];
 	dword gotkb = http.content_received/1024;
 
 	EDI = http.content_received / 100;
@@ -156,8 +198,20 @@ void DrawDownloadingProgress()
 	pb.max = http.content_length / 100;
 	progressbar_draw stdcall(#pb);
 	CalculateDownloadSpeed();
-	sprintf(#bytes_received, KB_RECEIVED, gotkb/1024, gotkb%1024/103, speed);
-	WriteTextWithBg(GAPX, pb.top + 22, 0xD0, sc.work_text, #bytes_received, sc.work);
+
+	//sprintf gets too much space
+	//sprintf(#received_status, T_STATUS_DOWNLOADING, gotkb/1024, gotkb%1024/103, speed);
+	
+	strcpy(#received_status, T_STATUS_DL_P1);
+	strcat(#received_status, itoa(gotkb/1024));
+	strcat(#received_status, ".");
+	strcat(#received_status, itoa(gotkb%1024/103));
+	strcat(#received_status, T_STATUS_DL_P2);
+	strcat(#received_status, itoa(speed));
+	strcat(#received_status, T_STATUS_DL_P3);
+	
+	active_status = #received_status;
+	WriteTextWithBg(GAPX, pb.top + 22, 0xD0, sc.work_text, active_status, sc.work);
 }
  
 void StopDownloading()
@@ -165,10 +219,15 @@ void StopDownloading()
 	http.stop();
 	if (http.content_pointer) http.content_pointer = free(http.content_pointer);
 	http.content_received = http.content_length = 0;
+}
 
-	ed.border_color = 0xFFFfff;
-	EditBox_UpdateText(#ed, ed_focus);
-	DrawWindow();
+void InitDownload()
+{
+	pb.value = 0;
+	pb.back_color = sc.light;
+	pb.progress_color = PB_COL_PROGRESS;
+	filepath = '\0';
+	active_status = T_STATUS_READY;
 }
 
 void MonitorProgress() 
@@ -179,7 +238,7 @@ void MonitorProgress()
 	if (!http.content_length) http.content_length = http.content_received * 20; //MOVE?
 
 	if (http.receive_result) {
-		DrawDownloadingProgress();  
+		DrawDownloadingProgress();
 	} else {
 		if (http.status_code >= 300) && (http.status_code < 400) {
 			http.header_field("location", #redirect_url, URL_SIZE);
@@ -188,12 +247,21 @@ void MonitorProgress()
 			StopDownloading();
 			StartDownloading();
 			return;
+		} else {
+			CompleteDownload();
 		}
-		SaveFile(0);
-		if (exit_param) ExitProcess();
-		StopDownloading();
-		DrawWindow();
 	}
+}
+
+void CompleteDownload()
+{
+	SaveFile(0);
+	if (autoclose.checked) ExitProcess();
+	pb.value = pb.max;
+	pb.progress_color = PB_COL_COMPLETE;
+	StopDownloading();
+	active_status = T_STATUS_COMPLETE;
+	DrawWindow();	
 }
 
 void SaveFile(int attempt)
@@ -202,8 +270,9 @@ void SaveFile(int attempt)
 	char notify_message[4296];
 	char file_name[URL_SIZE+96];
 
+
 	strcpy(#filepath, #save_dir);
-	chrcat(#filepath, '/');
+	chrcat(#filepath, '/');      ///need to check the last symbol
 
 	if (attempt > 9) {
 		notify("'Too many saving attempts' -E");
@@ -243,7 +312,8 @@ void SaveFile(int attempt)
 		miniprintf(#notify_message, FILE_NOT_SAVED, #filepath);
 	}
 
-	if (!exit_param) notify(#notify_message);
+	if (!autoclose.checked) notify(#notify_message);
+
 
 	if (!strcmpi(#filepath+strlen(#filepath)-4, ".zip"))
 	|| (!strcmpi(#filepath+strlen(#filepath)-3, ".7z")) {
@@ -257,11 +327,12 @@ void SaveFile(int attempt)
 void Unarchive(dword _arc)
 {
 	char folder_name[4096];
-	strcpy(#folder_name, "/tmp0/1/Downloads/");
+	strcpy(#folder_name, #save_dir);
 	strcpy(#folder_name, #filepath+strrchr(#filepath, '/'));
 	folder_name[strlen(#folder_name)-4] = '\0';
 	CreateDir(#folder_name);
 
+	//miniprintf2(#param, "-o \"%s\" -h \"%s", #folder_name, #filepath);
 	strcpy(#param, "-o \"");
 	strcat(#param, #folder_name);
 	strcat(#param, "\" -h \"");
