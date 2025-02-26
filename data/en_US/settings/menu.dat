@@ -49,7 +49,7 @@
 11 Fplay Video        * |/kolibrios/media/fplay
 #5 **** DEV
 54 Flat Assembler       |develop/fasm
-27 Example.asm          |example.asm
+27 Example.asm          |/sys/example.asm
 49 Debugger mtdbg       |develop/mtdbg
 49 Debugger koldbg    * |/kolibrios/develop/koldbg
 13 Debug Board          |develop/board

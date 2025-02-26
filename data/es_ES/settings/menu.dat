@@ -4,7 +4,7 @@
 00 3D Demos           >  |@2
 00 Gr ficos           >  |@3
 00 Multimedia         >  |@4
-00 Emulators          >  |@18
+00 Emulators          >  |@6
 00 Desarrollo         >  |@5
 00 Sistema            >  |@7
 00 Proceso de datos   >  |@11
@@ -45,12 +45,12 @@
 #4   **** MULTIMEDIA
 16 Pixie Audioplayer     |media/pixie
 16 AC97SND Audioplayer   |media/ac97snd
-16 Fplay - video         |/kolibrios/media/fplay
+16 Fplay - video      *  |/kolibrios/media/fplay
 16 MidAMP                |media/midamp
 #5    **** DESARROLLO
-00 Ejemplos           >  |@6
-16 Archiver KPack        |kpack
+27 Example.asm           |/sys/example.asm
 16 Flat Assembler        |develop/fasm
+16 Archiver KPack        |kpack
 16 Diff Tool             |develop/diff
 16 Debug Board           |develop/board
 49 Debugger mtdbg        |develop/mtdbg
@@ -59,12 +59,14 @@
 16 Tabla de caracteres   |ASCIIVju
 16 C¢digos ASCII         |develop/keyascii
 16 C¢digos SCAN          |develop/scancode
-#6    **** EJEMPLOS
-16 Threads               |develop/thread
-16 Selector de color     |demos/cslide
-16 Ejemplo de consola 1  |develop/testcon2
-16 Ejemplo de consola 2  |develop/test_gets
-16 Ejemplo de Messages   |demos/use_mb
+#6    **** EMULATORS
+24 DOSBox             *  |/kolibrios/emul/DosBox/dosbox
+16 e80 (ZX Spectrum)  *  |/kolibrios/emul/e80/e80
+23 FCE Ultra (NES)    *  |/kolibrios/emul/fceu/fceu
+23 DGEN (Sega)        *  |/kolibrios/emul/dgen/dgen
+23 Gameboy Color      *  |/kolibrios/emul/gameboy
+23 ZSNES              *  |/kolibrios/emul/zsnes/zsnes
+16 ScummVM            *  |/kolibrios/emul/scummvm
 #7    **** SISTEMA
 00 Archivos           >  |@10
 00 Accesibilidad      >  |@17
@@ -132,12 +134,4 @@
 #17    **** ACCESIBILIDAD
 16 Ampliaci¢n de pantalla|magnify
 16 Teclado en pantalla   |zkey
-#18    **** EMULATORS
-24 DOSBox             *  |/kolibrios/emul/DosBox/dosbox
-16 e80 (ZX Spectrum)  *  |/kolibrios/emul/e80/e80
-23 FCE Ultra (NES)    *  |/kolibrios/emul/fceu/fceu
-23 DGEN (Sega)        *  |/kolibrios/emul/dgen/dgen
-23 Gameboy Color      *  |/kolibrios/emul/gameboy
-23 ZSNES              *  |/kolibrios/emul/zsnes/zsnes
-16 ScummVM            *  |/kolibrios/emul/scummvm
 ##

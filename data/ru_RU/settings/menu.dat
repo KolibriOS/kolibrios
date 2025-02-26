@@ -49,7 +49,7 @@
 11 Видеоплеер Fplay   * |/kolibrios/media/fplay
 #5 **** Разработка
 54 Flat Assembler       |develop/fasm
-27 Example.asm          |example.asm
+27 Example.asm          |/sys/example.asm
 09 Упаковщик KPack      |kpack
 49 Отладчик mtdbg       |develop/mtdbg
 49 Отладчик koldbg    * |/kolibrios/develop/koldbg
