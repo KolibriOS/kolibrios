@@ -31,6 +31,7 @@ enum {
 	for (i=0; i<MAX_PROCESS_COUNT; i++)
 	{
 		GetProcessInfo(#Process, i);
+		if (EAX+1 >= i) break;
 		if (Process.status_slot != TSTATE_FREE)
 		&& (strcmpi(#Process.name, proc_name)==0)
 		{
@@ -46,6 +47,7 @@ enum {
 	for (i=0; i<MAX_PROCESS_COUNT; i++)
 	{
 		GetProcessInfo(#Process, i);
+		if (EAX+1 >= i) break;
 		if (Process.status_slot != TSTATE_FREE)
 		&& (strcmpi(#Process.name, proc_name)==0)
 			count++;
@@ -65,8 +67,8 @@ enum {
 	for (i=0; i<MAX_PROCESS_COUNT; i++)
 	{
 		GetProcessInfo(#Process, i);
+		if (EAX+1 >= i) break;
 		if (Process.name) 
-		&& (!streq(#Process.name, "OS"))
 		&& (Process.ID != Self.ID)
 			KillProcess(Process.ID);
 	}
