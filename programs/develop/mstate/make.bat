@@ -1,1 +1,0 @@
-nasm -f bin mstate.asm -o mstate
