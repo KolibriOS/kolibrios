@@ -56,10 +56,6 @@ void TWebBrowser::SetStyle()
 	if (tag.is("tr"))         { tag_table();          return; }
 	if (tag.is("th"))         { tag_table();          return; }
 	if (tag.is("td"))         { tag_table();          return; }
-
-	if (application_mode) {
-	    if (tag.is("exit")) { ExitProcess(); return; }
-	}
 }
 
 void TWebBrowser::tag_p()
@@ -148,22 +144,6 @@ void TWebBrowser::tag_meta_xml()
 	if (streq(tag.get_value_of("http-equiv"), "refresh")) && (tag.get_value_of("content")) {
 		if (tag.value = strstri(tag.value, "url")) strcpy(#redirect, tag.value);
 	}
-	if (streq(tag.get_value_of("name"), "application")) {
-	    if (application_mode) {
-	        if (tag.get_number_of("left")) {
-                MoveSize(tag.number,-1,-1,-1);
-            }
-            if (tag.get_number_of("top")) {
-                MoveSize(-1,tag.number,-1,-1);
-            }
-            if (tag.get_number_of("width")) {
-                MoveSize(-1,-1,tag.number,-1);
-            }
-            if (tag.get_number_of("height")) {
-                MoveSize(-1,-1,-1,tag.number);
-            }
-	    }
-    }
 }
 
 signed int get_encoding_type_by_name(dword name)

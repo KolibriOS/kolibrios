@@ -27,7 +27,7 @@ char link_menu[] =
 Скачать содержимое ссылки";
 char loading_text[] = "Загрузка...";
 
-char update_param[] = "-e http://builds.kolibrios.org/rus/data/programs/cmm/browser/WebView.com";
+char update_param[] = "-e http://builds.kolibrios.org/ru_RU/data/programs/cmm/browser/WebView.com";
 char update_download_error[] = "'WebView\nОшибка при получении обновлений!' -tE";
 char update_ok[] = "'WebView\nБраузер был успешно обновлен!' -tO";
 char update_is_current[] = "'WebView\nВы уже используете последнюю версию.' -tI";
@@ -63,7 +63,7 @@ Open in new window
 Copy link
 Download link contents";
 char loading_text[] = "Loading...";
-char update_param[] = "-e http://builds.kolibrios.org/eng/data/programs/cmm/browser/WebView.com";
+char update_param[] = "-e http://builds.kolibrios.org/en_US/data/programs/cmm/browser/WebView.com";
 char update_download_error[] = "'WebView\nError receiving an up to date information!' -tE";
 char update_ok[] = "'WebView\nThe browser has been updated!' -tO";
 char update_is_current[] = "'WebView\nThe browser is up to date.' -tI";

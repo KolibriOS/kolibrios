@@ -70,17 +70,17 @@ char aURIunescape[]          = "unescape";
 #define FLAG_TRANSFER_FAILED    1 << 20
 
 struct  http_msg{
-	dword   socket;
-	dword   flags;
-	dword   write_ptr;
-	dword   buffer_length;
-	dword   chunk_ptr;
-	dword   timestamp;
-	dword   status;
-	dword   header_length;
-	dword   content_ptr;
-	dword   content_length;
-	dword   content_received;
+	dword   socket;             //socket on which the actual transfer happens
+	dword   flags;              //flags, reflects status of the transfer using bitflags
+	dword   write_ptr;          //internal use only (where to write new data in buffer)
+	dword   buffer_length;      //internal use only (number of available bytes in buffer)
+	dword   chunk_ptr;          //internal use only (where the next chunk begins)
+	dword   timestamp;          //internal use only (when last data was received)
+	dword   status;             //HTTP status
+	dword   header_length;      //length of HTTP header
+	dword   content_ptr;        //ptr to content
+	dword   content_length;     //total length of HTTP content
+	dword   content_received;   //number of currently received content bytes
 	char    http_header;
 };
 

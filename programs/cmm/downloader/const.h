@@ -17,8 +17,10 @@
 	#define T_STATUS_DL_P2 " MБ получено ("
 	#define T_STATUS_DL_P3 " KБ/с)  "
 
-	#define FILE_SAVED_AS "'Менеджер загрузок\nФайл сохранен как %s' -Dt"
-	#define FILE_NOT_SAVED "'Менеджер загрузок\nОшибка! Файл не может быть сохранен как\n%s' -Et"
+	#define T_ERROR_TOO_MANY_REDIRECTS "'Менеджер загрузок\nСлишком много редиректов (HTTP 3XX)' -Et"
+
+	#define T_FILE_SAVED_AS "'Менеджер загрузок\nФайл сохранен как %s' -Dt"
+	#define T_FILE_NOT_SAVED "'Менеджер загрузок\nОшибка! Файл не может быть сохранен как\n%s' -Et"
 	#define T_ERROR_STARTING_DOWNLOAD "'Невозможно начать скачивание.\nПроверьте введенный путь и соединение с Интернетом.' -E"
 	char accept_language[]= "Accept-Language: ru\n";
 #else
@@ -38,8 +40,10 @@
 	#define T_STATUS_DL_P2 " MB received ("
 	#define T_STATUS_DL_P3 " KB/s)    "
 
-	#define FILE_SAVED_AS "'Download manager\nFile saved as %s' -Dt"
-	#define FILE_NOT_SAVED "'Download manager\nError! Can\96t save file as %s' -Et"
+	#define T_ERROR_TOO_MANY_REDIRECTS "'Download manager\nToo many redirects' -Et"
+
+	#define T_FILE_SAVED_AS "'Download manager\nFile saved as %s' -Dt"
+	#define T_FILE_NOT_SAVED "'Download manager\nError! Can\96t save file as %s' -Et"
 	#define T_ERROR_STARTING_DOWNLOAD "'Error while starting download process.\nCheck entered path and Internet connection.' -E"
 	char accept_language[]= "Accept-Language: en\n";
 #endif

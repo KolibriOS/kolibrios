@@ -11,6 +11,8 @@ bool open_file = false;
 
 dword speed;
 
+int redirect_count;
+
 _http http;
 
 checkbox autoclose = { T_AUTOCLOSE, false }; 
@@ -228,6 +230,7 @@ void InitDownload()
 	pb.progress_color = PB_COL_PROGRESS;
 	filepath = '\0';
 	active_status = T_STATUS_READY;
+	redirect_count = 0;
 }
 
 void MonitorProgress() 
@@ -241,6 +244,13 @@ void MonitorProgress()
 		DrawDownloadingProgress();
 	} else {
 		if (http.status_code >= 300) && (http.status_code < 400) {
+			redirect_count++;
+			if (redirect_count >= 5) {
+				notify(T_ERROR_TOO_MANY_REDIRECTS);
+				ProcessButtonClick(BTN_STOP);
+				EditBox_UpdateText(#ed, ed_focus + ed_always_focus);
+				return;
+			}
 			http.header_field("location", #redirect_url, URL_SIZE);
 			get_absolute_url(#redirect_url, #uEdit);
 			edit_box_set_text stdcall (#ed, #redirect_url);
@@ -307,9 +317,9 @@ void SaveFile(int attempt)
 	} 
 
 	if (CreateFile(http.content_received, http.content_pointer, #filepath)==0) {
-		miniprintf(#notify_message, FILE_SAVED_AS, #filepath);
+		miniprintf(#notify_message, T_FILE_SAVED_AS, #filepath);
 	} else {
-		miniprintf(#notify_message, FILE_NOT_SAVED, #filepath);
+		miniprintf(#notify_message, T_FILE_NOT_SAVED, #filepath);
 	}
 
 	if (!autoclose.checked) notify(#notify_message);

@@ -45,7 +45,6 @@
 bool debug_mode = false;
 bool show_images = true;
 bool source_mode = false;
-bool application_mode = false;
 
 _history history;
 
@@ -110,9 +109,6 @@ void HandleParam()
 			history.add(#param + 8);
 		} else if (!strncmp(#param, "-new ", 5)) {
 			history.add(#param + 5);
-		} else if (!strncmp(#param, "-app ", 5)) {
-          	history.add(#param + 5);
-          	application_mode = true;
         } else {
 			if (GetProcessesCount("WEBVIEW") == 1) {
 				history.add(#param);
@@ -135,14 +131,6 @@ void main()
 
 	LoadLibraries();
     HandleParam();
-
-	if (application_mode) {
-	    TOOLBAR_H = 0;
-	    PADDING = 0;
-        TSZE = 0;
-        STATUSBAR_H = 0;
-        TAB_H = 0;
-	}
 
 	omnibox_edit.left = PADDING+TSZE*2+PADDING+6;
 	omnibox_edit.top = PADDING+3;
@@ -221,15 +209,6 @@ void main()
 			if (http.transfer <= 0) break;
 			http.receive();
 
-			if (http_get_type==PAGE) {
-				CheckContentType();	
-				prbar.max = http.content_length;
-				if (prbar.value != http.content_received) {
-					prbar.value = http.content_received;	
-					DrawProgress();
-				}
-			}
-
 			if (http.receive_result != 0) break;
 			if (debug_mode) {
 				EAX = http.transfer;
@@ -248,6 +227,15 @@ void main()
 					notify("'Too many redirects.' -E");
 				}
 			} else {
+				if (http_get_type==PAGE) {
+					CheckContentType();	
+					prbar.max = http.content_length;
+					if (prbar.value != http.content_received) {
+						prbar.value = http.content_received;	
+						DrawProgress();
+					}
+				}
+				
 				// Loading the page is complete, free resources
 				redirect_count = 0;
 				if (http_get_type==PAGE) {
@@ -382,23 +370,21 @@ void draw_window()
 
 	SetElementSizes();
 
-    if (!application_mode) {
-        DrawBar(0,0, Form.cwidth,PADDING, sc.work);
-        DrawBar(0,PADDING+TSZE+1, Form.cwidth,PADDING-1, sc.work);
-        DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, MixColors(sc.dark, sc.work, 180));
-        DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, sc.line);
-        DrawBar(0, PADDING, omnibox_edit.left-2, TSZE+1, sc.work);
-        DrawBar(omnibox_edit.left+omnibox_edit.width+18, PADDING, Form.cwidth-omnibox_edit.left-omnibox_edit.width-18, TSZE+1, sc.work);
+    DrawBar(0,0, Form.cwidth,PADDING, sc.work);
+    DrawBar(0,PADDING+TSZE+1, Form.cwidth,PADDING-1, sc.work);
+    DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, MixColors(sc.dark, sc.work, 180));
+    DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, sc.line);
+    DrawBar(0, PADDING, omnibox_edit.left-2, TSZE+1, sc.work);
+    DrawBar(omnibox_edit.left+omnibox_edit.width+18, PADDING, Form.cwidth-omnibox_edit.left-omnibox_edit.width-18, TSZE+1, sc.work);
 
-        DrawTopPanelButton(BACK_BUTTON, PADDING-1, PADDING, 30, false);
-        DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, PADDING, 31, false);
-        DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, PADDING, -1, burger_active); //burger menu
+    DrawTopPanelButton(BACK_BUTTON, PADDING-1, PADDING, 30, false);
+    DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, PADDING, 31, false);
+    DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, PADDING, -1, burger_active); //burger menu
 
-        DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.line);
+    DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.line);
 
-        DrawRectangle(WB1.list.x + WB1.list.w, WB1.list.y, scroll_wv.size_x,
-		WB1.list.h-1, scroll_wv.bckg_col);
-	}
+    DrawRectangle(WB1.list.x + WB1.list.w, WB1.list.y, scroll_wv.size_x,
+	WB1.list.h-1, scroll_wv.bckg_col);
 
 	if (!canvas.bufw) {
 		EventOpenFirstPage();
@@ -406,12 +392,9 @@ void draw_window()
 		WB1.DrawPage(); 
 		DrawOmnibox();
 	}
-	if (!application_mode) {
-	    DrawProgress();
-	    DrawStatusBar(NULL);
-        DrawTabsBar();
-	}
-
+    DrawProgress();
+    DrawStatusBar(NULL);
+    DrawTabsBar();
 }
 
 void EventOpenFirstPage()
@@ -770,7 +753,6 @@ bool UrlExtIs(dword base, ext)
 void DrawProgress()
 {
 	dword pct;
-	if (application_mode) return;
 	if (!http.transfer) return;
 	if (http_get_type==PAGE) && (prbar.max) pct = prbar.value*30/prbar.max; else pct = 10;
 	if (http_get_type==IMG) pct = prbar.value * 70 / prbar.max + 30;
@@ -779,21 +761,18 @@ void DrawProgress()
 
 void EventShowPageMenu()
 {
-    if (application_mode) return;
 	open_lmenu(mouse.x, mouse.y, MENU_TOP_LEFT, NULL, #rmb_menu);
 	menu_id = VIEW_SOURCE;
 }
 
 void EventShowLinkMenu()
 {
-    if (application_mode) return;
 	open_lmenu(mouse.x, mouse.y, MENU_TOP_LEFT, NULL, #link_menu);
 	menu_id = IN_NEW_TAB;
 }
 
 void EventShowMainMenu()
 {
-    if (application_mode) return;
 	open_lmenu(Form.cwidth - PADDING -4, PADDING + TSZE + 3, 
 		MENU_TOP_RIGHT, NULL, #main_menu);
 	menu_id = OPEN_FILE;
@@ -801,7 +780,6 @@ void EventShowMainMenu()
 
 void EventShowEncodingsList()
 {
-    if (application_mode) return;
 	open_lmenu(Form.cwidth-4, Form.cheight - STATUSBAR_H + 12, 
 		MENU_BOT_RIGHT, WB1.cur_encoding + 1, 
 		"UTF-8\nKOI8-RU\nCP1251\nCP1252\nISO8859-5\nCP866");
@@ -886,7 +864,6 @@ void DrawStatusBar(dword _msg)
 {
 	dword status_y = Form.cheight - STATUSBAR_H + 4;
 	dword status_w = Form.cwidth - 90;
-	if (application_mode) return;
 	if (Form.status_window>2) return;
 	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, sc.work);
 	if (_msg) {
@@ -900,7 +877,6 @@ void DrawStatusBar(dword _msg)
 void DrawOmnibox()
 {
 	int imgxoff;
-	if (application_mode) return;
 	DrawOvalBorder(omnibox_edit.left-2, omnibox_edit.top-3, omnibox_edit.width+18, 24, sc.line, 
 		sc.line, sc.line, sc.dark);
 	DrawBar(omnibox_edit.left-1, omnibox_edit.top-2, omnibox_edit.width+18, 1, 0xD8DCD8);
@@ -919,7 +895,6 @@ void DrawOmnibox()
 
 void SetOmniboxText(dword _text)
 {
-    if (application_mode) return;
     edit_box_set_text stdcall (#omnibox_edit, _text);
     omnibox_edit.pos = omnibox_edit.flags = 0;
     DrawOmnibox();
