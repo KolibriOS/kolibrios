@@ -62,26 +62,43 @@ PROCEDURE drawTab (t: tTabs; id, x, y, width, height: INTEGER; s: ARRAY OF CHAR;
 CONST
 	btnCloseSize = 14;
 VAR
-    x2, y2, color, closeColor, closeForeColor, textColor: INTEGER;
+    x2, y2, bgColor, closeColor, closeForeColor, textColor: INTEGER;
     left, top: INTEGER;
 BEGIN
     IF id = t.current THEN
-        INC(height, curTabHeight - tabHeight);
-        DEC(y, curTabHeight - tabHeight)
+        INC(height, curTabHeight - tabHeight + 1);
+        DEC(y, curTabHeight - tabHeight + 1)
+    ELSE
+    	INC(height);
+    	DEC(y)
     END;
-    color := K.colors.work;
     textColor := K.colors.work_text;
     DEC(x); INC(width);
     x2 := x + width - 1;
     y2 := y + height - 1;
 
-    K.DrawRect(x, y, width, height, color);
-    K.DrawLine(x, y, x2, y, K.colors.line);
-    K.DrawLine(x2, y, x2, y2, K.colors.line);
+    //K.DrawRect(x, y + 2, width, height - 3, color);     //seems to be unnecessary redraw
+    K.DrawLine(x2, y + 1, x2, y2, K.colors.line);
+    K.DrawLine(x2 - 1, y2, x, y2, K.colors.line);
 
-    top := y + 3;
+    IF id = t.current THEN
+    	bgColor := K.colors.light;
+    	K.DrawRect(x, y + 1, width - 2, height - 3, bgColor);
+    	K.DrawLine(x + 1, y, x2 - 1, y, K.colors.line);
+    	K.DrawLine(x2 + 1, y + 2, x2 + 1, y2 - 1, K.colors.dark);
+    	K.PutPixel(x, y, K.colors.dark);
+    	K.PutPixel(x + 1, y + 1, K.colors.dark);
+    	K.PutPixel(x2, y, K.colors.dark);
+    	K.PutPixel(x2 - 1, y + 1, K.colors.dark)
+    ELSE
+    	bgColor := K.colors.work;
+    	K.DrawLine(x, y + 1, x2 - 1, y + 1, K.colors.light);
+    	K.DrawLine(x, y, x2, y, K.colors.line)
+    END;
+
+    top := y + 4;
+
     IF id # t.current THEN
-        K.DrawLine(x2 - 1, y2, x, y2, K.colors.line);
         closeColor := K.colors.button;
         closeForeColor := K.colors.button_text
     ELSE
@@ -89,14 +106,15 @@ BEGIN
     	closeColor := btnCloseColor;
     	closeForeColor := 0FFFFFFH
     END;
-    K.DrawLine(x, y2, x, y, K.colors.line);
+    K.DrawLine(x, y2, x, y + 1, K.colors.line);
 
-    K.DrawText866bk(x + K.fontWidth + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, textColor, color, s);
+    y := y + 1;
+    K.DrawText866bk(x + K.fontWidth + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, textColor, bgColor, s);
     IF modified THEN
-    	K.DrawText866bk(x + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, modifColor, color, "*")
+    	K.DrawText866bk(x + K.fontWidth DIV 2, y + (height - K.fontHeight) DIV 2, modifColor, bgColor, "*")
     END;
-    K.CreateButton(id + ORD({30}) + btnID, x + 1, y - 1, width - 1, height - 1, 0, "");
-    left := x + width - btnCloseSize - 5;
+    K.CreateButton(id + ORD({30}) + btnID, x + 1, y, width - 3, height - 3, 0, "");
+    left := x + width - btnCloseSize - 6;
     K.CreateButton(id + btnClose, left, top, btnCloseSize, btnCloseSize,  closeColor, "");
     K.DrawLine(left + 5, top + 4, left + btnCloseSize - 4, top + btnCloseSize - 5, closeForeColor);
     K.DrawLine(left + 4, top + 4, left + btnCloseSize - 4, top + btnCloseSize - 4, closeForeColor);
@@ -137,7 +155,7 @@ VAR
 BEGIN
     y := t.y;
     x := t.x;
-    K.DrawRect(x, y - (curTabHeight - tabHeight), t.width + (2*scrWidth + 2), t.height + (curTabHeight - tabHeight) - 1, K.colors.work);
+    K.DrawRect(x, y - (curTabHeight - tabHeight) - 1, t.width + (2*scrWidth + 2), t.height + (curTabHeight - tabHeight), K.colors.work);
     IF Width(t, 0, t.strings.count - 1) > t.width THEN
         INC(x, 2*scrWidth);
         K.DeleteButton(btnLeft);

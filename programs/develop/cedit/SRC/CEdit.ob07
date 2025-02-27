@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (01-oct-2023)";
+    HEADER = "CEdit (27-feb-2025)";
 
     ShellFilter = "";
     EditFilter = "sh|inc|txt|asm|ob07|c|cpp|h|pas|pp|lua|ini|json";
