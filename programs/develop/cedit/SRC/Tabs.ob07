@@ -155,7 +155,7 @@ VAR
 BEGIN
     y := t.y;
     x := t.x;
-    K.DrawRect(x, y - (curTabHeight - tabHeight), t.width + (2*scrWidth + 2), t.height + (curTabHeight - tabHeight) - 1, K.colors.work);
+    K.DrawRect(x, y - (curTabHeight - tabHeight) - 1, t.width + (2*scrWidth + 2), t.height + (curTabHeight - tabHeight), K.colors.work);
     IF Width(t, 0, t.strings.count - 1) > t.width THEN
         INC(x, 2*scrWidth);
         K.DeleteButton(btnLeft);
