@@ -473,6 +473,7 @@ tup.append_table(img_files, {
  {"DEVELOP/HEED", VAR_PROGS .. "/develop/heed/trunk/heed"},
  {"DEVELOP/KEYASCII", VAR_PROGS .. "/develop/keyascii/trunk/keyascii"},
  {"DEVELOP/MTDBG", VAR_PROGS .. "/develop/mtdbg/mtdbg"},
+ {"DEVELOP/MSTATE", VAR_PROGS .. "/develop/mstate/mstate"},
  {"DEVELOP/SCANCODE", VAR_PROGS .. "/develop/scancode/trunk/scancode"},
  {"DEVELOP/EXAMPLES/CIRCLE", VAR_PROGS .. "/develop/examples/circle/trunk/circle"},
  {"DEVELOP/EXAMPLES/COLORREF", VAR_PROGS .. "/demos/colorref/trunk/colorref"},
@@ -647,7 +648,6 @@ tup.append_table(img_files, {
  {"LOD", VAR_PROGS .. "/fs/lod/lod"},
  {"TIMER", VAR_PROGS .. "/other/Timer/timer"},
  {"TINFO", VAR_PROGS .. "/system/tinfo/tinfo"},
- {"DEVELOP/MSTATE", VAR_PROGS .. "/develop/mstate/mstate"},
  {"DEVELOP/GENFILES", VAR_PROGS .. "/testing/genfiles/GenFiles"},
  {"MEDIA/FILLSCR", VAR_PROGS .. "/media/FillScr/fillscr"},
 })
