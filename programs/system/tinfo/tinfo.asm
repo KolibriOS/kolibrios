@@ -113,31 +113,6 @@ EM_IPC                            equ   1000000b
 EM_NETWORK                        equ  10000000b
 EM_DEBUG                          equ 100000000b
 
-; ---------------------------------------------------------------------------- ;
-struct THREAD_INFO
-        cpu_usage               rd 1  ; usage of the processor
-        win_stack_pos           rw 1  ; position of the window of thread in the window stack
-        reserved0               rw 1  ; has no relation to the specified thread
-        reserved1               rw 1  ; reserved
-        name                    rb 11 ; name of the started file - executable file without extension
-        reserved2               rb 1  ; reserved, this byte is not changed
-        mem_address             rd 1  ; address of the process in memory
-        mem_usage               rd 1  ; size of used memory - 1
-        identifier              rd 1  ; identifier (PID/TID)
-        x                       rd 1  ; coordinate of the thread window on axis x
-        y                       rd 1  ; coordinate of the thread window on axis y
-        size_x                  rd 1  ; size of the thread window on axis x
-        size_y                  rd 1  ; size of the thread window on axis y
-        thread_state            rw 1  ; status of the thread slot
-        reserved3               rw 1  ; reserved, this word is not changed
-        client_x                rd 1  ; coordinate of the client area on axis x
-        client_y                rd 1  ; coordinate of the client area on axis y
-        client_size_x           rd 1  ; width of the client area
-        client_size_y           rd 1  ; height of the client area
-        window_state            rb 1  ; state of the window - bitfield
-        event_mask              rd 1  ; event mask
-        keyboard_mode           rb 1  ; keyboard mode
-ends
 
 ; ---------------------------------------------------------------------------- ;
 slot                              dd -1 ; for default if no params
@@ -248,7 +223,7 @@ macro DrawCpuUsage {
 ; sz_cpu_usage
         stdcall   DrawText, [back_color],[fore_color],sz_cpu_usage,[Pos.y],COLUMN1_TEXT_X
 ; [cpu_usage]
-        stdcall   uint2str, [thread_info + THREAD_INFO.cpu_usage]
+        stdcall   uint2str, [thread_info.cpu_usage]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -259,7 +234,7 @@ macro DrawWinStackPos {
 ; sz_win_stack_pos
         stdcall   DrawText, [back_color],[fore_color],sz_win_stack_pos,[Pos.y],COLUMN1_TEXT_X
 ; [win_stack_pos]
-        movzx  eax, word [thread_info + THREAD_INFO.win_stack_pos]
+        movzx  eax, word [thread_info.window_stack_position]
         stdcall   uint2str, eax
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
@@ -271,7 +246,7 @@ macro DrawName {
 ; sz_name
         stdcall   DrawText, [back_color],[fore_color],sz_name,[Pos.y],COLUMN1_TEXT_X
 ; name
-        stdcall   DrawText, [back_color],[fore_color],(thread_info + THREAD_INFO.name),[Pos.y],COLUMN2_TEXT_X
+        stdcall   DrawText, [back_color],[fore_color],(thread_info.process_name),[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
         add    [Pos.y], dword ITEM_HEIGHT
 }
@@ -280,7 +255,7 @@ macro DrawMemAddress {
 ; sz_mem_address
         stdcall   DrawText, [back_color],[fore_color],sz_mem_address,[Pos.y],COLUMN1_TEXT_X
 ; [mem_address]
-        stdcall   uint2str, [thread_info + THREAD_INFO.mem_address]
+        stdcall   uint2str, [thread_info.memory_start]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -291,7 +266,7 @@ macro DrawMemUsage {
 ; sz_mem_usage
         stdcall   DrawText, [back_color],[fore_color],sz_mem_usage,[Pos.y],COLUMN1_TEXT_X
 ; [mem_usage]
-        stdcall   uint2str, [thread_info + THREAD_INFO.mem_usage]
+        stdcall   uint2str, [thread_info.used_memory]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -302,7 +277,7 @@ macro DrawIdentifier {
 ; sz_identifier
         stdcall   DrawText, [back_color],[fore_color],sz_identifier,[Pos.y],COLUMN1_TEXT_X
 ; [identifier]
-        stdcall   uint2str, [thread_info + THREAD_INFO.identifier]
+        stdcall   uint2str, [thread_info.PID]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -313,7 +288,7 @@ macro DrawWindowX {
 ; sz_x
         stdcall   DrawText, [back_color],[fore_color],sz_x,[Pos.y],COLUMN1_TEXT_X
 ; [x]
-        stdcall   uint2str, [thread_info + THREAD_INFO.x]
+        stdcall   uint2str, [thread_info.box.left]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -324,7 +299,7 @@ macro DrawWindowY {
 ; sz_y
         stdcall   DrawText, [back_color],[fore_color],sz_y,[Pos.y],COLUMN1_TEXT_X
 ; [y]
-        stdcall   uint2str, [thread_info + THREAD_INFO.y]
+        stdcall   uint2str, [thread_info.box.top]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -335,7 +310,7 @@ macro DrawWindowSizeX {
 ; sz_size_x
         stdcall   DrawText, [back_color],[fore_color],sz_size_x,[Pos.y],COLUMN1_TEXT_X
 ; [size_x]
-        stdcall   uint2str, [thread_info + THREAD_INFO.size_x]
+        stdcall   uint2str, [thread_info.box.width]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -346,7 +321,7 @@ macro DrawWindowSizeY {
 ; sz_size_y
         stdcall   DrawText, [back_color],[fore_color],sz_size_y,[Pos.y],COLUMN1_TEXT_X
 ; [size_y]
-        stdcall   uint2str, [thread_info + THREAD_INFO.size_y]
+        stdcall   uint2str, [thread_info.box.height]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -357,7 +332,7 @@ macro DrawThreadState {
 ; sz_thread_state
         stdcall   DrawText, [back_color],[fore_color],sz_thread_state,[Pos.y],COLUMN1_TEXT_X
 ; decoded_thread_state & [thread_state]
-        movzx  eax, word [thread_info + THREAD_INFO.thread_state]
+        movzx  eax, word [thread_info.slot_state]
         push   eax ; for "call uint2str" below
 
         cmp    eax, THREAD_STATE_RUNNING
@@ -409,7 +384,7 @@ macro DrawClientX {
 ; sz_client_x
         stdcall   DrawText, [back_color],[fore_color],sz_client_x,[Pos.y],COLUMN1_TEXT_X
 ; [client_x]
-        stdcall   uint2str, [thread_info + THREAD_INFO.client_x]
+        stdcall   uint2str, [thread_info.client_box.left]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -420,7 +395,7 @@ macro DrawClientY {
 ; sz_client_y
         stdcall   DrawText, [back_color],[fore_color],sz_client_y,[Pos.y],COLUMN1_TEXT_X
 ; [client_y]
-        stdcall   uint2str, [thread_info + THREAD_INFO.client_y]
+        stdcall   uint2str, [thread_info.client_box.top]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -431,7 +406,7 @@ macro DrawClientSizeX {
 ; sz_client_size_x
         stdcall   DrawText, [back_color],[fore_color],sz_client_size_x,[Pos.y],COLUMN1_TEXT_X
 ; [client_size_x]
-        stdcall   uint2str, [thread_info + THREAD_INFO.client_size_x]
+        stdcall   uint2str, [thread_info.client_box.width]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -442,7 +417,7 @@ macro DrawClientSizeY {
 ; sz_client_size_y
         stdcall   DrawText, [back_color],[fore_color],sz_client_size_y,[Pos.y],COLUMN1_TEXT_X
 ; [client_size_y]
-        stdcall   uint2str, [thread_info + THREAD_INFO.client_size_y]
+        stdcall   uint2str, [thread_info.client_box.height]
         stdcall   PadBuffSpaces, COLUMN2_MAX_COUNT
         stdcall   DrawText, [back_color],[fore_color],tmpbuffer,[Pos.y],COLUMN2_TEXT_X
         call   ChangeBackColor
@@ -453,7 +428,7 @@ macro DrawWindowState {
 ; sz_window_state
         stdcall   DrawText, [back_color],[fore_color],sz_window_state,[Pos.y],COLUMN1_TEXT_X
 ; decoded_window_state & [window_state]
-        movzx  eax, byte [thread_info + THREAD_INFO.window_state]
+        movzx  eax, byte [thread_info.wnd_state]
         push   eax ; for "call uint2str" below
         mov    ebx, eax
         mov    [tmpbuffer], byte 0
@@ -483,7 +458,7 @@ macro DrawEventMask {
 ; sz_event_mask
         stdcall   DrawText, [back_color],[fore_color],sz_event_mask,[Pos.y],COLUMN1_TEXT_X
 ; decoded_event_mask & [event_mask]
-        mov    eax, [thread_info + THREAD_INFO.event_mask]
+        mov    eax, [thread_info.event_mask]
         push   eax ; for "call uint2str" below
         mov    ebx, eax
         mov    [tmpbuffer], byte 0
@@ -537,7 +512,7 @@ macro DrawKeyboardMode {
 ; sz_keyboard_mode
         stdcall   DrawText, [back_color],[fore_color],sz_keyboard_mode,[Pos.y],COLUMN1_TEXT_X
 ; decoded_keyboard_mode & [keyboard_mode]
-        movzx  eax, byte [thread_info + THREAD_INFO.keyboard_mode]
+        movzx  eax, byte [thread_info.keyboard_mode]
         push   eax ; for "call uint2str" below
 
         cmp    eax, KEYBOARD_MODE_ASCII

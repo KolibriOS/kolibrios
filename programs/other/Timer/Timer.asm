@@ -1,11 +1,21 @@
 ; Timer with three buttons ;
 ; %define lang "ru_RU"
 ; %define lang "it_IT"
-ORG 0
-BITS 32
-; ---------------------------------------------------------------------------- ;
-STACK_SIZE     equ 256
+use32
+	org 0
+	db 'MENUET01'
+version dd 1
+	dd program.start
+	dd program.end
+	dd program.memory
+	dd program.stack
+	dd 0,0
 
+include '../../macros.inc'
+include '../../proc32.inc'
+include '../../KOSfuncs.inc'
+include 'lang.inc'
+; ---------------------------------------------------------------------------- ;
 BUTTON_START   equ 2
 BUTTON_PAUSE   equ 3
 BUTTON_RESET   equ 4
@@ -19,32 +29,23 @@ CHAR_WIDTH     equ 6
 CHAR2_WIDTH    equ 8
 CHAR_HEIGHT    equ 9
 
-BUTTON_START_WIDTH equ (BUTTON_PADDING * 2) + (sz_start.end - sz_start) * CHAR_WIDTH
-BUTTON_PAUSE_WIDTH equ (BUTTON_PADDING * 2) + (sz_pause.end - sz_pause) * CHAR_WIDTH
-BUTTON_RESET_WIDTH equ (BUTTON_PADDING * 2) + (sz_reset.end - sz_reset) * CHAR_WIDTH
+BUTTON_START_WIDTH = (BUTTON_PADDING * 2) + (sz_start.end - sz_start) * CHAR_WIDTH
+BUTTON_PAUSE_WIDTH = (BUTTON_PADDING * 2) + (sz_pause.end - sz_pause) * CHAR_WIDTH
+BUTTON_RESET_WIDTH = (BUTTON_PADDING * 2) + (sz_reset.end - sz_reset) * CHAR_WIDTH
 
-BUTTON_HEIGHT  equ (BUTTON_PADDING * 2) + CHAR_HEIGHT + 1
+BUTTON_HEIGHT  = (BUTTON_PADDING * 2) + CHAR_HEIGHT + 1
 
-WINDOW_WIDTH   equ (BORDER_SIZE * 2) + (MARGIN * 2) + (BUTTON_MARGIN * 2) + (BUTTON_START_WIDTH + BUTTON_PAUSE_WIDTH + BUTTON_RESET_WIDTH)
+WINDOW_WIDTH   = (BORDER_SIZE * 2) + (MARGIN * 2) + (BUTTON_MARGIN * 2) + (BUTTON_START_WIDTH + BUTTON_PAUSE_WIDTH + BUTTON_RESET_WIDTH)
 
-TIME_AREA_WIDTH equ (CHAR2_WIDTH * 8) ; HH MM SS
-TIME_AREA_LEFT  equ (WINDOW_WIDTH - BORDER_SIZE * 2 - TIME_AREA_WIDTH) / 2
-TIME_AREA_TOP   equ MARGIN + 1
+TIME_AREA_WIDTH = (CHAR2_WIDTH * 8) ; HH MM SS
+TIME_AREA_LEFT  = (WINDOW_WIDTH - BORDER_SIZE * 2 - TIME_AREA_WIDTH) / 2
+TIME_AREA_TOP   = MARGIN + 1
 
-TEXT_ON_BUTTONS_TOP equ (MARGIN + CHAR_HEIGHT + MARGIN + BUTTON_PADDING) + 1
+TEXT_ON_BUTTONS_TOP = (MARGIN + CHAR_HEIGHT + MARGIN + BUTTON_PADDING) + 1
 
 BUTTON_START_BACK_COLOR equ 0x880000
 BUTTON_PAUSE_BACK_COLOR equ 0x008800
 BUTTON_RESET_BACK_COLOR equ 0x000088
-; ---------------------------------------------------------------------------- ;
-MENUET01       db 'MENUET01'
-version        dd 1
-program.start  dd START
-program.end    dd END
-program.memory dd END + STACK_SIZE
-program.stack  dd END + STACK_SIZE
-program.params dd 0
-program.path   dd 0
 ; ---------------------------------------------------------------------------- ;
 screen:
 .height        dw 0
@@ -56,17 +57,7 @@ window:
 .width         dd WINDOW_WIDTH
 .height        dd 0
 ; ---------------------------------------------------------------------------- ;
-sc:
-.frames           dd 0
-.grab             dd 0
-.work_dark        dd 0
-.work_light       dd 0
-.grab_text        dd 0
-.work             dd 0
-.work_button      dd 0
-.work_button_text dd 0
-.work_text        dd 0
-.work_graph       dd 0
+sc system_colors
 ; ---------------------------------------------------------------------------- ;
 timer_ticks       dd 0
 last_timer_ticks  dd 0
@@ -88,16 +79,16 @@ ButtonEvents:
 .pause  dd     EmptyProc       ; at start Pause must not work
 .reset  dd     On_ButtonReset
 ; ---------------------------------------------------------------------------- ;
-%ifidn     lang, "ru_RU"
-               sz_timer       db "Òàéìåð",0
+if lang eq ru_RU
+               sz_timer       db "’ ©¬¥à",0
 
-               sz_start:      db "ñòàðò"
+               sz_start:      db "áâ àâ"
                  .end:        db 0
-               sz_pause:      db "ïàóçà"
+               sz_pause:      db "¯ ã§ "
                  .end:        db 0
-               sz_reset:      db "ñáðîñ"
+               sz_reset:      db "á¡à®á"
                  .end:        db 0
-%elifidn   lang, "it_IT"
+else if lang eq it_IT
                sz_timer       db "Timer",0
 
                sz_start:      db "lancio"
@@ -106,7 +97,7 @@ ButtonEvents:
                  .end:        db 0
                sz_reset:      db "reset"
                  .end:        db 0
-%else
+else
                sz_timer       db "Timer",0
 
                sz_start:      db "start"
@@ -115,13 +106,12 @@ ButtonEvents:
                  .end:        db 0
                sz_reset:      db "reset"
                  .end:        db 0
-%endif
+end if
 ; ---------------------------------------------------------------------------- ;
-START:
+align 4
+program.start:
 ; get.screen.size
-        mov    eax, 61
-        mov    ebx, 1
-        int    64
+        mcall SF_GET_GRAPHICAL_PARAMS,SSF_SCREEN_SIZE
         mov    [screen], eax
 
         movzx  eax, word[screen.width]
@@ -130,9 +120,7 @@ START:
         mov    [window.left], eax
 
 ; skin.height
-        mov    eax, 48
-        mov    ebx, 4
-        int    64
+        mcall SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT
         add    eax, (MARGIN * 3) + BORDER_SIZE + BUTTON_HEIGHT + CHAR_HEIGHT
         mov    [window.height], eax
 
@@ -144,33 +132,26 @@ START:
         call On_Redraw
 ; ---------------------------------------------------------------------------- ;
 wait.event:
-        mov    eax, 23
-        mov    ebx, 50
-        int    64
-        call   [eax * 4 + Events]
+        mcall SF_WAIT_EVENT_TIMEOUT, 50
+        call   dword[eax * 4 + Events]
         jmp    wait.event
 ; ---------------------------------------------------------------------------- ;
 On_KeyPress:
-        mov    eax, 2
-        int    64
+        mcall SF_GET_KEY
         ret
 ; ---------------------------------------------------------------------------- ;
 On_ButtonPress:
-        mov    eax, 17
-        int    64
+        mcall SF_GET_BUTTON
         movzx  eax, ah
-        call   [eax * 4 + ButtonEvents]
+        call   dword[eax * 4 + ButtonEvents]
         ret
 ; ---------------------------------------------------------------------------- ;
 On_ButtonClose:
-        or     eax, -1
-        int    64
+        mcall SF_TERMINATE_PROCESS
 ; ---------------------------------------------------------------------------- ;
 On_ButtonStart:
 ; get system counter
-        mov    eax, 26
-        mov    ebx, 9
-        int    64
+        mcall SF_SYSTEM_GET,SSF_TIME_COUNT
         sub    eax, [last_timer_ticks]
         and    [last_timer_ticks], dword 0
         mov    [timer_ticks], eax
@@ -181,9 +162,7 @@ On_ButtonStart:
 ; ---------------------------------------------------------------------------- ;
 On_ButtonPause:
 ; get system counter
-        mov    eax, 26
-        mov    ebx, 9
-        int    64
+        mcall SF_SYSTEM_GET,SSF_TIME_COUNT
         sub    eax, [timer_ticks]
         mov    [last_timer_ticks], eax
         mov    [timer_proc], dword EmptyProc
@@ -204,23 +183,14 @@ On_ButtonReset:
 ; ---------------------------------------------------------------------------- ;
 On_Redraw:
 ; redraw.start
-        mov    eax, 12
-        mov    ebx, 1
-        int    64
+        mcall SF_REDRAW,SSF_BEGIN_DRAW
 ; get.standart.colors
-        mov    eax, 48
-        mov    ebx, 3
-        mov    ecx, sc
-        mov    edx, 40
-        int    64
+        mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
 ; skin.height
-        mov    eax, 48
-        mov    ebx, 4
-        int    64
+        mcall ,SSF_GET_SKIN_HEIGHT
         add    eax, (MARGIN * 3) + BORDER_SIZE + BUTTON_HEIGHT + CHAR_HEIGHT
         mov    [window.height], eax
 ; draw.window
-        xor    eax, eax
         mov    ebx, [window.left]
         shl    ebx, 16
         add    ebx, [window.width]
@@ -230,51 +200,28 @@ On_Redraw:
         mov    edx, [sc.work]
         or     edx, 0x34000000
         mov    edi, sz_timer
-        int    64
+        mcall SF_CREATE_WINDOW
 ; draw.buttons:
-        mov    eax, 8
-        mov    ecx, ((MARGIN + CHAR_HEIGHT + MARGIN) << 16) | BUTTON_HEIGHT
+        mcall SF_DEFINE_BUTTON, (MARGIN shl 16) or BUTTON_START_WIDTH, ((MARGIN + CHAR_HEIGHT + MARGIN) shl 16) or BUTTON_HEIGHT, BUTTON_START, BUTTON_START_BACK_COLOR
 
-        mov    ebx, (MARGIN << 16) | BUTTON_START_WIDTH
-        mov    edx, BUTTON_START
-        mov    esi, BUTTON_START_BACK_COLOR
-        int    64
+        mcall , ((MARGIN + BUTTON_START_WIDTH + BUTTON_MARGIN) shl 16) or BUTTON_PAUSE_WIDTH,, BUTTON_PAUSE, BUTTON_PAUSE_BACK_COLOR
 
-        mov    ebx, ((MARGIN + BUTTON_START_WIDTH + BUTTON_MARGIN) << 16) | BUTTON_PAUSE_WIDTH
-        mov    edx, BUTTON_PAUSE
-        mov    esi, BUTTON_PAUSE_BACK_COLOR
-        int    64
-
-        mov    ebx, ((MARGIN + BUTTON_START_WIDTH + BUTTON_MARGIN + BUTTON_PAUSE_WIDTH + BUTTON_MARGIN) << 16) | BUTTON_RESET_WIDTH
-        mov    edx, BUTTON_RESET
-        mov    esi, BUTTON_RESET_BACK_COLOR
-        int    64
+        mcall , ((MARGIN + BUTTON_START_WIDTH + BUTTON_MARGIN + BUTTON_PAUSE_WIDTH + BUTTON_MARGIN) shl 16) or BUTTON_RESET_WIDTH,, BUTTON_RESET, BUTTON_RESET_BACK_COLOR
 ;----------------------
 ; draw.texts:
-        mov    eax, 4
-        mov    ecx, 0x80FFFFFF
+        mcall SF_DRAW_TEXT, ((MARGIN + BUTTON_PADDING + 1) shl 16) or TEXT_ON_BUTTONS_TOP, 0x80FFFFFF, sz_start
 
-        mov    ebx, ((MARGIN + BUTTON_PADDING + 1) << 16) | TEXT_ON_BUTTONS_TOP
-        mov    edx, sz_start
-        int    64
+        mcall , ((MARGIN + BUTTON_START_WIDTH + BUTTON_MARGIN + BUTTON_PADDING + 1) shl 16) or TEXT_ON_BUTTONS_TOP,, sz_pause
 
-        mov    ebx, ((MARGIN + BUTTON_START_WIDTH + BUTTON_MARGIN + BUTTON_PADDING + 1) << 16) | TEXT_ON_BUTTONS_TOP
-        mov    edx, sz_pause
-        int    64
-
-        mov    ebx, ((MARGIN + BUTTON_START_WIDTH + BUTTON_MARGIN + BUTTON_PAUSE_WIDTH + BUTTON_MARGIN + BUTTON_PADDING + 1) << 16) | TEXT_ON_BUTTONS_TOP
-        mov    edx, sz_reset
-        int    64
+        mcall , ((MARGIN + BUTTON_START_WIDTH + BUTTON_MARGIN + BUTTON_PAUSE_WIDTH + BUTTON_MARGIN + BUTTON_PADDING + 1) shl 16) or TEXT_ON_BUTTONS_TOP,, sz_reset
 ;----------------------
         call   On_Idle
 ; redraw.finish
-        mov    eax, 12
-        mov    ebx, 2
-        int    64
+        mcall SF_REDRAW,SSF_END_DRAW
         ret
 ; ---------------------------------------------------------------------------- ;
 DrawTime:
-        mov    ebx, (1 << 16)
+        mov    ebx, (1 shl 16)
         mov    esi, [sc.work_text]
         mov    edi, [sc.work]
 ; HH
@@ -287,24 +234,16 @@ DrawTime:
         mov    ecx, eax ; [hours] first digit
 
         or     esi, 0x70000000
-        mov    eax, 47
-        mov    edx, (TIME_AREA_LEFT << 16) | TIME_AREA_TOP
-        int    64
+        mcall SF_DRAW_NUMBER,,, (TIME_AREA_LEFT shl 16) or TIME_AREA_TOP
         and    esi, 0x30FFFFFF
-        mov    eax, 47
-        mov    edx, ((TIME_AREA_LEFT + 1) << 16) | TIME_AREA_TOP
-        int    64
+        mcall ,,, ((TIME_AREA_LEFT + 1) shl 16) or TIME_AREA_TOP
 
         mov    ecx, ebp ; [hours] second digit
 
         or     esi, 0x70000000
-        mov    eax, 47
-        mov    edx, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH) << 16) | TIME_AREA_TOP
-        int    64
+        mcall ,,, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH) shl 16) or TIME_AREA_TOP
         and    esi, 0x30FFFFFF
-        mov    eax, 47
-        mov    edx, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH + 1) << 16) | TIME_AREA_TOP
-        int    64
+        mcall ,,, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH + 1) shl 16) or TIME_AREA_TOP
 ; MM
         mov    eax, [minutes]
         xor    edx, edx
@@ -315,24 +254,16 @@ DrawTime:
         mov    ecx, eax ; [minutes] first digit
 
         or     esi, 0x70000000
-        mov    eax, 47
-        mov    edx, ((TIME_AREA_LEFT + CHAR2_WIDTH * 3) << 16) | TIME_AREA_TOP
-        int    64
+        mcall SF_DRAW_NUMBER,,, ((TIME_AREA_LEFT + CHAR2_WIDTH * 3) shl 16) or TIME_AREA_TOP
         and    esi, 0x30FFFFFF
-        mov    eax, 47
-        mov    edx, ((TIME_AREA_LEFT + CHAR2_WIDTH * 3 + 1) << 16) | TIME_AREA_TOP
-        int    64
+        mcall ,,, ((TIME_AREA_LEFT + CHAR2_WIDTH * 3 + 1) shl 16) or TIME_AREA_TOP
 
         mov    ecx, ebp ; [minutes] second digit
 
         or     esi, 0x70000000
-        mov    eax, 47
-        mov    edx, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH * 3 + CHAR2_WIDTH) << 16) | TIME_AREA_TOP
-        int    64
+        mcall ,,, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH * 3 + CHAR2_WIDTH) shl 16) or TIME_AREA_TOP
         and    esi, 0x30FFFFFF
-        mov    eax, 47
-        mov    edx, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH * 3 + CHAR2_WIDTH + 1) << 16) | TIME_AREA_TOP
-        int    64
+        mcall ,,, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH * 3 + CHAR2_WIDTH + 1) shl 16) or TIME_AREA_TOP
 ; SS
         mov    eax, [seconds]
         xor    edx, edx
@@ -343,24 +274,16 @@ DrawTime:
         mov    ecx, eax ; [seconds] first digit
 
         or     esi, 0x70000000
-        mov    eax, 47
-        mov    edx, ((TIME_AREA_LEFT + CHAR2_WIDTH * 6) << 16) | TIME_AREA_TOP
-        int    64
+        mcall SF_DRAW_NUMBER,,, ((TIME_AREA_LEFT + CHAR2_WIDTH * 6) shl 16) or TIME_AREA_TOP
         and    esi, 0x30FFFFFF
-        mov    eax, 47
-        mov    edx, ((TIME_AREA_LEFT + CHAR2_WIDTH * 6 + 1) << 16) | TIME_AREA_TOP
-        int    64
+        mcall ,,, ((TIME_AREA_LEFT + CHAR2_WIDTH * 6 + 1) shl 16) or TIME_AREA_TOP
 
         mov    ecx, ebp ; [seconds] second digit
 
         or     esi, 0x70000000
-        mov    eax, 47
-        mov    edx, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH * 6 + CHAR2_WIDTH) << 16) | TIME_AREA_TOP
-        int    64
+        mcall ,,, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH * 6 + CHAR2_WIDTH) shl 16) or TIME_AREA_TOP
         and    esi, 0x30FFFFFF
-        mov    eax, 47
-        mov    edx, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH * 6 + CHAR2_WIDTH + 1) << 16) | TIME_AREA_TOP
-        int    64
+        mcall ,,, ((TIME_AREA_LEFT + 1 + CHAR2_WIDTH * 6 + CHAR2_WIDTH + 1) shl 16) or TIME_AREA_TOP
         ret
 ; ---------------------------------------------------------------------------- ;
 On_Idle:
@@ -370,9 +293,7 @@ On_Idle:
 ; ---------------------------------------------------------------------------- ;
 TimerStarted:
 ; get system counter
-        mov    eax, 26
-        mov    ebx, 9
-        int    64
+        mcall SF_SYSTEM_GET,SSF_TIME_COUNT
         sub    eax, [timer_ticks]
         xor    edx, edx
         mov    ecx, 100
@@ -390,4 +311,9 @@ TimerStarted:
 EmptyProc:
         ret
 ; ---------------------------------------------------------------------------- ;
-END:
+align 4
+program.end:
+	rb 512
+align 16
+program.stack:
+program.memory:
