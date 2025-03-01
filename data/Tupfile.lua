@@ -441,6 +441,7 @@ tup.append_table(img_files, {
  {"TERMINAL", VAR_PROGS .. "/system/terminal/terminal"},
  {"TEST", VAR_PROGS .. "/testing/protection/trunk/test"},
  {"TINYPAD", VAR_PROGS .. "/develop/tinypad/trunk/tinypad"},
+ {"TINFO", VAR_PROGS .. "/system/tinfo/tinfo"},
  {"UNZ", VAR_PROGS .. "/fs/unz/unz"},
  {"ZKEY", VAR_PROGS .. "/system/zkey/trunk/ZKEY"},
  {"3D/3DWAV", VAR_PROGS .. "/demos/3dwav/trunk/3dwav"},
@@ -647,7 +648,6 @@ tup.append_table(img_files, {
  {"ACLOCK", VAR_PROGS .. "/demos/aclock/trunk/aclock"},
  {"LOD", VAR_PROGS .. "/fs/lod/lod"},
  {"TIMER", VAR_PROGS .. "/other/Timer/timer"},
- {"TINFO", VAR_PROGS .. "/system/tinfo/tinfo"},
  {"DEVELOP/GENFILES", VAR_PROGS .. "/testing/genfiles/GenFiles"},
  {"MEDIA/FILLSCR", VAR_PROGS .. "/media/FillScr/fillscr"},
 })
