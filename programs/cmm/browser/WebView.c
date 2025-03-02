@@ -312,7 +312,7 @@ void ProcessKeyEvent()
 	if (key_modifier&KEY_LSHIFT) || (key_modifier&KEY_RSHIFT) 
 	{
 		if (key_scancode == SCAN_CODE_TAB) {EventActivatePreviousTab();return;}
-		if (key_scancode == SCAN_CODE_KEY_T) {EventOpenNewTab(URL_SERVICE_TEST);return;}
+		if (key_scancode == SCAN_CODE_BS) {EventOpenNewTab(URL_SERVICE_TEST);return;}
 	}
 
 	if (key_modifier&KEY_LCTRL) || (key_modifier&KEY_RCTRL) switch(key_scancode) 
@@ -802,7 +802,8 @@ void EventSeachWeb()
 {
 	char new_url[URL_SIZE+1];
 	replace_char(#editURL, ' ', '+', URL_SIZE);
-	strcpy(#new_url, "https://www.google.com/search?q=");
+	//strcpy(#new_url, "https://html.duckduckgo.com/html/?q=");
+	strcpy(#new_url, "http://bing.com/search?q=");
 	strncat(#new_url, #editURL, URL_SIZE);
 	OpenPage(#new_url);
 }

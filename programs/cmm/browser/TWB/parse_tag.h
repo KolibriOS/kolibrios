@@ -112,6 +112,7 @@ dword _tag::get_next_param(dword ps, pe)
 	// "pe" - param end
 	// "q"  - quote char
 	char q = NULL;
+	dword initial_pe = pe;
 	dword fixeq;
 	dword val;
 	dword attr;
@@ -145,6 +146,14 @@ dword _tag::get_next_param(dword ps, pe)
 		//already have ATTR end
 	}
 
+	if (pe > ps) pe--;
+
+	//Fix case: "src ="
+	while (pe>ps) && (__isWhite(ESBYTE[pe])) {
+		ESBYTE[pe] = '\0';
+		pe--;
+	}
+
 	//find ATTR start and copy
 	while (pe>ps) && (!__isWhite(ESBYTE[pe])) pe--;
 	attr = pe + 1;
@@ -161,6 +170,8 @@ dword _tag::get_next_param(dword ps, pe)
 	}
 	strlwr(attr);
 	strrtrim(val);
+	//Fix case: " img.png"
+	while(__isWhite(ESBYTE[val])) && (val<initial_pe) val++;
 
 	attributes.add(attr);
 	values.add(val);

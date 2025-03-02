@@ -65,6 +65,8 @@ char *unicode_symbols[]={
 "times", "x",
 "lowast","*",
 
+"#128154","<3",
+
 0}; 
 
 
