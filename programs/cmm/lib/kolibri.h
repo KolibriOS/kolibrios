@@ -202,7 +202,7 @@ struct proc_info
 	byte    reserved[1024-71];
 };
 
-:void GetProcessInfo(dword _process_struct_pointer, _process_id)
+:int GetProcessInfo(dword _process_struct_pointer, _process_id)
 {
 	EAX = 9;
 	EBX = _process_struct_pointer;
