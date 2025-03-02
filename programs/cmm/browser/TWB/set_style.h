@@ -436,7 +436,7 @@ void TWebBrowser::tag_table()
 				}
 			} */
 
-			tallest_cell_in_row = math.max(draw_y+style.cur_line_h-list.item_h, tallest_cell_in_row);
+			tallest_cell_in_row = math.max(draw_y+style.cur_line_h-list.item_h+1, tallest_cell_in_row);
 			style.cur_line_h = list.item_h;
 			if (tag.opened) {
 				
