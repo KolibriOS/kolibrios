@@ -1,28 +1,29 @@
-; to compile: nasm -f bin fillscr.asm -o fillscr ;
 ; to generate  random  colors use "fillscr rnd"  ;
 ; otherwise use "filscr r,g,b, r,g,b, r,g,b,..." ;
-ORG 0
-BITS 32
+use32
+	org 0
+	db 'MENUET01'
+version dd 1
+	dd program.start
+	dd program.end
+	dd program.memory
+	dd program.stack
+	dd program.params
+	dd 0
 ; ---------------------------- ;
-points         equ END
-POINTS_SIZE    equ 108
-PARAMS_SIZE    equ 256
+
+include '../../macros.inc'
+include '../../KOSfuncs.inc'
+
 ; ---------------------------- ;
-MENUET01       db 'MENUET01'
-version        dd 1
-program.start  dd START
-program.end    dd END
-program.memory dd END + POINTS_SIZE + PARAMS_SIZE
-program.stack  dd 0
-program.params dd END + POINTS_SIZE
-program.path   dd 0
-; ---------------------------- ;
+POINTS_SIZE = 108
 points_count   dd 0
 rnd            dd 0
 ; ---------------------------- ;
-START:
+align 4
+program.start:
         mov    edi, points
-        mov    esi, [program.params]
+        mov    esi, dword[program.params]
         cmp    [esi], dword "rnd"
         jne    .not_rnd
         mov    [points_count], dword POINTS_SIZE / 3
@@ -125,32 +126,29 @@ START:
 @@:
         add    edx, 2
         sub    eax, edx
-        jnle   @@
+        jnle   @b
         sbb    edx, -1
         shr    edx, 1
 ; set width, height
-        mov    eax, 15
-        mov    ebx, 1
         mov    ecx, edx
-        int    64
+        mcall SF_BACKGROUND_SET,SSF_SIZE_BG
 ; set "stretch"
-;         mov eax, 15
-        mov    ebx, 4
-        mov    ecx, 2
-        int    64
+        mcall ,SSF_MODE_BG
 ; put pixels
-;         mov eax, 15
-        mov    ebx,  5
-        mov    ecx, points       ; BBGGRRBBGGRR...
         xor    edx, edx
         mov    esi, [points_count] ; size of data = count * 3
         lea    esi, [esi * 2 + esi]
-        int    64
+        mcall ,SSF_IMAGE_BG, points       ; BBGGRRBBGGRR...
 ; refresh screen
-;         mov eax, 15
-        mov    ebx, 3
-        int    64
+        mcall ,SSF_REDRAW_BG
 ; thread terminate
-        mov    eax, -1
-        int    64
-END:
+        mcall SF_TERMINATE_PROCESS
+
+align 4
+program.end:
+	points rb POINTS_SIZE
+	program.params rb 256
+	rb 256
+align 16
+program.stack:
+program.memory:

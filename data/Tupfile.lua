@@ -521,6 +521,7 @@ tup.append_table(img_files, {
  {"LIB/SORT.OBJ", VAR_PROGS .. "/develop/libraries/sorter/sort.obj"},
  {"LIB/TINYGL.OBJ", VAR_PROGS .. "/develop/libraries/TinyGL/asm_fork/tinygl.obj"},
  {"MEDIA/ANIMAGE", VAR_PROGS .. "/media/animage/trunk/animage"},
+ {"MEDIA/FILLSCR", VAR_PROGS .. "/media/FillScr/fillscr"},
  {"MEDIA/KIV", VAR_PROGS .. "/media/kiv/trunk/kiv"},
  {"MEDIA/LISTPLAY", VAR_PROGS .. "/media/listplay/trunk/listplay"},
  {"MEDIA/MIDAMP", VAR_PROGS .. "/media/midamp/trunk/midamp"},
@@ -649,7 +650,6 @@ tup.append_table(img_files, {
  {"ACLOCK", VAR_PROGS .. "/demos/aclock/trunk/aclock"},
  {"LOD", VAR_PROGS .. "/fs/lod/lod"},
  {"DEVELOP/GENFILES", VAR_PROGS .. "/testing/genfiles/GenFiles"},
- {"MEDIA/FILLSCR", VAR_PROGS .. "/media/FillScr/fillscr"},
 })
 tup.append_table(extra_files, {
 })
