@@ -1,2 +1,2 @@
-if tup.getconfig("NO_NASM") ~= "" then return end
-tup.rule("fillscr.asm", "nasm -f bin -o %o %f " .. tup.getconfig("KPACK_CMD"), "fillscr")
+if tup.getconfig("NO_FASM") ~= "" then return end
+tup.rule("fillscr.asm", "fasm %f %o " .. tup.getconfig("KPACK_CMD"), "fillscr")
