@@ -8,11 +8,20 @@
 ; Author 0CodErr
 ; http://board.kolibrios.org/viewtopic.php?f=9&t=2486
 
-ORG 0
-BITS 32
-; ---------------------------------------------------------------------------- ;
-PARAMS_SIZE        equ 256
-STACK_SIZE         equ 256
+use32
+	org 0
+	db 'MENUET01'
+version dd 1
+	dd program.start
+	dd program.end
+	dd program.memory
+	dd program.stack
+	dd program.params
+	dd 0
+; ---------------------------- ;
+
+include '../../macros.inc'
+include '../../KOSfuncs.inc'
 ; ---------------------------------------------------------------------------- ;
 PROCINFO_SIZE      equ 1024
 FILENAME_AREA_SIZE equ 256
@@ -21,18 +30,10 @@ OPENFILE_PATH_SIZE equ 4096
 FILTER_AREA_SIZE   equ 256
 FILTER_BRACKET     equ "*" ; and for example: LOD *bmp,png,jpeg*/sys/media/kiv
 ; ---------------------------------------------------------------------------- ;
-MENUET01           db 'MENUET01'
-version            dd 1
-program.start      dd START
-program.end        dd END
-program.memory     dd END + PARAMS_SIZE + STACK_SIZE
-program.stack      dd END + PARAMS_SIZE + STACK_SIZE
-program.params     dd END
-program.path       dd 0
-; ---------------------------------------------------------------------------- ;
-START:
-		mov    edi,[program.params]
-		cmp    [edi],dword 0
+align 4
+program.start:
+		mov    edi, program.params
+		cmp    [edi], dword 0
 		je     terminate
 		
         call   FakeDrawWindow
@@ -43,19 +44,13 @@ START:
         je     terminate
         mov    [file_info.params], eax
 launch_program:
-        mov    eax, 70
-        mov    ebx, file_info
-        int    64
+        mcall SF_FILE, file_info
 terminate:
-        or     eax, -1
-        int    64
+        mcall SF_TERMINATE_PROCESS
 ; ---------------------------------------------------------------------------- ;
 OpenDialogInit:
 ; load.library
-        mov    eax, 68
-        mov    ebx, 19
-        mov    ecx, sz_proc_lib
-        int    64
+        mcall SF_SYS_MISC,SSF_LOAD_DLL, sz_proc_lib
         mov    [proclib], eax
 
         push   dword[proclib]
@@ -68,10 +63,7 @@ OpenDialogInit:
         call   GetProcAddress
         mov    [opendialog_start], eax
 ; memory.allocate
-        mov    eax, 68
-        mov    ebx, 12
-        mov    ecx, PROCINFO_SIZE + FILENAME_AREA_SIZE + OPENDIR_PATH_SIZE + OPENFILE_PATH_SIZE
-        int    64
+        mcall SF_SYS_MISC,SSF_MEM_ALLOC, PROCINFO_SIZE + FILENAME_AREA_SIZE + OPENDIR_PATH_SIZE + OPENFILE_PATH_SIZE
 
         mov    [od.procinfo], eax
         add    eax, PROCINFO_SIZE
@@ -121,13 +113,9 @@ GetProcAddress:
 ; ---------------------------------------------------------------------------- ;
 FakeDrawWindow:
 ; redraw.start
-        mov    eax, 12
-        mov    ebx, 1
-        int    64
+        mcall SF_REDRAW,SSF_BEGIN_DRAW
 ; get.screen.size
-        mov    eax, 61
-        mov    ebx, 1
-        int    64
+        mcall SF_GET_GRAPHICAL_PARAMS,SSF_SCREEN_SIZE
         shr    eax, 1
         and    eax, 0x7FFF7FFF
 ; draw.window        
@@ -136,17 +124,13 @@ FakeDrawWindow:
         shr    eax, 16
         movzx  ebx, ax
         shl    ebx, 16
-        mov    edx, 0x01000000
-        xor    eax, eax
-        int    64                         
+        mcall SF_CREATE_WINDOW,,, 0x01000000
 ; redraw.finish
-        mov    eax, 12
-        mov    ebx, 2
-        int    64
+        mcall SF_REDRAW,SSF_END_DRAW
         ret
 ; ---------------------------------------------------------------------------- ;
 OpenDialogSetFilter:
-        mov    edi, [program.params]
+        mov    edi, program.params
         mov    esi, filefilter + 4
 ; skip spaces
         or     ecx, -1
@@ -195,22 +179,17 @@ OpenDialogSetFilter:
 LaunchProgram:
         mov    eax, [od.openfile_path]
         mov    [file_info.params], eax
-        mov    eax, 70
-        mov    ebx, file_info
-        int    64
+        mcall SF_FILE, file_info
         ret
 ; ---------------------------------------------------------------------------- ;
 file_info:
-                    dd 7
-                    dd 0
-.params             dd 0
-                    dd 0
-                    dd 0
+                    dd SSF_START_APP,0
+.params             dd 0,0,0
                     db 0
 .file_path          dd 0
 ; ---------------------------------------------------------------------------- ;
 filefilter          dd 0
-                    resb FILTER_AREA_SIZE
+                    rb FILTER_AREA_SIZE
 .end                db 0
 ; ---------------------------------------------------------------------------- ;
 od:
@@ -242,4 +221,10 @@ proclib             dd 0
 opendialog_init     dd 0
 opendialog_start    dd 0
 ; ---------------------------------------------------------------------------- ;
-END:
+align 4
+program.end:
+	program.params rb 256
+	rb 256
+align 16
+program.stack:
+program.memory:
