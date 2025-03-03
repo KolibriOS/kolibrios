@@ -485,6 +485,7 @@ tup.append_table(img_files, {
  {"DEVELOP/EXAMPLES/USE_MB", VAR_PROGS .. "/demos/use_mb/use_mb"},
  {"File Managers/KFAR", VAR_PROGS .. "/fs/kfar/trunk/kfar"},
  {"File Managers/OPENDIAL", VAR_PROGS .. "/fs/opendial/opendial"},
+ {"LOD", VAR_PROGS .. "/fs/lod/lod"},
  {"GAMES/15", VAR_PROGS .. "/games/15/15"},
  {"GAMES/DINO", VAR_PROGS .. "/games/dino/dino"},
  {"GAMES/FREECELL", VAR_PROGS .. "/games/freecell/freecell"},
@@ -648,7 +649,6 @@ end -- tup.getconfig('NO_FASM') ~= 'full'
 if tup.getconfig('NO_NASM') ~= 'full' then
 tup.append_table(img_files, {
  {"ACLOCK", VAR_PROGS .. "/demos/aclock/trunk/aclock"},
- {"LOD", VAR_PROGS .. "/fs/lod/lod"},
  {"DEVELOP/GENFILES", VAR_PROGS .. "/testing/genfiles/GenFiles"},
 })
 tup.append_table(extra_files, {

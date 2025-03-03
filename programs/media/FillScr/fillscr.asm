@@ -23,7 +23,7 @@ rnd            dd 0
 align 4
 program.start:
         mov    edi, points
-        mov    esi, dword[program.params]
+        mov    esi, program.params
         cmp    [esi], dword "rnd"
         jne    .not_rnd
         mov    [points_count], dword POINTS_SIZE / 3
