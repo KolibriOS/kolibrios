@@ -471,6 +471,7 @@ tup.append_table(img_files, {
  {"DEVELOP/COBJ", VAR_PROGS .. "/develop/cObj/trunk/cObj"},
  {"DEVELOP/ENTROPYV", VAR_PROGS .. "/develop/entropyview/entropyview"},
  {"DEVELOP/FASM", VAR_PROGS .. "/develop/fasm/1.73/fasm"},
+ {"DEVELOP/GENFILES", VAR_PROGS .. "/testing/genfiles/GenFiles"},
  {"DEVELOP/H2D2B", VAR_PROGS .. "/develop/h2d2b/trunk/h2d2b"},
  {"DEVELOP/HEED", VAR_PROGS .. "/develop/heed/trunk/heed"},
  {"DEVELOP/KEYASCII", VAR_PROGS .. "/develop/keyascii/trunk/keyascii"},
@@ -649,7 +650,6 @@ end -- tup.getconfig('NO_FASM') ~= 'full'
 if tup.getconfig('NO_NASM') ~= 'full' then
 tup.append_table(img_files, {
  {"ACLOCK", VAR_PROGS .. "/demos/aclock/trunk/aclock"},
- {"DEVELOP/GENFILES", VAR_PROGS .. "/testing/genfiles/GenFiles"},
 })
 tup.append_table(extra_files, {
 })

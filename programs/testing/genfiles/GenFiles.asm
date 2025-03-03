@@ -2,36 +2,28 @@
 ;              path to folder in edit1             ;
 ;              count of files in edit2             ;
 ; to compile: nasm -f bin GenFiles.asm -o GenFiles ;
-ORG 0
-BITS 32
+use32
+	org 0
+	db 'MENUET01'
+version dd 1
+	dd program.start
+	dd program.end
+	dd program.memory
+	dd program.stack
+	dd 0,0
+
+include '../../macros.inc'
+include '../../proc32.inc'
+include '../../KOSfuncs.inc'
+
 ; ------------------------------------- ;
-STACK_SIZE             equ 256
+BUTTON_START           = 2
 ; ------------------------------------- ;
-EM_REDRAW              equ 0b1
-EM_KEY                 equ 0b10
-EM_BUTTON              equ 0b100
-EM_MOUSE               equ 0b100000
+ED_DISABLED            = 100000000000b
 ; ------------------------------------- ;
-BUTTON_START           equ 2
-; ------------------------------------- ;
-ED_DISABLED            equ 0b100000000000
-; ------------------------------------- ;
-EDIT1_MAX_LENGTH       equ 1024
-EDIT2_MAX_LENGTH       equ 10
-FILE_NAME_LENGTH       equ 256
-; ------------------------------------- ;
-text_buffer1           equ END + STACK_SIZE
-text_buffer2           equ END + STACK_SIZE + (EDIT1_MAX_LENGTH + 2)
-file_name              equ END + STACK_SIZE + (EDIT1_MAX_LENGTH + 2) + (EDIT2_MAX_LENGTH + 2)
-; ------------------------------------- ;
-MENUET01                db 'MENUET01'
-version                 dd 1
-program.start           dd START
-program.end             dd END
-program.memory          dd END + STACK_SIZE + (EDIT1_MAX_LENGTH + 2) + (EDIT2_MAX_LENGTH + 2) + FILE_NAME_LENGTH
-program.stack           dd END + STACK_SIZE
-program.params          dd 0
-program.path            dd 0
+EDIT1_MAX_LENGTH       = 1024
+EDIT2_MAX_LENGTH       = 10
+FILE_NAME_LENGTH       = 256
 ; ------------------------------------- ;
 align 4
 Events:
@@ -67,7 +59,7 @@ edit1:
 .width                  dd 100
 .left                   dd 48
 .top                    dd 8
-.color                  dd 0X00FFFFFF
+.color                  dd 0x00FFFFFF
 .shift_color            dd 0x94AECE
 .focus_border_color     dd 0
 .blur_border_color      dd 0
@@ -88,7 +80,7 @@ edit2:
 .width                  dd 60
 .left                   dd 216
 .top                    dd 8
-.color                  dd 0X00FFFFFF
+.color                  dd 0x00FFFFFF
 .shift_color            dd 0x94AECE
 .focus_border_color     dd 0
 .blur_border_color      dd 0
@@ -139,57 +131,39 @@ sz_error                db "error",0
 ; ------------------------------------- ;
 digits                  db "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 ; ------------------------------------- ;
-START:
+program.start:
 ; LoadLibrary:
-        mov    eax, 68
-        mov    ebx, 19
-        mov    ecx, sz_box_lib
-        int    64
+        mcall SF_SYS_MISC,SSF_LOAD_DLL, sz_box_lib
         mov    [box_lib], eax
 
-        push   dword[box_lib]
-        push   sz_edit_box
-        call   GetProcAddress
+        stdcall   GetProcAddress,sz_edit_box,[box_lib]
         mov    [edit_box_draw], eax
 
-        push   dword[box_lib]
-        push   sz_edit_box_key
-        call   GetProcAddress
+        stdcall   GetProcAddress,sz_edit_box_key,[box_lib]
         mov    [edit_box_key], eax
 
-        push   dword[box_lib]
-        push   sz_edit_box_mouse
-        call   GetProcAddress
+        stdcall   GetProcAddress,sz_edit_box_mouse,[box_lib]
         mov    [edit_box_mouse], eax
 
-        push   dword[box_lib]
-        push   sz_edit_box_set_text
-        call   GetProcAddress
+        stdcall   GetProcAddress,sz_edit_box_set_text,[box_lib]
         mov    [edit_box_set_text], eax
 
-        push   dword[box_lib]
-        push   sz_progressbar_draw
-        call   GetProcAddress
+        stdcall   GetProcAddress,sz_progressbar_draw,[box_lib]
         mov    [progressbar_draw], eax
 
-        push   dword[box_lib]
-        push   sz_progressbar_progress
-        call   GetProcAddress
+        stdcall   GetProcAddress,sz_progressbar_progress,[box_lib]
         mov    [progressbar_progress], eax
 ; ------------------------------------- ;
 ; SetEventMask
-        mov    eax, 40
-        mov    ebx, EM_REDRAW | EM_KEY | EM_BUTTON | EM_MOUSE
-        int    64
+        mcall SF_SET_EVENTS_MASK, EVM_REDRAW or EVM_KEY or EVM_BUTTON or EVM_MOUSE
 ; ------------------------------------- ;
 align 4
 WaitEvent:
-        mov    eax, 10
-        int    64
-        call   [eax * 4 + Events]
+        mcall SF_WAIT_EVENT
+        call   dword[eax * 4 + Events]
         jmp    WaitEvent
 ; ------------------------------------- ;
-%macro CreateNextFile 0
+macro CreateNextFile {
 ; Base36(count)
         mov    eax, [count]
         mov    ecx, 36        ; because our base is 36
@@ -197,14 +171,14 @@ WaitEvent:
         mov    edi, esi
         add    esi, 7         ; base36(0xFFFFFFFF) = 1Z141Z3 : 7 simbols
         mov    [esi], byte 0
-%%next:
+@@:
         xor    edx, edx
         div    ecx
         dec    esi
         mov    dl, [edx + digits]
         mov    [esi], dl
         test   eax, eax
-        jnz    %%next
+        jnz    @b
         mov    eax, esi
         sub    eax, edi
         mov    ecx, 7 + 1
@@ -218,12 +192,11 @@ WaitEvent:
         push   dword 0
         push   dword 0
         push   dword 0
-        push   dword 2  ; SubFunction #2 Create/Rewrite file
+        push   dword SSF_CREATE_FILE  ; SubFunction #2 Create/Rewrite file
         mov    ebx, esp
-        mov    eax, 70  ; Function #70
-        int    64
+        mcall SF_FILE
         add    esp, 25  ; restore stack
-%endmacro
+}
 ; ------------------------------------- ;
 align 4
 DoAction:
@@ -245,16 +218,12 @@ DoAction:
         mov    [pb.max], ecx
         mov    [pb.value], dword 0
 ; draw progressbar
-        push   pb
-        call   [progressbar_draw]
+        stdcall   [progressbar_draw], pb
 ; ------------------------------------- ;
         cmp    [count], dword 0
         jz     .done
 ; SetCurrentDirectory
-        mov    eax, 30
-        mov    ebx, 1
-        mov    ecx, [edit1.text]
-        int    64
+        mcall SF_CURRENT_FOLDER,SSF_SET_CF, [edit1.text]
 ;
         mov    [status_string], dword sz_doing
         call   DrawStatus
@@ -263,30 +232,23 @@ DoAction:
         test   eax, eax
         jnz    .error
 ; increase progress
-        push   pb
-        call   [progressbar_progress]
+        stdcall   [progressbar_progress], pb
 ; CheckEvent
-        mov    eax, 11
-        int    64
-        call   [eax * 4 + Events]
+        mcall SF_CHECK_EVENT
+        call   dword[eax * 4 + Events]
         dec    dword [count]
         jnz   .do
 .done:
         mov    [status_string], dword sz_done
         call   DrawStatus
-								ret
+        ret
 .error:
         mov    [status_string], dword sz_error
         call   DrawStatus
-								ret
+        ret
 ; ------------------------------------- ;
 DrawStatus:
-        mov    eax, 4
-        mov    ecx, 0xD0000000
-        mov    ebx, (297 << 16) | 38
-        mov    edx, [status_string]
-        mov    edi, 0x00FFFFFF
-        int    64
+        mcall SF_DRAW_TEXT, (297 shl 16) or 38, 0xD0000000, [status_string],, 0x00FFFFFF
         ret
 ; ------------------------------------- ;
 align 4
@@ -296,83 +258,54 @@ On_Idle:
 align 4
 On_Redraw:
 ; RedrawStart
-        mov    eax, 12
-        mov    ebx, 1
-        int    64
+        mcall SF_REDRAW,SSF_BEGIN_DRAW
 ; DrawWindow
-        xor    eax, eax
-        mov    ebx, (50 << 16) | 360
-        mov    ecx, (50 << 16) | 88
-        mov    edx, 0x34FFFFFF
         mov    edi, sz_caption
         xor    esi, esi
-        int    64
+        mcall SF_CREATE_WINDOW, (50 shl 16) or 360, (50 shl 16) or 88, 0x34FFFFFF
 ; draw progressbar
-        push   pb
-        call   [progressbar_draw]
+        stdcall   [progressbar_draw], pb
 ; draw edit1
-        push   edit1
-        call   [edit_box_draw]
+        stdcall   [edit_box_draw], edit1
 ; draw edit2
-        push   edit2
-        call   [edit_box_draw]
+        stdcall   [edit_box_draw], edit2
 ; DrawButton
-        mov    eax, 8
-        mov    ecx, (8   << 16) | 26
-        mov    ebx, (288 << 16) | 53
-        mov    edx, BUTTON_START
-        mov    esi, 0x00DDDDDD
-        int    64
+        mcall SF_DEFINE_BUTTON, (288 shl 16) or 53, (8   shl 16) or 26, BUTTON_START, 0x00DDDDDD
 ; DrawTexts
-        mov    eax, 4
-        mov    ecx, 0x90000000
 ;   Path:
-        mov    ebx, (8   << 16) | 11
-        mov    edx, sz_path
-        int    64
+        mcall SF_DRAW_TEXT, (8   shl 16) or 11, 0x90000000, sz_path
 ;   Count:
-        mov    ebx, (168 << 16) | 11
-        mov    edx, sz_count
-        int    64
+        mcall , (168 shl 16) or 11,, sz_count
 ;   Start:
-        mov    ebx, (297 << 16) | 15
-        mov    edx, sz_start
-        int    64
+        mcall , (297 shl 16) or 15,, sz_start
 ; draw status
         call   DrawStatus
 ; RedrawFinish
-        mov    eax, 12
-        mov    ebx, 2
-        int    64
+        mcall SF_REDRAW,SSF_END_DRAW
         ret
 ; ------------------------------------- ;
 align 4
 On_Key:
 ; GetKeyCode
-        mov    eax, 2
-        int    64
+        mcall SF_GET_KEY
 ; notify edit1 about key event
-        push   edit1
-        call   [edit_box_key]
+        stdcall   [edit_box_key], edit1
 ; notify edit2 about key event
-        push   edit2
-        call   [edit_box_key]
+        stdcall   [edit_box_key], edit2
         ret
 ; ------------------------------------- ;
 align 4
 On_Button:
 ; GetButtonNumber
-        mov    eax, 17
-        int    64
+        mcall SF_GET_BUTTON
         movzx  eax, ah
-        call   [eax * 4 + ButtonEvents]
+        call   dword[eax * 4 + ButtonEvents]
         ret
 ; ------------------------------------- ;
 align 4
 On_ButtonClose:
 ; Terminate
-        or     eax, -1
-        int    64
+        mcall SF_TERMINATE_PROCESS
         ; ret is not needed here because we are not back after terminate
 ; ------------------------------------- ;
 align 4
@@ -381,31 +314,25 @@ On_ButtonStart:
         or     [edit1.flags], dword ED_DISABLED       ; disable edit1       |   we will
         or     [edit2.flags], dword ED_DISABLED       ; disable edit2       |     in Action
 ; redraw edit1 after change flag
-        push   edit1
-        call   [edit_box_draw]
+        stdcall   [edit_box_draw], edit1
 ; redraw edit2 after change flag
-        push   edit2
-        call   [edit_box_draw]
+        stdcall   [edit_box_draw], edit2
         call   DoAction
         mov    [ButtonEvents.2], dword On_ButtonStart ; enable ButtonStart
-        and    [edit1.flags], dword ~ED_DISABLED      ; enable edit1
-        and    [edit2.flags], dword ~ED_DISABLED      ; enable edit2
+        and    [edit1.flags], not ED_DISABLED      ; enable edit1
+        and    [edit2.flags], not ED_DISABLED      ; enable edit2
 ; redraw edit1 after change flag
-        push   edit1
-        call   [edit_box_draw]
+        stdcall   [edit_box_draw], edit1
 ; redraw edit2 after change flag
-        push   edit2
-        call   [edit_box_draw]
+        stdcall   [edit_box_draw], edit2
         ret
 ; ------------------------------------- ;
 align 4
 On_Mouse:
 ; notify edit1 about mouse event
-        push   edit1
-        call   [edit_box_mouse]
+        stdcall   [edit_box_mouse], edit1
 ; notify edit2 about mouse event
-        push   edit2
-        call   [edit_box_mouse]
+        stdcall   [edit_box_mouse], edit2
         ret
 ; ------------------------------------- ;
 align 4
@@ -436,4 +363,12 @@ GetProcAddress:
         ret    8
 ; ------------------------------------- ;
 align 4
-END:
+program.end:
+; ------------------------------------- ;
+text_buffer1 rb EDIT1_MAX_LENGTH+2
+text_buffer2 rb EDIT2_MAX_LENGTH+2
+file_name    rb FILE_NAME_LENGTH
+	rb 256
+align 16
+program.stack:
+program.memory:
