@@ -103,15 +103,6 @@ THREAD_STATE_EXCEPT_TERMINATING   = 4
 THREAD_STATE_WAIT_EVENT           = 5
 THREAD_STATE_SLOT_IS_FREE         = 9
 ; ---------------------------------------------------------------------------- ;
-EM_REDRAW                         equ         1b
-EM_KEY                            equ        10b
-EM_BUTTON                         equ       100b
-EM_RESERVED0                      equ      1000b
-EM_REDRAW_BACKGROUND              equ     10000b
-EM_MOUSE                          equ    100000b
-EM_IPC                            equ   1000000b
-EM_NETWORK                        equ  10000000b
-EM_DEBUG                          equ 100000000b
 
 
 ; ---------------------------------------------------------------------------- ;
@@ -462,39 +453,39 @@ macro DrawEventMask {
         push   eax ; for "call uint2str" below
         mov    ebx, eax
         mov    [tmpbuffer], byte 0
-        test   ebx, EM_REDRAW
+        test   ebx, EVM_REDRAW
         jz     @f
         stdcall   StringConcatenate, sz_redraw,tmpbuffer
 @@:
-        test   ebx, EM_KEY
+        test   ebx, EVM_KEY
         jz     @f
         stdcall   StringConcatenate, sz_key,tmpbuffer
 @@:
-        test   ebx, EM_BUTTON
+        test   ebx, EVM_BUTTON
         jz     @f
         stdcall   StringConcatenate, sz_button,tmpbuffer
 @@:
-        test   ebx, EM_RESERVED0
+        test   ebx, EVM_EXIT
         jz     @f
         stdcall   StringConcatenate, sz_reserved0,tmpbuffer
 @@:
-        test   ebx, EM_REDRAW_BACKGROUND
+        test   ebx, EVM_BACKGROUND
         jz     @f
         stdcall   StringConcatenate, sz_redraw_background,tmpbuffer
 @@:
-        test   ebx, EM_MOUSE
+        test   ebx, EVM_MOUSE
         jz     @f
         stdcall   StringConcatenate, sz_mouse,tmpbuffer
 @@:
-        test   ebx, EM_IPC
+        test   ebx, EVM_IPC
         jz     @f
         stdcall   StringConcatenate, sz_ipc,tmpbuffer
 @@:
-        test   ebx, EM_NETWORK
+        test   ebx, EVM_STACK
         jz     @f
         stdcall   StringConcatenate, sz_network,tmpbuffer
 @@:
-        test   ebx, EM_DEBUG
+        test   ebx, EVM_DEBUG
         jz     @f
         stdcall   StringConcatenate, sz_debug,tmpbuffer
 @@:
@@ -604,7 +595,7 @@ program.start:
         mov    [window.left], eax
         mov    [window.top], edx
 ; set.event
-        mcall SF_SET_EVENTS_MASK, EM_REDRAW or EM_BUTTON
+        mcall SF_SET_EVENTS_MASK, EVM_REDRAW or EVM_BUTTON
 ; ---------------------------------------------------------------------------- ;
 align 4
 on_redraw:
