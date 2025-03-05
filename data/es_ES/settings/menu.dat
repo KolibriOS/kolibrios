@@ -56,8 +56,7 @@
 49 Debugger mtdbg        |develop/mtdbg
 49 Debugger koldbg    *  |/kolibrios/develop/koldbg
 16 Hex2Dec2Bin           |develop/h2d2b
-16 Tabla de caracteres   |ASCIIVju
-16 C¢digos ASCII         |develop/keyascii
+16 Tabla de caracteres   |develop/CHARSETS
 16 C¢digos SCAN          |develop/scancode
 #6    **** EMULATORS
 24 DOSBox             *  |/kolibrios/emul/DosBox/dosbox

@@ -57,8 +57,7 @@
 20 Diff Tool            |develop/diff
 52 Shared resources     |/sys/@reshare
 34 Base Converter       |develop/h2d2b
-59 Character table      |develop/ASCIIVju
-59 Key ASCII-codes      |develop/keyascii
+59 Charsets Viewer      |develop/CHARSETS
 59 Key SCAN-codes       |develop/scancode
 #6 **** EMUL
 24 DOSBox             * |/kolibrios/emul/DosBox/dosbox

@@ -58,8 +58,7 @@
 20 Diff tool            |develop/diff
 52 Shared resources     |/sys/@reshare
 34 Hex2Dec2Bin          |develop/h2d2b
-59 Таблица символов     |develop/ASCIIVju
-59 ASCII-коды           |develop/keyascii
+59 Таблица символов     |develop/CHARSETS
 59 SCAN-коды            |develop/scancode
 #6 **** Эмуляторы
 24 DOSBox             * |/kolibrios/emul/DosBox/dosbox
