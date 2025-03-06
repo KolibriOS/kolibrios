@@ -20,8 +20,6 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ;
-%ifndef _ADJSTWND_INC
-%define _ADJSTWND_INC
 
 
 	;window types
@@ -72,8 +70,7 @@ adjustWindowDimensions:
 
 	; clamp window dimensions
 .clamp:
-	mov	eax,MOS_SC_GETSCREENMAX ; get screen dimensions
-	int	0x40
+	mcall SF_GET_SCREEN_SIZE ; get screen dimensions
 	mov	edi,eax			; edi = screen width
 	shr	edi,16
 	mov	ebp,eax			; ebp = screen height
@@ -136,12 +133,10 @@ adjustWindowDimensions:
 	add	edx,MOS_WND_SKIN_BORDER_LEFT+MOS_WND_SKIN_BORDER_RIGHT
 	; adjust height (esi). we need the skin height to do this.
 	push	ebx
-	mov	eax,MOS_SC_WINDOWPROPERTIES
-	mov	ebx,4
-	int	0x40
+	mcall SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT
 	lea	esi,[esi+eax+MOS_WND_SKIN_BORDER_BOTTOM]
 	pop	ebx
 	jmp	.clamp
 
-%endif
+
 

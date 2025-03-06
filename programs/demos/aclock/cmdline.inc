@@ -17,8 +17,6 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ;
-%ifndef _CMDLINE_INC
-%define _CMDLINE_INC
 
 
 ;********************************************************************
@@ -105,8 +103,7 @@ parseCommandLine:
 ; output	:	eax contains position
 ; destroys	:	nothing
 parsePositionParam:
-	push	ebx
-	push	esi
+	push	ebx esi
 	pushfd
 
 	; is the second char of the parameter a '-' ?
@@ -129,8 +126,7 @@ parsePositionParam:
 .rotationshyperboloid:
 
 	popfd
-	pop	esi
-	pop	ebx
+	pop	esi ebx
 	ret
 
 ; parse dimension parameter
@@ -147,5 +143,4 @@ parseSizeParam:
 	ret
 
 
-%endif
 

@@ -1,5 +1,3 @@
-; some strtok-like function
-;
 ; Copyright (c) 2003 Thomas Mathys
 ; killer@vantage.ch
 ;
@@ -17,8 +15,94 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ;
-%ifndef _STRTOK_INC
-%define _STRTOK_INC
+
+
+;********************************************************************
+;	returns the length of an asciiz string
+;	input		:	esi = pointer to string
+;	output		:	eax = string length
+;	destroys	:	nothing
+;********************************************************************
+strlen:
+	push	ecx edi
+	pushfd
+	cld				; !
+	mov	ecx,-1
+	mov	edi,esi			; find terminating zero
+	xor	al,al
+	repne	scasb
+	mov	eax,edi			; calculate string length
+	sub	eax,esi
+	dec	eax
+	popfd
+	pop	edi ecx
+	ret
+
+
+;********************************************************************
+;	converts an asciiz string into an unsigned doubleword.
+;	(base 10 is assumed)
+;
+;	-	first, leading whitespaces are skipped
+;	-	then the function converts the string, until it
+;		finds the terminating zero, another character it
+;		cannot convert or the number becomes too large.
+;
+;	input		:	esi = pointer to string
+;	output		:	eax = unsigned doubleword
+;				the function tries to convert as
+;				many digits as possible, before it
+;				stops. if the value of the dword
+;				becomes too large, 0xffffffff is
+;				returned.
+;	destroys	:	nothing
+;********************************************************************
+string2dword:
+	push	ebx ecx edx esi
+	pushfd
+
+	xor	ebx,ebx			; ebx : dword
+
+	; skip leading whitespaces
+.skipspaces:
+	lodsb
+	cmp	al,32			; space
+	je	.skipspaces
+	cmp	al,12			; ff
+	je	.skipspaces
+	cmp	al,10			; lf
+	je	.skipspaces
+	cmp	al,13			; cr
+	je	.skipspaces
+	cmp	al,9			; ht
+	je	.skipspaces
+	cmp	al,11			; vt
+	je	.skipspaces
+
+	; convert string
+	dec	esi			; esi -> 1st non-whitespace
+.convert:
+	xor	eax,eax			; get character
+	lodsb
+	sub	al,'0'			; convert to digit
+	cmp	al,9			; is digit in range [0,9] ?
+	ja	.done			; nope -> stop conversion
+	mov	ecx,eax			; save new digit
+	mov	eax,10			; dword = dword * 10
+	mul	ebx
+	jc	.overflow
+	add	eax,ecx			; + new digit
+	jc	.overflow
+	mov	ebx,eax
+	jmp	.convert
+
+.overflow:
+	mov	ebx,0xffffffff
+.done:
+	mov	eax,ebx
+	popfd
+	pop	esi edx ecx ebx
+	ret
 
 
 ;********************************************************************
@@ -120,6 +204,4 @@ strtok:
 	popad
 	ret
 .adx	dd	0
-
-%endif
 

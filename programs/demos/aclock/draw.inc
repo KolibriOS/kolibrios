@@ -17,8 +17,6 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ;
-%ifndef _DRAW_INC
-%define _DRAW_INC
 
 
 TMR1_FACTOR	dd	0.45
@@ -50,45 +48,36 @@ monthNames:
 ;	output		:	nothing
 ;	destroys	:	nothing
 ;********************************************************************
-drawClock:
-	%push	drawClock_context
-	%stacksize flat
-	%assign	%$localsize 0
-
-	%local	i:dword,		\
-		TMR1X:dword,		\
-		TMR1Y:dword,		\
-		TMR2X:dword,		\
-		TMR2Y:dword,		\
-		SECRX:dword,		\
-		SECRY:dword,		\
-		MINRX:dword,		\
-		MINRY:dword,		\
-		HOURRX:dword,		\
-		HOURRY:dword,		\
-		workwidth:dword,	\
-		workheight:dword,	\
-		foo:dword
-	
-	enter	%$localsize,0
+proc drawClock
+	locals
+		i dd ?
+		TMR1X dd ?
+		TMR1Y dd ?
+		TMR2X dd ?
+		TMR2Y dd ?
+		SECRX dd ?
+		SECRY dd ?
+		MINRX dd ?
+		MINRY dd ?
+		HOURRX dd ?
+		HOURRY dd ?
+		workwidth dd ?
+		workheight dd ?
+		foo dd ?
+	endl
 	pushad
 	pushfd
 
 	; get window dimensions
-	mov	eax,MOS_SC_GETPROCESSINFO
-	mov	ebx,procInfo
-	mov	ecx,-1
-	int	0x40
+	mcall SF_THREAD_INFO,procInfo,-1
 
 	; calculate work area size (width/height = ecx/edx)
 	; if the work area is too small (maybe the window is shaded)
 	; we don't draw anything.
-	mov	eax,MOS_SC_WINDOWPROPERTIES
-	mov	ebx,4			; get skin height (eax)
-	int	0x40
-	mov	ecx,[procInfo + MOS_PROCESSINFO.wndWidth]
+	mcall SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT ; get skin height (eax)
+	mov	ecx,[procInfo.box.width]
 	sub	ecx,MOS_WND_SKIN_BORDER_LEFT+MOS_WND_SKIN_BORDER_RIGHT
-	mov	edx,[procInfo + MOS_PROCESSINFO.wndHeight]
+	mov	edx,[procInfo.box.height]
 	sub	edx,eax
 	sub	edx,MOS_WND_SKIN_BORDER_BOTTOM
 	cmp	ecx,0			; width too small ?
@@ -102,9 +91,9 @@ drawClock:
 	mov	[workheight],edx
 
 	; calculate center of clock (x/y = esi/edi)
-	mov	esi,[procInfo + MOS_PROCESSINFO.wndWidth]
+	mov	esi,[procInfo.box.width]
 	shr	esi,1
-	mov	edi,[procInfo + MOS_PROCESSINFO.wndHeight]
+	mov	edi,[procInfo.box.height]
 	sub	edi,MOS_WND_SKIN_BORDER_BOTTOM
 	sub	edi,eax
 	shr	edi,1
@@ -119,9 +108,8 @@ drawClock:
 	shl	ecx,16					; (=skin height)
 	or	ecx,edx					; height
 	inc	ecx
-	mov	edx,[wndColors + MOS_WNDCOLORS.work]
-	mov	eax,MOS_SC_DRAWBAR
-	int	0x40
+	mov	edx,[wndColors.work]
+	mcall SF_DRAW_RECT
 	popad
 
 	; calculate second hand radii
@@ -163,8 +151,7 @@ drawClock:
 	fstp	dword [TMR2Y]
 
 	; get system clock (edx)
-	mov	eax,MOS_SC_GETSYSCLOCK
-	int	0x40
+	mcall SF_GET_SYS_TIME
 	mov	edx,eax
 
 	; draw second hand
@@ -173,21 +160,14 @@ drawClock:
 	shr	eax,16
 	call	bcdbin
 	mov	ecx,eax			; save seconds for later
-	push	ecx
-	push	eax
-	fpush32	0.104719755		; 2*pi/60
-	push	dword [SECRX]
-	push	dword [SECRY]
-	push	esi
-	push	edi
-	call	getHandCoords
-	mov	eax,MOS_SC_DRAWLINE
+	; 2*pi/60
+	stdcall	getHandCoords,edi,esi,[SECRY],[SECRX],0.104719755,eax,ecx
 	shl	ebx,16
 	or	ebx,esi
 	shl	ecx,16
 	or	ecx,edi
-	mov	edx,[wndColors + MOS_WNDCOLORS.workText]
-	int	0x40
+	mov	edx,[wndColors.work_text]
+	mcall SF_DRAW_LINE
 	pop	ecx
 	pop	edx
 
@@ -200,21 +180,14 @@ drawClock:
 	mul	edx
 	add	eax,ecx
 	mov	ecx,eax			; save for later
-	push	ecx
-	push	eax
-	fpush32 0.001745329		; 2*pi/60/60
-	push	dword [MINRX]
-	push	dword [MINRY]
-	push	esi
-	push	edi
-	call	getHandCoords
-	mov	eax,MOS_SC_DRAWLINE
+	; 2*pi/60/60
+	stdcall	getHandCoords,edi,esi,[MINRY],[MINRX],0.001745329,eax,ecx
 	shl	ebx,16
 	or	ebx,esi
 	shl	ecx,16
 	or	ecx,edi
-	mov	edx,[wndColors + MOS_WNDCOLORS.workText]
-	int	0x40
+	mov	edx,[wndColors.work_text]
+	mcall SF_DRAW_LINE
 	pop	ecx
 	pop	edx
 
@@ -229,55 +202,39 @@ drawClock:
 	mov	edx,60*60
 	mul	edx
 	add	eax,ecx
-	push	eax
-	fpush32	0.000145444		; 2*pi/60/60/12
-	push	dword [HOURRX]
-	push	dword [HOURRY]
-	push	esi
-	push	edi
-	call	getHandCoords
-	mov	eax,MOS_SC_DRAWLINE
+	; 2*pi/60/60/12
+	stdcall	getHandCoords,edi,esi,[HOURRY],[HOURRX],0.000145444,eax
 	shl	ebx,16
 	or	ebx,esi
 	shl	ecx,16
 	or	ecx,edi
-	mov	edx,[wndColors + MOS_WNDCOLORS.workText]
-	int	0x40
+	mov	edx,[wndColors.work_text]
+	mcall SF_DRAW_LINE
 	pop	edx
 	
 	; draw tick marks
 	mov	dword [i],11		; draw 12 marks
 .drawtickmarks:
-	push	dword [i]		; calculate start point
-	fpush32	0.523598776		; 2*pi/12
-	push	dword [TMR1X]
-	push	dword [TMR1Y]
-	push	esi
-	push	edi
-	call	getHandCoords
+	; calculate start point
+	; 2*pi/12
+	stdcall	getHandCoords,edi,esi,[TMR1Y],[TMR1X],0.523598776,[i]
 	mov	eax,ebx			; save in eax and edx
 	mov	edx,ecx
-	push	dword [i]
-	fpush32	0.523598776		; 2*pi/12
-	push	dword [TMR2X]
-	push	dword [TMR2Y]
-	push	esi
-	push	edi
-	call	getHandCoords
+	; 2*pi/12
+	stdcall	getHandCoords,edi,esi,[TMR2Y],[TMR2X],0.523598776,[i]
 	shl	eax,16
 	shl	edx,16
 	or	ebx,eax			; ebx = x start and end
 	or	ecx,edx			; ecx = y start and end
-	mov	edx,[wndColors + MOS_WNDCOLORS.workText]
-	mov	eax,MOS_SC_DRAWLINE
-	int	0x40
+	mov	edx,[wndColors.work_text]
+	mcall SF_DRAW_LINE
 	dec	dword [i]
 	jns	.drawtickmarks
 
-	%define	DATE_WIDTH	48
+	DATE_WIDTH	=48
 
 	; calculate text start position
-	mov	eax,[procInfo+MOS_PROCESSINFO.wndWidth]
+	mov	eax,[procInfo.box.width]
 	sub	eax,DATE_WIDTH		; x = (wndwidth-textwidth)/2
 	shr	eax,1			; eax = x
 	fild	dword [workheight]	; y = DATE_FACTOR*workheight...
@@ -292,7 +249,7 @@ drawClock:
 	jb	.goodbye
 	mov	ecx,ebx				; text too high ?
 	add	ecx,10-1
-	mov	edx,[procInfo+MOS_PROCESSINFO.wndHeight]
+	mov	edx,[procInfo.box.height]
 	sub	edx,MOS_WND_SKIN_BORDER_BOTTOM
 	cmp	ecx,edx
 	jnae	.yousuck
@@ -306,8 +263,7 @@ drawClock:
 	or	ebx,eax
 	
 	; get date (edi)
-	mov	eax,MOS_SC_GETDATE
-	int	0x40
+	mcall SF_GET_SYS_DATE
 	mov	edi,eax
 
 	; display month
@@ -315,44 +271,41 @@ drawClock:
 	shr	eax,8
 	call	bcdbin
 					; ebx contains already position
-	mov	ecx,[wndColors+MOS_WNDCOLORS.workText]
+	mov	ecx,[wndColors.work_text]
 	lea	edx,[monthNames-3+eax*2+eax]; -3 because eax = 1..12 =]
 	mov	esi,3			; text length
-	mov	eax,MOS_SC_WRITETEXT
-	int	0x40
+	mcall SF_DRAW_TEXT
 
 	; display date
-	add	ebx,MOS_DWORD(3*6+3,0)
+	add	ebx,(3*6+3) shl 16
 	mov	eax,edi			; get date
 	shr	eax,16
 	call	bcdbin
 	mov	edx,ebx			; position must be in edx
 	mov	ebx,0x00020000		; number, display two digits
 	mov	ecx,eax			; number to display
-	mov	esi,[wndColors+MOS_WNDCOLORS.workText]
-	mov	eax,MOS_SC_WRITENUMBER
-	int	0x40
+	mov	esi,[wndColors.work_text]
+	mcall SF_DRAW_NUMBER
 
 	; display year. the way we avoid the y2k bug is even
 	; simpler, yet much better than in the last version:
 	; now we simply display the last two digits and let the
 	; user decide wether it's the year 1903 or 2003 =]
-	add	edx,MOS_DWORD(2*6+3,0)
+	add	edx,(2*6+3) shl 16
 	mov	eax,edi			; get year
 	call	bcdbin
 	mov	ebx,0x00020000		; number, display two digits
 	mov	ecx,eax			; number to display
 					; edx contains already position
-	mov	esi,[wndColors+MOS_WNDCOLORS.workText]
-	mov	eax,MOS_SC_WRITENUMBER
-	int	0x40
+	mov	esi,[wndColors.work_text]
+	mcall SF_DRAW_NUMBER
 
 .byebye:
 	popfd
 	popad
-	leave
+	;leave
 	ret
-	%pop
+endp
 
 
 ;**********************************************************
@@ -397,36 +350,26 @@ bcdbin:
 ; destroys:
 ; nothing
 ;********************************************************************
-getHandCoords:
-
-ANGLE	equ	28
-DEG2RAD	equ	24
-RADIUSX	equ	20
-RADIUSY	equ	16
-CENTERX	equ	12
-CENTERY	equ	8
-
-	enter	0,0
+proc getHandCoords CENTERY:dword, CENTERX:dword, RADIUSY:dword, RADIUSX:dword, DEG2RAD:dword, ANGLE:dword
 	pushfd
 
-	fild dword [ebp+ANGLE]		; get angle
-	fmul dword [ebp+DEG2RAD]	; convert to radians
+	fild dword [ANGLE]		; get angle
+	fmul dword [DEG2RAD]	; convert to radians
 	fsincos
-	fmul dword [ebp+RADIUSY]	; -y * radius + clockcy
+	fmul dword [RADIUSY]	; -y * radius + clockcy
 	fchs
-	fiadd dword [ebp+CENTERY]
-	fistp dword [ebp+CENTERY]	
-	fmul dword [ebp+RADIUSX]	; x * radius + clockcx
-	fiadd dword [ebp+CENTERX]
-	fistp dword [ebp+CENTERX]
+	fiadd dword [CENTERY]
+	fistp dword [CENTERY]	
+	fmul dword [RADIUSX]	; x * radius + clockcx
+	fiadd dword [CENTERX]
+	fistp dword [CENTERX]
 	
-	mov ebx,[ebp+CENTERX]
-	mov ecx,[ebp+CENTERY]
+	mov ebx,[CENTERX]
+	mov ecx,[CENTERY]
 
 	popfd
-	leave
-	ret	4*6
+	;leave
+	ret
+endp
 
-
-%endif
 

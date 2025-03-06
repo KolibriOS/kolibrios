@@ -16,44 +16,42 @@
 ; along with this program; if not, write to the Free Software
 ; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-	bits 32
-	%include 'mos.inc'
-	section .text
+use32
+	org 0
+	db 'MENUET01'
+	dd 1,main,image_end,memory_end,stacktop,cmdLine,0
+
+include '../../macros.inc'
+include '../../proc32.inc'
+include '../../KOSfuncs.inc'
 
 
 ;********************************************************************
 ;	configuration stuff
 ;********************************************************************
-
-	%define APPNAME		"Clock"
-	%define STACKSIZE	1024
+	; skinned window borders
+MOS_WND_SKIN_BORDER_LEFT	= 5
+MOS_WND_SKIN_BORDER_RIGHT	= 5
+MOS_WND_SKIN_BORDER_BOTTOM	= 5
 
 	; default window position/dimensions (work area)
-	%define DEFAULT_XPOS	-20
-	%define DEFAULT_YPOS	20
-	%define DEFAULT_WIDTH	110
-	%define DEFAULT_HEIGHT	110
+	DEFAULT_XPOS	=-20
+	DEFAULT_YPOS	=20
+	DEFAULT_WIDTH	=110
+	DEFAULT_HEIGHT	=110
 
 	; minimal size (horizontal and vertical) of work area
-	%define MIN_WIDTH	100
-	%define MIN_HEIGHT	100
+	MIN_WIDTH	=100
+	MIN_HEIGHT	=100
 
-
-;********************************************************************
-;	header
-;********************************************************************
-	
-	MOS_HEADER01 main,image_end,memory_end,stacktop-4,cmdLine,0
 
 	; these includes introduce code and thus mustn't stand
 	; before the menuet header =)
-	%include 'dbgboard.inc'
-	%include 'strlen.inc'
-	%include 'str2dwrd.inc'
-	%include 'strtok.inc'
-	%include 'cmdline.inc'
-	%include 'adjstwnd.inc'
-	%include 'draw.inc'
+	include 'dbgboard.inc'
+	include 'strfunct.inc'
+	include 'cmdline.inc'
+	include 'adjstwnd.inc'
+	include 'draw.inc'
 
 ;********************************************************************
 ;	main program
@@ -89,20 +87,18 @@ main:
 ;	call	drawClock
 
 	; wait up to a second for next event
-	mov	eax,MOS_SC_WAITEVENTTIMEOUT
-	mov	ebx,100
-	int	0x40
+	mcall SF_WAIT_EVENT_TIMEOUT,100
 
 	test	eax,eax
 	jne	.event_occured
 	call	drawClock
 
   .event_occured:
-	cmp	eax,MOS_EVT_REDRAW
+	cmp	eax,EV_REDRAW
 	je	.redraw
-	cmp	eax,MOS_EVT_KEY
+	cmp	eax,EV_KEY
 	je	.key
-	cmp	eax,MOS_EVT_BUTTON
+	cmp	eax,EV_BUTTON
 	je	.button
 	jmp	.msgpump
 
@@ -110,12 +106,10 @@ main:
 	call	drawWindow
 	jmp	.msgpump
 .key:
-	mov	eax,MOS_SC_GETKEY
-	int	0x40
+	mcall SF_GET_KEY
 	jmp	.msgpump
 .button:
-	mov	eax,MOS_SC_EXIT
-	int	0x40
+	mcall SF_TERMINATE_PROCESS
 	jmp	.msgpump
 
 
@@ -128,11 +122,7 @@ main:
 getDefaultWindowColors:
 	pushad
 	pushfd
-	mov	eax,MOS_SC_WINDOWPROPERTIES
-	mov	ebx,3
-	mov	ecx,wndColors
-	mov	edx,MOS_WNDCOLORS_size
-	int	0x40
+	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,wndColors,sizeof.system_colors
 	popfd
 	popad
 	ret
@@ -149,29 +139,24 @@ drawWindow:
 	pusha
 
 	; start window redraw
-	mov	eax,MOS_SC_REDRAWSTATUS
-	mov	ebx,1
-	int	0x40
+	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
 	; create window
-	mov	eax,MOS_SC_DEFINEWINDOW
 	mov	ebx,[wndXPos]
 	shl	ebx,16
 	or	ebx,[wndWidth]
 	mov	ecx,[wndYPos]
 	shl	ecx,16
 	or	ecx,[wndHeight]
-	mov	edx,[wndColors+MOS_WNDCOLORS.work]
+	mov	edx,[wndColors.work]
 	or	edx,0x53000000
-	mov	edi,label
-	int	0x40
+	mov	edi,w_label
+	mcall SF_CREATE_WINDOW
 
 	call drawClock
 	
 	; end window redraw
-	mov	eax,MOS_SC_REDRAWSTATUS
-	mov	ebx,2
-	int	0x40
+	mcall SF_REDRAW,SSF_END_DRAW
 	popa
 	ret
 
@@ -188,32 +173,29 @@ wndWidth	dd	DEFAULT_WIDTH
 wndHeight	dd	DEFAULT_HEIGHT
 
 	; window label
-label		db	APPNAME,0
-LABEL_LEN	equ	($-label-1)
+w_label:		db	"Clock",0
+.end:
+LABEL_LEN	equ	(w_label.end-w_label-1)
 
 	; token delimiter list for command line
 delimiters	db	9,10,11,12,13,32,0
 
-	; don't insert anything after this label
 image_end:
 
 
 ;********************************************************************
 ;	uninitialized data
 ;********************************************************************
-	section .bss align=4
-
-wndColors	resb	MOS_WNDCOLORS_size
-procInfo	resb	MOS_PROCESSINFO_size
+align 4
+wndColors system_colors
+procInfo process_information
 
 	; space for command line. at the end we have an additional
 	; byte for a terminating zero, just to be sure...
-cmdLine		resb	257
+cmdLine		rb	257
 
-	alignb	4
-stack		resb	STACKSIZE
+align 4
+	rb	1024
 stacktop:
-
-	; don't insert anything after this label
 memory_end:
 

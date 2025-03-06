@@ -407,6 +407,7 @@ tup.append_table(img_files, {
  {"@SS", VAR_PROGS .. "/system/scrsaver/scrsaver"},
  {"@VOLUME", VAR_PROGS .. "/media/volume/volume"},
  {"HACONFIG", VAR_PROGS .. "/other/ha/HACONFIG"},
+ {"ACLOCK", VAR_PROGS .. "/demos/aclock/aclock"},
  {"APM", VAR_PROGS .. "/system/apm/apm"},
  {"CALC", VAR_PROGS .. "/other/calc/trunk/calc"},
  {"CALENDAR", VAR_PROGS .. "/system/calendar/trunk/calendar"},
@@ -645,15 +646,6 @@ if build_type == "ru_RU" then tup.append_table(extra_files, {
 }) end
 
 end -- tup.getconfig('NO_FASM') ~= 'full'
-
--- Programs that require NASM to compile.
-if tup.getconfig('NO_NASM') ~= 'full' then
-tup.append_table(img_files, {
- {"ACLOCK", VAR_PROGS .. "/demos/aclock/trunk/aclock"},
-})
-tup.append_table(extra_files, {
-})
-end -- tup.getconfig('NO_NASM') ~= 'full'
 
 -- Programs that require JWASM to compile.
 if tup.getconfig('NO_JWASM') ~= 'full' then
