@@ -60,7 +60,8 @@ void TWebBrowser::SetStyle()
 
 void TWebBrowser::tag_p()
 {
-	IF (tag.prior[0] == 'h') || (streq(#tag.prior,"td")) || (streq(#tag.prior,"p")) return;
+	IF (tag.prior[0] == 'h') || (streq(#tag.prior,"td")) return;
+	if (!tag.opened) && (streq(#tag.prior,"p")) return;
 	NewLine();
 }
 
@@ -244,11 +245,19 @@ void TWebBrowser::tag_h1234_caption()
 	} else {
 		style.h = tag.opened;
 		if (tag.opened) {
-			if (!style.pre) NewLine();
-			draw_y += 10;
-			list.SetFont(BASIC_CHAR_W*2, 14*2, 10011001b);
-			list.item_h = BASIC_LINE_H * 2 - 2;
-			if (tag.is("h1")) style.b = true;
+			if (!style.pre) {
+				NewLine();
+				NewLine();
+			}
+			if (tag.is("h1")) { 
+				list.SetFont(BASIC_CHAR_W*2, 14+12, 10011001b); 
+				style.b = true; 
+			} else if (tag.is("h2")) {
+				list.SetFont(BASIC_CHAR_W*2, 14+12, 10011001b); 
+			} else {
+				list.SetFont(6*2, 9+7, 10001001b);
+			}
+			style.cur_line_h = list.item_h = list.font_h + 2;
 		} else {
 			if (tag.is("h1")) style.b = false;
 			NewLine();

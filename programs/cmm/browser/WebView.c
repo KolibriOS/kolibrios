@@ -337,6 +337,7 @@ void ProcessKeyEvent()
 	{
 		case SCAN_CODE_UP:    EventScrollUpAndDown(SCAN_CODE_UP); return;
 		case SCAN_CODE_DOWN:  EventScrollUpAndDown(SCAN_CODE_DOWN); return;
+		case SCAN_CODE_F2:    EventEditSource(); return;
 		case SCAN_CODE_F6:    {omnibox_edit.flags=ed_focus; DrawOmnibox();} return;
 		case SCAN_CODE_F5:    EventRefreshPage(); return;
 		case SCAN_CODE_ENTER: if (omnibox_edit.flags & ed_focus) EventSubmitOmnibox(); return;
@@ -571,7 +572,6 @@ void OpenPage(dword _open_URL)
 		history.add(#new_url);
 		WB1.custom_encoding = -1;
 		if (streq(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#buildin_page_home, sizeof(buildin_page_home));
-		else if (streq(#new_url, URL_SERVICE_HELP)) LoadInternalPage(#buildin_page_help, sizeof(buildin_page_help));
 		else if (streq(#new_url, URL_SERVICE_TEST)) LoadInternalPage(#buildin_page_test, sizeof(buildin_page_test));
 		else if (streq(#new_url, URL_SERVICE_HISTORY)) ShowHistory();
 		else LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
@@ -740,7 +740,12 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 			WB1.DrawPage();
 		}
 		http.hfree();
-		if (WB1.img_url.count) { GetImg(true); DrawOmnibox(); }
+		if (WB1.img_url.count) { 
+			GetImg(true);
+			DrawOmnibox(); 
+		} else {
+			PageLoaded();
+		}
 	}
 }
 
@@ -762,7 +767,7 @@ void DrawProgress()
 void EventShowPageMenu()
 {
 	open_lmenu(mouse.x, mouse.y, MENU_TOP_LEFT, NULL, #rmb_menu);
-	menu_id = VIEW_SOURCE;
+	menu_id = BACK_BUTTON;
 }
 
 void EventShowLinkMenu()
@@ -976,8 +981,13 @@ dword GetImg(bool _new)
 	DrawStatusBar(T_RENDERING);
 	WB1.Reparse();
 	WB1.DrawPage();
-	debugln(sprintf(#param, T_DONE_IN_SEC, GetStartTime()-render_start_time/100));
-	DrawStatusBar(NULL);
+	PageLoaded();
+}
+
+void PageLoaded()
+{
+	DrawStatusBar(sprintf(#param, T_DONE_IN_SEC, GetStartTime()-render_start_time/100, 
+		GetStartTime()-render_start_time*10));	
 }
 
 stop:

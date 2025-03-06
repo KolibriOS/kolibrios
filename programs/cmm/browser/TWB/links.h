@@ -45,9 +45,10 @@ void PAGE_LINKS::clear()
 	w.drop();
 	h.drop();
 	underline_h.drop();
+	id.drop();
+
 	element_links.drop();
 	unic_links.drop();
-	id.drop();
 
 	active = -1;
 	active_url = 0;

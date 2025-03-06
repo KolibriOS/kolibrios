@@ -13,7 +13,6 @@ struct collection_int
 	dword buf;
 	dword buf_size;
 	unsigned count;
-	void alloc();
 	void add();
 	dword get();
 	dword set();
@@ -22,34 +21,35 @@ struct collection_int
 	dword get_last();
 	void pop();
 	void drop();
+	#define DWSIZE4 4
 };
 
-:void collection_int::alloc() {
-	if (!buf) {
-		buf_size = 4096;
-		buf = malloc(4096);
-	} else {
-		buf_size += 4096;
-		buf = realloc(buf, buf_size);
-	}
-}
-
 :void collection_int::add(dword _in) {
-	if (!buf) || (count * sizeof(dword) >= buf_size) alloc();
-	EAX = count * sizeof(dword) + buf;
-	ESDWORD[EAX] = _in;
+	unsigned i;
+	if (!buf) {
+		//if (buf_size) notify("'buf_size on empty buf' -A");
+		buf_size = 4096 * 5;
+		buf = malloc(4096 * 5);
+		//if (!buf) notify("'malloc error' -E");
+	} else if (count + 1 * DWSIZE4 >= buf_size) {
+		buf_size += 4096 * 5;
+		buf = realloc(buf, buf_size);
+		//if (!buf) notify("'realloc error' -E");
+	}
+	i = count * DWSIZE4 + buf;
+	ESDWORD[i] = _in;
 	count++;
 }
 
 :dword collection_int::get(dword pos) {
-	if (pos<0) || (pos>=count) return 0;
-	return ESDWORD[pos * sizeof(dword) + buf];
+	if (!buf) || (pos<0) || (pos>=count) return 0;
+	return ESDWORD[pos * DWSIZE4 + buf];
 }
 
 
 :dword collection_int::set(dword pos, _in) {
 	while (pos >= count) add(0);
-	EAX = pos * sizeof(dword) + buf;
+	EAX = pos * DWSIZE4 + buf;
 	ESDWORD[EAX] = _in;
 	return ESDWORD[EAX];
 }
@@ -57,8 +57,8 @@ struct collection_int
 :void collection_int::swap(dword pos1, pos2) {
 	while (pos1 >= count) add(0);
 	while (pos2 >= count) add(0);
-	EAX = pos1 * sizeof(dword) + buf;
-	EBX = pos2 * sizeof(dword) + buf;
+	EAX = pos1 * DWSIZE4 + buf;
+	EBX = pos2 * DWSIZE4 + buf;
 	ESDWORD[EAX] >< ESDWORD[EBX];
 }
 
@@ -77,6 +77,8 @@ struct collection_int
 
 :void collection_int::drop() {
 	count = 0;
+	if (buf) buf = free(buf);
+	buf_size = 0;
 }
 
 /*========================================================
@@ -87,12 +89,11 @@ struct collection_int
 
 struct collection
 {
-	int realloc_size, count;
+	unsigned int realloc_size, count;
 	dword data_start;
 	dword data_size;
 	collection_int offset;
-	int add();
-	int addn();
+	dword add();
 	dword get(); //get_name_by_pos
 	dword get_pos_by_name();
 	void drop();
@@ -105,28 +106,22 @@ struct collection
 	if (realloc_size<4096) realloc_size = 4096;
 	if (!data_size) {
 		data_size = realloc_size;
-		data_start = malloc(realloc_size);		
-	}
-	else {
+		data_start = malloc(data_size);		
+	} else {
 		data_size = data_size + realloc_size;
 		data_start = realloc(data_start, data_size);
 	}
 }
 
-:int collection::add(dword in) {
-	return addn(in, strlen(in));
-}
-
-:int collection::addn(dword in, len) {
-	if (offset.get(count)+len+2 > data_size) {
+:dword collection::add(dword in) {
+	dword len = strlen(in);
+	while (offset.get(count) + len + 4 > data_size) {
 		increase_data_size();
-		addn(in, len);
-		return 1;
 	}
 	strncpy(data_start+offset.get(count), in, len);
 	count++;
 	offset.set(count, offset.get(count-1) + len + 1);
-	return 1;
+	return data_start+offset.get(count-1);
 }
 
 :dword collection::get(dword pos) {
@@ -141,7 +136,9 @@ struct collection
 :dword collection::get_pos_by_name(dword name) {
 	dword i;
 	for (i=0; i<count; i++) {
-		if (strcmp(data_start + offset.get(i), name)==0) return i;
+		if (streq(data_start + offset.get(i), name)) {
+			return i;
+		}
 	}
 	return -1;
 }

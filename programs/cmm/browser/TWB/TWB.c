@@ -101,9 +101,12 @@ void TWebBrowser::SetPageDefaults()
 	img_url.drop();
 	text_colors.drop();
 	text_colors.add(0);
-	bg_colors.drop();
-	bg_colors.add(DEFAULT_BG_COL);
-	canvas.Fill(0, DEFAULT_BG_COL);
+	if (!secondrun) {
+		bg_colors.drop();
+		bg_colors.add(DEFAULT_BG_COL);
+	} else {		
+		canvas.Fill(0, bg_colors.get(0));
+	}
 	header = NULL;
 	draw_y = BODY_MARGIN;
 	draw_x = left_gap = BODY_MARGIN;

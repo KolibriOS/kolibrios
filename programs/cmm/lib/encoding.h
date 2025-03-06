@@ -57,8 +57,8 @@ inline fastcall void utf8rutodos( ESI)
   while (BL=ESBYTE[ESI])
   {
     if (BL == 0xD0) || (BL == 0xD1) EDI--;
-        else if (BL == 0x81) && (ESBYTE[ESI-1]==0xD0) ESBYTE[EDI] = 0xF0; //ш
-        else if (BL == 0x91) && (ESBYTE[ESI-1]==0xD1) ESBYTE[EDI] = 0xF1; //м
+        else if (BL == 0x81) && (ESBYTE[ESI-1]==0xD0) ESBYTE[EDI] = 0xF0; //I urk
+        else if (BL == 0x91) && (ESBYTE[ESI-1]==0xD1) ESBYTE[EDI] = 0xF1; //i urk
         //0xE2 0x80 - сгруппировать
         else if (BL == 0xE2) && (ESBYTE[ESI+1]==0x80)
         switch (ESBYTE[ESI+2])

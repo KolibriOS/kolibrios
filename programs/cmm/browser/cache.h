@@ -16,7 +16,7 @@ struct _cache
 	void add();
 	bool has();
 	void clear();
-} cache=0;
+} cache;
 
 void _cache::add(dword _url, _data, _size, _type, _charset)
 {
@@ -37,6 +37,7 @@ void _cache::add(dword _url, _data, _size, _type, _charset)
 bool _cache::has(dword _link)
 {
 	int pos;
+	if (!url.count) return false;
 	pos = url.get_pos_by_name(_link);
 	if (pos != -1) {
 		current_buf = data.get(pos);
