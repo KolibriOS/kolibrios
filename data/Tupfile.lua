@@ -489,7 +489,6 @@ tup.append_table(img_files, {
  {"File Managers/OPENDIAL", VAR_PROGS .. "/fs/opendial/opendial"},
  {"LOD", VAR_PROGS .. "/fs/lod/lod"},
  {"GAMES/15", VAR_PROGS .. "/games/15/15"},
- {"GAMES/DINO", VAR_PROGS .. "/games/dino/dino"},
  {"GAMES/FREECELL", VAR_PROGS .. "/games/freecell/freecell"},
  {"GAMES/GOMOKU", VAR_PROGS .. "/games/gomoku/gomoku"},
  {"GAMES/LIGHTS", VAR_PROGS .. "/games/sq_game/SQ_GAME"},
@@ -722,6 +721,7 @@ if tup.getconfig('NO_TCC') ~= 'full' then
 tup.append_table(img_files, {
  {"NETWORK/WHOIS", VAR_PROGS .. "/network/whois/whois"},
  {"SHELL", VAR_PROGS .. "/system/shell/shell"},
+ {"GAMES/DINO", VAR_PROGS .. "/games/dino/dino"},
 })
 tup.append_table(extra_files, {
  {"kolibrios/utils/thashview", VAR_PROGS .. "/other/TinyHashView/thashview"},
