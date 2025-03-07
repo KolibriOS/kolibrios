@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: GPL-2.0-only
+; SPDX-FileCopyrightText: 2024-2025 KolibriOS Team
+
+; ================================================================
+
 format binary as ""
 use32
 org 0
@@ -170,7 +175,8 @@ draw_window:
         mcall   48, 3, window_colors, 40
 
         mcall     , 4
-        push    eax
+        add       eax, 3
+        mov       [win_head], eax
 
         mov     eax, 0
         mov     ebx, 100 * 65536 + 685
@@ -180,15 +186,24 @@ draw_window:
         mov     edi, title
         mcall
 
-        pop     esi
-        add     esi, 495
-        mcall   67, -1, -1, -1,
+        ; Don't draw rolled up or rolled down window
+        mcall   9, proc_info, -1
+        mov     eax, [proc_info + 70]
+        mov     [win_stat], eax
+        test    [win_stat], 100b
+        jnz     .draw_end
+
+        ; Draw all app content
+        add     [win_head], 492
 
         call    draw_base
         call    draw_update
         call    draw_toggle
 
-        mcall   12, 2
+        .draw_end:
+                mov     esi, [win_head]
+                mcall   67, -1, -1, -1,
+                mcall   12, 2
 
         ret
 
@@ -399,9 +414,21 @@ draw_update:
                 mov     al, 0x01
                 mov     ecx, eax
                 push    ecx
-                mcall   13, 65536 * 34 + 384, , [window_colors.work_button]
-                add     ecx, 65536 * 23
+
+                mov             eax, 13
+                mov             ebx, 65536 * 34 + 384
+                mov             edx, [window_colors.work_button]
+
+                ;skip lines aligned to table borders
+                cmp             ecx, 65536 * 34 + 65536
+                jle             .hl_next_hr
                 mcall
+                .hl_next_hr:
+                        add     ecx, 65536 * 23
+                        cmp     ecx, 65536 * 417
+                        jge     .hl_end_hr
+                        mcall
+                .hl_end_hr:
 
                 mov     al, [char]
                 and     al, 0x0F
@@ -411,15 +438,28 @@ draw_update:
                 shl     eax, 16
                 mov     al, 0x01
                 mov     ebx, eax
-                mcall   13, , 65536 * 34 + 384, [window_colors.work_button]
-                add     ebx, 65536 * 23
+
+                mov     eax, 13
+                mov     ecx, 65536 * 34 + 384
+                mov     edx, [window_colors.work_button]
+
+                ;skip lines aligned to table borders
+                cmp     ebx, 65536 * 34 + 65536
+                jle     .hl_next_vr
                 mcall
+                .hl_next_vr:
+                        add     ebx, 65536 * 23
+                        cmp     ebx, 65536 * 417
+                        jge     .hl_end_vr
+                        mcall
+                .hl_end_vr:
 
                 pop     ecx
                 add     ecx, 23
                 sub     ebx, 65535 * 23
                 mcall
 
+                ; redraw active symbol
                 shr     ecx, 16
                 mov     bx, cx
                 add     ebx, 65536 * 8 + 5
@@ -574,7 +614,7 @@ logic_utf16to8:
 
 ; ================================================================
 
-title   db "Charset Checker 0.3.1", 0
+title   db "Charsets Viewer 0.3.2", 0
 
 lb_cp6x9        db "CP866 6x9  ", 0
 lb_cp8x16       db "CP866 8x16 ", 0
@@ -609,7 +649,11 @@ char_ascii      dw 0x0000, 0
 char_scan       dw 0x0000, 0
 char_utf        dd 0x00000000, 0
 
-window_colors system_colors
+win_stat        rd 1
+win_head        rd 1
+
+window_colors   system_colors
+proc_info       process_information
 
 ; ================================================================
 

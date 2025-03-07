@@ -1,0 +1,33 @@
+Development history
+
+22.10.2024 - 0.1.0
+- First version, display of charpages in all KOS charsets
+
+23.10.2024 - 0.2.0
+- Fixed UTF-8 display by Doczom
+- Interface adaptation for skins
+- Reduced redraw
+- Refactored code
+
+27.10.2024 - 0.2.5
+- Fixed version in app header
+- Tweaked UI colors
+- Something else???
+
+17.01.2025 - 0.3.0
+- Added button to reset charpage to 00
+- Functionality to pick and preview single character
+- Functionality to input characters from keyboard
+- Display of ASCII and SCAN codes of characters in dec and hex format
+- Tweaked UI colors
+
+17.01.2025 - 0.3.1
+- Small UI fixes
+- Code refactoring
+- Reformatted sources, fixed indentation
+  and removed non-Unicode characters
+
+07.03.2025 - 0.3.2
+- Renamed to Charsets Viewer/Charsets
+- Symbol highlight UI tweaks
+- Fixed rolled up bug

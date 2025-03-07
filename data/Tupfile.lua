@@ -469,7 +469,7 @@ tup.append_table(img_files, {
  {"DEVELOP/BOARD", VAR_PROGS .. "/system/board/trunk/board"},
  {"DEVELOP/DBGBOARD", VAR_PROGS .. "/system/dbgboard/dbgboard"},
  {"DEVELOP/CEDIT", SRC_PROGS .. "/develop/cedit/CEDIT"},
- {"DEVELOP/CHARSETS", VAR_PROGS .. "/other/charset_checker/charchck"},
+ {"DEVELOP/CHARSETS", VAR_PROGS .. "/develop/charsets/charsets"},
  {"DEVELOP/COBJ", VAR_PROGS .. "/develop/cObj/trunk/cObj"},
  {"DEVELOP/ENTROPYV", VAR_PROGS .. "/develop/entropyview/entropyview"},
  {"DEVELOP/FASM", VAR_PROGS .. "/develop/fasm/1.73/fasm"},
