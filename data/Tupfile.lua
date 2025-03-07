@@ -468,6 +468,7 @@ tup.append_table(img_files, {
  {"DEMOS/ZEROLINE", VAR_PROGS .. "/demos/zeroline/trunk/zeroline"},
  {"DEVELOP/ASCIIVJU", VAR_PROGS .. "/develop/asciivju/trunk/asciivju"},
  {"DEVELOP/BOARD", VAR_PROGS .. "/system/board/trunk/board"},
+ {"DEVELOP/DBGBOARD", VAR_PROGS .. "/system/dbgboard/dbgboard"},
  {"DEVELOP/CEDIT", SRC_PROGS .. "/develop/cedit/CEDIT"},
  {"DEVELOP/COBJ", VAR_PROGS .. "/develop/cObj/trunk/cObj"},
  {"DEVELOP/ENTROPYV", VAR_PROGS .. "/develop/entropyview/entropyview"},
