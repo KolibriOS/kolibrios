@@ -1,48 +1,112 @@
 ; Originally written by Jarek Pelczar
 include "lang.inc"
-include "..\..\..\macros.inc"
+include "..\..\macros.inc"
+include "..\..\KOSfuncs.inc"
 
-WND_SIZE_X		= 320
-WND_SIZE_Y		= 200
+KOS_APP_START
 
-MEOS_APP_START
+WND_SIZE_X dd 640
+WND_SIZE_Y dd 400
+
+if lang eq ru_RU
+	title db 'Плазма',0
+else
+	title db 'Plasma',0
+end if
+
 CODE
+	mcall SF_SYS_MISC,SSF_HEAP_INIT
+	mov ecx,[WND_SIZE_X]
+	imul ecx,[WND_SIZE_Y]
+	mcall SF_SYS_MISC,SSF_MEM_ALLOC
+	mov [virtual_screen_8],eax
+
     fninit
-    mcall 40,101b
+    mcall SF_SET_EVENTS_MASK, 101b
     call init_palette
     call init_texture
     jmp .paint_window
 .event_loop:
-    mcall 23,1
+    mcall SF_WAIT_EVENT_TIMEOUT, 1
     test eax,eax
     je .draw_screen
     dec eax
     je .paint_window
 
-    or  eax,-1
-    mcall
+    mcall SF_TERMINATE_PROCESS
 
 .draw_screen:
     xor ebp,ebp
-    mcall 65,virtual_screen_8,<WND_SIZE_X,WND_SIZE_Y>,0,8,_palette
+	mov ecx,[WND_SIZE_X]
+	shl ecx,16
+	add ecx,[WND_SIZE_Y]
+    mcall SF_PUT_IMAGE_EXT, [virtual_screen_8],,0,8,_palette
     call rotate_pal
     jmp .event_loop
 
 .paint_window:
-    mcall 12,1
+    mcall SF_REDRAW, SSF_BEGIN_DRAW
 
-    mcall 48,4 ; get skin height
-    lea ecx,[eax + (110 shl 16) + WND_SIZE_Y + 4]
+	;if window resize
+	mcall SF_THREAD_INFO,procinfo,-1
+	cmp dword[procinfo.box.height],0
+	je .resize_end
+	mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+	add eax,4
+	sub eax,[procinfo.box.height]
+	neg eax
+	cmp eax,[WND_SIZE_Y]
+	je .end_h
+	cmp eax,32 ;min height
+	jge @f
+		mov eax,32
+	@@:
+	mov [WND_SIZE_Y],eax
+	xor eax,eax
+	mov [WND_SIZE_X],eax
+	.end_h:
+	
+	mov eax,[procinfo.box.width]
+	sub eax,9
+	cmp eax,[WND_SIZE_X]
+	je .resize_end
+	cmp eax,64 ;min width
+	jge @f
+		mov eax,64
+	@@:
+	mov [WND_SIZE_X],eax
+
+	call OnResize
+	call init_texture
+	.resize_end:
+
+    mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+    lea ecx,[eax + (110 shl 16) + 4]
+	add ecx,[WND_SIZE_Y]
     mov edi,title
-    mcall 0,<110,WND_SIZE_X+9>,,0x74000000
+	mov ebx,[WND_SIZE_X]
+	add ebx,(110 shl 16)+9
+    mcall SF_CREATE_WINDOW,,,0x73000000
 
-    xor ebp,ebp
-    mcall 65,virtual_screen_8,<WND_SIZE_X,WND_SIZE_Y>,0,8,_palette
+	xor ebp,ebp
+	mov ecx,[WND_SIZE_X]
+	shl ecx,16
+	add ecx,[WND_SIZE_Y]
+    mcall SF_PUT_IMAGE_EXT, [virtual_screen_8],,0,8,_palette
 
-    mcall 12,2
+    mcall SF_REDRAW, SSF_END_DRAW
 
     jmp .event_loop
 
+align 4
+OnResize:
+	mov ecx,[WND_SIZE_X]
+	imul ecx,[WND_SIZE_Y]
+	mcall SF_SYS_MISC,SSF_MEM_ALLOC
+	mov [virtual_screen_8],eax
+	ret
+
+align 4
 init_palette:
     mov edi,_palette
     mov ecx,64
@@ -92,7 +156,7 @@ init_texture:
     mov [_fpom16],180
     fidiv [_fpom16]
     fstp [_st_rad]
-    mov edi,virtual_screen_8
+    mov edi,[virtual_screen_8]
     cdq
 .itex_vertical:
     xor ecx,ecx
@@ -120,10 +184,10 @@ init_texture:
     inc eax
     stosb
     inc ecx
-    cmp ecx,WND_SIZE_X
+    cmp ecx,[WND_SIZE_X]
     jne .itex_horizontal
     inc edx
-    cmp edx,WND_SIZE_Y
+    cmp edx,[WND_SIZE_Y]
     jne .itex_vertical
     ret
 
@@ -141,7 +205,6 @@ rotate_pal:
 DATA
   _multiplier	dd 63.5
 
-  title          db 'Plasma',0
 
 UDATA
   _fpom32		rd 1
@@ -149,7 +212,7 @@ UDATA
   _st_rad		rd 1
   _palette:	rd 256
 
-  virtual_screen_8:
-   	rb WND_SIZE_X*WND_SIZE_Y
+  virtual_screen_8 rd 1
+  procinfo process_information
 
-MEOS_APP_END
+KOS_APP_END
