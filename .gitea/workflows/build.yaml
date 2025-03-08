@@ -14,15 +14,11 @@ on:
 jobs:
   codestyle:
     name: "Check kernel codestyle"
-    runs-on: ubuntu-latest
+    runs-on: kolibri-toolchain
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup dependencies
-        run: |
-          sudo apt update && sudo apt install perl -y
 
       - name: Check codestyle
         run: |
@@ -30,7 +26,7 @@ jobs:
 
   build:
     name: 'Build'
-    runs-on: ubuntu-latest
+    runs-on: kolibri-toolchain
 
     steps:
       - name: Checkout
@@ -38,27 +34,7 @@ jobs:
 
       - name: Get describe
         id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Setup dependencies
-        run: |
-          cd /tmp
-          sudo apt update
-          sudo apt install p7zip-full fasm nasm make gcc gcc-multilib g++ g++-multilib mtools mkisofs parted gdisk -y
-          wget http://mirrors.kernel.org/ubuntu/pool/universe/t/tup/tup_0.8-1_amd64.deb
-          sudo apt install ./tup_0.8-1_amd64.deb -y
-
-      - name: Install GCC toolchain
-        run: |
-          chmod +x ${{ gitea.workspace }}/.gitea/workflows/install_kgcc
-          ${{ gitea.workspace }}/.gitea/workflows/install_kgcc
-
-      - name: Install JWasm
-        run: |
-          cd /tmp
-          wget -O JWasm211bl.zip  https://sourceforge.net/projects/jwasm/files/JWasm%20Linux%20binary/JWasm211bl.zip/download
-          unzip JWasm211bl.zip "jwasm" -d /home/autobuild/tools/win32/bin/
-          chmod +x /home/autobuild/tools/win32/bin/jwasm
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITEA_OUTPUT
 
       - name: Build and install C--
         run: |
@@ -74,29 +50,29 @@ jobs:
           cp ${{ gitea.workspace }}/programs/develop/ktcc/trunk/bin/kos32-tcc /home/autobuild/tools/win32/bin/kos32-tcc
           chmod +x /home/autobuild/tools/win32/bin/kos32-tcc
 
-      - name: Compile objconv
+      - name: Build and install objconv
         run: |
           cd ${{ gitea.workspace }}/programs/develop/objconv/
           g++ -o /home/autobuild/tools/win32/bin/objconv -O2 *.cpp
           chmod +x /home/autobuild/tools/win32/bin/objconv
 
-      - name: Compile kerpack
+      - name: Build and install kerpack
         run: |
           cd ${{ gitea.workspace }}/programs/other/kpack/kerpack_linux/
           make
           chmod +x kerpack
           mv kerpack /home/autobuild/tools/win32/bin/.
 
-      - name: Compile kpack
+      - name: Build and install kpack
         run: |
           cd ${{ gitea.workspace }}/programs/other/kpack/linux/
           bash build.sh
           chmod +x kpack
           mv kpack /home/autobuild/tools/win32/bin/.
 
-      - name: Compile clink
+      - name: Build and install clink
         run: |
-          cd ${{ github.workspace }}/programs/develop/clink 
+          cd ${{ gitea.workspace }}/programs/develop/clink
           gcc main.c -o clink
           chmod a+x clink
           mv clink /home/autobuild/tools/win32/bin/clink
@@ -104,71 +80,100 @@ jobs:
       - name: Configure tup
         run: |
           cd ${{ gitea.workspace }}
-          export ROOT=${{ gitea.workspace }}
-          cd $ROOT
 
-          echo "CONFIG_KPACK_CMD=&& kpack --nologo %o"                                    >  tup.config 
-          echo "CONFIG_KERPACK_CMD=&& kerpack %o"                                         >> tup.config
-          echo "CONFIG_PESTRIP_CMD=&& EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o"   >> tup.config
-          echo "CONFIG_NO_MSVC=full"                                                      >> tup.config
-          echo "CONFIG_INSERT_REVISION_ID=1"                                              >> tup.config
+          export ROOT=${{ gitea.workspace }}
+          echo "CONFIG_KPACK_CMD= && kpack --nologo %o"                                   | tee en_US.config ru_RU.config es_ES.config
+          echo "CONFIG_KERPACK_CMD= && kerpack %o"                                        | tee -a en_US.config ru_RU.config es_ES.config
+          echo "CONFIG_PESTRIP_CMD= && EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o"  | tee -a en_US.config ru_RU.config es_ES.config
+          echo "CONFIG_NO_MSVC=full"                                                      | tee -a en_US.config ru_RU.config es_ES.config
+          echo "CONFIG_INSERT_REVISION_ID=1"                                              | tee -a en_US.config ru_RU.config es_ES.config
 
           tup -v
           tup init
 
-      - name: Build KolibriOS (en_US)
+          # Configure en_US
+          echo "CONFIG_LANG=en_US"       >> en_US.config
+          echo "CONFIG_BUILD_TYPE=en_US" >> en_US.config
+          tup variant en_US.config
+
+          # Configure ru_RU
+          echo "CONFIG_LANG=ru_RU"       >> ru_RU.config
+          echo "CONFIG_BUILD_TYPE=ru_RU" >> ru_RU.config
+          tup variant ru_RU.config
+          
+          # Configure es_ES
+          echo "CONFIG_LANG=es_ES"       >> es_ES.config
+          echo "CONFIG_BUILD_TYPE=es_ES" >> es_ES.config
+          tup variant es_ES.config
+
+      # -------------------------- Build en_US ------------------------- #
+      - name: (en_US) Build KolibriOS
         run: |
-          cp tup.config tup.config.en_US
-          echo "CONFIG_LANG=en_US"                                                        >> tup.config.en_US
-          echo "CONFIG_BUILD_TYPE=en_US"                                                  >> tup.config.en_US
-
           export PATH=/home/autobuild/tools/win32/bin:$PATH
-          tup generate --config tup.config.en_US build-en_US.sh
-          ./build-en_US.sh
+          tup build-en_US
 
-      - name: Upload floppy image (en_US)
+      - name: (en_US) Upload floppy image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-en_US-${{ steps.vars.outputs.sha_short }}.img
-          path: data/kolibri.img
+          path: build-en_US/data/kolibri.img
 
-      - name: Upload CD image (en_US)
+      - name: (en_US) Upload CD image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-en_US-${{ steps.vars.outputs.sha_short }}.iso
-          path: data/kolibri.iso
+          path: build-en_US/data/kolibri.iso
 
-      - name: Upload raw image (en_US)
+      - name: (en_US) Upload raw image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-en_US-${{ steps.vars.outputs.sha_short }}.raw
-          path: data/kolibri.raw
+          path: build-en_US/data/kolibri.raw
 
-      - name: Build KolibriOS (ru_RU)
+      # -------------------------- Build ru_RU ------------------------- #
+      - name: (ru_RU) Build KolibriOS
         run: |
-          git clean -d -x -f -e tup.config
-          cp tup.config tup.config.ru_RU
-          echo "CONFIG_LANG=ru_RU"                                                        >> tup.config.ru_RU
-          echo "CONFIG_BUILD_TYPE=ru_RU"                                                  >> tup.config.ru_RU
-
           export PATH=/home/autobuild/tools/win32/bin:$PATH
-          tup generate --config tup.config.ru_RU build-ru_RU.sh
-          ./build-ru_RU.sh
+          tup build-ru_RU
 
-      - name: Upload floppy image (ru_RU)
+      - name: (ru_RU) Upload floppy image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-ru_RU-${{ steps.vars.outputs.sha_short }}.img
-          path: data/kolibri.img
+          path: build-ru_RU/data/kolibri.img
 
-      - name: Upload CD image (ru_RU)
+      - name: (ru_RU) Upload CD image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-ru_RU-${{ steps.vars.outputs.sha_short }}.iso
-          path: data/kolibri.iso
+          path: build-ru_RU/data/kolibri.iso
 
-      - name: Upload raw image (ru_RU)
+      - name: (ru_RU) Upload raw image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-ru_RU-${{ steps.vars.outputs.sha_short }}.raw
-          path: data/kolibri.raw
+          path: build-ru_RU/data/kolibri.raw
+
+      # -------------------------- Build es_ES ------------------------- #
+      - name: (es_ES) Build KolibriOS
+        run: |
+          export PATH=/home/autobuild/tools/win32/bin:$PATH
+          tup build-es_ES
+
+      - name: (es_ES) Upload floppy image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-es_ES-${{ steps.vars.outputs.sha_short }}.img
+          path: build-es_ES/data/kolibri.img
+
+      - name: (es_ES) Upload CD image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-es_ES-${{ steps.vars.outputs.sha_short }}.iso
+          path: build-es_ES/data/kolibri.iso
+
+      - name: (es_ES) Upload raw image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-es_ES-${{ steps.vars.outputs.sha_short }}.raw
+          path: build-es_ES/data/kolibri.raw
