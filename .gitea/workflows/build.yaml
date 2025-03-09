@@ -4,12 +4,9 @@
 name: 'Build system'
 
 on:
-  push:
-    branches:
-      - 'main'
   pull_request:
     branches:
-      - '**'
+      - 'main'
 
 jobs:
   codestyle:
@@ -36,7 +33,15 @@ jobs:
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITEA_OUTPUT
 
+      - name: Restore toolchain
+        id: cache-toolchain
+        uses: actions/cache/restore@v4
+        with:
+          path: /home/autobuild
+          key: kolibri-toolchain
+
       - name: Build and install C--
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
           cd ${{ gitea.workspace }}/programs/develop/cmm/
           make -f Makefile.lin32
@@ -46,17 +51,20 @@ jobs:
           make -f Makefile.lin32 clean
 
       - name: Install TCC
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
           cp ${{ gitea.workspace }}/programs/develop/ktcc/trunk/bin/kos32-tcc /home/autobuild/tools/win32/bin/kos32-tcc
           chmod +x /home/autobuild/tools/win32/bin/kos32-tcc
 
       - name: Build and install objconv
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
           cd ${{ gitea.workspace }}/programs/develop/objconv/
           g++ -o /home/autobuild/tools/win32/bin/objconv -O2 *.cpp
           chmod +x /home/autobuild/tools/win32/bin/objconv
 
       - name: Build and install kerpack
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
           cd ${{ gitea.workspace }}/programs/other/kpack/kerpack_linux/
           make
@@ -64,6 +72,7 @@ jobs:
           mv kerpack /home/autobuild/tools/win32/bin/.
 
       - name: Build and install kpack
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
           cd ${{ gitea.workspace }}/programs/other/kpack/linux/
           bash build.sh
@@ -71,11 +80,25 @@ jobs:
           mv kpack /home/autobuild/tools/win32/bin/.
 
       - name: Build and install clink
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
           cd ${{ gitea.workspace }}/programs/develop/clink
           gcc main.c -o clink
           chmod a+x clink
           mv clink /home/autobuild/tools/win32/bin/clink
+
+      - name: Prepare cache folder
+        run: |
+          rm /home/autobuild
+          mv /root/autobuild /home/autobuild
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+
+      - name: Save toolchain
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: /home/autobuild
+          key: kolibri-toolchain
 
       - name: Configure tup
         run: |
