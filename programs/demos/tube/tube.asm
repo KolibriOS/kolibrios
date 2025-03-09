@@ -20,11 +20,23 @@ else
 	title db 'Tube - FPU',0
 end if
 
-SCREEN_W equ (640-10) ;10 px for borders
-SCREEN_H equ (400-10)
+SCREEN_W dd 640-10 ;10 px for borders
+SCREEN_H dd 400-10
 
 align 4
 START:
+	mcall SF_SYS_MISC,SSF_HEAP_INIT
+	mov ecx,[SCREEN_W]
+	imul ecx,[SCREEN_H]
+	;ecx = SCREEN_W*SCREEN_H
+	mcall SF_SYS_MISC,SSF_MEM_ALLOC
+	mov [PIXBUF],eax
+	mcall SF_SYS_MISC,SSF_MEM_ALLOC
+	mov [buf1],eax
+	lea ecx,[ecx+2*ecx]
+	mcall SF_SYS_MISC,SSF_MEM_ALLOC
+	mov [buf2],eax
+
 	call draw_window
 	call init_tube
 	push ebx
@@ -47,8 +59,19 @@ still:
 
 	mcall SF_TERMINATE_PROCESS
 
-EYE     equ EYE_P-4
-
+align 4
+OnResize:
+	mov ecx,[SCREEN_W]
+	imul ecx,[SCREEN_H]
+	;ecx = SCREEN_W*SCREEN_H
+	mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[PIXBUF]
+	mov [PIXBUF],eax
+	mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[buf1]
+	mov [buf1],eax
+	lea ecx,[ecx+2*ecx]
+	mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[buf2]
+	mov [buf2],eax
+	ret
 
 align 4
 MAIN:
@@ -56,17 +79,27 @@ MAIN:
 ;ebp - coord x
 ;edi - pixel buffer
 	add    ebx,10 shl 8
-	mov    edi,PIXBUF
+	mov    edi,[PIXBUF]
 	fadd   dword [TEXUV-4]
 	push   edi
-	mov    edx,-SCREEN_H/2
-
+	mov    edx,[SCREEN_H]
+	inc    edx ;fix (height%2)==1
+	shr    edx,1
+	neg    edx ;edx=-SCREEN_H/2
+align 4
 TUBEY:
-	mov    ebp,-SCREEN_W/2
-
+	mov    ebp,[SCREEN_W]
+	inc    ebp ;fix (width%2)==1
+	shr    ebp,1
+	neg    ebp ;ebp=-SCREEN_W/2
+align 4
 TUBEX:
 	mov    esi,TEXUV
-	fild   word [EYE]
+	fild   dword [SCREEN_W]
+	fld1
+	fld1
+	faddp
+	fdivp  ;st0=SCREEN_W/2
 	mov    [esi],ebp
 	fild   word [esi]
 	mov    [esi],edx
@@ -123,18 +156,22 @@ STORE_1:
 	add    [edi],al
 	inc    edi
 	inc    ebp
-	cmp    ebp,SCREEN_W/2
+	mov    eax,[SCREEN_W]
+	shr    eax,1 ;eax=SCREEN_W/2
+	cmp    ebp,eax
 
-EYE_P:
 	jnz    TUBEX
 	inc    edx
-	cmp    edx,SCREEN_H/2
+	mov    eax,[SCREEN_H]
+	shr    eax,1 ;eax=SCREEN_H/2
+	cmp    edx,eax
 	jnz    TUBEY
 
 	call   display_image
 
 	pop    esi
-	mov    ecx,SCREEN_H*SCREEN_W
+	mov    ecx,[SCREEN_W]
+	imul   ecx,[SCREEN_H]
 
 align 4
 BLUR:
@@ -148,8 +185,11 @@ align 4
 display_image:
 	pusha
 
-	mov esi,PIXBUF
-	mov edi,buf2
+	mov esi,[PIXBUF]
+	mov edi,[buf2]
+	mov eax,[SCREEN_W]
+	imul eax,[SCREEN_H]
+	add eax,esi
 align 4
 newp:
 	movzx edx,byte [esi]
@@ -160,11 +200,14 @@ newp:
 	add edi,3
 	inc esi
 
-	cmp esi,PIXBUF+SCREEN_W*SCREEN_H
+	cmp esi,eax
 	jbe newp
 
 	xor edx,edx
-	mcall SF_PUT_IMAGE,buf2,<SCREEN_W,SCREEN_H>
+	mov ecx,[SCREEN_W]
+	shl ecx,16
+	add ecx,[SCREEN_H]
+	mcall SF_PUT_IMAGE,[buf2]
 
 	popa
 	ret
@@ -176,9 +219,41 @@ draw_window:
 
 	mcall SF_REDRAW, SSF_BEGIN_DRAW
 	mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
-	add eax,SCREEN_H
+	add eax,[SCREEN_H]
 	lea ecx,[100*65536+4+eax]
-	mcall SF_CREATE_WINDOW,100*65536+SCREEN_W+9,, 0x74000000,,title
+	mov ebx,[SCREEN_W]
+	add ebx,(100 shl 16)+9
+	mcall SF_CREATE_WINDOW,,, 0x73000000,,title
+	
+	mcall SF_THREAD_INFO,procinfo,-1
+	mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+	add eax,4
+	sub eax,[procinfo.box.height]
+	neg eax
+	cmp eax,[SCREEN_H]
+	je .end_h
+	cmp eax,32 ;min height
+	jge @f
+		mov eax,32
+	@@:
+		mov [SCREEN_H],eax
+		xor eax,eax
+		mov [SCREEN_W],eax
+	.end_h:
+	
+	mov eax,[procinfo.box.width]
+	sub eax,9
+	cmp eax,[SCREEN_W]
+	je .resize_end
+	cmp eax,64 ;min width
+	jge @f
+		mov eax,64
+	@@:
+	mov [SCREEN_W],eax
+
+	call OnResize
+	.resize_end:
+
 	mcall SF_REDRAW, SSF_END_DRAW
 	popa
 	ret
@@ -191,6 +266,7 @@ TEXUV:
 align 4
 init_tube:
 	mov ecx,256
+	mov edi,[buf1]
 
 PAL1:
 	mov edx,3C8h
@@ -210,7 +286,7 @@ PAL2:
 
 PAL3:
 	mov ebx,ecx
-	mov [ebx+buf1],bh
+	mov [ebx+edi],bh
 	loop PAL1
 	mov  ecx,256
 
@@ -221,11 +297,11 @@ TEX:
 	mov dh,al
 	sar dh,5
 	adc dl,dh
-	adc dl,[ebx+255+buf1]
+	adc dl,[ebx+255+edi]
 	shr dl,1
-	mov [ebx+buf1],dl
+	mov [ebx+edi],dl
 	not bh
-	mov [ebx+buf1],dl
+	mov [ebx+edi],dl
 	loop TEX
 
 	fninit
@@ -235,9 +311,10 @@ TEX:
 
 align 4
 image_end:
-PIXBUF rb SCREEN_W*SCREEN_H
-buf1 rb SCREEN_W*SCREEN_H
-buf2 rb SCREEN_W*SCREEN_H*3
+PIXBUF rd 1
+buf1 rd 1
+buf2 rd 1
+procinfo process_information
 	rb	1024
 align 4
 stacktop:
