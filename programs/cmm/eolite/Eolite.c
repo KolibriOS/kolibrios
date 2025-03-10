@@ -539,8 +539,6 @@ void draw_window()
 	incn x;
 	dword title;
 	static int rand_n;
-	debugval("Form.width", Form.width);
-	debugval("screen.w", screen.w);
 	if (!rand_n) && (Form.width + 1 != screen.w) rand_n = random(80);
 
 	if (show_status_bar.checked) {
