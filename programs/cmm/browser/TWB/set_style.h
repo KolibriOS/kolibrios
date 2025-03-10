@@ -61,7 +61,7 @@ void TWebBrowser::SetStyle()
 void TWebBrowser::tag_p()
 {
 	IF (tag.prior[0] == 'h') || (streq(#tag.prior,"td")) return;
-	if (!tag.opened) && (streq(#tag.prior,"p")) return;
+	IF (!tag.opened) && (streq(#tag.prior,"p")) return;
 	NewLine();
 }
 
@@ -119,6 +119,7 @@ void TWebBrowser::tag_iframe()
 
 void TWebBrowser::tag_a()
 {
+	if (!secondrun) return;
 	if (tag.opened)
 	{
 		if (tag.get_value_of("href")) && (!strstr(tag.value,"javascript:"))
@@ -133,6 +134,7 @@ void TWebBrowser::tag_a()
 
 void TWebBrowser::tag_meta_xml()
 {
+	if (secondrun) return;
 	if (custom_encoding == -1) if (tag.get_value_of("charset")) 
 	|| (tag.get_value_of("content")) || (tag.get_value_of("encoding"))
 	{
@@ -187,7 +189,7 @@ void TWebBrowser::tag_ol_ul_dt()
 
 void TWebBrowser::tag_li()
 {
-	if (style.nav) return;
+	//if (style.nav) return;
 	if (tag.opened) {
 		if (!style.tag_list.level) style.tag_list.upd_level(1, 'u');
 		if (!style.pre) NewLine();
@@ -216,13 +218,10 @@ void TWebBrowser::tag_hr()
 void TWebBrowser::tag_body()
 {
 	t_body = tag.opened;
-	if (tag.get_value_of("link"))   link_color_default = GetColor(tag.value);
-	if (tag.get_value_of("alink"))  link_color_active = GetColor(tag.value);
-	if (tag.get_value_of("text"))   text_colors.set(0, GetColor(tag.value));
-	if (tag.get_value_of("bgcolor")) {
-		bg_colors.set(0, GetColor(tag.value));
-		canvas.Fill(0, bg_colors.get(0));
-	}
+	if (tag.get_value_of("link"))    link_color_default = GetColor(tag.value);
+	if (tag.get_value_of("alink"))   link_color_active = GetColor(tag.value);
+	if (tag.get_value_of("text"))    text_colors.set(0, GetColor(tag.value));
+	if (tag.get_value_of("bgcolor")) bg_colors.set(0, GetColor(tag.value));
 	// Autodetecting encoding if no encoding was set
 	if (tag.opened) && (custom_encoding==-1) && (cur_encoding == CH_CP866) {
 		if (strstr(bufpointer, "\208\190")) ChangeEncoding(CH_UTF8);
@@ -250,10 +249,10 @@ void TWebBrowser::tag_h1234_caption()
 				NewLine();
 			}
 			if (tag.is("h1")) { 
-				list.SetFont(BASIC_CHAR_W*2, 14+12, 10011001b); 
+				list.SetFont(BASIC_CHAR_W*2, 14+14, 10011001b); 
 				style.b = true; 
 			} else if (tag.is("h2")) {
-				list.SetFont(BASIC_CHAR_W*2, 14+12, 10011001b); 
+				list.SetFont(BASIC_CHAR_W*2, 14+14, 10011001b); 
 			} else {
 				list.SetFont(6*2, 9+7, 10001001b);
 			}
@@ -294,7 +293,7 @@ void TWebBrowser::tag_img()
 	if (!strcmp(tag.value + strrchr(tag.value, '.'), "webp")) goto NOIMG;
 
 	strlcpy(#img_path, tag.value, sizeof(img_path)-1);
-	replace_char(#img_path, ' ', '\0', sizeof(img_path));
+	replace_char(#img_path, ' ', '\0', sizeof(img_path)-1);
 	get_absolute_url(#img_path, history.current());
 
 	if (check_is_the_adress_local(#img_path)) {
@@ -331,31 +330,28 @@ NOIMG:
 	text_colors.pop();
 }
 
-
-
-
-
 struct TABLE {
-	int count;
 	int depth;
 	int margin;
 	collection_int cols;
-	collection_int width;
 } table;
 
-
-int tr_pos, td_pos;
-int row_start_y;
-int colcount;
-dword tallest_cell_in_row;
+unsigned table_id;
+unsigned colcount;
+unsigned tr_pos;
+unsigned td_pos;
+unsigned row_start_y;
+unsigned tallest_cell_in_row;
+unsigned cur_cell_w;
 
 void TWebBrowser::tag_table_reset()
 {
-	table.depth = 0;
-	table.count = 0;
+	table_id = 0;
 	colcount = 0;
 	tr_pos = 0;
 	td_pos = 0;
+	table.depth = 0;
+	cur_cell_w = 0;
 }
 
 void TWebBrowser::tag_table()
@@ -369,15 +365,15 @@ void TWebBrowser::tag_table()
 		if(tag.opened) {
 			table.depth++;
 			if (table.depth==1) {
-				table.count++;
+				table_id++;
 				colcount = 0;
 				td_pos = 0;
 				row_start_y = draw_y;
 				if (tag.get_number_of("width")) {
 					if (strchr(tag.value, '%')) tag.number = list.w * tag.number / 100;
-					table.width.set(table.count, math.min(tag.number,list.w));
+					cur_cell_w = math.min(tag.number,list.w);
 				} else {
-					table.width.set(table.count, list.w);
+					cur_cell_w = list.w;
 				}
 			}
 		} else {
@@ -436,26 +432,17 @@ void TWebBrowser::tag_table()
 
 			if (!tr_pos) goto _TR_FIX;
 
-			/*
-			if (tag.opened) {
-				if (tag.get_value_of("bgcolor")) {
-					bg_colors.add(GetColor(tag.value));
-				} else {
-					bg_colors.add(bg_colors.get(0));
-				}
-			} */
-
 			tallest_cell_in_row = math.max(draw_y+style.cur_line_h-list.item_h+1, tallest_cell_in_row);
 			style.cur_line_h = list.item_h;
-			if (tag.opened) {
-				
+			if (tag.opened) 
+			{
 				if (!td_pos) {
-					table.margin = list.w - table.width.get(table.count) / 2 + BODY_MARGIN;
+					table.margin = list.w - cur_cell_w / 2 + BODY_MARGIN;
 					draw_x = left_gap = table.margin;
-					draw_w = table.width.get(table.count) - BODY_MARGIN;
+					draw_w = cur_cell_w - BODY_MARGIN;
 				} else {
 					draw_x = left_gap = left_gap + draw_w;
-					draw_w = table.width.get(table.count) - left_gap + table.margin - BODY_MARGIN;
+					draw_w = cur_cell_w - left_gap + table.margin - BODY_MARGIN;
 				}
 
 				if (EAX = table.cols.get(tr_pos-1)-td_pos) {
@@ -466,20 +453,18 @@ void TWebBrowser::tag_table()
 				}
 				if (table.cols.get(tr_pos-1)-td_pos>1) && (tag.get_number_of("width")) {
 					if (strchr(tag.value, '%')) {
-						tag.number = table.width.get(table.count) - table.margin - 23 - left_gap * tag.number / 100;
+						tag.number = cur_cell_w - table.margin - 23 - left_gap * tag.number / 100;
 					}
 					if (tag.number < draw_w) draw_w = tag.number;
 				}
 				draw_y = row_start_y;
-				//canvas.WriteText(draw_x, draw_y, 10001001b, 0x0000FE, itoa(draw_x), NULL);
-				//canvas.WriteText(draw_x, draw_y+20, 10001001b, 0xFF0000, itoa(draw_w), NULL);
 				td_pos++;
 			}
 		}
 	}
-	if (draw_x > table.width.get(table.count)) {
+	if (draw_x > cur_cell_w) {
 		draw_x = left_gap = table.margin;
-		draw_w = table.width.get(table.count) - table.margin - 23 - left_gap;
+		draw_w = cur_cell_w - table.margin - 23 - left_gap;
 		table.depth = 0;
 		NewLine();
 		if (debug_mode) {
@@ -487,11 +472,8 @@ void TWebBrowser::tag_table()
 			canvas.DrawBar(0, draw_y, 20, 20, 0xFF0000);
 		}
 	}
-	/*
-	if (left_gap + draw_w > list.w) {
-		draw_w = list.w - left_gap;
-		if (debug_mode) debugln("anomaly draw_W");
-	}
-	*/
+	//if (left_gap + draw_w > list.w) {
+	//	draw_w = list.w - left_gap;
+	//	if (debug_mode) debugln("anomaly draw_W");
+	//}
 }
-

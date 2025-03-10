@@ -101,16 +101,16 @@ void TWebBrowser::SetPageDefaults()
 	img_url.drop();
 	text_colors.drop();
 	text_colors.add(0);
-	if (!secondrun) {
-		bg_colors.drop();
-		bg_colors.add(DEFAULT_BG_COL);
-	} else {		
+	if (secondrun) {
+		canvas.Init(list.x, list.y, list.w, math.max(list.visible, list.count));
 		canvas.Fill(0, bg_colors.get(0));
 	}
+	bg_colors.drop();
+	bg_colors.add(DEFAULT_BG_COL);
 	header = NULL;
 	draw_y = BODY_MARGIN;
 	draw_x = left_gap = BODY_MARGIN;
-	draw_w = list.w - BODY_MARGIN;
+	draw_w = list.w - BODY_MARGIN - BODY_MARGIN;
 	linebuf = 0;
 	redirect = '\0';
 	list.SetFont(8, 14, 10011000b);
@@ -136,8 +136,6 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 	dword bufpos;
 	bufsize = _bufsize;
 
-	if (list.w!=canvas.bufw) canvas.Init(list.x, list.y, list.w, 400*20);
-
 	if (bufpointer == _bufpointer) {
 		custom_encoding = cur_encoding;	
 	} else {
@@ -155,7 +153,6 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			bufsize = strlen(bufpointer);
 		}
 	}
-
 
 	table.cols.drop();
 	secondrun = false;
@@ -219,19 +216,15 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 		AddCharToTheLine(ESBYTE[bufpos]);
 	}
 
+	RenderTextbuf();
+	list.count = draw_y + style.cur_line_h;
+	list.CheckDoesValuesOkey();
+	anchors.current = NULL;
+
 	if (!secondrun) {
 		secondrun = true;
 		goto _PARSE_START_;
 	}
-
-	RenderTextbuf();
-	list.count = draw_y + style.cur_line_h;
-
-	canvas.bufh = math.max(list.visible, list.count);
-	buf_data = realloc(buf_data, canvas.bufh * canvas.bufw * 4 + 8);
-
-	list.CheckDoesValuesOkey();
-	anchors.current = NULL;
 	if (!header) {
 		strncpy(#header, #version, sizeof(TWebBrowser.header)-1);
 		DrawTitle(#header);

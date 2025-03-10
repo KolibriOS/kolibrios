@@ -22,11 +22,10 @@ void TWebBrowser::RenderLine(dword _line)
 		zoom = list.font_w / BASIC_CHAR_W;
 
 		//there is some shit happens!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		if (pw > draw_w) {
-			//draw_w = pw;
-			NewLine();
+		if (pw > draw_w + BODY_MARGIN) {
+			//debugln("shit");
 		}
-
+		
 		if (debug_mode) {
 			canvas.DrawBar(draw_x, draw_y, pw, list.item_h, 0xCCCccc);
 			debugln(_line);
@@ -83,12 +82,13 @@ void TWebBrowser::RenderTextbuf()
 
 		//debugln("                \\n");
 
-		//Is a new line fits in the current line?
+		//Is a new line fits in the maximum line width?
 		if (br * list.font_w + draw_x - left_gap >= draw_w) {
 			br = draw_w - draw_x + left_gap /list.font_w;
+			if (br < 0) br = 0;
 			while(br) {
 				if (ESBYTE[lbp + br]==' ') {
-					br++;
+					if (br < len) br++;
 					break;
 				}
 				br--;
@@ -96,7 +96,16 @@ void TWebBrowser::RenderTextbuf()
 		}
 		//Maybe a new line is too big for the whole new line? Then we have to split it
 		if (!br) && (len * list.font_w >= draw_w) {
+			//debugln("bigbr");
+			//debugval("draw_x", draw_x);
+			//debugval("draw_w", draw_w);
 			br = draw_w - draw_x / list.font_w;
+			//debugval("cut into 1", br * list.font_w);
+			if (br < 0) {
+				NewLine();
+				br = draw_w - draw_x / list.font_w;
+				//debugval("cut into 2", br * list.font_w);
+			}
 		}
 
 		if (br) {
@@ -120,9 +129,13 @@ void TWebBrowser::NewLine()
 
 	if (draw_x==left_gap) && (draw_y==BODY_MARGIN) return;
 	if (t_html) && (!t_body) return;
-	
+
 	if (draw_x == style.tag_list.level * 5 * list.font_w + left_gap) { 
-		if (!empty_line) empty_line=true; else return;
+		if (!empty_line) {
+			empty_line=true; 
+		} else {
+			return;
+		}
 	} else {
 		empty_line = false;
 	}

@@ -1,4 +1,4 @@
-//Copyright 2007-2021 by Veliant & Leency
+//Copyright 2007-2025 by Veliant & Leency
 //Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
 
 //BUGS
