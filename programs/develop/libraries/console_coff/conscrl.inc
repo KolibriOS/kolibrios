@@ -1,5 +1,5 @@
-; Вспомогательный файл для console.inc - описание scrollbar
-; Вертикальная прокрутка
+; Helper file for console.inc - scrollbar definition
+; Vertical scrolling
 virtual at 0
 file 'conscrlv.bmp', 36h
 ; sanity check
@@ -28,7 +28,7 @@ if con.vscroll_btn_height*4 + con.vscroll_bgr_height*2 \
 error 'conscrlv.bmp: invalid dimensions!'
 end if
 
-; Загружаем данные BMP, на ходу преобразуя их в данные для 7-й функции
+; Load BMP data, converting it into data for sysfn 7 on the fly
 con.vscroll:
 repeat con.vscroll_height
         file 'conscrlv.bmp':36h + ((con.vscroll_width*3+3) and not 3)*(con.vscroll_height - %),\

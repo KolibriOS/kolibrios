@@ -1,6 +1,7 @@
-; Функции работы с консолью для программ КолибриОС
+; SPDX-License-Identifier: GPL-2.0
+; Functions for interaction with the console for KolibriOS programs
 ; diamond, 2006-2008
-
+; Copyright (C) 2006-2025 KolibriOS team
 
 format MS COFF
 
@@ -56,7 +57,7 @@ START:
         or      eax, -1
         ret     4
 
-; Инициализация консоли
+; Console initialization
 ; void __stdcall con_init(dword wnd_width, dword wnd_height,
 ;       dword scr_width, dword scr_height, const char* title);
 
@@ -271,13 +272,13 @@ con_write_length:
         pop     esi ebx
         ret     8
 
-; Каждый символ классифицируется как один из
-con.printfc.normal = 0   ; нормальный символ
+; Each character is classified as one of the following
+con.printfc.normal = 0   ; normal character
 con.printfc.percent = 1  ; '%'
 con.printfc.dot = 2      ; '.'
 con.printfc.asterisk = 3 ; '*'
 con.printfc.zero = 4     ; '0'
-con.printfc.digit = 5    ; ненулевая цифра
+con.printfc.digit = 5    ; non-null digit
 con.printfc.plus = 6     ; '+'
 con.printfc.minus = 7    ; '-'
 con.printfc.sharp = 8    ; '#'
@@ -376,24 +377,24 @@ con_printf:
         jmp     .normal
   .spec_begin:
         xor     ebx, ebx
-; bl = тип позиции:
-; 0 = начало
-; 1 = прочитан ведущий 0 в спецификации формата
-; 2 = читаем поле ширины
-; 3 = читаем поле точности
-; 4 = прочитано поле размера аргумента
-; 5 = читаем поле типа
-; bh = флаги:
-; 1 = флаг '#', выводить 0/0x/0X
-; 2 = флаг '-', выравнивание влево
-; 4 = флаг '0', дополнение нулями
-; 8 = флаг 'h', короткий аргумент
+; bl = position type:
+; 0 = start
+; 1 = read leading 0 in format specification
+; 2 = read width field
+; 3 = read precision field
+; 4 = read argument size field
+; 5 =  read type field
+; bh = flags:
+; 1 = flag '#', output 0/0x/0X
+; 2 = flag '-', align left
+; 4 = flag '0', zero padding
+; 8 = flag 'h', short argument
         push    -1
 ; dword [esp+8] = precision
         push    -1
 ; dword [esp+4] = width
         push    0
-; byte [esp] = флаг 0/'+'/' '
+; byte [esp] = flag 0/'+'/' '
   .spec:
         xor     eax, eax
         lodsb
@@ -529,7 +530,7 @@ con_printf:
   @@:
         push    edx
         xor     edx, edx
-; число в eax, основание системы счисления в ecx
+; number in eax, radix in ecx
   @@:
         cmp     dword [esp+16+8], 0
         jnz     .print_num
@@ -1777,10 +1778,10 @@ con.data2image:
         mov     al, [esi+1]
         push    eax
         and     al, 0xF
-        mov     ebx, eax                ; цвет текста
+        mov     ebx, eax                ; text color
         pop     eax
         shr     al, 4
-        mov     ebp, eax                ; цвет фона
+        mov     ebp, eax                ; background color
         sub     ebx, ebp
         lodsb
         inc     esi
@@ -2188,7 +2189,7 @@ con_gets2:
         sub     ebx, 1
         jle     .ret
         mov     byte [esi], 0
-        xor     ecx, ecx                ; длина уже введённой строки
+        xor     ecx, ecx                ; length of the already entered string
         call    con.get_data_ptr
 .loop:
         call    con_getch2
@@ -2596,15 +2597,15 @@ con.wake:
         popad
         ret
 
-; Поток окна консоли. Обрабатывает ввод и вывод.
+; Console window thread. Handles input and output.
 con.thread:
-; Поток реагирует на IPC, которое используется только для того, чтобы его можно было "разбудить"
+; The thread responds to IPC, which is used only so that it can be "waken up"
         push    40
         pop     eax
         push    0x80000067 ;  program dont getting events mouse, when it dont active
         pop     ebx
         int     0x40
-        xor     ebx,ebx     ;clear ebx
+        xor     ebx,ebx    ; clear ebx
         mov     al, 60
         mov     bl, 1
         mov     ecx, con.ipc_buf
@@ -3212,7 +3213,7 @@ con.draw_image:
 @@:
         int     0x40
         push    edx
-; Вычисляем высоту бегунка
+; Calculate the height of the slider
         mov     ax, dx
         sub     eax, con.vscroll_btn_height
         mov     ecx, eax
@@ -3222,7 +3223,7 @@ con.draw_image:
         jae     @f
         mov     al, 5
 @@:
-; eax = высота бегунка. Вычисляем положение бегунка
+; eax = slider height. Calculate the slider position
         mov     [con.vscrollbar_size], eax
         xchg    eax, ecx
         sub     eax, ecx
@@ -3232,7 +3233,7 @@ con.draw_image:
         div     ebx
         pop     edx
         push    edx
-; ecx = высота бегунка, eax = положение
+; ecx = slider height, eax = position
         add     eax, con.vscroll_btn_height
         mov     [con.vscrollbar_pos], eax
         mov     ebx, con.vscroll_bgr2
@@ -3331,8 +3332,8 @@ con.extended_numlock:
 
 cursor_esc      dd 27 + ('[' shl 8)
 
-; В текущей реализации значения по умолчанию таковы.
-; В будущем они, возможно, будут считываться как параметры из ini-файла console.ini.
+; In the current implementation, the default values are:
+; In the future, they may be read as parameters from the console.ini ini file.
 con.def_wnd_width   dd    80
 con.def_wnd_height  dd    25
 con.def_scr_width   dd    80
