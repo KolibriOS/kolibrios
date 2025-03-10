@@ -55,9 +55,15 @@ _ini taskbar_vars_ini = { #taskbar_ini_path, "Variables" };
 
 _ini docky_ini = { "/sys/settings/docky.ini", "@" };
 
-unsigned char panels_img_data[] = FROM "bars.raw";
 #define PIMG_W 37
 #define PIMG_H 27 //27*5
+unsigned char panels_img_data[] = FROM "bars_8b.raw";
+dword panels_img_pal[] = {
+	0x00405D74,0x0084FC84,0x00FAFAFA,0x0000B400,
+	0x00E4E4E4,0x008C9B9C,0x000212FD,0x00D8DEDF,
+	0x00585C5D,0x0085B7E0,0x009EC6E7,0x0094C0E5,
+	0x00CB8800,0x00CE3D9E,0x00D20404,0x00485966
+};
 
 proc_info Form;
 
@@ -137,7 +143,7 @@ void main()
 
 void DrawPanelsImage(dword y, n)
 {
-	PutImage(22, y, PIMG_W, PIMG_H, n * PIMG_W * PIMG_H * 3 + #panels_img_data);
+	PutPaletteImage(n * PIMG_W * PIMG_H + #panels_img_data, PIMG_W, PIMG_H, 22, y, 8, #panels_img_pal);
 }
 
 void SetDisabledMode()
