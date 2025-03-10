@@ -11,9 +11,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.26a"
-#define TITLE_EOLITE "Eolite File Manager 5.26a"
-#define TITLE_KFM "Kolibri File Manager 2.26a";
+#define ABOUT_TITLE "EOLITE 5.27"
+#define TITLE_EOLITE "Eolite File Manager 5.27"
+#define TITLE_KFM "Kolibri File Manager 2.27";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -539,7 +539,9 @@ void draw_window()
 	incn x;
 	dword title;
 	static int rand_n;
-	if (!rand_n) rand_n = random(80);
+	debugval("Form.width", Form.width);
+	debugval("screen.w", screen.w);
+	if (!rand_n) && (Form.width + 1 != screen.w) rand_n = random(80);
 
 	if (show_status_bar.checked) {
 		#define STBAR_EOLITE_H 16
