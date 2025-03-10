@@ -484,7 +484,6 @@ tup.append_table(img_files, {
  {"DEVELOP/EXAMPLES/CONGET", VAR_PROGS .. "/develop/libraries/console_coff/examples/test_gets"},
  {"DEVELOP/EXAMPLES/CSLIDE", VAR_PROGS .. "/demos/cslide/trunk/cslide"},
  {"DEVELOP/EXAMPLES/THREAD", VAR_PROGS .. "/develop/examples/thread/trunk/thread"},
- {"DEVELOP/EXAMPLES/USE_MB", VAR_PROGS .. "/demos/use_mb/use_mb"},
  {"File Managers/KFAR", VAR_PROGS .. "/fs/kfar/trunk/kfar"},
  {"File Managers/OPENDIAL", VAR_PROGS .. "/fs/opendial/opendial"},
  {"LOD", VAR_PROGS .. "/fs/lod/lod"},
@@ -636,7 +635,7 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
  {"GAMES/KLAVISHA", VAR_PROGS .. "/games/klavisha/klavisha"},
  {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
 }) else tup.append_table(img_files, {
- {"DEVELOP/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
+ {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
 }) end
 
 if build_type == "ru_RU" then tup.append_table(extra_files, {
@@ -673,7 +672,6 @@ tup.append_table(img_files, {
  {"DEVELOP/PIPET", VAR_PROGS .. "/cmm/misc/pipet.com"},
  {"File Managers/EOLITE", VAR_PROGS .. "/cmm/eolite/Eolite.com"},
  {"File Managers/KFM2", VAR_PROGS .. "/cmm/misc/kfm2.com"},
- {"KF_VIEW", VAR_PROGS .. "/cmm/kf_font_viewer/font_viewer.com"},
  {"DEVELOP/DIFF", VAR_PROGS .. "/cmm/diff/diff.com"},
  {"GAMES/CLICKS", VAR_PROGS .. "/games/clicks/clicks.com"},
  {"GAMES/MBLOCKS", VAR_PROGS .. "/cmm/misc/mblocks.com"},
@@ -696,6 +694,7 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/notes", VAR_PROGS .. "/cmm/notes/notes.com"},
  {"kolibrios/utils/osupdate", VAR_PROGS .. "/cmm/misc/osupdate.com"},
  {"kolibrios/utils/quark", VAR_PROGS .. "/cmm/quark/quark.com"},
+ {"kolibrios/utils/kf_view", VAR_PROGS .. "/cmm/kf_font_viewer/font_viewer.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
 
