@@ -16,11 +16,11 @@ void graphicsInit() {
     if (spriteAtlas->Type != IMAGE_BPP32) {
         spriteAtlas = img_convert(spriteAtlas, NULL, IMAGE_BPP32, 0, 0);
         if (!spriteAtlas) {
-            dbg_printf("spriteAtlas convert error\n");
+            //dbg_printf("spriteAtlas convert error\n");
             exit(-1);
         }
     }
-    dbg_printf("spriteAtlas->Type = %d\n", spriteAtlas->Type);
+    //dbg_printf("spriteAtlas->Type = %d\n", spriteAtlas->Type);
     screenImage = img_create(DEFAULT_WIDTH, DEFAULT_HEIGHT, IMAGE_BPP32);
 }
 

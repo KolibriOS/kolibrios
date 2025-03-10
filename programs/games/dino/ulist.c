@@ -194,6 +194,7 @@ void ulist_print(Ulist* list) {
     printf("\n");
 }
 
+/*
 void ulist_test() {
     // Create a new Ulist
     Ulist* list = ulist_create();
@@ -239,3 +240,4 @@ void ulist_test() {
     // Destroy the list
     ulist_destroy(list);
 }
+*/

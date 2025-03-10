@@ -26,6 +26,6 @@ void* ulist_get_front(Ulist* list);
 void* ulist_get_back(Ulist* list);
 int ulist_size(Ulist* list);
 void ulist_print(Ulist* list);
-void ulist_test();
+//void ulist_test();
 
 #endif /* ULIST_H_ */

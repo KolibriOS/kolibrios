@@ -26,7 +26,7 @@ int main(int argc, char* args[]) {
 	win_pos.x -= DEFAULT_WIDTH/2;
 	win_pos.y /= 2;
 	win_pos.y -= DEFAULT_HEIGHT/2;
-	dbg_printf("wx = %d, wy = %d\n", win_pos.x, win_pos.y);
+	//dbg_printf("wx = %d, wy = %d\n", win_pos.x, win_pos.y);
 	ksys_colors_table_t sys_color_table;
     _ksys_get_system_colors(&sys_color_table);
 	_ksys_set_event_mask(0xC0000027); // !
@@ -37,7 +37,7 @@ int main(int argc, char* args[]) {
 
 	runnerInit();
 
-	dbg_printf("dino started\n");
+	//dbg_printf("dino started\n");
 
 	int ext_code = 0;
     uint8_t old_mode = 0;

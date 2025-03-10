@@ -6,7 +6,7 @@ int getRandomNumber(int _min, int _max) {
 
 void intToStr(int num, int ndigits, char* result) {
 	char num_str[16]; // 16 more than enough for int
-	sprintf(num_str, "%d", num); // Convert num to a string
+	//sprintf(num_str, "%d", num); // Convert num to a string
 	if (strlen(num_str) > ndigits) {
 		// Copy only the last ndigits to result
 		strcpy(result, num_str + strlen(num_str) - ndigits);
