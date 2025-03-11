@@ -25,4 +25,4 @@ The KolibriOS team expresses special thanks to the author of the 32-bit **Menuet
 
 Contents of this repository are licensed under the terms of **GNU GPL 2.0** unless otherwise specified.
 
-See [this](./kernel/trunk/COPYING.TXT) file for details.
+See [this](./COPYING.TXT) file for details.
