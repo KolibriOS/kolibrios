@@ -1,264 +1,246 @@
+; SPDX-License-Identifier: GPL-2.0
+; Ported tube demo by VT
+; Copyright (C) 2001 Milo≈° Bazelides <baze@stonline.sk>
+; Copyright (C) 2006-2025 KolibriOS team
 
-;  (‹) ( ) ‹ ) ( )   256b intro by baze/3SC for Syndeecate 2001
-;  ﬂ€ﬂ €‹€ €€€ €€‹   loveC: thanks, Serzh: eat my socks dude ;]
-;  ( ) ( ) ( ) ( )   e-mail: baze@stonline.sk, web: www.3SC.sk
+; Original comments: 
+;  256b intro by baze/3SC for Syndeecate 2001
+;  loveC: thanks, Serzh: eat my socks dude ;]
+;  e-mail: baze@stonline.sk, web: www.3SC.sk
 
-;  Menuet port by VT
-
-appname equ 'TUBE - FPU'
+; Original source: https://baze.sk/3sc/files/tube.zip
 
 use32
-             org  0x0
+	org  0
+	db   'MENUET01'
+	dd   1,START,image_end,memory_end,stacktop,0,0
 
-             db   'MENUET01'
-             dd   0x01
-             dd   START
-             dd   I_END
-             dd   0x40000
-             dd   0x40000
-             dd   0,0
+include '../../macros.inc'
+include '../../KOSfuncs.inc'
 
-include '..\..\..\macros.inc'
+title db 'Tube - FPU',0
 
+SCREEN_W equ (640-10) ;10 px for borders
+SCREEN_H equ (400-10)
+
+align 4
 START:
-
-   call draw_window
-
-   call init_tube
-
-   push ebx
+	call draw_window
+	call init_tube
+	push ebx
 
 still:
+	pop  ebx
+	call MAIN
+	push ebx
 
-   pop  ebx
+	mcall SF_WAIT_EVENT_TIMEOUT,1
 
-   call MAIN
+	cmp  eax,EV_REDRAW
+	jne  no_red
+	call draw_window
+	jmp  still
+ no_red:
 
-   push ebx
+	or   eax,eax
+	jz   still
 
-   mov  eax,23
-   mov  ebx,1
-   mcall
+	mcall SF_TERMINATE_PROCESS
 
-   cmp  eax,1
-   jne  no_red
-   call draw_window
-   jmp  still
-  no_red:
-
-   cmp  eax,0
-   je   still
-
-   or   eax,-1
-   mcall
-
-SCREEN  equ 160
-PIXBUF  equ 200h
-EYE     equ EYE_P-2
+EYE     equ EYE_P-4
 
 
+align 4
 MAIN:
-
- add    bh,10;8
- mov    edi,PIXBUF
- fadd   dword [di-PIXBUF+TEXUV-4]
- push   di
- mov    dx,-80
+;edx - coord y
+;ebp - coord x
+;edi - pixel buffer
+	add    ebx,10 shl 8
+	mov    edi,PIXBUF
+	fadd   dword [TEXUV-4]
+	push   edi
+	mov    edx,-SCREEN_H/2
 
 TUBEY:
-
- mov    bp,-160
+	mov    ebp,-SCREEN_W/2
 
 TUBEX:
-
- mov    si,TEXUV
- fild   word [si-TEXUV+EYE]
- mov    [si],bp
- fild   word [si]
- mov    [si],dx
- fild   word [si]
- mov    cl,2
+	mov    esi,TEXUV
+	fild   word [EYE]
+	mov    [esi],ebp
+	fild   word [esi]
+	mov    [esi],edx
+	fild   word [esi]
+	mov    cl,2
 
 ROTATE:
+	fld    st3
+	fsincos
+	fld    st2
+	fmul   st0,st1
+	fld    st4
+	fmul   st0,st3
+	fsubp  st1,st0
+	fxch   st3
+	fmulp  st2,st0
+	fmulp  st3,st0
+	faddp  st2,st0
+	fxch   st2
+	loop   ROTATE
 
- fld    st3
- fsincos
- fld    st2
- fmul   st0,st1
- fld    st4
- fmul   st0,st3
- db     0xde,0xe9 ; fsubp   st1,st0
- db     0xd9,0xcb ; fxch    st3
- fmulp  st2,st0
- fmulp  st3,st0
- faddp  st2,st0
- db     0xd9,0xca ; fxch    st2
+	fld    st1
+	fmul   st0,st0
+	fld    st1
+	fmul   st0,st0
+	faddp  st1,st0
+	fsqrt
+	
+	fdivp  st3,st0
+	fpatan
+	fimul  word [esi-4]
+	fistp  word [esi]
+	fimul  word [esi-4]
+	fistp  word [esi+1]
+	mov    esi,[esi]
 
- loop   ROTATE
+	lea    eax,[ebx+esi]
+	add    al,ah
+	and    al,64
+	mov    al,-5
+	jz     STORE_1
 
- fld    st1
- db     0xdc,0xc8 ; fmul    st0,st
- fld    st1
- db     0xdc,0xc8 ; fmul    st0,st
- faddp  st1,st0
- fsqrt
- db     0xde,0xfb ; fdivp   st3,st0
- fpatan
- fimul  word [si-4]
- fistp  word [si]
- fimul  word [si-4]
- fistp  word [si+1]
- mov    si,[si]
+	shl    esi,2
+	lea    eax,[ebx+esi]
+	sub    al,ah
+	mov    al,-16
+	jns    STORE_1
 
- lea    ax,[bx+si]
- add    al,ah
- and    al,64
- mov    al,-5
- jz     STORE_1
-
- shl    si,2
- lea    ax,[bx+si]
- sub    al,ah
- mov    al,-16
- jns    STORE_1
-
- shl    si,1
- mov    al,-48
+	shl    esi,1
+	mov    al,-48
 
 STORE_1:
-
 ; add    al,[ebx+esi+0x80000]
- add    [di],al
- inc    di
-
- inc    bp
- cmp    bp,160
+	add    [edi],al
+	inc    edi
+	inc    ebp
+	cmp    ebp,SCREEN_W/2
 
 EYE_P:
+	jnz    TUBEX
+	inc    edx
+	cmp    edx,SCREEN_H/2
+	jnz    TUBEY
 
- jnz    TUBEX
- inc    dx
- cmp    dx,80
- jnz    TUBEY
+	call   display_image
 
- call   display_image
+	pop    esi
+	mov    ecx,SCREEN_H*SCREEN_W
 
- pop    si
- mov    ch,SCREEN*320/256
-
+align 4
 BLUR:
-
- inc    si
- sar    byte [si],2
- loop   BLUR
-
- ret
+	inc    esi
+	sar    byte [esi],2
+	loop   BLUR
+	ret
 
 
-
+align 4
 display_image:
+	pusha
 
-  pusha
+	mov esi,PIXBUF
+	mov edi,buf2
+align 4
+newp:
+	movzx edx,byte [esi]
+	shl edx,4
 
-  mov esi,PIXBUF
-  mov edi,0x10000
- newp:
-  movzx edx,byte [esi]
-  shl edx,4
-;  mov dh,dl
-  mov [edi],edx
+	mov [edi],edx
 
-  add edi,3
-  inc esi
+	add edi,3
+	inc esi
 
-  cmp esi,320*160+PIXBUF
-  jbe newp
+	cmp esi,PIXBUF+SCREEN_W*SCREEN_H
+	jbe newp
 
-  mov eax,7
-  mov ecx,320*65536+160
-  xor edx,edx
-  mov ebx,0x10000
-  mcall
+	xor edx,edx
+	mcall SF_PUT_IMAGE,buf2,<SCREEN_W,SCREEN_H>
 
-  popa
-  ret
+	popa
+	ret
 
 
-
+align 4
 draw_window:
+	pusha
 
-     pusha
+	mcall SF_REDRAW, SSF_BEGIN_DRAW
+	mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+	add eax,SCREEN_H
+	lea ecx,[100*65536+4+eax]
+	mcall SF_CREATE_WINDOW,100*65536+SCREEN_W+9,, 0x74000000,,title
+	mcall SF_REDRAW, SSF_END_DRAW
+	popa
+	ret
 
-     mcall 12, 1
-	 mcall 48, 4 ;get skin width
-	 lea  ecx,[100*65536+164+eax]
-     xor  eax,eax
-     mov  ebx,100*65536+329
-     mov  edx,0x74000000
-     mov  edi,title
-     mcall
-     mcall 12, 2
-     popa
-     ret
-
-title db appname,0
-
-db 41,0,0xC3,0x3C
-
+align 4
+	db 41,0,0xC3,0x3C
 TEXUV:
+	rd 1
 
+align 4
 init_tube:
-
-  mov ecx,256
+	mov ecx,256
 
 PAL1:
-
-  mov dx,3C8h
-  mov ax,cx
-  inc dx
-  sar al,1
-  js PAL2
-  mul al
-  shr ax,6
+	mov edx,3C8h
+	mov eax,ecx
+	inc edx
+	sar al,1
+	js PAL2
+	mul al
+	shr ax,6
 
 PAL2:
-
-  mov al,0
-  jns PAL3
-  sub al,cl
-  shr al,1
-  shr al,1
+	mov al,0
+	jns PAL3
+	sub al,cl
+	shr al,1
+	shr al,1
 
 PAL3:
-
-  mov bx,cx
-  mov [ebx+0x1000],bh
-  loop PAL1
-  mov  ecx,256
+	mov ebx,ecx
+	mov [ebx+buf1],bh
+	loop PAL1
+	mov  ecx,256
 
 TEX:
+	mov bx,cx
+	add ax,cx
+	rol ax,cl
+	mov dh,al
+	sar dh,5
+	adc dl,dh
+	adc dl,[ebx+255+buf1]
+	shr dl,1
+	mov [ebx+buf1],dl
+	not bh
+	mov [ebx+buf1],dl
+	loop TEX
 
-  mov bx,cx
-  add ax,cx
-  rol ax,cl
-  mov dh,al
-  sar dh,5
-  adc dl,dh
-  adc dl,[ebx+255+0x1000]
-  shr dl,1
-  mov [ebx+0x1000],dl
-  not bh
-  mov [ebx+0x1000],dl
-  loop TEX
+	fninit
+	fldz
 
-  fninit
-  fldz
+	ret
 
-  ret
+align 4
+image_end:
 
+PIXBUF	rb	SCREEN_W*SCREEN_H
+buf1	rb	SCREEN_W*SCREEN_H
+buf2	rb 	SCREEN_W*SCREEN_H*3
 
-I_END:
-
-
-
-
+		rb	1024
+align 4
+stacktop:
+memory_end:
