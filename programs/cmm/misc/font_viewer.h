@@ -1,8 +1,4 @@
-#define MEMSIZE 1024*30
-#define ENTRY_POINT #main
 
-#include "../lib/kfont.h"
-#include "../lib/gui.h"
 
 #define BARH 28
 #define WINW 528
@@ -12,11 +8,8 @@ char active_tab = 0;
 char colored = true;
 dword checkbox_flag;
 
-void main()
+void main_kfont()
 {   
-	proc_info Form;
-
-	mem_init();
 	checkbox_flag = memopen("CHECKBOX", NULL, SHM_READ);
 
 	if (!param) strcpy(#param, DEFAULT_FONT);
@@ -48,7 +41,7 @@ void main()
 
 		case evReDraw:
 			sc.get();
-			DefineAndDrawWindow(215,100,WINW+9,WINH+GetSkinHeight()+4,0x74,0xFFFFFF,#title,0);
+			DefineAndDrawWindow(215,100,WINW+9,WINH+skin_h+4,0x74,0xFFFFFF,#title,0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window&ROLLED_UP) break;
 			_DRAW_WINDOW_CONTENT:

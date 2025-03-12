@@ -694,7 +694,6 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/notes", VAR_PROGS .. "/cmm/notes/notes.com"},
  {"kolibrios/utils/osupdate", VAR_PROGS .. "/cmm/misc/osupdate.com"},
  {"kolibrios/utils/quark", VAR_PROGS .. "/cmm/quark/quark.com"},
- {"kolibrios/utils/kf_view", VAR_PROGS .. "/cmm/kf_font_viewer/font_viewer.com"},
 })
 end -- tup.getconfig('NO_CMM') ~= 'full'
 

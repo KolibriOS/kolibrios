@@ -10,11 +10,13 @@ SOFTWARE CENTER v2.87
 #include "..\lib\obj\libini.h"
 #include "..\lib\kfont.h"
 #include "..\lib\list_box.h"
-#include "..\lib\collection.h"
 
 proc_info Form;
+
+#include "font_viewer.h"
+
 llist list;
-collection app_path_collection=0;
+dword app_path_collection;
 bool kolibrios_mounted;
 
 int window_width,
@@ -30,16 +32,10 @@ char window_title[128],
 
 bool small_screen = false;
 
-struct SW_COLORS 
- {
- 	dword list_bg;
- 	dword text;
- 	dword graph;
- 	dword dark;
- 	dword light;
- } swc;
-
 block selection[128];
+
+#define MAX_ITEMS 75
+#define MAX_FPATH 1024
 
 void load_ini_config(dword _ini_path)
 {
@@ -57,17 +53,21 @@ void main()
 {   
 	dword id;
 	kfont.init(DEFAULT_FONT);
-	load_dll(libini, #lib_init,1);
 
-	kolibrios_mounted = dir_exists("/kolibrios");
-
-	if (param) {
+	if (streq(#param + strlen(#param) - 3, ".kf")) {
+		main_kfont();
+	} else if (param) {
 		strcpy(#settings_ini_path, #param);
 	} else {
 		strcpy(#settings_ini_path, "/sys/settings/");
 		strcat(#settings_ini_path, I_Path + strrchr(I_Path, '/'));
 		strcat(#settings_ini_path, ".ini");		
 	}
+
+	load_dll(libini, #lib_init,1);
+	kolibrios_mounted = dir_exists("/kolibrios");
+
+	app_path_collection = malloc(MAX_FPATH*MAX_ITEMS);
 	
 	load_ini_config(#settings_ini_path);
 	list.cur_y = -1;
@@ -99,8 +99,8 @@ void main()
 			break;
 
 		case evReDraw:
-			SetAppColors();
 			DefineAndDrawWindow(screen.w-window_width/2,screen.h-window_height/2,window_width,window_height,0x74,0,"",0);
+			sc.get();
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window&ROLLED_UP) { 
 				DrawTitle(#window_title);
@@ -110,41 +110,18 @@ void main()
 				DrawTitle(#window_title);
 				list.y = 0;	
 			} else {
-				DrawTitle(NULL); 
+				DrawTitle(NULL);
 				DrawTopBar();
 			}
 			DrawList();
-			DrawBar(0, row +1 * list.item_h + list_pos, Form.cwidth, -row - 1 * list.item_h - list_pos + Form.cheight, swc.list_bg);
+			DrawBar(0, row +1 * list.item_h + list_pos, Form.cwidth, -row - 1 * list.item_h - list_pos + Form.cheight, sc.light);
 			DrawSelection();
-	}
-}
-
-void SetAppColors()
-{
-	dword bg_col, old_list_bg_color;
-	sc.get();
-	old_list_bg_color = swc.list_bg;
-	bg_col = sc.work;
-	if (skin_is_dark()) 
-	{
-		//dark colors
-		swc.list_bg = sc.work;
-	 	swc.text = sc.work_text;
-	 	swc.dark = sc.dark;
-	 	swc.light = sc.light;
-	} else {
-		//light colors
-		swc.list_bg = 0xF3F3F3;
-	 	swc.text = 0x000000;
-	 	swc.dark = 0xDCDCDC;
-	 	swc.light = 0xFCFCFC;
 	}
 }
 
 void DrawList() {
 	list.count = 0;
 	row = -1;
-	app_path_collection.drop();
 	list_pos = list.y;
 	list.column_max = window_width - 10 / list.item_w;
 	ini_enum_sections stdcall (#settings_ini_path, #process_sections);
@@ -168,7 +145,7 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 		col=0;
 	}
 
-	if (col==0) DrawBar(0, row * list.item_h + list_pos, Form.cwidth, list.item_h, swc.list_bg);
+	if (col==0) DrawBar(0, row * list.item_h + list_pos, Form.cwidth, list.item_h, sc.light);
 	DefineButton(col*list.item_w+6, row*list.item_h + list_pos,list.item_w,list.item_h-3,list.count + 100 + BT_HIDE,0);
 
 	icon_char_pos = strchr(key_value, ',');
@@ -177,20 +154,21 @@ byte draw_icons_from_section(dword key_value, key_name, sec_name, f_name)
 	selection[list.count].x = icon_x-2;
 	selection[list.count].y = icon_y-2;
 	if (icon_char_pos) ESBYTE[icon_char_pos] = '\0'; //delete icon from string
-	app_path_collection.add(key_value);
+
+	strncpy(list.count * MAX_FPATH + app_path_collection, key_value, MAX_FPATH);
 
 	text_x = col*list.item_w+5;
 	text_y = list.item_h - 40 / 2;
 	if (!strchr(key_name, ' ')) {//|| (kfont.getsize(key_name)+30<list.item_w) <== too slow
-		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos, list.item_w,0, swc.list_bg, swc.text, 12, key_name);
+		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos, list.item_w,0, sc.light, sc.work_text, 12, key_name);
 	} else {
 		space_pos = strrchr(key_name, ' ');
 		ESBYTE[key_name+space_pos-1] = '\0';
-		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos - 2, list.item_w,0, swc.list_bg, swc.text, 12, key_name);
-		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos + 13, list.item_w,0, swc.list_bg, swc.text, 12, key_name+space_pos);
+		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos - 2, list.item_w,0, sc.light, sc.work_text, 12, key_name);
+		kfont.WriteIntoWindowCenter(text_x, row*list.item_h+46 + list_pos + 13, list.item_w,0, sc.light, sc.work_text, 12, key_name+space_pos);
 	}
 	if (icon_char_pos) icon_id = atoi(icon_char_pos+1);
-	if (Form.cwidth) draw_icon_32(icon_x, icon_y, swc.list_bg, icon_id);
+	if (Form.cwidth) draw_icon_32(icon_x, icon_y, sc.light, icon_id);
 	list.count++;
 	col++;
 	return true;
@@ -212,10 +190,9 @@ byte process_sections(dword sec_name, f_name)
 	old_row = row;
 
 	if (!small_screen) {
-		DrawBar(0, row * list.item_h + list_pos, Form.cwidth , 29, swc.list_bg);
-		text_len = kfont.WriteIntoWindow(10, row * list.item_h + 10 + list_pos, swc.list_bg, swc.text, 15, sec_name);
-		DrawBar(text_len+20, row * list.item_h + list_pos + 20, Form.cwidth-text_len-20, 1, swc.dark);
-		DrawBar(text_len+20, row * list.item_h + list_pos + 21, Form.cwidth-text_len-20, 1, swc.light);
+		DrawBar(0, row * list.item_h + list_pos, Form.cwidth , 29, sc.light);
+		text_len = kfont.WriteIntoWindow(10, row * list.item_h + 10 + list_pos, sc.light, sc.work_text, 15, sec_name);
+		DrawBar(text_len+20, row * list.item_h + list_pos + 20, Form.cwidth-text_len-20, 2, sc.work);
 		list_pos += 29;		
 	}
 	ini_enum_keys stdcall (f_name, sec_name, #draw_icons_from_section);
@@ -233,7 +210,7 @@ void DrawTopBar()
 void EventIconClick(dword appid)
 {
 	char run_app_path[4096];
-	dword app_path = app_path_collection.get(appid);
+	dword app_path = MAX_FPATH * appid + app_path_collection;
 	dword param_pos = strchr(app_path, '|');
 	if (param_pos) {
 		ESBYTE[param_pos] = NULL;
@@ -273,7 +250,7 @@ void DrawSelection()
 	int i;
 	dword col;
 	for (i=0; i<list.count; i++) {
-		if (i==list.cur_y) col=0x0080FF; else col=swc.list_bg;
+		if (i==list.cur_y) col=0x0080FF; else col=sc.light;
 		DrawWideRectangle(selection[i].x, selection[i].y, 36, 36, 2, col);
 	}
 }
