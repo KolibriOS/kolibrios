@@ -66,10 +66,11 @@ int kfont_char_width[255];
 :bool KFONT::init(dword font_path)
 {
 	dword fsize_notused;
-	if(font)free(font);
+	if(font) font = free(font);
 	read_file(font_path, #font_begin, #fsize_notused);
 	if(!EAX) {
-		RunProgram("/sys/@notify", "'Error: KFONT is not loaded.' -E"); 
+		RunProgram("/sys/@notify", "'Error: KFONT is not loaded' -E"); 
+		kfont.height = 14;
 		return false;
 	}
 	changeSIZE();
@@ -99,6 +100,10 @@ int kfont_char_width[255];
 
 :dword KFONT::getsize(byte font_size, dword text1)
 {
+	if (!font) {
+		 size.width = strlen(text1) * 8;
+		 return size.width; 
+	}
 	size.height = size.width = 0;
 	size.offset_x = size.offset_y = -1;
 	if (size.pt != font_size) {
@@ -275,6 +280,11 @@ inline fastcall dword b32(EAX) { return DSDWORD[EAX]; }
 {
 	if(!text1)return 0;
 	getsize(font_size, text1);
+	if (!font) {
+		EDI = _background;
+		WriteText(x, y, 0xD0, _color, text1);
+		return size.width;
+	}
 	raw_size = NULL;
 	WriteIntoBuffer(0, -size.offset_y, size.width-size.offset_x, 
 		size.height-size.offset_y, _background, _color, font_size, text1);
