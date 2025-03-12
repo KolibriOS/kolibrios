@@ -158,25 +158,27 @@ void _SystemDiscs::DrawOptions(int draw_x)
 	SystemDiscs.Get();
 
 	DrawPopup(draw_x, optionsy, DDW, list.count*KFM2_DEVH, 1, -1, sc.line);
+	EAX = kfont.bold;
+	$push eax
 
 	for (i=0;i<list.count;i++) {
 		strcpy(#dev_name, list.get(i));
 		GetDiskIconAndName(#dev_name, #dev_icon, #disc_name);
-		if (strstr(path, #dev_name)!=0) is_active=true; else is_active=false;
+		if (strstr(path, #dev_name)!=0) kfont.bold=true; else kfont.bold=false;
 
 		DrawBar(draw_x, optionsy, DDW, KFM2_DEVH, 0xFFFFFF);
 		DefineButton(draw_x, optionsy, DDW, KFM2_DEVH-1, 100+i+BT_HIDE,0xFFFFFF);
-		PutImage(draw_x + 5, optionsy+2, 18,17, is_active*7+dev_icon*17*18*3+#devices);
-		if (is_active) kfont.bold = true;
+		PutImage(draw_x + 5, optionsy+2, 18,17, kfont.bold*7+dev_icon*17*18*3+#devices);
 		//strncpy(#volume_label, GetVolumeLabel(#dev_name), sizeof(volume_label));
 		strcpy(#label_file_name, #dev_name);
 		//if (dev_name[1]!='k') && (dev_name[2]!='y') {
 		//	if (volume_label) sprintf(#label_file_name, "%s [%s]", #dev_name, #volume_label);
 		//} 
 		kfont.WriteIntoWindow(draw_x + 24, optionsy+2, 0xFFFfff, 0x000000, kfont.size.pt, #label_file_name+1);
-		kfont.bold = false;
 		optionsy += KFM2_DEVH;
 	}
+	$pop eax
+	kfont.bold = EAX;
 }
 
 

@@ -38,7 +38,7 @@
 char *kfm_func = {
 	"Инфо",
 	"Переимен.",
-	"Просмотр",
+	"HEX-просм.",
 	"Редакт.",
 	"Копировать",
 	"Переместить",
@@ -86,9 +86,9 @@ char *actions[] = {
 
 #define TITLE_SETT "Настройки"
 #define SHOW_DEVICE_CLASS "Выводить названия класса устройств"
-#define SHOW_STATUS_BAR "Показывать статус бар"
 #define BIG_ICONS "Использовать большие иконки"
 #define COLORED_LINES "Подсвечивать четные линии в списке"
+#define FONT_BOLD "Жирный шрифт"
 #define FONT_SIZE_LABEL "Размер шрифта"
 #define LIST_LINE_HEIGHT "Высота строки в списке"
 #define SAVE_PATH_AS_DEFAULT "Текущий путь"
@@ -137,7 +137,7 @@ char *actions[] = {
 char *kfm_func = {
 	"Info",
 	"Rename",
-	"View",
+	"HEX View",
 	"Edit",
 	"Copy",
 	"Move",
@@ -185,9 +185,9 @@ char *actions[] = {
 
 #define TITLE_SETT "Settings"
 #define SHOW_DEVICE_CLASS "Show device class name"
-#define SHOW_STATUS_BAR "Show status bar"
 #define BIG_ICONS "Big icons in list"
 #define COLORED_LINES "Highlight even lines in list"
+#define FONT_BOLD "Bold font"
 #define FONT_SIZE_LABEL "Font size"
 #define LIST_LINE_HEIGHT "List line height"
 #define SAVE_PATH_AS_DEFAULT "Current path"

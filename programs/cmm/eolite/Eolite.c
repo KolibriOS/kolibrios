@@ -11,9 +11,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.27"
-#define TITLE_EOLITE "Eolite File Manager 5.27"
-#define TITLE_KFM "Kolibri File Manager 2.27";
+#define ABOUT_TITLE "EOLITE 5.28"
+#define TITLE_EOLITE "Eolite File Manager 5.28"
+#define TITLE_KFM "Kolibri File Manager 2.28";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -542,14 +542,11 @@ void draw_window()
 	static int rand_n;
 	if (!rand_n) && (Form.width + 1 != screen.w) rand_n = random(80);
 
-	if (show_status_bar.checked) {
-		#define STBAR_EOLITE_H 16
-		#define STBAR_KFM_H 21
-		if (efm) status_bar_h = STBAR_KFM_H;
-		else status_bar_h = STBAR_EOLITE_H;
-	} else {
-		status_bar_h = 0;
-	}
+	#define STBAR_EOLITE_H 16
+	#define STBAR_KFM_H 21
+	if (efm) status_bar_h = STBAR_KFM_H;
+	else status_bar_h = STBAR_EOLITE_H;
+
 	if (efm) title = TITLE_KFM; else title = TITLE_EOLITE;
 	DefineAndDrawWindow(Form.left+rand_n,Form.top+rand_n,Form.width,Form.height,0x73,NULL,title,0);
 	GetProcessInfo(#Form, SelfInfo);
@@ -597,7 +594,7 @@ void draw_window()
 	}
 	//main rectangles
 	DrawRectangle(1,40,Form.cwidth-3,Form.cheight - 42-status_bar_h,sc.line);
-	DrawBar(0,39,1,-show_status_bar.checked*status_bar_h + Form.cheight - 40, sc.work);
+	DrawBar(0,39,1,-status_bar_h + Form.cheight - 40, sc.work);
 	EBX = Form.cwidth-1 * 65536 + 1;
 	$int 64
 	for (i=0; i<6; i++) DrawBar(0, 34+i, Form.cwidth, 1, MixColors(sc.dark, sc.work, i*10));
@@ -652,17 +649,13 @@ void DrawStatusBar()
 {
 	char status_bar_str[80];
 	int go_up_folder_exists=0;
-	dword topcolor;
-
-	if (show_status_bar.checked) topcolor=sc.light; else topcolor=sc.work;
-	DrawBar(0, Form.cheight - status_bar_h-1, Form.cwidth, 1, topcolor);
-
+	DrawBar(0, Form.cheight - status_bar_h-1, Form.cwidth, 1, sc.light);
 	if (efm) {
 		DrawBar(0, Form.cheight - status_bar_h, Form.cwidth, 2, sc.work);
 		DrawBar(0, Form.cheight - 2, Form.cwidth,  2, EDX);
 		DrawBar(Form.cwidth-1, Form.cheight - 19, 1,  17, EDX);
 		DrawFuncButtonsInKfm();
-	} else if (show_status_bar.checked) {
+	} else {
 		if (files.count>0) && (streq(items.get(0)*304+buf+72,"..")) go_up_folder_exists=1;
 		DrawBar(0, Form.cheight - status_bar_h, Form.cwidth,  status_bar_h, sc.work);
 		sprintf(#status_bar_str, T_STATUS_EVEMENTS, folder_count-go_up_folder_exists, files.count-folder_count);
@@ -1116,7 +1109,6 @@ void EventClosePopinForm()
 void ShowPopinForm(byte _popin_type)
 {
 	int popinx;
-	popin_string[0] = -1;
 	switch(_popin_type) {
 		case POPIN_PATH:
 				edit_box_set_text stdcall (#popin_text, path);
@@ -1131,6 +1123,7 @@ void ShowPopinForm(byte _popin_type)
 				DrawEolitePopup(T_CREATE, T_CANCEL);
 				break;
 		case POPIN_RENAME:
+				if (itdir) && (streq(#file_name,"..")) return;
 				edit_box_set_text stdcall (#popin_text, #file_name);
 				DrawEolitePopup(T_RENAME, T_CANCEL);
 				break;
@@ -1188,7 +1181,7 @@ void FnProcess(byte N)
 			if (files.count) ShowPopinForm(POPIN_RENAME);
 			break;
 		case 3:
-			if (files.count) && (!itdir) RunProgram("/kolibrios/utils/quark", #file_path);
+			if (files.count) && (!itdir) RunProgram("/sys/develop/heed", #file_path);
 			break;
 		case 4:
 			if (files.count) && (!itdir) RunProgram("/sys/develop/cedit", #file_path);

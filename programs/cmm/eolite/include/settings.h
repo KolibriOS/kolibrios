@@ -9,9 +9,9 @@ edit_box path_start_ed = {290,50,57,0xffffff,0x94AECE,0xffffff,0xffffff,0x100000
 more_less_box font_size   = { NULL, 9, 22, FONT_SIZE_LABEL };
 more_less_box line_height = { NULL, 16, 64, LIST_LINE_HEIGHT };
 checkbox show_dev_name    = { SHOW_DEVICE_CLASS };
-checkbox show_status_bar  = { SHOW_STATUS_BAR };
 checkbox big_icons        = { BIG_ICONS };
 checkbox colored_lines    = { COLORED_LINES };
+checkbox bold_font        = { FONT_BOLD };
 
 
 void settings_dialog()
@@ -51,8 +51,10 @@ void settings_dialog()
 					break;
 				}
 				show_dev_name.click(id);
-				show_status_bar.click(id);
 				colored_lines.click(id);
+				if (bold_font.click(id)) {
+					kfont.bold^=1;
+				}
 				if (font_size.click(id)) { 
 					kfont.size.pt = font_size.value; 
 					kfont.changeSIZE(); 
@@ -72,7 +74,7 @@ void settings_dialog()
 				
 			case evReDraw:
 				DefineAndDrawWindow(Form.cwidth-300/2+Form.left, Form.cheight-292/2+Form.top, 400, 
-					-efm*42+345+skin_h,0x34,sc.work,TITLE_SETT,0);
+					345+skin_h,0x34,sc.work,TITLE_SETT,0);
 				GetProcessInfo(#Settings, SelfInfo);
 				DrawSettingsCheckBoxes();
 		}
@@ -96,10 +98,10 @@ void DrawSettingsCheckBoxes()
 	y.n = 0;
 	if (!efm) {
 		show_dev_name.draw(XXX, y.inc(14));
-		show_status_bar.draw(XXX, y.inc(25));
 	}
 	big_icons.draw(XXX, y.inc(25));
 	colored_lines.draw(XXX, y.inc(25));
+	bold_font.draw(XXX, y.inc(25));
 	font_size.draw(XXX, y.inc(31));
 	line_height.draw(XXX, y.inc(31));
 	
@@ -121,7 +123,7 @@ void LoadIniSettings()
 
 	files.SetFont(6, 9, 10000000b);
 	show_dev_name.checked   = ini.GetInt("ShowDeviceName", true); 
-	show_status_bar.checked = ini.GetInt("ShowStatusBar", true); 
+	kfont.bold = bold_font.checked = ini.GetInt("BoldFont", false); 
 	big_icons.checked       = ini.GetInt("BigIcons", false); BigIconsSwitch();
 	colored_lines.checked   = ini.GetInt("ColoredLines", true); 
 	kfont.size.pt   = ini.GetInt("FontSize", 13); 
@@ -141,7 +143,7 @@ void LoadIniSettings()
 void SaveIniSettings()
 {
 	ini.SetInt("ShowDeviceName", show_dev_name.checked);
-	ini.SetInt("ShowStatusBar", show_status_bar.checked);
+	ini.SetInt("BoldFont", bold_font.checked);
 	ini.SetInt("BigIcons", big_icons.checked);
 	ini.SetInt("ColoredLines", colored_lines.checked);
 	ini.SetInt("FontSize", kfont.size.pt);

@@ -42,7 +42,7 @@ void about_dialog()
 				about_x = -strlen(ABOUT_TITLE)*18+about_form.cwidth/2;
 				WriteTextB(about_x+2,107,0x82,0xD49CD2,ABOUT_TITLE);
 				WriteTextB(about_x,105,0x82,0x9D129D,ABOUT_TITLE);
-				WriteTextLines(73,163,0x90,sc.work_text,"    By Leency\nand KolibriOS Team\n    2008-2021",20);
+				WriteTextLines(73,163,0x90,sc.work_text,"    By Leency\nand KolibriOS Team\n    2008-2025",20);
 				#ifdef LANG_RUS
 				DrawStandartCaptButton(60,about_form.cheight-38,11,"История разработки");
 				#endif
