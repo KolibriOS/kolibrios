@@ -23,11 +23,8 @@ MAX_TRIANGLES equ 12
 SCREEN_X equ 320
 SCREEN_Y equ 200
 
-include 'lang.inc'
 include '..\..\..\macros.inc'
 ;purge mov
-include 'ascl.inc'
-include 'ascgl.inc'
 
 START:
 init_sin_cos:
@@ -65,7 +62,47 @@ still:
 ;    cmp  eax,3                  ; button in buffer ?
     jz   button
 
-    fps  220,8,cl_White,cl_Black
+
+; FPS - Set Frame Per Second Display
+fps_show_frequency=40
+macro fps x,y,color,delcolor
+{
+local spdat,savetime,new_time,fps,fps_cntr,out_fps,new_time,ttt
+local no_out_fps
+    jmp spdat
+savetime dd 0
+fps_cntr dd 0
+fps      dd 0
+ttt      dd 0
+spdat:
+get_time:
+    mov eax,3
+    mcall
+    cmp eax,[savetime]
+    jne new_time
+    inc [fps_cntr]
+    cmp dword [ttt],0
+    je  out_fps
+    dec dword [ttt]
+    jmp no_out_fps
+new_time:
+    mov [savetime],eax
+    mov ebx,[fps_cntr]
+    mov [fps],ebx
+    mov [fps_cntr],0
+out_fps:
+    mov dword [ttt],fps_show_frequency
+    mov eax,47
+    mov ebx,5*65536
+    mov edx,(x+1)*65536+y
+    mov esi,color+0xD0000000
+    mov edi,delcolor
+    mov ecx,[fps]
+    mcall
+no_out_fps:
+}
+
+    fps  220,5,0x00FFFfff,0x00000000
 
 main_loop:
 
@@ -112,15 +149,15 @@ exit:
 draw_window:
     mcall 12, 1 ;Start window redraw
 
-	mcall 48, 4
+    mcall 48, 4
 	
-	lea	ecx, [100*65536+SCREEN_Y+4+eax]; [y start] *65536 + [y size] + [skin_height]
-	xor	eax, eax   ;Draw window
+    lea ecx,[100*65536+SCREEN_Y+4+eax]; [y start] *65536 + [y size] + [skin_height]
+    xor eax,eax   ;Draw window
     mov ebx,100*65536+(SCREEN_X+9)  ;x start*65536+x size
     mov edx,0x54000000         ;0x03 use skinned window
     mov edi,title
     mcall
-	
+
     mcall 12, 2 ;End window redraw
 	
     ret
@@ -196,7 +233,7 @@ clear_screen_buffer:
  rep stosd
 
 	ret
-
+	
 ;include triangle.asm
 ; Mikolaj Felix 14/5/2001
 ; mfelix@polbox.com
