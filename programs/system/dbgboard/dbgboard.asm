@@ -240,7 +240,6 @@ proc print_next_char uses ebx
                         invoke con_write_asciiz, prefix
                     .endif
                 .endif
-                ; invoke  con_write_asciiz, prefix
 
                 mov     [is_start_line], 0
                 mov     [prefix_index], 0
@@ -258,7 +257,6 @@ proc print_next_char uses ebx
                     invoke con_write_asciiz, chr
                 .endif
             .endif
-        ;     invoke con_write_asciiz, chr
             .if byte [chr] = 10
                 mov [is_start_line], 1
                 stdcall set_text_color, TEXT_COLOR_LIGHTGRAY
@@ -268,11 +266,11 @@ proc print_next_char uses ebx
 endp
 
 start:
-        ;; if there is a second instance of conboard is running then exit
+        ;; if there is a second instance of dbgboard is running then exit
         mcall   SF_THREAD_INFO, thread_info, -1
         stdcall string.copy, thread_info + process_information.process_name, thread_name
         stdcall string.to_lower_case, thread_name
-        xor     edx, edx ; conboard instance count
+        xor     edx, edx ; dbgboard instance count
         xor     esi, esi
         .while esi < 256 ; NOTE: add to macros.inc MAX_THREAD_COUNT = 256
             mcall SF_THREAD_INFO, thread_info, esi
@@ -294,7 +292,7 @@ start:
         jnz     .exit
 
         invoke  con_start, 1
-         mov eax, [current_mode]
+        mov eax, [current_mode]
         shl eax, 2 ; *4
         add eax, title_base
         invoke  con_init, 80, 32, -1, -1, [eax]
@@ -313,10 +311,6 @@ start:
                 mcall SF_FILE, struct_open_in_notepad
             .endif
             .if ah = 0x0F ; Tab
-                ; invoke con_set_title, [title_base + 4]
-
-                ; invoke  con_exit, 1
-                ; jmp .raw_exit
                 mov eax, [current_mode]
                 inc eax
                 .if eax >= MODES_COUNT
@@ -382,8 +376,6 @@ title_base:
 title_mode_user   db 'Debug board - [Tab] switches mode: USER_kernel_both  [F2] opens log file',0
 title_mode_kernel db 'Debug board - [Tab] switches mode: user_KERNEL_both  [F2] opens log file',0
 title_mode_both   db 'Debug board - [Tab] switches mode: user_kernel_BOTH  [F2] opens log file',0
-; [Tab] changes mode: user_kernel_BOTH   [F2] opens log-file
-
 
 log_file_path dd default_log_file_path
 default_log_file_path db '/tmp0/1/BOARDLOG.TXT',0
