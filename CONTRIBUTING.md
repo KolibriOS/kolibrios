@@ -37,7 +37,7 @@ When a pull request is submitted, at least two project participants must conduct
 The commit message should look like this:
 
 ```test
-[Category] Commit message header
+Commit message header
 
 Commit message body, if needed
 ```
@@ -49,28 +49,6 @@ Commit message body, if needed
 ### Length
 
 Maximum number of characters in a commit header is **72** (standard for **Git**). Also, **72** is the maximum length of a line in a commit body.
-
-### Categories
-
-List of existing categories accepted in the project:
-
-- `Krn` - kernel
-- `Drv` - drivers
-- `Libs` - libraries
-- `Apps` - user-space applications
-- `Skins` - skins
-- `Build` - build system
-- `CI/CD` - CI/CD
-- `Docs` - documentation
-- `Data` - images, configs, resources, etc.
-- `All` - global changes
-
-If changes are made to a specific component, the name of the component separated by `/` character needs to be specified. For example:
-
-```text
-Apps/shell
-Libs/libimg
-```
 
 ## Merge commits
 
