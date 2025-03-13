@@ -463,7 +463,7 @@ tup.append_table(img_files, {
  {"DEMOS/TINYFRAC", VAR_PROGS .. "/demos/tinyfrac/trunk/tinyfrac"},
  {"DEMOS/TRANTEST", VAR_PROGS .. "/demos/trantest/trunk/trantest"},
  {"DEMOS/TUBE", VAR_PROGS .. "/demos/tube/tube"},
- {"DEMOS/UNVWATER", VAR_PROGS .. "/demos/unvwater/trunk/unvwater"},
+ {"DEMOS/UNVWATER", VAR_PROGS .. "/demos/unvwater/unvwater"},
  {"DEMOS/WEB", VAR_PROGS .. "/demos/web/trunk/web"},
  {"DEMOS/ZEROLINE", VAR_PROGS .. "/demos/zeroline/trunk/zeroline"},
  {"DEVELOP/BOARD", VAR_PROGS .. "/system/board/trunk/board"},
