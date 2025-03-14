@@ -24,7 +24,7 @@ You can also help us by submitting code via pull requests. The process of submit
 2. Make a fork of kolibrios (or other needed) repository
 3. Create a branch with a name that matches your changes
 4. Implement and test the changes
-5. Create commits according to the [accepted style](##commit-style)
+5. Create commits according to the [accepted style](#commit-style)
 6. Create and submit a pull request into `main` branch
 7. Wait for CI/CD pipelines and code review to pass
 
