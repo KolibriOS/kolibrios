@@ -1,3 +1,7 @@
+#ifndef KOLIBRI_H_INCLUDED
+#define KOLIBRI_H_INCLUDED
+
+#include <stdint.h>
 
 #define NULL ((void*)0)
 
@@ -54,6 +58,15 @@ void	*data;
 } kol_struct_import;
 #pragma pack(pop)
 
+struct kernel_version {
+unsigned char osrel[4];
+char dbgtag;
+uint8_t abimin;
+uint16_t abimaj;
+uint32_t cmtid;
+uint16_t reserved;
+uint16_t offset;
+};
 
 void kol_exit();
 void kol_sleep(unsigned d);
@@ -108,7 +121,7 @@ unsigned kol_time_tick();
 unsigned kol_sound_speaker(char data[]);
 unsigned kol_process_info(unsigned slot, char buf1k[]);
 int kol_process_kill_pid(unsigned process);
-void kol_get_kernel_ver(char buff16b[]);
+void kol_get_kernel_ver(struct kernel_version *kv);
 int kol_kill_process(unsigned process);
 int kol_buffer_open(char name[], int mode, int size, char **buf);
 void  kol_buffer_close(char name[]);
@@ -118,3 +131,4 @@ void  kol_buffer_close(char name[]);
 void set_cwd(const char* cwd);
 int getcwd(char *buf, unsigned size);
 
+#endif  // KOLIBRI_H_INCLUDED

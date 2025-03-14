@@ -405,9 +405,9 @@ int kol_kill_process(unsigned process)
 asm volatile ("int $0x40"::"a"(18), "b"(2), "c"(process));
 }
 
-void kol_get_kernel_ver(char buff16b[])
+void kol_get_kernel_ver(struct kernel_version *kv)
 {
-asm volatile ("int $0x40"::"a"(18), "b"(13), "c"(buff16b));
+asm volatile ("int $0x40"::"a"(18), "b"(13), "c"(kv):"memory");
 }
 
 int kol_buffer_open(char name[], int mode, int size, char **buf)

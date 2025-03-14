@@ -59,7 +59,7 @@ const command_t COMMANDS[]=
 #define CMD_SLEEP_USAGE "  sleep <интервал в сотых доляx секунды>\n\r"
 #define CMD_TOUCH_USAGE "  touch <имя файла>\n\r"
 #define CMD_UPTIME_FMT "  Uptime: %d дней, %d:%d:%d.%d\n\r"
-#define CMD_VER_FMT1 "  KolibriOS v%d.%d.%d.%d. SVN-рев. ядра: %d\n\r"
+#define CMD_VER_FMT1 "  KolibriOS v%u.%u.%u.%u%s%s%s, ABI ядра: %u.%u\n\r"
 #define CMD_WAITFOR_FMT "  Ожидаем завершения PID %d\n\r"
 #define EXEC_STARTED_FMT "  '%s' запущен. PID = %d\n\r"
 #define EXEC_SCRIPT_ERROR_FMT "Ошибка в '%s' : скрипт должен начинаться со строчки #SHS\n\r"

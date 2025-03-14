@@ -1,20 +1,21 @@
+#include "../system/kolibri.h"
 
 void get_str_kernel_version(char *str, const char *fmt) {
-    char *kvbuf;
-    char *vA, *vB, *vC, *vD;
-    unsigned *Rev;
+    struct kernel_version kv;
 
-    kvbuf = malloc(16);
-    kol_get_kernel_ver(kvbuf);
-    vA = kvbuf+0;
-    vB = kvbuf+1;
-    vC = kvbuf+2;
-    vD = kvbuf+3;
-    Rev = (unsigned*)(kvbuf + 5);
+    kol_get_kernel_ver(&kv);
+    char str_offset[8] = {'\0'};
+    if (kv.offset)
+        sprintf(str_offset, "+%u", kv.offset);
+    char str_dbgtag[4] = {'\0'};
+    if (kv.dbgtag)
+        sprintf(str_dbgtag, "-%c", kv.dbgtag);
+    char str_cmtid[16] = {'\0'};
+    if (kv.cmtid)
+        sprintf(str_cmtid, " (%08x)", kv.cmtid);
 
-    sprintf (str, fmt, *vA, *vB, *vC, *vD, *Rev);
-
-    free(kvbuf);
+    sprintf(str, fmt, kv.osrel[0], kv.osrel[1], kv.osrel[2], kv.osrel[3],
+            str_offset, str_dbgtag, str_cmtid, kv.abimaj, kv.abimin);
 }
 
 void get_str_cpu_info(char *str) {
