@@ -1,5 +1,5 @@
 
-#define SHELL_VERSION "0.8.3"
+#define SHELL_VERSION "0.8.4"
 
 char	cmdline[256];
 

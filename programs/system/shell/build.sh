@@ -1,2 +1,0 @@
-../../develop/ktcc/trunk/source/kos32-tcc -I../../develop/ktcc/trunk/libc.obj/include -nostdlib ../../develop/ktcc/trunk/bin/lib/crt0.o -L../../develop/ktcc/trunk/bin/lib shell.c system/kolibri.c -o shell -ltcc -lc.obj
-../../other/kpack/linux/kpack shell
