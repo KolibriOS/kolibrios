@@ -7,7 +7,7 @@ edit_box path_start_ed = {290,50,57,0xffffff,0x94AECE,0xffffff,0xffffff,0x100000
 	                      #path_start,0, 100000000000010b,0,0};
 
 more_less_box font_size   = { NULL, 9, 22, FONT_SIZE_LABEL };
-more_less_box line_height = { NULL, 16, 64, LIST_LINE_HEIGHT };
+more_less_box line_height = { NULL, 18, 64, LIST_LINE_HEIGHT };
 checkbox show_dev_name    = { SHOW_DEVICE_CLASS };
 checkbox big_icons        = { BIG_ICONS };
 checkbox colored_lines    = { COLORED_LINES };
@@ -134,7 +134,6 @@ void LoadIniSettings()
 	Form.height = ini.GetInt("WinH", efm*100+517); 
 	ini.GetString("DefaultPath", #path_start, 4096, "/sys");
 	path_start_ed.size = path_start_ed.pos = strlen(#path_start);
-	kfont.init(DEFAULT_FONT);
 	ini_get_str stdcall ("/sys/SETTINGS/SYSTEM.INI", "system", "font smoothing",#temp,4096,"on");
 	if(streq(#temp,"off")) kfont.smooth = false; else kfont.smooth = true;
 }

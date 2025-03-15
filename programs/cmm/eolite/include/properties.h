@@ -175,8 +175,10 @@ void properties_dialog()
 				break;
 				
 		case evMouse:
-				edit_box_mouse stdcall (#file_name_ed);
-				edit_box_mouse stdcall (#path_to_file_ed);
+				if (!apply_question_active) {					
+					edit_box_mouse stdcall (#file_name_ed);
+					edit_box_mouse stdcall (#path_to_file_ed);
+				}
 				break;
 			
 		case evKey:
