@@ -1,6 +1,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; A firework demo
-; Programmed by Yaniv LEVIATHAN
+; Copyright (C) 2010-2025 KolibriOS team
+;
+; Initially ðrogrammed by Yaniv Leviathan
 ; http://yaniv.leviathanonline.com
 ; Converted to DexOS, By Dex
 ; Converted to KolibriOS, By Asper
@@ -21,9 +23,11 @@ use32
         dd      stacktop        ; reserved=no extended header
         dd      0, 0
 
-include '../../../macros.inc'
-SCREEN_WIDTH   = 320
-SCREEN_HEIGHT  = 200
+include '../../macros.inc'
+include '../../KOSfuncs.inc'
+
+SCREEN_WIDTH   = 600 ;.. mod 8 == 0
+SCREEN_HEIGHT  = 400
 SIMD equ SSE
 SIMD_BYTES = 8
 ; SSE    8
@@ -46,41 +50,35 @@ PART_SIZE      = 20
 macro shade
 {
 local .lop
-if SIMD eq SSE
         mov     ecx, SCREEN_WIDTH * SCREEN_HEIGHT / SIMD_BYTES
         mov     edi, buffer
+if SIMD eq SSE
         movq    mm1, qword [sub_mask]
-  .lop:
+.lop:
         movq    mm0, [edi]
         psubusb mm0, mm1
         movq    [edi], mm0
         add     edi, SIMD_BYTES
         loop    .lop
 else if SIMD eq AVX
-        mov     ecx, SCREEN_WIDTH * SCREEN_HEIGHT / SIMD_BYTES
-        mov     edi, buffer
         vmovdqa xmm1, xword [sub_mask]
-  .lop:
+.lop:
         vmovdqa xmm0, [edi]
         vpsubusb xmm0, xmm0, xmm1
         vmovdqa [edi], xmm0
         add     edi, SIMD_BYTES
         loop    .lop
 else if SIMD eq AVX2
-        mov     ecx, SCREEN_WIDTH * SCREEN_HEIGHT / SIMD_BYTES
-        mov     edi, buffer
         vmovdqa ymm1, yword [sub_mask]
-  .lop:
+.lop:
         vmovdqa ymm0, [edi]
         vpsubusb ymm0, ymm0, ymm1
         vmovdqa [edi], ymm0
         add     edi, SIMD_BYTES
         loop    .lop
 else if SIMD eq AVX512
-        mov     ecx, SCREEN_WIDTH * SCREEN_HEIGHT / SIMD_BYTES
-        mov     edi, buffer
         vmovdqa64 zmm1, zword [sub_mask]
-  .lop:
+.lop:
         vmovdqa64 zmm0, [edi]
         vpsubusb zmm0, zmm0, zmm1
         vmovdqa64 [edi], zmm0
@@ -91,7 +89,7 @@ end if
 
 macro blur_prepare
 {
-        mov     ecx, (SCREEN_WIDTH * SCREEN_HEIGHT - SCREEN_WIDTH * 2 - SIMD_BYTES*2) / SIMD_BYTES
+        mov     ecx, (SCREEN_WIDTH * (SCREEN_HEIGHT - 2) - SIMD_BYTES*2) / SIMD_BYTES
         mov     edi, buffer + SCREEN_WIDTH + SIMD_BYTES
 }
 
@@ -217,12 +215,12 @@ STARTAPP:
 init_palette:
         mov     edi, pal
         xor     eax, eax
-red_loop:
+@@:
         stosd
         stosd
         add     eax, 0x040000
         and     eax, 0xFFFFFF
-        jnz     red_loop
+        jnz     @b
 
         mov     eax, 63*4 SHL 16
 @@:
@@ -254,29 +252,21 @@ end virtual
    jmp MAIN
 
 
+align 4
 red:
-        mcall   9, proc_info, -1
+        mcall   SF_THREAD_INFO, proc_info, -1
 x = 100
 y = 70
 xsize = SCREEN_WIDTH+9
 ysize = SCREEN_HEIGHT+4
 areacolor = 0x54224466
-        mov     eax, 12                 ; function 12:tell os about windowdraw
-        mov     ebx, 1                  ; 1, start of draw
-        int     0x40
-        mov     eax, 48
-        mov     ebx, 4
-        int     0x40
+        mcall   SF_REDRAW, SSF_BEGIN_DRAW
+        mcall   SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
         lea     ecx, [(y SHL 16) + ysize + eax]
-        xor     eax, eax                ; function 0 : define and draw window
-        mov     ebx, (x SHL 16) + xsize ; [x start] *65536 + [x size]
-        mov     edx, areacolor          ; color of work area RRGGBB
-        mov     edi, window_title
-        int     0x40
-        mov     eax, 12                 ; end of redraw
-        mov     ebx, 2
-        int     0x40
+        mcall   SF_CREATE_WINDOW, <x, xsize>,, areacolor,, window_title
+        mcall   SF_REDRAW, SSF_END_DRAW ; end of redraw
 
+align 4
 MAIN:
         test    [proc_info.wnd_state], 0x04
         jnz     still
@@ -339,36 +329,30 @@ MAIN:
 
     .copy_buffer_to_video:
 
-        mcall   48, 4
-        lea     edx, [(5 SHL 16) + eax]
-
-        mov     eax, 65
-        mov     ebx, buffer
-        mov     ecx, (SCREEN_WIDTH SHL 16) + SCREEN_HEIGHT
+        mcall   SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+	lea     edx, [(5 shl 16) + eax]
         push    8
         pop     esi
-        mov     edi, pal
         xor     ebp, ebp
-        int     0x40
+        mcall   SF_PUT_IMAGE_EXT, buffer, (SCREEN_WIDTH SHL 16) + SCREEN_HEIGHT,,, pal
 
 
-still:
-        mov     eax, 11             ; Test if there is an event in the queue.
-        int     0x40
+align 4
+still:      
+	mcall   SF_WAIT_EVENT_TIMEOUT, 1
 
-        dec     eax                   ; redraw request ?
+        dec     eax                 ; redraw request ?
         jz      red
-        dec     eax                   ; key in buffer ?
+        dec     eax                 ; key in buffer ?
         jz      key
-        dec     eax                   ; button in buffer ?
+        dec     eax                 ; button in buffer ?
         jz      button
 
         jmp     MAIN
 
-
+align 4
 key:
-        mov     eax, 2
-        int     0x40
+        mcall   SF_GET_KEY
 ;       cmp     ah, 1               ; Test Esc in Scan
 ;       je      close_app
         cmp     ah, 27              ; Test Esc in ASCII
@@ -378,8 +362,7 @@ key:
 button:
 ; we have only one button, close
 close_app:
-        mov     eax, -1         ; close this program
-        int     0x40
+        mcall   SF_TERMINATE_PROCESS
 
 init_particle:
         rdtsc
@@ -445,6 +428,7 @@ align 16
 pal             rb 256 * 4
 align SIMD_BYTES
 buffer          rb SCREEN_WIDTH * SCREEN_HEIGHT
-E_END:
-rd 0x200
+align 4
+	rd 1024
 stacktop:
+E_END:
