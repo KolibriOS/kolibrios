@@ -273,7 +273,7 @@ void draw_list()
 	}
 
 	init = false;
-	if (selected) WriteText(5, selected-1*ITEM_H + menu1.y + menu1.text_y, TEXT_FONT_TYPE, 0xEE0000, "\x10"); // ?
+	if (selected) WriteText(5, selected-1*ITEM_H + menu1.y + menu1.text_y +3, 0x80, 0xEE0000, "\x10"); // ?
 }
 
 void click()
