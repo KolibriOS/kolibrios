@@ -28,7 +28,7 @@ submitting a pull request consists of the following steps:
 
 1. Find what you want to implement or improve
 2. Make a fork of kolibrios (or other needed) repository
-3. Create a branch with a name that matches your changes
+3. Create a branch with a name that matches [the style](#branch-style)
 4. Implement and test the changes
 5. Create commits according to the [accepted style](#commit-style)
 6. Create and submit a pull request into `main` branch
@@ -37,6 +37,13 @@ submitting a pull request consists of the following steps:
 When a pull request is submitted, at least two project participants must conduct
 a code review, after which the proposed changes can be corrected (if it's
 necessary) and merged into the project.
+
+## Branch style
+
+1. Your branch name should be as short as possible, but describes your changes
+2. Words should be divided by minus sign (`-`)
+3. Optionally, might starts with general [type](#types) of your future PR
+with slash (`/`): `refactor/nasm-to-fasm`, `update/demos`, `fix/cp866-charset`
 
 ## Commit style
 
