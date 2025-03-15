@@ -36,41 +36,61 @@ When a pull request is submitted, at least two project participants must conduct
 
 The commit message should look like this:
 
-```test
-[Category] Commit message header
+```
+type(scope): commit message header
 
 Commit message body, if needed
 ```
-
+- Use the present tense ("Add feature" not "Added feature")
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit the first line to 72 characters or less
+- Reference issues and pull requests liberally after the first line
+- When only changing documentation, include [ci skip] in the commit title
 - Commit message header and body should reflect changes made in commit
-- Commit message header should start with a capital letter
-- Commit message body should be separated from the header by one empty line
 
-### Length
+### Types
 
-Maximum number of characters in a commit header is **72** (standard for **Git**). Also, **72** is the maximum length of a line in a commit body.
+|       Type       | Description                                       |
+| :--------------: | :------------------------------------------------ |
+| `feat / feature` | for new feature implementing commit               |
+|     `update`     | for update commit                                 |
+|      `bug`       | for bug fix commit                                |
+|    `security`    | for security issue fix commit                     |
+|  `performance`   | for performance issue fix commit                  |
+|  `improvement`   | for backwards-compatible enhancement commit       |
+|    `breaking`    | for backwards-incompatible enhancement commit     |
+|   `deprecated`   | for deprecated feature commit                     |
+|      `i18n`      | for i18n (internationalization) commit            |
+|      `a11y`      | for a11y (accessibility) commit                   |
+|    `refactor`    | for refactoring commit                            |
+|      `docs`      | for documentation commit                          |
+|    `example`     | for example code commit                           |
+|      `test`      | for testing commit                                |
+|      `deps`      | for dependencies upgrading or downgrading commit  |
+|     `config`     | for configuration commit                          |
+|     `build`      | for packaging or bundling commit                  |
+|    `release`     | for publishing commit                             |
+|      `wip`       | for work in progress commit                       |
+|     `chore`      | for other operations commit                       |
 
-### Categories
+### Scopes
 
-List of existing categories accepted in the project:
+> [!NOTE]
+> Scopes are optional
 
-- `Krn` - kernel
-- `Drv` - drivers
-- `Libs` - libraries
-- `Apps` - user-space applications
-- `Skins` - skins
-- `Build` - build system
-- `CI/CD` - CI/CD
-- `Docs` - documentation
-- `Data` - images, configs, resources, etc.
-- `All` - global changes
+| Scope  | Description                      |
+| :----: | :------------------------------- |
+| `krn`  | kernel                           |
+| `drv`  | drivers                          |
+| `lib`  | libraries                        |
+| `app`  | userspace applications           |
+| `skin` | skins                            |
+| `data` | images, configs, resources, etc. |
 
-If changes are made to a specific component, the name of the component separated by `/` character needs to be specified. For example:
-
-```text
-Apps/shell
-Libs/libimg
-```
+> [!NOTE]
+> If changes are made to a specific component, the name of the component
+> separated by `/` character needs to be specified. For example:
+> `app/shell`, `lib/libimg`
 
 ## Merge commits
 
