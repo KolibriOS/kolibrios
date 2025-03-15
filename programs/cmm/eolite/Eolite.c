@@ -11,9 +11,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.28"
-#define TITLE_EOLITE "Eolite File Manager 5.28"
-#define TITLE_KFM "Kolibri File Manager 2.28";
+#define ABOUT_TITLE "EOLITE 5.29"
+#define TITLE_EOLITE "Eolite File Manager 5.29"
+#define TITLE_KFM "Kolibri File Manager 2.29";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -194,6 +194,8 @@ void main()
 #endif
 
 	handle_param();
+
+	kfont.init(DEFAULT_FONT);
 
 	SystemDiscs.Get();
 	OpenDir(ONLY_OPEN);
