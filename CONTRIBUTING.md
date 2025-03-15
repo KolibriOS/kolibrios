@@ -11,14 +11,20 @@ Each of these types is described in detail below.
 
 ## Issues
 
-You can help us by submitting issues about problems found in the system. Currently, there are two main ways of submitting an issue in the project: **Bug Reports** and **Feature Requests**:
+You can help us by submitting issues about problems found in the system.
+Currently, there are two main ways of submitting an issue in the project:
+**Bug Reports** and **Feature Requests**:
 
-- Bug Reports are suitable if you find a **bug** (crash, error, unexpected behavior) in some part of the system (kernel, drivers, apps, etc.) and want to report it
-- Feature Request are used, when you want to propose some **improvement** to the system (missing features, improved  user experience, etc.)
+- Bug Reports are suitable if you find a **bug** (crash, error, unexpected
+behavior) in some part of the system (kernel, drivers, apps, etc.) and want to
+report it
+- Feature Request are used, when you want to propose some **improvement** to
+the system (missing features, improved  user experience, etc.)
 
 ## Pull requests
 
-You can also help us by submitting code via pull requests. The process of submitting a pull request consists of the following steps:
+You can also help us by submitting code via pull requests. The process of
+submitting a pull request consists of the following steps:
 
 1. Find what you want to implement or improve
 2. Make a fork of kolibrios (or other needed) repository
@@ -28,7 +34,9 @@ You can also help us by submitting code via pull requests. The process of submit
 6. Create and submit a pull request into `main` branch
 7. Wait for CI/CD pipelines and code review to pass
 
-When a pull request is submitted, at least two project participants must conduct a code review, after which the proposed changes can be corrected (if it's necessary) and merged into the project.
+When a pull request is submitted, at least two project participants must conduct
+a code review, after which the proposed changes can be corrected (if it's
+necessary) and merged into the project.
 
 ## Commit style
 
@@ -99,4 +107,5 @@ Commit message body, if needed
 
 ## Conclusion
 
-We hope this small instructions will help you to get familiar  with KolibriOS contribution rules and inspire you to participate in the work of this project.
+We hope this small instructions will help you to get familiar  with KolibriOS
+contribution rules and inspire you to participate in the work of this project.
