@@ -2,7 +2,6 @@
 ; DBGBOARD - a console-based debug board
 ; Copyright (C) 2025 KolibriOS team
 
-
 format binary as ""
 use32
 org 0
@@ -55,6 +54,7 @@ struct RING_BUFFER
         pos          dd ?
         bytes_filled dd ?
 ends
+assert sizeof.RING_BUFFER = 16 ; for BSF
 
 proc set_text_color stdcall uses eax ecx edx, _color
         and     [_color], 0x0F
@@ -154,7 +154,7 @@ proc print_ring_buffer stdcall uses eax ebx ecx edx esi, _rb
             add eax, edx
             mov eax, [eax]
             mov byte [chr], al
-            stdcall print_next_char, chr
+            stdcall print_next_char
             inc ecx
         .endw
         ret
@@ -231,7 +231,7 @@ proc print_next_char uses ebx
                     stdcall set_text_color, TEXT_COLOR_LIGHTGRAY
                     mov [is_kernel_printing], 0
                 .endif
-                .if [is_kernel_printing]
+                .if [is_kernel_printing] = 1
                     .if [current_mode] = MODE_KERNEL | [current_mode] = MODE_BOTH
                         invoke con_write_asciiz, prefix
                     .endif
@@ -248,7 +248,7 @@ proc print_next_char uses ebx
                 inc [prefix_index]
             .endif
         .else
-            .if [is_kernel_printing]
+            .if [is_kernel_printing] = 1
                 .if [current_mode] = MODE_KERNEL | [current_mode] = MODE_BOTH
                     invoke con_write_asciiz, chr
                 .endif
@@ -317,7 +317,7 @@ start:
                     xor eax, eax
                 .endif
                 mov [current_mode], eax
-                shl eax, BSF sizeof.RING_BUFFER ; assert on sizeof, must be power of two
+                shl eax, BSF sizeof.RING_BUFFER
                 add eax, rb_base
                 mov [current_rb], eax
                 mov eax, [current_mode]
@@ -331,7 +331,7 @@ start:
                 mov dword [prefix], 0
                 mov [prefix_index], 0
                 mov [is_start_line], 1
-                mov [is_kernel_printing], 0 ;;
+                mov [is_kernel_printing], 0
                 stdcall print_ring_buffer, [current_rb]
             .endif
         .endif
