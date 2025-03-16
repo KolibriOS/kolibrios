@@ -457,7 +457,7 @@ tup.append_table(img_files, {
  {"DEMOS/BUDHBROT", VAR_PROGS .. "/demos/buddhabrot/trunk/buddhabrot"},
  {"DEMOS/EYES", VAR_PROGS .. "/demos/eyes/trunk/eyes"},
  {"DEMOS/FIREWORK", VAR_PROGS .. "/demos/firework/firework"},
- {"DEMOS/MOVBACK", VAR_PROGS .. "/demos/movback/trunk/movback"},
+ {"DEMOS/MOVBACK", VAR_PROGS .. "/demos/movback/movback"},
  {"DEMOS/PLASMA", VAR_PROGS .. "/demos/plasma/plasma"},
  {"DEMOS/SPIRAL", VAR_PROGS .. "/demos/spiral/spiral"},
  {"DEMOS/TINYFRAC", VAR_PROGS .. "/demos/tinyfrac/trunk/tinyfrac"},

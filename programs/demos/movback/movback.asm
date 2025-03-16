@@ -1,6 +1,11 @@
-include "lang.inc"
-include "../../../macros.inc"
-include "../../../KOSfuncs.inc"
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; SPDX-License-Identifier: GPL-2.0-only
+; A MoveBack demo
+; Copyright (C) 2010-2025 KolibriOS team
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+include "../../macros.inc"
+include "../../KOSfuncs.inc"
 
 WND_SIZE_X		= 320
 WND_SIZE_Y		= 200
