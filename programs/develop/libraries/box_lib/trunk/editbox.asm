@@ -601,6 +601,8 @@ edit_box_mouse:
 	jnz	edit_box_mouse.mouse_left_button
 	and	word ed_flags,ed_mouse_on_off
 	mov	ebx,ed_mouse_variable
+	or	ebx,ebx
+	jz	edit_box_exit
 	push	0
 	pop	dword [ebx]
 	jmp	edit_box_exit
@@ -610,13 +612,14 @@ edit_box_mouse:
 ;--- блокировка от фокусировки в других боксах при попадании на них курсора
 ;----------------------------------------------------------
 	mov	eax,ed_mouse_variable
+	test	eax,eax
+	jz	@f ;если ed_mouse_variable=0
 	push	dword [eax]
 	pop	eax
 	test	eax,eax
-	jz	@f
+	jz	@f ;если [ed_mouse_variable]=0
 	cmp	eax,edi
-	je	@f
-	jmp	edit_box_mouse._blur
+	jne	edit_box_mouse._blur
 ;----------------------------------------------------------
 ;--- получаем координаты мыши относительно 0 т.е всей области экрана
 ;----------------------------------------------------------
@@ -672,8 +675,11 @@ edit_box_mouse._mshift:
 	or	word  ed_flags,ed_mouse_on
 	mov	ed_pos,eax
 	mov	ebx,ed_mouse_variable
+	or	ebx,ebx
+	jz	edit_box_mouse.mv_end
 	push	edi
 	pop	dword [ebx]
+edit_box_mouse.mv_end:
 	bts	word ed_flags,1
 	call	edit_box_draw.bg
 	jmp	edit_box_mouse.m_sh
