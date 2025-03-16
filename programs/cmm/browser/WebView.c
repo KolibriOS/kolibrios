@@ -199,7 +199,7 @@ void main()
 			GetProcessInfo(#Form, SelfInfo);
 			ProcessMenuClick();
 			sc.get();
-			if (Form.status_window>2) break;
+			if (Form.status_window & ROLLED_UP) break;
 			if (Form.height<120) { MoveSize(OLD,OLD,OLD,120); break; }
 			if (Form.width<280) { MoveSize(OLD,OLD,280,OLD); break; }
 			draw_window();
@@ -870,7 +870,7 @@ void DrawStatusBar(dword _msg)
 {
 	dword status_y = Form.cheight - STATUSBAR_H + 4;
 	dword status_w = Form.cwidth - 90;
-	if (Form.status_window>2) return;
+	if (Form.status_window & ROLLED_UP) return;
 	DrawBar(0,Form.cheight - STATUSBAR_H+1, Form.cwidth,STATUSBAR_H-1, sc.work);
 	if (_msg) {
 		ESI = math.min(status_w/6, strlen(_msg));

@@ -26,15 +26,9 @@ struct collection_int
 
 :void collection_int::add(dword _in) {
 	unsigned i;
-	if (!buf) {
-		//if (buf_size) notify("'buf_size on empty buf' -A");
-		buf_size = 4096 * 5;
-		buf = malloc(4096 * 5);
-		//if (!buf) notify("'malloc error' -E");
-	} else if (count + 1 * DWSIZE4 >= buf_size) {
+	if (!buf) || (count + 1 * DWSIZE4 >= buf_size) {
 		buf_size += 4096 * 5;
 		buf = realloc(buf, buf_size);
-		//if (!buf) notify("'realloc error' -E");
 	}
 	i = count * DWSIZE4 + buf;
 	ESDWORD[i] = _in;
@@ -77,8 +71,8 @@ struct collection_int
 
 :void collection_int::drop() {
 	count = 0;
-	if (buf) buf = free(buf);
-	buf_size = 0;
+	//if (buf) buf = free(buf);
+	//buf_size = 0;
 }
 
 /*========================================================
@@ -97,31 +91,30 @@ struct collection
 	dword get(); //get_name_by_pos
 	dword get_pos_by_name();
 	void drop();
-	void increase_data_size();
 	dword get_last();
 	bool pop();
 };
 
-:void collection::increase_data_size() {
-	if (realloc_size<4096) realloc_size = 4096;
-	if (!data_size) {
-		data_size = realloc_size;
-		data_start = malloc(data_size);		
-	} else {
-		data_size = data_size + realloc_size;
-		data_start = realloc(data_start, data_size);
-	}
-}
-
 :dword collection::add(dword in) {
 	dword len = strlen(in);
-	while (offset.get(count) + len + 4 > data_size) {
-		increase_data_size();
+	unsigned cur_buf_size;
+
+	if (!count) {
+		cur_buf_size = 0;
+	} else {
+		cur_buf_size = offset.get(count);
 	}
-	strncpy(data_start+offset.get(count), in, len);
+
+	if (realloc_size<4096) realloc_size = 4096;
+	while (cur_buf_size + len + 4 > data_size) {
+		data_size += realloc_size;
+		data_start = realloc(data_start, data_size);
+	}
+	
+	strncpy(data_start+cur_buf_size, in, len);
 	count++;
-	offset.set(count, offset.get(count-1) + len + 1);
-	return data_start+offset.get(count-1);
+	offset.set(count, cur_buf_size + len + 1);
+	return data_start + cur_buf_size;
 }
 
 :dword collection::get(dword pos) {
