@@ -254,10 +254,7 @@ init_palette:
 
 	;init buffer
 	mcall SF_SYS_MISC,SSF_HEAP_INIT
-	mov ecx,[Screen_W]
-	imul ecx,[Screen_H]
-	mcall SF_SYS_MISC,SSF_MEM_ALLOC
-	mov [buffer],eax
+	call OnResize
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Main Functions
@@ -281,6 +278,7 @@ OnResize:
 	imul ecx,[Screen_H]
 	;ecx = SCREEN_W*SCREEN_H
 	mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[buffer]
+	mov [buffer],eax
 	ret
 
 align 4
