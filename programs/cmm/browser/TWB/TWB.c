@@ -68,6 +68,7 @@ struct TWebBrowser {
 	void tag_a();
 	void tag_p();
 	void tag_img();
+	void tag_kosicon();
 	void tag_div();
 	void tag_h1234_caption();
 	void tag_ol_ul_dt();
@@ -176,7 +177,7 @@ void TWebBrowser::ParseHtml(dword _bufpointer, _bufsize){
 			}
 		}
 		if (ESBYTE[bufpos] == '&')	{
-			bufpos = GetUnicodeSymbol(#linebuf, sizeof(TWebBrowser.linebuf), bufpos+1, bufpointer+bufsize);
+			bufpos = GetUnicodeSymbol(#linebuf, sizeof(TWebBrowser.linebuf)-1, bufpos+1, bufpointer+bufsize);
 			continue;
 		}
 		if (ESBYTE[bufpos] == '<') && (is_html) {

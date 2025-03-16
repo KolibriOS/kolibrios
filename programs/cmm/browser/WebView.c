@@ -79,7 +79,7 @@ char default_dir[] = "/sys";
 od_filter filter2 = { 22, "TXT\0HTM\0HTML\0DOCX\0\0" };
 
 char editURL[URL_SIZE+1];
-edit_box omnibox_edit = {, 0, 0, 0xffffff,
+edit_box omnibox_edit = {250, 0, 0, 0xffffff,
 	0x94AECE, 0xffffff, 0xffffff,0x10000000,URL_SIZE-2,#editURL,0,,19,19};
 
 //===================================================//
@@ -258,6 +258,7 @@ void main()
 					free(http.content_pointer);
 					GetImg(false);
 				}
+				debugln("end evNetwork");
 			}
 			break;
 		default:
@@ -516,7 +517,6 @@ bool GetLocalFileData(dword _path)
 bool GetUrl(dword _http_url)
 {
 	char new_url_full[URL_SIZE+1];
-
 	if (!strncmp(_http_url,"http:",5)) {
 		http.get(_http_url);
 		return true;
@@ -571,10 +571,10 @@ void OpenPage(dword _open_URL)
 		//INTERNAL PAGE
 		history.add(#new_url);
 		WB1.custom_encoding = -1;
-		if (streq(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#buildin_page_home, sizeof(buildin_page_home));
-		else if (streq(#new_url, URL_SERVICE_TEST)) LoadInternalPage(#buildin_page_test, sizeof(buildin_page_test));
+		if (streq(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#buildin_page_home, sizeof(buildin_page_home)-1);
+		else if (streq(#new_url, URL_SERVICE_TEST)) LoadInternalPage(#buildin_page_test, sizeof(buildin_page_test)-1);
 		else if (streq(#new_url, URL_SERVICE_HISTORY)) ShowHistory();
-		else LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
+		else LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error)-1);
 
 	} else if (!strncmp(#new_url,"http:",5)) || (!strncmp(#new_url,"https:",6)) {
 		//WEB PAGE
@@ -589,7 +589,7 @@ void OpenPage(dword _open_URL)
 
 		if (!http.transfer) {
 			history.add(#new_url);
-			LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
+			LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error)-1);
 		}
 	} else {
 		//LOCAL PAGE
@@ -602,7 +602,7 @@ void OpenPage(dword _open_URL)
 			strcpy(#new_url, "/tmp0/1/temp/word/document.xml");
 		} 
 		if (!GetLocalFileData(#new_url)) {
-			LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
+			LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error)-1);
 		}
 	}
 }
@@ -712,7 +712,7 @@ void EventSubmitOmnibox()
 
 void LoadInternalPage(dword _bufdata, _in_bufsize){
 	if (!_bufdata) || (!_in_bufsize) {
-		LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
+		LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error)-1);
 	} else {
 		WB1.list.first = 0; //scroll page to the top
 		DrawOmnibox();
@@ -920,7 +920,7 @@ dword GetAbsoluteActiveURL()
 void CheckContentType()
 {
 	char content_type[64];
-	if (http.header_field("content-type", #content_type, sizeof(content_type))) // application || image
+	if (http.header_field("content-type", #content_type, sizeof(content_type)-1)) // application || image
 
 	if (content_type[0] == 'i') {
 		EventDownloadAndOpenImage(http.cur_url);
@@ -968,12 +968,14 @@ dword GetImg(bool _new)
 	for (i = 0; i < WB1.img_url.count; i++)
 	{
 		cur_img_url = WB1.img_url.get(i);
-		if (debug_mode) 
-			{debug("get img: ");debugln(cur_img_url);}
 		if (cache.has(cur_img_url)==false) {
 			prbar.max = WB1.img_url.count;
 			prbar.value = i;
-			if (GetUrl(cur_img_url)) {DrawStatusBar(cur_img_url); DrawProgress(); return;}
+			if (GetUrl(cur_img_url)) {
+				DrawStatusBar(cur_img_url); 
+				DrawProgress(); 
+				return;
+			}
 		}
 	}
 	if (_new) return;

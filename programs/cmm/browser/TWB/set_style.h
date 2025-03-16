@@ -10,6 +10,7 @@ void TWebBrowser::SetStyle()
 	if (tag.is("a"))          { tag_a();                   return; }
 	if (tag.is("p"))          { tag_p();                   return; } 
 	if (tag.is("img"))        { tag_img();                 return; }
+	if (tag.is("kosicon"))    { tag_kosicon();             return; }
 	if (tag.is("div"))        { tag_div();                 return; }
 	if (tag.is("br"))         { /*draw_x++;*/NewLine();    return; }
 	if (tag.is("nav"))        { style.nav = tag.opened;    return; }
@@ -266,6 +267,17 @@ void TWebBrowser::tag_h1234_caption()
 	}
 }
 
+void TWebBrowser::tag_kosicon()
+{
+	dword imgbuf[44];
+	dword shared_i18 = memopen("ICONS18", NULL, SHM_READ);
+	if (shared_i18) && (tag.get_number_of("n")) {
+		if (draw_x + 18 > canvas.bufw) NewLine();
+		canvas.DrawImage(draw_x, draw_y-2, 18, 18, 18*18*4*tag.number+shared_i18);
+		draw_x += 22;
+	}
+
+}
 
 void TWebBrowser::tag_img()
 {
@@ -305,7 +317,7 @@ void TWebBrowser::tag_img()
 		img_decode stdcall (cache.current_buf, cache.current_size, 0);
 		if (EAX) goto IMGOK; else goto NOIMG;
 	} else {
-		img_url.add(#img_path);
+		if (img_url.get_pos_by_name(#img_path)==-1) img_url.add(#img_path);
 		goto NOIMG;
 	}
 

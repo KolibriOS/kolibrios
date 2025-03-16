@@ -17,16 +17,24 @@ struct CANVAS {
 	void Show();
 	void Fill();
 	void DrawBar();
+	void DrawImage();
 	void WriteText();
 	void PutPixel();
 	void AlignCenter();
 	void AlignRight();
 	void IncreaseBufSize();
+	bool BufIsInvalid();
 };
 
 char draw_buf_not_enaught_ram[] = 
 "'CANVAS requested %i MB more memory than the system has.
 Application could be unstable.' -E";
+
+bool CANVAS::BufIsInvalid()
+{
+	if (!buf_data) || (!bufw) return true;
+	return false;
+}
 
 bool CANVAS::Init(dword i_bufx, i_bufy, i_bufw, i_bufh)
 {
@@ -45,6 +53,7 @@ bool CANVAS::Init(dword i_bufx, i_bufy, i_bufw, i_bufh)
 void CANVAS::Fill(dword start_pointer, i_fill_color)
 {
 	dword max_i = bufw * bufh * 4 - start_pointer/4;
+	if (BufIsInvalid()) return;
 	fill_color = i_fill_color | 0xFF000000; //set background color non-transparent
 	@MEMSETD(buf_data+start_pointer+8, max_i, fill_color);
 }
@@ -52,10 +61,28 @@ void CANVAS::Fill(dword start_pointer, i_fill_color)
 void CANVAS::DrawBar(dword x, y, w, h, color)
 {
 	dword i, j;
+	if (BufIsInvalid()) return;
 	if (y + h >= bufh) IncreaseBufSize();
 	for (j=0; j<h; j++)	{
 		for (i = y+j*bufw+x<<2+8+buf_data; i<y+j*bufw+x+w<<2+8+buf_data; i+=4) {
 			ESDWORD[i] = color;
+		}
+	}
+}
+
+void CANVAS::DrawImage(dword x, y, w, h, img)
+{
+	dword i, j, p=0;
+	dword ystart;
+	if (BufIsInvalid()) return;
+	if (y < 0) y = 0;
+	if (x < 0) x = 0;
+	while (y + h >= bufh) IncreaseBufSize(); //WHY NOT WORKING?
+	for (j=0; j<h; j++)	{
+		ystart = y + j * bufw + x;
+		for (i = ystart<<2+8+buf_data; i<ystart+w<<2+8+buf_data; i+=4) {
+			ESDWORD[i] = ESDWORD[img+p];
+			p+=4;
 		}
 	}
 }
@@ -66,6 +93,7 @@ void CANVAS::WriteText(dword x, y, byte fontType, dword color, str_offset, strle
 	dword ydiv=0;
 	dword reserve_data_1, reserve_data_2;
 	dword new_buf_offset;
+	if (BufIsInvalid()) return;
 	if (y + 30 >= bufh) IncreaseBufSize();
 	if (y < BUGFIX_32000) {
 		ESI = strlen;
@@ -92,6 +120,7 @@ void CANVAS::WriteText(dword x, y, byte fontType, dword color, str_offset, strle
 void CANVAS::PutPixel(dword x, y, color)
 {
 	dword pos = y*bufw+x*4+8+buf_data;
+	if (BufIsInvalid()) return;
 	ESDWORD[pos] = color;
 }
 
@@ -99,6 +128,7 @@ void CANVAS::AlignRight(dword x,y,w,h, content_width)
 {
 	dword i, j, l;
 	dword content_left = w - content_width / 2;
+	if (BufIsInvalid()) return;
 	for (j=0; j<h; j++)
 	{
 		for (i=j*w+w-x*4, l=j*w+content_width+x*4; (i>=j*w+content_left*4) && (l>=j*w*4); i-=4, l-=4)
@@ -112,6 +142,7 @@ void CANVAS::AlignCenter(dword x,y,w,h, content_width)
 {
 	dword i, j, l;
 	dword content_left = w - content_width / 2;
+	if (BufIsInvalid()) return;
 	for (j=0; j<h; j++)
 	{
 		for (i=j*w+content_width+content_left*4, l=j*w+content_width+x*4; (i>=j*w+content_left*4) && (l>=j*w*4); i-=4, l-=4)
@@ -123,6 +154,7 @@ void CANVAS::AlignCenter(dword x,y,w,h, content_width)
 
 void CANVAS::Show(dword _y_offset, _h)
 {
+	if (BufIsInvalid()) return;
 	PutPaletteImage(_y_offset * bufw * 4 + buf_data+8, bufw, _h, bufx, bufy, 32, 0);
 }
 
@@ -132,6 +164,8 @@ void CANVAS::IncreaseBufSize()
 	dword alloc_size;
 	dword free_ram_size;
 	char error_str[256];
+
+	if (!bufw) return;
 
 	if (!buf_data) {
 		alloc_size = bufh * bufw * 4 + 8;

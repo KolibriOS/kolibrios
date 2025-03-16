@@ -151,7 +151,7 @@ bool TWebBrowser::RenderImage(dword cur_img)
 	int img_x, img_y, img_w, img_h;
 	dword imgbuf[44];
 
-	if (!cur_img) return false;
+	if (!cur_img) || (!buf_data) return false;
 
 	img_h = ESDWORD[cur_img+8];
 	img_w = ESDWORD[cur_img+4];

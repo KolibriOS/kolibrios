@@ -67,7 +67,7 @@ bool _tag::parse(dword _bufpos, bufend)
 
 	if (!whitepos) || (whitepos > closepos) {
 		//no param
-		strncpy(#name, bufpos, math.min(closepos - bufpos, sizeof(tag.name)));
+		strncpy(#name, bufpos, math.min(closepos - bufpos, sizeof(tag.name)-1));
 		bufpos = closepos;
 	} else {
 		//we have param
@@ -76,7 +76,7 @@ bool _tag::parse(dword _bufpos, bufend)
 			if (openpos < strchr(closepos+1, '>')) break;
 			if (!closepos = EAX) {closepos = bufend;break;}
 		}
-		strncpy(#name, bufpos, math.min(whitepos - bufpos, sizeof(tag.name)));
+		strncpy(#name, bufpos, math.min(whitepos - bufpos, sizeof(tag.name)-1));
 		bufpos = closepos;
 
 		params = malloc(closepos - whitepos + 1);
