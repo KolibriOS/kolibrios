@@ -20,7 +20,7 @@ include '../../KOSfuncs.inc'
 
 title db 'Tube - FPU',0
 
-SCREEN_W dd 640-10 ;10 px for borders
+SCREEN_W dd 600-10 ;10 px for borders
 SCREEN_H dd 400-10
 
 align 4
@@ -28,7 +28,8 @@ START:
 	mcall SF_SYS_MISC,SSF_HEAP_INIT
 	call OnResize
 	call draw_window
-	call init_tube
+	fninit
+	fldz
 	push ebx
 
 still:
@@ -56,8 +57,6 @@ OnResize:
 	;ecx = SCREEN_W*SCREEN_H
 	mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[PIXBUF]
 	mov [PIXBUF],eax
-	mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[buf1]
-	mov [buf1],eax
 	lea ecx,[ecx+2*ecx]
 	mcall SF_SYS_MISC,SSF_MEM_REALLOC,,[buf2]
 	mov [buf2],eax
@@ -159,14 +158,14 @@ STORE_1:
 
 	call   display_image
 
-	pop    esi
+	pop    esi ;esi=PIXBUF
 	mov    ecx,[SCREEN_W]
 	imul   ecx,[SCREEN_H]
 
 align 4
 BLUR:
-	inc    esi
 	sar    byte [esi],2
+	inc    esi
 	loop   BLUR
 	ret
 
@@ -185,13 +184,15 @@ newp:
 	movzx edx,byte [esi]
 	shl edx,4
 
-	mov [edi],edx
+	mov word [edi],dx ;blue,green
+	;shr edx,16
+	;mov [edi+2],dl ;red - not used
 
 	add edi,3
 	inc esi
 
 	cmp esi,eax
-	jbe newp
+	jb newp
 
 	xor edx,edx
 	mov ecx,[SCREEN_W]
@@ -254,56 +255,9 @@ TEXUV:
 	rd 1
 
 align 4
-init_tube:
-	mov ecx,256
-	mov edi,[buf1]
-
-PAL1:
-	mov edx,3C8h
-	mov eax,ecx
-	inc edx
-	sar al,1
-	js PAL2
-	mul al
-	shr ax,6
-
-PAL2:
-	mov al,0
-	jns PAL3
-	sub al,cl
-	shr al,1
-	shr al,1
-
-PAL3:
-	mov ebx,ecx
-	mov [ebx+edi],bh
-	loop PAL1
-	mov  ecx,256
-
-TEX:
-	mov bx,cx
-	add ax,cx
-	rol ax,cl
-	mov dh,al
-	sar dh,5
-	adc dl,dh
-	adc dl,[ebx+255+edi]
-	shr dl,1
-	mov [ebx+edi],dl
-	not bh
-	mov [ebx+edi],dl
-	loop TEX
-
-	fninit
-	fldz
-
-	ret
-
-align 4
 image_end:
 
 PIXBUF	rd	1
-buf1	rd	1
 buf2	rd	1
 procinfo process_information
 
