@@ -465,9 +465,10 @@ void TWebBrowser::tag_table()
 				}
 				if (table.cols.get(tr_pos-1)-td_pos>1) && (tag.get_number_of("width")) {
 					if (strchr(tag.value, '%')) {
-						tag.number = cur_cell_w - table.margin - 23 - left_gap * tag.number / 100;
+						tag.number = cur_cell_w * tag.number / 100;  //
 					}
-					if (tag.number < draw_w) draw_w = tag.number;
+					if (tag.number < list.w - table.margin - left_gap) draw_w = tag.number;
+
 				}
 				draw_y = row_start_y;
 				td_pos++;
