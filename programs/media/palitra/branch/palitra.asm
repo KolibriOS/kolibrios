@@ -64,44 +64,46 @@
 ;****************************************************************************************************|
 ; ЗАГОЛОВОК ИСПОЛНЯЕМОГО ФАЙЛА ПРИЛОЖЕНИЯ ДЛЯ КОЛИБРИ ОС                                             |
 ;----------------------------------------------------------------------------------------------------/
-  use32
-  org    0
-  db     'MENUET01'
-  dd     1,START,I_END,I_MEM,stacktop,params,sys_path
+use32
+org    0
+db     'MENUET01'
+dd     1,START,I_END,I_MEM,stacktop,params,sys_path
 
-  include '../../../macros.inc'
-  include '../../../proc32.inc'
-  include '../../../KOSfuncs.inc'
-  include '../../../dll.inc'
+include '../../../macros.inc'
+include '../../../proc32.inc'
+include '../../../KOSfuncs.inc'
+include '../../../dll.inc'
 
-  include 'draw_sliders.inc'
-  include 'draw_utils.inc'
-  include 'draw_palitra.inc'
+include 'draw_sliders.inc'
+include 'draw_utils.inc'
+include 'draw_palitra.inc'
 
+MODE_PALITRA = 0
+MODE_PIPET   = 1
 
+WIN_W  = 374            ; ширина окна
+WIN_H  = 251            ; высота окна
+WIN_X  = 250            ; координата х окна
+WIN_Y  = 190            ; координата у окна
 
-  WIN_W  = 374            ; ширина окна
-  WIN_H  = 251            ; высота окна
-  WIN_X  = 250            ; координата х окна
-  WIN_Y  = 190            ; координата у окна
+Left_Border=4
+SliderPanel_W = 110
+DRAWY  = 9
 
-  Left_Border=4
-  SliderPanel_W = 110
-  DRAWY  = 9
+CELLW       = 11; 11            ; not used yet, but has to be :)
 
-  CELLW  = 11; 11            ; not used yet, but has to be :)
+ICONX  = WIN_W - 39
+ICONS  = 18             ; icon size  
+SLIDEW = 25
 
-  ICONX  = WIN_W - 39
-  ICONS  = 18             ; icon size  
-  SLIDEW = 25
-
-  palitra_x = Left_Border+SliderPanel_W+12
-  palitra_w = CELLW*(8)+8+1
-  palitra_xw = palitra_x shl 16 + palitra_w
-  palitra_yw = DRAWY shl 16 + palitra_w
+PALITRA_X = Left_Border+SliderPanel_W+12
+PALITRA_W = CELLW*(8)+8+1
+PALITRA_XW = PALITRA_X shl 16 + PALITRA_W
+PALITRA_YW = DRAWY shl 16 + PALITRA_W
 
 START:
-    mcall   SF_SYS_MISC,SSF_HEAP_INIT ; инициализация кучи
+    mcall SF_SYSTEM, SSF_WINDOW_BEHAVIOR, SSSF_SET_WB, -1, 1 ;always on top
+    mcall SF_SYS_MISC,SSF_HEAP_INIT ; инициализация кучи
     mcall SF_SYS_MISC, SSF_MEM_OPEN, i18_name
     mov [icons18], eax
     mcall SF_SYS_MISC, SSF_MEM_OPEN, i18bg_name
@@ -138,7 +140,7 @@ key:                                      ; нажата клавиша на клавиатуре
 ;end_key
 
 mouse:
-    cmp     [renmode],2
+    cmp     [renmode],MODE_PIPET
     jne     left
     call    cyrcle_draw
     jmp     center
@@ -171,7 +173,7 @@ button:
     cmp     ah, 12                        ; если нажата кнопка NEXT
     jne     next_bg                       ; выходим
     inc     [pnext]                       ; увеличиваем при нажатии номер палитры
-    mov     [renmode],0                   ; включаем цветовые схемы
+    mov     [renmode],MODE_PALITRA        ; включаем цветовые схемы
     mov     eax,[pnext]                   ; заносим значение в еах
     cmp     al,6                          ; сравниваем с заявленным количеством палитр
     jne     next_redraw                   ; если не больше максимума то на вызов отрисовки
@@ -181,19 +183,19 @@ button:
     call    draw_palitra                  ; РИСУЕМ ПАЛИТРУ
     jmp     still                         ; Уходим на ожидание другого события
   next_bg:
-    cmp     ah, 14                        ; Кнопка BACKGROUND
+    cmp     ah, 14                        ; Кнопка GRADIENT
     jne     next_bg2                      ; если не нажата то выходим
     call    set_background                ; иначе устанавливаем фон
     jmp     still                         ; и на ожидание события
   next_bg2:
-    cmp     ah, 16                        ; Кнопка BACKGROUND
+    cmp     ah, 16                        ; Кнопка NOISY
     jne     circle_bg                     ; если не нажата то выходим
     call    set_background2               ; иначе устанавливаем фон
     jmp     still                         ; и на ожидание события
   circle_bg:
     cmp     ah, 15                        ; Кнопка Круговая палитра
     jne     next_end                      ; если не нажата то выходим
-    mov     [renmode],2                   ; включаем отрисовку круговой палитры
+    mov     [renmode],MODE_PIPET          ; включаем отрисовку круговой палитры
     call    draw_palitra                  ; РИСУЕМ ПАЛИТРУ
     jmp     still                         ; и на ожидание события
   next_end:
@@ -252,15 +254,10 @@ button:
 ; ГЛАВНЫЙ МОДУЛЬ ОТРИСОВКИ ОКНА И ЭЛЕМЕНТОВ ПРИЛОЖЕНИЯ                                               |
 ;----------------------------------------------------------------------------------------------------/
 draw_main:
-    ; функция 12: означает, что будет рисоваться окно
     mcall   SF_REDRAW,SSF_BEGIN_DRAW
-
-    ; Функция 48 - стили отображения окон
     mcall   SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
-
-    ; Функция 48 - стили отображения окон
     mcall   SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT
-    mov     ecx,eax                       ; Запоминаем высоту скина
+    mov     ecx,eax                      ; Запоминаем высоту скина
 
     mov     edi,[runmode]
     cmp     edi,2
@@ -288,10 +285,10 @@ draw_main:
     call    draw_palitra                  ; РИСУЕМ ПАЛИТРУ
     call    draw_result                   ; РИСУЕМ РЕЗУЛЬТАТ
 
-    mcall   SF_DEFINE_BUTTON, <palitra_x,palitra_w*2+1  > , <DRAWY,palitra_w*2+2>, 7+BT_HIDE ; palitra
+    mcall   SF_DEFINE_BUTTON, <PALITRA_X,PALITRA_W*2+1  > , <DRAWY,PALITRA_W*2+2>, 7+BT_HIDE+BT_NOFRAME ; palitra
 
     inc     edx
-    mcall   , <10,22>, <56,128>           ; Рисуем невидимую кнопку под слайдером red
+    mcall   , <10,22>, <54,136>           ; Рисуем невидимую кнопку под слайдером red
     add     ebx,25*65536                  ; Добавляем
     inc     edx                           ; ID = 9
     int     0x40                          ; Рисуем невидимую кнопку под слайдером green
@@ -303,103 +300,64 @@ draw_main:
     int     0x40                          ; Рисуем невидимую кнопку под слайдером alpha
 
     ; Функция 8 - определить/удалить кнопку (СМЕНА ЦВЕТА)
-    mcall   , <13,19>, <20,18>, 0x0D+BT_HIDE
+    mcall   , <10,22>, <16,20>, 13+BT_HIDE
 
     call    draw_bottom_panel
-    call    draw_left_panel
+    call    draw_right_panel
 
-    ; функция 12: означает, что будет рисоваться окно
     mcall SF_REDRAW,SSF_END_DRAW
     ret
 
 
 
-;#___________________________________________________________________________________________________
-;****************************************************************************************************|
-; БЛОК ВСПОМОГАТЕЛЬНЫХ ПРОЦЕДУР И ФУНКЦИЙ ПРИЛОЖЕНИЯ                                                 |
-;----------------------------------------------------------------------------------------------------/
+;#_______________________________________________________
+;*******************************************************|
+; БЛОК ВСПОМОГАТЕЛЬНЫХ ПРОЦЕДУР И ФУНКЦИЙ ПРИЛОЖЕНИЯ    |                                 --------------------------------------------------------/
 
 
     ;------------------------------------------------------------------------------------------------+
-    draw_left_panel:                      ; Отрисовка боковой панели  SL97: На самом деле правой.
+    draw_right_panel:
     ;.................................................................................................
     ; button_next_colorsheme
     mcall   SF_DEFINE_BUTTON, <ICONX,ICONS+3>, <DRAWY,ICONS+3>, 12+BT_HIDE
 
     ; palitra button                    ; ID = 14
-    mcall , ,(DRAWY+150) shl 16 + ICONS+3, 14+BT_HIDE
+    mcall , ,(DRAWY+141) shl 16 + ICONS+3, 14+BT_HIDE
 
     ; pipet button                        ; ID = 15
-    mcall , , (DRAWY+150) shl 16 + ICONS+3, 15+BT_HIDE
+    mcall , , (DRAWY+174) shl 16 + ICONS+3, 15+BT_HIDE
 
     mov     ebx,[icons18bg]
     add     ebx,ICONS*ICONS*4*53
     mcall   SF_PUT_IMAGE_EXT, ebx, <ICONS,ICONS>, <ICONX+2,DRAWY+2>, 32, 0, 0
 
     add     ebx,ICONS*ICONS*4*(39-53)
-    mov     edx,(ICONX+2)*65536+WIN_H-90
+    mov     edx,(ICONX+2)*65536+DRAWY+174+2
     mcall
 
     mov     ebx,[icons18]
     add     ebx,ICONS*ICONS*4*(53-1)
-    sub     edx,40
+    mov     edx,(ICONX+2)*65536+DRAWY+141+2
     mcall
 
     stdcall DrawDeepRectangle, ICONX-1, DRAWY-1,   ICONS+5, ICONS+5, [sc.work_graph], [sc.work_graph]
     stdcall DrawDeepRectangle, ICONX,   DRAWY,     ICONS+3, ICONS+3, [sc.work_light], [sc.work_dark]
 
-    stdcall DrawDeepRectangle, ICONX-1, DRAWY+109, ICONS+5, ICONS+5, [sc.work_graph], [sc.work_graph]
-    stdcall DrawDeepRectangle, ICONX,   DRAWY+110, ICONS+3, ICONS+3, [sc.work_dark], [sc.work_light]
-    stdcall DrawDeepRectangle, ICONX+1, DRAWY+111, ICONS+1, ICONS+1, 0xFFFfff, 0xFFFfff
+    stdcall DrawDeepRectangle, ICONX-1, DRAWY+140, ICONS+5, ICONS+5, [sc.work_graph], [sc.work_graph]
+    stdcall DrawDeepRectangle, ICONX,   DRAWY+141, ICONS+3, ICONS+3, [sc.work_dark], [sc.work_light]
+    stdcall DrawDeepRectangle, ICONX+1, DRAWY+142, ICONS+1, ICONS+1, 0xFFFfff, 0xFFFfff
 
-    stdcall DrawDeepRectangle, ICONX-1, DRAWY+149, ICONS+5, ICONS+5, [sc.work_graph], [sc.work_graph]
-    stdcall DrawDeepRectangle, ICONX,   DRAWY+150, ICONS+3, ICONS+3, [sc.work_light], [sc.work_dark]
+    stdcall DrawDeepRectangle, ICONX-1, DRAWY+173, ICONS+5, ICONS+5, [sc.work_graph], [sc.work_graph]
+    stdcall DrawDeepRectangle, ICONX,   DRAWY+174, ICONS+3, ICONS+3, [sc.work_light], [sc.work_dark]
 
-    ;stdcall DrawRectangle3D, ICONX, DRAWY, 22, 22, [sc.work_light], [sc.work_dark]   ;Leency: draw rectangle around the button, buggy now
-
-    ;mov     eax,13                        ; draw rect
-    ;mov     ebx,266 shl 16+16             ; [x] + [size]
-    ;mov     ecx,9 shl 16+16               ; [y] + [size]
-    ;mov     edx,0x666666                  ; RGB
-    ;push    esi                           ; backup esi
-    ;mov     esi,8                         ; counter=8
-    ;draw_lpanel:                          ; loop label
-    ;  int     0x40                        ; call draw black rect
-    ;  add     ecx,19 shl 16               ; move rect
-    ;  dec     esi                         ; decrement counter
-    ;  cmp     esi,0                       ; if counter!=zero
-    ;  jne     draw_lpanel                 ; then goto label
-    ;  mov     esi,8                       ; else counter=8
-    ;  mov     ebx,267 shl 16+14           ; [x] + [size]
-    ;  mov     ecx,10 shl 16+14            ; [y] + [size]
-    ;  mov     edx,0xF3F3F3                ; RGB
-    ;draw_lpanel2:                         ; 2 loop label
-    ;  int     0x40                        ; call draw white rect
-    ;  add     ecx,19 shl 16               ; move rect
-    ;  dec     esi                         ; decrement counter
-    ;  cmp     esi,0                       ; if counter!=0
-    ;  jne     draw_lpanel2                ; then goto label2
-    ;pop     esi                           ; restore esi
-    ; draw_left_arrow for button_next_colorsheme
-    ;mov     eax,4                         ; Write string
-    ;mov     ebx,272 shl 16+13             ; [x] + [y]
-    ;mov     ecx,0x0                       ; RGB
-    ;mov     edx,larrow                    ; string pointer
-    ;mov     esi,1                         ; count symbol
-    ;int     0x40                          ; call
-    ;mov     eax,38                        ; draw line
-    ;mov     ebx,270 shl 16+272            ; [start x] + [end x]
-    ;mov     ecx,16 shl 16+16              ; [start y] + [end y]
-    ;mov     edx,0x0                       ; RGB
-    ;int     0x40                          ; call
-    ret                                   ; return
+    ret
     ;.................................................................................................
 
 
     ;------------------------------------------------------------------------------------------------+
     draw_bottom_panel:                    ; Отрисовка нижней панели
     ;.................................................................................................
-    mcall   SF_DEFINE_BUTTON, <129,90>, <WIN_H-27,16>, 16, [sc.work_button]
+    mcall   SF_DEFINE_BUTTON, <129,90>, <WIN_H-27,18>, 14, [sc.work_button]
 
     add     ebx, 100 shl 16
     add     edx, 2
@@ -408,7 +366,7 @@ draw_main:
     ; Write string
     mov     ecx,[sc.work_text]            ; RGB
     add     ecx, 0x90000000
-    mcall   SF_DRAW_TEXT, <35, WIN_H-26>, ,bground
+    mcall   SF_DRAW_TEXT, <35, WIN_H-25>, ,bground
 
     mov     ecx, [sc.work_button_text]
     add     ecx, 0x90000000
@@ -892,8 +850,7 @@ endp
 ;****************************************************************************************************|
 ; БЛОК ПЕРЕМЕННЫХ И КОНСТАНТ                                                                         |
 ;----------------------------------------------------------------------------------------------------/
-circle:
-    title       db 'Palitra v0.77',0      ; хранит имя программы
+    title       db 'Palitra v0.8',0      ; хранит имя программы
     hidden      db 'Hidden',0
 ;    hex         db '#',0                 ; для вывода решётки как текста
     cname       db 'RGBAx'                ; хранит разряды цветов (red,green,blue) x-метка конца
@@ -937,7 +894,7 @@ I_END:
     cblue       rb 1                      ; храним синий спектр
     calpha      rb 1                      ; храним прозрачность
     pnext       rd 1                      ; счетчик переключения палитры
-    renmode     rd 1                      ; режим отрисовки (1-цветовая схема,2-пипетка,3-круговая)
+    renmode     rd 1                      ; режим отрисовки (0-цветовая схема,1-пипетка)
     params      rb 20                     ; приём параметров
     params_c    rb 9                      ; приёмник для цвета
     bgimg_buf   rd 1                      ; buffer for a generated image
