@@ -1675,6 +1675,14 @@ proc generate_window_header
         mov     eax, [ebx+Image.Height]
         call    bin2dec
 
+        mov     eax, [ebx+Image.Type]
+        dec     eax
+        shl     eax, 2
+        add     eax, BppTypeNames
+        mov     eax, [eax]
+        mov     dword[edi], eax
+        add     edi, 4
+
         mov     byte[edi], ')'
         inc     edi
 
@@ -2543,6 +2551,18 @@ db 'WEBP',0
 db 'XBM',0
 .end:
 db 0
+
+BppTypeNames:
+db '@08b'
+db '@24b'
+db '@32b'
+db '@15b'
+db '@16b'
+db '@01b'
+db '@8gr'
+db '@02b'
+db '@04b'
+db '@08a'
 
 draw_window_fake:
         ret
