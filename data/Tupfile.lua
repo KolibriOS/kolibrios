@@ -289,6 +289,7 @@ extra_files = {
  {"kolibrios/res/templates/NES/", "common/templates/NES/*"},
  {"kolibrios/res/wallpapers/", "common/wallpapers/*"},
  {"kolibrios/res/system/", build_type .. "/settings/kolibri.lbl"},
+ {"kolibrios/res/system/", "common/signs.png"},
  {"kolibrios/utils/vmode", "common/vmode"},
  {"kolibrios/utils/texture", "common/utils/texture"},
  {"kolibrios/utils/cnc_editor/cnc_editor", VAR_PROGS .. "/other/cnc_editor/cnc_editor"},

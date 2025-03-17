@@ -1,0 +1,78 @@
+<html><title>Welcome notes</title><body bgcolor=#fff>
+
+<h1><font color=1BB71A>Welcome to KolibriOS</font> 0.8.0.0 beta</h1>
+<pre>
+Dear friends,
+
+What you see now is the most compact operating system in the whole world. Kolibri is a piece of programming art that is based on logic and coffee.
+
+As no one reads manuals, I'm here to help with the most common issues that new users of KolibriOS are facing. This document is also a required read for any <b>YouTube blogger</b> who wants to make a review of the system :)
+
+<dd><h3><kosicon n=5>Floppy version</h3>
+The asterisk [*] in the Menu means the app isn't available in the Floppy version, only in the Big distro (Flash/ISO/UEFI-HDD). Not all programs are available via Menu to encourage you to explore KolibriOS files by yourself.
+
+<h3><kosicon n=25>If you have problems with USB</h3>
+Only USB1.1 and USB2 ports are supported, not USB3+. And yep, the USB driver is written entirely in assembler. Some motherboards have options like "USB Legacy Support" or something similar, which may help the system detect your device. Also, some ports on your motherboard may work while others may not, only G-d knows why. So, play with the BIOS/UEFI settings and try different ports.
+
+<h3><kosicon n=7>Sound</h3>
+List of supported devices:
+- Most AC97 cards: Intel, nForce, VIA
+- A variety of HD Audio devices: Intel, Realtek...
+- SIS PCI audio (Sis 7012) 	
+- Creative labs EMU10K1X (Dell OEM)
+- Media Forte FM801 
+- ISA Sound Blaster 16. Only THIS particular model works, not other SB cards that have software SB16-emulation
+
+<h3><kosicon n=61>Video</h3>
+By default, you can change the resolution only on the blue boot screen. The modes listed there are provided by the video card's BIOS. It is impossible to 'simply add additional screen modes to the list'. If video card's BIOS doesn't provide some modes then you need a driver. It is not possible to write a generic video card driver. Each driver must be written for a specific video card model.
+Intel and AMD drivers for some video cards are ported from Linux and are available in the Big distro. Check SYSPANEL. Features: change resolution in Kolibri, hardware cursor (not actual anymore), bit-blit operations accelerated.
+
+<h3><kosicon n=25>Wi-Fi</h3>
+Not supported. You have to know that the Wi-Fi specification is so complex that it is almost impossible to write the code for it from scratch. Only big OSes like Windows / Linux / BSD have it. MacOS and Haiku just ported the BSD drivers. I don't say porting them in KolibiOS is not possible, but the required effort is going to be tremendous.
+
+<h3><kosicon n=25>LAN/Ethernet</h3>
+Supported devices:
+3c59x       3Com Fast EtherLink (3c59x/450/555/556/575/900/905/980)
+ar81xx      Atheros 8161/8162/8171/8172
+dec21x4x*   Accton en1207B-TX, DEC 21140,.., VirtualPC
+forcedeth*  nVidia nForce chipset integrated ethernet
+i8255x      Intel eepro/100 (i8255x, i82562, i82801,..), QEMU
+i8254x      Intel PRO/1000 (i8254x), Virtualbox, BOCHS, QEMU
+mtd80x      Myson MTD803
+pcnet32     AMD PCnet (79c970, 79c978, 79c973,..), Virtualbox, QEMU
+r6040       RDC Semiconductors R6040
+rhine       VIA Rhine II and III
+rtl8029     Realtek 8029/8019, ne2000 PCI, BOCHS, QEMU
+rtl8139     Realtek 8139 and clones, QEMU
+rtl8169     Realtek 8110/8111/8167/8168/8169
+sis900      SiS900, 7016
+* - in development.
+Blessed be our Flemish friend Jeffrey, who has written most of the Network staff by himself: stack, drivers, and a lot of apps (except WebView).
+
+<h3><kosicon n=12>WebView</h3>
+It was never intended to be a browser but rather a Help Center that uses HTML markup. It fits well this purpose, doesn't it? According to current WebView's codebase (that was my first app ever) it will never become a normal web-browser. Please help us and write/port smth good. Good undertake will be to finish Netsurf port.
+
+<h3><kosicon n=9>How did you achieve so much while being so small?</h3>
+- Kernel, almost all drivers and most applications are written in assembly.
+- Files in IMG are packed via the LZMA algorithm from 7-Zip. They are unpacked to RAM when accessed.
+- Images are manually optimized by hand: postering, dithering and other techniques were used.
+- Files names in IMG fit 8.3 naming convention (name.extension) which doesn't use additional FAT12 space
+- Image files are combined into a single file
+- Compact binary header of applications, no sections
+- Resources are reused, and file duplication is avoided, for example: 
+	~ Shared libraries
+	~ KFM2 is an Eolite just with another appearance
+	~ Memory app uses system icons as images
+	~ one app for APP+, Games and System panel
+
+See more <a href=http://wiki.kolibrios.org/wiki/Hardware_Support>http://wiki.kolibrios.org/wiki/Hardware_Support</a>
+</dd>
+
+<h3><kosicon n=13>Last words</h3>
+<font bg=#F9F0A3>We want to express our gratitude to every KolibriOS contributor. Also we would like to give special thanks to Ville M. Turjanmaa, the author of MenuetOS, the predecessor of our system. Finally, we want to thank you, the brave and curious users, we are doing it all for you!
+Have fun!</font>
+
+Sincerely yours,
+KolibriOS Team
+<img src=/kolibrios/res/system/signs.png alt="You have to use Big Distro to see this image!">
+<!-- Somewhere deep in the Galaxy stars light up and go out, empires are born and turn to dust. In this impenetrable darkness and decadence, there are people who are still working on Kolibri. Many years will pass and perhaps you and I will no longer be here, and our great-grandchildren will ask "Who were those insane who made such an incredible OS?" -->
