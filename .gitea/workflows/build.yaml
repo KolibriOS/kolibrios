@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Get describe
         id: vars
@@ -77,6 +79,7 @@ jobs:
       - name: Build and install kerpack
         if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
+          export PATH=/home/autobuild/tools/win32/bin:$PATH
           cd ${{ gitea.workspace }}/programs/other/kpack/kerpack_linux/
           make
           chmod +x kerpack
@@ -85,6 +88,7 @@ jobs:
       - name: Build and install kpack
         if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
+          export PATH=/home/autobuild/tools/win32/bin:$PATH
           cd ${{ gitea.workspace }}/programs/other/kpack/linux/
           bash build.sh
           chmod +x kpack
@@ -144,6 +148,7 @@ jobs:
       - name: (en_US) Build KolibriOS
         run: |
           export PATH=/home/autobuild/tools/win32/bin:$PATH
+          source kos32-export-env-vars ${{ gitea.workspace }}
           tup build-en_US
 
       - name: (en_US) Upload floppy image
@@ -168,6 +173,7 @@ jobs:
       - name: (ru_RU) Build KolibriOS
         run: |
           export PATH=/home/autobuild/tools/win32/bin:$PATH
+          source kos32-export-env-vars ${{ gitea.workspace }}
           tup build-ru_RU
 
       - name: (ru_RU) Upload floppy image
@@ -192,6 +198,7 @@ jobs:
       - name: (es_ES) Build KolibriOS
         run: |
           export PATH=/home/autobuild/tools/win32/bin:$PATH
+          source kos32-export-env-vars ${{ gitea.workspace }}
           tup build-es_ES
 
       - name: (es_ES) Upload floppy image
