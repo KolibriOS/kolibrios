@@ -436,12 +436,14 @@ struc POINT _t,_dx,_dy {
 ; structure definition helper
 include 'struct.inc'
 
-struct RECT
-  left   dd ?
-  top    dd ?
-  right  dd ?
-  bottom dd ?
-ends
+macro define@lstruct name,[field]
+ { local value
+   common   struc name [value] \{
+   forward    \.#field = value
+   common   \} }
+
+;usecase
+define@lstruct RECT,X,Y,W,H
 
 struct BOX
   left   dd ?

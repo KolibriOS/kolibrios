@@ -40,7 +40,6 @@ START:
 
         mcall   SF_SYS_MISC, SSF_MEM_OPEN, win_icons_name, , 0
         add     eax, 39*18*18*4
-        mov     [win_icons], eax
 
         mov     esi, eax
         mov     edi, [pip_icon]
@@ -130,25 +129,11 @@ draw_window:
         mcall                    , SSF_GET_SKIN_HEIGHT,
 
         mov     ecx, eax
-        add     ecx, WIN_Y * 65536 + WIN_H
+        add     ecx, WIN.Y * 65536 + WIN.H
 
         mov     edx, [win_cols.work]
         add     edx, 0x34000000
-        mcall   SF_CREATE_WINDOW, <WIN_X, WIN_W>, , , , header
-
-        ; icon background color conversion
-        mov     esi, [pip_icon]
-        mov     ecx, 18*18
-
-        .icon_loop:
-                mov     eax, [esi]
-                cmp     eax, [win_cols.work]
-                jne     .skip_change
-                mov     ebx, [win_cols.work_light]
-                mov     [esi], ebx
-        .skip_change:
-                add     esi, 4
-                loop    .icon_loop
+        mcall   SF_CREATE_WINDOW, <WIN.X, WIN.W>, , , , header
 
         call    draw_base
         call    draw_update
@@ -162,29 +147,30 @@ draw_window:
 ; draw basic elements of window
 draw_base:
 
-        mcall   SF_DRAW_RECT, <BUT_PIP_X, BUT_PIP_H>, <BUT_PIP_Y, BUT_PIP_H>, [win_cols.work_graph]
-        mcall               , <BUT_COL_X, BUT_COL_W>,                       ,
-        mcall               , <BUT_HEX_X, BUT_HEX_W>, <BUT_HEX_Y, BUT_HEX_H>,
-        mcall               ,                       , <BUT_RGB_Y, BUT_HEX_H>,
-        mcall               , <BUT_REC_X, BUT_REC_W>, <BUT_REC_Y, BUT_REC_H>,
+        mcall   SF_DRAW_RECT, <BUT_PIP.X, BUT_PIP.H>, <BUT_PIP.Y, BUT_PIP.H>, [win_cols.work_graph]
+        mcall               , <BUT_COL.X, BUT_COL.W>,                       ,
+        mcall               , <BUT_HEX.X, BUT_HEX.W>, <BUT_HEX.Y, BUT_HEX.H>,
+        mcall               ,                       , <BUT_RGB.Y, BUT_HEX.H>,
+        mcall               , <BUT_REC.X, BUT_REC.W>, <BUT_REC.Y, BUT_REC.H>,
 
-        mcall               , <BUT_PIP_X, BUT_PIP_H - 1>, <BUT_PIP_Y, BUT_PIP_H - 1>, [win_cols.work_dark]
-        mcall               , <BUT_COL_X, BUT_COL_W - 1>,                           ,
-        mcall               , <BUT_HEX_X, BUT_HEX_W - 1>, <BUT_HEX_Y, BUT_HEX_H - 1>,
-        mcall               ,                           , <BUT_RGB_Y, BUT_HEX_H - 1>,
-        mcall               , <BUT_REC_X, BUT_REC_W - 1>, <BUT_REC_Y, BUT_REC_H - 1>,
+        mcall               , <BUT_PIP.X, BUT_PIP.H - 1>, <BUT_PIP.Y, BUT_PIP.H - 1>, [win_cols.work_dark]
+        mcall               , <BUT_COL.X, BUT_COL.W - 1>,                           ,
+        mcall               , <BUT_HEX.X, BUT_HEX.W - 1>, <BUT_HEX.Y, BUT_HEX.H - 1>,
+        mcall               ,                           , <BUT_RGB.Y, BUT_HEX.H - 1>,
+        mcall               , <BUT_REC.X, BUT_REC.W - 1>, <BUT_REC.Y, BUT_REC.H - 1>,
 
-        mcall               , <BUT_PIP_X + 1, BUT_PIP_H - 2>, <BUT_PIP_Y + 1, BUT_PIP_H - 2>, [win_cols.work_light]
-        mcall               , <BUT_COL_X + 1, BUT_COL_W - 2>,                               , [win_cols.work_button_text]
-        mcall               , <BUT_HEX_X + 1, BUT_HEX_W - 2>, <BUT_HEX_Y + 1, BUT_HEX_H - 2>,
-        mcall               ,                               , <BUT_RGB_Y + 1, BUT_HEX_H - 2>,
-        mcall               , <BUT_REC_X + 1, BUT_REC_W - 2>, <BUT_REC_Y + 1, BUT_REC_H - 2>,
+        mcall               , <BUT_PIP.X + 1, BUT_PIP.H - 2>, <BUT_PIP.Y + 1, BUT_PIP.H - 2>, [col_white]
+        mcall               , <BUT_COL.X + 1, BUT_COL.W - 2>,                               ,
+        mcall               , <BUT_HEX.X + 1, BUT_HEX.W - 2>, <BUT_HEX.Y + 1, BUT_HEX.H - 2>,
+        mcall               ,                               , <BUT_RGB.Y + 1, BUT_HEX.H - 2>,
+        mcall               , <BUT_REC.X + 1, BUT_REC.W - 2>, <BUT_REC.Y + 1, BUT_REC.H - 2>,
+
 
         ; buttons 11, 12, 13 and 14
-        mcall    SF_DEFINE_BUTTON, <BUT_PIP_X + 1, BUT_PIP_W - 3>, <BUT_PIP_Y + 1, BUT_PIP_H - 3>, 0x4000000B
-        mcall                    , <BUT_HEX_X + 1, BUT_HEX_W - 3>, <BUT_HEX_Y + 1, BUT_HEX_H - 3>, 0x4000000C
-        mcall                    ,                               , <BUT_RGB_Y + 1, BUT_HEX_H - 3>, 0x4000000D
-        mcall                    , <BUT_REC_X + 2, BUT_REC_W - 4>, <BUT_REC_Y + 2, BUT_REC_H - 4>, 0x6000000E
+        mcall   SF_DEFINE_BUTTON, <BUT_PIP.X + 1, BUT_PIP.W - 3>, <BUT_PIP.Y + 1, BUT_PIP.H - 3>, 0x4000000B
+        mcall                   , <BUT_HEX.X + 1, BUT_HEX.W - 3>, <BUT_HEX.Y + 1, BUT_HEX.H - 3>, 0x4000000C
+        mcall                   ,                               , <BUT_RGB.Y + 1, BUT_RGB.H - 3>, 0x4000000D
+        mcall                   , <BUT_REC.X + 2, BUT_REC.W - 4>, <BUT_REC.Y + 2, BUT_REC.H - 4>, 0x6000000E
 
         ; 18*18 pixels icon
         mcall   SF_PUT_IMAGE_EXT, [pip_icon], 0x00120012, 0x000B000F, 32
@@ -196,12 +182,12 @@ draw_base:
 draw_update:
 
         ; current color rect
-        mcall   SF_DRAW_RECT, <BUT_COL_X + 2, BUT_COL_W - 4>, <BUT_COL_Y + 2, BUT_COL_H - 4>, [sel_color]
+        mcall   SF_DRAW_RECT, <BUT_COL.X + 2, BUT_COL.W - 4>, <BUT_COL.Y + 2, BUT_COL.H - 4>, [sel_color]
 
         ; color codes
-        mcall               , <BUT_RGB_X + 1, BUT_HEX_W - 2>, <BUT_RGB_Y + 1, BUT_HEX_H - 2>, [win_cols.work_button_text]
+        mcall               , <BUT_RGB.X + 1, BUT_HEX.W - 2>, <BUT_RGB.Y + 1, BUT_HEX.H - 2>, [col_white]
 
-        mcall   SF_DRAW_NUMBER, 0x00060100, [sel_color], <BUT_HEX_X + 26, BUT_HEX_Y + 5>, 0x50000000, [win_cols.work_button_text]
+        mcall   SF_DRAW_NUMBER, 0x00060100, [sel_color], <BUT_HEX.X + 26, BUT_HEX.Y + 5>, 0x50000000, [col_white]
 
         mov     ebx, 0x00030000
         xor     ecx, ecx
@@ -232,10 +218,10 @@ draw_update:
                 jle     .du_loop_rect_row
                 mov     ebx, 118 * 65536 + 12
                 add     ecx,  12 * 65536
+
                 .du_loop_rect_row:
                 add     esi, 3
                 dec     edi
-                cmp     edi, 0
                 jne     .du_loop_rect
 
         ; selection of one pixel from 7*7 grid
@@ -267,17 +253,16 @@ draw_update:
 ; making pipet active again
 make_pick_active:
 
-        mov     [pick_act], 0x01
+        mov     [pick_act],   0x01
         mov     [cell_act_x], 0x03
         mov     [cell_act_y], 0x03
 
-
-        mcall   SF_DRAW_RECT, <BUT_REC_X + 1, BUT_REC_W - 2>, <BUT_REC_Y + 1, BUT_REC_H - 2>, [win_cols.work_button_text]
-        mcall   SF_DRAW_TEXT, <BUT_REC_X + 28, BUT_REC_Y + 37>, 0x10000000, mes_pick, 4
+        mcall   SF_DRAW_RECT, <BUT_REC.X + 1, BUT_REC.W - 2>, <BUT_REC.Y + 1, BUT_REC.H - 2>, [col_white]
+        mcall   SF_DRAW_TEXT, <BUT_REC.X + 28, BUT_REC.Y + 37>, 0x10000000, mes_pick, 4
 
         mcall   SF_SLEEP, 50
 
-        mcall   SF_DRAW_RECT, <BUT_PIP_X + 1, BUT_PIP_W - 2>, <BUT_PIP_Y + 1, BUT_PIP_H - 2>, [win_cols.work_light]
+        mcall   SF_DRAW_RECT, <BUT_PIP.X + 1, BUT_PIP.W - 2>, <BUT_PIP.Y + 1, BUT_PIP.H - 2>, [win_cols.work_light]
         mcall   SF_PUT_IMAGE_EXT, [pip_icon], 0x00120012, 0x000B000F, 32
 
         call    draw_update
@@ -345,10 +330,9 @@ clamp_pixels:
                 mov     ax, dx
 
         .combine_coords:
-                xor     edx, edx
                 mov     dx, cx
-                rol     edx, 16
-                mov     dx, ax
+                shl     edx, 16
+                or     	dx, ax
 
         ret
 
@@ -356,7 +340,7 @@ clamp_pixels:
 ; copy color HEX code
 copy_col_hex:
 
-        mcall   SF_DRAW_RECT, <BUT_HEX_X + 2, BUT_HEX_W - 4>, <BUT_HEX_Y + 2, BUT_HEX_H - 4>, [win_cols.work_button_text]
+        mcall   SF_DRAW_RECT, <BUT_HEX.X + 2, BUT_HEX.W - 4>, <BUT_HEX.Y + 2, BUT_HEX.H - 4>, [col_white]
 
         mov     ebx, [sel_color]
         mov     ecx, 6
@@ -376,10 +360,10 @@ copy_col_hex:
                         loop    ch_loop
 
         mcall   SF_CLIPBOARD, 2, color_hex.end - color_hex, color_hex
-        mcall   SF_DRAW_TEXT, <BUT_HEX_X + 1, BUT_HEX_Y + 5>, 0x10000000, mes_copy, 12
+        mcall   SF_DRAW_TEXT, <BUT_HEX.X + 1, BUT_HEX.Y + 5>, 0x10000000, mes_copy, 12
         mcall   SF_SLEEP, 50
 
-        mcall   SF_DRAW_RECT, <BUT_HEX_X + 1, BUT_HEX_W - 2>, <BUT_HEX_Y + 1, BUT_HEX_H - 2>, [win_cols.work_button_text]
+        mcall   SF_DRAW_RECT, <BUT_HEX.X + 1, BUT_HEX.W - 2>, <BUT_HEX.Y + 1, BUT_HEX.H - 2>, [col_white]
 
         call    draw_update
         jmp     still
@@ -388,7 +372,7 @@ copy_col_hex:
 ; copy color RGB code
 copy_col_rgb:
 
-        mcall   SF_DRAW_RECT, <BUT_HEX_X + 2, BUT_HEX_W - 4>, <BUT_RGB_Y + 2, BUT_HEX_H - 4>, [win_cols.work_button_text]
+        mcall   SF_DRAW_RECT, <BUT_HEX.X + 2, BUT_HEX.W - 4>, <BUT_RGB.Y + 2, BUT_HEX.H - 4>, [col_white]
 
         mov     bl, 10
         mov     edx, [sel_color]
@@ -412,15 +396,14 @@ copy_col_rgb:
                 shr     edx, 8
                 sub     esi, 4
                 dec     edi
-                cmp     edi, 0
                 jg      cr_loop
 
 
         mcall   SF_CLIPBOARD, 2, color_rgb.end - color_rgb, color_rgb
-        mcall   SF_DRAW_TEXT, <BUT_HEX_X + 1, BUT_RGB_Y + 5>, 0x10000000, mes_copy, 12
+        mcall   SF_DRAW_TEXT, <BUT_HEX.X + 1, BUT_RGB.Y + 5>, 0x10000000, mes_copy, 12
         mcall   SF_SLEEP, 50
 
-        mcall   SF_DRAW_RECT, <BUT_HEX_X + 1, BUT_HEX_W - 2>, <BUT_RGB_Y + 1, BUT_HEX_H - 2>, [win_cols.work_button_text]
+        mcall   SF_DRAW_RECT, <BUT_HEX.X + 1, BUT_HEX.W - 2>, <BUT_RGB.Y + 1, BUT_HEX.H - 2>, [col_white]
 
         call    draw_update
         jmp     still
@@ -457,48 +440,27 @@ pick_col_cell:
         mov     [sel_color], ebx
 
         call    draw_update
-        jmp still
+        jmp     still
 
 ;---------------------------------------------------------------------
 
-WIN_X           = 100
-WIN_W           = 221
-WIN_Y           = 100
-WIN_H           = 112
+WIN     RECT 100,100,221,112
 
-BUT_PIP_X       = 8
-BUT_PIP_W       = 24
-BUT_PIP_Y       = 12
-BUT_PIP_H       = 24
-
-BUT_COL_X       = 40
-BUT_COL_W       = 68
-BUT_COL_Y       = 12
-BUT_COL_H       = 24
-
-
-BUT_HEX_X       = 8
-BUT_HEX_W       = 100
-BUT_HEX_Y       = 44
-BUT_HEX_H       = 24
-
-BUT_RGB_X       = 8
-BUT_RGB_Y       = 76
-
-BUT_REC_X       = 116
-BUT_REC_W       = 88
-BUT_REC_Y       = 12
-BUT_REC_H       = 88
+BUT_PIP RECT   8, 12, 24, 24
+BUT_COL RECT  40, 12, 68, 24
+BUT_HEX RECT   8, 44,100, 24
+BUT_RGB RECT   8, 76,100, 24
+BUT_REC RECT 116, 12, 88, 88
 
 ;---------------------------------------------------------------------
 
 win_cols        system_colors
-win_icons_name  db 'ICONS18W', 0
-win_icons       dd 0x00000000
+win_icons_name  db 'ICONS18', 0
 pip_icon        dd 0x00000000
+col_white       dd 0x00FFFFFF
 
 if lang eq ru_RU
-                header  db 'ÔøΩÔøΩÔøΩÔøΩ‚™†', 0
+                header  db 'è®Ø•‚™†', 0
 else if lang eq es_ES
                 header  db 'Pipeta', 0
 else
