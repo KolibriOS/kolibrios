@@ -1053,6 +1053,8 @@ endl
 
         test    [_flip_kind], FLIP_VERTICAL
         jz      .dont_flip_vert
+        cmp     dword [ebx + Image.Height], 2
+        jl      .dont_flip_vert
 
         imul    eax, ecx
         sub     eax, [scanline_len]
@@ -1101,6 +1103,8 @@ endl
 
         test    [_flip_kind], FLIP_HORIZONTAL
         jz      .exit
+        cmp     dword [ebx + Image.Width], 2
+        jl      .exit
 
         mov     ecx, [ebx + Image.Height]
         mov     eax, [ebx + Image.Type]
