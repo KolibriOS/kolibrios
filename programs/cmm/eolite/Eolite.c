@@ -26,6 +26,7 @@ TODO:
 #include "../lib/kfont.h"
 #include "../lib/collection.h"
 #include "../lib/copyf.h"
+#include "../lib/dll.h"
 
 #include "../lib/obj/libini.h"
 #include "../lib/obj/box_lib.h"

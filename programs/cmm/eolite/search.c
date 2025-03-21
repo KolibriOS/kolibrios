@@ -4,6 +4,10 @@
 //                                                   //
 //===================================================//
 
+#include "../lib/dll.h"
+#include "../lib/obj/box_lib.h"
+#include "../lib/obj/proc_lib.h"
+
 #ifdef LANG_RUS
 	?define T_WINDOW_HEADER "Поиск"
 	?define T_BUTTON_SEARCH "Найти"
