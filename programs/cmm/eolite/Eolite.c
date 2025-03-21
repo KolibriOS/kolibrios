@@ -11,9 +11,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.29"
-#define TITLE_EOLITE "Eolite File Manager 5.29"
-#define TITLE_KFM "Kolibri File Manager 2.29";
+#define ABOUT_TITLE "EOLITE 5.30"
+#define TITLE_EOLITE "Eolite File Manager 5.30"
+#define TITLE_KFM "Kolibri File Manager 2.30";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -30,8 +30,10 @@ TODO:
 #include "../lib/obj/libini.h"
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/libimg.h"
+#include "../lib/obj/proc_lib.h"
 
 #include "../lib/patterns/history.h"
+#include "../lib/patterns/select_list.h"
 
 #include "imgs/images.h"
 #include "include/const.h"
@@ -110,6 +112,9 @@ edit_box popin_text = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x1000000
 
 PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
+_ini icons_ini = { "/sys/File managers/icons.ini", NULL };
+
+#include "search.c"
 #include "include\settings.h"
 #include "include\gui.h"
 #include "include\progress_dialog.h"
@@ -145,6 +150,14 @@ void handle_param()
 	path = location[0];
 
 	if (ESBYTE[p]=='\0') return;
+
+	if (ESBYTE[p]=='\\') switch (ESBYTE[p+1])
+	{
+		case 's':
+			strcpy(path, p + 3);
+			SearchThread();
+			ExitProcess();
+	}
 
 	if (ESBYTE[p]=='-') switch (ESBYTE[p+1])
 	{
@@ -437,6 +450,9 @@ void main()
 							break;
 					case SCAN_CODE_KEY_G:
 							EventOpenConsoleHere();
+							break;
+					case SCAN_CODE_KEY_F:
+							EventOpenSearch();
 							break;
 					case SCAN_CODE_KEY_V:
 							EventPaste(path);
@@ -1320,6 +1336,12 @@ void EventOpenConsoleHere()
 {
 	sprintf(#param, "pwd cd %s", path);
 	RunProgram("/sys/shell", #param);
+}
+
+void EventOpenSearch()
+{
+	sprintf(#param, "\\s %s", path);
+	RunProgram(#program_path, #param);	
 }
 
 void ProceedMouseGestures()

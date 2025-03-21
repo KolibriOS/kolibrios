@@ -1,4 +1,3 @@
-_ini icons_ini = { "/sys/File managers/icons.ini", NULL };
 
 struct ICONS_INI {
 	collection exts;

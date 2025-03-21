@@ -1,13 +1,3 @@
-#define MEMSIZE 100*1000
-
-#include "../lib/fs.h"
-#include "../lib/gui.h"
-#include "../lib/list_box.h"
-#include "../lib/obj/box_lib.h"
-#include "../lib/obj/proc_lib.h"
-#include "../lib/obj/libini.h"
-#include "../lib/patterns/select_list.h"
-
 //===================================================//
 //                                                   //
 //                       DATA                        //
@@ -34,11 +24,11 @@ enum {
 	BTN_CHOOSE_PATH
 };
 
-proc_info Form;
-#define TOOLBAR_H 100
-
-edit_box edit_name = {230,13, 30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(search_name)-2,#search_name,0, ed_focus,0,0};
-edit_box edit_path = {310,260,30,0xffffff,0x94AECE,0xffffff,0xffffff,0x10000000,sizeof(search_path)-2,#search_path,0, 0b,0,0};
+dword mouse_dd;
+edit_box edit_name = {230,13, 30,0xffffff,0x94AECE,0xffffff,0xffffff,
+0x10000000,sizeof(search_name)-2,#search_name,#mouse_dd, ed_focus,0,0};
+edit_box edit_path = {310,260,30,0xffffff,0x94AECE,0xffffff,0xffffff,
+0x10000000,sizeof(search_path)-2,#search_path,#mouse_dd, 0b,0,0};
 
 opendialog open_folder_dialog = 
 {
@@ -49,7 +39,7 @@ opendialog open_folder_dialog =
   0, //dword opendir_path,
   #search_path, //dword dir_default_path,
   #open_dialog_path,
-  #draw_window,
+  #draw_window_search,
   0,
   #search_path, //dword openfile_path,
   0, //dword filename_area,
@@ -59,6 +49,10 @@ opendialog open_folder_dialog =
   320,
   NULL
 };
+
+#define TOOLBAR_H 100
+#define LISTX 0
+#define LISTY TOOLBAR_H
 
 //===================================================//
 //                                                   //
@@ -97,16 +91,14 @@ void RESULTS::drop()
 //                                                   //
 //===================================================//
 
-void main()
+void SearchThread()
 {  
 	int prev_first, prev_cur_y;
-	load_dll(boxlib, #box_lib_init,0);
-	load_dll(libini, #lib_init,1);
 	load_dll(Proc_lib, #OpenDialog_init,0);
 	OpenDialog_init stdcall (#open_folder_dialog);
 
-	edit_box_set_text stdcall (#edit_name, ".ini");
-	edit_box_set_text stdcall (#edit_path, "/kolibrios");
+	if (!ESBYTE[path]) strcpy(path, "/sys");
+	edit_box_set_text stdcall (#edit_path, path);
 	
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop() switch(@WaitEvent())
@@ -134,6 +126,17 @@ void main()
 			@GetKeys(); 
 			edit_box_key stdcall (#edit_name);
 			edit_box_key stdcall (#edit_path);
+			if (key_scancode == SCAN_CODE_TAB) {
+				if (edit_name.flags & ed_focus) {
+					edit_name.flags >< edit_path.flags;
+				} else if (edit_path.flags & ed_focus) {
+					edit_path.flags -= ed_focus;
+				} else {
+					edit_name.flags += ed_focus;
+				}
+				draw_window_search();
+				break;
+			}
 			if (edit_name.flags & ed_focus) || (edit_path.flags & ed_focus) {
 				if (SCAN_CODE_ENTER == key_scancode) EventSearch();
 			} else {
@@ -152,22 +155,20 @@ void main()
 			break;
 		 
 		case evReDraw:
-			draw_window();
+			sc.get();			
+			DefineAndDrawWindow(screen.w-600/2,100,640,600,0x73,sc.work,T_WINDOW_HEADER,0);
+			GetProcessInfo(#Form, SelfInfo);
+			IF (Form.status_window&ROLLED_UP) break;
+			if (Form.width  < 370) { MoveSize(OLD,OLD,370,OLD); break; }
+			if (Form.height < 250) { MoveSize(OLD,OLD,OLD,250); break; }
+			draw_window_search();
 			break;
    }
 }
 
-void draw_window()
+void draw_window_search()
 {
-	sc.get();			
-	DefineAndDrawWindow(screen.w-600/2,100,640,600,0x73,sc.work,T_WINDOW_HEADER,0);
-	GetProcessInfo(#Form, SelfInfo);
-	IF (Form.status_window&ROLLED_UP) return;
-	if (Form.width  < 270) { MoveSize(OLD,OLD,270,OLD); return; }
-	if (Form.height < 200) { MoveSize(OLD,OLD,OLD,200); return; }
-	SelectList_Init( 0, TOOLBAR_H, 
-		Form.cwidth-scroll1.size_x-1, 
-		Form.cheight-TOOLBAR_H-1);
+	SelectList_Init(LISTX, LISTY, Form.cwidth-scroll1.size_x-1, Form.cheight-TOOLBAR_H-1);
 	SelectList_Draw();
 	DrawBar(0, TOOLBAR_H-1, Form.cwidth, 1, sc.line);
 	DrawBar(0, 0, Form.cwidth, TOOLBAR_H-1, sc.work);
@@ -178,7 +179,6 @@ void draw_window()
 	DrawStandartCaptButton(10, 63, BTN_SEARCH, T_BUTTON_SEARCH);
 }
 
-_ini ini = { "/sys/File managers/icons.ini", "icons16" };
 void SelectList_DrawLine(dword i)
 {
 	int yyy = i*select_list.item_h+select_list.y;
@@ -201,16 +201,19 @@ void SelectList_DrawLine(dword i)
 	} else {
 		strcpy(#tname, results.name.get(select_list.first + i));
 		strlwr(#tname);
-		icon = ini.GetInt(#tname + strrchr(#tname, '.'), 2);
+		icons_ini.section = "icons16";
+		icon = icons_ini.GetInt(#tname + strrchr(#tname, '.'), 2);
 	}
 
 	#define ICONX 7
-	DrawBar(select_list.x, yyy, ICONX-1, select_list.item_h, 0xFFFfff);
-	DrawBar(select_list.x+ICONX+18, yyy, select_list.w-ICONX-18, select_list.item_h, bg);
-	draw_icon_16(select_list.x+ICONX, yyy+1, icon);
+	DrawBar(LISTX, yyy, ICONX, select_list.item_h, 0xFFFfff);
+	DrawBar(LISTX+ICONX, yyy, 18, 1, 0xFFFfff);
+	DrawBar(LISTX+ICONX, yyy + select_list.item_h-1, 18, 1, 0xFFFfff);
+	DrawBar(LISTX+ICONX+18, yyy, select_list.w-ICONX-18, select_list.item_h, bg);
+	draw_icon_16(LISTX+ICONX, yyy+1, icon);
 
-	WriteText(select_list.x + ICONX+18+4,yyy+select_list.text_y,0x90, col, results.name.get(select_list.first + i));
-	WriteText(select_list.x + ICONX+18+206,yyy+select_list.text_y,0x90, col, results.path.get(select_list.first + i));
+	WriteText(LISTX + ICONX+18+4,yyy+select_list.text_y,0x90, col, results.name.get(select_list.first + i));
+	WriteText(LISTX + ICONX+18+206,yyy+select_list.text_y,0x90, col, results.path.get(select_list.first + i));
 }
 
 void SelectList_LineChanged() 
@@ -288,7 +291,5 @@ void find_loop(dword way)
 		free(dirbuf);
 	}
 }
-
-stop:
 
 
