@@ -76,22 +76,15 @@ jobs:
           g++ -o /home/autobuild/tools/win32/bin/objconv -O2 *.cpp
           chmod +x /home/autobuild/tools/win32/bin/objconv
 
-      - name: Build and install kerpack
+      - name: Build and install kerpack and kpack
         if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
           export PATH=/home/autobuild/tools/win32/bin:$PATH
           cd ${{ gitea.workspace }}/programs/other/kpack/kerpack_linux/
           make
           chmod +x kerpack
-          mv kerpack /home/autobuild/tools/win32/bin/.
-
-      - name: Build and install kpack
-        if: steps.cache-toolchain.outputs.cache-hit != 'true'
-        run: |
-          export PATH=/home/autobuild/tools/win32/bin:$PATH
-          cd ${{ gitea.workspace }}/programs/other/kpack/linux/
-          bash build.sh
           chmod +x kpack
+          mv kerpack /home/autobuild/tools/win32/bin/.
           mv kpack /home/autobuild/tools/win32/bin/.
 
       - name: Build and install clink
