@@ -114,7 +114,6 @@ PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #t
 
 _ini icons_ini = { "/sys/File managers/icons.ini", NULL };
 
-#include "search.c"
 #include "include\settings.h"
 #include "include\gui.h"
 #include "include\progress_dialog.h"
@@ -125,6 +124,8 @@ _ini icons_ini = { "/sys/File managers/icons.ini", NULL };
 #include "include\menu.h"
 #include "include\about.h"
 #include "include\properties.h"
+
+#include "search.c"
 
 void handle_param()
 {
