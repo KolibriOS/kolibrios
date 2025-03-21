@@ -4,10 +4,6 @@
 //                                                   //
 //===================================================//
 
-#include "../lib/dll.h"
-#include "../lib/obj/box_lib.h"
-#include "../lib/obj/proc_lib.h"
-
 #ifdef LANG_RUS
 	?define T_WINDOW_HEADER "Поиск"
 	?define T_BUTTON_SEARCH "Найти"
@@ -98,7 +94,10 @@ void RESULTS::drop()
 void SearchThread()
 {  
 	int prev_first, prev_cur_y;
+
+#ifndef __COFF__
 	load_dll(Proc_lib, #OpenDialog_init,0);
+#endif
 	OpenDialog_init stdcall (#open_folder_dialog);
 
 	if (!ESBYTE[path]) strcpy(path, "/sys");
@@ -128,8 +127,8 @@ void SearchThread()
 	  
 		case evKey:
 			@GetKeys(); 
-			edit_box_key stdcall (#edit_name);
-			edit_box_key stdcall (#edit_path);
+			edit_box_key_safe stdcall (#edit_name);
+			edit_box_key_safe stdcall (#edit_path);
 			if (key_scancode == SCAN_CODE_TAB) {
 				if (edit_name.flags & ed_focus) {
 					edit_name.flags >< edit_path.flags;
