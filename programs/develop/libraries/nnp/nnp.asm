@@ -32,7 +32,6 @@ section '.flat' code readable align 16
 include "..\..\..\KOSfuncs.inc"
 include "..\..\..\proc32.inc"
 include "..\..\..\macros.inc"
-include "..\..\..\dll.inc"
 include "..\..\..\bcc32\include\kos_func.inc"
 include "..\..\..\bcc32\include\kos_heap.inc"
 
@@ -44,9 +43,9 @@ include "..\..\..\bcc32\include\kos_heap.inc"
 @@StrToInt$qpc equ @StrToInt$qpc
 @@StrToDouble$qpc equ @StrToDouble$qpc
 
-mem.alloc   dd ? ;функция для выделения памяти
-mem.free    dd ? ;функция для освобождения памяти
-mem.realloc dd ? ;функция для перераспределения памяти
+mem.alloc   dd ? ;memory allocation function
+mem.free    dd ? ;function to free up memory
+mem.realloc dd ? ;function for memory reallocation
 dll.load    dd ?
 
 PRECISION equ 16
@@ -54,20 +53,20 @@ NNP_FF_BIN  equ 0x6e6962
 NNP_FF_JSON equ 0x6e6f736a
 
 struct Layer
-	c_size  dd ? ;+ 0 curent size - число нейронов в текущем слое
-	n_size  dd ? ;+ 4 next size   - число нейронов на следующем слое
+	c_size  dd ? ;+ 0 curent size - number of neurons in the current layer
+	n_size  dd ? ;+ 4 next size   - number of neurons in the next layer
 	neurons dd ? ;+ 8 []
 	biases  dd ? ;+12 []
 	weights dd ? ;+16 [][]
 ends
 
 struct NeuralNetwork
-	learningRate  dq ? ;+ 0 скорость обучения
-	layers        dd ? ;+ 8 [] слои
-	layers_length dd ? ;+12 число слоев
-	activation    dd ? ;+16 указатель на функцию активации
-	derivative    dd ? ;+20 указатель на функцию
-	errors        dd ? ;+24 массив для вычислений
+	learningRate  dq ? ;+ 0
+	layers        dd ? ;+ 8 []
+	layers_length dd ? ;+12 number of layers
+	activation    dd ? ;+16 pointer to activation function
+	derivative    dd ? ;+20 function pointer
+	errors        dd ? ;+24 array for calculations
 	errorsNext    dd ? ;+28
 	gradients     dd ? ;+32
 	deltas        dd ? ;+36
@@ -113,11 +112,6 @@ proc lib_init
 	mov     [mem.free], ebx
 	mov     [mem.realloc], ecx
 	mov     [dll.load], edx
-
-	or      edx, edx
-	jz      @f
-		invoke  dll.load, @IMPORT
-@@:
 	ret
 endp
 
@@ -138,6 +132,21 @@ Math_random:
 	db 0,0,128,55 ;dd 1.0/65536.0
 
 align 16
+ieee754_exp:
+	fld       qword[esp+4]
+	fldl2e    ;push log2(e) onto stack
+	fmulp
+	fst       st1 ;copies st0 to st1
+	frndint   ;round to integer
+	fst       st2 ;copies st0 to st2
+	fsubp     ;subtraction with stack pop
+	f2xm1     ;raises 2 to the power st0 and subtracts 1
+	fld1
+	faddp
+	fscale    ;scale by powers of two
+	ret
+
+align 16
 sigmoid:
 	push      ebp
 	mov       ebp,esp
@@ -145,7 +154,7 @@ sigmoid:
 	fld       qword[ebp+8]
 	fchs
 	fstp      qword[esp]
-	call      dword[_exp]
+	call      ieee754_exp
 	add       esp,8
 	fadd      dword[f_1_0]
 	fdivr     dword[f_1_0]
@@ -190,7 +199,7 @@ Layer_Create:
 	mov       dword[esi+Layer.weights],eax
 	xor       ebx,ebx
 	cmp       edi,ebx
-	jbe        .end_f
+	jbe       .end_f
 @@:
 	mov       eax,[ebp+16]
 	shl       eax,3
@@ -250,18 +259,18 @@ NNP_Create:
 	mov       eax,[ebp+28] ;sizes
 	lea       edx,[eax+4]
 	mov       dword[ebp-8],edx ;save &sizes[i+1]
-	jmp       .150
+	jmp       .3
 .cycle_0: ;for (i=0; i < sizes_length; i++)
 	xor       ecx,ecx
 	mov       dword[ebp-4],ecx ;nextSize = 0
 	mov       eax,[ebp+32] ;sizes_length
 	dec       eax
 	cmp       edi,eax
-	jae       .152
+	jae       @f
 	mov       edx,[ebp-8]
 	mov       ecx,[edx]
 	mov       dword[ebp-4],ecx ;nextSize = sizes[i+1]
-.152:
+@@:
 	mov       eax,[ebp-4]
 	push      eax
 	mov       edx,[ebp-8]
@@ -277,7 +286,7 @@ NNP_Create:
 	mov       eax,[ebp-8]
 	lea       edx,[eax-4]
 	mov       dword[ebp-12],edx ;save &sizes[i]
-	jmp       .154
+	jmp       .2
 .cycle_1: ;for (j=0; j < sizes[i]; j++)
 	call      Math_random
 	fmul      dword[f_2_0]
@@ -290,7 +299,7 @@ NNP_Create:
 	fstp      qword[ecx+8*esi]
 	xor       ebx,ebx ;k=0
 	cmp       ebx,[ebp-4]
-	jae       .157
+	jae       .1
 @@: ;for (k=0; k < nextSize; k++)
 	call      Math_random
 	fmul      dword[f_2_0]
@@ -305,15 +314,15 @@ NNP_Create:
 	inc       ebx
 	cmp       ebx,[ebp-4]
 	jb        @b
-.157:
+.1:
 	inc       esi
-.154:
+.2:
 	mov       ecx,[ebp-12]
 	cmp       esi,[ecx]
 	jb        .cycle_1
 	inc       edi
 	add       dword[ebp-8],4
-.150:
+.3:
 	cmp       edi,[ebp+32] ;sizes_length
 	jb        .cycle_0
 ;create errors array
@@ -349,7 +358,7 @@ f_2_0:
 f_1_0:
 	dd 1.0
 
-;заполнение случайными числами
+;random number filling
 ;+ 8 NeuralNetwork* o
 align 16
 NNP_Reset:
@@ -413,7 +422,7 @@ NNP_Reset:
 	pop       ebp
 	ret       4
 
-;расчет входных и выходных нейронов
+;calculation of input and output neurons
 ;+ 8 NeuralNetwork* o
 ;+12 double* inputs
 align 16
@@ -508,7 +517,7 @@ NNP_BackPropagation:
 	add       edi,[esi+NeuralNetwork.layers]
 	xor       ebx,ebx ;i=0
 	mov       eax,[ebp+12] ;eax = targets[]
-	jmp       .180
+	jmp       .1
 align 4
 .cycle_0:
 	mov       edx,[edi+Layer.neurons]
@@ -518,7 +527,7 @@ align 4
 	fstp      qword[ecx+8*ebx]
 	inc       ebx
 	add       eax,8
-.180:
+.1:
 	cmp       ebx,[edi+Layer.c_size]
 	jb        .cycle_0
 	dec       dword[ebp-4] ;k--
@@ -528,7 +537,7 @@ align 4
 .cycle_1:
 	sub       edi,sizeof.Layer
 	xor       ebx,ebx ;i=0
-	jmp       .186
+	jmp       .2
 align 4
 .cycle_2:
 	mov       eax,[edi+sizeof.Layer+Layer.neurons]
@@ -541,12 +550,12 @@ align 4
 	mov       edx,[esi+NeuralNetwork.gradients]	
 	fstp      qword[edx+8*ebx]
 	inc       ebx
-.186:
+.2:
 	cmp       ebx,[edi+sizeof.Layer+Layer.c_size]
 	jb        .cycle_2
 	mov       edx,[esi+NeuralNetwork.deltas]
 	xor       ebx,ebx
-	jmp       .189
+	jmp       .3
 align 4
 .cycle_3:
 	mov       eax,[edi+Layer.c_size]
@@ -556,7 +565,7 @@ align 4
 	pop       ecx
 	mov       dword[edx],eax
 	xor       eax,eax ;j=0
-	jmp       .191
+	jmp       @f
 align 4
 .cycle_4:
 	mov       ecx,[esi+NeuralNetwork.gradients]
@@ -566,16 +575,16 @@ align 4
 	mov       ecx,[edx]
 	fstp      qword[ecx+8*eax]
 	inc       eax
-.191:
+@@:
 	cmp       eax,[edi+Layer.c_size]
 	jb        .cycle_4
 	inc       ebx
 	add       edx,4
-.189:
+.3:
 	cmp       ebx,[edi+sizeof.Layer+Layer.c_size]
 	jb        .cycle_3
 	xor       ebx,ebx
-	jmp       .195
+	jmp       .4
 align 4
 .cycle_5:
 	mov       eax,[esi+NeuralNetwork.errorsNext]
@@ -583,7 +592,7 @@ align 4
 	mov       dword[eax+8*ebx],edx
 	mov       dword[eax+8*ebx+4],edx
 	xor       eax,eax ;j=0
-	jmp       .197
+	jmp       @f
 align 4
 .cycle_6:
 	mov       edx,[edi+Layer.weights]
@@ -595,11 +604,11 @@ align 4
 	fadd      qword[ecx+8*ebx]
 	fstp      qword[ecx+8*ebx]
 	inc       eax
-.197:
+@@:
 	cmp       eax,[edi+sizeof.Layer+Layer.c_size]
 	jb        .cycle_6
 	inc       ebx
-.195:
+.4:
 	cmp       ebx,[edi]
 	jb        .cycle_5
 ;copy errors to next level
@@ -610,7 +619,7 @@ align 4
 	mov       eax,[esi+NeuralNetwork.deltas]
 	mov       dword[ebp-12],eax
 	xor       ebx,ebx ;i=0
-	jmp       .201
+	jmp       .6
 align 4
 .cycle_7:
 	mov       ecx,[esi+NeuralNetwork.gradients]
@@ -620,7 +629,7 @@ align 4
 	fstp      qword[eax+8*ebx]
 	xor       eax,eax ;j=0
 	mov       edx,[ebp-12] ;edx = deltas[i]
-	jmp       .203
+	jmp       .5
 align 4
 .cycle_8:
 ;	mov       ecx,[edx]
@@ -656,7 +665,7 @@ align 4
 ;	pop       edx
 ;@@:
 	inc       eax
-.203:
+.5:
 	cmp       eax,[edi+Layer.c_size]
 	jb        .cycle_8
 	mov       eax,[ebp-12]
@@ -664,7 +673,7 @@ align 4
 	pop       ecx
 	inc       ebx
 	add       dword[ebp-12],4
-.201:
+.6:
 	cmp       ebx,[edi+sizeof.Layer+Layer.c_size]
 	jb        .cycle_7
 	dec       dword[ebp-4]
@@ -693,8 +702,7 @@ NNP_GetMemData:
 	jne       .end_f
 	mov       esi,[ebp+16]
 	mov       byte[esi],0
-	stdcall   [_strcat], esi,txt_QlearningRateQ_
-	add       esp,8
+	stdcall   str_cat, esi,txt_QlearningRateQ_
 	push      1
 	push      PRECISION
 	mov       eax,[ebp+8]
@@ -702,12 +710,9 @@ NNP_GetMemData:
 	push      dword[eax+NeuralNetwork.learningRate]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
-	stdcall   [_strcat], esi,txt_zap_nl
-	add       esp,8
-	stdcall   [_strcat], esi,txt_Qlayers_lengthQ
-	add       esp,8
+	stdcall   str_cat, esi,eax
+	stdcall   str_cat, esi,txt_zap_nl
+	stdcall   str_cat, esi,txt_Qlayers_lengthQ
 	push      1
 	push      0
 	mov       ecx,[ebp+8]
@@ -716,23 +721,18 @@ NNP_GetMemData:
 	fstp      qword[esp]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
-	stdcall   [_strcat], esi,txt_zap_nl
-	add       esp,8
-.230:
-	stdcall   [_strcat], esi,txt_QlayersQ
-	add       esp,8
+	stdcall   str_cat, esi,eax
+	stdcall   str_cat, esi,txt_zap_nl
+	stdcall   str_cat, esi,txt_QlayersQ
 	xor       edi,edi ;i=0
-	jmp       .232
+	jmp       .7
 align 4
 .cycle_0:
 	push      esi
 	call      @@strlen$qpxc
 	pop       ecx
 	add       esi,eax
-	stdcall   [_strcat], esi,txt_nl_t_Qc_sizeQ
-	add       esp,8
+	stdcall   str_cat, esi,txt_nl_t_Qc_sizeQ
 	mov       ebx,edi
 	imul      ebx,sizeof.Layer
 	push      1
@@ -748,10 +748,8 @@ align 4
 	fstp      qword[esp]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
-	stdcall   [_strcat], esi,txt_zap_nl_t_Qn_sizeQ
-	add       esp,8
+	stdcall   str_cat, esi,eax
+	stdcall   str_cat, esi,txt_zap_nl_t_Qn_sizeQ
 	push      1
 	push      0
 	mov       ecx,[ebp+8]
@@ -765,21 +763,17 @@ align 4
 	fstp      qword[esp]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
-	stdcall   [_strcat], esi,txt_zap_nl
-	add       esp,8
-	stdcall   [_strcat], esi,txt_t_QneuronsQ
-	add       esp,8
+	stdcall   str_cat, esi,eax
+	stdcall   str_cat, esi,txt_zap_nl
+	stdcall   str_cat, esi,txt_t_QneuronsQ
 	xor       ebx,ebx ;j=0
-	jmp       .234
+	jmp       .1
 align 4
 .cycle_1:
 	test      ebx,ebx
-	je        .235
-	stdcall   [_strcat], esi,txt_zap_sp
-	add       esp,8
-.235:
+	je        @f
+	stdcall   str_cat, esi,txt_zap_sp
+@@:
 	push      1
 	push      PRECISION
 	mov       eax,edi
@@ -791,29 +785,25 @@ align 4
 	push      dword[eax+8*ebx]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
+	stdcall   str_cat, esi,eax
 	inc       ebx
-.234:
+.1:
 	mov       ecx,edi
 	imul      ecx,sizeof.Layer
 	mov       eax,[ebp+8]
 	add       ecx,[eax+NeuralNetwork.layers]
 	cmp       ebx,[ecx+Layer.c_size]
 	jb        .cycle_1
-	stdcall   [_strcat], esi,txt_sqbr_zap_nl
-	add       esp,8
-	stdcall   [_strcat], esi,txt_t_QbiasesQ
-	add       esp,8
+	stdcall   str_cat, esi,txt_sqbr_zap_nl
+	stdcall   str_cat, esi,txt_t_QbiasesQ
 	xor       ebx,ebx ;j=0
-	jmp       .238
+	jmp       .2
 align 4
 .cycle_2:
 	test      ebx,ebx
-	je        .239
-	stdcall   [_strcat], esi,txt_zap_sp
-	add       esp,8
-.239:
+	je        @f
+	stdcall   str_cat, esi,txt_zap_sp
+@@:
 	push      1
 	push      PRECISION
 	mov       eax,edi
@@ -825,43 +815,38 @@ align 4
 	push      dword[eax+8*ebx]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
+	stdcall   str_cat, esi,eax
 	inc       ebx
-.238:
+.2:
 	mov       ecx,edi
 	imul      ecx,sizeof.Layer
 	mov       eax,[ebp+8]
 	add       ecx,[eax+NeuralNetwork.layers]
 	cmp       ebx,[ecx+Layer.c_size]
 	jb        .cycle_2
-	stdcall   [_strcat], esi,txt_sqbr_zap_t_QweightsQ
-	add       esp,8
+	stdcall   str_cat, esi,txt_sqbr_zap_t_QweightsQ
 	mov       eax,[ebp+8]
 	mov       ecx,edi
 	imul      ecx,sizeof.Layer
 	add       ecx,[eax+NeuralNetwork.layers]
 	cmp       dword[ecx+Layer.n_size],0
-	je        .241
+	je        .6
 	xor       ebx,ebx
-	jmp       .243
-.242:
+	jmp       .5
+.cycle_3:
 	test      ebx,ebx
-	je        .244
-	stdcall   [_strcat], esi,txt_zap_nl_t_t
-	add       esp,8
-.244:
-	stdcall   [_strcat], esi,txt_sqbro
-	add       esp,8
+	je        @f
+	stdcall   str_cat, esi,txt_zap_nl_t_t
+@@:
+	stdcall   str_cat, esi,txt_sqbro
 	xor       eax,eax
 	mov       dword[ebp-4],eax
-	jmp       .246
-.245:
+	jmp       .4
+.3:
 	cmp       dword[ebp-4],0
-	je        .247
-	stdcall   [_strcat], esi,txt_zap_sp
-	add       esp,8
-.247:
+	je        @f
+	stdcall   str_cat, esi,txt_zap_sp
+@@:
 	push      1
 	push      PRECISION
 	mov       edx,edi
@@ -875,43 +860,39 @@ align 4
 	push      dword[ecx+8*eax]
 @@:
 	call      @@DoubleToStr$qduso
-	dec       dword[esp+8] ;уменьшаем PRECISION
-	jz        @f           ;для избежания зацикливания
+	dec       dword[esp+8] ;decrease PRECISION
+	jz        @f           ;to avoid looping
 	cmp       word[eax],'#'
-	je        @b           ;если число не поместилось пробуем перевести с меньшей точностью
+	je        @b           ;if the number does not fit, we try to translate with less precision
 @@:
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
+	stdcall   str_cat, esi,eax
 	inc       dword[ebp-4]
-.246:
+.4:
 	mov       ecx,edi
 	imul      ecx,sizeof.Layer
 	mov       eax,[ebp+8]
 	add       ecx,[eax+NeuralNetwork.layers]
 	mov       ecx,[ecx+Layer.n_size]
 	cmp       ecx,[ebp-4]
-	ja        .245
-	stdcall   [_strcat], esi,txt_sqbr
-	add       esp,8
+	ja        .3
+	stdcall   str_cat, esi,txt_sqbr
 	inc       ebx
-.243:
+.5:
 	mov       eax,edi
 	imul      eax,sizeof.Layer
 	mov       ecx,[ebp+8]
 	add       eax,[ecx+NeuralNetwork.layers]
 	cmp       ebx,[eax+Layer.c_size]
-	jb        .242
-.241:
-	stdcall   [_strcat], esi,txt_sqbr_fbr_zap
-	add       esp,8
+	jb        .cycle_3
+.6:
+	stdcall   str_cat, esi,txt_sqbr_fbr_zap
 	inc       edi
-.232:
+.7:
 	mov       eax,[ebp+8]
 	cmp       edi,[eax+NeuralNetwork.layers_length]
 	jb        .cycle_0
-	stdcall   [_strcat], esi,txt_nl_t_sqbr
-	add       esp,8
+	stdcall   str_cat, esi,txt_nl_t_sqbr
 .end_f:
 	pop       edi esi ebx
 	mov       esp,ebp
@@ -963,12 +944,11 @@ NNP_SetMemData:
 	mov       eax,[ebp+16]
 	mov       edx,[ebp+12]
 ;	cmp       edx,NNP_FF_BIN
-;	jne       .191
+;	jne       @f
 ;...
-;.191:
+;@@:
 	cmp       edx,NNP_FF_JSON
-	jne       .198
-.199:
+	jne       .9
 	stdcall   @@strstr$qpxct1, eax,txt_learningRate
 	add       esp,8
 	mov       esi,eax
@@ -976,27 +956,27 @@ NNP_SetMemData:
 	add       esp,8
 	mov       esi,eax
 	test      esi,esi
-	jne       .200
+	jne       @f
 	mov       eax,1
-	jmp       .193
-.200:
+	jmp       .end_f
+@@:
 	stdcall   @@strchr$qpxci, esi,':'
 	add       esp,8
 	mov       ebx,eax
 	test      ebx,ebx
-	jne       .201
+	jne       @f
 	mov       eax,2
-	jmp       .193
-.201:
+	jmp       .end_f
+@@:
 	inc       ebx
 	stdcall   @@strchr$qpxci, esi,','
 	add       esp,8
 	mov       esi,eax
 	test      esi,esi
-	jne       .202
+	jne       @f
 	mov       eax,3
-	jmp       .193
-.202:
+	jmp       .end_f
+@@:
 	mov       byte[esi],0
 	inc       esi
 	stdcall   @@StrToInt$qpc, ebx
@@ -1008,38 +988,38 @@ NNP_SetMemData:
 	mov       eax,[ebp+8]
 	mov       edx,[eax+12]
 	cmp       edx,[ebp-4]
-	je        .203
+	je        @f
 	mov       eax,txt_err_layers_neq
-	jmp       .193
-.203:
+	jmp       .end_f
+@@:
 	xor       edi,edi ;i=0
-	jmp       .205
-.204: ;for(i=0;i<o->layers_length;i++)
+	jmp       .8
+.cycle_0: ;for(i=0;i<o->layers_length;i++)
 	stdcall   @@strstr$qpxct1, esi,txt_c_size
 	add       esp,8
 	mov       esi,eax
 	test      esi,esi
-	jne        .206
+	jne       @f
 	mov       eax,txt_err_c_size
-	jmp       .193
-.206:
+	jmp       .end_f
+@@:
 	stdcall   @@strchr$qpxci, esi,':'
 	add       esp,8
 	mov       ebx,eax
 	test      ebx,ebx
-	jne        .207
+	jne       @f
 	mov       eax,6
-	jmp       .193
-.207:
+	jmp       .end_f
+@@:
 	inc       ebx
 	stdcall   @@strchr$qpxci, esi,','
 	add       esp,8
 	mov       esi,eax
 	test      esi,esi
-	jne        .208
+	jne       @f
 	mov       eax,7
-	jmp       .193
-.208:
+	jmp       .end_f
+@@:
 	mov       byte[esi],0
 	inc       esi
 	stdcall   @@StrToInt$qpc, ebx
@@ -1049,27 +1029,27 @@ NNP_SetMemData:
 	add       esp,8
 	mov       esi,eax
 	test      esi,esi
-	jne       .209
+	jne       @f
 	mov       eax,8
-	jmp       .193
-.209:
+	jmp       .end_f
+@@:
 	stdcall   @@strchr$qpxci, esi,':'
 	add       esp,8
 	mov       ebx,eax
 	test      ebx,ebx
-	jne       .210
+	jne       @f
 	mov       eax,9
-	jmp       .193
-.210:
+	jmp       .end_f
+@@:
 	inc       ebx
 	stdcall   @@strchr$qpxci, esi,','
 	add       esp,8
 	mov       esi,eax
 	test      esi,esi
-	jne       .211
+	jne       @f
 	mov       eax,10
-	jmp       .193
-.211:
+	jmp       .end_f
+@@:
 	mov       byte[esi],0
 	inc       esi
 	stdcall   @@StrToInt$qpc,ebx
@@ -1081,11 +1061,11 @@ NNP_SetMemData:
 	add       eax,[edx+NeuralNetwork.layers]
 	mov       edx,[eax+Layer.c_size]
 	cmp       edx,[ebp-4]
-	jne       .213
+	jne       @f
 	mov       edx,[eax+Layer.n_size]
 	cmp       edx,[ebp-8]
-	je        .214
-.213:
+	je        .1
+@@:
 	mov       ecx,[ebp+8]
 	stdcall   NNP_GetMaxLLen,ecx
 	mov       ecx,edi
@@ -1106,10 +1086,10 @@ NNP_SetMemData:
 	add       eax,edx
 	stdcall   Layer_Create,eax
 	cmp       ebx,[ebp-4] ;if(n>s || k>s)
-	jb        .215
+	jb        @f
 	cmp       ebx,[ebp-8]
-	jae       .214
-.215:
+	jae       .1
+@@:
 	mov       edx,[ebp+8]
 	mov       ecx,[edx+NeuralNetwork.errors]
 	cmp       ecx,[edx+NeuralNetwork.errorsNext]
@@ -1135,45 +1115,45 @@ NNP_SetMemData:
 	stdcall   [mem.realloc], [edx+NeuralNetwork.deltas],ebx
 	mov       edx,[ebp+8]
 	mov       dword[edx+NeuralNetwork.deltas],eax
-.214:
+.1:
 	stdcall   @@strstr$qpxct1, esi,txt_biases
 	add       esp,8
 	mov       esi,eax
 	test      esi,esi
-	jne       .216
+	jne       @f
 	mov       eax,11
-	jmp       .193
-.216:
+	jmp       .end_f
+@@:
 	stdcall   @@strchr$qpxci, esi,'['
 	add       esp,8
 	mov       ebx,eax
 	test      ebx,ebx
-	jne        .217
+	jne       @f
 	mov       eax,txt_err_sqbrl_b1
-	jmp       .193
-.217:
+	jmp       .end_f
+@@:
 	inc       ebx
 	xor       edx,edx
 	mov       dword[ebp-8],edx
-	jmp        .219
-.218:
+	jmp        .4
+.2:
 	dec       edx
 	cmp       eax,edx
-	jae        .220
+	jae       @f
 	stdcall   @@strchr$qpxci, ebx,','
 	add       esp,8
 	mov       esi,eax
-	jmp        .221
-.220:
+	jmp        .3
+@@:
 	stdcall   @@strchr$qpxci, ebx,']'
 	add       esp,8
 	mov       esi,eax
-.221:
+.3:
 	test      esi,esi
-	jne        .222
+	jne       @f
 	mov       eax,13
-	jmp       .193
-.222:
+	jmp       .end_f
+@@:
 	mov       byte[esi],0
 	stdcall   @@StrToDouble$qpc,ebx
 	pop       ecx
@@ -1186,7 +1166,7 @@ NNP_SetMemData:
 	mov       edx,[eax+edx+Layer.biases]
 	fstp      qword[edx+8*ecx]
 	inc       dword[ebp-8]
-.219:
+.4:
 	mov       edx,edi
 	imul      edx,sizeof.Layer
 	mov       ecx,[ebp+8]
@@ -1194,29 +1174,29 @@ NNP_SetMemData:
 	mov       edx,[edx+Layer.c_size]
 	mov       eax,[ebp-8]
 	cmp       edx,eax
-	ja        .218
+	ja        .2
 	mov       esi,ebx
 	stdcall   @@strstr$qpxct1, esi,txt_weights
 	add       esp,8
 	mov       esi,eax
 	test      esi,esi
-	jne       .224
+	jne       @f
 	mov       eax,14
-	jmp       .193
-.224:
+	jmp       .end_f
+@@:
 	stdcall   @@strchr$qpxci, esi,'['
 	add       esp,8
 	mov       esi,eax
 	test      esi,esi
-	jne       .225
+	jne       @f
 	mov       eax,txt_err_sqbrl_w1
-	jmp       .193
-.225:
+	jmp       .end_f
+@@:
 	inc       esi
 	xor       edx,edx
 	mov       dword[ebp-8],edx ;k=0
-	jmp       .227
-.226: ;for(k=0;k<o->layers[i].c_size;k++)
+	jmp       .7
+.cycle_1: ;for(k=0;k<o->layers[i].c_size;k++)
 
 	mov       eax,edi
 	imul      eax,sizeof.Layer
@@ -1226,39 +1206,39 @@ NNP_SetMemData:
 	or        eax,eax
 	jnz       .end_null_we
 	inc       dword[ebp-8] ;k++
-	jmp       .227 ;if 'weights' is null array
+	jmp       .7 ;if 'weights' is null array
 .end_null_we:
 
 	stdcall   @@strchr$qpxci, esi,'['
 	add       esp,8
 	mov       ebx,eax
 	test      ebx,ebx
-	jne       .228
+	jne       @f
 	mov       eax,txt_err_sqbrl_w2
-	jmp       .193
-.228:
+	jmp       .end_f
+@@:
 	inc       ebx
 	xor       edx,edx
 	mov       dword[ebp-12],edx ;j=0
-	jmp       .230
-.229: ;for(j=0;j<o->layers[i].n_size;j++)
+	jmp       .6
+.cycle_2: ;for(j=0;j<o->layers[i].n_size;j++)
 	dec       edx
 	cmp       eax,edx ;eax = j, edx = n_size-1
-	jae       .231
+	jae       @f
 	stdcall   @@strchr$qpxci, ebx,','
 	add       esp,8
 	mov       esi,eax
-	jmp       .232
-.231:
+	jmp       .5
+@@:
 	stdcall   @@strchr$qpxci, ebx,']'
 	add       esp,8
 	mov       esi,eax
-.232:
+.5:
 	test      esi,esi
-	jne       .233
+	jne       @f
 	mov       eax,txt_err_sqbrr_w2
-	jmp       .193
-.233:
+	jmp       .end_f
+@@:
 	mov       byte[esi],0
 	stdcall   @@StrToDouble$qpc,ebx
 	pop       ecx
@@ -1273,7 +1253,7 @@ NNP_SetMemData:
 	mov       edx,[ebp-12]
 	fstp      qword[eax+8*edx]
 	inc       dword[ebp-12]
-.230:
+.6:
 	mov       edx,edi
 	imul      edx,sizeof.Layer
 	mov       ecx,[ebp+8]
@@ -1281,27 +1261,27 @@ NNP_SetMemData:
 	mov       edx,[edx+Layer.n_size]
 	mov       eax,[ebp-12]
 	cmp       edx,eax
-	ja        .229
+	ja        .cycle_2
 	mov       esi,ebx
 	inc       dword[ebp-8]
-.227:
+.7:
 	mov       eax,edi
 	imul      eax,sizeof.Layer
 	mov       edx,[ebp+8]
 	add       eax,[edx+NeuralNetwork.layers]
 	mov       eax,[eax+Layer.c_size]
 	cmp       eax,[ebp-8]
-	ja        .226
+	ja        .cycle_1
 	inc       edi
-.205:
+.8:
 	mov       edx,[ebp+8]
 	cmp       edi,[edx+NeuralNetwork.layers_length]
-	jb        .204
+	jb        .cycle_0
 	xor       eax,eax
-	jmp        .193
-.198:
+	jmp       .end_f
+.9:
 	mov       eax,1000
-.193:
+.end_f:
 	pop       edi esi ebx
 	mov       esp,ebp
 	pop       ebp
@@ -1320,20 +1300,19 @@ Layer_Destroy:
 	call      @$bdele$qpv
 	pop       ecx
 	xor       ebx,ebx
-	jmp       .143
-.142:
+	jmp       @f
+.cycle_1:
 	mov       eax,[esi+Layer.weights]
 	push      dword[eax+4*ebx]
 	call      @$bdele$qpv
 	pop       ecx
 	inc       ebx
-.143:
+@@:
 	cmp       ebx,[esi+Layer.c_size]
-	jb        .142
+	jb        .cycle_1
 	push      dword[esi+Layer.weights]
 	call      @$bdele$qpv
 	pop       ecx
-.145:
 	pop       esi ebx ebp
 	ret       4
 
@@ -1344,17 +1323,17 @@ NNP_Destroy:
 	push      ebx esi
 	mov       esi,[ebp+8]
 	xor       ebx,ebx
-	jmp       .232
-.231:
+	jmp       @f
+.cycle_1:
 	mov       eax,ebx
 	imul      eax,sizeof.Layer
 	add       eax,[esi+NeuralNetwork.layers]
 	push      eax
 	call      Layer_Destroy
 	inc       ebx
-.232:
+@@:
 	cmp       ebx,[esi+NeuralNetwork.layers_length]
-	jb        .231
+	jb        .cycle_1
 	push      dword[esi+NeuralNetwork.layers]
 	call      @$bdele$qpv
 	pop       ecx
@@ -1398,14 +1377,3 @@ EXPORTS:
 	sz_getmemdata db 'NNP_GetMemData',0
 	sz_setmemdata db 'NNP_SetMemData',0
 	sz_destroy db 'NNP_Destroy',0
-
-align 16
-@IMPORT:
-
-library \
-	libc, 'libc.obj'
-
-import libc, \
-_strcat, 'strcat',\
-_exp,    'exp'
-;_scanf,  'scanf',\ ;???
