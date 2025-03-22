@@ -26,16 +26,25 @@
 //? define DEBUG 1
 
 ? print "\nЪДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДї"
-? print "\nі          KolibriOS MineSweeper v0.52         і"
-? print "\nі (C)   Leency  (leency@mail.ru)     2010,2011 і"
+? print "\nі          KolibriOS MineSweeper v0.62         і"
+? print "\nі (C)   Leency  (leency@mail.ru)     2010-2025 і"
 ? print "\nі (C) Ivan Poddubny (ivan-yar@bk.ru) 2003,2004 і"
 ? print "\nАДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДЩ\n\n"
 
-/************************************** DATA **************************************/
+/************************************* DEFINES *************************************/
 
-? define XPX 16      // X pixels by square - размер клетки в пикселях
-? define YPX 16      // Y pixels by square
+?define HEADER_Y 5
+?define BTNSIZE 21
+?define CENTER_POS xsize / 2 - 10
+
+?define XST 5       // offset of first pixel X - смещение поля от границы окна
+?define YST 32
+
+? define XPX 21      // X pixels by square - размер клетки в пикселях
+? define YPX 21      // Y pixels by square
 ? define MINE 255    // в клетке мина, если value = MINE
+
+/************************************** DATA **************************************/
 
 struct
 {
@@ -58,9 +67,6 @@ struct
   byte   nmines;
 } stdmodes[3] = {9,9,10, 16,16,40, 30,16,99}; // {x,y,m}
 
-?define XST 5       // offset of first pixel X - смещение поля от границы окна
-?define YST 28
-
 int ncx,             // number of squares in X  - размер поля
     ncy,
     cmines,          // mines discovered        - количество неоткрытых мин
@@ -79,7 +85,7 @@ byte stop_game = FALSE,   // game stopped - признак конца игры
      firstmine;
 
 ProcessInfo  procinfo;
-SystemColors colors;
+//SystemColors colors;
 
 /************************************** CODE **************************************/
 
@@ -429,6 +435,8 @@ void end_game()
 
 void main()
 {
+  sys_mem_init();
+  
   new_game();
   draw_window();
 
@@ -458,11 +466,11 @@ void main()
         ELSE IF (EAX == 1001)        // change mode
         {
           mode++; 
-          if (mode==4) mode=1;
+          IF (mode==4) mode=1;
           //EAX = mode; EAX++; EAX = EAX%3; EAX++; mode = AL;
 
           new_game();
-          window_move_size(OLD,OLD,xsize+9,ysize);
+          sys_window_move_size(OLD,OLD,xsize+9,ysize);
           CONTINUE;
         }
 //        ELSE IF (EAX == 1002)

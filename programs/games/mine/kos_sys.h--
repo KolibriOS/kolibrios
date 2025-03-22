@@ -64,7 +64,8 @@ struct ProcessInfo
         ystart,
         xsize,
         ysize;
-  byte  not_used2[974];
+  char  status_window;
+  byte  reserved[1024-71];
 };
 
 #define SystemColors SystemColours // usa/british
@@ -210,6 +211,15 @@ inline fastcall dword sys_put_image(dword EBX, ECX, EDX)
 {
   EAX = 7;
   $int 0x40
+}
+
+inline fastcall void sys_put_palette_image(dword EBX,ECX,EDX,ESI,EDI)
+{
+  $push ebp
+  EAX = 65;
+  EBP = 0;
+  $int 0x40
+  $pop ebp
 }
 
 
@@ -1117,11 +1127,44 @@ inline fastcall dword sys_debug_read_char(dword EBX)
 }
 
 
-inline fastcall dword window_move_size(dword EBX,ECX,EDX,ESI){
+inline fastcall dword sys_window_move_size(dword EBX,ECX,EDX,ESI){
 	EAX = 67;
 	$int 0x40
 }
 
+/*********************************************************
+68.11 = mem_init is required to work with heap
+*********************************************************/
+
+inline fastcall void sys_mem_init()
+{
+  $mov     eax, 68
+  $mov     ebx, 11
+  $int     0x40
+}
+
+/*********************************************************
+68.22 = shared memory
+in:
+  ecx = area name, 31 symbols max
+  edx = area size for SHM_CREATE SHM_OPEN_ALWAYS
+  esi = flags, see the list below
+out:
+  eax = pointer to memory or 0 
+  edx = memsize
+*********************************************************/
+
+#define SHM_OPEN        0x00
+#define SHM_OPEN_ALWAYS 0x04
+#define SHM_CREATE      0x08
+#define SHM_READ        0x00
+#define SHM_WRITE       0x01
+inline fastcall dword sys_memopen(ECX, EDX, ESI)
+{
+  $mov     eax, 68
+  $mov     ebx, 22
+  $int     0x40
+}
 
 /*********************************************************
 -1 = EXIT PROCESS

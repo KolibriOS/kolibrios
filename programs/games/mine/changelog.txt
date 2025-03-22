@@ -1,5 +1,11 @@
 ====Leency====
 
+v0.62 (21/03/2025)
+- proper window rolling up fix
+- bigger cells and fonts
+- add icon to a new game button
+- better alignment of ui elements in header
+
 v0.52 (16/12/2008)
 - window rolling up fix
 

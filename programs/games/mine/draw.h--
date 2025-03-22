@@ -18,43 +18,42 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 *******************************************************************************/
-?define HEADER_Y 4
-?define BTNSIZE 19
 char game_mode[] = "1/3";
 
-void draw_window() // Процедура отрисовки окна
+void draw_window()
 {
-  sys_get_colors(#colors, 40);
+  dword iconimg = sys_memopen("ICONS18", 0, SHM_READ);
+  //sys_get_colors(#colors, 40);
 
-  // WINDOW
   sys_window_redraw(1);
   EBX = xpos << 16 + xsize + 9;
   ECX = ypos << 16 + ysize;
-  sys_draw_window(EBX, ECX, 0x34CCCCCC, colors.w_work | 0x80000000, "MineSweeper");
-  sys_window_redraw(2);
+  sys_draw_window(EBX, ECX, 0x34CCCCCC, clGray | 0x80000000, "MineSweeper");
   
-  // Leency ROLLED UP FIX
   sys_process_info(#procinfo, -1);
-  IF (procinfo.ysize<70) return;  
+  #define ROLLED_UP 0x04
+  IF (procinfo.status_window&ROLLED_UP) return;
 
   // <NEW GAME> BUTTON (911)
-  EBX = xsize / 2 - 10;
-  EBX = EBX << 16 + BTNSIZE;
-  sys_draw_button(EBX, HEADER_Y<<16+BTNSIZE, 911+BT_HIDE, clLightGray);
-  draw_rectangle(xsize/2-10,HEADER_Y,BTNSIZE,BTNSIZE,clWhite,clDarkGray);
+  sys_draw_button(CENTER_POS << 16 + BTNSIZE, HEADER_Y<<16+BTNSIZE, 911+BT_HIDE, clLightGray);
+  draw_rectangle(CENTER_POS,HEADER_Y,BTNSIZE,BTNSIZE,clWhite,clDarkGray);
+  draw_rectangle(CENTER_POS+1,HEADER_Y+1,BTNSIZE-2,BTNSIZE-2,clWhite,clWhite);
+  sys_put_palette_image(18*18*4*58 + iconimg, 18<<16+18, CENTER_POS+2<<16+HEADER_Y+2, 32, 0);
 
   // <CHANGE MODE> BUTTON (1001)
   sys_draw_button(5<<16+32, HEADER_Y<<16+BTNSIZE, 1001+BT_HIDE, clLightGray);
   draw_rectangle(5,HEADER_Y,32,BTNSIZE,clWhite,clDarkGray);
   game_mode[0] = mode + '0';
-  sys_write_text(9<<16+HEADER_Y+3, 0x90000000+clDarkGray, #game_mode, 3);
+  sys_write_text(9<<16+HEADER_Y+4, 0x90656565, #game_mode, 3);
 
   // <USER FIELD> BUTTON (1002)
   //sys_draw_button(BTNSIZE<<16+7, ECX, EDX+1, 0xddbb44);
 
-  draw_time();     // draw timer
-  draw_mines_left();   // draw mines
-  draw_squares();  // draw field
+  draw_time();
+  draw_mines_left();
+  draw_squares();
+
+  sys_window_redraw(2);
 }
 
 dword num_colors[8]=
@@ -70,11 +69,11 @@ dword num_colors[8]=
 };
 
 
-// Отрисовка одной клетки
+// Draw a single square
 void draw_square(int x, y)
 {
-   int xl, xr, yt, yb;       // слева, справа, сверху, снизу
-   dword tcolor = clBlack;   // цвет значения клетки по умолчанию черный
+   int xl, xr, yt, yb;       // lefx, right, top, bottom
+   dword tcolor = clBlack;   // set default color as black 
    byte tchar, tval;
 
    xl = XPX * x + XST;
@@ -86,7 +85,7 @@ void draw_square(int x, y)
    ECX = yt+1 << 16 + yb - yt-1;
    $inc ebx
    $inc ecx
-   sys_draw_bar(EBX, ECX, clLightGray);  // рисует закрашенный прямоугольник
+   sys_draw_bar(EBX, ECX, clLightGray);  // fill bg
 
    if (!get_open(x, y))
    {
@@ -100,16 +99,16 @@ void draw_square(int x, y)
 
       SWITCH (get_mark(x, y))
       {
-        CASE 2: tcolor = 0x121288; tchar = '?'; BREAK;
-        CASE 1: tcolor = 0xd04444; tchar = 'P';
+        CASE 2: tcolor = 0x10121288; tchar = '?'; BREAK;
+        CASE 1: tcolor = 0x10d04444; tchar = 'P';
       }
 
       IF (get_mark(x,y))
       {
-        EBX = xl + 5 << 16 + yt + 4;
+        EBX = xl + 6 << 16 + yt + 4;
         sys_write_text(EBX, tcolor, #tchar, 1);
         EBX += 0x00010000;
-        /*  Второй раз - регистры сохраняются  */
+        /*  Second run - registers are saved  */
         sys_write_text(EBX, ECX, EDX, ESI);
       }
    }
@@ -120,15 +119,15 @@ void draw_square(int x, y)
       {
         IF (tval == MINE)
         {
-          tcolor = 0xee1111;
+          tcolor = 0x10ee1111;
           tchar = '*';
         }
         ELSE
         {
           tchar = tval + '0';
-          tcolor = num_colors[tval-1];
+          tcolor = num_colors[tval-1]+0x10000000;
         }
-        EBX = xl + 5 << 16 + yt + 5;
+        EBX = xl + 7 << 16 + yt + 4;
         sys_write_text(EBX, tcolor, #tchar, 1);
         EBX += 0x00010000;
         sys_write_text(EBX, ECX, EDX, ESI);
@@ -140,19 +139,19 @@ void draw_square(int x, y)
 
 void draw_time()
 {
-  sys_draw_bar(xsize-XST-58<<16+29, HEADER_Y<<16+20, clWhiteGray);
-  sys_write_number(0x00030000, time, xsize-XST-56<<16+HEADER_Y+3, 0x101166C3);
+  sys_draw_bar(xsize-XST-63<<16+34, HEADER_Y<<16+22, clWhiteGray);
+  sys_write_number(0x00030000, time, xsize-XST-58<<16+HEADER_Y+4, 0x101166C3);
 }
 
 
 void draw_mines_left()
 {
-  sys_draw_bar(xsize-XST-29<<16+29, HEADER_Y<<16+20, clWhiteGray);
-  sys_write_number(0x00030000, cmines, xsize-XST-27<<16+HEADER_Y+3, 0x10ff0000);
+  sys_draw_bar(xsize-XST-32<<16+32, HEADER_Y<<16+22, clWhiteGray);
+  sys_write_number(0x00030000, cmines, xsize-XST-29<<16+HEADER_Y+4, 0x10ff0000);
 }
 
 
-// Отрисовка минного поля
+// Draw mine field
 void draw_squares()
 {
   int x,y;
