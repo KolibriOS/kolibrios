@@ -32,7 +32,6 @@ section '.flat' code readable align 16
 include "..\..\..\KOSfuncs.inc"
 include "..\..\..\proc32.inc"
 include "..\..\..\macros.inc"
-include "..\..\..\dll.inc"
 include "..\..\..\bcc32\include\kos_func.inc"
 include "..\..\..\bcc32\include\kos_heap.inc"
 
@@ -113,11 +112,6 @@ proc lib_init
 	mov     [mem.free], ebx
 	mov     [mem.realloc], ecx
 	mov     [dll.load], edx
-
-	or      edx, edx
-	jz      @f
-		invoke  dll.load, @IMPORT
-@@:
 	ret
 endp
 
@@ -138,6 +132,21 @@ Math_random:
 	db 0,0,128,55 ;dd 1.0/65536.0
 
 align 16
+ieee754_exp:
+	fld       qword[esp+4]
+	fldl2e    ;поместить в стек log2(e)
+	fmulp
+	fst       st1 ;копирует st0 в приемник
+	frndint   ;округлить до целого
+	fst       st2 ;копирует st0 в приемник
+	fsubp     ;вычитание с выталкиванием из стека
+	f2xm1     ;возводит 2 в степень st0 и вычитает 1
+	fld1
+	faddp
+	fscale    ;масштабировать по степеням двойки
+	ret
+
+align 16
 sigmoid:
 	push      ebp
 	mov       ebp,esp
@@ -145,7 +154,7 @@ sigmoid:
 	fld       qword[ebp+8]
 	fchs
 	fstp      qword[esp]
-	call      dword[_exp]
+	call      ieee754_exp
 	add       esp,8
 	fadd      dword[f_1_0]
 	fdivr     dword[f_1_0]
@@ -693,8 +702,7 @@ NNP_GetMemData:
 	jne       .end_f
 	mov       esi,[ebp+16]
 	mov       byte[esi],0
-	stdcall   [_strcat], esi,txt_QlearningRateQ_
-	add       esp,8
+	stdcall   str_cat, esi,txt_QlearningRateQ_
 	push      1
 	push      PRECISION
 	mov       eax,[ebp+8]
@@ -702,12 +710,9 @@ NNP_GetMemData:
 	push      dword[eax+NeuralNetwork.learningRate]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
-	stdcall   [_strcat], esi,txt_zap_nl
-	add       esp,8
-	stdcall   [_strcat], esi,txt_Qlayers_lengthQ
-	add       esp,8
+	stdcall   str_cat, esi,eax
+	stdcall   str_cat, esi,txt_zap_nl
+	stdcall   str_cat, esi,txt_Qlayers_lengthQ
 	push      1
 	push      0
 	mov       ecx,[ebp+8]
@@ -716,13 +721,10 @@ NNP_GetMemData:
 	fstp      qword[esp]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
-	stdcall   [_strcat], esi,txt_zap_nl
-	add       esp,8
+	stdcall   str_cat, esi,eax
+	stdcall   str_cat, esi,txt_zap_nl
 .230:
-	stdcall   [_strcat], esi,txt_QlayersQ
-	add       esp,8
+	stdcall   str_cat, esi,txt_QlayersQ
 	xor       edi,edi ;i=0
 	jmp       .232
 align 4
@@ -731,8 +733,7 @@ align 4
 	call      @@strlen$qpxc
 	pop       ecx
 	add       esi,eax
-	stdcall   [_strcat], esi,txt_nl_t_Qc_sizeQ
-	add       esp,8
+	stdcall   str_cat, esi,txt_nl_t_Qc_sizeQ
 	mov       ebx,edi
 	imul      ebx,sizeof.Layer
 	push      1
@@ -748,10 +749,8 @@ align 4
 	fstp      qword[esp]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
-	stdcall   [_strcat], esi,txt_zap_nl_t_Qn_sizeQ
-	add       esp,8
+	stdcall   str_cat, esi,eax
+	stdcall   str_cat, esi,txt_zap_nl_t_Qn_sizeQ
 	push      1
 	push      0
 	mov       ecx,[ebp+8]
@@ -765,20 +764,16 @@ align 4
 	fstp      qword[esp]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
-	stdcall   [_strcat], esi,txt_zap_nl
-	add       esp,8
-	stdcall   [_strcat], esi,txt_t_QneuronsQ
-	add       esp,8
+	stdcall   str_cat, esi,eax
+	stdcall   str_cat, esi,txt_zap_nl
+	stdcall   str_cat, esi,txt_t_QneuronsQ
 	xor       ebx,ebx ;j=0
 	jmp       .234
 align 4
 .cycle_1:
 	test      ebx,ebx
 	je        .235
-	stdcall   [_strcat], esi,txt_zap_sp
-	add       esp,8
+	stdcall   str_cat, esi,txt_zap_sp
 .235:
 	push      1
 	push      PRECISION
@@ -791,8 +786,7 @@ align 4
 	push      dword[eax+8*ebx]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
+	stdcall   str_cat, esi,eax
 	inc       ebx
 .234:
 	mov       ecx,edi
@@ -801,18 +795,15 @@ align 4
 	add       ecx,[eax+NeuralNetwork.layers]
 	cmp       ebx,[ecx+Layer.c_size]
 	jb        .cycle_1
-	stdcall   [_strcat], esi,txt_sqbr_zap_nl
-	add       esp,8
-	stdcall   [_strcat], esi,txt_t_QbiasesQ
-	add       esp,8
+	stdcall   str_cat, esi,txt_sqbr_zap_nl
+	stdcall   str_cat, esi,txt_t_QbiasesQ
 	xor       ebx,ebx ;j=0
 	jmp       .238
 align 4
 .cycle_2:
 	test      ebx,ebx
 	je        .239
-	stdcall   [_strcat], esi,txt_zap_sp
-	add       esp,8
+	stdcall   str_cat, esi,txt_zap_sp
 .239:
 	push      1
 	push      PRECISION
@@ -825,8 +816,7 @@ align 4
 	push      dword[eax+8*ebx]
 	call      @@DoubleToStr$qduso
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
+	stdcall   str_cat, esi,eax
 	inc       ebx
 .238:
 	mov       ecx,edi
@@ -835,8 +825,7 @@ align 4
 	add       ecx,[eax+NeuralNetwork.layers]
 	cmp       ebx,[ecx+Layer.c_size]
 	jb        .cycle_2
-	stdcall   [_strcat], esi,txt_sqbr_zap_t_QweightsQ
-	add       esp,8
+	stdcall   str_cat, esi,txt_sqbr_zap_t_QweightsQ
 	mov       eax,[ebp+8]
 	mov       ecx,edi
 	imul      ecx,sizeof.Layer
@@ -848,19 +837,16 @@ align 4
 .242:
 	test      ebx,ebx
 	je        .244
-	stdcall   [_strcat], esi,txt_zap_nl_t_t
-	add       esp,8
+	stdcall   str_cat, esi,txt_zap_nl_t_t
 .244:
-	stdcall   [_strcat], esi,txt_sqbro
-	add       esp,8
+	stdcall   str_cat, esi,txt_sqbro
 	xor       eax,eax
 	mov       dword[ebp-4],eax
 	jmp       .246
 .245:
 	cmp       dword[ebp-4],0
 	je        .247
-	stdcall   [_strcat], esi,txt_zap_sp
-	add       esp,8
+	stdcall   str_cat, esi,txt_zap_sp
 .247:
 	push      1
 	push      PRECISION
@@ -881,8 +867,7 @@ align 4
 	je        @b           ;если число не поместилось пробуем перевести с меньшей точностью
 @@:
 	add       esp,16
-	stdcall   [_strcat], esi,eax
-	add       esp,8
+	stdcall   str_cat, esi,eax
 	inc       dword[ebp-4]
 .246:
 	mov       ecx,edi
@@ -892,8 +877,7 @@ align 4
 	mov       ecx,[ecx+Layer.n_size]
 	cmp       ecx,[ebp-4]
 	ja        .245
-	stdcall   [_strcat], esi,txt_sqbr
-	add       esp,8
+	stdcall   str_cat, esi,txt_sqbr
 	inc       ebx
 .243:
 	mov       eax,edi
@@ -903,15 +887,13 @@ align 4
 	cmp       ebx,[eax+Layer.c_size]
 	jb        .242
 .241:
-	stdcall   [_strcat], esi,txt_sqbr_fbr_zap
-	add       esp,8
+	stdcall   str_cat, esi,txt_sqbr_fbr_zap
 	inc       edi
 .232:
 	mov       eax,[ebp+8]
 	cmp       edi,[eax+NeuralNetwork.layers_length]
 	jb        .cycle_0
-	stdcall   [_strcat], esi,txt_nl_t_sqbr
-	add       esp,8
+	stdcall   str_cat, esi,txt_nl_t_sqbr
 .end_f:
 	pop       edi esi ebx
 	mov       esp,ebp
@@ -1398,14 +1380,3 @@ EXPORTS:
 	sz_getmemdata db 'NNP_GetMemData',0
 	sz_setmemdata db 'NNP_SetMemData',0
 	sz_destroy db 'NNP_Destroy',0
-
-align 16
-@IMPORT:
-
-library \
-	libc, 'libc.obj'
-
-import libc, \
-_strcat, 'strcat',\
-_exp,    'exp'
-;_scanf,  'scanf',\ ;???
