@@ -85,6 +85,7 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/trunk/mykey.ini"},
  {"SETTINGS/SYSPANEL.INI", "ru_RU/settings/syspanel.ini"},
 }) elseif build_type == "en_US" then tup.append_table(img_files, {
+ {"WELCOME.HTM", VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
  {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/trunk/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
