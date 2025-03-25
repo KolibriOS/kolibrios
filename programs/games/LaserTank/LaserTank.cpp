@@ -1163,10 +1163,7 @@ void draw_window(void)
 	if (w_redraw)
 	{
 		kos_WindowRedrawStatus(1);
-
-		//kos_DefineAndDrawWindow(50, 50, 640, 506 - 22 + kos_GetSkinHeight(), 0x74, 0xEEEEEE, 0, 0, (Dword)windowTitle);
-
-		kos_DefineAndDrawWindow(10, 40, 384 + 9, 384 + 25, 0x74, 0x444444, 0, 0, (Dword)header);
+		kos_DefineAndDrawWindow(10, 40, 384 + 9, 388 + kos_GetSkinHeight(), 0x74, 0x444444, 0, 0, (Dword)header);
 		kos_WindowRedrawStatus(2);
 		w_redraw = false;
 	}
