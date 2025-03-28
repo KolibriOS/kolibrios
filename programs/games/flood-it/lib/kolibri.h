@@ -23,6 +23,10 @@ dword  I_Path       = 0;
 #define BT_HIDE		0x40000000
 #define BT_NOFRAME	0x20000000
 
+#define bool char
+#define true 1
+#define false 0
+
 //-------------------------------------------------------------------------
 
 
@@ -94,16 +98,11 @@ inline fastcall Pause(dword EBX)
 
 //------------------------------------------------------------------------------
 
-char buffer[11]="";
-inline fastcall dword IntToStr(dword ESI)
+char buffer[5];
+inline fastcall dword itoa_nosign(dword ESI)
 {
      $mov     edi, #buffer
      $mov     ecx, 10
-     $test     esi, esi
-     $jns     f1
-     $mov     al, '-'
-     $stosb
-     $neg     esi
 f1:
      $mov     eax, esi
      $push     -'0'
@@ -126,7 +125,7 @@ f3:
 //------------------------------------------------------------------------------
 
 
-void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,byte headerType,dword headerColour,EDI)
+void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,EDI)
 {
 	EAX = 12;              // function 12:tell os about windowdraw
 	EBX = 1;
@@ -135,7 +134,7 @@ void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaC
 	EBX = x << 16 + sizeX;
 	ECX = y << 16 + sizeY;
 	EDX = mainAreaType << 24 | mainAreaColour;
-	ESI = headerType << 24 | headerColour;
+	ESI = 0;
 	$xor eax,eax
 	$int 0x40
 
@@ -166,6 +165,13 @@ dword GetSkinHeight()
 	$pop  ebx
 }
 
+inline fastcall int GetScreenHeight()
+{
+	$mov eax, 14
+	$int 0x40
+	$and eax,0x0000FFFF
+}
+
 void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 {
 	EAX = 4;
@@ -190,12 +196,20 @@ void DefineButton(dword x,y,w,h,EDX,ESI)
  	$int 0x40
 }
 
-void DrawRegion(dword x,y,width,height,EDX)
+void DrawRegion(dword x,y,s,EDX)
 {
-	DrawBar(x,y,width,1,EDX);
-	DrawBar(x,y+height,width,1,EDX);
-	DrawBar(x,y,1,height,EDX);
-	DrawBar(x+width,y,1,height+1,EDX);
+	EAX = 13;
+	EBX = x<<16+s;
+	ECX = y<<16+1;
+ 	$int 0x40
+ 	ECX = y+s<<16+1;
+ 	$int 0x40
+ 	EBX = x<<16+1;
+	ECX = y<<16+s;
+ 	$int 0x40
+  	EBX = x+s<<16+1;
+	ECX = y<<16+s+1;
+ 	$int 0x40	
 }
 
 inline fastcall dword WriteDebug(dword EDX)
