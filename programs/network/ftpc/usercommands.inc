@@ -82,13 +82,13 @@ cmd_retr:
         mov     ecx, 256-5
         call    set_filename
 
-        mov     [filestruct.subfn], 2   ; create/rewrite file
+        mov     [filestruct.subfn], SSF_CREATE_FILE ; create/rewrite file
         mov     [filestruct.offset], 0
         mov     [filestruct.offset+4], 0
         mov     [filestruct.size], 0
         mov     [filestruct.ptr], 0
 
-        mcall   70, filestruct
+        mcall   SF_FILE, filestruct
         test    eax, eax
         jz      @f
         call    error_fs
@@ -96,7 +96,7 @@ cmd_retr:
       @@:
 ; Prepare to write to the file
 
-        mov     [filestruct.subfn], 3   ; write to file
+        mov     [filestruct.subfn], SSF_WRITE_FILE
         mov     [operation], OPERATION_RETR
 
 ; Request the file from server
@@ -138,7 +138,7 @@ cmd_stor:
         mov     [operation], OPERATION_STOR
 
         ; get file size
-        mov     [filestruct.subfn], 5
+        mov     [filestruct.subfn], SSF_GET_INFO
         mov     [filestruct.offset], 0
         mov     [filestruct.offset+4], 0
         mov     [filestruct.size], 0
@@ -148,12 +148,12 @@ cmd_stor:
         mov     ecx, 256-5
         call    set_filename
 
-        mcall   70, filestruct
+        mcall   SF_FILE, filestruct
 
         mov     eax, dword[folder_buf+32] ; supports file size upto 4GB
         mov     [file_size], eax
 
-        mov     [filestruct.subfn], 0   ; read file
+        mov     [filestruct.subfn], SSF_READ_FILE
         ; mov     [filestruct.offset], 0
         ; mov     [filestruct.offset+4], 0
         mov     [filestruct.size], BUFFERSIZE
@@ -191,12 +191,12 @@ cmd_lcwd:
         mov     byte[esi-1], 0
 
         ; check whether entered path is valid (folder exists)
-        mov     [filestruct2.subfn], 5
+        mov     [filestruct2.subfn], SSF_GET_INFO
         mov     [filestruct2.offset], 0
         mov     [filestruct2.size], 0
         mov     [filestruct2.ptr], folder_buf
         mov     [filestruct2.name], buf_cmd+5
-        mcall   70, filestruct2
+        mcall   SF_FILE, filestruct2
         test    eax, eax
         jz      @f
         cmp     eax, 2
@@ -205,10 +205,10 @@ cmd_lcwd:
         jmp     wait_for_usercommand
 
   @@:
-        mcall   30, 1, buf_cmd+5              ; set working directory
+        mcall   SF_CURRENT_FOLDER, SSF_SET_CF, buf_cmd+5 ; set working directory
 
   .print:
-        mcall   30, 2, buf_cmd, 256           ; and read it again
+        mcall   SF_CURRENT_FOLDER, SSF_GET_CF, buf_cmd, 256 ; and read it again
         icall   eax, interface_addr, interface.print, str_lcwd, buf_cmd, str_newline
 
         jmp     wait_for_usercommand

@@ -45,8 +45,8 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         test    eax, eax
         jnz     .exit
 
-        mcall   48, 3, sc, sizeof.system_colors
-        mcall   40, 0xC0000027 ; set event mask
+        mcall   SF_STYLE_SETTINGS, SSF_GET_COLORS, sc, sizeof.system_colors
+        mcall   SF_SET_EVENTS_MASK, 0xC0000027 ; set event mask
         ret
 
     .server_addr:
@@ -84,7 +84,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         mov     [filestruct.subfn], 0
         mov     [filestruct.offset], 54
         mov     [filestruct.size], ecx
-        mcall   70, filestruct
+        mcall   SF_FILE, filestruct
         cmp     ebx, 0
         jl      @f
         m2m     dword[tree1.data_img_sys], dword[icon_tl_sys]
@@ -98,7 +98,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         ;mov    [filestruct.subfn], 0
         ;mov    [filestruct.offset], 54
         mov     [filestruct.size], ecx
-        mcall   70, filestruct
+        mcall   SF_FILE, filestruct
         cmp     ebx, 0
         jl      @f
         m2m     dword[tree1.data_img], dword[icon_tl_nod]
@@ -121,7 +121,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
     align 4
     .still:
-        mcall   10
+        mcall   SF_WAIT_EVENT
 
         dec     eax
         jz      .redraw
@@ -146,65 +146,65 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
     align 4
     .draw:
-        mcall   12, 1
+        mcall   SF_REDRAW, SSF_BEGIN_DRAW
         ; main window
-        mcall   0, <35,830>, <20,555>, 0x34000000+SYS_COL, 0x805080DD, str_title
+        mcall   SF_CREATE_WINDOW, <35,830>, <20,555>, 0x34000000+SYS_COL, 0x805080DD, str_title
 
         ;-------------------------
         ; textedit components
         ;-------------------------
-        mcall   9, procinfo, -1
+        mcall   SF_THREAD_INFO, procinfo, -1
         mov     edi, tedit0
         call    EvSize
 
         movzx   ebx,word[procinfo.client_box.width]
         inc     bx
-        mcall   13, , ted_wnd_t
+        mcall   SF_DRAW_RECT, , ted_wnd_t
         stdcall [ted_draw], tedit0
 
         ; draw "disconnect" button
-        mcall   8, <50,95>, <25,25>, 3, BT_COL
+        mcall   SF_DEFINE_BUTTON, <50,95>, <25,25>, 3, BT_COL
         ; string "disconnect"
-        mcall   4, <50+5,25+5>, 0xb0000000+STR_COL, str_disconnect
+        mcall   SF_DRAW_TEXT, <50+5,25+5>, 0xb0000000+STR_COL, str_disconnect
         ; draw "Copy" button
-        mcall   8, <50,40>, <326,25>, 4, BT_COL
+        mcall   SF_DEFINE_BUTTON, <50,40>, <326,25>, 4, BT_COL
         ; string "copy"
-        mcall   4, <50+5,326+5>, 0xb0000000+STR_COL, str_copy
+        mcall   SF_DRAW_TEXT, <50+5,326+5>, 0xb0000000+STR_COL, str_copy
         ; draw "Search" button
-        mcall   8, <TLIST2_X+TLIST_SZ-55,55>, <20,25>, 5, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-55,55>, <20,25>, 5, BT_COL
         ; string "Search"
-        mcall   4, <TLIST2_X+TLIST_SZ-55+5,20+5>, 0xb0000000+STR_COL, str_search
+        mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-55+5,20+5>, 0xb0000000+STR_COL, str_search
 
         ; draw "LIST" button
-        mcall   8, <TLIST2_X+TLIST_SZ-4*BT_SZ_X-15,BT_SZ_X>, <50,25>, 12, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-4*BT_SZ_X-15,BT_SZ_X>, <50,25>, 12, BT_COL
         ; string "LIST"
-        mcall   4, <TLIST2_X+TLIST_SZ-4*BT_SZ_X-15+5,50+5>, 0xb0000000+STR_COL, str_list
+        mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-4*BT_SZ_X-15+5,50+5>, 0xb0000000+STR_COL, str_list
         ; draw "DELE" button
-        mcall   8, <TLIST2_X+TLIST_SZ-3*BT_SZ_X-10,BT_SZ_X>, <50,25>, 7, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-3*BT_SZ_X-10,BT_SZ_X>, <50,25>, 7, BT_COL
         ; string "DELE"
-        mcall   4, <TLIST2_X+TLIST_SZ-3*BT_SZ_X-10+5,50+5>, 0xb0000000+STR_COL, str_dele
+        mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-3*BT_SZ_X-10+5,50+5>, 0xb0000000+STR_COL, str_dele
         ; draw "RDIR" button
-        mcall   8, <TLIST2_X+TLIST_SZ-2*BT_SZ_X-5,BT_SZ_X>, <50,25>, 8, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-2*BT_SZ_X-5,BT_SZ_X>, <50,25>, 8, BT_COL
         ; string "RDIR"
-        mcall   4, <TLIST2_X+TLIST_SZ-2*BT_SZ_X-5+5,50+5>, 0xb0000000+STR_COL, str_rdir
+        mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-2*BT_SZ_X-5+5,50+5>, 0xb0000000+STR_COL, str_rdir
         ; draw "RMD" button
-        mcall   8, <TLIST2_X+TLIST_SZ-BT_SZ_X,BT_SZ_X>, <50,25>, 9, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-BT_SZ_X,BT_SZ_X>, <50,25>, 9, BT_COL
         ; string "RMD"
-        mcall   4, <TLIST2_X+TLIST_SZ-BT_SZ_X+5,50+5>, 0xb0000000+STR_COL, str_rmd
+        mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-BT_SZ_X+5,50+5>, 0xb0000000+STR_COL, str_rmd
 
         ; draw "mkd" button
-        mcall   8, <TLIST2_X+TLIST_SZ-BT_SZ_X,BT_SZ_X>, <80,20>, 6, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-BT_SZ_X,BT_SZ_X>, <80,20>, 6, BT_COL
         ; string "mkd"
-        mcall   4, <TLIST2_X+TLIST_SZ-BT_SZ_X+5,80+5>, 0xb0000000+STR_COL, str_mkd
+        mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-BT_SZ_X+5,80+5>, 0xb0000000+STR_COL, str_mkd
         
         ; draw "cancel" button
-        ;mcall   8, <555,55>, <308,25>, 10, BT_COL
+        ;mcall   SF_DEFINE_BUTTON, <555,55>, <308,25>, 10, BT_COL
         ; string "Cancel"
-        ;mcall   4, <555+5,308+5>, 0xb0000000+STR_COL, str_abort
+        ;mcall   SF_DRAW_TEXT, <555+5,308+5>, 0xb0000000+STR_COL, str_abort
         ; draw "change volume" button
-        mcall   8, <TLIST1_X+TLIST_SZ-55,55>, <100-20,22>, 11, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST1_X+TLIST_SZ-55,55>, <100-20,22>, 11, BT_COL
         ; string "Change"
-        mcall   4, <TLIST1_X+TLIST_SZ-55+5,100-20+5>, 0xb0000000+STR_COL, str_change
+        mcall   SF_DRAW_TEXT, <TLIST1_X+TLIST_SZ-55+5,100-20+5>, 0xb0000000+STR_COL, str_change
 
         ;--------------------------
         ; tree list components
@@ -222,12 +222,12 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         stdcall [edit_box_draw], edit_volume
         stdcall [edit_box_draw], edit_search
 
-        mcall   12,2
+        mcall   SF_REDRAW, SSF_END_DRAW
         ret
 
     align 16
     .mouse:
-        mcall   37, 1
+        mcall   SF_MOUSE_GET, SSF_WINDOW_POSITION
         cmp     word[tedit0.wnd.top], ax
         jg      .no_edit
 
@@ -235,7 +235,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         cmp     word[tedit0.wnd.left], ax
         jg      .no_edit
 
-        mcall   37, 3
+        mcall   SF_MOUSE_GET, SSF_BUTTON_EXT
         bt      eax, 24
         jnc     @f
 
@@ -256,7 +256,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
     align 16
     .key:
-        mcall   2
+        mcall   SF_GET_KEY
         stdcall [tl_key], tree1
         stdcall [tl_key], tree2
         stdcall [edit_box_key], edit_mkd
@@ -266,7 +266,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
     align 16
     .button:
-        mcall   17
+        mcall   SF_GET_BUTTON
 
         cmp     ah, 3
         jne     @f
@@ -424,6 +424,8 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         mov     byte[edi], 0
 
         ; add node to tree list
+        and dword[tree2.style], not 8
+        stdcall [tl_cur_next], tree2
         cmp     word[node_entry2], 'fi'
         jne     @f
         stdcall [tl_node_add], tree2, 0, node_entry2
@@ -470,6 +472,8 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         jne     @b
 
       .done_parsing:
+        stdcall [tl_cur_beg], tree2
+        or dword[tree2.style], 8
         call    .draw ; to update tree list immediately in case of "auto_list"
         pop     eax
         pop     edx
@@ -494,7 +498,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 ;;================================================================================================;;
 
         ; detect abort
-        mcall   17
+        mcall   SF_GET_BUTTON
         cmp     ah, 10
         je      cmd_abor
 
@@ -641,7 +645,7 @@ populate_local_tree_list: ;/////////////////////////////////////////////////////
     jne     @f
 
     ; removes last file name from filestruct.name
-    mcall   30, 2, filestruct.name,1024 ; get absolute path for cwd
+    mcall   SF_CURRENT_FOLDER, SSF_GET_CF, filestruct.name,1024 ; get absolute path for cwd
     lea     edi, [filestruct.name+eax] ; edi = pointer to the tail of file name
     mov     al, '/'
     mov     ecx, -1
@@ -652,15 +656,15 @@ populate_local_tree_list: ;/////////////////////////////////////////////////////
     mov     ecx, filestruct.name
 
   @@:
-    mcall   30, 1, ; set cwd
-    mcall   30, 2, filestruct.name, 1024 ; get absolute path for cwd
+    mcall   SF_CURRENT_FOLDER, SSF_SET_CF ; set cwd
+    mcall   SF_CURRENT_FOLDER, SSF_GET_CF, filestruct.name, 1024 ; get absolute path for cwd
     ; clear all nodes in tree list
     stdcall [tl_info_clear], tree1
     mov     [filestruct.offset], 0
 
   ; read 32 blocks
   .outer:
-    mcall   70, filestruct
+    mcall   SF_FILE, filestruct
     ;int3
     test    eax, eax
     jz      @f

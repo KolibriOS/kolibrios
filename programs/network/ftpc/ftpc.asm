@@ -83,12 +83,12 @@ start: ;////////////////////////////////////////////////////////////////////////
 ;< none                                                                                           ;;
 ;;================================================================================================;;
 ; initialize heap for using dynamic blocks
-        mcall   68, 11
+        mcall   SF_SYS_MISC, SSF_HEAP_INIT
         test    eax, eax
         je      exit2
         
 ; disable all events except network event
-        mcall   40, EV_STACK
+        mcall   SF_SET_EVENTS_MASK, EV_STACK
 ; load libraries
         stdcall dll.Load, @IMPORT
         test    eax, eax
@@ -125,16 +125,16 @@ start: ;////////////////////////////////////////////////////////////////////////
         mov     [acti_port_stop], ax
 
         invoke  ini.get_str, path, str_general, str_dir, buf_buffer1, BUFFERSIZE, 0
-        mcall   30, 1, buf_buffer1                      ; set working directory
+        mcall   SF_CURRENT_FOLDER, SSF_SET_CF, buf_buffer1 ; set working directory
 
         ; initialize log file
         invoke  ini.get_str, path, str_general, str_logfile, log_file, 512, 0
-        mov     [filestruct2.subfn], 2
+        mov     [filestruct2.subfn], SSF_CREATE_FILE
         mov     [filestruct2.offset], 0
         mov     [filestruct2.size], 0
         mov     [filestruct2.ptr], 0
         mov     [filestruct2.name], log_file
-        mcall   70, filestruct2
+        mcall   SF_FILE, filestruct2
 
 ; Usage: ftpc [-cli] [ftp://username:password@server:port/path]
 
@@ -355,7 +355,7 @@ wait_for_servercommand: ;///////////////////////////////////////////////////////
 
 ; receive socket data with timeout
   .receive:
-        mcall   26, 9
+        mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
         add     eax, TIMEOUT*100
         mov     [timeout], eax
   .again:
@@ -365,11 +365,11 @@ wait_for_servercommand: ;///////////////////////////////////////////////////////
         je      .closed
         cmp     ebx, EWOULDBLOCK
         jne     .sock_err
-        mcall   26, 9
+        mcall   SF_SYSTEM_GET, SSF_TIME_COUNT
         mov     ebx, [timeout]
         sub     ebx, eax
         jle     .timeout
-        mcall   23      ; Wait for event with timeout
+        mcall   SF_WAIT_EVENT_TIMEOUT ; Wait for event with timeout
         jmp     .again
 
   .sock_err:
@@ -524,7 +524,7 @@ transfer_queued:
 
         ; Error occured, we reached the end of the buffer before [queued] reached 0
         mov     [queued], 0
-        mcall   68, 13, [ptr_fname]             ; free buffer
+        mcall   SF_SYS_MISC, SSF_MEM_FREE, [ptr_fname] ; free buffer
         test    eax, eax
         jz      error_heap
         jmp     wait_for_usercommand
@@ -535,7 +535,7 @@ transfer_queued:
         dec     [queued]
         jnz     cmd_retr
 
-        mcall   68, 13, [ptr_fname]             ; free buffer
+        mcall   SF_SYS_MISC, SSF_MEM_FREE, [ptr_fname] ; free buffer
         test    eax, eax
         jz      error_heap
         jmp     cmd_retr
@@ -655,12 +655,12 @@ write_to_file: ;////////////////////////////////////////////////////////////////
         mov     eax, 0
         ret
       @@:
-        mov     [filestruct2.subfn], 3
+        mov     [filestruct2.subfn], SSF_WRITE_FILE
         m2m     [filestruct2.offset], [logfile_offset]
         mov     [filestruct2.size], ecx
         mov     [filestruct2.ptr], eax
         mov     [filestruct2.name], log_file
-        mcall   70, filestruct2
+        mcall   SF_FILE, filestruct2
         test    eax, eax
         jz      @f
         mov     [logfile_offset], -1 ; disable logging
@@ -754,7 +754,7 @@ wait_for_keypress:
 exit:
         mcall   close, [controlsocket]
 exit2:  
-        mcall   -1
+        mcall   SF_TERMINATE_PROCESS
 
 
 
