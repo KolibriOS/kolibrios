@@ -157,7 +157,7 @@ extra_files = {
  {"kolibrios/3D/info3ds/OBJECTS.PNG", SRC_PROGS .. "/develop/info3ds/objects.png"},
  {"kolibrios/3D/info3ds/TOOLBAR.PNG", SRC_PROGS .. "/develop/info3ds/toolbar.png"},
  {"kolibrios/3D/info3ds/FONT8X9.BMP", SRC_PROGS .. "/fs/kfar/trunk/font8x9.bmp"},
- {"kolibrios/3D/blocks/", "../programs/bcc32/games/blocks/bin/*"},
+ {"kolibrios/3D/blocks/blocks.kex", "../programs/bcc32/games/blocks/bin/blocks.kex"},
  {"kolibrios/3D/blocks/models/", "../programs/bcc32/games/blocks/models/*"},
  {"kolibrios/3D/md2view/", "common/3d/md2view/*"},
  {"kolibrios/3D/md2view/md2_model/", "common/3d/md2view/md2_model/*"},
@@ -631,6 +631,7 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/calcplus", VAR_PROGS .. "/other/calcplus/calcplus"},
  {"kolibrios/utils/kfm/kfm", VAR_PROGS .. "/fs/kfm/trunk/kfm"},
  {"kolibrios/utils/tedit/t_edit", VAR_PROGS .. "/other/t_edit/t_edit"},
+ {"kolibrios/3D/blocks/block.bin", VAR_PROGS .. "/bcc32/games/blocks/block.bin"}
 })
 -- For russian build, add russian-only programs.
 if build_type == "ru_RU" then tup.append_table(img_files, {
