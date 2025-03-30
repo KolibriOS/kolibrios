@@ -122,12 +122,17 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         stdcall [edit_box_key], edit_path
 
         jmp     .still
-	
+
   .connect:
-		mcall   SF_CHANGE_WINDOW, 35, 20, 830, 555 ; resize to main gui window's coordinates
+        mov     esi, 555
+        or      [show_log],0
+        jnz     @f
+        sub     esi, 160
+  @@:
+        mcall   SF_CHANGE_WINDOW, 35, 20, 830 ; resize to main gui window's coordinates
         cmp     [param_server_addr], 0
-		jne     gui.main
-		
+        jne     gui.main
+        
         mov     [str_error_addr], gui_str_no_srvr
         jmp     .redraw
  

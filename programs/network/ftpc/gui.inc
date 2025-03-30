@@ -7,6 +7,7 @@ include '../../load_lib.mac'
  
 icon_tl_sys dd 0
 icon_tl_nod dd 0
+show_log    db 0 ; 0 - hide log, 1 - show log
 
 TLIST_SZ = 325+16 ;=341. 16 is x-size of scroll bar
 TLIST1_X = 50
@@ -148,7 +149,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
     .draw:
         mcall   SF_REDRAW, SSF_BEGIN_DRAW
         ; main window
-        mcall   SF_CREATE_WINDOW, <35,830>, <20,555>, 0x34000000+SYS_COL, 0x805080DD, str_title
+        mcall   SF_CREATE_WINDOW, <35,830>, <20,555-160>, 0x34000000+SYS_COL, 0x805080DD, str_title
 
         ;-------------------------
         ; textedit components
@@ -160,16 +161,30 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         movzx   ebx,word[procinfo.client_box.width]
         inc     bx
         mcall   SF_DRAW_RECT, , ted_wnd_t
-        stdcall [ted_draw], tedit0
 
         ; draw "disconnect" button
         mcall   SF_DEFINE_BUTTON, <50,95>, <25,25>, 3, BT_COL
         ; string "disconnect"
         mcall   SF_DRAW_TEXT, <50+5,25+5>, 0xb0000000+STR_COL, str_disconnect
+        ; draw "Show|Hide log" button
+        mcall   SF_DEFINE_BUTTON, <50,79>, <326,25>, 10, BT_COL
+        ; string "Show|Hide log"
+        cmp     [show_log],0
+        je      @f
+        stdcall [ted_draw], tedit0
+        mov     edx, str_hide_log
+        jmp     .end_log_1
+        @@:
+        mov     edx, str_show_log
+        .end_log_1:
+        mcall   SF_DRAW_TEXT, <50+5,326+5>, 0xb0000000+STR_COL
+        cmp     [show_log],0
+        je @f
         ; draw "Copy" button
-        mcall   SF_DEFINE_BUTTON, <50,40>, <326,25>, 4, BT_COL
+        mcall   SF_DEFINE_BUTTON, <129+5,40>, <326,25>, 4, BT_COL
         ; string "copy"
-        mcall   SF_DRAW_TEXT, <50+5,326+5>, 0xb0000000+STR_COL, str_copy
+        mcall   SF_DRAW_TEXT, <129+10,326+5>, 0xb0000000+STR_COL, str_copy
+        @@:
         ; draw "Search" button
         mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-55,55>, <20,25>, 5, BT_COL
         ; string "Search"
@@ -243,6 +258,8 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         jmp     .still
 
       @@:
+        cmp     [show_log],0
+        je      .still
         stdcall [ted_mouse], tedit0
         jmp     .still
 
@@ -271,6 +288,12 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         cmp     ah, 3
         jne     @f
         ijmp    eax, interface_addr, interface.server_addr
+        jmp     .still
+
+      @@:
+        cmp     ah, 10
+        jne     @f
+        call    show_hide_log
         jmp     .still
 
       @@:
@@ -327,7 +350,10 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         cmp     byte[esi], 0
         jne     @b
         stdcall [ted_text_add], tedit0, tedit_buffer, ecx, ebx
+        cmp     [show_log],0
+        je      .end_log_2
         stdcall [ted_draw], tedit0
+    .end_log_2:
         ; write to log file
         mov     eax, [esp+36]
         sub     ecx, 2 ; 0a0d is not included
@@ -750,6 +776,16 @@ EvSize:
     ret
 
 
+;
+show_hide_log:
+    mov     esi, 555
+    xor     [show_log],1
+    jnz     @f
+    sub     esi, 160
+    @@:
+    mcall   SF_CHANGE_WINDOW, -1, -1, -1
+    ret
+
 ;;================================================================================================;;
 filter_remote_list: ;/////////////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -870,6 +906,8 @@ search: ;///////////////////////////////////////////////////////////////////////
 ;hed             db 'FTP Client for KolibriOS',0
 str_change      db 'Change',0
 str_disconnect  db 'Disconnect',0
+str_show_log    db 'Show log',0
+str_hide_log    db 'Hide log',0
 str_copy        db 'Copy',0
 str_mkd         db 'MKD',0
 str_dele        db 'DELE',0
