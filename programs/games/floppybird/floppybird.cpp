@@ -343,7 +343,7 @@ void kos_Main()
 
 void drawGameWindow()
 {
-	kos_DefineAndDrawWindow(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0x33, 0x00FFFF, 0, 0, (Dword)HEADER_STRING);
+	kos_DefineAndDrawWindow(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0x34, 0x00FFFF, 0, 0, (Dword)HEADER_STRING);
 	bird.draw();
 	for (int i = 0; i < tubeNumber; ++i)
 		tubes[i].draw();
@@ -370,7 +370,7 @@ void redrawGameWindow()
 
 void drawGameoverWindow()
 {
-	kos_DefineAndDrawWindow(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0x33, 0x000000, 0, 0, (Dword)HEADER_STRING);
+	kos_DefineAndDrawWindow(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0x34, 0x000000, 0, 0, (Dword)HEADER_STRING);
 	kos_WriteTextToWindow(125, 50, 0x82, 0xFFFFFF, GAMEOVER_STRING, 0);
 	kos_WriteTextToWindow(135, 100, 0x81, 0xFFFFFF, scoreString, 0);
 	kos_WriteTextToWindow(50, 150, 0x81, 0xFFFFFF, ANY_KEY_STRING, 0);
@@ -387,7 +387,7 @@ void WriteBorderedText(Word x, Word y, Byte fontType, Dword textColor, const cha
 
 void drawMenuWindow()
 {
-	kos_DefineAndDrawWindow(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0x33, 0x00FFFF, 0, 0, (Dword)HEADER_STRING);
+	kos_DefineAndDrawWindow(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0x34, 0x00FFFF, 0, 0, (Dword)HEADER_STRING);
 	
 	WriteBorderedText(85, 40, 0x4, 0xFFFFFF, HEADER_STRING, 6, 0x000000, 2);
 	WriteBorderedText(185, 80, 0x84, 0xFFFFFF, HEADER_STRING + 7, 0, 0x000000, 2);
