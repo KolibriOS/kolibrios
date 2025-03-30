@@ -635,7 +635,6 @@ tup.append_table(extra_files, {
 })
 -- For russian build, add russian-only programs.
 if build_type == "ru_RU" then tup.append_table(img_files, {
- {"PERIOD", VAR_PROGS .. "/other/period/trunk/period"},
  {"GAMES/KLAVISHA", VAR_PROGS .. "/games/klavisha/klavisha"},
  {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
 }) else tup.append_table(img_files, {
@@ -643,6 +642,7 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
 }) end
 
 if build_type == "ru_RU" then tup.append_table(extra_files, {
+ {"kolibrios/utils/period", VAR_PROGS .. "/other/period/trunk/period"},
  {"kolibrios/games/Dungeons/Dungeons", VAR_PROGS .. "/games/Dungeons/Dungeons"},
 }) end
 
