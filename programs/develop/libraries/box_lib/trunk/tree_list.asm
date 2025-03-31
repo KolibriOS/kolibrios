@@ -1,7 +1,6 @@
-; элемент TreeList для библиотеки box_lib.obj
-; на код применена GPL2 лицензия
-; последняя модификация 12.01.2021 IgorA
-
+; SPDX-License-Identifier: GPL-2.0-only
+; TreeList: used as a ListBox or Tree control (determined by settings)
+; Copyright (C) 2009-2025  IgorA <aie85playm@gmail.com>
 
 struct TreeNode
 	type dw ? ;+ 0 тип элемента, или индекс иконки для узла
@@ -13,6 +12,52 @@ struct TreeNode
 	t_delete dd ? ;+16 врем. удаления
 ends
 
+
+;input:
+; ecx - 0xXX...... font options
+;output:
+; eax - font height in pixels
+align 4
+proc get_font_h uses ebx
+	mov eax,ecx
+	shr eax,24
+	bt eax,4
+	jc @f
+	bt eax,5
+	jc @f
+		mov ebx,9
+		jmp .siz0
+	@@:
+		mov ebx,16
+	.siz0:
+	and eax,7
+	inc eax
+	imul eax,ebx
+	ret
+endp
+
+;input:
+; ecx - 0xXX...... font options
+;output:
+; eax - font width in pixels
+align 4
+proc get_font_w uses ebx
+	mov eax,ecx
+	shr eax,24
+	bt eax,4
+	jc @f
+	bt eax,5
+	jc @f
+		mov ebx,6
+		jmp .siz0
+	@@:
+		mov ebx,8
+	.siz0:
+	and eax,7
+	inc eax
+	imul eax,ebx
+	ret
+endp
 
 ;выделние памяти для структур списка и основной информации (конструктор)
 align 16
@@ -463,34 +508,24 @@ proc tl_draw, tlist:dword
 
 	cmp tl_capt_cy,9 ;9 - minimum caption height
 	jl @f
-	mov ebx,edi ;calculate cursor position
-	mov eax,tl_cur_pos
-	inc eax
-	lea edi,[txt_capt_cur.v]
-	stdcall tl_convert_to_str, 5
-
-	mov edi,ebx
+	call tl_draw_caption_cur_pos
 	mov eax,tl_tim_undo
+	or eax,eax
+	jz @f
+	mov ebx,edi ;save edi
 	lea edi,[txt_capt_otm.v]
 	stdcall tl_convert_to_str, 5
 	mov edi,ebx ;restore edi
 
-	mov eax,SF_DRAW_TEXT ;captions
-	mov ebx,tl_box_left
-	shl ebx,16
-	add ebx,5*65536+3
-	add ebx,tl_box_top
-	mov ecx,tl_col_txt
-	or  ecx,0x80000000
-	lea edx,[txt_capt_cur]
-	int 0x40
-
 	mov ebx,tl_box_left
 	shl ebx,16
 	add ebx,100*65536+3
+	mov ecx,tl_col_txt
+	and ecx,0x00ffffff
+	or  ecx,0x80000000
 	add ebx,tl_box_top
 	lea edx,[txt_capt_otm]
-	int 0x40
+	mcall SF_DRAW_TEXT ;undo
 	@@:
 
 	;cycle to nodes
@@ -1163,10 +1198,11 @@ proc tl_draw_node_caption uses ebx ecx edx esi
 		ror ecx,16
 		mov ebx,ecx
 		add bx,tl_img_cy ;выравнивиние по нижней границе иконки
-		sub bx,9 ;отнимаем высоту текста
 		mov ecx,tl_col_txt
-		and ecx,0xffffff
-		mcall SF_DRAW_TEXT
+		call get_font_h
+		sub bx,ax ;отнимаем высоту текста
+		and ecx,0x37ffffff
+		mcall SF_DRAW_TEXT ;node text
 	@@:
 	ret
 endp
@@ -1179,13 +1215,15 @@ endp
 align 4
 proc tl_get_draw_text_len uses eax ecx edx
 	mov esi,eax ;берем длинну строки
+	mov ecx,tl_col_txt
+	call get_font_w
+	mov ecx,eax
 	mov eax,tl_box_left
 	add eax,tl_box_width
 	cmp eax,ebx
 	jle .text_null ;если подпись полностью вся за экраном
 		sub eax,ebx
 		xor edx,edx
-		mov ecx,6 ;ширина системного шрифта
 		div ecx ;смотрим сколько символов может поместиться на экране
 		cmp esi,eax
 		jl @f
@@ -1858,10 +1896,8 @@ pushad
 			.po8:
 				call tl_node_move_po8 ;узлы идут не подряд меняем 8 ссылок
 			.cur_mov:
-				push dword edi
-				call tl_cur_perv
-				push dword edi
-				call tl_draw
+				stdcall tl_cur_perv, edi
+				stdcall tl_draw, edi
 	@@:
 popad
 	ret
@@ -1981,10 +2017,11 @@ tl_draw_caption_cur_pos:
 		add ebx,5*65536+3
 		add ebx,tl_box_top
 		mov ecx,tl_col_txt
+		and ecx,0x00ffffff
 		or  ecx,0xc0000000 ;0x40000000 закрашивать фон цветом edi
 		lea edx,[txt_capt_cur]
 		mov edi,tl_col_zag
-		mcall SF_DRAW_TEXT ;captions
+		mcall SF_DRAW_TEXT ;row number
 	popad
 	@@:
 	ret
@@ -2253,6 +2290,6 @@ align 4
 	jge @f
 		or al,0x30  ;добавляем символ '0'
 		stosb       ;записать al в ячеку памяти [edi]
-		mov byte[edi],0
+		mov word[edi],' ' ;add space symbol and 0
 	@@:
 	ret
