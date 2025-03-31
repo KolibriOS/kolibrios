@@ -4,9 +4,11 @@ char file_actions[]=
 "Открыть           |Enter
 Открыть с помощью  |Ctrl+Ent
 -
-Копировать         |Ctrl+C
-Вырезать           |Ctrl+X
-Вставить           |Ctrl+V
+Копировать путь    |Ctrl+P
+-
+Копировать|Ctrl+C
+Вырезать|Ctrl+X
+Вставить|Ctrl+V
 -
 Переименовать      |F2
 Удалить            |Del
@@ -15,8 +17,10 @@ char empty_folder_actions[]=
 "Вставить      |Ctrl+V";
 char burger_menu_items[] = 
 "Новое окно|Ctrl+N
+-
 Открыть консоль|Ctrl+G
-Обновить папку|Ctrl+R
+Поиск|Ctrl+F
+-
 Настройки|F10
 О программе";
 
@@ -24,6 +28,8 @@ char burger_menu_items[] =
 char file_actions[]= 
 "Ava           |Enter
 Ava ...        |Ctrl+Ent
+-
+Copy path      |Ctrl+P
 -
 Kopeeri        |Ctrl+C
 Lїika          |Ctrl+X
@@ -36,8 +42,10 @@ char empty_folder_actions[]=
 "Aseta         |Ctrl+V";
 char burger_menu_items[] = 
 "New window|Ctrl+N
+-
 Open console here|Ctrl+G
-Vфrskenda|Ctrl+R
+Search|Ctrl+F
+-
 Settings|F10
 About";
 
@@ -45,6 +53,8 @@ About";
 char file_actions[]= 
 "Open         |Enter
 Open with...  |Ctrl+Ent
+-
+Copy path     |Ctrl+P
 -
 Copy          |Ctrl+C
 Cut           |Ctrl+X
@@ -57,8 +67,10 @@ char empty_folder_actions[]=
 "Paste        |Ctrl+V";
 char burger_menu_items[] = 
 "New window|Ctrl+N
+-
 Open console here|Ctrl+G
-Refresh folder|Ctrl+R
+Search|Ctrl+F
+-
 Settings|F10
 About";
 #endif
@@ -76,17 +88,18 @@ void EventMenuClick(dword _id)
 	if (active_menu == MENU_FILE) switch(_id) {
 		case 1: EventOpen(0); break;
 		case 2: ShowOpenWithDialog(); break;
-		case 3: CopyFilesListToClipboard(COPY); break;
-		case 4: CopyFilesListToClipboard(CUT); break;
-		case 5: EventPaste(path); break;
-		case 6: FnProcess(2); break;
-		case 7: ShowPopinForm(POPIN_DELETE); break;
-		case 8: FnProcess(1); break;
+		case 3: EventCopyItemPath(); break;
+		case 4: CopyFilesListToClipboard(COPY); break;
+		case 5: CopyFilesListToClipboard(CUT); break;
+		case 6: EventPaste(path); break;
+		case 7: FnProcess(2); break;
+		case 8: ShowPopinForm(POPIN_DELETE); break;
+		case 9: FnProcess(1); break;
 	}
 	if (active_menu == MENU_BURGER) switch(_id) {
 		case 1: EventOpenNewEolite(); break;
 		case 2: EventOpenConsoleHere(); break;
-		case 3: EventRefreshDisksAndFolders(); break;
+		case 3: EventOpenSearch(); break;
 		case 4: FnProcess(10); break;
 		case 5: EventShowAbout(); break;		
 	}

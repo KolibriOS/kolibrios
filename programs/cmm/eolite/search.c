@@ -127,8 +127,8 @@ void SearchThread()
 	  
 		case evKey:
 			@GetKeys(); 
-			edit_box_key_c stdcall (#edit_name);
-			edit_box_key_c stdcall (#edit_path);
+			edit_box_key stdcall (#edit_name);
+			edit_box_key stdcall (#edit_path);
 			if (key_scancode == SCAN_CODE_TAB) {
 				if (edit_name.flags & ed_focus) {
 					edit_name.flags >< edit_path.flags;

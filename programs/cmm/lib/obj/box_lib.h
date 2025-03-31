@@ -6,37 +6,6 @@
 #include "../lib/kolibri.h"
 #endif
 
-#ifdef __COFF__
-extern dword edit_box_draw;
-extern dword edit_box_key_safe;
-extern dword edit_box_mouse;
-extern dword edit_box_set_text;
-
-extern dword scrollbar_v_draw;
-extern dword scrollbar_v_mouse;
-extern dword scrollbar_h_draw;
-extern dword scrollbar_h_mouse;
-
-extern dword PathShow_prepare;
-extern dword PathShow_draw;
-
-extern dword progressbar_draw;
-extern dword progressbar_progress;
-
-extern dword frame_draw;
-
-/* 
-    Legacy support
-    For new programs need to use edit_box_key_safe (or edit_box_key_c
-    with a define below)   
-    TODO: change in all cmm programs edit_box_key to edit_box_key_safe (edit_box_key_c)
-          See examples in eolite and imgedit
-          
-    This define changed all edit_box_key_c to edit_box_key_safe identifier's              
-*/
-#define edit_box_key_c  edit_box_key_safe
-
-#else
 #ifndef INCLUDE_DLL_H
 #include "../lib/dll.h"
 #endif
@@ -242,5 +211,3 @@ struct frame
 	frame_draw stdcall (#frame123);
 }
 
-
-#endif

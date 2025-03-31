@@ -1,9 +1,8 @@
-//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2022
+//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2025
 //GNU GPL license.
 
 /*
 BUGS:
-- F1 in KFM (move Properties to an external app)
 - Ctrl+1+2+3+4 in KFM
 - Highlight another commands on Ctrl|Shift in KFM like in Classic KFM
 TODO:
@@ -11,9 +10,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "EOLITE 5.30"
-#define TITLE_EOLITE "Eolite File Manager 5.30"
-#define TITLE_KFM "Kolibri File Manager 2.30";
+#define ABOUT_TITLE "Eolite 5.31"
+#define TITLE_EOLITE "Eolite File Manager 5.31"
+#define TITLE_KFM "Kolibri File Manager 2.31";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -443,6 +442,9 @@ void main()
 								pause(7);
 							}
 							EventDriveClick(key_scancode);
+							break;
+					case SCAN_CODE_KEY_P:
+							EventCopyItemPath();
 							break;
 					case SCAN_CODE_KEY_X:
 							CopyFilesListToClipboard(CUT);
@@ -1055,7 +1057,6 @@ void EventHistoryGoForward()
 	}
 }
 
-
 void ShowOpenWithDialog()
 {
 	byte open_param[4097];
@@ -1149,6 +1150,7 @@ void ShowPopinForm(byte _popin_type)
 				break;
 		case POPIN_DELETE:
 				if (!files.count) return;
+				popin_string[0] = -1;
 				if (!getSelectedCount()) && (!strncmp(#file_name,"..",2)) return;
 				popinx = DrawEolitePopup(T_YES, T_NO);
 				WriteTextCenter(popinx, 178, POPIN_W, sc.work_text, T_DELETE_FILE);
@@ -1344,6 +1346,12 @@ void EventOpenSearch()
 {
 	sprintf(#param, "\\s %s", path);
 	RunProgram(#program_path, #param);	
+}
+
+
+void EventCopyItemPath()
+{
+	Clipboard__CopyText(#file_path);
 }
 
 void ProceedMouseGestures()
