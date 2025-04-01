@@ -760,7 +760,7 @@ exit2:
 
 ; data
 str_title       db 'FTP client for KolibriOS',0
-str_welcome     db 'FTP client for KolibriOS v0.16',10
+str_welcome     db 'FTP client for KolibriOS v0.18',10
                 db 10,0
 str_srv_addr    db 'Please enter ftp server address.',10,0
 
@@ -971,6 +971,6 @@ param_path      rb 1024
 param_port      rb 6
 
 sc system_colors
-rb 1024
+rb 2048
 
 mem:

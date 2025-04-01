@@ -16,6 +16,9 @@ BT_SZ_X  = 40
 SYS_COL  = 0xe6e6e6
 BT_COL   = 0xcccccc
 STR_COL  = 0x595959 ;0x000000
+ICON_TOP_B  = 2 ; top border
+ICON_LEFT_B = 2 ; left border
+ICON_SIZE   = (18+ICON_LEFT_B)*(18+ICON_TOP_B)*3
 
 ; TODO: automatic resizing of GUI elements on window resizing
 
@@ -74,37 +77,36 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         ; initialize tree list elements
         stdcall [tl_data_init], tree1
         stdcall [tl_data_init], tree2
-		
-		or dword[tree1.style], 8 ;tl_cursor_pos_limited - restrict cursor move to existing nodes
-		or dword[tree2.style], 8 ;tl_cursor_pos_limited
-		
-        ; read icons
-        load_image_file 'ftpc_sys.png', icon_tl_sys
 
-        mov     [filestruct.ptr], eax
-        mov     [filestruct.subfn], 0
-        mov     [filestruct.offset], 54
-        mov     [filestruct.size], ecx
-        mcall   SF_FILE, filestruct
-        cmp     ebx, 0
-        jl      @f
+        or dword[tree1.style], 8 ;tl_cursor_pos_limited - restrict cursor move to existing nodes
+        or dword[tree2.style], 8 ;tl_cursor_pos_limited
+        
+        ; read icons
+        mcall   SF_SYS_MISC, SSF_MEM_OPEN, str_icon_18,, 0
+        or      eax, eax
+        jz      @f
+        mov     esi, eax
+        mov     ecx, ICON_SIZE*11
+        mcall   SF_SYS_MISC, SSF_MEM_ALLOC
+        mov     ecx, eax
+        mov     [icon_tl_sys], eax
+        stdcall copy_icon, eax,esi,31 ;active cursor
+        add     eax, ICON_SIZE*3 ;skip not used icons
+        stdcall img_to_gray, ecx, eax, ICON_SIZE/3 ;not active cursor
+
         m2m     dword[tree1.data_img_sys], dword[icon_tl_sys]
         m2m     dword[tree2.data_img_sys], dword[icon_tl_sys]
 
-      @@:
         ; read nodes icon file
-        load_image_file 'ftpc_nod.png', icon_tl_nod
+        mov     ecx, ICON_SIZE*2
+        mcall   SF_SYS_MISC, SSF_MEM_ALLOC
+        mov     [icon_tl_nod], eax
+        stdcall copy_icon, eax,esi,2
+        stdcall copy_icon, eax,esi,0
 
-        mov     [filestruct.ptr], eax
-        ;mov    [filestruct.subfn], 0
-        ;mov    [filestruct.offset], 54
-        mov     [filestruct.size], ecx
-        mcall   SF_FILE, filestruct
-        cmp     ebx, 0
-        jl      @f
         m2m     dword[tree1.data_img], dword[icon_tl_nod]
         m2m     dword[tree2.data_img], dword[icon_tl_nod]
-    
+
       @@:
         call    .draw
         ; create initial tree list for root_dir
@@ -901,6 +903,74 @@ search: ;///////////////////////////////////////////////////////////////////////
     pop     edi esi edx ecx ebx
     ret
 
+
+align 4
+proc copy_icon uses ebx ecx esi edi, buf_d:dword, buf_s:dword, ind:dword
+;;------------------------------------------------------------------------------------------------;;
+;> buf_d = pointer to destination buffer 24-bit
+;> buf_s = pointer to source buffer 32-bit (with icons)
+;> ind   = icon index
+;;------------------------------------------------------------------------------------------------;;
+;< eax   = pointer to destination buffer + icon size
+;;------------------------------------------------------------------------------------------------;;
+    mov     edi, [buf_d]
+    mov     ecx, (18+ICON_LEFT_B)*ICON_TOP_B*3
+    mov     al, 0xff
+    rep     stosb ; make top border
+    ; copy icon
+    mov     esi, [ind]
+    imul    esi, 18*18*4
+    add     esi, [buf_s]
+    mov     ebx, 18
+  .cycle0:
+    mov     ecx, ICON_LEFT_B*3
+    rep     stosb ; make left border
+    mov     ecx, 18
+  @@:
+    movsw
+    movsb
+    inc     esi ; skip transparent byte
+    loop    @b
+    dec     ebx
+    jnz     .cycle0
+    mov     eax, edi
+    ret
+endp
+
+
+align 4
+proc img_to_gray, buf_rgb:dword, buf_g24:dword, pixels:dword
+;;------------------------------------------------------------------------------------------------;;
+; function for generating gray icons
+;;------------------------------------------------------------------------------------------------;;
+;> buf_rgb - buffer with input 24-bit color image
+;> buf_g24 - buffer with output 24-bit gray image
+;> pixels - number of pixels in the image
+;;------------------------------------------------------------------------------------------------;;
+pushad
+    mov     esi, [buf_rgb]
+    mov     edi, [buf_g24]
+    mov     ecx, [pixels]
+    mov     ebx, 3
+  @@:
+    movzx   eax, byte[esi]
+    movzx   edx, byte[esi+1]
+    add     eax, edx
+    movzx   edx, byte[esi+2]
+    add     eax, edx
+    xor     edx, edx
+    div     ebx
+    mov     ah, al
+    mov     word[edi], ax
+    mov     byte[edi+2], al
+    add     esi, 3
+    add     edi, 3
+    loop    @b
+popad
+    ret
+endp
+
+
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 ;hed             db 'FTP Client for KolibriOS',0
@@ -918,15 +988,17 @@ str_search      db 'Search',0
 str_list        db 'LIST',0
 str_null        db 0
 
+str_icon_18 db 'ICONS18',0
+
 ;----------------------
 ; tree list elements
 ;----------------------
-tree1 tree_list 64, 500, tl_list_box_mode, 16, 16, \
-    0xffffff, BT_COL, 0x000000, TLIST1_X, 105, TLIST_SZ-16, 185, 14, 4,\
+tree1 tree_list 64, 500, tl_list_box_mode, 18+ICON_LEFT_B, 18+ICON_TOP_B, \
+    0xffffff, BT_COL, 0x10000000, TLIST1_X, 105, TLIST_SZ-16, 185, 14, 4,\
     0, el_focus, wScr, fun_on_enter
 
-tree2 tree_list 64, 500, tl_list_box_mode, 16, 16, \
-    0xffffff, BT_COL, 0x000000, TLIST2_X, 105, TLIST_SZ-16, 185, 14, 4, \
+tree2 tree_list 64, 500, tl_list_box_mode, 18+ICON_LEFT_B, 18+ICON_TOP_B, \
+    0xffffff, BT_COL, 0x10000000, TLIST2_X, 105, TLIST_SZ-16, 185, 14, 4, \
     0, el_focus, wScr2, fun_on_enter2
 
 ; editbox for mkd

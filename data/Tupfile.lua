@@ -49,8 +49,6 @@ img_files = {
  {"MEDIA/IMGF/INVSOL.OBJ", "common/media/ImgF/invSol.obj"},
  {"MEDIA/PIXIESKN.PNG", SRC_PROGS .. "/cmm/pixie2/pixieskn.png"},
  {"NETWORK/FTPC.INI", SRC_PROGS .. "/network/ftpc/ftpc.ini"},
- {"NETWORK/FTPC_SYS.PNG", SRC_PROGS .. "/network/ftpc/ftpc_sys.png"},
- {"NETWORK/FTPC_NOD.PNG", SRC_PROGS .. "/network/ftpc/ftpc_nod.png"},
  {"NETWORK/FTPD.INI", "common/network/ftpd.ini"},
  {"NETWORK/KNMAP", "common/network/knmap"},
  {"NETWORK/USERS.INI", "common/network/users.ini"},
