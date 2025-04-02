@@ -270,11 +270,15 @@ void TWebBrowser::tag_h1234_caption()
 void TWebBrowser::tag_kosicon()
 {
 	dword imgbuf[44];
+	dword maxicon;
 	dword shared_i18 = memopen("ICONS18", NULL, SHM_READ);
+	maxicon = EDX / 18 / 18 / 4;
 	if (shared_i18) && (tag.get_number_of("n")) {
-		if (draw_x + 18 > canvas.bufw) NewLine();
-		canvas.DrawImage(draw_x, draw_y-2, 18, 18, 18*18*4*tag.number+shared_i18);
-		draw_x += 22;
+		if (tag.number < maxicon) {
+			if (draw_x + 18 > canvas.bufw) NewLine();
+			canvas.DrawImage(draw_x, draw_y-2, 18, 18, 18*18*4*tag.number+shared_i18);
+			draw_x += 22;			
+		}
 	}
 
 }

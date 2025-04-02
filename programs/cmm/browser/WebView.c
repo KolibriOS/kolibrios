@@ -571,10 +571,10 @@ void OpenPage(dword _open_URL)
 		//INTERNAL PAGE
 		history.add(#new_url);
 		WB1.custom_encoding = -1;
-		if (streq(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#buildin_page_home, sizeof(buildin_page_home)-1);
-		else if (streq(#new_url, URL_SERVICE_TEST)) LoadInternalPage(#buildin_page_test, sizeof(buildin_page_test)-1);
+		if (streq(#new_url, URL_SERVICE_HOMEPAGE)) LoadInternalPage(#buildin_page_home, sizeof(buildin_page_home));
+		else if (streq(#new_url, URL_SERVICE_TEST)) LoadInternalPage(#buildin_page_test, sizeof(buildin_page_test));
 		else if (streq(#new_url, URL_SERVICE_HISTORY)) ShowHistory();
-		else LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error)-1);
+		else LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
 
 	} else if (!strncmp(#new_url,"http:",5)) || (!strncmp(#new_url,"https:",6)) {
 		//WEB PAGE
@@ -589,7 +589,7 @@ void OpenPage(dword _open_URL)
 
 		if (!http.transfer) {
 			history.add(#new_url);
-			LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error)-1);
+			LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
 		}
 	} else {
 		//LOCAL PAGE
@@ -712,7 +712,7 @@ void EventSubmitOmnibox()
 
 void LoadInternalPage(dword _bufdata, _in_bufsize){
 	if (!_bufdata) || (!_in_bufsize) {
-		LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error)-1);
+		LoadInternalPage(#buildin_page_error, sizeof(buildin_page_error));
 	} else {
 		WB1.list.first = 0; //scroll page to the top
 		DrawOmnibox();
