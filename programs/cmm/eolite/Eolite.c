@@ -10,9 +10,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "Eolite 5.31"
-#define TITLE_EOLITE "Eolite File Manager 5.31"
-#define TITLE_KFM "Kolibri File Manager 2.31";
+#define ABOUT_TITLE "Eolite 5.32"
+#define TITLE_EOLITE "Eolite File Manager 5.32"
+#define TITLE_KFM "Kolibri File Manager 2.32";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"
@@ -718,7 +718,7 @@ void DrawFilePanels()
 		DrawButtonsAroundList();
 		path = location[active_panel^1];
 		active_panel ^= 1;
-		OpenDir2(WITH_REDRAW);
+		OpenDir_without_unselect(WITH_REDRAW);
 		active_panel ^= 1;
 		if (!getSelectedCount()) files_inactive.count = files.count;
 		llist_copy(#files, #files_active);
@@ -731,38 +731,22 @@ void DrawFilePanels()
 
 		DrawButtonsAroundList();
 		path = location[active_panel];
-		OpenDir2(WITH_REDRAW);
+		OpenDir_without_unselect(WITH_REDRAW);
 	}
 }
 
-void OpenDir2(char redraw){
-	if (buf) free(buf);
-	if (GetDir(#buf, #files.count, path, DIRS_NOROOT)) {
-		Write_Error(EAX);
-		history.add(path);
-		EventHistoryGoBack();
-		return;
-	}
-	SetCurDir(path);
-	if (files.count>0) && (files.cur_y-files.first==-1) files.cur_y=0;
-	files.visible = math.min(files.h / files.item_h, files.count);
-	if (!strncmp(path, "/rd/1",5)) || (!strncmp(path, "/sys/",4))
-		dir_at_fat16 = true; else dir_at_fat16 = false;
-	Sorting();
-	SystemDiscs.Draw();
-	list_full_redraw = true;
-	List_ReDraw();
-	DrawPathBar();
-}
-
-
-void OpenDir(char redraw){
-	int errornum;
+void OpenDir(char redraw) {
 	unselectAll();
+	OpenDir_without_unselect(redraw);
+}
+
+
+void OpenDir_without_unselect(char redraw) {
+	int errornum;
+
 	if (buf) free(buf);
 	if (errornum = GetDir(#buf, #files.count, path, DIRS_NOROOT)) {
 		history.add(path);
-		//EventHistoryGoBack();
 		Dir_Up();
 		Write_Error(errornum);
 		return;

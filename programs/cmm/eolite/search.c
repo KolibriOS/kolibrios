@@ -50,10 +50,6 @@ opendialog open_folder_dialog =
   NULL
 };
 
-#define TOOLBAR_H 100
-#define LISTX 0
-#define LISTY TOOLBAR_H
-
 //===================================================//
 //                                                   //
 //                      RESULTS                      //
@@ -95,9 +91,7 @@ void SearchThread()
 {  
 	int prev_first, prev_cur_y;
 
-#ifndef __COFF__
 	load_dll(Proc_lib, #OpenDialog_init,0);
-#endif
 	OpenDialog_init stdcall (#open_folder_dialog);
 
 	if (!ESBYTE[path]) strcpy(path, "/sys");
@@ -107,28 +101,43 @@ void SearchThread()
 	loop() switch(@WaitEvent())
 	{
 	  	case evMouse:
+
 			edit_box_mouse stdcall (#edit_name);
 			edit_box_mouse stdcall (#edit_path);
+
+
+			prev_cur_y = select_list.cur_y;
+
 			if (SelectList_ProcessMouse()) {
 				SelectList_Draw();
 			} else {
 				SelectList_DrawLine(select_list.cur_y);
-			}
-			if (mouse.key&MOUSE_RIGHT) && (mouse.up) && (select_list.MouseOver()) EventOpenFile(false);
-	  		break;
+				
+				if (select_list.MouseOver(mouse.x, mouse.y)) 
+				{
+						if (mouse.key&MOUSE_LEFT) && (mouse.up) {
+							if (prev_cur_y == select_list.cur_y) EventRunFile();
+						}
 
+						if (mouse.key&MOUSE_RIGHT) && (mouse.up) {
+							EventShowFileInFolder();
+						}
+				}
+			}
+	  		
+	  	break;
 		case evButton:
 			switch (@GetButtonID()) {
 				case 1: @ExitProcess(); break;
 				case BTN_SEARCH: EventSearch(); break;
 				case BTN_CHOOSE_PATH: EventChooseSearchInPath();
 			}
-			break;
-	  
+
+			break;	  
 		case evKey:
-			@GetKeys(); 
-			edit_box_key stdcall (#edit_name);
-			edit_box_key stdcall (#edit_path);
+			GetKeys(); 
+			edit_box_key_c stdcall (#edit_name, key_editbox);
+			edit_box_key_c stdcall (#edit_path, key_editbox);
 			if (key_scancode == SCAN_CODE_TAB) {
 				if (edit_name.flags & ed_focus) {
 					edit_name.flags >< edit_path.flags;
@@ -143,7 +152,7 @@ void SearchThread()
 			if (edit_name.flags & ed_focus) || (edit_path.flags & ed_focus) {
 				if (SCAN_CODE_ENTER == key_scancode) EventSearch();
 			} else {
-				if (SCAN_CODE_ENTER == key_scancode) EventOpenFile(true);
+				if (SCAN_CODE_ENTER == key_scancode) EventRunFile();
 				prev_first = select_list.first;
 				prev_cur_y = select_list.cur_y;
 				if (select_list.ProcessKey(key_scancode)) {
@@ -169,17 +178,24 @@ void SearchThread()
    }
 }
 
+#define TOOLBAR_H 100
+#define PAD 10
+#define LISTX PAD
+#define LISTY TOOLBAR_H
+
 void draw_window_search()
 {
-	SelectList_Init(LISTX, LISTY, Form.cwidth-scroll1.size_x-1, Form.cheight-TOOLBAR_H-1);
+	SelectList_Init(LISTX, LISTY, Form.cwidth-scroll1.size_x-LISTX-LISTX, Form.cheight-TOOLBAR_H-PAD);
 	SelectList_Draw();
-	DrawBar(0, TOOLBAR_H-1, Form.cwidth, 1, sc.line);
+	DrawWideRectangle(0, LISTY-PAD-1, Form.cwidth, Form.cheight-TOOLBAR_H+PAD+1, 9, sc.work);
+	DrawRectangle(PAD-1, LISTY-1, select_list.w+1, select_list.h+1, sc.line);
+
 	DrawBar(0, 0, Form.cwidth, TOOLBAR_H-1, sc.work);
 	DrawEditBox(#edit_name);
 	WriteText(edit_name.left-2, edit_name.top-20, 0x90, sc.work_text, T_SEARCH_NAME);
 	edit_path.width = Form.cwidth - 314;
+	DrawStandartCaptButton(PAD, 63, BTN_SEARCH, T_BUTTON_SEARCH);
 	DrawFileBox(#edit_path, T_SEARCH_PATH, BTN_CHOOSE_PATH);
-	DrawStandartCaptButton(10, 63, BTN_SEARCH, T_BUTTON_SEARCH);
 }
 
 void SelectList_DrawLine(dword i)
@@ -224,6 +240,12 @@ void SelectList_LineChanged()
 	return;
 }
 
+void getfullpath(dword to, path, name) {
+	strcpy(to, path);
+	chrcat(to, '/');
+	strcat(to, name);
+}
+
 //===================================================//
 //                                                   //
 //                     EVENTS                        //
@@ -238,22 +260,21 @@ void EventChooseSearchInPath()
 	}
 }
 
-void getfullpath(dword to, path, name) {
-	strcpy(to, path);
-	chrcat(to, '/');
-	strcat(to, name);
-}
-
-void EventOpenFile(int run_file_not_show_in_folder)
+void EventShowFileInFolder()
 {
 	char full_path[4096];
 	int pos = select_list.cur_y;
 	getfullpath(#full_path, results.path.get(pos), results.name.get(pos));
-	if (run_file_not_show_in_folder) {
-		RunProgram("/sys/@open", #full_path);
-	} else {
-		RunProgram("/sys/file managers/eolite", #full_path);	
-	}
+	RunProgram(#program_path, #full_path);	
+}
+
+void EventRunFile()
+{
+	char full_path[4096];
+	int pos = select_list.cur_y;
+	getfullpath(#full_path, results.path.get(pos), results.name.get(pos));
+	if (dir_exists(#full_path)) chrcat(#full_path, '/');
+	RunProgram("/sys/@open", #full_path);
 }
 
 void EventSearch()

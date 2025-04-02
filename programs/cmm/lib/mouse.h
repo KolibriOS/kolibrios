@@ -116,17 +116,10 @@
 	EAX = 37;
 	EBX = 2;
 	$int	64
-	$mov	ebx, eax
-	$mov	ecx, eax
 	key = EAX;
-	$and	eax, 0x00000001
-	$shr	ebx, 1
-	$and	ebx, 0x00000001
-	$shr	ecx, 2
-	$and	ecx, 0x00000001
-	lkm = EAX;
-	pkm = EBX;
-	mkm = ECX;
+	lkm = EAX&MOUSE_LEFT;
+	pkm = EAX&MOUSE_RIGHT;
+	mkm = EAX&MOUSE_MIDDLE;
 	
 	//when you release the MOUSE button
 	// Mouse Move Event

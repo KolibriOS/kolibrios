@@ -44,15 +44,14 @@ signed SelectList_ProcessMouse()
 		return true;
 	}
 
-	if (mouse.up) && (mouse.click) 
-		if (select_list.ProcessMouse(mouse.x, mouse.y)) {
-			SelectList_LineChanged();
-			return true;
-		}
+	if (mouse.up) && (select_list.ProcessMouse(mouse.x, mouse.y)) {
+		SelectList_LineChanged();
+		return true;
+	}
 	return false;
 }
 
-void SelectList_DrawBorder() {
+:void SelectList_DrawBorder() {
 	DrawRectangle3D(select_list.x-2, select_list.y-2,
 		select_list.w+3+scroll1.size_x, select_list.h+3, 
 		sc.dark, sc.light);
@@ -61,8 +60,8 @@ void SelectList_DrawBorder() {
 
 void SelectList_DrawScroller()
 {
-	scroll1.bckg_col = MixColors(sc.work, 0xBBBbbb, 80);
-	scroll1.frnt_col = MixColors(sc.work,0xFFFfff,120);
+	scroll1.bckg_col = sc.dark;  // MixColors(sc.work, 0xBBBbbb, 80);
+	scroll1.frnt_col = sc.light; // MixColors(sc.work,0xFFFfff,120);
 	scroll1.line_col = sc.line;
 
 	scroll1.max_area = select_list.count;

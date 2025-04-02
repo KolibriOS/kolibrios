@@ -9,7 +9,6 @@
 #pragma option -CPA
 #initallvar 0
 
-#ifndef __COFF__
 #jumptomain FALSE
 
 #startaddress 0
@@ -30,17 +29,6 @@ dword  I_Param      = #param;
 dword  I_Path       = #program_path;
 char param[4096];
 char program_path[4096];
-#else
-extern dword            __argv;
-extern dword            __path;
-
-dword  I_Param      =   #__argv;
-dword  I_Path       =   #__path;
-
-#define param           __argv
-#define program_path    __path
-#define ______INIT______  start
-#endif
 
 #define bool      int
 
@@ -403,6 +391,7 @@ inline fastcall int TestBit( EAX, CL)
 
 //------------------------------------------------------------------------------
 
+#define MINIMIZED 0x02
 #define ROLLED_UP 0x04
 :void DefineAndDrawWindow(dword _x, _y, _w, _h, _window_type, _bgcolor, _title, _flags)
 {
