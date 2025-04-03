@@ -194,6 +194,7 @@ data_loop:
         test    eax, eax
         jz      @f
         call    error_fs
+        add     esp, 4 ; fix stack
         jmp     close_datacon
       @@:
         pop     eax

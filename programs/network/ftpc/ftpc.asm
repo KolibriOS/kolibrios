@@ -36,8 +36,8 @@ use32
         dd      1               ; header version
         dd      start           ; entry point
         dd      i_end           ; initialized size
-        dd      mem+0x1000      ; required memory
-        dd      mem+0x1000      ; stack pointer
+        dd      mem             ; required memory
+        dd      stacktop        ; stack pointer
         dd      buf_cmd         ; parameters
         dd      path            ; path
 
@@ -971,6 +971,7 @@ param_path      rb 1024
 param_port      rb 6
 
 sc system_colors
-rb 2048
-
+align 16
+rb 4096
+stacktop:
 mem:

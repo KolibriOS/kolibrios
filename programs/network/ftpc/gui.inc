@@ -7,6 +7,7 @@ include '../../load_lib.mac'
  
 icon_tl_sys dd 0
 icon_tl_nod dd 0
+lbl_after_enter dd 0
 show_log    db 0 ; 0 - hide log, 1 - show log
 
 TLIST_SZ = 325+16 ;=341. 16 is x-size of scroll bar
@@ -266,8 +267,13 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         jmp     .still
 
       .no_edit:
+        mov     [lbl_after_enter], 0
         stdcall [tl_mouse], tree1
         stdcall [tl_mouse], tree2
+        cmp     [lbl_after_enter], 0
+        jz      @f
+        jmp     [lbl_after_enter]
+      @@:
         stdcall [edit_box_mouse], edit_mkd
         stdcall [edit_box_mouse], edit_volume
         stdcall [edit_box_mouse], edit_search
@@ -276,8 +282,13 @@ gui: ;//////////////////////////////////////////////////////////////////////////
     align 16
     .key:
         mcall   SF_GET_KEY
+        mov     [lbl_after_enter], 0
         stdcall [tl_key], tree1
         stdcall [tl_key], tree2
+        cmp     [lbl_after_enter], 0
+        jz      @f
+        jmp     [lbl_after_enter]
+      @@:
         stdcall [edit_box_key], edit_mkd
         stdcall [edit_box_key], edit_volume
         stdcall [edit_box_key], edit_search
@@ -335,7 +346,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
       @@:
         cmp     ah, 1
         je      .exit
-      
+        
         jmp     .still
 
     .print:
@@ -610,7 +621,8 @@ fun_on_enter:
     cmp     byte[esi], 0
     jne     @b
     mov     word[edi], 0x000a
-    jmp     cmd_stor
+    mov     [lbl_after_enter], cmd_stor
+    ret
 
 
 ; Function to call when you press [Enter]
@@ -623,7 +635,8 @@ fun_on_enter2:
     cmp     dword[esi], 0x2E2E
     jne     @f
     mov     [auto_list], 1
-    jmp     cmd_cdup
+    mov     [lbl_after_enter], cmd_cdup
+    ret
 
   @@:
     cmp     word[eax], 'fo'
@@ -642,12 +655,14 @@ fun_on_enter2:
                                 ; newline in console code
     cmp     word[eax], 'fo'
     je      @f
-    jmp     cmd_retr
+    mov     [lbl_after_enter], cmd_retr
+    ret
 
   @@:
     stdcall [tl_info_clear], tree2
     mov     [auto_list], 1
-    jmp     cmd_cwd
+    mov     [lbl_after_enter], cmd_cwd
+    ret
 
 
 ;;================================================================================================;;
