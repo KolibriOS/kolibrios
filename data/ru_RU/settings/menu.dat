@@ -119,7 +119,7 @@
 45 Простой скриншотер   |easyshot
 29 FB2 Читалка          |fb2read
 16 Аналоговые часы      |aclock
-21 Таблица Менделеева   |period
+21 Таблица Менделеева   |/kolibrios/utils/period
 59 Тренажёр KJ|ABuIIIA  |games/klavisha
 16 Бинарные часы        |demos/bcdclk
 53 Таймер               |timer
