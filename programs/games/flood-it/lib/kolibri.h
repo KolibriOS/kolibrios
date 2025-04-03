@@ -27,6 +27,8 @@ dword  I_Path       = 0;
 #define true 1
 #define false 0
 
+inline fastcall dword calc(EAX) { return EAX; }
+
 //-------------------------------------------------------------------------
 
 

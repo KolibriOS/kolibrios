@@ -225,8 +225,10 @@ void draw_window()
 
 	// Main buttons to fill the board
 	#define FILL_BUTTON_SIZE BUTTON_SIZE+8
-	for (i=0;i<6;i++)
-		DefineButton(i%3*FILL_BUTTON_SIZE+17,i/3*FILL_BUTTON_SIZE+15,FILL_BUTTON_SIZE,FILL_BUTTON_SIZE, i+100,FIELD_COLORS[i]);
+	for (i=0;i<6;i++) {
+		DefineButton(i%3*FILL_BUTTON_SIZE+17,calc(i/3)*FILL_BUTTON_SIZE+15,
+			FILL_BUTTON_SIZE,FILL_BUTTON_SIZE, i+100,FIELD_COLORS[i]);
+	}
 
 	// Menu buttons
 	for (i=0;i<3;i++)
