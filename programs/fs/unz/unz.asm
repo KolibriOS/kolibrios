@@ -41,6 +41,7 @@ dd     1, start, init_end, end_mem, stack_top, params,	0
 include 'lang.inc' ; Language support for locales: ru_RU (CP866), es_ES, en_US.
 include '../../macros.inc'
 include '../../proc32.inc'
+include "../../string.inc"
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
 ;include '../../debug.inc'
@@ -369,6 +370,12 @@ endl
 
 	mcall	30,4,,1
 	jmp	.n
+@@:
+	stdcall string.length, pathOut
+	add     eax, pathOut
+	cmpne   [eax - 1], byte '/', @f
+	mov     [eax - 1], byte 0
+	dec     dword[edtUnpPath.size]
 @@:
 	mcall	30,4,pathOut,1
 .n:
