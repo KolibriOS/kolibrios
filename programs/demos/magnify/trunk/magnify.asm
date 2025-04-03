@@ -1,156 +1,229 @@
-;---------------------------------------------------------------------
-;    MAGNIFY SCREEN v1.0
+; SPDX-License-Identifier: GPL-2.0-only
 ;
-;    Version for KolibriOS 2005-2011
-;
-;    Version for Menuet to 2005
-;---------------------------------------------------------------------
-; last update:  08/18/2011
-; changed by:   Marat Zakiyanov aka Mario79, aka Mario
-; changes:      Checking for "rolled up" window
-;---------------------------------------------------------------------
-	use32
-	org     0x0
-	db      'MENUET01'              ; 8 byte id
-	dd      1                       ; header version
-	dd      START                   ; program start
-	dd      I_END                   ; program image size
-	dd      0x1000                  ; required amount of memory
-	dd      0x1000                  ; esp
-	dd      0, 0                    ; no parameters, no path
-;---------------------------------------------------------------------
-include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
-include '..\..\..\macros.inc'
-delay   equ     20
+; Magnify - Screen Magnifier
+; Copyright (C) 2005 MenuetOS
+; Copyright (C) 2005-2025 KolibriOS team
 
-magnify_width = 40
-magnify_height = 30
 ;---------------------------------------------------------------------
-START:                          ; start of execution
-redraw:
-	call	draw_window
+
+use32
+org     0x0
+
+db      'MENUET01'
+dd      1
+dd      START
+dd      I_END
+dd      MEM
+dd      STACKTOP
+dd      0, 0
+
+;---------------------------------------------------------------------
+
+include '../../../macros.inc'
+include "../../../KOSfuncs.inc"
+include "../../../encoding.inc"
+
+;---------------------------------------------------------------------
+
+START:
+        mcall   SF_SET_EVENTS_MASK, EVM_REDRAW or EVM_BUTTON or EVM_MOUSE
+
+        mcall   SF_SYS_MISC, SSF_HEAP_INIT
+
+        ; initializing MAG_H * MAG_W rect of pixels from screen
+        mcall   SF_SYS_MISC, SSF_MEM_ALLOC, MAG_H * MAG_W * 3
+        mov     [screen_rect], eax
+
+        call    logic_read_screen
+
 still:
-	call	draw_magnify
-wtevent:
-	mcall	23,delay	; wait here for event with timeout
-	dec	eax
-	js	still
-	jz	redraw
-	dec	eax
-	jnz	button
-; key in buffer
-	mov	al, 2
-	mcall
-	jmp	wtevent
+        mcall   SF_WAIT_EVENT_TIMEOUT, DELAY
+
+        cmp     eax, EV_REDRAW
+        je      redraw
+
+        cmp     eax, EV_BUTTON
+        je      button
+
+        cmp     eax, EV_MOUSE
+        je      mouse
+
+        jmp     redraw
+
+redraw:
+        call    draw_window
+        call    draw_magnify
+
+        jmp still
+
 ;---------------------------------------------------------------------
+
 button:
-; we have only one button, close
-	or	eax, -1
-	mcall
+        ; we have only one button, close
+        or      eax, SF_TERMINATE_PROCESS
+        mcall
+
+mouse:
+        mcall   SF_MOUSE_GET, SSF_BUTTON
+
+        test    ax, 0x0001
+        jnz     still
+
+        call    logic_read_screen
+        call    draw_magnify
+
+        jmp     still
+
 ;---------------------------------------------------------------------
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;---------------------------------------------------------------------
+
 draw_window:
-	mcall	12,1
 
-	mov	al, 48          ; function 48 : graphics parameters
-	mov	bl, 4           ; subfunction 4 : get skin height
-	mcall
-					; DRAW WINDOW
-	mov	ebx, 100*65536 + 8*magnify_width + 8
-	lea	ecx, [eax + 100*65536 + 8*magnify_height + 3]
-	mov	edx, 0x34000000         ; color of work area RRGGBB
-	mov	edi, labelt             ; header
-	xor	eax, eax                ; function 0 : define and draw window
-	mcall
+        mcall   SF_REDRAW, SSF_BEGIN_DRAW
 
-	mcall	12,2
-	ret
-;---------------------------------------------------------------------
+        mcall   SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+
+        mov     ecx, eax
+        add     ecx, WIN.Y shl 16 + WIN.H
+
+        mcall   SF_CREATE_WINDOW, <WIN.X, WIN.W>, , 0x34181818, , labelt
+
+        mcall   SF_REDRAW, SSF_END_DRAW
+
+        ret
+
+
+; MAG_H * MAG_W pixels grid
 draw_magnify:
-	mcall	9,procinfo,-1
-	mov	eax,[procinfo+70] ;status of window
-	test	eax,100b
-	jne	.end
 
-	mcall	14	; get screen size
-	movzx	ecx, ax
-	inc	ecx
-	mov	[size_y], ecx
-	shr	eax, 16
-	inc	eax
-	mov	[size_x], eax
+        mcall   SF_THREAD_INFO, procinfo, -1
+        mov     al, byte [procinfo.wnd_state]
+        test    al, 0x04
+        jne     .du_loop_end
 
-	xor	ebx, ebx
-	mcall	37	; get mouse coordinates
-	mov	ecx, eax
-	shr	ecx, 16         ; ecx = x
-	movzx	edx, ax         ; edx = y
-	inc	ecx
-	mov	[m_xe], ecx
-	inc	edx
-	mov	[m_ye], edx
-	sub	ecx, magnify_width
-	sub	edx, magnify_height
-	mov	[m_x], ecx
-	mov	[m_y], edx
-.loop_y:
-.loop_x:
-	xor	eax, eax        ; assume black color for invalid pixels
-	test	ecx, ecx
-	js	.nopix
-	cmp	ecx, [size_x]
-	jge	.nopix
-	test	edx, edx
-	js	.nopix
-	cmp	edx, [size_y]
-	jge	.nopix
-	mov	ebx, edx
-	imul	ebx, [size_x]
-	add	ebx, ecx
-	mcall	35	; read pixel
-.nopix:
-	push	ecx edx
-	sub	ecx, [m_x]
-	sub	edx, [m_y]
-	mov	ebx, ecx
-	shl	ebx, 3+16
-	mov	bl, 8
-	mov	ecx, edx
-	shl	ecx, 3+16
-	mov	cl, 8
-	mov	edx, eax
-	mcall	13
-	pop	edx ecx
-	inc	ecx
-	cmp	ecx, [m_xe]
-	jnz	.loop_x
-	mov	ecx, [m_x]
-	inc	edx
-	cmp	edx, [m_ye]
-	jnz	.loop_y
-.end:
-	ret
+        mov     eax, SF_DRAW_RECT
+        mov     ebx, MAG_S - 1
+        mov     ecx, MAG_S - 1
+        mov     esi, [screen_rect]
+        mov     edi, MAG_W * MAG_H
+
+        .du_loop_rect:
+                mcall   , , , dword [esi]
+                add     ebx, MAG_S shl 16
+                cmp     ebx, MAG_S * MAG_W shl 16
+                jle     .du_loop_rect_row
+                mov     ebx, MAG_S - 1
+                add     ecx, MAG_S shl 16
+
+                .du_loop_rect_row:
+                add     esi, 3
+                dec     edi
+                jne     .du_loop_rect
+
+        .du_loop_end:
+                ret
+
+;---------------------------------------------------------------------
+; LOGIC AREA
+;---------------------------------------------------------------------
+
+; read array of pixels from screen by mouse coords
+logic_read_screen:
+
+        mcall   SF_MOUSE_GET, SSF_SCREEN_POSITION
+        mov     edx, eax
+
+        ; clamping mouse coords to stay within the screen
+        mcall   SF_GET_SCREEN_SIZE
+        mov     ebx, eax
+        call    logic_clamp_pixels
+
+        sub     edx, (MAG_W / 2) shl 16 + (MAG_H / 2)
+        mcall   SF_GET_IMAGE, [screen_rect], <MAG_W, MAG_H>,
+
+        ret
+
+
+; clamping mouse coords to stay within the screen
+logic_clamp_pixels:
+
+        mov     eax, edx
+        shr     eax, 16
+        mov     cx, ax
+        mov     ax, dx
+
+        push    ax
+        push    cx
+        mov     ax, bx
+        mov     di, ax
+        mov     eax, ebx
+        shr     eax, 16
+        mov     si, ax
+
+        pop     cx
+        pop     ax
+
+        .check_min_x:
+                cmp     cx, MAG_W / 2
+                jge     .check_min_y
+                mov     cx, MAG_W / 2
+        .check_min_y:
+                cmp     ax, MAG_H / 2
+                jge     .check_max_x
+                mov     ax, MAG_H / 2
+        .check_max_x:
+                mov     dx, si
+                sub     dx, MAG_W / 2 - 1
+                cmp     cx, dx
+                jle     .check_max_y
+                mov     cx, dx
+        .check_max_y:
+                mov     dx, di
+                sub     dx, MAG_H / 2 - 1
+                cmp     ax, dx
+                jle     .combine_coords
+                mov     ax, dx
+
+        .combine_coords:
+                mov     dx, cx
+                shl     edx, 16
+                or      dx, ax
+
+        ret
+
 ;---------------------------------------------------------------------
 ; DATA AREA
 ;---------------------------------------------------------------------
+
+DELAY           = 5
+
+MAG_W           = 40
+MAG_H           = 30
+MAG_S           = 8
+
+WIN             RECT    100, 100, MAG_W * MAG_S + 8, MAG_H * MAG_S + 3
+
+;---------------------------------------------------------------------
+
 if lang eq ru_RU
-labelt:
-    db   'Magnifier - ��࠭��� �㯠', 0
-else ; Default to en_US
-labelt:
-    db   'Magnifier', 0
-end if
+        labelt  cp866   'Magnify - Экранная лупа', 0
+else if lang eq es_ES
+        labelt  db      'Magnify - Lupa de Pantalla', 0
+else
+        labelt  db      'Magnify - Screen Magnifier', 0
+endf
+
+;---------------------------------------------------------------------
+
+screen_rect     dd 0x00000000
+
+;---------------------------------------------------------------------
 
 I_END:
-align 4
-m_x     dd      ?
-m_y     dd      ?
-m_xe    dd      ?
-m_ye    dd      ?
-size_x  dd      ?
-size_y  dd      ?
-;---------------------------------------------------------------------
-procinfo:
-	rb 1024
-;---------------------------------------------------------------------
+        rb      512
+        align   512
+
+STACKTOP:
+        procinfo        process_information
+MEM:
