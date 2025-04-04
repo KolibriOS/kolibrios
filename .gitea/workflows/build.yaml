@@ -149,18 +149,21 @@ jobs:
         with:
           name: kolibrios-en_US-${{ steps.vars.outputs.sha_short }}.img
           path: build-en_US/data/kolibri.img
+          retention-days: 365
 
       - name: (en_US) Upload CD image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-en_US-${{ steps.vars.outputs.sha_short }}.iso
           path: build-en_US/data/kolibri.iso
+          retention-days: 30
 
       - name: (en_US) Upload raw image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-en_US-${{ steps.vars.outputs.sha_short }}.raw
           path: build-en_US/data/kolibri.raw
+          retention-days: 7
 
       # -------------------------- Build ru_RU ------------------------- #
       - name: (ru_RU) Build KolibriOS
@@ -174,18 +177,21 @@ jobs:
         with:
           name: kolibrios-ru_RU-${{ steps.vars.outputs.sha_short }}.img
           path: build-ru_RU/data/kolibri.img
+          retention-days: 365
 
       - name: (ru_RU) Upload CD image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-ru_RU-${{ steps.vars.outputs.sha_short }}.iso
           path: build-ru_RU/data/kolibri.iso
+          retention-days: 30
 
       - name: (ru_RU) Upload raw image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-ru_RU-${{ steps.vars.outputs.sha_short }}.raw
           path: build-ru_RU/data/kolibri.raw
+          retention-days: 7
 
       # -------------------------- Build es_ES ------------------------- #
       - name: (es_ES) Build KolibriOS
@@ -199,15 +205,18 @@ jobs:
         with:
           name: kolibrios-es_ES-${{ steps.vars.outputs.sha_short }}.img
           path: build-es_ES/data/kolibri.img
+          retention-days: 365
 
       - name: (es_ES) Upload CD image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-es_ES-${{ steps.vars.outputs.sha_short }}.iso
           path: build-es_ES/data/kolibri.iso
+          retention-days: 30
 
       - name: (es_ES) Upload raw image
         uses: actions/upload-artifact@v3
         with:
           name: kolibrios-es_ES-${{ steps.vars.outputs.sha_short }}.raw
           path: build-es_ES/data/kolibri.raw
+          retention-days: 7
