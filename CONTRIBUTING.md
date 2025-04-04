@@ -66,6 +66,17 @@ to the end commit message body on a new line.
 
 Use **rebase** to keep your branch up to date.
 
+## Licensing
+
+For new source code files and for existing ones without a license, you need to add the following header to the beginning of the file:
+```asm
+; SPDX-License-Identifier: GPL-2.0-only
+; Program - Brief description.
+; Copyright (C) 2011-2025 KolibriOS team
+```
+
+Be careful when setting copyright and date interval. Review the file's history to verify its origin.
+
 ## Conclusion
 
 We hope this small instructions will help you to get familiar with KolibriOS contribution rules and inspire you to participate in the life of our project.
