@@ -663,8 +663,8 @@ KEYBOARD_X      = LIST_ITEM_W + 20
 KEYBOARD_Y      = LIST_Y
 KEYBOARD_W      = 190
 
-LIST_ITEM_TEXT1 equ dword [sc.work_text]
-LIST_ITEM_TEXT2 equ dword [sc.work_text]
+LIST_ITEM_TEXT1 = dword [sc.work_text]
+LIST_ITEM_TEXT2 = dword [sc.work_text]
 
 WIN_X           = 200
 WIN_Y           = 200
