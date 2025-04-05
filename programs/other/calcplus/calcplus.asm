@@ -39,6 +39,38 @@ imports:
 
 ; ====================================================================
 
+LIST_X          = 5
+LIST_Y          = 43
+LIST_ITEM_H     = 26
+LIST_ITEM_W     = 320 - 25
+LIST_ITEM_COUNT = 8
+LIST_H          = LIST_ITEM_H * LIST_ITEM_COUNT
+LIST_TEXT_Y     = LIST_ITEM_H / 2 - 8
+
+KEYB_BTN_W      = 37
+KEYB_BTN_H      = 37
+GAP             = 5
+
+KEYBOARD_X      = LIST_ITEM_W + 20
+KEYBOARD_Y      = LIST_Y
+KEYBOARD_W      = 190
+
+LIST_ITEM_TEXT1 equ dword [sc.work_text]
+LIST_ITEM_TEXT2 equ dword [sc.work_text]
+
+WIN_X           = 200
+WIN_Y           = 200
+WIN_W           = LIST_ITEM_W + 16 + KEYBOARD_W
+WIN_H           = LIST_H + 58
+
+sz_head         db "Calc+", 0
+btn_clr         db ""
+buttons         db "|%^*/-+)(=7894561230"
+edb1            edit_box 0, 8, 12, 0xFFFFFF, 0x94AECE, 0xFFC90E, 0xCACACA, 0x10000000, \
+                         480, exp, group, ed_always_focus + ed_focus, 0, 0
+
+; ====================================================================
+
 START:
         mov     [ans.buffer], dword "= 0"
         mov     [ans.size], 3 * 8 + 9
@@ -644,38 +676,6 @@ else
         engineering_len         = 16
 
 endf
-
-; ====================================================================
-
-LIST_X          = 5
-LIST_Y          = 43
-LIST_ITEM_H     = 26
-LIST_ITEM_W     = 320 - 25
-LIST_ITEM_COUNT = 8
-LIST_H          = LIST_ITEM_H * LIST_ITEM_COUNT
-LIST_TEXT_Y     = LIST_ITEM_H / 2 - 8
-
-KEYB_BTN_W      = 37
-KEYB_BTN_H      = 37
-GAP             = 5
-
-KEYBOARD_X      = LIST_ITEM_W + 20
-KEYBOARD_Y      = LIST_Y
-KEYBOARD_W      = 190
-
-LIST_ITEM_TEXT1 = dword [sc.work_text]
-LIST_ITEM_TEXT2 = dword [sc.work_text]
-
-WIN_X           = 200
-WIN_Y           = 200
-WIN_W           = LIST_ITEM_W + 16 + KEYBOARD_W
-WIN_H           = LIST_H + 58
-
-sz_head db "Calc+", 0
-btn_clr db ""
-buttons db "|%^*/-+)(=7894561230"
-edb1    edit_box 0, 8, 12, 0xFFFFFF, 0x94AECE, 0xFFC90E, 0xCACACA, 0x10000000, \
-                 480, exp, group, ed_always_focus + ed_focus, 0, 0
 
 ; ====================================================================
 
