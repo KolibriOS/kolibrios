@@ -30,57 +30,8 @@ include "../../dll.inc"
 include "../../develop/libraries/box_lib/trunk/box_lib.mac"
 include "parser.inc"
 
-; ====================================================================
-
-if lang eq ru_RU
-
-        engineering_str db      "Engineering calc"
-        engineering_len         = 16
-
-else if lang eq es_ES
-
-        engineering_str db      " Modo ingeniero "
-        engineering_len         = 16
-else
-
-        engineering_str cp866   "Инженерный режим"
-        engineering_len         = 16
-
-endf
-
-; ====================================================================
-
-LIST_X          = 5
-LIST_Y          = 43
-LIST_ITEM_H     = 26
-LIST_ITEM_W     = 320 - 25
-LIST_ITEM_COUNT = 8
-LIST_H          = LIST_ITEM_H * LIST_ITEM_COUNT
-LIST_TEXT_Y     = LIST_ITEM_H / 2 - 8
-
-KEYB_BTN_W      = 37
-KEYB_BTN_H      = 37
-GAP             = 5
-
-KEYBOARD_X      = LIST_ITEM_W + 20
-KEYBOARD_Y      = LIST_Y
-KEYBOARD_W      = 190
-
-LIST_ITEM_TEXT1 equ dword [sc.work_text]
-LIST_ITEM_TEXT2 equ dword [sc.work_text]
-
-WIN_X           = 200
-WIN_Y           = 200
-WIN_W           = LIST_ITEM_W + 16 + KEYBOARD_W
-WIN_H           = LIST_H + 58
-
-sz_head db "Calc+", 0
-btn_clr db ""
-buttons db "|%^*/-+)(=7894561230"
-edb1    edit_box 0, 8, 12, 0xffffff, 0x94AECE, 0xFFC90E,0xCACACA, 0x10000000, \
-                 480, exp, group, ed_always_focus + ed_focus, 0, 0
-
 imports:
+
         library gui,    "box_lib.obj"
         import  gui,    editbox.draw,   "edit_box", \
                         editbox.key,    "edit_box_key", \
@@ -328,7 +279,7 @@ calc:
         stdcall convert_to_str, eax, ans.buffer + 2
         add     eax, 2
         mov     edi, eax
-        imul    eax, 8                          ;char_w
+        imul    eax, 8                          ; char_w
         add     eax, 9
         mov     [ans.size], eax
 
@@ -372,7 +323,6 @@ calc:
         jmp     .redraw
 
         ; ERRORS
-
         .error:
         cmp     [error_n], 1
         je      .err_1
@@ -437,7 +387,7 @@ proc draw_textbox
 
         @@:
         mcall   SF_DRAW_RECT, <LIST_X + 1, LIST_ITEM_W - 2>, <  9,  28>
-        mcall               , <LIST_X + 1, LIST_ITEM_W - 2>, <  9,   1>, [scn.text_box_inner_shadow]
+        mcall               , <LIST_X + 1, LIST_ITEM_W - 2>, <  9,   1>, [scn.gui_tb_in_shd]
         mcall               , <LIST_X + 1, 1              >, < 10,  27>
         mcall               , <LIST_X    , LIST_ITEM_W - 1>, < 38,   1>, [sc.work_light]
 
@@ -499,7 +449,7 @@ proc draw_button, x, y
 
         ret
 
- endp
+endp
 
 ; ====================================================================
 
@@ -676,6 +626,56 @@ proc str_cpy uses eax ebx ecx, from, to
         ret
 
 endp
+
+; ====================================================================
+
+if lang eq ru_RU
+
+        engineering_str db      "Engineering calc"
+        engineering_len         = 16
+
+else if lang eq es_ES
+
+        engineering_str db      " Modo ingeniero "
+        engineering_len         = 16
+else
+
+        engineering_str cp866   "Инженерный режим"
+        engineering_len         = 16
+
+endf
+
+; ====================================================================
+
+LIST_X          = 5
+LIST_Y          = 43
+LIST_ITEM_H     = 26
+LIST_ITEM_W     = 320 - 25
+LIST_ITEM_COUNT = 8
+LIST_H          = LIST_ITEM_H * LIST_ITEM_COUNT
+LIST_TEXT_Y     = LIST_ITEM_H / 2 - 8
+
+KEYB_BTN_W      = 37
+KEYB_BTN_H      = 37
+GAP             = 5
+
+KEYBOARD_X      = LIST_ITEM_W + 20
+KEYBOARD_Y      = LIST_Y
+KEYBOARD_W      = 190
+
+LIST_ITEM_TEXT1 equ dword [sc.work_text]
+LIST_ITEM_TEXT2 equ dword [sc.work_text]
+
+WIN_X           = 200
+WIN_Y           = 200
+WIN_W           = LIST_ITEM_W + 16 + KEYBOARD_W
+WIN_H           = LIST_H + 58
+
+sz_head db "Calc+", 0
+btn_clr db ""
+buttons db "|%^*/-+)(=7894561230"
+edb1    edit_box 0, 8, 12, 0xFFFFFF, 0x94AECE, 0xFFC90E, 0xCACACA, 0x10000000, \
+                 480, exp, group, ed_always_focus + ed_focus, 0, 0
 
 ; ====================================================================
 
