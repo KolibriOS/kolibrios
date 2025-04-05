@@ -306,7 +306,7 @@ calc:
         cmp     [error_n], 0
         jne     .error
 
-        mov     [ans.buffer], word "= "
+        mov     [ans.buffer], word " = "
 
         stdcall convert_to_str, eax, ans.buffer + 2
         add     eax, 2
@@ -422,7 +422,7 @@ proc draw_textbox
         mcall               , <LIST_X + 1, LIST_ITEM_W - 2>, <  9,   1>, [scn.gui_tb_in_shd]
         mcall               , <LIST_X + 1, 1              >, < 10,  27>
 
-        mov     ebx, LIST_X + LIST_ITEM_W - 12
+        mov     ebx, LIST_X + LIST_ITEM_W - 9
         sub     ebx, [ans.size]
         shl     ebx, 16
         add     ebx, 16
