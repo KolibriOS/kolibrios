@@ -66,13 +66,13 @@ WIN_H           = LIST_H + 60
 sz_head         db "Calc+", 0
 btn_clr         db ""
 buttons         db "|%^*/-+)(=7894561230"
-edb1            edit_box 0, 11, 12, 0xFFFFFF, 0x94AECE, 0xFFC90E, 0xCACACA, 0x10000000, \
+edb1            edit_box 0, 14, 12, 0xFFFFFF, 0x94AECE, 0xFFC90E, 0xCACACA, 0x10000000, \
                          480, exp, group, ed_always_focus + ed_focus, 0, 0
 
 ; ====================================================================
 
 START:
-        mov     [ans.buffer], dword "= 0"
+        mov     [ans.buffer], dword " = 0"
         mov     [ans.size], 3 * 8 + 9
 
         mcall   SF_SET_EVENTS_MASK, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE
@@ -306,7 +306,7 @@ calc:
         cmp     [error_n], 0
         jne     .error
 
-        mov     [ans.buffer], word "= "
+        mov     [ans.buffer], dword " = "
 
         stdcall convert_to_str, eax, ans.buffer + 2
         add     eax, 2
@@ -422,7 +422,7 @@ proc draw_textbox
         mcall               , <LIST_X + 1, LIST_ITEM_W - 2>, <  9,   1>, [scn.gui_tb_in_shd]
         mcall               , <LIST_X + 1, 1              >, < 10,  27>
 
-        mov     ebx, LIST_X + LIST_ITEM_W - 9
+        mov     ebx, LIST_X + LIST_ITEM_W - 12
         sub     ebx, [ans.size]
         shl     ebx, 16
         add     ebx, 16
