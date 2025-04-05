@@ -73,7 +73,7 @@ edb1            edit_box 0, 14, 12, 0xFFFFFF, 0x94AECE, 0xFFC90E, 0xCACACA, 0x10
 
 START:
         mov     [ans.buffer], dword " = 0"
-        mov     [ans.size], 3 * 8 + 9
+        mov     [ans.size], 4 * 8 + 9
 
         mcall   SF_SET_EVENTS_MASK, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE
 
@@ -306,7 +306,7 @@ calc:
         cmp     [error_n], 0
         jne     .error
 
-        mov     [ans.buffer], word "= "
+        mov     [ans.buffer], dword " = "
 
         stdcall convert_to_str, eax, ans.buffer + 2
         add     eax, 2
@@ -666,7 +666,7 @@ endp
 
 if lang eq ru_RU
 
-        engineering_str db      "Engineering calc"
+        engineering_str db      "Инженерный режим"
         engineering_len         = 16
 
 else if lang eq es_ES
@@ -675,7 +675,7 @@ else if lang eq es_ES
         engineering_len         = 16
 else
 
-        engineering_str cp866   "Инженерный режим"
+        engineering_str cp866   "Engineering calc"
         engineering_len         = 16
 
 endf
