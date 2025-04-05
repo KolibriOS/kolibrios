@@ -306,7 +306,7 @@ calc:
         cmp     [error_n], 0
         jne     .error
 
-        mov     [ans.buffer], word " = "
+        mov     [ans.buffer], word "= "
 
         stdcall convert_to_str, eax, ans.buffer + 2
         add     eax, 2
