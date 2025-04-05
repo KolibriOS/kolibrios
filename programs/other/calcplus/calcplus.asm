@@ -39,19 +39,19 @@ imports:
 
 ; ====================================================================
 
-LIST_X          = 5
-LIST_Y          = 43
+LIST_X          = 8
+LIST_Y          = 47
 LIST_ITEM_H     = 26
-LIST_ITEM_W     = 320 - 25
+LIST_ITEM_W     = 295
 LIST_ITEM_COUNT = 8
 LIST_H          = LIST_ITEM_H * LIST_ITEM_COUNT
 LIST_TEXT_Y     = LIST_ITEM_H / 2 - 8
 
 KEYB_BTN_W      = 37
 KEYB_BTN_H      = 37
-GAP             = 5
+GAP             = 8
 
-KEYBOARD_X      = LIST_ITEM_W + 20
+KEYBOARD_X      = LIST_ITEM_W + 16
 KEYBOARD_Y      = LIST_Y
 KEYBOARD_W      = 190
 
@@ -60,7 +60,7 @@ LIST_ITEM_TEXT2 equ dword [sc.work_text]
 
 WIN_X           = 200
 WIN_Y           = 200
-WIN_W           = LIST_ITEM_W + 16 + KEYBOARD_W
+WIN_W           = LIST_ITEM_W + KEYBOARD_W + 34
 WIN_H           = LIST_H + 58
 
 sz_head         db "Calc+", 0
@@ -421,7 +421,6 @@ proc draw_textbox
         mcall   SF_DRAW_RECT, <LIST_X + 1, LIST_ITEM_W - 2>, <  9,  28>
         mcall               , <LIST_X + 1, LIST_ITEM_W - 2>, <  9,   1>, [scn.gui_tb_in_shd]
         mcall               , <LIST_X + 1, 1              >, < 10,  27>
-        mcall               , <LIST_X    , LIST_ITEM_W - 1>, < 38,   1>, [sc.work_light]
 
         mov     ebx, LIST_X + LIST_ITEM_W - 12
         sub     ebx, [ans.size]
@@ -536,7 +535,7 @@ proc draw_list
         ; BACKGROUND
         mov     eax, SF_DRAW_RECT
         mov     ebx, LIST_X shl 16 + LIST_ITEM_W
-        mov     ecx, LIST_Y shl 16 + LIST_ITEM_H
+        mov     ecx, LIST_Y shl 16 + LIST_ITEM_H + 1
         mov     edx, [sc.work_light]
         mov     edi, LIST_ITEM_COUNT
         
@@ -544,7 +543,7 @@ proc draw_list
         mcall
         ; draw separator {
         push    ecx edx
-        sub     ecx, LIST_ITEM_H-1
+        sub     ecx, LIST_ITEM_H - 1
         mov     edx, [sc.work_dark]
         mcall
         ; }
@@ -555,6 +554,9 @@ proc draw_list
         dec     edi
         cmp     edi, 0
         jne     @b
+
+        mcall     , <LIST_X             , 1>, <LIST_Y, LIST_ITEM_H * 8 + 10>
+        mcall     , <LIST_X + LIST_W - 1, 1>,
 
         ; BUTTONS
         mov     eax, SF_DEFINE_BUTTON
