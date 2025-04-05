@@ -555,8 +555,8 @@ proc draw_list
         cmp     edi, 0
         jne     @b
 
-        mcall     , <LIST_X             , 1>, <LIST_Y, LIST_ITEM_H * 8 + 10>
-        mcall     , <LIST_X + LIST_W - 1, 1>,
+        mcall     , <LIST_X                  , 1>, <LIST_Y, LIST_ITEM_H * 8 + 10>
+        mcall     , <LIST_X + LIST_ITEM_W - 1, 1>,
 
         ; BUTTONS
         mov     eax, SF_DEFINE_BUTTON
