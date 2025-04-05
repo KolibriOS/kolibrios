@@ -308,8 +308,8 @@ calc:
 
         mov     [ans.buffer], dword " = "
 
-        stdcall convert_to_str, eax, ans.buffer + 2
-        add     eax, 2
+        stdcall convert_to_str, eax, ans.buffer + 3
+        add     eax, 3
         mov     edi, eax
         imul    eax, 8                          ; char_w
         add     eax, 9
