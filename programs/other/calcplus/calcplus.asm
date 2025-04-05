@@ -49,7 +49,7 @@ LIST_TEXT_Y     = LIST_ITEM_H / 2 - 8
 
 KEYB_BTN_W      = 37
 KEYB_BTN_H      = 37
-GAP             = 8
+GAP             = 5
 
 KEYBOARD_X      = LIST_ITEM_W + 16
 KEYBOARD_Y      = LIST_Y
@@ -66,7 +66,7 @@ WIN_H           = LIST_H + 58
 sz_head         db "Calc+", 0
 btn_clr         db ""
 buttons         db "|%^*/-+)(=7894561230"
-edb1            edit_box 0, 8, 12, 0xFFFFFF, 0x94AECE, 0xFFC90E, 0xCACACA, 0x10000000, \
+edb1            edit_box 0, 8, 15, 0xFFFFFF, 0x94AECE, 0xFFC90E, 0xCACACA, 0x10000000, \
                          480, exp, group, ed_always_focus + ed_focus, 0, 0
 
 ; ====================================================================
@@ -535,7 +535,7 @@ proc draw_list
         ; BACKGROUND
         mov     eax, SF_DRAW_RECT
         mov     ebx, LIST_X shl 16 + LIST_ITEM_W
-        mov     ecx, LIST_Y shl 16 + LIST_ITEM_H + 1
+        mov     ecx, LIST_Y shl 16 + LIST_ITEM_H
         mov     edx, [sc.work_light]
         mov     edi, LIST_ITEM_COUNT
         
@@ -555,7 +555,7 @@ proc draw_list
         cmp     edi, 0
         jne     @b
 
-        mcall     , <LIST_X                  , 1>, <LIST_Y, LIST_ITEM_H * 8 + 10>
+        mcall     , <LIST_X                  , 1>, <LIST_Y, LIST_ITEM_H * 8 + 10>, [sc.work_dark]
         mcall     , <LIST_X + LIST_ITEM_W - 1, 1>,
 
         ; BUTTONS
