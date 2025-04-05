@@ -60,13 +60,13 @@ LIST_ITEM_TEXT2 equ dword [sc.work_text]
 
 WIN_X           = 200
 WIN_Y           = 200
-WIN_W           = LIST_ITEM_W + KEYBOARD_W + 34
-WIN_H           = LIST_H + 58
+WIN_W           = LIST_ITEM_W + KEYBOARD_W + 7
+WIN_H           = LIST_H + 60
 
 sz_head         db "Calc+", 0
 btn_clr         db ""
 buttons         db "|%^*/-+)(=7894561230"
-edb1            edit_box 0, 8, 15, 0xFFFFFF, 0x94AECE, 0xFFC90E, 0xCACACA, 0x10000000, \
+edb1            edit_box 0, 11, 12, 0xFFFFFF, 0x94AECE, 0xFFC90E, 0xCACACA, 0x10000000, \
                          480, exp, group, ed_always_focus + ed_focus, 0, 0
 
 ; ====================================================================
@@ -555,8 +555,9 @@ proc draw_list
         cmp     edi, 0
         jne     @b
 
-        mcall     , <LIST_X                  , 1>, <LIST_Y, LIST_ITEM_H * 8 + 10>, [sc.work_dark]
+        mcall     , <LIST_X                  , 1>, <LIST_Y, LIST_ITEM_H * 8>, [sc.work_dark]
         mcall     , <LIST_X + LIST_ITEM_W - 1, 1>,
+        mcall     , <LIST_X, LIST_ITEM_W>, <LIST_Y + LIST_ITEM_H * 8, 1>
 
         ; BUTTONS
         mov     eax, SF_DEFINE_BUTTON
@@ -588,7 +589,7 @@ proc draw_list
         mcall
 
         push    ebx
-        add     ebx, LIST_ITEM_W shl 16
+        add     ebx, (LIST_ITEM_W - 8) shl 16
         mov     esi, [edx + 508]
         shl     esi, 16
         sub     ebx, esi
