@@ -49,22 +49,22 @@ qrcodegen_Mode_ECI          = 0x7
 ; Moreover, the maximum allowed bit length is 32767 because
 ; the largest QR Code (version 40) has 31329 modules.
 struct qrcodegen_Segment
-    ; The mode indicator of this segment.
-    mode dd ? ; qrcodegen_Mode
-    
-    ; The length of this segment's unencoded data. Measured in characters for
-    ; numeric/alphanumeric/kanji mode, bytes for byte mode, and 0 for ECI mode.
-    ; Always zero or positive. Not the same as the data's bit length.
-    numChars dd ?
-    
-    ; The data bits of this segment, packed in bitwise big endian.
-    ; Can be null if the bit length is zero.
-    data dd ?
-    
-    ; The number of valid data bits used in the buffer. Requires
-    ; 0 <= bitLength <= 32767, and bitLength <= (capacity of data array) * 8.
-    ; The character count (numChars) must agree with the mode and the bit buffer length.
-    bitLength dd ?
+        ; The mode indicator of this segment.
+        mode dd ? ; qrcodegen_Mode
+        
+        ; The length of this segment's unencoded data. Measured in characters for
+        ; numeric/alphanumeric/kanji mode, bytes for byte mode, and 0 for ECI mode.
+        ; Always zero or positive. Not the same as the data's bit length.
+        numChars dd ?
+        
+        ; The data bits of this segment, packed in bitwise big endian.
+        ; Can be null if the bit length is zero.
+        data dd ?
+        
+        ; The number of valid data bits used in the buffer. Requires
+        ; 0 <= bitLength <= 32767, and bitLength <= (capacity of data array) * 8.
+        ; The character count (numChars) must agree with the mode and the bit buffer length.
+        bitLength dd ?
 ends
 
 ; The minimum version number supported in the QR Code Model 2 standard
@@ -101,6 +101,28 @@ PENALTY_N4 = 10
 
 
 ; CODE:
+
+proc qrcodegen_encodeBinary uses xxx, dataAndTemp, dataLen, qrcode, ecl, minVersion, maxVersion, mask, boostEcl
+locals
+        seg qrcodegen_Segment
+endl
+        mov     [seg + qrcodegen_Segment.mode], qrcodegen_Mode_BYTE
+        stdcall calcSegmentBitLength, [seg + qrcodegen_Segment.mode], [dataLen]
+        mov     [seg + qrcodegen_Segment.bitLength], eax
+        .if [seg + qrcodegen_Segment.bitLength] = LENGTH_OVERFLOW
+            mov byte [qrcode + 0], 0 ; Set size to invalid value for safety
+            jmp .ret
+        .endif
+        mov     eax, [dataLen]
+        mov     [seg + qrcodegen_Segment.numChars], eax
+        mov     eax, [dataAndTemp]
+        mov     [seg + qrcodegen_Segment.data], eax
+        lea     eax, [seg]
+        stdcall qrcodegen_encodeSegmentsAdvanced, eax, 1, [ecl], [minVersion], [maxVersion], [mask], [boostEcl], [dataAndTemp], [qrcode]
+.ret:
+        ret
+endp
+
 
 
 
