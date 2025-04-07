@@ -85,7 +85,7 @@ qrcodegen_VERSION_MAX = 40
 ; TODO make this fasm macro:
 ; #define qrcodegen_BUFFER_LEN_MAX  qrcodegen_BUFFER_LEN_FOR_VERSION(qrcodegen_VERSION_MAX)
 
-
+INT16_MAX = 32767
 
 ; Sentinel value for use in only some functions
 LENGTH_OVERFLOW  = -1
@@ -102,7 +102,7 @@ PENALTY_N4 = 10
 
 ; CODE:
 
-proc qrcodegen_encodeBinary uses xxx, dataAndTemp, dataLen, qrcode, ecl, minVersion, maxVersion, mask, boostEcl
+proc qrcodegen_encodeBinary, dataAndTemp, dataLen, qrcode, ecl, minVersion, maxVersion, mask, boostEcl
 locals
         seg qrcodegen_Segment
 endl
@@ -123,6 +123,60 @@ endl
         ret
 endp
 
+
+
+; Returns the number of data bits needed to represent a segment
+; containing the given number of characters using the given mode. Notes:
+; - Returns LENGTH_OVERFLOW on failure, i.e. numChars > INT16_MAX
+;   or the number of needed bits exceeds INT16_MAX (i.e. 32767).
+; - Otherwise, all valid results are in the range [0, INT16_MAX].
+; - For byte mode, numChars measures the number of bytes, not Unicode code points.
+; - For ECI mode, numChars must be 0, and the worst-case number of bits is returned.
+;   An actual ECI segment can have shorter data. For non-ECI modes, the result is exact.
+
+proc calcSegmentBitLength uses edx ebx, mode, numChars
+        .if [numChars] > INT16_MAX
+            mov eax, LENGTH_OVERFLOW
+            jmp .ret
+        .endif
+        mov   eax, [numChars]
+        .if [mode] = qrcodegen_Mode_NUMERIC
+            ; eax = ceil(10/3 * n)
+            xor edx, edx
+            mov ebx, 10
+            mul ebx
+            add eax, 2
+            mov ebx, 3
+            div eax, ebx
+        .elseif [mode] = qrcodegen_Mode_ALPHANUMERIC
+            ; eax = ceil(11/2 * n)
+            xor edx, edx
+            mov ebx, 11
+            mul eax, ebx
+            inc eax
+            mov ebx, 2
+            div eax, ebx
+        .elseif [mode] = qrcodegen_Mode_BYTE
+            shl eax, 3  ; *8 
+        .elseif [mode] = qrcodegen_Mode_KANJI
+            xor edx, edx
+            mov ebx, 13
+            mul ebx
+        .elseif [mode] = qrcodegen_Mode_ECI
+            .if [numChars] = 0
+                mov eax, 3*8
+            .endif
+        .else ;  Invalid argument
+            mov eax, LENGTH_OVERFLOW
+            jmp .ret
+        .endif
+        ; TODO  assert(result >= 0)
+        .if eax > INT16_MAX
+                mov eax, LENGTH_OVERFLOW
+        .endif
+.ret:
+        ret
+endp
 
 
 
