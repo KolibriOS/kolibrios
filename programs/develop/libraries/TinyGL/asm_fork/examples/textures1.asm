@@ -297,9 +297,8 @@ draw_3d:
 stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
 
 call [glPushMatrix]
-	stdcall [glTranslatef], 0.0,0.0,0.5
 	stdcall [glScalef], [scale], [scale], [scale]
-	stdcall [glScalef], 1.0, 1.0, 0.1 ;прижимаем сферу, что-бы сразу не вылазила при увеличении
+	stdcall [glScalef], 1.0, 1.0, 0.2 ;прижимаем сферу, что-бы сразу не вылазила при увеличении
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
 

@@ -951,13 +951,12 @@ endl
 endp
 
 align 4
-proc glClearDepth uses eax, depth:dword
+proc glClearDepth uses eax, depth:qword
 locals
 	p rd 2
 endl
 	mov dword[p],OP_ClearDepth
-	mov eax,[depth]
-	fld qword[eax]
+	fld qword[depth]
 	fstp dword[p+4]
 
 	lea eax,[ebp-8] ;=sizeof(dd)*2

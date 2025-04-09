@@ -185,7 +185,7 @@ align 4
 	cmp ecx,GL_SPOT_EXPONENT
 	jne @f
 		mov ecx,[ebx+12]
-		mov [edi+GLLight.spot_exponent],ecx ;l.spot_exponent=p[3]
+		mov [edx+GLLight.spot_exponent],ecx ;l.spot_exponent=p[3]
 		jmp .end_f
 align 4
 	@@:
@@ -193,7 +193,7 @@ align 4
 	jne .end_spot_c
 		fld dword[ebp+12] ;float a=v.v[0]
 ;      assert(a == 180 || (a>=0 && a<=90));
-		fst dword[edi+GLLight.spot_cutoff] ;l.spot_cutoff=a
+		fst dword[edx+GLLight.spot_cutoff] ;l.spot_cutoff=a
 		fcom dword[an180f] ;if (a != 180)
 		fstsw ax
 		sahf
@@ -202,7 +202,7 @@ align 4
 			fmulp
 			fdiv dword[an180f]
 			fcos
-			fstp dword[edi+GLLight.cos_spot_cutoff] ;l.cos_spot_cutoff=cos(a * M_PI / 180.0)
+			fstp dword[edx+GLLight.cos_spot_cutoff] ;l.cos_spot_cutoff=cos(a * M_PI / 180.0)
 			jmp .end_f
 		@@:
 		ffree st0
@@ -213,21 +213,21 @@ align 4
 	cmp ecx,GL_CONSTANT_ATTENUATION
 	jne @f
 		mov ecx,[ebx+12]
-		mov [edi+GLLight.attenuation],ecx ;l->attenuation[0]=p[3]
+		mov [edx+GLLight.attenuation],ecx ;l->attenuation[0]=p[3]
 		jmp .end_f
 align 4
 	@@:
 	cmp ecx,GL_LINEAR_ATTENUATION
 	jne @f
 		mov ecx,[ebx+12]
-		mov [edi+GLLight.attenuation+4],ecx ;l->attenuation[1]=p[3]
+		mov [edx+GLLight.attenuation+4],ecx ;l->attenuation[1]=p[3]
 		jmp .end_f
 align 4
 	@@:
 	cmp ecx,GL_QUADRATIC_ATTENUATION
 	jne @f
 		mov ecx,[ebx+12]
-		mov [edi+GLLight.attenuation+8],ecx ;l->attenuation[2]=p[3]
+		mov [edx+GLLight.attenuation+8],ecx ;l->attenuation[2]=p[3]
 		jmp .end_f
 align 4
 	@@: ;default:
@@ -363,15 +363,14 @@ fl_1e_3 dd 1.0e-3
 align 16
 proc gl_shade_vertex, context:dword, v:dword
 locals
-	R dd ? ;float ebp-96
-	G dd ? ;float ebp-92
-	B dd ? ;float ebp-88
-	A dd ? ;float ebp-84
-	s V3 ;ebp-80
-	d V3 ;ebp-68
-	tmp dd ? ;float ebp-56
-	att dd ? ;float ebp-52
-	dot_spot dd ? ;float ebp-48
+	R dd ? ;float ebp-92
+	G dd ? ;float ebp-88
+	B dd ? ;float ebp-84
+	A dd ? ;float ebp-80
+	s V3 ;ebp-76
+	d V3 ;ebp-64
+	tmp dd ? ;float ebp-52
+	att dd ? ;float ebp-48
 	lR dd ? ;float ebp-44
 	lB dd ? ;float ebp-40
 	lG dd ? ;float ebp-36
@@ -563,7 +562,6 @@ align 4
 				fmul dword[d+offs_Z]
 				faddp
 				fchs
-				fst dword[dot_spot]
 				cmp dword[twoside],0 ;if (twoside && dot_spot < 0)
 				je @f
 				ftst ;if (dot_spot<0)

@@ -17,7 +17,7 @@ proc ZB_plot uses eax ebx ecx edx edi, zb:dword, p:dword
 	mov edi,[ebx+ZBufferPoint.z]
 	shr edi,ZB_POINT_Z_FRAC_BITS
 	cmp di,word[ecx]
-	jl .end_f
+	jb .end_f
 if TGL_FEATURE_RENDER_BITS eq 24
 	mov eax,[ebx+ZBufferPoint.r]
 	mov byte[edx],ah
