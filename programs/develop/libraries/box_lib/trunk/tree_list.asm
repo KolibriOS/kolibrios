@@ -170,6 +170,7 @@ proc tl_key uses ebx ecx edi, tlist:dword
 	cmp tl_on_press,0
 	je @f
 		call tl_on_press
+		jmp .no_edit
 	@@:
 	cmp ah,byte[ecx+1] ;Space
 	jne @f

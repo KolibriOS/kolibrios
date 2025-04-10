@@ -190,10 +190,11 @@ data_loop:
         mov     [filestruct.ptr], buf_buffer2
         mov     [filestruct.size], eax
         push    eax
-        mcall   70, filestruct
+        mcall   SF_FILE, filestruct
         test    eax, eax
         jz      @f
         call    error_fs
+        add     esp, 4 ; fix stack
         jmp     close_datacon
       @@:
         pop     eax
@@ -204,7 +205,7 @@ data_loop:
 
 ; storing, send all data
   .stor:
-        mcall   70, filestruct
+        mcall   SF_FILE, filestruct
         cmp     eax, 6          ; end of file
         je      .last_call
         test    eax, eax        ; error
@@ -244,7 +245,7 @@ data_loop:
         mov     ecx, eax                        ; eax is size of buffer received
         inc     ecx
         add     ecx, [size_fname]               ; added old size to form new required size
-        mcall   68, 20, , [ptr_fname]           ; realloc
+        mcall   SF_SYS_MISC, SSF_MEM_REALLOC, , [ptr_fname]
         test    eax, eax
         je      error_heap
         mov     [ptr_fname], eax                ; eax contains the new block now

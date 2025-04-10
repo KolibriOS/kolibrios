@@ -27,7 +27,7 @@ login_gui: ;////////////////////////////////////////////////////////////////////
   .get_username:
         ; in case of error when either login_gui.server_addr or 
         ; login_gui.get_username is called, should resize window
-        mcall   67, WIN_X, WIN_Y, WIN_W, WIN_H ; resize to login gui window size
+        mcall   SF_CHANGE_WINDOW, WIN_X, WIN_Y, WIN_W, WIN_H ; resize to login gui window size
 
   .redraw:
         call    .draw
@@ -44,22 +44,22 @@ login_gui: ;////////////////////////////////////////////////////////////////////
 
   align 4
   .draw:
-        mcall   12, 1
-        mcall   48, 3, sc, 40
+        mcall   SF_REDRAW, SSF_BEGIN_DRAW
+        mcall   SF_STYLE_SETTINGS, SSF_GET_COLORS, sc, 40
         edit_boxes_set_sys_color edit_usr,editboxes_end,sc
         mov     edx, 0x34000000
         or      edx, [sc.work]
-        mcall   0, <WIN_X,WIN_W>, <WIN_Y,WIN_H>, , 0x805080DD, str_title
+        mcall   SF_CREATE_WINDOW, <WIN_X,WIN_W>, <WIN_Y,WIN_H>, , 0x805080DD, str_title
 
 		call    .draw_editboxes
 
         ; draw "connect" button
-        mcall   8, <162,65>, <150,25>, 2, [sc.work_button]
+        mcall   SF_DEFINE_BUTTON, <162,65>, <150,25>, 2, [sc.work_button]
 
         ; draw strings
         mov     ecx, 0x90000000
         or      ecx, [sc.work_text]
-        mcall   4, <3,      8>, , gui_str_usr
+        mcall   SF_DRAW_TEXT, <3,      8>, , gui_str_usr
         mcall    , <3,PAD*1+8>, , gui_str_pass
         mcall    , <3,PAD*2+8>, , gui_str_server
         mcall    , <3,PAD*3+8>, , gui_str_port
@@ -74,12 +74,12 @@ login_gui: ;////////////////////////////////////////////////////////////////////
 		mcall
         mov     [str_error_addr], gui_str_null ; reset error string address
 
-        mcall   12, 2
+        mcall   SF_REDRAW, SSF_END_DRAW
         ret
 
   align 4
   .still:
-        mcall    10     ; wait for event
+        mcall    SF_WAIT_EVENT
         dec      eax
         jz       .redraw
         dec      eax
@@ -96,7 +96,7 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         jmp     .still
 
   .button:
-        mcall   17
+        mcall   SF_GET_BUTTON
 
         dec     ah
         jz      .exit
@@ -107,7 +107,7 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         jmp     .still
 
   .key:
-        mcall   2
+        mcall   SF_GET_KEY
 
         cmp     ah,13
         je      .connect
@@ -122,12 +122,17 @@ login_gui: ;////////////////////////////////////////////////////////////////////
         stdcall [edit_box_key], edit_path
 
         jmp     .still
-	
+
   .connect:
-		mcall   67, 35, 20, 830, 555 ; resize to main gui window's coordinates
+        mov     esi, 555
+        or      [show_log],0
+        jnz     @f
+        sub     esi, 160
+  @@:
+        mcall   SF_CHANGE_WINDOW, 35, 20, 830 ; resize to main gui window's coordinates
         cmp     [param_server_addr], 0
-		jne     gui.main
-		
+        jne     gui.main
+        
         mov     [str_error_addr], gui_str_no_srvr
         jmp     .redraw
  

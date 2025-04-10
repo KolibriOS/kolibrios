@@ -7,6 +7,9 @@ include '../../load_lib.mac'
  
 icon_tl_sys dd 0
 icon_tl_nod dd 0
+icon_buttons dd 0
+lbl_after_enter dd 0
+show_log    db 0 ; 0 - hide log, 1 - show log
 
 TLIST_SZ = 325+16 ;=341. 16 is x-size of scroll bar
 TLIST1_X = 50
@@ -15,6 +18,9 @@ BT_SZ_X  = 40
 SYS_COL  = 0xe6e6e6
 BT_COL   = 0xcccccc
 STR_COL  = 0x595959 ;0x000000
+ICON_TOP_B  = 2 ; top border
+ICON_LEFT_B = 2 ; left border
+ICON_SIZE   = (18+ICON_LEFT_B)*(18+ICON_TOP_B)*3
 
 ; TODO: automatic resizing of GUI elements on window resizing
 
@@ -45,8 +51,8 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         test    eax, eax
         jnz     .exit
 
-        mcall   48, 3, sc, sizeof.system_colors
-        mcall   40, 0xC0000027 ; set event mask
+        mcall   SF_STYLE_SETTINGS, SSF_GET_COLORS, sc, sizeof.system_colors
+        mcall   SF_SET_EVENTS_MASK, 0xC0000027 ; set event mask
         ret
 
     .server_addr:
@@ -73,37 +79,42 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         ; initialize tree list elements
         stdcall [tl_data_init], tree1
         stdcall [tl_data_init], tree2
-		
-		or dword[tree1.style], 8 ;tl_cursor_pos_limited - restrict cursor move to existing nodes
-		or dword[tree2.style], 8 ;tl_cursor_pos_limited
-		
-        ; read icons
-        load_image_file 'ftpc_sys.png', icon_tl_sys
 
-        mov     [filestruct.ptr], eax
-        mov     [filestruct.subfn], 0
-        mov     [filestruct.offset], 54
-        mov     [filestruct.size], ecx
-        mcall   70, filestruct
-        cmp     ebx, 0
-        jl      @f
+        or dword[tree1.style], 8 ;tl_cursor_pos_limited - restrict cursor move to existing nodes
+        or dword[tree2.style], 8 ;tl_cursor_pos_limited
+        
+        ; read icons
+        mcall   SF_SYS_MISC, SSF_MEM_OPEN, str_icon_18,, 0
+        or      eax, eax
+        jz      @f
+        mov     esi, eax
+        mov     ecx, ICON_SIZE*11
+        mcall   SF_SYS_MISC, SSF_MEM_ALLOC
+        mov     ecx, eax
+        mov     [icon_tl_sys], eax
+        stdcall copy_icon, eax,esi,31 ;active cursor
+        add     eax, ICON_SIZE*3 ;skip not used icons
+        stdcall img_to_gray, ecx, eax, ICON_SIZE/3 ;not active cursor
+
         m2m     dword[tree1.data_img_sys], dword[icon_tl_sys]
         m2m     dword[tree2.data_img_sys], dword[icon_tl_sys]
 
-      @@:
         ; read nodes icon file
-        load_image_file 'ftpc_nod.png', icon_tl_nod
+        mov     ecx, ICON_SIZE*2
+        mcall   SF_SYS_MISC, SSF_MEM_ALLOC
+        mov     [icon_tl_nod], eax
+        stdcall copy_icon, eax,esi,2
+        stdcall copy_icon, eax,esi,0
 
-        mov     [filestruct.ptr], eax
-        ;mov    [filestruct.subfn], 0
-        ;mov    [filestruct.offset], 54
-        mov     [filestruct.size], ecx
-        mcall   70, filestruct
-        cmp     ebx, 0
-        jl      @f
         m2m     dword[tree1.data_img], dword[icon_tl_nod]
         m2m     dword[tree2.data_img], dword[icon_tl_nod]
-    
+
+        ; initialize icon buttons
+        mov     ecx, 18*18*4*2
+        mcall   SF_SYS_MISC, SSF_MEM_ALLOC
+        mov     [icon_buttons], eax
+        stdcall copy_icon_w, eax,esi, 4 ;disconnect
+        stdcall copy_icon_w, eax,esi,49 ;search
       @@:
         call    .draw
         ; create initial tree list for root_dir
@@ -117,11 +128,11 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         jmp     cmd_list
 
     .redraw:
-        call     .draw
+        call    .draw
 
     align 4
     .still:
-        mcall   10
+        mcall   SF_WAIT_EVENT
 
         dec     eax
         jz      .redraw
@@ -146,65 +157,86 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
     align 4
     .draw:
-        mcall   12, 1
+        mcall   SF_REDRAW, SSF_BEGIN_DRAW
         ; main window
-        mcall   0, <35,830>, <20,555>, 0x34000000+SYS_COL, 0x805080DD, str_title
+        mcall   SF_CREATE_WINDOW, <35,830>, <20,555-160>, 0x34000000+SYS_COL, 0x805080DD, str_title
 
         ;-------------------------
         ; textedit components
         ;-------------------------
-        mcall   9, procinfo, -1
+        mcall   SF_THREAD_INFO, procinfo, -1
         mov     edi, tedit0
         call    EvSize
 
         movzx   ebx,word[procinfo.client_box.width]
         inc     bx
-        mcall   13, , ted_wnd_t
-        stdcall [ted_draw], tedit0
+        mcall   SF_DRAW_RECT, , ted_wnd_t
 
         ; draw "disconnect" button
-        mcall   8, <50,95>, <25,25>, 3, BT_COL
+        mcall   SF_DEFINE_BUTTON, <50,114>, <25,25>, 3, BT_COL
+        ; icon
+        mcall   SF_PUT_IMAGE_EXT, [icon_buttons], <18, 18>, <54, 29>, 32,, 0
         ; string "disconnect"
-        mcall   4, <50+5,25+5>, 0xb0000000+STR_COL, str_disconnect
+        mcall   SF_DRAW_TEXT, <50+18+10,25+5>, 0xb0000000+STR_COL, str_disconnect
+
+        ; draw "Show|Hide log" button
+        mcall   SF_DEFINE_BUTTON, <50,79>, <326,25>, 10, BT_COL
+        ; string "Show|Hide log"
+        cmp     [show_log],0
+        je      @f
+        stdcall [ted_draw], tedit0
+        mov     edx, str_hide_log
+        jmp     .end_log_1
+        @@:
+        mov     edx, str_show_log
+        .end_log_1:
+        mcall   SF_DRAW_TEXT, <50+5,326+5>, 0xb0000000+STR_COL
+        cmp     [show_log],0
+        je @f
         ; draw "Copy" button
-        mcall   8, <50,40>, <326,25>, 4, BT_COL
+        mcall   SF_DEFINE_BUTTON, <129+5,40>, <326,25>, 4, BT_COL
         ; string "copy"
-        mcall   4, <50+5,326+5>, 0xb0000000+STR_COL, str_copy
+        mcall   SF_DRAW_TEXT, <129+10,326+5>, 0xb0000000+STR_COL, str_copy
+        @@:
         ; draw "Search" button
-        mcall   8, <TLIST2_X+TLIST_SZ-55,55>, <20,25>, 5, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-25,25>, <20,25>, 5, BT_COL
+        ; icon
+        mov     ebx, [icon_buttons]
+        add     ebx, 18*18*4
+        mcall   SF_PUT_IMAGE_EXT,, <18, 18>, <730, 24>, 32,, 0
         ; string "Search"
-        mcall   4, <TLIST2_X+TLIST_SZ-55+5,20+5>, 0xb0000000+STR_COL, str_search
+        ;mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-55+5,20+5>, 0xb0000000+STR_COL, str_search
 
         ; draw "LIST" button
-        mcall   8, <TLIST2_X+TLIST_SZ-4*BT_SZ_X-15,BT_SZ_X>, <50,25>, 12, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-4*BT_SZ_X-15,BT_SZ_X>, <50,25>, 12, BT_COL
         ; string "LIST"
-        mcall   4, <TLIST2_X+TLIST_SZ-4*BT_SZ_X-15+5,50+5>, 0xb0000000+STR_COL, str_list
+        mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-4*BT_SZ_X-15+5,50+5>, 0xb0000000+STR_COL, str_list
         ; draw "DELE" button
-        mcall   8, <TLIST2_X+TLIST_SZ-3*BT_SZ_X-10,BT_SZ_X>, <50,25>, 7, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-3*BT_SZ_X-10,BT_SZ_X>, <50,25>, 7, BT_COL
         ; string "DELE"
-        mcall   4, <TLIST2_X+TLIST_SZ-3*BT_SZ_X-10+5,50+5>, 0xb0000000+STR_COL, str_dele
+        mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-3*BT_SZ_X-10+5,50+5>, 0xb0000000+STR_COL, str_dele
         ; draw "RDIR" button
-        mcall   8, <TLIST2_X+TLIST_SZ-2*BT_SZ_X-5,BT_SZ_X>, <50,25>, 8, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-2*BT_SZ_X-5,BT_SZ_X>, <50,25>, 8, BT_COL
         ; string "RDIR"
-        mcall   4, <TLIST2_X+TLIST_SZ-2*BT_SZ_X-5+5,50+5>, 0xb0000000+STR_COL, str_rdir
+        mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-2*BT_SZ_X-5+5,50+5>, 0xb0000000+STR_COL, str_rdir
         ; draw "RMD" button
-        mcall   8, <TLIST2_X+TLIST_SZ-BT_SZ_X,BT_SZ_X>, <50,25>, 9, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-BT_SZ_X,BT_SZ_X>, <50,25>, 9, BT_COL
         ; string "RMD"
-        mcall   4, <TLIST2_X+TLIST_SZ-BT_SZ_X+5,50+5>, 0xb0000000+STR_COL, str_rmd
+        mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-BT_SZ_X+5,50+5>, 0xb0000000+STR_COL, str_rmd
 
         ; draw "mkd" button
-        mcall   8, <TLIST2_X+TLIST_SZ-BT_SZ_X,BT_SZ_X>, <80,20>, 6, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-BT_SZ_X,BT_SZ_X>, <80,20>, 6, BT_COL
         ; string "mkd"
-        mcall   4, <TLIST2_X+TLIST_SZ-BT_SZ_X+5,80+5>, 0xb0000000+STR_COL, str_mkd
+        mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-BT_SZ_X+5,80+5>, 0xb0000000+STR_COL, str_mkd
         
         ; draw "cancel" button
-        ;mcall   8, <555,55>, <308,25>, 10, BT_COL
+        ;mcall   SF_DEFINE_BUTTON, <555,55>, <308,25>, 10, BT_COL
         ; string "Cancel"
-        ;mcall   4, <555+5,308+5>, 0xb0000000+STR_COL, str_abort
+        ;mcall   SF_DRAW_TEXT, <555+5,308+5>, 0xb0000000+STR_COL, str_abort
         ; draw "change volume" button
-        mcall   8, <TLIST1_X+TLIST_SZ-55,55>, <100-20,22>, 11, BT_COL
+        mcall   SF_DEFINE_BUTTON, <TLIST1_X+TLIST_SZ-55,55>, <100-20,22>, 11, BT_COL
         ; string "Change"
-        mcall   4, <TLIST1_X+TLIST_SZ-55+5,100-20+5>, 0xb0000000+STR_COL, str_change
+        mcall   SF_DRAW_TEXT, <TLIST1_X+TLIST_SZ-55+5,100-20+5>, 0xb0000000+STR_COL, str_change
 
         ;--------------------------
         ; tree list components
@@ -222,12 +254,12 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         stdcall [edit_box_draw], edit_volume
         stdcall [edit_box_draw], edit_search
 
-        mcall   12,2
+        mcall   SF_REDRAW, SSF_END_DRAW
         ret
 
     align 16
     .mouse:
-        mcall   37, 1
+        mcall   SF_MOUSE_GET, SSF_WINDOW_POSITION
         cmp     word[tedit0.wnd.top], ax
         jg      .no_edit
 
@@ -235,7 +267,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         cmp     word[tedit0.wnd.left], ax
         jg      .no_edit
 
-        mcall   37, 3
+        mcall   SF_MOUSE_GET, SSF_BUTTON_EXT
         bt      eax, 24
         jnc     @f
 
@@ -243,12 +275,19 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         jmp     .still
 
       @@:
+        cmp     [show_log],0
+        je      .still
         stdcall [ted_mouse], tedit0
         jmp     .still
 
       .no_edit:
+        mov     [lbl_after_enter], 0
         stdcall [tl_mouse], tree1
         stdcall [tl_mouse], tree2
+        cmp     [lbl_after_enter], 0
+        jz      @f
+        jmp     [lbl_after_enter]
+      @@:
         stdcall [edit_box_mouse], edit_mkd
         stdcall [edit_box_mouse], edit_volume
         stdcall [edit_box_mouse], edit_search
@@ -256,9 +295,14 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
     align 16
     .key:
-        mcall   2
+        mcall   SF_GET_KEY
+        mov     [lbl_after_enter], 0
         stdcall [tl_key], tree1
         stdcall [tl_key], tree2
+        cmp     [lbl_after_enter], 0
+        jz      @f
+        jmp     [lbl_after_enter]
+      @@:
         stdcall [edit_box_key], edit_mkd
         stdcall [edit_box_key], edit_volume
         stdcall [edit_box_key], edit_search
@@ -266,11 +310,17 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
     align 16
     .button:
-        mcall   17
+        mcall   SF_GET_BUTTON
 
         cmp     ah, 3
         jne     @f
         ijmp    eax, interface_addr, interface.server_addr
+        jmp     .still
+
+      @@:
+        cmp     ah, 10
+        jne     @f
+        call    show_hide_log
         jmp     .still
 
       @@:
@@ -310,7 +360,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
       @@:
         cmp     ah, 1
         je      .exit
-      
+        
         jmp     .still
 
     .print:
@@ -327,13 +377,15 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         cmp     byte[esi], 0
         jne     @b
         stdcall [ted_text_add], tedit0, tedit_buffer, ecx, ebx
+        cmp     [show_log],0
+        je      .end_log_2
         stdcall [ted_draw], tedit0
+    .end_log_2:
         ; write to log file
         mov     eax, [esp+36]
         sub     ecx, 2 ; 0a0d is not included
         call    write_to_file
 
-      @@:
         popad
         ret     4
 
@@ -353,13 +405,16 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 ;< none                                                                                           ;;
 ;;================================================================================================;;
 
-        push    edx
-        push    eax
+        cmp     eax, 1
+        jl      data_loop
+        push    edx eax
         ; check if any incomplete entry to be parsed
         cmp     byte[remote_list_buf], 0
         je      .no_backlog
+
         ; find end of remote_list_buf
         mov     edi, remote_list_buf
+        mov     ecx, 1024 ;buffer size
         mov     al, 0
         repne   scasb
         ; copy rest of the incomplete entry to remote_list_buf
@@ -424,6 +479,8 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         mov     byte[edi], 0
 
         ; add node to tree list
+        and dword[tree2.style], not 8
+        stdcall [tl_cur_next], tree2
         cmp     word[node_entry2], 'fi'
         jne     @f
         stdcall [tl_node_add], tree2, 0, node_entry2
@@ -453,9 +510,9 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
       .store_last_entry:
         ; find index of the last incomplete entry
-        mov     ecx, -1
         mov     eax, [esp]
         lea     edi, [buf_buffer2+eax-2]
+        mov     ecx, eax
         mov     al, 0x0a
         std
         repne   scasb
@@ -470,9 +527,10 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         jne     @b
 
       .done_parsing:
+        stdcall [tl_cur_beg], tree2
+        or dword[tree2.style], 8
         call    .draw ; to update tree list immediately in case of "auto_list"
-        pop     eax
-        pop     edx
+        pop     eax edx
         jmp     data_loop
 
         ; clear tree list and add ".." node before executing "LIST"
@@ -494,7 +552,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 ;;================================================================================================;;
 
         ; detect abort
-        mcall   17
+        mcall   SF_GET_BUTTON
         cmp     ah, 10
         je      cmd_abor
 
@@ -578,7 +636,8 @@ fun_on_enter:
     cmp     byte[esi], 0
     jne     @b
     mov     word[edi], 0x000a
-    jmp     cmd_stor
+    mov     [lbl_after_enter], cmd_stor
+    ret
 
 
 ; Function to call when you press [Enter]
@@ -591,7 +650,8 @@ fun_on_enter2:
     cmp     dword[esi], 0x2E2E
     jne     @f
     mov     [auto_list], 1
-    jmp     cmd_cdup
+    mov     [lbl_after_enter], cmd_cdup
+    ret
 
   @@:
     cmp     word[eax], 'fo'
@@ -610,12 +670,14 @@ fun_on_enter2:
                                 ; newline in console code
     cmp     word[eax], 'fo'
     je      @f
-    jmp     cmd_retr
+    mov     [lbl_after_enter], cmd_retr
+    ret
 
   @@:
     stdcall [tl_info_clear], tree2
     mov     [auto_list], 1
-    jmp     cmd_cwd
+    mov     [lbl_after_enter], cmd_cwd
+    ret
 
 
 ;;================================================================================================;;
@@ -641,7 +703,7 @@ populate_local_tree_list: ;/////////////////////////////////////////////////////
     jne     @f
 
     ; removes last file name from filestruct.name
-    mcall   30, 2, filestruct.name,1024 ; get absolute path for cwd
+    mcall   SF_CURRENT_FOLDER, SSF_GET_CF, filestruct.name,1024 ; get absolute path for cwd
     lea     edi, [filestruct.name+eax] ; edi = pointer to the tail of file name
     mov     al, '/'
     mov     ecx, -1
@@ -652,15 +714,15 @@ populate_local_tree_list: ;/////////////////////////////////////////////////////
     mov     ecx, filestruct.name
 
   @@:
-    mcall   30, 1, ; set cwd
-    mcall   30, 2, filestruct.name, 1024 ; get absolute path for cwd
+    mcall   SF_CURRENT_FOLDER, SSF_SET_CF ; set cwd
+    mcall   SF_CURRENT_FOLDER, SSF_GET_CF, filestruct.name, 1024 ; get absolute path for cwd
     ; clear all nodes in tree list
     stdcall [tl_info_clear], tree1
     mov     [filestruct.offset], 0
 
   ; read 32 blocks
   .outer:
-    mcall   70, filestruct
+    mcall   SF_FILE, filestruct
     ;int3
     test    eax, eax
     jz      @f
@@ -745,6 +807,16 @@ EvSize:
     popad
     ret
 
+
+;
+show_hide_log:
+    mov     esi, 555
+    xor     [show_log],1
+    jnz     @f
+    sub     esi, 160
+    @@:
+    mcall   SF_CHANGE_WINDOW, -1, -1, -1
+    ret
 
 ;;================================================================================================;;
 filter_remote_list: ;/////////////////////////////////////////////////////////////////////////////;;
@@ -861,30 +933,133 @@ search: ;///////////////////////////////////////////////////////////////////////
     pop     edi esi edx ecx ebx
     ret
 
+
+align 4
+proc copy_icon uses ebx ecx esi edi, buf_d:dword, buf_s:dword, ind:dword
+;;------------------------------------------------------------------------------------------------;;
+;> buf_d = pointer to destination buffer 24-bit
+;> buf_s = pointer to source buffer 32-bit (with icons)
+;> ind   = icon index
+;;------------------------------------------------------------------------------------------------;;
+;< eax   = pointer to destination buffer + icon size
+;;------------------------------------------------------------------------------------------------;;
+    mov     edi, [buf_d]
+    mov     ecx, (18+ICON_LEFT_B)*ICON_TOP_B*3
+    mov     al, 0xff
+    rep     stosb ; make top border
+    ; copy icon
+    mov     esi, [ind]
+    imul    esi, 18*18*4
+    add     esi, [buf_s]
+    mov     ebx, 18
+  .cycle0:
+    mov     ecx, ICON_LEFT_B*3
+    rep     stosb ; make left border
+    mov     ecx, 18
+  @@:
+    movsw
+    movsb
+    inc     esi ; skip transparent byte
+    loop    @b
+    dec     ebx
+    jnz     .cycle0
+    mov     eax, edi
+    ret
+endp
+
+
+align 4
+proc img_to_gray, buf_rgb:dword, buf_g24:dword, pixels:dword
+;;------------------------------------------------------------------------------------------------;;
+; function for generating gray icons
+;;------------------------------------------------------------------------------------------------;;
+;> buf_rgb - buffer with input 24-bit color image
+;> buf_g24 - buffer with output 24-bit gray image
+;> pixels - number of pixels in the image
+;;------------------------------------------------------------------------------------------------;;
+pushad
+    mov     esi, [buf_rgb]
+    mov     edi, [buf_g24]
+    mov     ecx, [pixels]
+    mov     ebx, 3
+  @@:
+    movzx   eax, byte[esi]
+    movzx   edx, byte[esi+1]
+    add     eax, edx
+    movzx   edx, byte[esi+2]
+    add     eax, edx
+    xor     edx, edx
+    div     ebx
+    mov     ah, al
+    mov     word[edi], ax
+    mov     byte[edi+2], al
+    add     esi, 3
+    add     edi, 3
+    loop    @b
+popad
+    ret
+endp
+
+
+align 4
+proc copy_icon_w uses ecx esi edi, buf_d:dword, buf_s:dword, ind:dword
+;;------------------------------------------------------------------------------------------------;;
+;> buf_d = pointer to destination buffer 32-bit
+;> buf_s = pointer to source buffer 32-bit (with icons)
+;> ind   = icon index
+;;------------------------------------------------------------------------------------------------;;
+;< eax   = pointer to destination buffer + icon size
+;;------------------------------------------------------------------------------------------------;;
+    mov     edi, [buf_d]
+    mov     ecx, 18*18
+    mov     esi, [ind]
+    imul    esi, ecx
+    shl     esi, 2
+    add     esi, [buf_s]
+    rep     movsd
+    mov     eax, edi
+
+    mov     ecx, 18*18
+    mov     edi, [buf_d]
+    mov     esi, [edi] ;copy transparent color
+  .cycle0:
+    cmp     [edi], esi
+    jne     @f
+    mov     dword[edi], BT_COL
+  @@:
+    add     edi, 4
+    loop    .cycle0
+    ret
+endp
+
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 ;hed             db 'FTP Client for KolibriOS',0
 str_change      db 'Change',0
 str_disconnect  db 'Disconnect',0
+str_show_log    db 'Show log',0
+str_hide_log    db 'Hide log',0
 str_copy        db 'Copy',0
 str_mkd         db 'MKD',0
 str_dele        db 'DELE',0
 str_rdir        db 'RDIR',0
 str_rmd         db 'RMD',0
 str_abort       db 'Cancel',0
-str_search      db 'Search',0
+;str_search      db 'Search',0
 str_list        db 'LIST',0
 str_null        db 0
+
+str_icon_18 db 'ICONS18',0
 
 ;----------------------
 ; tree list elements
 ;----------------------
-tree1 tree_list 64, 500, tl_list_box_mode, 16, 16, \
-    0xffffff, BT_COL, 0x000000, TLIST1_X, 105, TLIST_SZ-16, 185, 14, 4,\
+tree1 tree_list 64, 500, tl_list_box_mode, 18+ICON_LEFT_B, 18+ICON_TOP_B, \
+    0xffffff, BT_COL, 0x10000000, TLIST1_X, 105, TLIST_SZ-16, 185, 15, 4,\
     0, el_focus, wScr, fun_on_enter
 
-tree2 tree_list 64, 500, tl_list_box_mode, 16, 16, \
-    0xffffff, BT_COL, 0x000000, TLIST2_X, 105, TLIST_SZ-16, 185, 14, 4, \
+tree2 tree_list 64, 500, tl_list_box_mode, 18+ICON_LEFT_B, 18+ICON_TOP_B, \
+    0xffffff, BT_COL, 0x10000000, TLIST2_X, 105, TLIST_SZ-16, 185, 15, 4, \
     0, el_focus, wScr2, fun_on_enter2
 
 ; editbox for mkd
@@ -896,7 +1071,7 @@ edit_volume edit_box TLIST_SZ-60, TLIST1_X, 80, 0xffffff, 0x94AECE, 0, \
     0xAABBCC, 0x10000000, 99, root_dir, mouse_dd, 0
 
 ; editbox for search
-edit_search edit_box TLIST_SZ-60, TLIST2_X, 22, 0xffffff, 0x94AECE, 0, \
+edit_search edit_box TLIST_SZ-30, TLIST2_X, 22, 0xffffff, 0x94AECE, 0, \
     0xAABBCC, 0x10000000, 99, filter,mouse_dd, 0
  
 ; A subsidiary structure for scrolling
