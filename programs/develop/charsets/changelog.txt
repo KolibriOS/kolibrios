@@ -31,3 +31,19 @@ Development history
 - Renamed to Charsets Viewer/Charsets
 - Symbol highlight UI tweaks
 - Fixed rolled up bug
+
+30.03.2025 - 0.4.0
+- Localization for all system languages
+- Display all character scales
+- Abolity to copy character codes
+- Block on charpage 00 for CP866
+- New character code half markers
+- Navigation using keys (see hotkeys.txt)
+
+03.04.2025 - 0.4.1
+- Fixed bug with codes color subscription
+
+04.04.2025 - 0.4.2
+- Fixed bug with resetting UTF charpage to zero on double charset swap to CP866
+- Improved charpage blocking for CP866 UX 
+- Improved char codes copying UI

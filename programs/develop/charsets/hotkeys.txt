@@ -1,0 +1,12 @@
+Control hotkeys
+
+- Navigate inside charpage:
+  - Arrows
+  - Num2/4/6/8
+
+- Navigation between charpages:
+  - PgDN, PgUP - previous/next page
+  - Num0, Home - reset page to zero
+
+- Change symbol scale:
+  - Num- and Num+
