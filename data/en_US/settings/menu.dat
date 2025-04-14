@@ -92,6 +92,7 @@
 59 Screen keyboard      |zkey
 #10 **** DATA PROCESSING
 16 Calculator           |calc
+16 Calculator+          |calcplus
 03 Tinypad              |tinypad
 28 CodeEdit             |develop/cedit
 21 Table processor      |table

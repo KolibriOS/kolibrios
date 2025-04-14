@@ -410,6 +410,7 @@ tup.append_table(img_files, {
  {"ACLOCK", VAR_PROGS .. "/demos/aclock/aclock"},
  {"APM", VAR_PROGS .. "/system/apm/apm"},
  {"CALC", VAR_PROGS .. "/other/calc/trunk/calc"},
+ {"CALCPLUS", VAR_PROGS .. "/other/calcplus/calcplus"},
  {"CALENDAR", VAR_PROGS .. "/system/calendar/trunk/calendar"},
  {"COLRDIAL", VAR_PROGS .. "/system/colrdial/color_dialog"},
  {"CROPFLAT", VAR_PROGS .. "/system/cropflat/cropflat"},
@@ -626,7 +627,6 @@ tup.append_table(extra_files, {
  {"kolibrios/media/zsea/plugins/rotate.obj", VAR_PROGS .. "/media/zsea/plugins/rotate/rotate.obj"},
  {"kolibrios/media/zsea/plugins/scaling.obj", VAR_PROGS .. "/media/zsea/plugins/scaling/scaling.obj"},
  {"kolibrios/utils/AMDtemp", VAR_PROGS .. "/system/amd_temp_view/AMDtemp"},
- {"kolibrios/utils/calcplus", VAR_PROGS .. "/other/calcplus/calcplus"},
  {"kolibrios/utils/kfm/kfm", VAR_PROGS .. "/fs/kfm/trunk/kfm"},
  {"kolibrios/utils/tedit/t_edit", VAR_PROGS .. "/other/t_edit/t_edit"},
  {"kolibrios/3D/blocks/block.bin", VAR_PROGS .. "/bcc32/games/blocks/block.bin"}

@@ -90,6 +90,7 @@
 59 Экранная клавиатура  |zkey
 #10 **** Офис
 16 Калькулятор          |calc
+16 Калькулятор+         |calcplus
 03 Редактор Tinypad     |tinypad
 28 Редактор CodeEdit    |develop/cedit
 21 Табличный процессор  |table
