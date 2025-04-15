@@ -88,13 +88,13 @@ red_win:
 align 4
 still:
 	mcall SF_WAIT_EVENT
-	cmp al,1
-	jz red_win
-	cmp al,2
-	jz key
-	cmp al,3
-	jz button
-	jmp still
+	cmp   al,EV_REDRAW
+	jz    red_win
+	cmp   al,EV_KEY
+	jz    key
+	cmp   al,EV_BUTTON
+	jz    button
+	jmp   still
 
 align 4
 draw_window:
@@ -295,7 +295,6 @@ draw_3d:
 stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
 
 call [glPushMatrix]
-	stdcall [glTranslatef], 0.0,0.0,0.5
 	stdcall [glScalef], [scale], [scale], [scale]
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0

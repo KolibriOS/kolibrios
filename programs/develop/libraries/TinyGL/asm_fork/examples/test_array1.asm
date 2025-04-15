@@ -12,6 +12,15 @@ include '../opengl_const.inc'
 
 @use_library
 
+;Constants describing the house.3ds file (obtained using the info_3ds program)
+VERTICES_OFFSET =  0x33 ;offset along which the coordinates of the vertices go
+FACES_COUNT	= 0x162 ;number of faces
+FACES_OFFSET	= 0x96b ;offset along which information about the edges goes
+
+HOUSE_FILE_SIZE = 5297
+txt_error_file_size db '"House.3ds file size does not match" -tE',0
+
+
 align 4
 start:
 	load_library name_tgl, library_path, system_path, import_tinygl
@@ -20,20 +29,20 @@ start:
 
 	mcall SF_SET_EVENTS_MASK,0x27
 
-	;заполняем массив индексов из файла house.3ds (который вшит внутрь данной программы)
+	;we fill the array of indices from the house.3ds file (which is embedded inside this program)
 	mov esi,house_3ds
-	add esi,0x1798 ;смещение по которому идет информация о гранях в файле 3ds (получено с использованием программы info_3ds)
+	add esi,FACES_OFFSET
 	mov edi,Indices
-	mov eax,0x1a6 ;число граней в файле 3ds (получено с использованием программы info_3ds)
+	mov eax,FACES_COUNT
 	@@:
 		movsd
 		movsw
-		add esi,2 ;пропускаем свойства грани
+		add esi,2 ;skip face properties
 		dec eax
 		or eax,eax
 	jnz @b
 
-	;первоначальные настройки контекста tinygl
+	;tinygl initial context settings
 	stdcall [kosglMakeCurrent], 10,10,400,350,ctx1
 	stdcall [glEnable], GL_DEPTH_TEST
 	stdcall [glClearColor], 0.0,0.0,0.0,0.0
@@ -48,13 +57,13 @@ red_win:
 align 4
 still:
 	mcall SF_WAIT_EVENT
-	cmp al,1
-	jz red_win
-	cmp al,2
-	jz key
-	cmp al,3
-	jz button
-	jmp still
+	cmp   al,EV_REDRAW
+	jz    red_win
+	cmp   al,EV_KEY
+	jz    key
+	cmp   al,EV_BUTTON
+	jz    button
+	jmp   still
 
 align 4
 draw_window:
@@ -140,29 +149,34 @@ caption db 'Test opengl 1.1 arrays, [Esc] - exit, [<-],[->],[Up],[Down] - rotate
 
 align 4
 draw_3d:
-stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
+stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;clear the color and depth buffer
+mov eax,house_3ds.end-house_3ds
+cmp eax,HOUSE_FILE_SIZE
+je @f
+	notify_window_run txt_error_file_size
+	ret
+@@:
 call [glPushMatrix]
 
-	;масштаб и повороты
-	stdcall [glTranslatef], 0.0,0.0,0.5
+	;scale and rotations
 	stdcall [glScalef], [scale], [scale], [scale]
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
 
-	;рисование через индексный массив
-	mov eax,house_3ds ;начало внедренного файла 3ds
-	add eax,0xeb ;смещение по которому идут координаты вершин (получено с использованием программы info_3ds)
-	stdcall [glVertexPointer], 3, GL_FLOAT, 0, eax ;задаем массив для вершин, 3 - число координат для одной вершины
-	stdcall [glEnableClientState], GL_VERTEX_ARRAY ;включаем режим рисования вершин
-	stdcall [glDrawElements], GL_TRIANGLES, 0x1a6*3, GL_UNSIGNED_SHORT, Indices ;mode, count, type, *indices
-	stdcall [glDisableClientState], GL_VERTEX_ARRAY ;отключаем режим рисования вершин
+	;drawing via index array
+	mov eax,house_3ds ;start of embedded 3ds file
+	add eax,VERTICES_OFFSET
+	stdcall [glVertexPointer], 3, GL_FLOAT, 0, eax ;we set an array for the vertices, 3 is the number of coordinates for one vertex
+	stdcall [glEnableClientState], GL_VERTEX_ARRAY ;turn on the vertex drawing mode
+	stdcall [glDrawElements], GL_TRIANGLES, FACES_COUNT*3, GL_UNSIGNED_SHORT, Indices ;mode, count, type, *indices
+	stdcall [glDisableClientState], GL_VERTEX_ARRAY ;disable vertex drawing mode
 
 call [glPopMatrix]
 ret
 
 align 4
-scale dd 0.0065 ;начальный масштаб (в идеальном случае должен вычислятся, но для даного примера подобран в ручную на глаз)
+scale dd 0.07 ;initial scale (ideally should be calculated)
 delt_sc dd 0.0005
 angle_z dd 90.0
 angle_y dd 90.0
@@ -170,10 +184,11 @@ angle_x dd 0.0
 delt_size dd 3.0
 
 align 4
-house_3ds: ;внедряем файл внутрь программы (в идеальном случае должен открыватся через окно диалога, но для облегчения примера вшит внутрь)
+house_3ds: ;we embed the file inside the program (ideally it should open through a dialog box)
 file '../../../../../demos/view3ds/3ds_objects/House.3ds'
+.end:
 align 4
-Indices rb 0x1a6*6 ;0x1a6 - число граней, на каждую грань по 3 точки, индекс точки 2 байта
+Indices rb FACES_COUNT*6 ;3 points per edge, point index 2 bytes
 
 ;--------------------------------------------------
 align 4

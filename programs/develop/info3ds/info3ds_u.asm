@@ -1408,7 +1408,7 @@ buf_1:
 align 4
 el_focus dd tree1
 tree1 tree_list size_one_list,300+2, tl_key_no_edit+tl_draw_par_line,\
-	16,16, 0xffffff,0xb0d0ff,0x400040, 5,47,195-16,250, 16,list_offs_text,0, el_focus,\
+	16,16, 0xffffff,0xb0d0ff,0x10400040, 5,47,195-16,250, 16,list_offs_text,0, el_focus,\
 	w_scr_t1,0
 
 align 4
@@ -1427,9 +1427,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru_RU
-capt db 'info 3ds [user] версия 29.09.20',0 ; подпись окна
+capt db 'info 3ds [user] версия 14.04.25',0 ; подпись окна
 else ; Default to en_US
-capt db 'info 3ds [user] version 29.09.20',0 ; Window caption
+capt db 'info 3ds [user] version 14.04.25',0 ; Window caption
 end if
 
 align 16

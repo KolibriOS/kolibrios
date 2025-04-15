@@ -16,9 +16,9 @@ include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 if lang eq ru_RU
-caption db 'Просмотр вокселей 11.11.20',0 ;подпись окна
+caption db 'Просмотр вокселей 14.04.25',0 ;подпись окна
 else ; Default to en_US
-caption db 'Voxel viewer 11.11.20',0
+caption db 'Voxel viewer 14.04.25',0
 end if
 
 3d_wnd_l equ   5 ;отступ для tinygl буфера слева
@@ -750,12 +750,8 @@ draw_3d:
 	je @f
 		call SetLight
 	@@:
-	stdcall [glTranslatef], 0.0,0.0,0.5 ;координаты по оси z должны быть в пределах от 0.0 до 1.0, иначе изображение будет отсекаться
-		;воксельный объект имеет координаты по осям от -0.5 до 0.5, потому его двигаем на +0.5
-		;но все же при поворотах будут отсекатся края, которые вылезут за пределы плоскостей отсечения
-		;в версии opengl под Win координаты идут от -1.0 до 1.0 потому там этого делать не нужно
 	stdcall [glScalef], [scale], [scale], [scale] ;увеличиваем воксельный объект, что-бы не был очень маленьким
-	stdcall [glScalef], 1.0, 1.0, 0.25 ;что-бы края объекта не вылазили за грани отсечения
+	stdcall [glScalef], 1.0, 1.0, 0.5 ;что-бы края объекта не вылазили за грани отсечения
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0

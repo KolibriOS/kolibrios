@@ -102,7 +102,7 @@ local .end_0
 	mov [zz],eax
 	mov ebx,[pz]
 	cmp ax,word[ebx]
-	jl .end_0
+	jb .end_0
 		RGBPIXEL
 		mov eax,dword[zz]
 		mov ebx,[pz]

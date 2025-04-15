@@ -23,8 +23,7 @@ endl
 		imul ecx,ebx
 		shl ecx,2
 		add ecx,[eax+GLContext.color_array] ;ecx = &context.color_array[i]
-		mov ebx,ebp
-		sub ebx,20 ;=sizeof(dd)*5
+		lea ebx,[ebp-20] ;=sizeof(dd)*5
 		mov edx,[ecx]
 		mov [ebx+4],edx
 		mov edx,[ecx+4]
@@ -48,8 +47,7 @@ endl
 		imul esi,ebx
 		shl esi,2
 		add esi,[eax+GLContext.normal_array] ;esi = &normal_array[ebx * (3 + c->normal_array_stride)]
-		mov edi,eax
-		add edi,GLContext.current_normal
+		lea edi,[eax+GLContext.current_normal]
 		mov ecx,3
 		rep movsd
 		mov dword[edi],0.0
@@ -92,8 +90,7 @@ endl
 		imul ecx,ebx
 		shl ecx,2
 		add ecx,[eax+GLContext.vertex_array] ;ecx = &context.vertex_array[i]
-		mov ebx,ebp
-		sub ebx,20 ;=sizeof(dd)*5
+		lea ebx,[ebp-20] ;=sizeof(dd)*5
 		mov edx,[ecx]
 		mov [ebx+4],edx
 		mov edx,[ecx+4]
@@ -130,8 +127,7 @@ endl
 	mov eax,[i]
 	mov dword[p+4],eax
 
-	mov eax,ebp
-	sub eax,8 ;=sizeof(dd)*2
+	lea eax,[ebp-8] ;=sizeof(dd)*2
 	stdcall gl_add_op,eax
 	ret
 endp
@@ -139,10 +135,9 @@ endp
 align 4
 proc glopDrawArrays, context:dword, param:dword
 locals
-	vi dd ?
 	idx dd ?
 	states dd ?
-	size dd ?
+	a_size dd ?
 	p rd 8 ;функция glopColor требует 8 параметров, другие функции требуют меньше, берем по максимуму что-бы не портить стек
 endl
 pushad
@@ -155,132 +150,19 @@ pushad
 	mov [idx],eax ;param[2].i
 	mov eax,[ebx+4]
 	mov [p+4],eax ;p[1].i = param[1].i
-	mov eax,ebp
-	sub eax,32 ;=sizeof(dd)*8
+	lea eax,[ebp-32] ;=sizeof(dd)*8
 	stdcall glopBegin, edx,eax
 
-	mov dword[vi],0
+	cmp ecx,1
+	jl @f
 align 4
 	.cycle_0: ;for (int vi=0; vi<count; vi++)
-	cmp dword[vi],ecx
-	jge .cycle_0_end
-		bt dword[states],1 ;2^1=COLOR_ARRAY
-		jnc @f
-			mov esi,[edx+GLContext.color_array_size]
-			mov [size],esi
-			add esi,[edx+GLContext.color_array_stride]
-			imul esi,[idx] ;esi = i
-			shl esi,2
-			add esi,[edx+GLContext.color_array] ;esi = &context.color_array[i]
-			mov edi,ebp
-			sub edi,28 ;edi = &p[1]
-			mov ebx,[esi+8]
-			mov [edi],ebx   ;p[1].f = context.color_array[i+2]
-			mov ebx,[esi+4]
-			mov [edi+4],ebx ;p[2].f = context.color_array[i+1]
-			mov ebx,[esi]
-			mov [edi+8],ebx ;p[3].f = context.color_array[i]
-			add edi,12
-			cmp dword[size],3
-			jle .e1
-				add esi,12
-				movsd
-				jmp .e2
-			.e1:
-				mov dword[edi],1.0 ;если задано 3 параметра, то 4-й ставим по умолчанию 1.0
-			.e2:
-			mov edi,ebp
-			sub edi,32 ;edi = &p[0]
-			mov ebx,ebp
-			sub ebx,12 ;ebp-12 = &p[5]
-			push ebx
-			add ebx,4 ;ebp-8 = &p[6]
-			push ebx
-			add ebx,4 ;ebp-4 = &p[7]
-			push ebx
-			stdcall RGBFtoRGBI,[edi+12],[edi+8],[edi+4] ;call: r,g,b,&p[7],&p[6],&p[5]
-			stdcall glopColor, edx,edi ;(context, p(op,rf,gf,bf,af,ri,gi,bi))
-		@@:
-		bt dword[states],2 ;2^2=NORMAL_ARRAY
-		jnc @f
-			mov esi,[edx+GLContext.normal_array_stride]
-			add esi,3
-			imul esi,[idx]
-			shl esi,2
-			add esi,[edx+GLContext.normal_array] ;esi = &context.normal_array[ idx * (3 + context.normal_array_stride) ]
-			mov edi,edx
-			add edi,GLContext.current_normal
-			movsd ;context.current_normal.X = context.normal_array[i]
-			movsd
-			movsd
-			mov dword[edi],0.0 ;context.current_normal.W = 0.0f
-		@@:
-		bt dword[states],3 ;2^3=TEXCOORD_ARRAY
-		jnc @f
-			mov esi,[edx+GLContext.texcoord_array_size]
-			mov [size],esi
-			add esi,[edx+GLContext.texcoord_array_stride]
-			imul esi,[idx] ;esi = i
-			shl esi,2
-			add esi,[edx+GLContext.texcoord_array] ;esi = &context.texcoord_array[i]
-			mov edi,edx
-			add edi,GLContext.current_tex_coord
-			movsd ;context.current_tex_coord.X = ccontext.texcoord_array[i]
-			movsd
-			cmp dword[size],2
-			jle .e3
-				movsd
-				jmp .e4
-			.e3:
-				mov dword[edi],0.0 ;если задано 2 параметра, то 3-й ставим по умолчанию 0.0
-				add edi,4
-			.e4:
-			cmp dword[size],3
-			jle .e5
-				movsd
-				jmp @f
-			.e5:
-				mov dword[edi],1.0 ;если задано 3 параметра, то 4-й ставим по умолчанию 1.0
-		@@:
-		bt dword[states],0 ;2^0=VERTEX_ARRAY
-		jnc @f
-			mov esi,[edx+GLContext.vertex_array_size]
-			mov [size],esi
-			add esi,[edx+GLContext.vertex_array_stride]
-			imul esi,[idx] ;esi = i
-			shl esi,2
-			add esi,[edx+GLContext.vertex_array] ;esi = &context.vertex_array[i]
-			mov edi,ebp
-			sub edi,28 ;edi = &p[1]
-			movsd ;p[1].f = context.vertex_array[i]
-			movsd
-			cmp dword[size],2
-			jle .e6
-				movsd
-				jmp .e7
-			.e6:
-				mov dword[edi],0.0 ;если задано 2 параметра, то 3-й ставим по умолчанию 0.0
-				add edi,4
-				jmp .e8 ;и 4-й тоже ставим по умолчанию
-			.e7:
-			cmp dword[size],3
-			jle .e8
-				movsd
-				sub edi,20 ;edi=&p[0]
-				jmp .e9
-			.e8:
-				mov dword[edi],1.0 ;если задано 3 параметра, то 4-й ставим по умолчанию 1.0
-				sub edi,16 ;edi=&p[0]
-			.e9:
-			stdcall glopVertex, edx,edi
-		@@:
+		call CopyArrayElementByIndex
 		inc dword[idx]
-	inc dword[vi]
-	jmp .cycle_0
-	.cycle_0_end:
+		loop .cycle_0
+	@@:
 
-	;mov eax,ebp
-	;sub eax,32 ;=sizeof(dd)*8
+	lea eax,[ebp-32] ;=sizeof(dd)*8
 	stdcall glopEnd, edx,eax
 popad
 	ret
@@ -299,8 +181,7 @@ endl
 	mov eax,[count]
 	mov dword[p+12],eax
 
-	mov eax,ebp
-	sub eax,16 ;=sizeof(dd)*4
+	lea eax,[ebp-16] ;=sizeof(dd)*4
 	stdcall gl_add_op,eax
 	ret
 endp
@@ -308,12 +189,12 @@ endp
 align 4
 proc glopDrawElements, context:dword, param:dword
 locals
+	type dd ?
+	indices dd ? ;указатель на 16 или 32 битные индексы
 	ii dd ?
 	idx dd ?
 	states dd ?
-	type dd ?
-	size dd ?
-	indices dd ? ;указатель на 16 или 32 битные индексы
+	a_size dd ?
 	p rd 8
 endl
 pushad
@@ -328,8 +209,7 @@ pushad
 	mov [type],eax ;type = param[3].i
 	mov eax,[ebx+16]
 	mov [indices],eax ;*indices = param[4].p
-	mov eax,ebp
-	sub eax,32 ;=sizeof(dd)*8
+	lea eax,[ebp-32] ;=sizeof(dd)*8
 	stdcall glopBegin, edx,eax
 
 	mov dword[ii],0
@@ -351,126 +231,132 @@ align 4
 		.end_0:
 		mov [idx],esi
 
-		bt dword[states],1 ;2^1=COLOR_ARRAY
-		jnc @f
-			mov esi,[edx+GLContext.color_array_size]
-			mov [size],esi
-			add esi,[edx+GLContext.color_array_stride]
-			imul esi,[idx] ;esi = i
-			shl esi,2
-			add esi,[edx+GLContext.color_array] ;esi = &context.color_array[i]
-			mov edi,ebp
-			sub edi,28 ;edi = &p[1]
-			mov ebx,[esi+8]
-			mov [edi],ebx   ;p[1].f = context.color_array[i+2]
-			mov ebx,[esi+4]
-			mov [edi+4],ebx ;p[2].f = context.color_array[i+1]
-			mov ebx,[esi]
-			mov [edi+8],ebx ;p[3].f = context.color_array[i]
-			add edi,12
-			cmp dword[size],3
-			jle .e1
-				add esi,12
-				movsd
-				jmp .e2
-			.e1:
-				mov dword[edi],1.0 ;если задано 3 параметра, то 4-й ставим по умолчанию 1.0
-			.e2:
-			mov edi,ebp
-			sub edi,32 ;edi = &p[0]
-			mov ebx,ebp
-			sub ebx,12 ;ebp-12 = &p[5]
-			push ebx
-			add ebx,4 ;ebp-8 = &p[6]
-			push ebx
-			add ebx,4 ;ebp-4 = &p[7]
-			push ebx
-			stdcall RGBFtoRGBI,[edi+12],[edi+8],[edi+4] ;call: r,g,b,&p[7],&p[6],&p[5]
-			stdcall glopColor, edx,edi ;(context, p(op,rf,gf,bf,af,ri,gi,bi)) 
-		@@:
-		bt dword[states],2 ;2^2=NORMAL_ARRAY
-		jnc @f
-			mov esi,[edx+GLContext.normal_array_stride]
-			add esi,3
-			imul esi,[idx] ;esi = idx * (3 + context.normal_array_stride)
-			shl esi,2
-			add esi,[edx+GLContext.normal_array]
-			mov edi,edx
-			add edi,GLContext.current_normal
-			movsd ;context.current_normal.X = context.normal_array[i]
-			movsd
-			movsd
-			mov dword[edi],0.0 ;context.current_normal.W = 0.0f
-		@@:
-		bt dword[states],3 ;2^3=TEXCOORD_ARRAY
-		jnc @f
-			mov esi,[edx+GLContext.texcoord_array_size]
-			mov [size],esi
-			add esi,[edx+GLContext.texcoord_array_stride]
-			imul esi,[idx] ;esi = i
-			shl esi,2
-			add esi,[edx+GLContext.texcoord_array] ;esi = &context.texcoord_array[i]
-			mov edi,edx
-			add edi,GLContext.current_tex_coord
-			movsd ;context.current_tex_coord.X = ccontext.texcoord_array[i]
-			movsd
-			cmp dword[size],2
-			jle .e3
-				movsd
-				jmp .e4
-			.e3:
-				mov dword[edi],0.0 ;если задано 2 параметра, то 3-й ставим по умолчанию 0.0
-				add edi,4
-			.e4:
-			cmp dword[size],3
-			jle .e5
-				movsd
-				jmp @f
-			.e5:
-				mov dword[edi],1.0 ;если задано 3 параметра, то 4-й ставим по умолчанию 1.0
-		@@:
-		bt dword[states],0 ;2^0=VERTEX_ARRAY
-		jnc @f
-			mov esi,[edx+GLContext.vertex_array_size]
-			mov [size],esi
-			add esi,[edx+GLContext.vertex_array_stride]
-			imul esi,[idx] ;esi = i
-			shl esi,2
-			add esi,[edx+GLContext.vertex_array] ;esi = &context.vertex_array[i]
-			mov edi,ebp
-			sub edi,28 ;edi = &p[1]
-			movsd ;p[1].f = context.vertex_array[i]
-			movsd
-			cmp dword[size],2
-			jle .e6
-				movsd
-				jmp .e7
-			.e6:
-				mov dword[edi],0.0 ;если задано 2 параметра, то 3-й ставим по умолчанию 0.0
-				add edi,4
-				jmp .e8 ;и 4-й тоже ставим по умолчанию
-			.e7:
-			cmp dword[size],3
-			jle .e8
-				movsd
-				sub edi,20 ;edi=&p[0]
-				jmp .e9
-			.e8:
-				mov dword[edi],1.0 ;если задано 3 параметра, то 4-й ставим по умолчанию 1.0
-				sub edi,16 ;edi=&p[0]
-			.e9:
-			stdcall glopVertex, edx,edi
-		@@:
+		call CopyArrayElementByIndex
 	inc dword[ii]
 	jmp .cycle_0
 	.cycle_0_end:
 
-	mov eax,ebp
-	sub eax,32 ;=sizeof(dd)*8
+	lea eax,[ebp-32] ;=sizeof(dd)*8
 	stdcall glopEnd, edx,eax
 popad
 	ret
 endp
+
+;input:
+; edx - GLContext
+idx    equ ebp-44
+states equ ebp-40
+a_size equ ebp-36
+align 4
+CopyArrayElementByIndex:
+	bt dword[states],1 ;2^1=COLOR_ARRAY
+	jnc @f
+		mov esi,[edx+GLContext.color_array_size]
+		mov [a_size],esi
+		add esi,[edx+GLContext.color_array_stride]
+		imul esi,[idx] ;esi = i
+		shl esi,2
+		add esi,[edx+GLContext.color_array] ;esi = &context.color_array[i]
+		lea edi,[ebp-28] ;edi = &p[1]
+		mov ebx,[esi+8]
+		mov [edi],ebx   ;p[1].f = context.color_array[i+2]
+		mov ebx,[esi+4]
+		mov [edi+4],ebx ;p[2].f = context.color_array[i+1]
+		mov ebx,[esi]
+		mov [edi+8],ebx ;p[3].f = context.color_array[i]
+		add edi,12
+		cmp dword[a_size],3
+		jle .e1
+			add esi,12
+			movsd
+			jmp .e2
+		.e1:
+			mov dword[edi],1.0 ;если задано 3 параметра, то 4-й ставим по умолчанию 1.0
+		.e2:
+		lea edi,[ebp-32] ;edi = &p[0]
+		lea ebx,[ebp-12] ;ebp-12 = &p[5]
+		push ebx
+		add ebx,4 ;ebp-8 = &p[6]
+		push ebx
+		add ebx,4 ;ebp-4 = &p[7]
+		push ebx
+		stdcall RGBFtoRGBI,[edi+12],[edi+8],[edi+4] ;call: r,g,b,&p[7],&p[6],&p[5]
+		stdcall glopColor, edx,edi ;(context, p(op,rf,gf,bf,af,ri,gi,bi)) 
+	@@:
+	bt dword[states],2 ;2^2=NORMAL_ARRAY
+	jnc @f
+		mov esi,[edx+GLContext.normal_array_stride]
+		add esi,3
+		imul esi,[idx] ;esi = idx * (3 + context.normal_array_stride)
+		shl esi,2
+		add esi,[edx+GLContext.normal_array] ;esi = &context.normal_array[ idx * (3 + context.normal_array_stride) ]
+		lea edi,[edx+GLContext.current_normal]
+		movsd ;context.current_normal.X = context.normal_array[i]
+		movsd
+		movsd
+		mov dword[edi],0.0 ;context.current_normal.W = 0.0f
+	@@:
+	bt dword[states],3 ;2^3=TEXCOORD_ARRAY
+	jnc @f
+		mov esi,[edx+GLContext.texcoord_array_size]
+		mov [a_size],esi
+		add esi,[edx+GLContext.texcoord_array_stride]
+		imul esi,[idx] ;esi = i
+		shl esi,2
+		add esi,[edx+GLContext.texcoord_array] ;esi = &context.texcoord_array[i]
+		lea edi,[edx+GLContext.current_tex_coord]
+		movsd ;context.current_tex_coord.X = ccontext.texcoord_array[i]
+		movsd
+		cmp dword[a_size],2
+		jle .e3
+			movsd
+			jmp .e4
+		.e3:
+			mov dword[edi],0.0 ;если задано 2 параметра, то 3-й ставим по умолчанию 0.0
+			add edi,4
+		.e4:
+		cmp dword[a_size],3
+		jle .e5
+			movsd
+			jmp @f
+		.e5:
+			mov dword[edi],1.0 ;если задано 3 параметра, то 4-й ставим по умолчанию 1.0
+	@@:
+	bt dword[states],0 ;2^0=VERTEX_ARRAY
+	jnc @f
+		mov esi,[edx+GLContext.vertex_array_size]
+		mov [a_size],esi
+		add esi,[edx+GLContext.vertex_array_stride]
+		imul esi,[idx] ;esi = i
+		shl esi,2
+		add esi,[edx+GLContext.vertex_array] ;esi = &context.vertex_array[i]
+		lea edi,[ebp-28] ;edi = &p[1]
+		movsd ;p[1].f = context.vertex_array[i]
+		movsd
+		cmp dword[a_size],2
+		jle .e6
+			movsd
+			jmp .e7
+		.e6:
+			mov dword[edi],0.0 ;если задано 2 параметра, то 3-й ставим по умолчанию 0.0
+			add edi,4
+			jmp .e8 ;и 4-й тоже ставим по умолчанию
+		.e7:
+		cmp dword[a_size],3
+		jle .e8
+			movsd
+			sub edi,20 ;edi=&p[0]
+			jmp .e9
+		.e8:
+			mov dword[edi],1.0 ;если задано 3 параметра, то 4-й ставим по умолчанию 1.0
+			sub edi,16 ;edi=&p[0]
+		.e9:
+		stdcall glopVertex, edx,edi
+	@@:
+	ret
+purge idx
+purge states
+purge a_size
 
 align 4
 proc glDrawElements uses eax, mode:dword, count:dword, type:dword, indices:dword
@@ -488,8 +374,7 @@ endl
 	mov eax,[indices]
 	mov dword[p+16],eax
 
-	mov eax,ebp
-	sub eax,20 ;=sizeof(dd)*5
+	lea eax,[ebp-20] ;=sizeof(dd)*5
 	stdcall gl_add_op,eax
 	ret
 endp
@@ -533,8 +418,7 @@ endl
 		;assert(0);
 	.end_f:
 
-	mov eax,ebp
-	sub eax,8 ;=sizeof(dd)*2
+	lea eax,[ebp-8] ;=sizeof(dd)*2
 	stdcall gl_add_op,eax
 	ret
 endp
@@ -578,8 +462,7 @@ endl
 		;assert(0);
 	.end_f:
 
-	mov eax,ebp
-	sub eax,8 ;=sizeof(dd)*2
+	lea eax,[ebp-8] ;=sizeof(dd)*2
 	stdcall gl_add_op,eax
 	ret
 endp
@@ -612,8 +495,7 @@ endl
 	mov eax,[pointer]
 	mov dword[p+12],eax
 
-	mov eax,ebp
-	sub eax,16 ;=sizeof(dd)*4
+	lea eax,[ebp-16] ;=sizeof(dd)*4
 	stdcall gl_add_op,eax
 	ret
 endp
@@ -646,8 +528,7 @@ endl
 	mov eax,[pointer]
 	mov dword[p+12],eax
 
-	mov eax,ebp
-	sub eax,16 ;=sizeof(dd)*4
+	lea eax,[ebp-16] ;=sizeof(dd)*4
 	stdcall gl_add_op,eax
 	ret
 endp
@@ -676,8 +557,7 @@ endl
 	mov eax,[pointer]
 	mov dword[p+8],eax
 
-	mov eax,ebp
-	sub eax,12 ;=sizeof(dd)*3
+	lea eax,[ebp-12] ;=sizeof(dd)*3
 	stdcall gl_add_op,eax
 	ret
 endp
@@ -710,8 +590,7 @@ endl
 	mov eax,[pointer]
 	mov dword[p+12],eax
 
-	mov eax,ebp
-	sub eax,16 ;=sizeof(dd)*4
+	lea eax,[ebp-16] ;=sizeof(dd)*4
 	stdcall gl_add_op,eax
 	ret
 endp

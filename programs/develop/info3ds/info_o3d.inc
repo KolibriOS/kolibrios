@@ -812,9 +812,8 @@ proc draw_3d uses eax ebx ecx edi, o_data:dword
 	@@:
 		stdcall [glDisable],GL_LIGHTING
 	.end_l:
-	stdcall [glTranslatef], 0.0,0.0,0.5 ;correct for z
 	stdcall [glScalef], [edi+obj_3d.x_scale],[edi+obj_3d.y_scale],[edi+obj_3d.z_scale]
-	stdcall [glScalef], 1.0,1.0,0.7 ;correct for z
+	stdcall [glScalef], 1.0,1.0,1.4 ;correct for z
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glRotatef], [angle_x],1.0,0.0,0.0

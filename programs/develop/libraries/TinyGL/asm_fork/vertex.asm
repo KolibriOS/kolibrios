@@ -134,7 +134,7 @@ endl
 
 	cmp dword[edx+GLContext.lighting_enabled],0 ;if(context.lighting_enabled)
 	jne .if_0
-	cmp dword[eax+GLContext.texture_2d_enabled],0
+	cmp dword[edx+GLContext.texture_2d_enabled],0
 	jne .if_0
 		jmp @f
 align 4

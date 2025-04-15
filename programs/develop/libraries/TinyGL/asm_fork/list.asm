@@ -197,21 +197,24 @@ push edi esi
 			add ebx,4
 			inc esi
 
-			cmp byte[esi],'f'
+			cmp byte[esi],'f' ;float
 			jne @f
 				fld dword[ebx]
 				fstp qword[Data_Double]
 				call DoubleFloat_to_String
 				stdcall str_cat, edi,Data_String
 			@@:
-			cmp byte[esi],'d'
-			jne @f
+			cmp byte[esi],'C' ;const
+			je @f
+			cmp byte[esi],'d' ;integer
+			je @f
+			jmp .no_param
+			@@:
 				stdcall str_len,edi
 				add edi,eax
 				sub ecx,eax
 				mov eax,dword[ebx]
 				stdcall convert_int_to_str,ecx
-			@@:
 		.no_param:
 		inc esi
 		cmp byte[esi],0

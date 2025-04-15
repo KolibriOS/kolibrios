@@ -58,7 +58,7 @@ end if
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
 	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
-	jl .end_0
+	jb .end_0
 		;edi = pp
 		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
@@ -103,7 +103,7 @@ local .end_0
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
 	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
-	jl .end_0
+	jb .end_0
 		;edi = pp
 		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
@@ -171,7 +171,7 @@ local .end_0
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
 	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
-	jl .end_0
+	jb .end_0
 		;edi = pp
 		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
@@ -251,7 +251,7 @@ local .end_0
 	mov eax,[z]
 	shr eax,ZB_POINT_Z_FRAC_BITS
 	cmp ax,word[esi+2*_a] ;if (zz >= pz[_a])
-	jl .end_0
+	jb .end_0
 		;edi = pp
 		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
