@@ -1,3 +1,7 @@
+; SPDX-License-Identifier: GPL-2.0-only
+; Test glu1 - gluCylinder and gluDisk functionality testing
+; Copyright (C) 2014-2025 KolibriOS team
+
 use32
 	org 0
 	db 'MENUET01'
@@ -8,15 +12,21 @@ include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
 include '../../../../../load_img.inc'
 include '../../../../../load_lib.mac'
+include '../kosgl.inc'
 include '../opengl_const.inc'
 include '../zbuffer.inc'
 include '../../../../../develop/info3ds/info_fun_float.inc'
+
+3d_wnd_l equ   5 ;tinygl buffer left indent
+3d_wnd_t equ  30 ;tinygl buffer top indent
+3d_wnd_w equ 400
+3d_wnd_h equ 350
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
 IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
 
-;Макрос для параметров типа double (8 байт)
+;Macro for double type parameters (8 bytes)
 macro glpush GLDoubleVar {
 	push dword[GLDoubleVar+4]
 	push dword[GLDoubleVar]
@@ -39,7 +49,7 @@ load_libraries l_libs_start,l_libs_end
 	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
 	mcall SF_SET_EVENTS_MASK,0x27
 
-	stdcall [kosglMakeCurrent], 5,30,[buf_ogl.w],[buf_ogl.h],ctx1
+	stdcall [kosglMakeCurrent], 3d_wnd_l,3d_wnd_t,[buf_ogl.w],[buf_ogl.h],ctx1
 	stdcall [glEnable], GL_DEPTH_TEST
 	stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
 	call [gluNewQuadric]
@@ -48,7 +58,7 @@ load_libraries l_libs_start,l_libs_end
 	stdcall [glClearColor], 0.25,0.25,0.25,0.0
 	stdcall [glShadeModel], GL_SMOOTH
 
-	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
+	mov eax,[ctx1.gl_context]
 	mov eax,[eax] ;eax -> ZBuffer
 	mov eax,[eax+ZBuffer.pbuf]
 	mov dword[buf_ogl],eax
@@ -60,6 +70,10 @@ load_libraries l_libs_start,l_libs_end
 	stdcall [buf2d_convert_text_matrix], buf_1
 
 	load_image_file 'toolb_1.png', image_data_toolbar
+	fld dword[angle_y]
+	stdcall update_number, txt_angle_y.v
+	fld dword[angle_z]
+	stdcall update_number, txt_angle_z.v
 	call SetLight
 	call draw_3d
 
@@ -76,6 +90,9 @@ still:
 	jz    key
 	cmp   al,EV_BUTTON
 	jz    button
+	cmp   al,EV_MOUSE
+	jne   still
+	call  mouse
 	jmp   still
 
 align 4
@@ -129,11 +146,7 @@ key:
 		fld dword[angle_y]
 		fadd dword[delt_size]
 		fst dword[angle_y]
-		mov word[NumberSymbolsAD],2
-		fstp qword[Data_Double]
-		call DoubleFloat_to_String
-		mov byte[txt_angle_y.v],0
-		stdcall str_cat, txt_angle_y.v,Data_String
+		stdcall update_number, txt_angle_y.v
 		call draw_3d
 		call [kosglSwapBuffers]
 		jmp still
@@ -144,11 +157,7 @@ key:
 		fld dword[angle_y]
 		fsub dword[delt_size]
 		fst dword[angle_y]
-		mov word[NumberSymbolsAD],2
-		fstp qword[Data_Double]
-		call DoubleFloat_to_String
-		mov byte[txt_angle_y.v],0
-		stdcall str_cat, txt_angle_y.v,Data_String
+		stdcall update_number, txt_angle_y.v
 		call draw_3d
 		call [kosglSwapBuffers]
 		jmp still
@@ -159,11 +168,7 @@ key:
 		fld dword[angle_z]
 		fadd dword[delt_size]
 		fst dword[angle_z]
-		mov word[NumberSymbolsAD],2
-		fstp qword[Data_Double]
-		call DoubleFloat_to_String
-		mov byte[txt_angle_z.v],0
-		stdcall str_cat, txt_angle_z.v,Data_String
+		stdcall update_number, txt_angle_z.v
 		call draw_3d
 		call [kosglSwapBuffers]
 		jmp still
@@ -174,11 +179,7 @@ key:
 		fld dword[angle_z]
 		fsub dword[delt_size]
 		fst dword[angle_z]
-		mov word[NumberSymbolsAD],2
-		fstp qword[Data_Double]
-		call DoubleFloat_to_String
-		mov byte[txt_angle_z.v],0
-		stdcall str_cat, txt_angle_z.v,Data_String
+		stdcall update_number, txt_angle_z.v
 		call draw_3d
 		call [kosglSwapBuffers]
 		;jmp still
@@ -220,6 +221,104 @@ button:
 	stdcall [gluDeleteQuadric], [qObj]
 	stdcall mem.Free,[image_data_toolbar]
 	mcall SF_TERMINATE_PROCESS
+
+align 4
+mouse:
+	push eax ebx
+	mcall SF_MOUSE_GET,SSF_BUTTON_EXT
+	bt eax,0
+	jnc .end_m
+		;mouse l. but. move
+		cmp dword[mouse_drag],1
+		jne .end_m
+
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
+		mov ebx,eax
+		sar ebx,16 ;mouse.x
+		cmp ebx,3d_wnd_l
+		jg @f
+			mov ebx,3d_wnd_l
+		@@:
+		sub ebx,3d_wnd_l
+		cmp ebx,3d_wnd_w
+		jle @f
+			mov ebx,3d_wnd_w
+		@@:
+		movsx eax,ax ;mouse.y
+		cmp eax,3d_wnd_t
+		jg @f
+			mov eax,3d_wnd_t
+		@@:
+		sub eax,3d_wnd_t
+		cmp eax,3d_wnd_h
+		jle @f
+			mov eax,3d_wnd_h
+		@@:
+		finit
+		fild  dword[mouse_y]
+		mov   [mouse_y],eax
+		fisub dword[mouse_y]
+		fdiv  dword[angle_dzm] ;if the cursor moves along the y axis (up or down), then the rotation is done around the x axis
+		fadd  dword[angle_z]
+		fst   dword[angle_z]
+		stdcall update_number, txt_angle_z.v
+
+		fild  dword[mouse_x]
+		mov   [mouse_x],ebx
+		fisub dword[mouse_x]
+		fdiv  dword[angle_dym] ;если курсор движется по оси x (вверх или вниз) то поворот делаем вокруг оси y
+		fadd  dword[angle_y]
+		fst   dword[angle_y]
+		stdcall update_number, txt_angle_y.v
+
+		call draw_3d
+		call [kosglSwapBuffers]
+		jmp .end_d
+	.end_m:
+	bt eax,16
+	jnc @f
+		;mouse l. but. up
+		mov dword[mouse_drag],0
+		jmp .end_d
+	@@:
+	bt eax,8
+	jnc .end_d
+		;mouse l. but. press
+		mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
+		mov ebx,eax
+		sar ebx,16 ;mouse.x
+		cmp ebx,3d_wnd_l
+		jl .end_d
+		sub ebx,3d_wnd_l
+		cmp ebx,3d_wnd_w
+		jg .end_d
+		movsx eax,ax ;mouse.y
+		cmp eax,3d_wnd_t
+		jl .end_d
+		sub eax,3d_wnd_t
+		cmp eax,3d_wnd_h
+		jg .end_d
+		mov dword[mouse_drag],1
+		mov dword[mouse_x],ebx
+		mov dword[mouse_y],eax
+	.end_d:
+
+	pop ebx eax
+	ret
+
+;input:
+; st0 - number
+; txt_addr - pointer to text buffer
+align 4
+proc update_number uses eax, txt_addr:dword
+	mov word[NumberSymbolsAD],2
+	fstp qword[Data_Double]
+	call DoubleFloat_to_String
+	mov eax,[txt_addr]
+	mov byte[eax],0
+	stdcall str_cat, eax,Data_String
+	ret
+endp
 
 align 4
 but_st_point:
@@ -310,15 +409,37 @@ call [glPushMatrix]
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
 	stdcall [glTranslatef], 0.0,0.0,-1.0 ;опускаем цилинды вниз
-	stdcall [gluCylinder], [qObj], rad1,rad1,hei1, 32,8
+	push 8
+	push 32
+	glpush hei1
+	glpush rad1
+	glpush rad1
+	stdcall [gluCylinder], [qObj]
+
+	stdcall [glTranslatef], 0.0,0.0,2.0
+	push 4
+	push 32
+	glpush rad1
+	glpush rad3
+	stdcall [gluDisk], [qObj]
 
 	stdcall [glColor3f], 1.0, 0.0, 0.0
-	stdcall [glTranslatef], -1.6,0.0,0.0
-	stdcall [gluCylinder], [qObj], rad2,rad3,hei2, 16,8
+	stdcall [glTranslatef], -1.6,0.0,-2.0
+	push 8
+	push 16
+	glpush hei2
+	glpush rad3
+	glpush rad2
+	stdcall [gluCylinder], [qObj]
 
 	stdcall [glColor3f], 0.0, 0.0, 1.0
 	stdcall [glTranslatef], 3.2,0.0,0.0
-	stdcall [gluCylinder], [qObj], rad2,rad3,hei2, 16,8
+	push 8
+	push 16
+	glpush hei2
+	glpush rad3
+	glpush rad2
+	stdcall [gluCylinder], [qObj]
 call [glPopMatrix]
 
 	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_scale,5,5,0xffff00
@@ -344,10 +465,17 @@ SetLight:
 	stdcall [glEnable],GL_LIGHT0
 ret
 
-scale dd 0.4 ;начальный масштаб
-sc_delt dd 0.05 ;изменение масштаба при нажатии
-sc_min dd 0.1 ;минимальный масштаб
-sc_max dd 1.1 ;максимальный масштаб
+align 4
+mouse_drag dd 0 ;scene rotation mode based on mouse cursor movement
+mouse_x dd 0
+mouse_y dd 0
+angle_dzm dd 2.2222 ;~ 3d_wnd_w/180 - adding scene rotation angles when rotating the mouse
+angle_dym dd 1.9444 ;~ 3d_wnd_h/180
+
+scale dd 0.4 ;initial scale
+sc_delt dd 0.05 ;zoom on click
+sc_min dd 0.1 ;minimum scale
+sc_max dd 1.1 ;maximum scale
 angle_z dd -45.0
 angle_y dd -150.0
 delt_size dd 3.0
@@ -510,8 +638,8 @@ align 4
 buf_ogl:
 	dd 0 ;указатель на буфер изображения
 	dw 10,10 ;+4 left,top
-.w: dd 400
-.h: dd 350
+.w: dd 3d_wnd_w
+.h: dd 3d_wnd_h
 	dd 0,24 ;+16 color,bit in pixel
 
 align 4
@@ -530,7 +658,7 @@ l_libs_end:
 
 align 4
 i_end:
-	ctx1 rb 28 ;sizeof.TinyGLContext = 28
+	ctx1 TinyGLContext
 	image_data_toolbar dd 0
 	qObj dd 0
 	run_file_70 FileInfoBlock

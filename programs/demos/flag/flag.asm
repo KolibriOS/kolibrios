@@ -40,6 +40,11 @@ start:
 
 	stdcall [glClearColor], 0.549, 0.549, 0.588, 1.0
 
+	stdcall [glEnable], GL_LIGHTING
+	stdcall [glLightf], GL_LIGHT0, GL_SPOT_EXPONENT, 0.0
+	stdcall [glLightf], GL_LIGHT0, GL_SPOT_CUTOFF, 180.0
+	stdcall [glEnable], GL_LIGHT0
+
 	stdcall [glLightfv], GL_LIGHT0, GL_POSITION, lightpos
 	stdcall [glLightfv], GL_LIGHT0, GL_SPOT_DIRECTION, lightdirect
 

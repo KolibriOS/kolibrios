@@ -393,20 +393,9 @@ align 4
 		mov [dx1],eax ;dx1 = l2.x - l1.x
 		cmp edx,0 ;if (dy1 > 0) 
 		jle .els_3
-			xor edx,edx
-			cmp eax,0
-			jl .otr_dx1
 			shl eax,16
-			div dword[dy1] ;eax = (dx1 << 16) / dy1
-			jmp .end_3
-align 4
-			.otr_dx1:
-			neg eax
-			inc eax
-			shl eax,16
-			div dword[dy1] ;eax = (-dx1 << 16) / dy1
-			neg eax
-			inc eax
+			cdq
+			idiv dword[dy1] ;eax = (dx1 << 16) / dy1
 			jmp .end_3
 align 4
 		.els_3:
@@ -529,12 +518,10 @@ end if
 			jmp .end_4
 align 4
 			.otr_dx2:
-			neg eax
-			inc eax ;dx2 *= -1
+			neg eax ;dx2 *= -1
 			shl eax,16
 			div dword[dy2] ;eax = (-dx2 << 16) / dy2
 			neg eax
-			inc eax
 			jmp .end_4
 align 4
 		.els_4:

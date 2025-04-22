@@ -114,9 +114,7 @@ end if
 
 macro DRAWLINE d_x,d_y,inc_1,inc_2
 {
-local .mz_0
 local .mz_1
-local .mz_2
 
 	mov eax,d_x
 	mov [n],eax
@@ -124,26 +122,12 @@ if INTERP_Z eq 1
 	mov ebx,[p1]
 	mov eax,[p2]
 	mov eax,[eax+ZBufferPoint.z]
-	cmp eax,[ebx+ZBufferPoint.z]
-	jg .mz_0
-	je .mz_1
-		;if(p2.z<p1.z)
-		sub eax,[ebx+ZBufferPoint.z]
-		neg eax
-		inc eax
-		xor edx,edx
-		div dword[n]
-		neg eax
-		inc eax
-		jmp .mz_2
-	.mz_0:
 	sub eax,[ebx+ZBufferPoint.z]
-	xor edx,edx
-	div dword[n]
-	jmp .mz_2
+	jz .mz_1
+		;if(p2.z!=p1.z)
+		cdq
+		idiv dword[n]
 	.mz_1:
-		xor eax,eax
-	.mz_2:
 	mov [zinc],eax ;zinc=(p2.z-p1.z)/n
 end if
 	shl dword d_y,1

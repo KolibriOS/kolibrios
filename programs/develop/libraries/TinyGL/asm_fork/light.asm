@@ -1,5 +1,6 @@
 align 4
-sp128f dd 128.0
+fl_128  dd 128.0
+fl_1e_3 dd 1.0e-3
 
 align 4
 proc glopMaterial uses eax ebx ecx edi esi, context:dword, p:dword
@@ -11,8 +12,7 @@ proc glopMaterial uses eax ebx ecx edi esi, context:dword, p:dword
 	cmp ecx,GL_FRONT_AND_BACK ;if (mode == GL_FRONT_AND_BACK)
 	jne @f
 		mov dword[ebx+4],GL_FRONT ;p[1].i=GL_FRONT
-		lea edi,[ebp+12]
-		stdcall glopMaterial,eax,edi
+		stdcall glopMaterial,eax,ebx
 		mov ecx,GL_BACK
 	@@:
 	lea edi,[eax+GLContext.materials]
@@ -58,7 +58,7 @@ align 4
 		add edi,GLMaterial.shininess
 		movsd
 		mov dword[edi],SPECULAR_BUFFER_RESOLUTION
-		fdiv dword[sp128f]
+		fdiv dword[fl_128]
 		fimul dword[edi]
 		fistp dword[edi] ;m.shininess_i = (v[0]/128.0f)*SPECULAR_BUFFER_RESOLUTION
 		jmp .end_f
@@ -191,7 +191,7 @@ align 4
 	@@:
 	cmp ecx,GL_SPOT_CUTOFF
 	jne .end_spot_c
-		fld dword[ebp+12] ;float a=v.v[0]
+		fld dword[ebx+12] ;float a=v.v[0]
 ;      assert(a == 180 || (a>=0 && a<=90));
 		fst dword[edx+GLLight.spot_cutoff] ;l.spot_cutoff=a
 		fcom dword[an180f] ;if (a != 180)
@@ -356,9 +356,6 @@ align 4
 	ret
 endp
 
-align 4
-fl_1e_3 dd 1.0e-3
-
 ; non optimized lightening model
 align 16
 proc gl_shade_vertex, context:dword, v:dword
@@ -395,8 +392,7 @@ pushad
 
 	mov esi,[v]
 	mov edx,[context]
-	mov ecx,edx
-	add ecx,GLContext.materials ;ecx(m) = &context.materials[0]
+	lea ecx,[edx+GLContext.materials] ;ecx(m) = &context.materials[0]
 	mov eax,[edx+GLContext.light_model_two_side]
 	mov [twoside],eax
 
@@ -409,7 +405,7 @@ pushad
 
 	fld dword[edx+GLContext.ambient_light_model]
 	fmul dword[ecx+GLMaterial.ambient]
-	fadd dword[ecx] ;GLMaterial.emission=0
+	fadd dword[ecx+GLMaterial.emission]
 	fstp dword[R] ;R=m.emission.v[0]+m.ambient.v[0]*context.ambient_light_model.v[0]
 	fld dword[edx+GLContext.ambient_light_model+4]
 	fmul dword[ecx+GLMaterial.ambient+4]
@@ -429,7 +425,7 @@ pushad
 
 		; ambient
 		fld dword[ecx+GLMaterial.ambient]
-		fmul dword[ebx] ;GLLight.ambient=0
+		fmul dword[ebx+GLLight.ambient]
 		fstp dword[lR] ;lR=l.ambient.v[0] * m.ambient.v[0]
 		fld dword[ecx+GLMaterial.ambient+4]
 		fmul dword[ebx+GLLight.ambient+4]
@@ -446,8 +442,8 @@ pushad
 			; light at infinity
 			ffree st0 ;l.position.v[3]
 			fincstp
-			mov eax,[ebx+GLLight.norm_position]
-			mov [d],eax ;d.X=l.norm_position.v[0]
+			mov eax,[ebx+GLLight.norm_position+offs_X]
+			mov [d+offs_X],eax ;d.X=l.norm_position.v[0]
 			mov eax,[ebx+GLLight.norm_position+offs_Y]
 			mov [d+offs_Y],eax ;d.Y=l.norm_position.v[1]
 			mov eax,[ebx+GLLight.norm_position+offs_Z]
@@ -459,9 +455,9 @@ align 4
 			; distance attenuation
 			ffree st0 ;l.position.v[3]
 			fincstp
-			fld dword[ebx+GLLight.position]
-			fsub dword[esi+GLVertex.ec]
-			fstp dword[d] ;d.X=l.position.v[0]-v.ec.v[0]
+			fld dword[ebx+GLLight.position+offs_X]
+			fsub dword[esi+GLVertex.ec+offs_X]
+			fstp dword[d+offs_X] ;d.X=l.position.v[0]-v.ec.v[0]
 			fld dword[ebx+GLLight.position+offs_Y]
 			fsub dword[esi+GLVertex.ec+offs_Y]
 			fstp dword[d+offs_Y] ;d.Y=l.position.v[1]-v.ec.v[1]
@@ -483,9 +479,9 @@ align 4
 			jbe @f ;if (dist>1.0e-3)
 				fld1
 				fdiv st0,st1
-				fld dword[d]
+				fld dword[d+offs_X]
 				fmul st0,st1
-				fstp dword[d]
+				fstp dword[d+offs_X]
 				fld dword[d+offs_Y]
 				fmul st0,st1
 				fstp dword[d+offs_Y]
@@ -508,8 +504,8 @@ align 4
 			ffree st0 ;dist
 			fincstp
 		.els_0_end:
-		fld dword[d]
-		fmul dword[n]
+		fld dword[d+offs_X]
+		fmul dword[n+offs_X]
 		fld dword[d+offs_Y]
 		fmul dword[n+offs_Y]
 		faddp
@@ -700,7 +696,7 @@ align 4
 				@@:
 				shl dword[idx],2
 				add edi,dword[idx]
-				fld dword[edi+offs_spec_buf] ;dot_spec = specbuf.buf[idx]
+				fld dword[edi+GLSpecBuf.buf] ;dot_spec = specbuf.buf[idx]
 				fld dword[ebx+GLLight.specular]
 				fmul st0,st1
 				fmul dword[ecx+GLMaterial.specular]

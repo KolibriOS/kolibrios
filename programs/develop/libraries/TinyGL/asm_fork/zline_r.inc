@@ -134,6 +134,7 @@ local .mb_2
 	mov ebx,[p1]
 	mov ecx,[p2]
 if INTERP_Z eq 1
+	xor edx,edx
 	mov eax,[ecx+ZBufferPoint.z]
 	cmp eax,[ebx+ZBufferPoint.z]
 	jg .mz_0
@@ -141,15 +142,11 @@ if INTERP_Z eq 1
 		;if(p2.z<p1.z)
 		sub eax,[ebx+ZBufferPoint.z]
 		neg eax
-		inc eax
-		xor edx,edx
 		div dword[n]
 		neg eax
-		inc eax
 		jmp .mz_2
 	.mz_0:
 	sub eax,[ebx+ZBufferPoint.z]
-	xor edx,edx
 	div dword[n]
 	jmp .mz_2
 	.mz_1:
@@ -159,6 +156,7 @@ if INTERP_Z eq 1
 end if
 
 	;ebx=&p1, ecx=&p2
+	xor edx,edx
 	mov eax,[ecx+ZBufferPoint.r]
 	cmp eax,[ebx+ZBufferPoint.r]
 	jg .mr_0
@@ -166,17 +164,13 @@ end if
 		;if(p2.r<p1.r)
 		sub eax,[ebx+ZBufferPoint.r]
 		neg eax
-		inc eax
 		shl eax,8
-		xor edx,edx
 		div dword[n]
 		neg eax
-		inc eax
 		jmp .mr_2
 	.mr_0:
 	sub eax,[ebx+ZBufferPoint.r]
 	shl eax,8
-	xor edx,edx
 	div dword[n]
 	jmp .mr_2
 	.mr_1:
@@ -184,6 +178,7 @@ end if
 	.mr_2:
 	mov [rinc],eax ;rinc=((p2.r-p1.r)<<8)/n
 
+	xor edx,edx
 	mov eax,[ecx+ZBufferPoint.g]
 	cmp eax,[ebx+ZBufferPoint.g]
 	jg .mg_0
@@ -191,17 +186,13 @@ end if
 		;if(p2.g<p1.g)
 		sub eax,[ebx+ZBufferPoint.g]
 		neg eax
-		inc eax
 		shl eax,8
-		xor edx,edx
 		div dword[n]
 		neg eax
-		inc eax
 		jmp .mg_2
 	.mg_0:
 	sub eax,[ebx+ZBufferPoint.g]
 	shl eax,8
-	xor edx,edx
 	div dword[n]
 	jmp .mg_2
 	.mg_1:
@@ -209,6 +200,7 @@ end if
 	.mg_2:
 	mov [ginc],eax ;ginc=((p2.g-p1.g)<<8)/n
 
+	xor edx,edx
 	mov eax,[ecx+ZBufferPoint.b]
 	cmp eax,[ebx+ZBufferPoint.b]
 	jg .mb_0
@@ -216,17 +208,13 @@ end if
 		;if(p2.b<p1.b)
 		sub eax,[ebx+ZBufferPoint.b]
 		neg eax
-		inc eax
 		shl eax,8
-		xor edx,edx
 		div dword[n]
 		neg eax
-		inc eax
 		jmp .mb_2
 	.mb_0:
 	sub eax,[ebx+ZBufferPoint.b]
 	shl eax,8
-	xor edx,edx
 	div dword[n]
 	jmp .mb_2
 	.mb_1:
