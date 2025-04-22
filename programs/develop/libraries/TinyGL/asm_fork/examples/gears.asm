@@ -1,3 +1,7 @@
+; SPDX-License-Identifier: GPL-2.0-only
+; Gears - 3D gear wheels
+; Copyright (C) 2014-2025 KolibriOS team
+
 use32
 	org 0
 	db 'MENUET01'
@@ -8,6 +12,7 @@ include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
 include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
+include '../kosgl.inc'
 include '../opengl_const.inc'
 include 'fps.inc'
 
@@ -18,7 +23,7 @@ macro matr_cell c_funct,c_param,funct,param, dia
 	dia dword[esp-4*(c_param*(c_funct-funct)+(1+c_param-param))]
 }
 
-;Макрос для параметров типа double (8 байт)
+;Macro for double type parameters (8 bytes)
 macro glpush GLDoubleVar {
 	push dword[GLDoubleVar+4]
 	push dword[GLDoubleVar]
@@ -83,8 +88,7 @@ red_win:
 		mov ebx,200
 	@@:
 	sub ebx,10
-		stdcall reshape, ebx,eax
-	.end0:
+	stdcall reshape, ebx,eax
 
 align 16
 still:
@@ -165,8 +169,7 @@ draw_window:
 
 	;Title
 	mcall SF_DRAW_TEXT,(338 shl 16)+4,0xc0c0c0,fps,   fps.end-fps
-	mcall SF_DRAW_TEXT,(8 shl 16)+4,0xc0c0c0,title3,title3.end-title3
-	;mcall SF_DRAW_TEXT,(180 shl 16)+4,0xc0c0c0,title2,title2.end-title2
+	mcall SF_DRAW_TEXT,(8 shl 16)+4,0xc0c0c0,title2,title2.end-title2
 
 	mcall SF_REDRAW,SSF_END_DRAW
 	popad
@@ -247,9 +250,7 @@ button:
 align 4
 title1: db 'TinyGL in KolibriOS'
 .end: db 0
-;title2: db 'F full screen'
-;.end: db 0
-title3: db 'ESC - exit, Arrow keys - rotate, +/- zoom, P - pause'
+title2: db 'ESC - exit, Arrow keys - rotate, +/- zoom, P - pause'
 .end: db 0
 fps:	db 'FPS:'
 .end: db 0
@@ -922,8 +923,7 @@ name_tgl db 'tinygl.obj',0
 
 align 16
 i_end:
-ctx1 db 28 dup (0) ;TinyGLContext or KOSGLContext
-;sizeof.TinyGLContext = 28
+ctx1 TinyGLContext
 procinfo process_information 
 cur_dir_path rb 4096
 library_path rb 4096

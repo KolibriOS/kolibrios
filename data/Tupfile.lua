@@ -604,6 +604,7 @@ tup.append_table(extra_files, {
  {"kolibrios/3D/voxel_utilites/VOX_CREATOR" , VAR_PROGS .. "/media/voxel_editor/utilites/vox_creator"},
  {"kolibrios/3D/voxel_utilites/VOX_MOVER" , VAR_PROGS .. "/media/voxel_editor/utilites/vox_mover"},
  {"kolibrios/3D/voxel_utilites/VOX_TGL" , VAR_PROGS .. "/media/voxel_editor/utilites/vox_tgl"},
+ {"kolibrios/demos/flag", VAR_PROGS .. "/demos/flag/flag"},
  {"kolibrios/demos/life3", VAR_PROGS .. "/games/life3/life3"},
  {"kolibrios/demos/qjulia", VAR_PROGS .. "/demos/qjulia/trunk/qjulia"},
  {"kolibrios/develop/koldbg", VAR_PROGS .. "/develop/koldbg/koldbg"},
