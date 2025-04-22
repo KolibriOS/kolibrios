@@ -206,6 +206,12 @@ ev_button:
         add     ebx, 482
         stdcall str_len, ebx
 
+        ; skip first (space) character
+        test    eax, eax
+        jz      .redraw
+        dec     eax
+        inc     ebx
+
         mov     edx, exp
         add     edx, [edb1.size]
         add     edx, eax
@@ -559,9 +565,9 @@ proc draw_list
 
         ; BUTTONS
         mov     eax, SF_DEFINE_BUTTON
-        mov     ebx, LIST_X shl 16 + LIST_ITEM_W
-        mov     ecx, 43 shl 16 + LIST_ITEM_H
-        mov     edx, 60 + BT_HIDE
+        mov     ebx, LIST_X shl 16 + (LIST_ITEM_W - 1)
+        mov     ecx, LIST_Y shl 16 + LIST_ITEM_H
+        mov     edx, 0x60 + BT_HIDE
         mov     edi, LIST_ITEM_COUNT
 
         @@:
