@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (27-feb-2025)";
+    HEADER = "CEdit (30-apr-2025)";
 
     ShellFilter = "";
     EditFilter = "sh|inc|txt|asm|ob07|c|cpp|h|pas|pp|lua|ini|json";
@@ -1320,7 +1320,7 @@ BEGIN
     |menuBoard:
         K.Run("/sys/develop/board", "")
     |menuSysFunc:
-        K.Run("/sys/docpack", "f")
+        K.Run("/sys/docpack", "e")
     |menuLineNumbers:
         T.toggleNumbers;
         Ini.setInt("settings", "line_numbers", ORD(T.lineNumbers))

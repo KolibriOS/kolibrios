@@ -13,7 +13,7 @@ sz app_board   ,'/sys/develop/board',0
 sz app_tinypad ,'/sys/tinypad',0
 sz app_docpak  ,'/sys/docpack',0
 
-sz sysfuncs_param,'f',0
+sz sysfuncs_param,'e',0
 
 include 'tp-tables.inc'
 include 'tp-locale.inc'
