@@ -668,6 +668,8 @@ socket_accept:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_accept: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
 
+        push    edx esi
+
         call    socket_num_to_ptr
         test    eax, eax
         jz      .invalid
@@ -696,6 +698,24 @@ socket_accept:
         mov     ebx, [ebx + APPDATA.tid]
         mov     [eax + SOCKET.TID], ebx
 
+        pop     esi edx
+
+        test    edx, edx
+        jz      .skip_sockaddr
+
+        mov     word[edx], 0 ; unknown domain
+        cmp     esi, 8       ; domain + port + ipv4
+        jb      .skip_sockaddr
+
+        mov     word[edx], AF_INET4
+        mov     esi, edx
+        mov     edx, [eax + IP_SOCKET.RemoteIP]
+        mov     [esi + sockaddr.ip], edx
+
+        mov     dx, [eax + TCP_SOCKET.RemotePort]
+        mov     [esi + sockaddr.port], dx
+
+.skip_sockaddr:
 ; Return socket number to caller
         mov     eax, [eax + SOCKET.Number]
         mov     [esp + SYSCALL_STACK.eax], eax
@@ -711,16 +731,19 @@ socket_accept:
   .wouldblock:
         mov     dword[esp + SYSCALL_STACK.ebx], EWOULDBLOCK
         mov     dword[esp + SYSCALL_STACK.eax], -1
+        pop     esi edx
         ret
 
   .invalid:
         mov     dword[esp + SYSCALL_STACK.ebx], EINVAL
         mov     dword[esp + SYSCALL_STACK.eax], -1
+        pop     esi edx
         ret
 
   .notsupp:
         mov     dword[esp + SYSCALL_STACK.ebx], EOPNOTSUPP
         mov     dword[esp + SYSCALL_STACK.eax], -1
+        pop     esi edx
         ret
 
 ;-----------------------------------------------------------------;
