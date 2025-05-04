@@ -85,6 +85,7 @@ struct TWebBrowser {
 	void tag_table();
 	void tag_td();
 	void tag_tr();
+	void reset_font_style();
 };
 
 #include "TWB\render.h"
@@ -94,16 +95,16 @@ void TWebBrowser::SetPageDefaults()
 {
 	t_html = t_body = link = false;
 	style.reset();
+	reset_font_style();
 	link_color_default = 0x0000FF;
 	link_color_active = 0xFF0000;
-	style.cur_line_h = list.item_h;
 	links.clear();
 	anchors.clear();
 	img_url.drop();
 	text_colors.drop();
 	text_colors.add(0);
 	if (secondrun) {
-		canvas.Init(list.x, list.y, list.w, math.max(list.visible, list.count));
+		canvas.Init(list.x, list.y, list.w, math.max(list.visible, list.count)+200);
 		canvas.Fill(0, bg_colors.get(0));
 	}
 	bg_colors.drop();
@@ -114,7 +115,6 @@ void TWebBrowser::SetPageDefaults()
 	draw_w = list.w - BODY_MARGIN - BODY_MARGIN;
 	linebuf = 0;
 	redirect = '\0';
-	list.SetFont(8, 14, 10011000b);
 	tag_table_reset();
 	is_html = true;
 	if (!strstri(bufpointer, "<body")) {
