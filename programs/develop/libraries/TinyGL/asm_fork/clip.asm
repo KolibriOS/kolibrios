@@ -21,7 +21,7 @@ proc gl_transform_to_viewport uses eax ebx ecx, context:dword,v:dword
 	fmul st0,st1
 	fmul dword[eax+GLContext.viewport+GLViewport.scale+offs_X]
 	fadd dword[eax+GLContext.viewport+GLViewport.trans+offs_X]
-	fistp dword[ebx+GLVertex.zp] ;v.zp.x = st0, st0 = st1
+	fistp dword[ebx+GLVertex.zp+ZBufferPoint.x] ;v.zp.x = st0, st0 = st1
 
 	fld dword[ebx+GLVertex.pc+offs_Y] ;st0 = v.pc.Y
 	fmul st0,st1
@@ -62,14 +62,14 @@ align 4
 	je @f
 		mov eax,[eax+GLContext.current_texture] ;eax = &context.current_texture
 		mov eax,[eax] ;eax = context.current_texture
-		;[eax+offs_text_images] = im = &context.current_texture.images[0]
+		;[eax+GLTexture.images] = im = &context.current_texture.images[0]
 
-		fild dword[eax+offs_text_images+offs_imag_s_bound]
+		fild dword[eax+GLTexture.images+GLImage.s_bound]
 		fmul dword[ebx+GLVertex.tex_coord+offs_X]
 		fistp dword[ebx+GLVertex.zp+ZBufferPoint.s]
 		;v.zp.s=(int)(v.tex_coord.X * im.s_bound)
 
-		fild dword[eax+offs_text_images+offs_imag_t_bound]
+		fild dword[eax+GLTexture.images+GLImage.t_bound]
 		fmul dword[ebx+GLVertex.tex_coord+offs_Y]
 		fistp dword[ebx+GLVertex.zp+ZBufferPoint.t]
 		;v.zp.t=(int)(v.tex_coord.Y * im.t_bound)
@@ -138,12 +138,12 @@ macro interpolate q, p0, p1, t
 {
 	fld dword[t]
 
-	; интерполяция по координатам
-	fld dword[p1+GLVertex.pc]
-	fsub dword[p0+GLVertex.pc]
+	; interpolation by coordinates
+	fld dword[p1+GLVertex.pc+offs_X]
+	fsub dword[p0+GLVertex.pc+offs_X]
 	fmul st0,st1
-	fadd dword[p0+GLVertex.pc]
-	fstp dword[q+GLVertex.pc] ;q.pc.X = p0.pc.X + (p1.pc.X - p0.pc.X) * t
+	fadd dword[p0+GLVertex.pc+offs_X]
+	fstp dword[q+GLVertex.pc+offs_X] ;q.pc.X = p0.pc.X + (p1.pc.X - p0.pc.X) * t
 
 	fld dword[p1+GLVertex.pc+offs_Y]
 	fsub dword[p0+GLVertex.pc+offs_Y]
@@ -163,7 +163,7 @@ macro interpolate q, p0, p1, t
 	fadd dword[p0+GLVertex.pc+offs_W]
 	fstp dword[q+GLVertex.pc+offs_W]
 
-	; интерполяция по цвету
+	; color interpolation
 	fld dword[p1+GLVertex.color]
 	fsub dword[p0+GLVertex.color]
 	fmul st0,st1
@@ -228,7 +228,7 @@ align 4
 		fstsw ax
 		sahf
 		jae .r1_f1
-			fstp dword[ebx] ;if (t<*tmin) *tmax=t
+			fstp dword[ebx] ;if (t<*tmax) *tmax=t
 		jmp .r1
 align 4
 	.els_1: ;else if (num>0)
@@ -1028,9 +1028,11 @@ if PROFILE eq 1
 end if
 		mov eax,[edx+GLContext.current_texture]
 		mov eax,[eax] ;переход по указателю
-		;так как offs_text_images+offs_imag_pixmap = 0 то context.current_texture.images[0].pixmap = [eax]
-		stdcall ZB_setTexture, [edx+GLContext.zb], [eax],\
-			[eax+offs_imag_s_bound],[eax+offs_imag_t_bound],[eax+offs_imag_xsize_log2]
+		stdcall ZB_setTexture, [edx+GLContext.zb],\
+			[eax+GLTexture.images+GLImage.pixmap],\
+			[eax+GLTexture.images+GLImage.s_bound],\
+			[eax+GLTexture.images+GLImage.t_bound],\
+			[eax+GLTexture.images+GLImage.xsize_log2]
 		mov eax,[p0]
 		add eax,GLVertex.zp
 		push ecx

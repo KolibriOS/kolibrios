@@ -17,9 +17,9 @@ proc find_texture uses ebx ecx, context:dword, h:dword
 		cmp dword[eax],0
 		je .no_found
 		mov ebx,[eax]
-		cmp dword[ebx+offs_text_handle],ecx
+		cmp dword[ebx+GLTexture.handle],ecx
 		je .found
-		mov eax,[ebx+offs_text_next]
+		mov eax,[ebx+GLTexture.next]
 		jmp @b
 	.no_found:
 	xor eax,eax ;ret NULL
@@ -32,36 +32,36 @@ proc free_texture uses eax ebx ecx edx, context:dword, h:dword
 	mov edx,[context]
 
 	stdcall find_texture,edx,[h] ;t=find_texture(context,h)
-	cmp dword[eax+offs_text_prev],0 ;if (t.prev==NULL)
+	cmp dword[eax+GLTexture.prev],0 ;if (t.prev==NULL)
 	jne .else
 		mov edx,[edx+GLContext.shared_state+4] ;edx = &context.shared_state.texture_hash_table[0]
-		mov ebx,[eax+offs_text_handle]
+		mov ebx,[eax+GLTexture.handle]
 		and ebx,0xff
 		shl ebx,2
 		add edx,ebx ;edx = &context.shared_state.texture_hash_table[t.handle % TEXTURE_HASH_TABLE_SIZE]
-		mov ebx,[eax+offs_text_next]
+		mov ebx,[eax+GLTexture.next]
 		mov [edx],ebx ;*ht=t.next
 		jmp @f
 	.else:
-		mov ebx,[eax+offs_text_prev]
-		mov ecx,[eax+offs_text_next]
-		mov [ebx+offs_text_next],ecx ;t.prev.next=t.next
+		mov ebx,[eax+GLTexture.prev]
+		mov ecx,[eax+GLTexture.next]
+		mov [ebx+GLTexture.next],ecx ;t.prev.next=t.next
 	@@:
-	cmp dword[eax+offs_text_next],0 ;if (t.next!=NULL)
+	cmp dword[eax+GLTexture.next],0 ;if (t.next!=NULL)
 	je @f
-		mov ebx,[eax+offs_text_next]
-		mov ecx,[eax+offs_text_prev]
-		mov [ebx+offs_text_prev],ecx ;t.next.prev=t.prev
+		mov ebx,[eax+GLTexture.next]
+		mov ecx,[eax+GLTexture.prev]
+		mov [ebx+GLTexture.prev],ecx ;t.next.prev=t.prev
 	@@:
 
 	xor ebx,ebx
-	mov ecx,[eax+offs_text_images] ;im=&t.images[0]
+	mov ecx,[eax+GLTexture.images] ;im=&t.images[0]
 	.cycle_0: ;for(i=0;i<MAX_TEXTURE_LEVELS;i++)
 	cmp ebx,MAX_TEXTURE_LEVELS
 	jge .cycle_0_end
-		cmp dword[ecx+offs_imag_pixmap],0 ;if (im.pixmap != NULL)
+		cmp dword[ecx+GLImage.pixmap],0 ;if (im.pixmap != NULL)
 		je @f
-			stdcall gl_free,[ecx+offs_imag_pixmap]
+			stdcall gl_free,[ecx+GLImage.pixmap]
 		@@:
 		add ecx,sizeof.GLImage
 		inc ebx
@@ -87,16 +87,16 @@ proc alloc_texture uses ebx ecx, context:dword, h:dword
 	add ecx,ebx ;ecx = &context.shared_state.texture_hash_table[h % TEXTURE_HASH_TABLE_SIZE]
 
 	mov ebx,[ecx]
-	mov [eax+offs_text_next],ebx
-	mov dword[eax+offs_text_prev],0 ;NULL
-	cmp dword[eax+offs_text_next],0 ;NULL
+	mov [eax+GLTexture.next],ebx
+	mov dword[eax+GLTexture.prev],0 ;NULL
+	cmp dword[eax+GLTexture.next],0 ;NULL
 	je @f
-		mov [eax+offs_text_prev],eax
+		mov [eax+GLTexture.prev],eax
 	@@:
 	mov [ecx],eax
 
 	mov ebx,[h]
-	mov [eax+offs_text_handle],ebx
+	mov [eax+GLTexture.handle],ebx
 
 	ret
 endp
@@ -129,11 +129,11 @@ proc glGenTextures uses eax ebx ecx edx esi, n:dword, textures:dword
 		.cycle_1: ;while (t!=NULL)
 		or edx,edx
 		jz .cycle_1_end
-			cmp [edx+offs_text_handle],ebx ;if (t.handle>max)
+			cmp [edx+GLTexture.handle],ebx ;if (t.handle>max)
 			jle @f
-				mov ebx,[edx+offs_text_handle] ;max=t.handle
+				mov ebx,[edx+GLTexture.handle] ;max=t.handle
 			@@:
-			mov edx,[edx+offs_text_next] ;t=t.next
+			mov edx,[edx+GLTexture.next] ;t=t.next
 			jmp .cycle_1
 		.cycle_1_end:
 		inc ecx
@@ -266,22 +266,22 @@ align 4
 
 	mov ecx,[context]
 	mov ecx,[ecx+GLContext.current_texture]
-	add ecx,offs_text_images
+	add ecx,GLTexture.images
 	imul ebx,sizeof.GLTexture
 	add ecx,ebx ;ecx = &context.current_texture.images[level]
-	mov [ecx+offs_imag_xsize],edx ;im.xsize=width
-	mov [ecx+offs_imag_ysize],esi ;im.ysize=height
+	mov [ecx+GLImage.xsize],edx ;im.xsize=width
+	mov [ecx+GLImage.ysize],esi ;im.ysize=height
 	mov ebx,edx
 	dec ebx
 	shl ebx,ZB_POINT_TEXEL_SIZE
-	mov [ecx+offs_imag_s_bound],ebx ;im.s_bound = (unsigned int)(width-1)
+	mov [ecx+GLImage.s_bound],ebx ;im.s_bound = (unsigned int)(width-1)
 	shr ebx,ZB_POINT_TEXEL_SIZE
 
-	mov dword[ecx+offs_imag_xsize_log2],ZB_POINT_TEXEL_SIZE
+	mov dword[ecx+GLImage.xsize_log2],ZB_POINT_TEXEL_SIZE
 	or ebx,ebx
 	jz .set_l2
 	@@:
-		dec dword[ecx+offs_imag_xsize_log2]
+		dec dword[ecx+GLImage.xsize_log2]
 		shr ebx,1
 		or ebx,ebx
 		jnz @b
@@ -289,18 +289,18 @@ align 4
 	;im.xsize_log2 = ZB_POINT_TEXEL_SIZE-log_2(width)
 	dec esi
 	shl esi,ZB_POINT_TEXEL_SIZE
-	mov [ecx+offs_imag_t_bound],esi ;im.t_bound = (unsigned int)(height-1)
+	mov [ecx+GLImage.t_bound],esi ;im.t_bound = (unsigned int)(height-1)
 	shr esi,ZB_POINT_TEXEL_SIZE
 	inc esi
-	cmp dword[ecx+offs_imag_pixmap],0 ;if (im.pixmap!=NULL) 
+	cmp dword[ecx+GLImage.pixmap],0 ;if (im.pixmap!=NULL) 
 	je @f
-		stdcall gl_free, [ecx+offs_imag_pixmap]
+		stdcall gl_free, [ecx+GLImage.pixmap]
 	@@:
 if TGL_FEATURE_RENDER_BITS eq 24
 	imul edx,esi
 	imul edx,3
 	stdcall gl_malloc,edx
-	mov [ecx+offs_imag_pixmap],eax ;im.pixmap = gl_malloc(width*height*3)
+	mov [ecx+GLImage.pixmap],eax ;im.pixmap = gl_malloc(width*height*3)
 	or eax,eax ;if(im.pixmap)
 	jz @f
 		mov edi,eax
@@ -314,7 +314,7 @@ if TGL_FEATURE_RENDER_BITS eq 32
 	imul edx,esi
 	shl edx,2
 	stdcall gl_malloc,edx
-	mov [ecx+offs_imag_pixmap],eax ;im.pixmap = gl_malloc(width*height*4)
+	mov [ecx+GLImage.pixmap],eax ;im.pixmap = gl_malloc(width*height*4)
 	or eax,eax ;if(im.pixmap)
 	jz @f
 ;gl_convertRGB_to_8A8R8G8B(eax,[pixels1],ebx,esi)

@@ -692,6 +692,15 @@ struct TinyGLContext
 	long int dx, dy, x, y;
 };
 
+struct GLUquadricObj
+{
+	GLenum DrawStyle;      // GLU_FILL, LINE, SILHOUETTE, or POINT
+	GLenum Orientation;    // GLU_INSIDE or GLU_OUTSIDE
+	GLboolean TextureFlag; // Generate texture coords?
+	GLenum Normals;        // GLU_NONE, GLU_FLAT, or GLU_SMOOTH
+	void (__stdcall* ErrorFunc)(GLenum err); // Error handler callback function
+};
+
 //
 // tinygl - import table
 //
@@ -748,7 +757,7 @@ void (__stdcall* glEdgeFlag)(int flag) = (void (__stdcall*)(int))&"glEdgeFlag";
 void (__stdcall* glMatrixMode)(int mode) = (void (__stdcall*)(int))&"glMatrixMode";
 void (__stdcall* glLoadMatrixf)(const float* m) = (void (__stdcall*)(const float*))&"glLoadMatrixf";
 void (__stdcall* glLoadIdentity)() = (void (__stdcall*)())&"glLoadIdentity";
-//void (__stdcall* glMultMatrixf)(...) = (void (__stdcall*)(...))&"glMultMatrixf";
+void (__stdcall* glMultMatrixf)(const GLfloat *m) = (void (__stdcall*)(const GLfloat*))&"glMultMatrixf";
 void (__stdcall* glPushMatrix)() = (void (__stdcall*)())&"glPushMatrix";
 void (__stdcall* glPopMatrix)() = (void (__stdcall*)())&"glPopMatrix";
 void (__stdcall* glRotatef)(float angle, float x, float y, float z) = (void (__stdcall*)(float, float, float, float))&"glRotatef";
@@ -763,7 +772,7 @@ void (__stdcall* glEndList)() = (void (__stdcall*)())&"glEndList";
 void (__stdcall* glCallList)(unsigned int list) = (void (__stdcall*)(unsigned int))&"glCallList";
 void (__stdcall* glClear)(int mask) = (void (__stdcall*)(int))&"glClear";
 void (__stdcall* glClearColor)(float r, float g, float b, float a) = (void (__stdcall*)(float, float, float, float))&"glClearColor";
-//void (__stdcall* glClearDepth)(...) = (void (__stdcall*)(...))&"glClearDepth";
+void (__stdcall* glClearDepth)(double depth) = (void (__stdcall*)(double))&"glClearDepth";
 void (__stdcall* glRenderMode)(int mode) = (void (__stdcall*)(int))&"glRenderMode";
 //void (__stdcall* glSelectBuffer)(...) = (void (__stdcall*)(...))&"glSelectBuffer";
 //void (__stdcall* glInitNames)(...) = (void (__stdcall*)(...))&"glInitNames";
@@ -799,18 +808,22 @@ void (__stdcall* glColorPointer)(GLint size, GLenum type, GLsizei stride, const 
 void (__stdcall* glNormalPointer)(GLenum type, GLsizei stride, const GLvoid* pointer) = (void (__stdcall*)(GLenum, GLsizei, const GLvoid*))&"glNormalPointer";
 void (__stdcall* glTexCoordPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid* pointer) = (void (__stdcall*)(GLint, GLenum, GLsizei, const GLvoid*))&"glTexCoordPointer";
 //void (__stdcall* glPolygonOffset)(...) = (void (__stdcall*)(...))&"glPolygonOffset";
-//void (__stdcall* glOrtho)(...) = (void (__stdcall*)(...))&"glOrtho";
+void (__stdcall* glOrtho)(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar) = (void (__stdcall*)(GLdouble, GLdouble, GLdouble, GLdouble, GLdouble, GLdouble))&"glOrtho";
 //void (__stdcall* glDebug)(...) = (void (__stdcall*)(...))&"glDebug";
 //void (__stdcall* glInit)(...) = (void (__stdcall*)(...))&"glInit";
 //void (__stdcall* glClose)(...) = (void (__stdcall*)(...))&"glClose";
-//void (__stdcall* gluPerspective)(...) = (void (__stdcall*)(...))&"gluPerspective";
-//void (__stdcall* gluNewQuadric)(...) = (void (__stdcall*)(...))&"gluNewQuadric";
-//void (__stdcall* gluDeleteQuadric)(...) = (void (__stdcall*)(...))&"gluDeleteQuadric";
-//void (__stdcall* gluQuadricDrawStyle)(...) = (void (__stdcall*)(...))&"gluQuadricDrawStyle";
-//void (__stdcall* gluQuadricOrientation)(...) = (void (__stdcall*)(...))&"gluQuadricOrientation";
-//void (__stdcall* gluQuadricTexture)(...) = (void (__stdcall*)(...))&"gluQuadricTexture";
-//void (__stdcall* gluCylinder)(...) = (void (__stdcall*)(...))&"gluCylinder";
-//void (__stdcall* gluSphere)(...) = (void (__stdcall*)(...))&"gluSphere";
+void (__stdcall* gluPerspective)(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar) = (void (__stdcall*)(GLdouble, GLdouble, GLdouble, GLdouble))&"gluPerspective";
+GLUquadricObj* (__stdcall* gluNewQuadric)() = (GLUquadricObj* (__stdcall*)())&"gluNewQuadric";
+void (__stdcall* gluDeleteQuadric)(GLUquadricObj *state) = (void (__stdcall*)(GLUquadricObj*))&"gluDeleteQuadric";
+void (__stdcall* gluQuadricDrawStyle)(GLUquadricObj *quadObject, GLenum drawStyle) = (void (__stdcall*)(GLUquadricObj*, GLenum))&"gluQuadricDrawStyle";
+void (__stdcall* gluQuadricOrientation)(GLUquadricObj *quadObject, GLenum orientation) = (void (__stdcall*)(GLUquadricObj*, GLenum))&"gluQuadricOrientation";
+void (__stdcall* gluQuadricTexture)(GLUquadricObj *quadObject, GLboolean textureCoords) = (void (__stdcall*)(GLUquadricObj*, GLboolean))&"gluQuadricTexture";
+void (__stdcall* gluCylinder)(GLUquadricObj *qobj,
+	GLdouble baseRadius, GLdouble topRadius, GLdouble height, GLint slices, GLint stacks) = (void (__stdcall*)(GLUquadricObj*, GLdouble, GLdouble, GLdouble, GLint, GLint))&"gluCylinder";
+void (__stdcall* gluDisk)(GLUquadricObj *qobj,
+	GLdouble innerRadius, GLdouble outerRadius, GLint slices, GLint loops) = (void (__stdcall*)(GLUquadricObj*, GLdouble, GLdouble, GLint, GLint))&"gluDisk";
+void (__stdcall* gluSphere)(GLUquadricObj *qobj,
+	GLdouble radius, GLint slices, GLint stacks) = (void (__stdcall*)(GLUquadricObj*, GLdouble, GLint, GLint))&"gluSphere";
 void (__stdcall* kosglMakeCurrent)(long l, long t, long w, long h, TinyGLContext*) = (void (__stdcall*)(long, long, long, long, TinyGLContext*))&"kosglMakeCurrent";
 void (__stdcall* kosglSwapBuffers)() = (void (__stdcall*)())&"kosglSwapBuffers";
 asm{

@@ -57,12 +57,13 @@ proc delete_list uses eax ebx ecx edx, context:dword, list:dword
 	; free param buffer
 	mov eax,[edx] ;eax = GLList.first_op_buffer
 	@@:
-	cmp eax,0
-	je .end_w
-		mov ecx,[eax+offs_gpbu_next]
+	or eax,eax
+	jz .end_w
+		mov ecx,[eax+GLParamBuffer.next]
 		stdcall gl_free,eax
 		mov eax,ecx
 		jmp @b
+align 4
 	.end_w:
 
 	stdcall gl_free,edx
@@ -79,10 +80,10 @@ proc alloc_list uses ebx ecx, context:dword, list:dword
 	mov ecx,eax
 	stdcall gl_zalloc,sizeof.GLList
 
-	mov dword[ecx+offs_gpbu_next],0 ;ob.next=NULL
+	mov dword[ecx+GLParamBuffer.next],0 ;ob.next=NULL
 	mov dword[eax],ecx ;l.first_op_buffer=ob
 
-	mov dword[ecx+offs_gpbu_ops],OP_EndList ;ob.ops[0].op=OP_EndList
+	mov dword[ecx+GLParamBuffer.ops],OP_EndList ;ob.ops[0].op=OP_EndList
 
 	mov ebx,[context]
 	mov ebx,[ebx+GLContext.shared_state]
@@ -138,12 +139,12 @@ pushad
 	jle @f
 		mov edi,eax
 		stdcall gl_zalloc,sizeof.GLParamBuffer
-		mov dword[eax+offs_gpbu_next],0 ;=NULL
+		mov dword[eax+GLParamBuffer.next],0 ;=NULL
 
-		mov dword[edi+offs_gpbu_next],eax
+		mov dword[edi+GLParamBuffer.next],eax
 		lea esi,[edi+4*ebx]
-		mov dword[esi+offs_gpbu_ops],OP_NextBuffer
-		mov dword[esi+offs_gpbu_ops+4],eax
+		mov dword[esi+GLParamBuffer.ops],OP_NextBuffer
+		mov dword[esi+GLParamBuffer.ops+4],eax
 
 		mov dword[edx+GLContext.current_op_buffer],eax
 		xor ebx,ebx
@@ -168,8 +169,8 @@ push edi esi
 	mov ebx,[ebx]
 	lea eax,[op_table_str]
 	@@:
-		cmp ebx,0
-		je @f
+		or ebx,ebx
+		jz @f
 		cmp byte[eax],0
 		jne .no_dec
 			dec ebx
@@ -310,8 +311,8 @@ proc glNewList uses eax ebx, list:dword, mode:dword
 ;  assert(ebx->compile_flag == 0);
 
 	stdcall find_list,ebx,[list]
-	cmp eax,0
-	je @f
+	or eax,eax
+	jz @f
 		stdcall delete_list,ebx,[list]
 	@@:
 	stdcall alloc_list,ebx,[list]
@@ -350,8 +351,8 @@ align 4
 proc glIsList, list:dword
 	call gl_get_context
 	stdcall find_list, eax,[list]
-	cmp eax,0 ;NULL
-	je @f
+	or eax,eax ;NULL
+	jz @f
 		mov eax,1
 	@@:
 	ret

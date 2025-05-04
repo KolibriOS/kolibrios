@@ -168,7 +168,8 @@ E_LIB gluQuadricDrawStyle
 E_LIB gluQuadricOrientation
 E_LIB gluQuadricTexture
 E_LIB gluCylinder ;(GLUquadricObj, double, double, double, int, int)
-E_LIB gluSphere ;(GLUquadricObj, float, int, int)
+E_LIB gluDisk ;(GLUquadricObj, double, double, int, int)
+E_LIB gluSphere ;(GLUquadricObj, double, int, int)
 
 ;
 ; KolibriOS functions

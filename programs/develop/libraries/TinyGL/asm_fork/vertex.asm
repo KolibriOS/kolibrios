@@ -86,14 +86,14 @@ endl
 	fdiv st0,st1 ;st0 = 0.5
 
 	fild dword[eax+GLViewport.xsize]
-	fsub st0,st1
+	fsub dword[fl_1e_3]
 	fdiv st0,st2
 	fst dword[eax+GLViewport.scale+offs_X]
 	fiadd dword[eax+GLViewport.xmin]
 	fstp dword[eax+GLViewport.trans+offs_X]
 
 	fild dword[eax+GLViewport.ysize]
-	fsub st0,st1
+	fsub dword[fl_1e_3]
 	fdiv st0,st2
 	fchs
 	fst dword[eax+GLViewport.scale+offs_Y]
@@ -135,20 +135,12 @@ endl
 	cmp dword[edx+GLContext.lighting_enabled],0 ;if(context.lighting_enabled)
 	jne .if_0
 	cmp dword[edx+GLContext.texture_2d_enabled],0
-	jne .if_0
-		jmp @f
+	je @f
 align 4
 	.if_0:
-if DEBUG ;context.matrix_stack_ptr[0]
-	stdcall gl_print_matrix,dword[edx+GLContext.matrix_stack_ptr],4
-end if
 		; precompute inverse modelview
 		lea ebx,[ebp-sizeof.M4]
 		stdcall gl_M4_Inv, ebx,dword[edx+GLContext.matrix_stack_ptr]
-if DEBUG ;tmp
-	stdcall dbg_print,txt_sp,txt_nl
-	stdcall gl_print_matrix,ebx,4
-end if
 		push ebx
 		lea ebx,[edx+GLContext.matrix_model_view_inv]
 		stdcall gl_M4_Transpose, ebx
@@ -253,8 +245,7 @@ pushad
 	cmp dword[eax+GLContext.lighting_enabled],0 ;if (context.lighting_enabled)
 	jne @f
 	cmp dword[eax+GLContext.texture_2d_enabled],0
-	jne @f
-		jmp .els_0
+	je .els_0
 align 4
 	@@:
 		; eye coordinates needed for lighting

@@ -1,3 +1,9 @@
+;Macro for double type parameters (8 bytes)
+macro glpush GLDoubleVar {
+	push dword[GLDoubleVar+4]
+	push dword[GLDoubleVar]
+}
+
 struct TinyGLContext
 	gl_context dd ?
 	xsize dd ? ;+4

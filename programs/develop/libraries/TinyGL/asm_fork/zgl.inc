@@ -51,16 +51,11 @@ struct GLSpecBuf
 	next dd ? ;struct GLSpecBuf*
 ends
 
-offs_spec_shininess_i equ 0
-offs_spec_last_used equ 4
-offs_spec_buf equ 8
-offs_spec_next equ 8+4*(SPECULAR_BUFFER_SIZE+1)
-
 struct GLLight
-	ambient V4
-	diffuse V4
+	ambient  V4
+	diffuse  V4
 	specular V4
-	position V4	
+	position V4
 	spot_direction V3
 	spot_exponent dd ? ;float
 	spot_cutoff dd ? ;float
@@ -102,9 +97,6 @@ struct GLParamBuffer
 	next dd ? ;struct GLParamBuffer*
 ends
 
-offs_gpbu_ops equ 0
-offs_gpbu_next equ 4*OP_BUFFER_MAX_SIZE
-
 struct GLList
 	first_op_buffer dd ? ;GLParamBuffer*
 	; TODO: extensions for an hash table or a better allocating scheme
@@ -133,28 +125,16 @@ struct GLImage
 	t_bound dd ? ;unsigned int
 ends
 
-offs_imag_pixmap equ 0
-offs_imag_xsize equ 4
-offs_imag_ysize equ 8
-offs_imag_xsize_log2 equ 12
-offs_imag_s_bound equ 16
-offs_imag_t_bound equ 20
-
 ; textures
 
 TEXTURE_HASH_TABLE_SIZE equ 256 ;должно быть кратное 2, в коде берется остаток от деления (через and быстрее чем div)
 
 struct GLTexture
-	images rb sizeof.GLImage * MAX_TEXTURE_LEVELS ;GLImage[MAX_TEXTURE_LEVELS]
+	images rd (sizeof.GLImage * MAX_TEXTURE_LEVELS)/4 ;GLImage[MAX_TEXTURE_LEVELS]
 	handle dd ? ;int
 	next dd ? ;struct GLTexture*
 	prev dd ? ;struct GLTexture*
 ends
-
-offs_text_images equ 0
-offs_text_handle equ sizeof.GLImage*MAX_TEXTURE_LEVELS
-offs_text_next equ 4+offs_text_handle
-offs_text_prev equ 8+offs_text_handle
 
 ; shared state
 

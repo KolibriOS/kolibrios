@@ -1,3 +1,7 @@
+; SPDX-License-Identifier: GPL-2.0-only
+; Test glu0 - gluSphere functionality testing
+; Copyright (C) 2014-2025 KolibriOS team
+
 use32
 	org 0
 	db 'MENUET01'
@@ -8,6 +12,7 @@ include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
 include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
+include '../kosgl.inc'
 include '../opengl_const.inc'
 
 @use_library
@@ -132,9 +137,6 @@ button:
 
 
 align 4
-caption db 'Test gluSphere, [Esc] - exit, [<-],[->],[Up],[Down] - rotate',0
-
-align 4
 draw_3d:
 stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
 
@@ -145,20 +147,33 @@ call [glPushMatrix]
 
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
 	stdcall [glRotatef], [angle_y],0.0,1.0,0.0
-	stdcall [gluSphere], [qObj], 1.0, 16,16
+	push 16
+	push 16
+	glpush rad1
+	stdcall [gluSphere], [qObj]
 
 	stdcall [glColor3f], 1.0, 0.0, 0.0
 	stdcall [glTranslatef], -1.6,0.0,0.0
-	stdcall [gluSphere], [qObj], 0.55, 8,8
+	push 8
+	push 8
+	glpush rad2
+	stdcall [gluSphere], [qObj]
 
 	stdcall [glColor3f], 0.0, 0.0, 1.0
 	stdcall [glTranslatef], 3.2,0.0,0.0
-	stdcall [gluSphere], [qObj], 0.55, 8,8
+	push 8
+	push 8
+	glpush rad2
+	stdcall [gluSphere], [qObj]
 call [glPopMatrix]
 ret
 
 align 4
-qObj dd 0
+caption db 'Test gluSphere, [Esc] - exit, [<-],[->],[Up],[Down] - rotate',0
+
+align 4
+rad1 dq 1.0
+rad2 dq 0.55
 
 scale dd 0.4
 delt_sc dd 0.05
@@ -172,13 +187,17 @@ import_tinygl:
 
 macro E_LIB n
 {
+if defined sz_#n
 	n dd sz_#n
+end if
 }
 include '../export.inc'
 	dd 0,0
 macro E_LIB n
 {
+if used n
 	sz_#n db `n,0
+end if
 }
 include '../export.inc'
 
@@ -189,7 +208,8 @@ name_tgl db 'tinygl.obj',0
 
 align 16
 i_end:
-	ctx1 rb 28 ;sizeof.TinyGLContext = 28
+	ctx1 TinyGLContext
+	qObj dd 0
 cur_dir_path rb 4096
 library_path rb 4096
 	rb 2048

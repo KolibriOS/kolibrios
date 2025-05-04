@@ -18,12 +18,6 @@ include '../../develop/libraries/TinyGL/asm_fork/examples/fps.inc'
 
 @use_library
 
-;Macro for double type parameters (8 bytes)
-macro glpush GLDoubleVar {
-	push dword[GLDoubleVar+4]
-	push dword[GLDoubleVar]
-}
-
 align 4
 start:
 	load_library name_tgl, library_path, system_path, import_tinygl
@@ -39,6 +33,11 @@ start:
 	call    [glLoadIdentity]
 
 	stdcall [glClearColor], 0.549, 0.549, 0.588, 1.0
+
+	stdcall [glEnable], GL_LIGHTING
+	stdcall [glLightf], GL_LIGHT0, GL_SPOT_EXPONENT, 0.0
+	stdcall [glLightf], GL_LIGHT0, GL_SPOT_CUTOFF, 180.0
+	stdcall [glEnable], GL_LIGHT0
 
 	stdcall [glLightfv], GL_LIGHT0, GL_POSITION, lightpos
 	stdcall [glLightfv], GL_LIGHT0, GL_SPOT_DIRECTION, lightdirect
@@ -126,11 +125,6 @@ endl
 	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT
 	ret
 endp
-
-align 4
-p1 dq 28.0
-p3 dq  1.0
-p4 dq 40.0
 
 align 4
 draw_window:
@@ -247,7 +241,11 @@ align 4
 	ret 
 endp
 
-align 4        
+align 4
+p1 dq 28.0
+p3 dq  1.0
+p4 dq 40.0
+       
 delt_1 dd 0.08
 delt_2 dd 0.2
 delt_3 dd 0.01
@@ -278,13 +276,17 @@ import_tinygl:
 
 macro E_LIB n
 {
+if defined sz_#n
 	n dd sz_#n
+end if
 }
 include '../../develop/libraries/TinyGL/asm_fork/export.inc'
 	dd 0,0
 macro E_LIB n
 {
+if used n
 	sz_#n db `n,0
+end if
 }
 include '../../develop/libraries/TinyGL/asm_fork/export.inc'
 

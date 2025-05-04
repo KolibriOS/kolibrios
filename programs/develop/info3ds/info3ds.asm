@@ -12,6 +12,7 @@ include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../load_img.inc'
 include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/TinyGL/asm_fork/kosgl.inc'
 include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include 'info_fun_float.inc'
@@ -235,7 +236,7 @@ start:
 	call [gluNewQuadric]
 	mov [qObj],eax
 
-	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
+	mov eax,[ctx1.gl_context]
 	mov eax,[eax] ;eax -> ZBuffer
 	mov eax,[eax+ZBuffer.pbuf]
 	mov dword[buf_ogl],eax
@@ -1290,13 +1291,17 @@ align 4
 import_tinygl:
 macro E_LIB n
 {
+if defined sz_#n
 	n dd sz_#n
+end if
 }
 include '../../develop/libraries/TinyGL/asm_fork/export.inc'
 	dd 0,0
 macro E_LIB n
 {
+if used n
 	sz_#n db `n,0
+end if
 }
 include '../../develop/libraries/TinyGL/asm_fork/export.inc'
 
@@ -1362,14 +1367,14 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru_RU
-capt db 'info 3ds версия 14.04.25',0 ;подпись окна
+capt db 'info 3ds версия 04.05.25',0 ;подпись окна
 else ; Default to en_US
-capt db 'info 3ds version 14.04.25',0 ;window caption
+capt db 'info 3ds version 04.05.25',0 ;window caption
 end if
 
 align 16
 i_end:
-	ctx1 rb 28 ;sizeof.TinyGLContext = 28
+	ctx1 TinyGLContext
 	procinfo process_information
 	run_file_70 FileInfoBlock
 	sc system_colors

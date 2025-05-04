@@ -115,18 +115,10 @@ end if
 
 macro DRAWLINE d_x,d_y,inc_1,inc_2
 {
-local .mz_0
 local .mz_1
-local .mz_2
-local .mr_0
 local .mr_1
-local .mr_2
-local .mg_0
 local .mg_1
-local .mg_2
-local .mb_0
 local .mb_1
-local .mb_2
 
 	mov eax,d_x
 	mov [n],eax
@@ -135,103 +127,44 @@ local .mb_2
 	mov ecx,[p2]
 if INTERP_Z eq 1
 	mov eax,[ecx+ZBufferPoint.z]
-	cmp eax,[ebx+ZBufferPoint.z]
-	jg .mz_0
-	je .mz_1
-		;if(p2.z<p1.z)
-		sub eax,[ebx+ZBufferPoint.z]
-		neg eax
-		inc eax
-		xor edx,edx
-		div dword[n]
-		neg eax
-		inc eax
-		jmp .mz_2
-	.mz_0:
 	sub eax,[ebx+ZBufferPoint.z]
-	xor edx,edx
-	div dword[n]
-	jmp .mz_2
+	jz .mz_1
+		;if(p2.z!=p1.z)
+		cdq
+		idiv dword[n]
 	.mz_1:
-		xor eax,eax
-	.mz_2:
 	mov [zinc],eax ;zinc=(p2.z-p1.z)/n
 end if
 
 	;ebx=&p1, ecx=&p2
 	mov eax,[ecx+ZBufferPoint.r]
-	cmp eax,[ebx+ZBufferPoint.r]
-	jg .mr_0
-	je .mr_1
-		;if(p2.r<p1.r)
-		sub eax,[ebx+ZBufferPoint.r]
-		neg eax
-		inc eax
-		shl eax,8
-		xor edx,edx
-		div dword[n]
-		neg eax
-		inc eax
-		jmp .mr_2
-	.mr_0:
 	sub eax,[ebx+ZBufferPoint.r]
-	shl eax,8
-	xor edx,edx
-	div dword[n]
-	jmp .mr_2
+	jz .mr_1
+		;if(p2.r!=p1.r)
+		shl eax,8
+		cdq
+		idiv dword[n]
 	.mr_1:
-		xor eax,eax
-	.mr_2:
 	mov [rinc],eax ;rinc=((p2.r-p1.r)<<8)/n
 
 	mov eax,[ecx+ZBufferPoint.g]
-	cmp eax,[ebx+ZBufferPoint.g]
-	jg .mg_0
-	je .mg_1
-		;if(p2.g<p1.g)
-		sub eax,[ebx+ZBufferPoint.g]
-		neg eax
-		inc eax
-		shl eax,8
-		xor edx,edx
-		div dword[n]
-		neg eax
-		inc eax
-		jmp .mg_2
-	.mg_0:
 	sub eax,[ebx+ZBufferPoint.g]
-	shl eax,8
-	xor edx,edx
-	div dword[n]
-	jmp .mg_2
+	jz .mg_1
+		;if(p2.g!=p1.g)
+		shl eax,8
+		cdq
+		idiv dword[n]
 	.mg_1:
-		xor eax,eax
-	.mg_2:
 	mov [ginc],eax ;ginc=((p2.g-p1.g)<<8)/n
 
 	mov eax,[ecx+ZBufferPoint.b]
-	cmp eax,[ebx+ZBufferPoint.b]
-	jg .mb_0
-	je .mb_1
-		;if(p2.b<p1.b)
-		sub eax,[ebx+ZBufferPoint.b]
-		neg eax
-		inc eax
-		shl eax,8
-		xor edx,edx
-		div dword[n]
-		neg eax
-		inc eax
-		jmp .mb_2
-	.mb_0:
 	sub eax,[ebx+ZBufferPoint.b]
-	shl eax,8
-	xor edx,edx
-	div dword[n]
-	jmp .mb_2
+	jz .mb_1
+		;if(p2.b!=p1.b)
+		shl eax,8
+		cdq
+		idiv dword[n]
 	.mb_1:
-		xor eax,eax
-	.mb_2:
 	mov [binc],eax ;binc=((p2.b-p1.b)<<8)/n
 
 	shl dword d_y,1

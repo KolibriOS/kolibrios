@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: GPL-2.0-only
+; Textures1 - drawing the earth with and without meridians.
+;             Texture size 1024*512 pixels is used.
+; Copyright (C) 2015-2025 KolibriOS team
+
 use32
 	org 0
 	db 'MENUET01'
@@ -8,24 +13,24 @@ include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
 include '../../../../../load_img.inc'
 include '../../../../../load_lib.mac'
+include '../kosgl.inc'
 include '../opengl_const.inc'
 include '../zbuffer.inc'
 include '../../../../../develop/info3ds/info_fun_float.inc'
 
-@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
+3d_wnd_l equ   0 ;tinygl buffer left indent
+3d_wnd_t equ  30 ;tinygl buffer top indent
+3d_wnd_w equ 450
+3d_wnd_h equ 400
 
-;Макрос для параметров типа double (8 байт)
-macro glpush GLDoubleVar {
-	push dword[GLDoubleVar+4]
-	push dword[GLDoubleVar]
-}
+@use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
 IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
 
 align 4
 start:
 load_libraries l_libs_start,l_libs_end
-	;проверка на сколько удачно загузились библиотеки
+	;checking how successfully the libraries were loaded
 	mov	ebp,lib_0
 	.test_lib_open:
 	cmp	dword [ebp+ll_struc_size-4],0
@@ -39,9 +44,9 @@ load_libraries l_libs_start,l_libs_end
 	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
 	mcall SF_SET_EVENTS_MASK,0x27
 
-	stdcall [kosglMakeCurrent], 5,30,[buf_ogl.w],[buf_ogl.h],ctx1
+	stdcall [kosglMakeCurrent], 3d_wnd_l,3d_wnd_t,[buf_ogl.w],[buf_ogl.h],ctx1
 	stdcall [glEnable], GL_DEPTH_TEST
-	stdcall [glEnable], GL_NORMALIZE ;делам нормали одинаковой величины во избежание артефактов
+	stdcall [glEnable], GL_NORMALIZE ;normals of the same size to avoid artifacts
 	call [gluNewQuadric]
 	mov [qObj],eax
 	stdcall [gluQuadricTexture], eax,GL_TRUE
@@ -49,7 +54,7 @@ load_libraries l_libs_start,l_libs_end
 	stdcall [glClearColor], 0.0,0.0,0.0,0.0
 	stdcall [glShadeModel], GL_SMOOTH
 
-	mov eax,dword[ctx1] ;eax -> TinyGLContext.GLContext
+	mov eax,[ctx1.gl_context]
 	mov eax,[eax] ;eax -> ZBuffer
 	mov eax,[eax+ZBuffer.pbuf]
 	mov dword[buf_ogl],eax
@@ -62,6 +67,11 @@ load_libraries l_libs_start,l_libs_end
 
 	load_image_file 'toolb_1.png', image_data_toolbar
 	load_image_file 'text_2.png', texture, text_w,text_h ;открытие файла текстуры
+
+	fld dword[angle_x]
+	stdcall update_number, txt_angle_x.v
+	fld dword[angle_y]
+	stdcall update_number, txt_angle_y.v
 
 	;* Setup texturing *
 	stdcall [glTexEnvi], GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL
@@ -100,7 +110,15 @@ align 4
 draw_window:
 	pushad
 	mcall SF_REDRAW,SSF_BEGIN_DRAW
-	mcall SF_CREATE_WINDOW,(50 shl 16)+420,(30 shl 16)+410,0x33ffffff,,caption
+
+	mcall SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT
+	mov ebx,[buf_ogl.w]
+	add ebx,(50 shl 16)+9
+	mov ecx,[buf_ogl.h]
+	add ecx,(30 shl 16)+4
+	add ecx,eax
+	add cx,[buf_ogl.t]
+	mcall SF_CREATE_WINDOW,,,0x33ffffff,,caption
 
 	mov esi,[sc.work_button]
 	mcall SF_DEFINE_BUTTON,(6 shl 16)+19,(6 shl 16)+19,3+0x40000000 ;земля с меридиан.
@@ -146,11 +164,7 @@ key:
 		fld dword[angle_y]
 		fadd dword[delt_size]
 		fst dword[angle_y]
-		mov word[NumberSymbolsAD],2
-		fstp qword[Data_Double]
-		call DoubleFloat_to_String
-		mov byte[txt_angle_y.v],0
-		stdcall str_cat, txt_angle_y.v,Data_String
+		stdcall update_number, txt_angle_y.v
 		call draw_3d
 		call [kosglSwapBuffers]
 	@@:
@@ -160,11 +174,7 @@ key:
 		fld dword[angle_y]
 		fsub dword[delt_size]
 		fst dword[angle_y]
-		mov word[NumberSymbolsAD],2
-		fstp qword[Data_Double]
-		call DoubleFloat_to_String
-		mov byte[txt_angle_y.v],0
-		stdcall str_cat, txt_angle_y.v,Data_String
+		stdcall update_number, txt_angle_y.v
 		call draw_3d
 		call [kosglSwapBuffers]
 	@@:
@@ -174,11 +184,7 @@ key:
 		fld dword[angle_x]
 		fadd dword[delt_size]
 		fst dword[angle_x]
-		mov word[NumberSymbolsAD],2
-		fstp qword[Data_Double]
-		call DoubleFloat_to_String
-		mov byte[txt_angle_x.v],0
-		stdcall str_cat, txt_angle_x.v,Data_String
+		stdcall update_number, txt_angle_x.v
 		call draw_3d
 		call [kosglSwapBuffers]
 	@@:
@@ -188,11 +194,7 @@ key:
 		fld dword[angle_x]
 		fsub dword[delt_size]
 		fst dword[angle_x]
-		mov word[NumberSymbolsAD],2
-		fstp qword[Data_Double]
-		call DoubleFloat_to_String
-		mov byte[txt_angle_x.v],0
-		stdcall str_cat, txt_angle_x.v,Data_String
+		stdcall update_number, txt_angle_x.v
 		call draw_3d
 		call [kosglSwapBuffers]
 	@@:
@@ -228,6 +230,20 @@ button:
 	stdcall [gluDeleteQuadric], [qObj]
 	stdcall mem.Free,[image_data_toolbar]
 	mcall SF_TERMINATE_PROCESS
+
+;input:
+; st0 - number
+; txt_addr - pointer to text buffer
+align 4
+proc update_number uses eax, txt_addr:dword
+	mov word[NumberSymbolsAD],2
+	fstp qword[Data_Double]
+	call DoubleFloat_to_String
+	mov eax,[txt_addr]
+	mov byte[eax],0
+	stdcall str_cat, eax,Data_String
+	ret
+endp
 
 align 4
 but_dr_0:
@@ -289,8 +305,6 @@ but_zoom_m:
 	call [kosglSwapBuffers]
 	ret
 
-align 4
-caption db 'Test textures, [Esc] - exit, [<-],[->],[Up],[Down] - rotate',0
 
 align 4
 draw_3d:
@@ -304,18 +318,27 @@ call [glPushMatrix]
 
 cmp dword[dr_figure],0
 jne @f
-	; рисование земли с меридианами
+	; drawing earth with meridians
 	stdcall [glColor3f], 0.0, 0.0, 1.0
 	stdcall [gluQuadricDrawStyle], [qObj],GLU_LINE
-	stdcall [gluSphere], [qObj], 1.0, 24,18 ;меридианы
+	push 18
+	push 24
+	glpush rad1
+	stdcall [gluSphere], [qObj] ;meridians
 	stdcall [gluQuadricDrawStyle], [qObj],GLU_FILL
-	stdcall [gluSphere], [qObj], 0.995, 24,18 ;земля
+	push 24
+	push 18
+	glpush rad2
+	stdcall [gluSphere], [qObj] ;Earth
 @@:
 cmp dword[dr_figure],1
 jne @f
-	; рисование земли
+	; drawing the earth
 	stdcall [gluQuadricDrawStyle], [qObj],GLU_FILL
-	stdcall [gluSphere], [qObj], 1.0, 64,64
+	push 64
+	push 64
+	glpush rad1
+	stdcall [gluSphere], [qObj]
 @@:
 call [glPopMatrix]
 
@@ -323,6 +346,13 @@ call [glPopMatrix]
 	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_angle_y,5,15,0xffff00
 	stdcall [buf2d_draw_text], buf_ogl, buf_1,txt_angle_x,5,25,0xffff00
 	ret
+
+align 4
+caption db 'Test textures, [Esc] - exit, [<-],[->],[Up],[Down] - rotate',0
+
+align 4
+rad1 dq 1.0
+rad2 dq 0.995
 
 scale dd 0.95 ;начальный масштаб
 sc_delt dd 0.05 ;изменение масштаба при нажатии
@@ -339,13 +369,17 @@ import_tinygl:
 
 macro E_LIB n
 {
+if defined sz_#n
 	n dd sz_#n
+end if
 }
 include '../export.inc'
 	dd 0,0
 macro E_LIB n
 {
+if used n
 	sz_#n db `n,0
+end if
 }
 include '../export.inc'
 
@@ -463,34 +497,27 @@ lib_name_2 db 'libimg.obj',0
 
 txt_scale:
 db 'Scale: '
-.v:
-db 0
-rb 10
+.v: rb 11
 
 txt_angle_z:
 db 'Rotate z: '
-.v:
-db 0
-rb 10
+.v: rb 11
 
 txt_angle_x:
 db 'Rotate x: '
-.v:
-db 0
-rb 10
+.v: rb 11
 
 txt_angle_y:
 db 'Rotate y: '
-.v:
-db 0
-rb 10
+.v: rb 11
 
 align 4
 buf_ogl:
 	dd 0 ;указатель на буфер изображения
-	dw 10,10 ;+4 left,top
-.w: dd 400
-.h: dd 350
+	dw 3d_wnd_l ;+4 left
+.t: dw 3d_wnd_t ;+6 top
+.w: dd 3d_wnd_w
+.h: dd 3d_wnd_h
 	dd 0,24 ;+16 color,bit in pixel
 
 align 4
@@ -509,7 +536,7 @@ l_libs_end:
 
 align 4
 i_end:
-	ctx1 rb 28 ;sizeof.TinyGLContext = 28
+	ctx1 TinyGLContext
 	image_data_toolbar dd 0
 	dr_figure dd 0
 	qObj dd 0

@@ -306,7 +306,7 @@ align 4
 		faddp
 		fild dword[rad_c]
 		fdivp ;radius=(size.x+size.y)/rad_c
-		fstp dword[sph_radius]
+		fstp qword[sph_radius]
 
 	;делаем одинаковый масштаб по осям x и y, что-бы не нарушались пропорции изображения
 	fld dword[edi+obj_3d.y_scale]
@@ -975,7 +975,10 @@ if version_edit eq 1
 		stdcall [glColor3ub],[color_select+2],[color_select+1],[color_select]
 		call [glPushMatrix]
 			stdcall [glTranslatef], [eax],[eax+4],[eax+8]
-			stdcall [gluSphere], [qObj], [sph_radius], 8,8
+			push 8
+			push 8
+			glpush sph_radius
+			stdcall [gluSphere], [qObj]
 		call [glPopMatrix]
 	@@:
 
@@ -996,7 +999,10 @@ align 4
 			mov eax,[eax]
 			call [glPushMatrix]
 				stdcall [glTranslatef], [eax],[eax+4],[eax+8]
-				stdcall [gluSphere], [qObj], [sph_radius], 4,4
+				push 4
+				push 4
+				glpush sph_radius
+				stdcall [gluSphere], [qObj]
 			call [glPopMatrix]
 			dec ecx
 			jz .end_select
@@ -1344,5 +1350,5 @@ delt_size dd 3.0 ;изменение углов при поворотах с кливиатуры
 mouse_drag dd 0 ;режим поворота сцены от перемещении курсора мыши
 mouse_x dd 0
 mouse_y dd 0
-sph_radius dd 0 ;радиус сферы для выделения активной точки
+sph_radius dq 0 ;radius of the sphere for selecting the active point
 
