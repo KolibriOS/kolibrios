@@ -1,7 +1,8 @@
 ; SPDX-License-Identifier: GPL-2.0-only
 ;
 ; Magnify - Screen Magnifier
-; Copyright (C) 2005-2025 MenuetOS, KolibriOS team
+; Copyright (C) 2005 MenuetOS
+; Copyright (C) 2005-2025 KolibriOS team
 ;
 ; Contributor MenuetOS - Main code
 ; Contributor Mario    - Checking for "rolled up" window
@@ -102,8 +103,8 @@ draw_window:
 ; MAG_H * MAG_W pixels grid
 draw_magnify:
 
-        mcall   SF_THREAD_INFO, WIN_INFO, -1
-        mov     al, byte [WIN_INFO + 70]
+        mcall   SF_THREAD_INFO, procinfo, -1
+        mov     al, byte [procinfo + 70]
         test    al, 0x04
         jne     .du_loop_end
 
@@ -230,5 +231,5 @@ I_END:
         align   512
 
 STACKTOP:
-        WIN_INFO        rb 1024
+        procinfo        rb 1024
 MEM:
