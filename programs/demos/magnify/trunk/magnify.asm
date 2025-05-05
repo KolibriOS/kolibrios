@@ -44,13 +44,13 @@ START:
 still:
         mcall   SF_WAIT_EVENT_TIMEOUT, DELAY
 
-        cmp     eax, 1
+        cmp     eax, EV_REDRAW
         je      redraw
 
-        cmp     eax, 3
+        cmp     eax, EV_BUTTON
         je      button
 
-        cmp     eax, 6
+        cmp     eax, EV_MOUSE
         je      mouse
 
         jmp     redraw
@@ -104,7 +104,7 @@ draw_window:
 draw_magnify:
 
         mcall   SF_THREAD_INFO, procinfo, -1
-        mov     al, byte [procinfo + 70]
+        mov     al, byte [procinfo.wnd_state]
         test    al, 0x04
         jne     .du_loop_end
 
@@ -231,5 +231,5 @@ I_END:
         align   512
 
 STACKTOP:
-        procinfo        rb 1024
+        procinfo        process_information
 MEM:
