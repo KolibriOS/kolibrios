@@ -1,3 +1,7 @@
+; SPDX-License-Identifier: GPL-2.0-only
+; Test 3 - example of drawing triangles
+; Copyright (C) 2014-2025 KolibriOS team
+
 use32
 	org 0
 	db 'MENUET01'
@@ -8,13 +12,14 @@ include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
 include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
+include '../kosgl.inc'
 include '../opengl_const.inc'
 
 @use_library
 
 align 4
 start:
-	load_library name_tgl, library_path, system_path, import_lib_tinygl
+	load_library name_tgl, library_path, system_path, import_tinygl
 	cmp eax,SF_TERMINATE_PROCESS
 	jz button.exit
 
@@ -34,11 +39,11 @@ red_win:
 align 16
 still:
 	mcall SF_WAIT_EVENT
-	cmp al,1
+	cmp al,EV_REDRAW
 	jz red_win
-	cmp al,2
+	cmp al,EV_KEY
 	jz key
-	cmp al,3
+	cmp al,EV_BUTTON
 	jz button
 	jmp still
 
@@ -99,7 +104,7 @@ caption db 'Test tinygl library, [Esc] - exit, [<-] and [->] - rotate',0
 
 align 4
 draw_3d:
-stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
+stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;clear the color and depth buffer
 
 call [glPushMatrix]
 	stdcall [glRotatef], [angle_z],0.0,0.0,1.0
@@ -136,30 +141,15 @@ angle_z dd 15.0
 delt_size dd 3.0
 
 ;--------------------------------------------------
-align 4
-import_lib_tinygl:
+include '../import.inc' ;tinygl
 
-macro E_LIB n
-{
-	n dd sz_#n
-}
-include '../export.inc'
-	dd 0,0
-macro E_LIB n
-{
-	sz_#n db `n,0
-}
-include '../export.inc'
-
-;--------------------------------------------------
 system_path db '/sys/lib/'
 name_tgl db 'tinygl.obj',0
 ;--------------------------------------------------
 
 align 16
 i_end:
-ctx1 rb 28 ;TinyGLContext or KOSGLContext
-;sizeof.TinyGLContext = 28
+ctx1 TinyGLContext
 cur_dir_path rb 4096
 library_path rb 4096
 	rb 1024
