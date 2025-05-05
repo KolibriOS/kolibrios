@@ -1,7 +1,7 @@
 #ifdef LANG_RUS
-#define HISTORY_HEADER "<html><title>История</title><body><b>Посещенные страницы</b><br>"
+#define HISTORY_HEADER "<html><title>История</title><body bgcolor=#fff><h3>Посещенные страницы</h3><br>"
 #else
-#define HISTORY_HEADER "<html><title>History</title><body><b>Visited pages</b><br>"
+#define HISTORY_HEADER "<html><title>History</title><body bgcolor=#fff><h3>Visited pages</h3><br>"
 #endif
 
 
@@ -13,7 +13,7 @@ ShowHistory()
 
 	for (i=0; i<history.items.count-1; i++) //if (cache.type.get(i) == PAGE)
 	{
-		strcat(history_pointer, "<a href='");
+		strcat(history_pointer, "<kosicon n=3><a href='");
 		strcat(history_pointer, history.items.get(i));
 		strcat(history_pointer, "'>");
 		strcat(history_pointer, history.items.get(i));

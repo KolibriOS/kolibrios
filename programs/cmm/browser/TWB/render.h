@@ -49,14 +49,14 @@ void TWebBrowser::RenderLine(dword _line)
 		pc = text_colors.get_last();
 		if (link) && (pc == text_colors.get(0)) pc = link_color_default;
 
-		canvas.WriteText(draw_x, draw_y, list.font_type, pc, _line, NULL);
-		if (style.b) canvas.WriteText(draw_x+1, draw_y, list.font_type, pc, _line, NULL);
+		canvas.WriteText(draw_x, draw_y+1, list.font_type, pc, _line, NULL);
+		if (style.b) canvas.WriteText(draw_x+1, draw_y+1, list.font_type, pc, _line, NULL);
 		if (style.s) canvas.DrawBar(draw_x, list.item_h / 2 - zoom + draw_y, pw, zoom, pc);
-		if (style.u) canvas.DrawBar(draw_x, list.item_h - zoom - zoom + draw_y, pw, zoom, pc);
+		if (style.u) canvas.DrawBar(draw_x, draw_y + list.font_h, pw, zoom, pc);
 		if (link) {
 			if (ESBYTE[_line]==' ') && (ESBYTE[_line+1]==NULL) {} else {
-				canvas.DrawBar(draw_x, draw_y + list.item_h - calc(zoom*2)-1, pw, zoom, link_color_default);
-				links.add_text(draw_x, draw_y + list.y, pw, list.item_h - calc(zoom*2)-1, zoom);				
+				canvas.DrawBar(draw_x, draw_y + list.font_h, pw, zoom, link_color_default);
+				links.add_text(draw_x, draw_y + list.y, pw, list.font_h, zoom);				
 			}
 		}
 		_SKIP_DRAW:

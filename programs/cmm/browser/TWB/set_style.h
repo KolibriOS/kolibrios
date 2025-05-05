@@ -208,9 +208,20 @@ void TWebBrowser::tag_li()
 void TWebBrowser::tag_hr()
 {
 	dword hrcol = 0x00777777;
-	if (tag.get_value_of("color")) hrcol = GetColor(tag.value);
+	dword hr_width = draw_w-BODY_MARGIN-BODY_MARGIN;
+	dword hr_size = 1;
+	if (tag.get_value_of("color")) {
+		hrcol = GetColor(tag.value);
+	}
+	if (tag.get_value_of("width")) && (!strchr(tag.value, '%')) {
+		hr_width = math.min(hr_width, tag.get_number_of("width"));
+	}
+	if (tag.get_number_of("size")) {
+		hr_size = math.min(500, tag.number);
+	} 
 	if (draw_x != left_gap) NewLine();
-	if (secondrun) canvas.DrawBar(5+left_gap, style.cur_line_h / 2 + draw_y - 1, draw_w-10, 1, hrcol);
+	if (secondrun) canvas.DrawBar(left_gap, style.cur_line_h / 2 + draw_y - 1, hr_width, hr_size, hrcol);
+	draw_y += hr_size - 3;
 	draw_x++;
 	NewLine();
 	return;
@@ -235,6 +246,12 @@ void TWebBrowser::tag_q()
 	chrncat(#linebuf, '\"', sizeof(TWebBrowser.linebuf));
 }
 
+void TWebBrowser::reset_font_style()
+{
+	list.SetFont(BASIC_CHAR_W, 14, 10011000b);
+	style.cur_line_h = list.item_h = list.font_h + 5;
+}
+
 void TWebBrowser::tag_h1234_caption()
 {
 	if (ESBYTE[#tag.name+1]=='4') {
@@ -250,19 +267,18 @@ void TWebBrowser::tag_h1234_caption()
 				NewLine();
 			}
 			if (tag.is("h1")) { 
-				list.SetFont(BASIC_CHAR_W*2, 14+14, 10011001b); 
+				list.SetFont(BASIC_CHAR_W*2, 14+13, 10011001b); 
 				style.b = true; 
 			} else if (tag.is("h2")) {
-				list.SetFont(BASIC_CHAR_W*2, 14+14, 10011001b); 
+				list.SetFont(BASIC_CHAR_W*2, 14+13, 10011001b); 
 			} else {
-				list.SetFont(6*2, 9+7, 10001001b);
+				list.SetFont(6*2, 9+8, 10001001b);
 			}
-			style.cur_line_h = list.item_h = list.font_h + 2;
+			style.cur_line_h = list.item_h = list.font_h + 3;
 		} else {
 			if (tag.is("h1")) style.b = false;
 			NewLine();
-			list.SetFont(BASIC_CHAR_W, 14, 10011000b);
-			style.cur_line_h = list.item_h = BASIC_LINE_H;
+			reset_font_style();
 		}		
 	}
 }
@@ -276,7 +292,7 @@ void TWebBrowser::tag_kosicon()
 	if (shared_i18) && (tag.get_number_of("n")) {
 		if (tag.number < maxicon) {
 			if (draw_x + 18 > canvas.bufw) NewLine();
-			canvas.DrawImage(draw_x, draw_y-2, 18, 18, 18*18*4*tag.number+shared_i18);
+			canvas.DrawImage(draw_x, draw_y-1, 18, 18, 18*18*4*tag.number+shared_i18);
 			draw_x += 22;			
 		}
 	}

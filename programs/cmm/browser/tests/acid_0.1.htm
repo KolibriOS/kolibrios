@@ -5,12 +5,19 @@
  <title>Тест Acid 0.1</title>
 </head>
 <body bgcolor="#000000" link="#0066FF" text="#FFFFFF">
-<h1 align=center>Это тестовая страница для проверки WebViewer</h1>
-<br />
-<p>WebViewer является текстовым браузером и поддерживает все популярные кодировки (cp1251, koi-8, cp866, unicode)
-и некоторые теги. Поддержка таблииц (&lt;table&gt;), CSS, Javascript'a и Контактика пока не реализована :)
+<h1 align=center>Тест Acid 0.1</h1>
+<br>
+<b>Это тестовая страница для проверки текстового браузера <s>HTML Viewer</s> WebView</b>
+
+<p>Из кодировок поддерживаются: CP866(DOS), CP1251(Windows), CP1252(Latin legacy), KOI8, и конечно UTF8. CSS и Javascript пока не реализованы (ахахаха). Поддержка тега &lt;table&gt; крайне базовая, поддержки вложенных таблиц нет.
 </p>
-<br />
+
+<h3>История</h3>
+
+Ранее программа называлась <b  >HTMLv (HTML Viewer)</b> и изначально задумывалась как <q>Центр справки и поддержки</q>. Чтобы не изобретать велосипед и одновременно исполнить мечту многих, форматом просматриваемых страниц был выбран html. 
+Первоначальный автор Veliant, затем разработка была подхвачена дизайнером Leency. Это была моя вторая программа после файлового менеджера Eolite.<br>
+
+<span> <br />
 
 <b>
 <font color="#FF0000">K</font>
@@ -33,7 +40,8 @@
 </b>
 <br>
 
-<p>
+<table>
+<td>
 <bg bgcolor=#333>
 Небольшой список:<ol>
 <li><q>Этот текст в кавычках</q></li>
@@ -46,16 +54,13 @@
 </p>
 <br>
 
-<pre>
-"Осень уже пришла!"-
-    Шепнул мне на ухо ветер,
-        Подкравшись к подушке моей.
-
-                               Басе
-</pre>
 <!-- комментарий: этого текста здесь <нет> -->
 
 <br>
+
+<img alt="нет картинки, просто alt">
+
+<img src = http://wiby.org/about/wibyplex.gif>
 
 <a href="http://kolibrios.org/i/logo.png"><img id="2.1.4" src="http://kolibrios.org/i/logo.png" alt="logo"><br>Открыть</a><br>
 
@@ -65,10 +70,25 @@
 <a href='/sys/index.htm'>Незакрытый тег а - index.htm<br>
 <a href="/sys/calc">/sys/calc</a><br>
 <a href="#2.1.4">#2.1.4</a><br>
-<a href="http://bash.im">http://bash.im</a><br>
+<a href="http://kolibrios.org">http://kolibrios.org</a><br>
 <a href="mailto:leency@mail.ru">Mail to Leency</a><br>
 <br>
-<br>
+
+<h1><a href=#>Link H1</a> <u>Underline H1</u></h1>
+<h2><a href=#>Link H2</a> <u>Underline H2</u></h2>
+<h3><a href=#>Link H3</a> <u>Underline H2</u></h3>
+<a href=#>Link</a> <u>Underline</u>
+
+<td>
+
+<pre>
+"Осень уже пришла!"-
+    Шепнул мне на ухо ветер,
+        Подкравшись к подушке моей.
+
+                               Басе
+
+</pre><br>
 
 В этом тексте есть переход на следующую строку, но браузер
 его должен проигнорировать. Еще много           пробелов. А тут есть 
@@ -80,8 +100,19 @@
       &#1082;&#1086;&#1088;&#1087;&#1091;&#1089; &#1085;&#1072; &#1090;&#1077;&#1088;&#1088;&#1080;&#1090;&#1086;&#1088;&#1080;&#1080; &#1053;&#1058;&#1059; «&#1061;&#1055;&#1048;»
 </p>
 
+<pre><font color="#000">
+  <font bg=#FFED00 style="background-color:#FFED00"> Заметки </font>
+  <font bg=#FFFBCE style="background-color:#FFFBCE">                             </font>
+  <font bg=#FFFBCE style="background-color:#FFFBCE">   Речка на Жукова           </font>
+  <font bg=#FFFBCE style="background-color:#FFFBCE">   Heroes 3                  </font>
+  <font bg=#FFFBCE style="background-color:#FFFBCE">   Рисостерон, куринабол     </font>
+  <font bg=#FFFBCE style="background-color:#FFFBCE">                             </font>
+</font></pre>
+
+</table>
+
 <hr color="#758999"> 
-<center>Zhitomyr 2008-2015</center>
+<center>Zhytomyr 2008-2025</center>
 
 
 </body>
