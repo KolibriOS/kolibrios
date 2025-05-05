@@ -1,0 +1,48 @@
+;
+; Export functions
+;
+
+E_LIB lib_init
+E_LIB buf2d_create
+E_LIB buf2d_create_f_img
+E_LIB buf2d_clear
+E_LIB buf2d_draw
+E_LIB buf2d_delete
+E_LIB buf2d_resize
+E_LIB buf2d_rotate
+E_LIB buf2d_line
+E_LIB buf2d_line_sm
+E_LIB buf2d_rect_by_size
+E_LIB buf2d_filled_rect_by_size
+E_LIB buf2d_circle
+E_LIB buf2d_img_hdiv2
+E_LIB buf2d_img_wdiv2
+E_LIB buf2d_conv_24_to_8
+E_LIB buf2d_conv_24_to_32
+E_LIB buf2d_bit_blt
+E_LIB buf2d_bit_blt_transp
+E_LIB buf2d_bit_blt_alpha
+E_LIB buf2d_curve_bezier
+E_LIB buf2d_convert_text_matrix
+E_LIB buf2d_draw_text
+E_LIB buf2d_crop_color
+E_LIB buf2d_offset_h
+E_LIB buf2d_flood_fill
+E_LIB buf2d_set_pixel
+E_LIB buf2d_get_pixel
+E_LIB buf2d_flip_h
+E_LIB buf2d_flip_v
+E_LIB buf2d_filter_dither
+
+E_LIB buf2d_vox_brush_create
+E_LIB buf2d_vox_brush_delete
+E_LIB buf2d_vox_obj_get_img_w_3g
+E_LIB buf2d_vox_obj_get_img_h_3g
+E_LIB buf2d_vox_obj_draw_1g
+E_LIB buf2d_vox_obj_draw_3g
+E_LIB buf2d_vox_obj_draw_3g_scaled
+E_LIB buf2d_vox_obj_draw_pl
+E_LIB buf2d_vox_obj_draw_pl_scaled
+E_LIB buf2d_vox_obj_draw_3g_shadows
+
+purge E_LIB
