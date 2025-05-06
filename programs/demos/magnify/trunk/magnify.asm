@@ -3,11 +3,6 @@
 ; Magnify - Screen Magnifier
 ; Copyright (C) 2005 MenuetOS
 ; Copyright (C) 2005-2025 KolibriOS team
-;
-; Contributor MenuetOS - Main code
-; Contributor Mario    - Checking for "rolled up" window
-; Contributor Leency   - Display of grid between pixels
-; Contributor Burer    - Massive code refactoring and logic update
 
 ;---------------------------------------------------------------------
 
