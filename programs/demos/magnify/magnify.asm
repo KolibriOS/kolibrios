@@ -19,14 +19,14 @@ dd      0, 0
 
 ;---------------------------------------------------------------------
 
-include '../../../macros.inc'
-include "../../../KOSfuncs.inc"
-include "../../../encoding.inc"
+include '../../macros.inc'
+include "../../KOSfuncs.inc"
+include "../../encoding.inc"
 
 ;---------------------------------------------------------------------
 
 START:
-        mcall   SF_SET_EVENTS_MASK, 0x00000027
+        mcall   SF_SET_EVENTS_MASK, EVM_REDRAW or EVM_BUTTON or EVM_MOUSE
 
         mcall   SF_SYS_MISC, SSF_HEAP_INIT
 
