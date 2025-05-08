@@ -65,13 +65,12 @@ button:
 
 mouse:
         mcall   SF_MOUSE_GET, SSF_BUTTON
+        
         test    ax, 0x0001
-        jz      .move
-        jmp     still
+        jnz     still
 
-        .move:
-                call    logic_read_screen
-                call    draw_magnify
+        call    logic_read_screen
+        call    draw_magnify
 
         jmp     still
 
