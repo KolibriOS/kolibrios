@@ -2021,10 +2021,11 @@ str_head        db 'HEAD ', 0
 str_post        db 'POST ', 0
 
 bits_must_escape:
-dd      0xffffffff                                                      ; 00-1F
-dd      1 shl 0 + 1 shl 2 + 1 shl 3 + 1 shl 5 + 1 shl 28 + 1 shl 30     ; "#%<>
-dd      1 shl 27 + 1 shl 28 + 1 shl 29 + 1 shl 30                       ;[\]^
-dd      1 shl 0 + 1 shl 27 + 1 shl 28 + 1 shl 29 + 1 shl 31             ;`{|} DEL
+dd      0xffffffff                                                                              ; 00-1F
+dd      1 shl 0 + 1 shl 2 + 1 shl 3 + 1 shl 5 + 1 shl 6 + 1 shl 11 + 1 shl 28 + 1 shl 30        ; "#%<>+&"
+dd      1 shl 0 + 1 shl 2 + 1 shl 3 + 1 shl 5 + 1 shl 28 + 1 shl 30                             ; "#%<>
+dd      1 shl 27 + 1 shl 28 + 1 shl 29 + 1 shl 30                                               ;[\]^
+dd      1 shl 0 + 1 shl 27 + 1 shl 28 + 1 shl 29 + 1 shl 31                                     ;`{|} DEL
 
 dd      0xffffffff
 dd      0xffffffff
