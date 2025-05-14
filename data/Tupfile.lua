@@ -428,7 +428,7 @@ tup.append_table(img_files, {
  {"KPACK", VAR_PROGS .. "/other/kpack/trunk/kpack"},
  {"LAUNCHER", VAR_PROGS .. "/system/launcher/trunk/launcher"},
  {"LOADDRV", VAR_PROGS .. "/system/loaddrv/loaddrv"},
- {"MAGNIFY", VAR_PROGS .. "/demos/magnify/trunk/magnify"},
+ {"MAGNIFY", VAR_PROGS .. "/system/magnify/magnify"},
  {"MGB", VAR_PROGS .. "/testing/mgb/trunk/mgb"},
  {"MOUSEMUL", VAR_PROGS .. "/system/mousemul/trunk/mousemul"},
  {"MADMOUSE", VAR_PROGS .. "/other/madmouse/madmouse"},

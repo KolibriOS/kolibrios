@@ -19,9 +19,9 @@ dd      0, 0
 
 ;---------------------------------------------------------------------
 
-include '../../../macros.inc'
-include "../../../KOSfuncs.inc"
-include "../../../encoding.inc"
+include '../../macros.inc'
+include "../../KOSfuncs.inc"
+include "../../encoding.inc"
 
 ;---------------------------------------------------------------------
 
