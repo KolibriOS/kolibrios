@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2020. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2025. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  HTTP library for KolibriOS                                     ;;
@@ -2021,15 +2021,15 @@ str_head        db 'HEAD ', 0
 str_post        db 'POST ', 0
 
 bits_must_escape:
-dd      0xffffffff                                                      ; 00-1F
-dd      1 shl 0 + 1 shl 2 + 1 shl 3 + 1 shl 5 + 1 shl 28 + 1 shl 30     ; "#%<>
-dd      1 shl 27 + 1 shl 28 + 1 shl 29 + 1 shl 30                       ;[\]^
-dd      1 shl 0 + 1 shl 27 + 1 shl 28 + 1 shl 29 + 1 shl 31             ;`{|} DEL
-
-dd      0xffffffff
-dd      0xffffffff
-dd      0xffffffff
-dd      0xffffffff
+;       bit 31 <========   ========> bit 0      ; bit 0 ===> bit 31
+dd      0xffffffff                              ;00-1F
+dd      11111100_00000000_10011111_11111111b    ; !"#$%&'()*+,/:;<=>?
+dd      01111000_00000000_00000000_00000001b    ;@[\]^
+dd      10111000_00000000_00000000_00000001b    ;`{|} DEL
+dd      0xffffffff                              ;80-9F
+dd      0xffffffff                              ;A0-BF
+dd      0xffffffff                              ;C0-DF
+dd      0xffffffff                              ;E0-FF
 
 str_hex:
 db '0123456789ABCDEF'
