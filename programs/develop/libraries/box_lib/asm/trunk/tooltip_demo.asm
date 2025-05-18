@@ -34,14 +34,14 @@ START:
 ;---------------------------------------------------------------------
 ;--- ИНИЦИАЛИЗАЦИЯ ----------------------------------------
 ;---------------------------------------------------------------------
-mcall	68, 11
+mcall	SF_SYS_MISC, SSF_HEAP_INIT
 
-mcall 40, $C0000027 ; маска событий - мышь только в активном окне
+mcall SF_SET_EVENTS_MASK, $C0000027 ; маска событий - мышь только в активном окне
 
-sys_load_library  lib_name, lib_path, sys_path, myimport
+sys_load_library  lib_name, lib_path, sys_path, import_box_lib
 test eax,eax
 jz	@f
-	mcall -1 ; alarm exit
+	mcall SF_TERMINATE_PROCESS
 @@:
 
 
@@ -56,16 +56,16 @@ call draw_window ; вызываем процедуру отрисовки окна
 ;---------------------------------------------------------------------
 
 still:
-mcall 23, 5 ; функция 23 - ждать события Не более чем 0.05с
+mcall SF_WAIT_EVENT_TIMEOUT, 5 ; ждать события не более чем 0.05с
 test eax, eax ; нет событий - проверить рисование тултипов по таймеру
 je yield
-cmp eax,1 ; перерисовать окно ?
+cmp eax,EV_REDRAW
 je red ; если да - на метку red
-cmp eax,2 ; нажата клавиша ?
+cmp eax,EV_KEY
 je key ; если да - на key
-cmp eax,3 ; нажата кнопка ?
+cmp eax,EV_BUTTON
 je button ; если да - на button
-cmp eax,6 ; событие мыши
+cmp eax,EV_MOUSE
 je mouse ; если да - на mouse
 
 jmp still ; если другое событие - в начало цикла
@@ -81,21 +81,21 @@ invoke tooltip_mouse, redbox_tt
 jmp still ; вернуться к началу цикла
 
 key: ; нажата клавиша на клавиатуре
-mcall 2 ; функция 2 - считать код символа (в ah)
+mcall SF_GET_KEY ; считать код символа (в ah)
 
 jmp still ; вернуться к началу цикла
 
 ;---------------------------------------------------------------------
 
 button:
-mcall 17 ; 17 - получить идентификатор нажатой кнопки
+mcall SF_GET_BUTTON ; получить идентификатор нажатой кнопки
 
 cmp ah, 1 ; если НЕ нажата кнопка с номером 1,
 jne still ; вернуться
 
 pexit:
 invoke tooltip_delete, redbox_tt	; освобождаем память
-mcall -1 ; иначе конец программы
+mcall SF_TERMINATE_PROCESS
 
 
 ;---------------------------------------------------------------------
@@ -104,20 +104,20 @@ mcall -1 ; иначе конец программы
 
 draw_window:
 
-mcall 12, 1 ; функция 12: сообщить ОС о начале отрисовки
+mcall SF_REDRAW, SSF_BEGIN_DRAW
 
-mcall 48, 3, sc,sizeof.system_colors
+mcall SF_STYLE_SETTINGS, SSF_GET_COLORS, sc, sizeof.system_colors
 
 mov edx, [sc.work] ; цвет фона
 or edx, 0x33000000 ; и тип окна 3
-mcall 0, <200,300>, <200,150>, , ,title
+mcall SF_CREATE_WINDOW, <200,300>, <200,150>, , ,title
 
 ; вывод квадратиков
-mcall 13, <60,50>, <50,50>, $FF0000
-mcall 13, <140,50>, <50,50>, $FF
+mcall SF_DRAW_RECT, <60,50>, <50,50>, $FF0000
+mcall SF_DRAW_RECT, <140,50>, <50,50>, $FF
 
 
-mcall 12, 2 ; функция 12.2, закончили рисовать
+mcall SF_REDRAW, SSF_END_DRAW
 
 ret ; выходим из процедуры
 
@@ -135,22 +135,7 @@ lib_name    db 'box_lib.obj',0
 cur_dir_path    rb 4096
 lib_path    rb 4096
 
-myimport:
-				dd sz_lib_init ;функция запускается макросом 1 раз при подключении 
-;библиотеки, потому в программе метка на нее не нужна
-tooltip_init  	dd sz_tooltip_init
-tooltip_delete	dd sz_tooltip_delete
-tooltip_test_show	dd sz_tooltip_test_show
-tooltip_mouse	dd sz_tooltip_mouse
-get_font_size	dd sz_get_font_size
-    dd    0,0
-
-sz_lib_init 			db 'lib_init',0
-sz_tooltip_init			db 'tooltip_init', 0
-sz_tooltip_delete		db 'tooltip_delete', 0
-sz_tooltip_test_show	db 'tooltip_test_show', 0
-sz_tooltip_mouse		db 'tooltip_mouse', 0
-sz_get_font_size		db 'get_font_size', 0
+include '../../import.inc' ;import_box_lib
 
 
 ;tooltip txt, next, zone_x, zone_w, zone_y, zone_h, col_txt, col_bkg, tm_wait

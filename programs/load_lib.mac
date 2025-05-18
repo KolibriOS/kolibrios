@@ -24,6 +24,9 @@ library_fun_memory_realloc equ mem_realloc
 library_fun_dll_load equ dll_load
 
 align 4
+strz_lib_init db 'lib_init',0
+
+align 4
 arrea_xx dd 0
 file_name db '/sys/@notify',0
 
@@ -214,7 +217,7 @@ end if
 		jmp		i_error
 align 4
 	i_begin:
-		import_boxlib myimport
+		import_some_library myimport
 		test	eax,eax
 		jz		i_exit
 	i_error:
@@ -234,13 +237,13 @@ macro load_library library_name__, library_path__, system_path__, myimport, poin
 local i_begin
 local i_error
 local i_exit
-	push ebx
 if point_dir_name__ eq
 		copy_path   library_name__, [32], library_path__,0
 else
 		;the macros making way /current path a program/ + name system library
 		copy_path   library_name__, [32], library_path__,point_dir_name__
 end if
+	push ebx
 		mcall	SF_SYS_MISC,SSF_LOAD_DLL,library_path__ ; load of alternative
 		test	eax,eax
 		jnz		i_begin
@@ -251,7 +254,7 @@ end if
 		jmp		i_error
 align 4
 	i_begin:
-		import_boxlib myimport
+		import_some_library myimport
 		test	eax,eax
 		jz		i_exit
 	i_error:
@@ -309,7 +312,7 @@ align 4
 align 4
 	end_steep:
 		mov		adr_load_lib,eax        ;save adr lib in memory
-		import_boxlib my_import
+		import_some_library my_import
 		test	eax,eax
 		jz		cycle0n
 		or		status_lib,2          ; status of code - enable error - import error
@@ -387,7 +390,7 @@ align 4
 align 4
 	end_steep:
 		mov		adr_load_lib,eax        ;save adr lib in memory
-		import_boxlib my_import
+		import_some_library my_import
 		test	eax,eax
 		jz		cycle0n
 		or		status_lib,2          ; status of code - enable error - import error
@@ -451,7 +454,7 @@ pop ebx eax
 ;output:
 ; eax - если удачно то 0 или указатель на имя функции которую не удалось загрузить
 ; ebx - разрушается
-macro import_boxlib myimport
+macro import_some_library myimport
 {
 local import_loop
 local import_find

@@ -18,7 +18,7 @@ include '../../../../../load_lib.mac'
     @use_library         ;use load lib macros
 start:
 ;universal load library/librarys
-sys_load_library  library_name, library_path, system_path, myimport
+sys_load_library  library_name, library_path, system_path, import_box_lib
 ;if return code =-1 then exit, else nornary work
     cmp      eax,-1
     jz       exit
@@ -116,37 +116,7 @@ library_name    db 'box_lib.obj',0
 ;library_name     db 'box_lib.obj',0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-myimport:
-
-edit_box_draw    dd    aEdit_box_draw
-edit_box_key     dd    aEdit_box_key
-edit_box_mouse   dd    aEdit_box_mouse
-version_ed       dd    aVersion_ed
-
-init_checkbox    dd    aInit_checkbox
-check_box_draw   dd    aCheck_box_draw
-check_box_mouse  dd    aCheck_box_mouse
-version_ch       dd    aVersion_ch
-
-option_box_draw  dd    aOption_box_draw
-option_box_mouse dd    aOption_box_mouse
-version_op       dd    aVersion_op
-
-    dd    0,0
-
-aEdit_box_draw   db 'edit_box_draw',0
-aEdit_box_key    db 'edit_box_key',0
-aEdit_box_mouse  db 'edit_box_mouse',0
-aVersion_ed      db 'version_ed',0
-
-aInit_checkbox   db 'init_checkbox2',0
-aCheck_box_draw  db 'check_box_draw2',0
-aCheck_box_mouse db 'check_box_mouse2',0
-aVersion_ch      db 'version_ch2',0
-
-aOption_box_draw  db 'option_box_draw',0
-aOption_box_mouse db 'option_box_mouse',0
-aVersion_op       db 'version_op',0
+include '../../import.inc' ;creating a function import table
 
 
 check1 check_box2 (10 shl 16 + 12),(45 shl 16 + 12),5,0x80AABBCC,0,0,check_text1,ch_flag_en
