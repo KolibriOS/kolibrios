@@ -470,10 +470,14 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         dec     edx
         jnz     @b
 
+        inc     ecx
         lea     esi, [edi-1]
         lea     edi, [node_entry2+4]
       @@:
         movsb
+        dec     ecx
+        ; check if the file name is incomplete
+        jz      .store_last_entry
         cmp     word[esi], 0x0a0d ; end of entry
         jne     @b
         mov     byte[edi], 0
