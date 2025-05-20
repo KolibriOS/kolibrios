@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 format binary as ""
 
 use32
@@ -13,13 +16,13 @@ __DEBUG_LEVEL__  = 1
 
 LG_TRACE equ 1
 
-include '../../../config.inc'
-include '../../../proc32.inc'
-include '../../../macros.inc'
-include '../../../KOSfuncs.inc'
-include '../../../dll.inc'
-include '../../../debug-fdo.inc'
-include '../../../develop/libraries/libs-dev/libimg/libimg.inc'
+include '../../config.inc'
+include '../../proc32.inc'
+include '../../macros.inc'
+include '../../KOSfuncs.inc'
+include '../../dll.inc'
+include '../../debug-fdo.inc'
+include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 
 
 KEY_MOVE_PIXELS   = 50

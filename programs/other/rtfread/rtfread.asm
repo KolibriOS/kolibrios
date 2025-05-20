@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;   RTF READER FOR KOLIBRI >= 0.7.7.0
 ;   Written in pure assembler by Ivushkin Andrey aka Willow
 ;   Menu_bar and scroll_bar from box_lib provided by dunkaist
@@ -57,15 +60,15 @@ AR_OFFSET               equ     10
   dd     fname_buf   ; адрес буфера для параметров
   dd     cur_dir_path ; путь к программе
 
-include '../../../config.inc' ;for nightbuild
-include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
-include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../KOSfuncs.inc'
-include '../../../load_lib.mac'
+include '../../config.inc' ;for nightbuild
+include '../../macros.inc' ; Macros facilitate the life of assemblers!
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../KOSfuncs.inc'
+include '../../load_lib.mac'
 
 @use_library
 
-; include '../../../debug.inc'
+; include '../../debug.inc'
 
 TOP=TOP+4
 include 'bgifont.inc'
@@ -242,10 +245,10 @@ key:                  ; нажата клавиша на клавиатуре
   .home:
     cmp  ah,180         ; Home
     je   top_red
-    
+
     cmp  dword[is_scroll_bar_needed], 0
      je  still
-    
+
     mov  ebx,dword[prcinfo+46]
     sub  ebx,TOP+15
     cmp  ah,183 ;PgDn
@@ -254,7 +257,7 @@ key:                  ; нажата клавиша на клавиатуре
 
     cmp  dword[is_scroll_bar_needed], 0
      je  still
-    
+
     mov  eax, [scroll_bar_data_vertical.position]
     add  eax, AR_OFFSET*7
     mov  ebx, [scroll_bar_data_vertical.max_area]
@@ -273,7 +276,7 @@ key:                  ; нажата клавиша на клавиатуре
 
     cmp  dword[is_scroll_bar_needed], 0
      je  still
-    
+
     mov  eax, [scroll_bar_data_vertical.position]
     add  eax, AR_OFFSET
     mov  ebx, [scroll_bar_data_vertical.max_area]
@@ -299,7 +302,7 @@ key:                  ; нажата клавиша на клавиатуре
 
     cmp  dword[is_scroll_bar_needed], 0
      je  still
-    
+
     cmp  dword[scroll_bar_data_vertical.position], AR_OFFSET*7
     sub  dword[scroll_bar_data_vertical.position], AR_OFFSET*7
     jg  @f
@@ -314,7 +317,7 @@ key:                  ; нажата клавиша на клавиатуре
 
     cmp  dword[is_scroll_bar_needed], 0
      je  still
-    
+
     cmp  dword[scroll_bar_data_vertical.position], AR_OFFSET
     sub  dword[scroll_bar_data_vertical.position], AR_OFFSET
     jg  @f
@@ -337,7 +340,7 @@ key:                  ; нажата клавиша на клавиатуре
 
     cmp  dword[is_scroll_bar_needed], 0
      je  still
-    
+
     mov  eax, [scroll_bar_data_vertical.max_area]
     sub  eax, [scroll_bar_data_vertical.cur_area]
     mov  dword[scroll_bar_data_vertical.position], eax
@@ -350,7 +353,7 @@ key:                  ; нажата клавиша на клавиатуре
 ;---------------------------------------------------------------------
 ;OpenDialog_start:
 ;       copy_path       open_dialog_name,path,library_path,0
-        
+
         push    dword OpenDialog_data
         call    [OpenDialog_Start]
 
@@ -366,14 +369,14 @@ key:                  ; нажата клавиша на клавиатуре
     cmp   ah, 1         ; если нажата кнопка с номером 1,
     je    .exit
     jmp still
-    
+
   .exit:
     mcall -1            ; иначе конец программы
-    
+
 
 ;---------------------------------------------------------------------
 ;---  MOUSE EVENT PROCESSING  ----------------------------------------
-;---------------------------------------------------------------------    
+;---------------------------------------------------------------------
 mouse:
         mcall   37,7
         test    eax,    eax
@@ -454,9 +457,9 @@ mouse:
 
         push    dword scroll_bar_data_vertical
         call    [scrollbar_ver_mouse]
-  
+
         call    Set_position
-        
+
         mov     eax,scroll_bar_data_vertical.redraw
         xor     ebx,ebx
         cmp     [eax],ebx
@@ -482,7 +485,7 @@ draw_window:
   @@:
     mov  edx, -1
     mov  esi, -1
-    
+
     mov  eax, [procinfo2.box.width]
     cmp  eax, [window_width]
      je  @f
@@ -526,11 +529,11 @@ draw_window:
 	  sub ebx, SCROLL_WIDTH_SIZE
 	  dec ebx
 	@@:
-	
+
 	mov  ecx, 19*65536-23
     add  ecx, [procinfo2.box.height]
 	sub  ecx, [skin_height]
-	
+
 	mov  eax, 13
 	mov  edx, 0xf0f0f0
 	int 0x40
@@ -544,13 +547,13 @@ draw_window:
 ; draw for Vertical ScrollBar
         push    dword scroll_bar_data_vertical
         call    [scrollbar_ver_draw]
-; reset all_redraw flag 
+; reset all_redraw flag
         xor     eax,eax
         mov     [scroll_bar_data_vertical.all_redraw],eax
   @@:
 ;---------------------------------------------
 	;po-moumu eto govno mamonta
-	
+
     ;mcall 47,0x30000,isymImplemented,<114,8>, 0x10DDEEFF
     ;add  edx,36 shl 16
     ;mcall ,,isymMax
@@ -585,18 +588,18 @@ draw_window:
 ;---------------------------------------------
 ; draw for Menu 1
         push    dword menu_data_1
-        call    [menu_bar_draw] 
+        call    [menu_bar_draw]
 ; draw for Menu 2
         push    dword menu_data_2
-        call    [menu_bar_draw] 
+        call    [menu_bar_draw]
 ; draw for Menu 3
         push    dword menu_data_3
-        call    [menu_bar_draw]         
+        call    [menu_bar_draw]
 ;---------------------------------------------
 
     sub  dword[prcinfo+42],2*LMARGIN+SCROLL_WIDTH_SIZE
     sub  dword[prcinfo+46],CHARH+25
-    
+
  if GUTTER eq 1
     mov  ebx,LMARGIN shl 16+20
     mov  ecx,20
@@ -676,7 +679,7 @@ call Set_position
 ; draw for Vertical ScrollBar
         push    dword scroll_bar_data_vertical
         call    [scrollbar_ver_draw]
-; reset all_redraw flag 
+; reset all_redraw flag
         xor     eax,eax
         mov     [scroll_bar_data_vertical.all_redraw],eax
   @@:
@@ -712,10 +715,10 @@ Set_position:
     mov ebx, [scroll_bar_data_vertical.max_area]
     sub ebx, [scroll_bar_data_vertical.cur_area]
     div ebx
-    
+
     mov dword[top], TOP
     sub dword[top], eax
-    
+
   .quit:
     ret
 ;---------------------------------------------------------------------
@@ -728,7 +731,7 @@ Set_scroll_position:
     mov eax, dword[procinfo2+0x42]
     sub eax, 17
     mov word[scroll_bar_data_vertical.size_y], ax
-    
+
     ret
 ;---------------------------------------------------------------------
 
@@ -1049,7 +1052,7 @@ litt_end:
 help_file:
     file  'reader.rtf'
 help_end:
-  
+
 I_END0:
 fname_buf:
         rb      1024+16

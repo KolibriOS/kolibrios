@@ -13,12 +13,12 @@ rem
    set __value=
    set __res=
    shift
-   
+
   :__allowed
    set __values=%1 %__values%
    shift
    if not "%1"=="" goto __allowed
-   
+
    set /P __res=">
   :Check_Value
    for %%a in (%__values%) do if %%a==%__res% set __value=%__res%
@@ -59,7 +59,7 @@ echo *
 fasm system\calendar\trunk\calendar.asm %BIN%\calendar
 fasm system\board\trunk\board.asm %BIN%\develop\board
 fasm system\commouse\trunk\commouse.asm %BIN%\commouse
-fasm system\cpu\trunk\cpu.asm %BIN%\cpu 
+fasm system\cpu\trunk\cpu.asm %BIN%\cpu
 fasm system\cpuid\trunk\cpuid.asm %BIN%\cpuid
 fasm system\skincfg\trunk\skincfg.asm %BIN%\skincfg
 fasm system\docpack\trunk\docpack.asm %BIN%\docpack
@@ -154,16 +154,16 @@ echo *
 echo Building other
 echo *
 rem fasm other\archer\trunk\@rcher.asm %BIN%\@rcher
-fasm other\calc\trunk\calc.asm %BIN%\calc
+fasm other\calc\calc.asm %BIN%\calc
 fasm other\mhc\trunk\mhc.asm %BIN%\mhc
-fasm other\period\trunk\period.asm %BIN%\period
-fasm other\rtfread\trunk\rtfread.asm %BIN%\rtfread
+fasm other\period\period.asm %BIN%\period
+fasm other\rtfread\rtfread.asm %BIN%\rtfread
 
 echo *
 echo Building media
 echo *
 rem media\ac97snd\trunk\ac97snd.asm ac97snd
-fasm media\animage\trunk\animage.asm %BIN%\animage
+fasm media\animage\animage.asm %BIN%\animage
 fasm media\cdp\trunk\cdp.asm %BIN%\cdp
 fasm media\gifview\trunk\gifview.asm %BIN%\gifview
 fasm media\iconedit\trunk\iconedit.asm %BIN%\iconedit
@@ -231,9 +231,9 @@ echo *
 echo Building depend application for fdd's nightbuild
 echo *
 echo __nightbuild fix yes >> config.inc
-fasm media\kiv\trunk\kiv.asm %BIN%\nightbuild\kiv
+fasm media\kiv\kiv.asm %BIN%\nightbuild\kiv
 fasm media\scrshoot\scrshoot.asm %BIN%\nightbuild\scrshoot
-fasm media\animage\trunk\animage.asm %BIN%\nightbuild\animage
+fasm media\animage\animage.asm %BIN%\nightbuild\animage
 fasm media\midamp\trunk\midamp.asm %BIN%\nightbuild\midamp
 fasm develop\heed\trunk\heed.asm %BIN%\nightbuild\heed
 fasm develop\tinypad\trunk\tinypad.asm %BIN%\nightbuild\tinypad
@@ -242,27 +242,27 @@ fasm system\hdd_info\trunk\hdd_info.asm %BIN%\nightbuild\hdd_info
 fasm system\mgb\trunk\mgb.asm %BIN%\nightbuild\mgb
 fasm system\rdsave\trunk\rdsave.asm %BIN%\nightbuild\rdsave
 fasm other\kpack\trunk\kpack.asm %BIN%\nightbuild\kpack
-fasm other\rtfread\trunk\rtfread.asm %BIN%\nightbuild\rtfread
+fasm other\rtfread\rtfread.asm %BIN%\nightbuild\rtfread
 ;restore
 echo __CPU_type fix %res% > config.inc
 erase lang.inc
 
 echo *
-echo Finished building 
+echo Finished building
 echo *
 
 
 kpack /nologo 2> nul
 if "%errorlevel%"=="9009" (
 echo   *** NOTICE ***
-echo If you want to pack all applications you may 
+echo If you want to pack all applications you may
 echo place "kpack" in accessible directory.
 echo You can download that tool from http://diamondz.land.ru/
 goto END
 )
 
 echo Kpack KolibriOS apps?
-echo     
+echo
 
 set /P res=[y/n]?
 
@@ -273,7 +273,7 @@ echo Compressing system
 echo *
 kpack %BIN%\calendar
 kpack %BIN%\develop\board
-kpack %BIN%\cpu 
+kpack %BIN%\cpu
 kpack %BIN%\cpuid
 kpack %BIN%\skincfg
 kpack %BIN%\docpack

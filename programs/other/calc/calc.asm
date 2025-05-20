@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;;   Calculator for MenuetOS (c) Ville Turjanmaa
 ;;
 ;;   Compile with FASM
@@ -31,9 +34,9 @@ use32
         dd      E_END           ; esp
         dd      0x0,0x0         ; I_Param , I_Icon
 
-include '../../../macros.inc'
-include '../../../gui_patterns.inc'
-include '../../../KOSfuncs.inc'
+include '../../macros.inc'
+include '../../gui_patterns.inc'
+include '../../KOSfuncs.inc'
 
 hotkeys_count equ 26
 asci:   db 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 43, 61, 13, 45, 42, 47, 44, 46, 27, 182, \
