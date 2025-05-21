@@ -574,7 +574,7 @@ tup.append_table(img_files, {
  {"DRIVERS/USBSTOR.SYS", VAR_DRVS .. "/usb/usbstor.sys"},
  {"DRIVERS/RDC.SYS", VAR_DRVS .. "/video/rdc.sys"},
  {"DRIVERS/COMMOUSE.SYS", VAR_DRVS .. "/mouse/commouse.sys"},
- {"DRIVERS/PS2MOUSE.SYS", VAR_DRVS .. "/mouse/ps2mouse4d/trunk/ps2mouse.sys"},
+ {"DRIVERS/PS2MOUSE.SYS", VAR_DRVS .. "/mouse/ps2mouse4d/ps2mouse.sys"},
  {"DRIVERS/TMPDISK.SYS", VAR_DRVS .. "/disk/tmpdisk.sys"},
  {"DRIVERS/HDAUDIO.SYS", VAR_DRVS .. "/audio/intel_hda/hdaudio.sys"},
  {"DRIVERS/SB16.SYS", VAR_DRVS .. "/audio/sb16/sb16.sys"},
