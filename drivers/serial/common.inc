@@ -1,3 +1,5 @@
+SERIAL_COMPATIBLE_API_VER = 0 ; increments in case of breaking changes
+
 SERIAL_API_GET_VERSION = 0
 SERIAL_API_SRV_ADD_PORT = 1
 SERIAL_API_SRV_REMOVE_PORT = 2
@@ -21,14 +23,18 @@ SERIAL_CONF_PARITY_ODD = 2
 SERIAL_CONF_PARITY_MARK = 3
 SERIAL_CONF_PARITY_SPACE = 4
 
+SERIAL_CONF_STOP_BITS_1 = 0
+SERIAL_CONF_STOP_BITS_1_5 = 1
+SERIAL_CONF_STOP_BITS_2 = 2
+
 SERIAL_CONF_FLOW_CTRL_NONE = 0
 
 struct  SP_DRIVER
         size            dd ? ; size of this struct
-        startup         dd ? ; void __stdcall (*startup)(void *drv_data, const struct serial_conf *conf);
-        shutdown        dd ? ; void __stdcall (*shutdown)(void *drv_data);
-        reconf          dd ? ; void __stdcall (*reconf)(void *drv_data, const struct serial_conf *conf);
-        tx              dd ? ; void __stdcall (*tx)(void *drv_data);
+        startup         dd ? ; int __stdcall (*startup)(void *drv_data, const struct serial_conf *conf);
+        shutdown        dd ? ; int __stdcall (*shutdown)(void *drv_data);
+        reconf          dd ? ; int __stdcall (*reconf)(void *drv_data, const struct serial_conf *conf);
+        tx              dd ? ; int __stdcall (*tx)(void *drv_data);
 ends
 
 struct  SP_CONF
@@ -120,6 +126,30 @@ proc serial_port_init
         lea     ecx, [serial_drv_name]
         mcall   SF_SYS_MISC, SSF_LOAD_DRIVER
         mov     [serial_drv_handle], eax
+        ret
+endp
+
+proc serial_port_get_version stdcall, version:dword
+locals
+        .handler    dd ?
+        .io_code    dd ?
+        .input      dd ?
+        .inp_size   dd ?
+        .output     dd ?
+        .out_size   dd ?
+endl
+        mov     eax, [serial_drv_handle]
+        mov     [.handler], eax
+        mov     dword [.io_code], SERIAL_API_GET_VERSION
+        mov     [.input], 0
+        mov     dword [.inp_size], 0
+        mov     eax, [version]
+        mov     [.output], eax
+        mov     dword [.out_size], 4
+
+        lea     ecx, [.handler]
+        mcall   SF_SYS_MISC, SSF_CONTROL_DRIVER
+        
         ret
 endp
 

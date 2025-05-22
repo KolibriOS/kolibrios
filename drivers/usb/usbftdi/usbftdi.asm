@@ -1123,11 +1123,53 @@ proc uart_shutdown stdcall uses ebx, data:dword
         ret
 endp
 
-proc uart_reconf stdcall uses ebx esi, dev:dword, conf:dword
-        mov     ebx, [dev]
+proc uart_reconf stdcall uses esi, dev:dword, conf:dword
+locals
+ConfPacket  rb  8
+endl
         mov     esi, [conf]
-        stdcall ftdi_set_baudrate, ebx, [esi + SP_CONF.baudrate]
-        ; TODO set word_size, parity, etc.
+        xor     edx, edx
+        mov     al, [esi + SP_CONF.word_size]
+        cmp     al, 7
+        jb      .invalid
+        cmp     al, 8
+        ja      .invalid
+        mov     dl, al
+        ; odd and even parities are different from serial api
+        ; serial api: even=1 odd=2
+        ; ft232x api: odd=1  even=2
+        movzx   eax, [esi + SP_CONF.parity]
+        cmp     al, SERIAL_CONF_PARITY_SPACE
+        ja      .invalid
+        cmp     al, SERIAL_CONF_PARITY_ODD
+        ja      .parity_ok
+        cmp     al, SERIAL_CONF_PARITY_EVEN
+        jb      .parity_ok
+        ; swap bits
+        xor     al, 0x3
+    .parity_ok:
+        shl     eax, 8 ; parity offset
+        or      edx, eax
+        movzx   eax, [esi + SP_CONF.stop_bits]
+        cmp     al, SERIAL_CONF_STOP_BITS_2
+        ja      .invalid
+        shl     eax, 11 ; stop bits offset
+        or      edx, eax
+        mov     word [ConfPacket], (FTDI_DEVICE_OUT_REQTYPE) \
+                                   + (SIO_SET_DATA shl 8)
+        mov     word [ConfPacket + 2], dx
+        mov     word [ConfPacket + 4], 0
+        mov     word [ConfPacket + 6], 0
+        lea     edx, [ConfPacket]
+        stdcall ftdi_blocking_ctrl_tranfser, [dev], edx
+        test    eax, eax
+        jnz     .exit
+        stdcall ftdi_set_baudrate, [dev], [esi + SP_CONF.baudrate]
+        ret
+
+    .invalid:
+        or      eax, -1
+    .exit:
         ret
 endp
 
@@ -1204,17 +1246,10 @@ proc uart_rx stdcall uses ebx esi, data:dword
         ret
 endp
 
-proc ftdi_set_baudrate stdcall uses ebx esi edi, dev:dword, baud:dword
+proc ftdi_set_baudrate stdcall uses ebx, dev:dword, baud:dword
 locals
-ConfPacket  rb  10
-EventData   rd  3
+ConfPacket  rb  8
 endl
-        xor     esi, esi
-        xor     ecx, ecx
-        invoke  CreateEvent
-        mov     [EventData], eax
-        mov     [EventData + 4], edx
-
         mov     ebx, [dev]
         cmp     [ebx + ftdi_context.chipType], TYPE_2232H
         jl      .c_clk
@@ -1257,7 +1292,7 @@ endl
         jmp     .calcend
 
   .c_nextbaud2:
-        cmp     dword [edi + 8], C_CLK / (2 * 16)
+        cmp     dword [baud], C_CLK / (2 * 16)
         jl      .c_nextbaud3
         mov     edx, 2
         mov     ecx, C_CLK / (2 * 16)
@@ -1348,15 +1383,39 @@ endl
         mov     word [ConfPacket + 4], cx
         mov     word [ConfPacket + 6], 0
 
-        lea     esi, [ConfPacket]
+        lea     ebx, [ConfPacket]
+        stdcall ftdi_blocking_ctrl_tranfser, [dev], ebx
+
+        ret
+endp
+
+proc ftdi_blocking_ctrl_tranfser stdcall uses ebx esi edi, dev:dword, conf:dword
+; conf is a pointer to values: bmRequestType, bRequest, wValue, wIndex, wLength
+locals
+EventData   rd  3
+endl
+        xor     esi, esi
+        xor     ecx, ecx
+        invoke  CreateEvent
+        test    eax, eax
+        jz      .exit
+        mov     [EventData], eax
+        mov     [EventData + 4], edx
+
+        mov     eax, [dev]
+        mov     esi, [conf]
         lea     edi, [EventData]
-        invoke  USBControlTransferAsync, [ebx + ftdi_context.nullP], esi, 0,\
+        invoke  USBControlTransferAsync, [eax + ftdi_context.nullP], esi, 0,\
                                          0, control_callback, edi, 0
         test    eax, eax
         jz      .error
+
         mov     eax, [EventData]
         mov     ebx, [EventData + 4]
         invoke  WaitEvent
+
+        cmp     [EventData + 8], 0 ; USB_STATUS_OK
+        jne     .error
 
         mov     eax, [EventData]
         mov     ebx, [EventData + 4]
@@ -1364,7 +1423,11 @@ endl
         xor     eax, eax
         ret
 
-  .error:
+    .error:
+        mov     eax, [EventData]
+        mov     ebx, [EventData + 4]
+        invoke  DestroyEvent
+    .exit:
         or      eax, -1
         ret
 endp

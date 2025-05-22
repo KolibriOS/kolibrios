@@ -350,10 +350,10 @@ endl
         ; calc  stop bits
         mov     bx, LCR_STOP_1
         mov     al, [esi + SP_CONF.stop_bits]
-        cmp     al, 1
+        cmp     al, SERIAL_CONF_STOP_BITS_1
         je      .stop_bits_ok
         or      bx, LCR_STOP_2
-        cmp     al, 2
+        cmp     al, SERIAL_CONF_STOP_BITS_2
         jne     .fail
   .stop_bits_ok:
         or      [lcr], bx

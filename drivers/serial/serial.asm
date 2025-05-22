@@ -9,8 +9,6 @@ __DEBUG_LEVEL__ = L_DBG
 
 SERIAL_RING_BUF_SIZE = 32768
 
-API_VERSION = 1
-
 section '.flat' readable writable executable
 
 include '../struct.inc'
@@ -22,6 +20,9 @@ include '../peimport.inc'
 include 'common.inc'
 include 'ring_buf.inc'
 include 'uart16550.inc'
+
+CURRENT_API = 0x0001
+API_VERSION = (SERIAL_COMPATIBLE_API_VER shl 16) + CURRENT_API
 
 struct  SERIAL_OBJ
         magic           dd ?
@@ -45,7 +46,7 @@ struct  SERIAL_PORT
         conf            SP_CONF
 ends
 
-proc START c, reason:dword
+proc START c, reason:dword, cmdline:dword
         cmp     [reason], DRV_ENTRY
         jne     .fail
 
@@ -347,15 +348,12 @@ proc sp_validate_conf
         mov     eax, [ecx + SP_CONF.baudrate]
         test    eax, eax
         jz      .fail
-        mov     al, [ecx + SP_CONF.word_size]
-        cmp     al, 8
-        jne     .fail ; TODO implement different word size
         mov     al, [ecx + SP_CONF.stop_bits]
-        cmp     al, 1
-        jne     .fail ; TODO implement different stop bits count
+        cmp     al, SERIAL_CONF_STOP_BITS_2
+        ja      .fail
         mov     al, [ecx + SP_CONF.parity]
-        cmp     al, SERIAL_CONF_PARITY_NONE
-        jne     .fail ; TODO implement parity
+        cmp     al, SERIAL_CONF_PARITY_SPACE
+        ja      .fail
         mov     al, [ecx + SP_CONF.flow_ctrl]
         cmp     al, SERIAL_CONF_FLOW_CTRL_NONE
         jne     .fail ; TODO implement flow control
@@ -550,7 +548,6 @@ proc sp_setup
         mov     eax, [edi + SERIAL_PORT.drv]
         mov     ecx, [edi + SERIAL_PORT.drv_data]
         stdcall dword [eax + SP_DRIVER.reconf], ecx, esi
-        xor     eax, eax
         push    eax
         test    eax, eax
         jnz     @f
