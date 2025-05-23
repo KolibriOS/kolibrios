@@ -69,6 +69,7 @@ img_files = {
  {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
  {"SETTINGS/TASKBAR.INI", "common/settings/taskbar.ini"},
  {"SETTINGS/SYSTEM.ENV", "common/settings/system.env"},
+ {"SETTINGS/USBDRV.DAT",VAR_DRVS .. "/usb/usbother/usbdrv.dat"},
 }
 
 -- For russian build, add russian-only files.
@@ -567,6 +568,7 @@ tup.append_table(img_files, {
  {"DRIVERS/OHCI.SYS", VAR_DRVS .. "/usb/ohci.sys"},
  {"DRIVERS/EHCI.SYS", VAR_DRVS .. "/usb/ehci.sys"},
  {"DRIVERS/USBHID.SYS", VAR_DRVS .. "/usb/usbhid/usbhid.sys"},
+ {"DRIVERS/USBOTHER.SYS",VAR_DRVS .. "/usb/usbother/usbother.sys"},
  {"DRIVERS/USBSTOR.SYS", VAR_DRVS .. "/usb/usbstor.sys"},
  {"DRIVERS/RDC.SYS", VAR_DRVS .. "/video/rdc.sys"},
  {"DRIVERS/COMMOUSE.SYS", VAR_DRVS .. "/mouse/commouse.sys"},
