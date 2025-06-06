@@ -76,6 +76,7 @@ USBDRV_TYPE_NOLOCK      = 0 ; usb device not controlled (native driver
 USBDRV_TYPE_NATIVE      = 1 ; native PE kernel driver for usb
 USBDRV_TYPE_IOCTL       = 2 ; usb device is controlled by IOCTL service
                             ; (driver or userspace process/threads)
+USBDRV_IOCTL_BLOCKED    = 4 ; blocked IOCTL interface, device disconnected
 
 
 
@@ -86,10 +87,11 @@ struct DRV_CONTEXT
         drv_pdata       dd ?
         flags           dd ?
 
-        config_pipe     dd ?
         config_descr    dd ?
         interface_descr dd ?
+        ep              rd 64 ; 32 IN + 32 OUT endpointers pipe
 ends
+DRV_CONTEXT.ep0 fix (DRV_CONTEXT.ep + 0)
 
 
 section '.flat' code readable writable executable
@@ -106,6 +108,9 @@ proc    START c, state:dword, cmdline:dword
         ; init
 
         mov     ecx, drv_list_lock
+        invoke  MutexInit
+
+        mov     ecx, interface_list_lock
         invoke  MutexInit
 
         ; load drv_list
@@ -161,7 +166,7 @@ proc    service_proc stdcall, .ioctl:dword
         cmp     ecx, .count_ioctl_codes
         jae     .fail
 
-        jmp     dword[.table_subfunction + ecx]
+        jmp     dword[.table_subfunction + ecx*4]
 
 .table_subfunction:
         dd      .get_version
@@ -205,6 +210,7 @@ proc    service_proc stdcall, .ioctl:dword
 .get_full_dev_data:
 .open_dev:
 .close_dev:
+;
 .control_transfer:
 .bulk_transfer:
 .interrupt_transfer:
@@ -227,23 +233,20 @@ proc    AddDevice stdcall, .config_pipe:dword, \
 
         mov     esi, eax
 
-;        mov     ecx, interface_list_lock
-;        invoke  MutexLock
-;
-;        mov     edx, [usb_interface_list]
-;        test    edx, edx
-;        jz      @f
-;        mov     [edx + DRV_CONTEXT.prev], esi
-;@@:
-;        mov     [esi + DRV_CONTEXT.next], edx
-;        mov     [esi + DRV_CONTEXT.prev], 0
-;        mov     [usb_interface_list], esi
-;
-;        mov     ecx, interface_list_lock
-;        invoke  MutexUnlock
+        mov     ecx, interface_list_lock
+        invoke  MutexLock
+
+        mov     edx, [usb_interface_list]     ; next
+        mov     [esi + DRV_CONTEXT.next], edx
+        mov     [esi + DRV_CONTEXT.prev], usb_interface_list
+        mov     [usb_interface_list], esi
+        mov     [edx + DRV_CONTEXT.prev], esi
+
+        mov     ecx, interface_list_lock
+        invoke  MutexUnlock
 
         and     [esi + DRV_CONTEXT.drv_hand], 0
-        mov     [esi + DRV_CONTEXT.flags], 0
+        mov     [esi + DRV_CONTEXT.flags], USBDRV_TYPE_NOLOCK
 
         ; lock mutex
         mov     ecx, drv_list_lock
@@ -251,7 +254,7 @@ proc    AddDevice stdcall, .config_pipe:dword, \
 
         ; save device context data
         mov     eax, [.config_pipe]
-        mov     [esi + DRV_CONTEXT.config_pipe], eax
+        mov     [esi + DRV_CONTEXT.ep0], eax
         mov     eax, [.config_descr]
         mov     [esi + DRV_CONTEXT.config_descr], eax
         mov     eax, [.interface]
@@ -456,26 +459,17 @@ proc    DeviceDisconnected stdcall, .pdata:dword
         stdcall [edx + USBFUNC.device_disconnect], [eax + DRV_CONTEXT.drv_pdata]
 .free:
         ; clear list of DRV_CONTENT
-;        mov     ecx, interface_list_lock
-;        invoke  MutexLock
-;
-;        mov     eax, [.pdata]
-;        mov     edx, [eax + DRV_CONTEXT.prev]
-;        mov     ecx, [eax + DRV_CONTEXT.next]
-;        test    edx, edx
-;        jz      @f
-;        mov     [edx + DRV_CONTEXT.next], ecx
-;@@:
-;        test    ecx, ecx
-;        jz      @f
-;        mov     [ecx + DRV_CONTEXT.prev], edx
-;@@:
-;        cmp     [usb_interface_list], eax
-;        jne     @f
-;        mov     [usb_interface_list], ecx
-;@@:
-;        mov     ecx, interface_list_lock
-;        invoke  MutexUnlock
+        mov     ecx, interface_list_lock
+        invoke  MutexLock
+
+        mov     eax, [.pdata]
+        mov     edx, [eax + DRV_CONTEXT.prev]
+        mov     ecx, [eax + DRV_CONTEXT.next]
+        mov     [edx + DRV_CONTEXT.next], ecx
+        mov     [ecx + DRV_CONTEXT.prev], edx
+
+        mov     ecx, interface_list_lock
+        invoke  MutexUnlock
 
         ; free context
         mov    eax, [.pdata]
@@ -485,6 +479,15 @@ proc    DeviceDisconnected stdcall, .pdata:dword
         test    [eax + DRV_CONTEXT.flags], USBDRV_TYPE_IOCTL
         jz      .free
 
+        ; set state for block user api and clear struct
+        or      [eax + DRV_CONTEXT.flags], USBDRV_IOCTL_BLOCKED
+        xor     ecx, ecx
+        ;mov     [eax + DRV_CONTEXT.drv_hand], ecx
+        ;mov     [eax + DRV_CONTEXT.drv_pdata], ecx
+        mov     [eax + DRV_CONTEXT.config_descr], ecx
+        mov     [eax + DRV_CONTEXT.interface_descr], ecx
+        mov     [eax + DRV_CONTEXT.ep0], ecx
+        ; TODO
         jmp     .free
 endp
 
@@ -495,8 +498,8 @@ drv_list        dd ?
 
 interface_list_lock     MUTEX
 usb_interface_list:
-        dd      ?
-        dd      ?
+        dd      usb_interface_list
+        dd      usb_interface_list
 
 
 usb_functions:
