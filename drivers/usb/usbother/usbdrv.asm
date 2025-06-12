@@ -11,8 +11,8 @@
 ;
 ;       n = 0 .. count driver with ID table
 ;       nt = count driver with ID table
-; ID_drv_table + 0*(n-1)|  4    | ID_TABLE      | offset of base to table VID:PID
-; ID_drv_table + 4*(n-1)|  4    | DRV_NAME      | offset of base to name the driver
+; ID_drv_table + 0*(n-1)|  4    | ID_TABLE      | offset from base to table VID:PID
+; ID_drv_table + 4*(n-1)|  4    | DRV_NAME      | offset from base to name of driver
 ; ID_drv_table + 8*nt   |  8    | __ZERO        | terminaror of list
 
 ;       k = 0 .. count driver on class code
@@ -21,7 +21,7 @@
 ; Class_table + 1*(k-1) |  1    | USB_CLASS     | main usb class code (M)
 ; Class_table + 2*(k-1) |  1    | USB_SUBCLASS  | USB subclass code or zero(V)
 ; Class_table + 2*(k-1) |  1    | USB_PROTOCOL  | USB protocol code or zero(V)
-; Class_table + 4*(k-1) |  4    | DRV_NAME      | offset of base to name the driver
+; Class_table + 4*(k-1) |  4    | DRV_NAME      | offset from base to name of driver
 ; Class_table + 8*kt    |  8    | __ZERO        | terminaror of list
 
 ;       i = 0 .. count VID:PID
