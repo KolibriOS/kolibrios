@@ -89,7 +89,7 @@ struct DRV_CONTEXT
 
         config_descr    dd ?
         interface_descr dd ?
-        ep              rd 64 ; 32 IN + 32 OUT endpointers pipe
+        ep              rd 64 ; 32 IN + 32 OUT endpoints' pipes
 ends
 DRV_CONTEXT.ep0 fix (DRV_CONTEXT.ep + 0)
 
@@ -315,7 +315,7 @@ proc    AddDevice stdcall, .config_pipe:dword, \
 
         ; get in ecx class code
         mov     eax, [.interface]
-        mov     ecx, dword[eax + INTERFACE_DESCR.bInterfaceClass]  ; 24-31bits
+        mov     ecx, dword[eax + INTERFACE_DESCR.bInterfaceClass]  ; 24-31 bits
 
         mov     edi, [drv_list]
         add     edi, [edi + 4]
@@ -325,11 +325,11 @@ proc    AddDevice stdcall, .config_pipe:dword, \
 
         ; check class
         movzx   eax, byte[edi]  ; length
-        and     eax, 11b ; protect - max length = 3
-        lea     eax, [eax*8] ; 1 = 8;  2 = 16; 3 = 24
+        and     eax, 11b        ; protect - max length = 3
+        lea     eax, [eax*8]    ; 1 = 8;  2 = 16; 3 = 24
         xor     edx, edx
         bts     edx, eax
-        dec     edx  ; bitmask
+        dec     edx             ; bitmask
 
         mov     eax, [edi]
         shr     eax, 8
@@ -512,11 +512,11 @@ drv_name        db 'usbother', 0
 
 default_list:   db '/sys/settings/usbdrv.dat', 0
 
-str_1: db 'USBOTHER: Not found ID driver', 13, 10, 0
+str_1: db 'USBOTHER: Driver ID not found', 13, 10, 0
 str_2: db 'USBOTHER: Check found driver: ', 0, 13, 10, 0
-str_3: db 'USBOTHER: Device driver good', 13, 10, 0
+str_3: db 'USBOTHER: Device driver is good', 13, 10, 0
 str_4: db 'USBOTHER: Device driver fail prob', 13, 10, 0
-str_5: db 'USBOTHER: Load device driver error', 13, 10, 0
+str_5: db 'USBOTHER: Device driver load error', 13, 10, 0
 str_newline: db 13,10,0
 
 data fixups
