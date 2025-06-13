@@ -4,23 +4,15 @@ languages=en_US|ru_RU|de_DE|et_EE|es_ES
 
 .PHONY: all kernel bootloader clean
 
-all: kernel bootloader bootbios
+all: kernel bootloader
 
-kernel: check_lang bootbios
+kernel: check_lang
 	@echo "*** building kernel with language '$(lang)' ..."
 	@mkdir -p bin
 	@echo "lang fix $(lang)" > lang.inc
 	@echo "--- building 'bin/kernel.mnt' ..."
 	@$(FASM) $(FLAGS) kernel.asm bin/kernel.mnt
 	@$(FASM) $(FLAGS) -dUEFI=1 kernel.asm bin/kernel.bin
-	@rm -f lang.inc
-
-bootbios: check_lang
-	@echo "*** building bootbios.bin with language '$(lang)' ..."
-	@mkdir -p bin
-	@echo "lang fix $(lang)" > lang.inc
-	@echo "--- building 'bootbios.bin' ..."
-	@$(FASM) $(FLAGS) bootbios.asm bootbios.bin
 	@rm -f lang.inc
 
 bootloader: check_lang
