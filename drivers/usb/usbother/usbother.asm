@@ -512,7 +512,7 @@ drv_name        db 'usbother', 0
 
 default_list:   db '/sys/settings/usbdrv.dat', 0
 
-str_1: db 'USBOTHER: Driver ID not found', 13, 10, 0
+str_1: db 'USBOTHER: Driver for this ID not found', 13, 10, 0
 str_2: db 'USBOTHER: Check found driver: ', 0, 13, 10, 0
 str_3: db 'USBOTHER: Device driver is good', 13, 10, 0
 str_4: db 'USBOTHER: Device driver fail prob', 13, 10, 0
