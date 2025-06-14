@@ -1238,9 +1238,9 @@ end virtual
         cmp     eax, 2
         je      .ascii2utf16
 @@:
-        sub     ecx, 1 ; CF + ZF
-        jbe     @f
-        movsd
+        sub     ecx, 1 ; CF
+        jb      @f
+        movsb
         cmp     byte[esi], ';'
         jne     @b
 @@:
