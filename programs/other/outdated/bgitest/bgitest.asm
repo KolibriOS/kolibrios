@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ; BGI Font Test
 ;
 ; Written in pure assembler by Ivushkin Andrey aka Willow
@@ -69,7 +75,7 @@ use32
 not1strun  dd	 0x0
 
 include 'lang.inc'
-include  '..\..\..\..\macros.inc'
+include '..\..\..\macros.inc'
 ;include   'debug.inc'
 include  'bgifont.inc'
 
