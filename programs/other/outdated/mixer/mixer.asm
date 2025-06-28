@@ -1,3 +1,4 @@
+; SPDX-License-Identifier: NOASSERTION
 
 ;
 ;    MIXER
@@ -6,7 +7,7 @@
 ;
 
 include 'lang.inc'
-include '..\..\..\..\macros.inc'
+include '..\..\..\macros.inc'
 
 
 use32
