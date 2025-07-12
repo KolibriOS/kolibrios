@@ -1,79 +1,72 @@
-Имя программы;Описание;Lang;WebSVN;Forum;wiki
-@docky;Док-бар;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fdocky%2F&#a92e88fd4523f8d4e6b72c977e438ea8a;http://board.kolibrios.org/viewtopic.php?f=48&t=2455;
-@ha;"служба опции Hot Angles (запуск приложения путём наведения курсора в угол экрана; доп. возможности рабочего стола)";asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fother%2Fha%2F&#af32bbff78a611a6e4824edcba7361181;http://board.kolibrios.org/viewtopic.php?f=42&t=3762;
-@icon;рабочий стол;asm;;http://board.kolibrios.org/viewtopic.php?f=48&t=1515;
-@menu;Меню пуск.;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fmenu%2Ftrunk%2F&#a07a01d3bfab170d2567a0c43beb53556;http://board.kolibrios.org/viewtopic.php?f=48&t=1906;
-@notify;утилита вывода уведомлений;asm;;http://board.kolibrios.org/viewtopic.php?f=42&t=2650;
-@open;Диалог выбора программы.;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fopen%2F&#a71954713f684b2f848a962781352c698;http://board.kolibrios.org/viewtopic.php?f=48&t=2997;
-@ss;Скринсейвер. Хранитель экрана. Заставка экрана.;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fss%2Ftrunk%2F&#ae76c7f2a5ba34ae0045bc2f9189f3de0;http://board.kolibrios.org/viewtopic.php?f=48&t=2045;
-@taskbar;панель задач;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Ftaskbar%2F&#a62ec11ea886ca71c82afc8a714b579cf;http://board.kolibrios.org/viewtopic.php?f=48&t=809;
-@volume;Регулировщик звука.;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fmedia%2Fvolume%2F&#afc250e0bd57c71d8513adada51b87586;http://board.kolibrios.org/viewtopic.php?f=38&t=3010;
-allgames;игровой центр;c--;;http://board.kolibrios.org/viewtopic.php?f=9&t=3001;
-app_plus;"виджет со списком программ ISO; позволяет примонтировать /kolibrios/ вручную";c--;;http://board.kolibrios.org/viewtopic.php?f=9&t=3001;
-asciivju;Таблица ASCII символов.;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fdevelop%2Fasciivju%2Ftrunk%2F&#a5da69869b5757c5b71158a900f51c0c3;http://board.kolibrios.org/viewtopic.php?f=42&t=1455;
-calc;калькулятор;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fother%2Fcalc%2F&#a63c078ecbd7ae4df180813602b5ae0b7;http://board.kolibrios.org/viewtopic.php?f=46&t=392;
-calendar;системный календарь;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fcalendar%2F&#aad5ef82ddbb8983b84a7bea39c99bd48;http://board.kolibrios.org/viewtopic.php?f=42&t=705;
-colrdial;диалог выбора цвета с палитрой;asm;;http://board.kolibrios.org/viewtopic.php?f=48&t=1946;
-cpu;диспетчер процессов;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fcpu%2F&#ade815415c1e9b899c56c61778998e7fc;http://board.kolibrios.org/viewtopic.php?f=48&t=2054;
-cpuid;подробная информация о процессоре;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fcpuid%2F&#a82de51835bbc6ad60432500271150598;http://board.kolibrios.org/viewtopic.php?f=42&t=594;
-cropflat;Ограничение размеров отображаемой части экрана;asm;;http://board.kolibrios.org/viewtopic.php?f=36&t=2071&p=41586&hilit=cropflat#p41586;
-disptest;программа для проверки матрицы дисплея;;;http://board.kolibrios.org/viewtopic.php?f=42&t=1122;
-docpack;документация / блок документов;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fdocpack%2F&#a8b02b30e041c28305e4b1339149932ea;;
-easyshot;простой скриншотер;c--;;http://board.kolibrios.org/viewtopic.php?f=42&t=3695;
-end;программа завершения работы;asm;;http://board.kolibrios.org/viewtopic.php?f=48&t=2442;
-eskin;установщик фона и скина при старте системы;asm;;http://board.kolibrios.org/viewtopic.php?f=42&t=2424;
-fb2read;читалка fb2;oberon07;;http://board.kolibrios.org/viewtopic.php?f=46&t=3128;
-font_viewer;просмотр KF шрифтов;c--;;;
-fspeed;тестирование скорости диска в работе с файлами;asm;;http://board.kolibrios.org/viewtopic.php?f=42&t=2660;
-gmon;информация о загрузке системы;asm;;http://board.kolibrios.org/viewtopic.php?f=42&t=470;
-graph;построение графиков;c (msvc);;http://board.kolibrios.org/viewtopic.php?f=38&t=1059;
-haconfig;конфигуратор опции Hot Angles;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fother%2Fha%2F&#af32bbff78a611a6e4824edcba7361181;http://board.kolibrios.org/viewtopic.php?f=42&t=3762;
-hdd_info;информация о физических дисках;;;http://board.kolibrios.org/viewtopic.php?f=42&t=1318;
-kbd;утилита позволяет отключать южный мост на материнской плате для экономии электроэнергии;asm;;;http://wiki.kolibrios.org/wiki/Kbd/ru
-kerpack;сжимает kernel.mnt;asm;;;
-kpack;системный упаковщик и распаковщик;asm;;http://board.kolibrios.org/viewtopic.php?f=46&t=355;
-launcher;запуск программ при старте системы;asm;;http://board.kolibrios.org/viewtopic.php?f=48&t=2454;
-loaddrv;утилита для ручной загрузки драйверов ;asm;;;
-lod;работает через параметры: открывает opendial с маской и после выбора файла открывает его в приложении;;;;
-madmouse;делает стороны экрана сквозными для мыши;;;http://board.kolibrios.org/viewtopic.php?f=42&t=1732;
-magnify;увеличительное стекло для рабочего стола;;;;
-mgb;графический бенчмарк;;;http://board.kolibrios.org/viewtopic.php?f=42&t=670;
-mousecfg;утилита настройки и проверки мыши;c--;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fcmm%2Fmousecfg%2F&#a51476493ffefa534a9f94b1bd115997f;http://board.kolibrios.org/viewtopic.php?f=48&t=3095;
-mousemul;эмулятор мыши через клавиатуру;asm;;http://board.kolibrios.org/viewtopic.php?f=42&t=814;
-mykey;;asm;;;
-notes;заметки;c--;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fcmm%2Fnotes%2F&#ab282b876c270d40ad64654e8b7727298;;
-panels_cfg;управление таскбаром и доком;c--;;http://board.kolibrios.org/viewtopic.php?f=48&t=3020;
-pcidev;информация об устройствах на материнской плате;asm;;http://board.kolibrios.org/viewtopic.php?f=42&t=73;
-period;периодическая таблица;asm;;http://board.kolibrios.org/viewtopic.php?f=38&t=411;
-pipetka;пипетка для рабочего стола;asm;;http://board.kolibrios.org/viewtopic.php?f=38&t=3546;
-rdsave;сохранение образа IMG для сохранения изменений в системе;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Frdsave%2F&#a96edb222ca9242e088c4b4a52513c728;http://board.kolibrios.org/viewtopic.php?f=42&t=645;
-rtfread;читалка RTF;asm;;http://board.kolibrios.org/viewtopic.php?f=9&t=1821;
-run;запускалка файлов с параметрами;uasm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Frun%2F&#af97b4cdeaba3ef1cb77ef952175085df;http://board.kolibrios.org/viewtopic.php?f=42&t=554;
-srcshoot;стриншотер;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fmedia%2Fscrshoot%2F&#a268c6b8a259b32f84482097103fcf083;http://board.kolibrios.org/viewtopic.php?f=38&t=528;
-searchap;поиск и подключение дополнительной системной папки /kolibrios/;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fsearchap%2F&#ab5102e78ca9592829ed715bc6f82267d;;
-setup;настройка некоторых системных параметров;asm;;http://board.kolibrios.org/viewtopic.php?f=48&t=1966;
-shell;консольный интерпретатор команд (шелл);c (gcc);http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fshell%2F&#a3c50045ecae9694143987608f19fe69b;http://board.kolibrios.org/viewtopic.php?f=48&t=1111;http://wiki.kolibrios.org/wiki/Shell/ru
-skincfg;настройка цветов окон;asm;;;
-sysmon;"мониторинг ресурсов (ОЗУ; CPU и свободной памяти)";c--;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fcmm%2Fsysmon%2F&#a65a1e5da34b9a03e871ac1d837c418b1;http://board.kolibrios.org/viewtopic.php?f=42&t=3753;
-syspanel;системная панель;;;;
-table;редактор электронных таблиц;c (msvc);http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fother%2Ftable%2F&#a944e66191e0bbc79d321026a7d432775;http://board.kolibrios.org/viewtopic.php?f=46&t=1070;http://wiki.kolibrios.org/wiki/Table/ru
-terminal;терминал для работы с com портами;;;http://board.kolibrios.org/viewtopic.php?f=23&t=2563&hilit=terminal;
-test;тест защиты ядра;;;;
-tinfo;информация о потоке выполнения (ПКМ на процессе в cpu);asm;;;
-tinypad;текстовый редактор;asm;;http://board.kolibrios.org/viewtopic.php?f=46&t=39;
-tmpdisk;управление виртуальными RAM дисками /tmp;c--;;http://board.kolibrios.org/viewtopic.php?f=44&t=2172;
-txtread;читалка текстовых файлов;c--;;http://board.kolibrios.org/viewtopic.php?f=46&t=3119;
-unz;распаковщик архивов ZIP и 7Z;asm;;;
-vmode;изменение разрешения экрана при использовании видеодрайвера;?? (c?);;;
-zkey;виртуальная клавиатура;;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fzkey%2F&#a429ac959a677f842944a8d49dd36381c;http://board.kolibrios.org/viewtopic.php?f=42&t=1109;
-board;доска отладки и сообщений;asm;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fsystem%2Fboard%2F&#a47fda09b36905262a7a84fd15e2cb66a;http://board.kolibrios.org/viewtopic.php?f=42&t=1485;
-clipview;просмотрщик содержимого буфера обмена;c--;http://websvn.kolibrios.org/listing.php?repname=Kolibri+OS&path=%2Fprograms%2Fcmm%2Fclipview%2F&#a71f4bc86e0bd2fc3e7634575ae41b9af;http://board.kolibrios.org/viewtopic.php?f=42&t=3396;
-diff;визуальное сравнение двух текстовых файлов;c--;;http://board.kolibrios.org/viewtopic.php?f=45&t=3436;
-fasm;ассемблер;asm;;http://board.kolibrios.org/viewtopic.php?f=45&t=1514;
-h2d2b;преобразование чисел hex 2 dec 2 bin;asm;;http://board.kolibrios.org/viewtopic.php?f=42&t=117;
-heed;HEX-редактор;asm;;http://board.kolibrios.org/viewtopic.php?f=46&t=1285;
-keyascii;просмотр кодов клавиатуры в ASCII и ScanCode;asm;;http://board.kolibrios.org/viewtopic.php?f=42&t=2049;
-mstate;проверка состояния мыши;asm (???);;;
-mtdbg;дебаггер;asm;;;
-scancode;отображение скандово клавиш клавиатуры;img; для разработки;;
-testcon2;;asm;;;
+Имя программы;Описание;Lang;Gitea;Forum;Wiki
+@docky;Док-бар;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/docky/trunk;http://board.kolibrios.org/viewtopic.php?t=2455;
+@ha;Hot Angles (выполнение системных действий путём наведения курсора в угол экрана);asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/ha;http://board.kolibrios.org/viewtopic.php?t=3762;
+@icon;Рабочий стол;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/icon_new;http://board.kolibrios.org/viewtopic.php?t=1515;
+@menu;Меню 'Пуск';asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/menu/trunk;http://board.kolibrios.org/viewtopic.php?t=1906;https://wiki.kolibrios.org/wiki/@menu/ru
+@notify;Утилита для вывода уведомлений;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/notify3;http://board.kolibrios.org/viewtopic.php?t=2650;
+@open;Диалог выбора программы;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/open;http://board.kolibrios.org/viewtopic.php?t=2997;
+@ss;Скринсейвер. Хранитель экрана. Заставка экрана;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/scrsaver;http://board.kolibrios.org/viewtopic.php?t=3847;https://wiki.kolibrios.org/wiki/@ss/ru
+@taskbar;Панель задач;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/taskbar/trunk;http://board.kolibrios.org/viewtopic.php?t=809;https://wiki.kolibrios.org/wiki/@taskbar/ru
+@volume;Регулировщик звука;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/media/volume;http://board.kolibrios.org/viewtopic.php?t=3010;
+app_plus;Виджет для монтирования программ из ISO-образа;c--;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/cmm/app_plus;;
+charsets;Просмотрщик таблиц символов;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/develop/charsets;http://board.kolibrios.org/viewtopic.php?t=5709;
+calc;Калькулятор;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/calc;http://board.kolibrios.org/viewtopic.php?t=392;https://wiki.kolibrios.org/wiki/Calc/ru
+calendar;Системный календарь;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/calendar/trunk;http://board.kolibrios.org/viewtopic.php?t=705;https://wiki.kolibrios.org/wiki/Calendar/ru
+colrdial;Диалог выбора цвета с палитрой;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/colrdial;http://board.kolibrios.org/viewtopic.php?t=1946;
+cpu;Диспетчер процессов;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/cpu/trunk;http://board.kolibrios.org/viewtopic.php?t=2054;https://wiki.kolibrios.org/wiki/Cpu/ru
+cpuid;Подробная информация о процессоре;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/testing/cpuid/trunk;http://board.kolibrios.org/viewtopic.php?t=594;https://wiki.kolibrios.org/wiki/Cpuid/ru
+cropflat;Ограничение размеров отображаемой части экрана;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/cropflat;http://board.kolibrios.org/viewtopic.php?t=2071;
+disptest;Программа для проверки матрицы дисплея;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/testing/disptest/trunk;http://board.kolibrios.org/viewtopic.php?t=1122;https://wiki.kolibrios.org/wiki/Disptest/ru
+docpack;Документация / Блок документов;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/docpack/trunk;;https://wiki.kolibrios.org/wiki/Docpack/ru
+easyshot;Простой скриншотер;c--;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/cmm/misc/easyshot.c;http://board.kolibrios.org/viewtopic.php?t=3695;
+end;Программа завершения работы;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/end;http://board.kolibrios.org/viewtopic.php?t=2442;https://wiki.kolibrios.org/wiki/End/ru
+eskin;Установщик фона и скина при старте системы;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/eskin/trunk;http://board.kolibrios.org/viewtopic.php?t=2424;
+fb2read;Читалка FB2;oberon07;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/fb2reader;http://board.kolibrios.org/viewtopic.php?t=3128;
+fspeed;Тестирование скорости диска;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/testing/fspeed;http://board.kolibrios.org/viewtopic.php?t=2660;
+gmon;Информация о загрузке системы;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/gmon;http://board.kolibrios.org/viewtopic.php?t=470;https://wiki.kolibrios.org/wiki/Gmon/ru
+graph;Построение графиков;c (msvc);http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/graph;http://board.kolibrios.org/viewtopic.php?t=1059;https://wiki.kolibrios.org/wiki/Graph/ru
+hdd_info;Информация о физических дисках;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/hdd_info/trunk;http://board.kolibrios.org/viewtopic.php?t=1318;https://wiki.kolibrios.org/wiki/Hdd_info/ru
+kbd;Утилита, позволяющая отключить южный мост на материнской плате для экономии электроэнергии;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/testing/kbd/trunk;;http://wiki.kolibrios.org/wiki/KBD_(Kolibri_Bus_Disconnect)
+kpack;Cистемный упаковщик и распаковщик;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/kpack/trunk;http://board.kolibrios.org/viewtopic.php?t=355;https://wiki.kolibrios.org/wiki/Kpack/ru
+launcher;Запуск программ при старте системы;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/launcher/trunk;http://board.kolibrios.org/viewtopic.php?t=2454;
+loaddrv;Утилита для ручной загрузки драйверов;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/loaddrv;;
+lod;Программа для настройки ассоциации типа файла и программы для открытия в OpenDial;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/fs/lod;http://board.kolibrios.org/viewtopic.php?t=2486;
+madmouse;Делает стороны экрана сквозными для мыши;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/madmouse;http://board.kolibrios.org/viewtopic.php?t=1732;
+magnify;Увеличительное стекло для экрана;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/magnify;;https://wiki.kolibrios.org/wiki/Magnify/ru
+mgb;Графический бенчмарк;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/testing/mgb/trunk;http://board.kolibrios.org/viewtopic.php?t=670;
+mousecfg;Утилита для настройки и проверки мыши;c--;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/cmm/mousecfg;http://board.kolibrios.org/viewtopic.php?t=3095;
+mousemul;Эмулятор мыши через клавиатуру;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/mousemul/trunk;http://board.kolibrios.org/viewtopic.php?t=814;https://wiki.kolibrios.org/wiki/Mousemul/ru
+mykey;Запуск програм по комбинации клавиш;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/MyKey/trunk;http://board.kolibrios.org/viewtopic.php?t=1361;https://wiki.kolibrios.org/wiki/MyKey/ru
+notes;Заметки;c--;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/cmm/notes;;https://wiki.kolibrios.org/wiki/Notes/ru
+barscfg;Управление таскбаром и доком;c--;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/cmm/barscfg;http://board.kolibrios.org/viewtopic.php?t=3020;
+pcidev;Информация о подключённых PCI-устройствах;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/testing/pcidev/trunk;http://board.kolibrios.org/viewtopic.php?t=73;https://wiki.kolibrios.org/wiki/PCIDEV/ru
+period;Периодическая таблица элементов;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/period;http://board.kolibrios.org/viewtopic.php?t=411;https://wiki.kolibrios.org/wiki/Period/ru
+pipet;Пипетка для рабочего стола;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/pipet;http://board.kolibrios.org/viewtopic.php?t=3546;
+rdsave;Сохранение образа системы в IMG;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/rdsave/trunk;http://board.kolibrios.org/viewtopic.php?t=645;
+rtfread;Читалка RTF;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/rtfread;http://board.kolibrios.org/viewtopic.php?t=1821;https://wiki.kolibrios.org/wiki/Rtfread/ru
+run;Запускалка файлов с параметрами;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/run/trunk;http://board.kolibrios.org/viewtopic.php?t=554;https://wiki.kolibrios.org/wiki/Run/ru
+scrshoot;Скриншотер;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/media/scrshoot;http://board.kolibrios.org/viewtopic.php?t=528;https://wiki.kolibrios.org/wiki/Scrshoot/ru
+searchap;Поиск и подключение дополнительной системной папки /kolibrios/;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/searchap;http://board.kolibrios.org/viewtopic.php?t=2319;https://wiki.kolibrios.org/wiki/@searchap/ru
+setup;Настройка некоторых системных параметров;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/setup/trunk;http://board.kolibrios.org/viewtopic.php?t=1966;https://wiki.kolibrios.org/wiki/Setup/ru
+shell;Консольный интерпретатор команд (шелл);c (gcc);http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/shell;http://board.kolibrios.org/viewtopic.php?t=1111;http://wiki.kolibrios.org/wiki/Shell/ru
+skincfg;Настройка цветов скинов;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/skincfg/trunk;http://board.kolibrios.org/viewtopic.php?t=1509;http://wiki.kolibrios.org/wiki/Skincfg/ru
+sysmon;Мониторинг ресурсов (ОЗУ, CPU, память);c--;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/cmm/sysmon;http://board.kolibrios.org/viewtopic.php?t=3753;
+syspanel;Универсальный виджет приложений;c--;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/cmm/misc/software_widget.c;http://board.kolibrios.org/viewtopic.php?t=3001;
+table;Редактор электронных таблиц;c (msvc);http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/table;http://board.kolibrios.org/viewtopic.php?t=1070;http://wiki.kolibrios.org/wiki/Table/ru
+terminal;Терминал для работы с COM портами;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/terminal;http://board.kolibrios.org/viewtopic.php?t=2563;
+test;Тест защиты ядра;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/testing/protection/trunk;;https://wiki.kolibrios.org/wiki/Test/ru
+tinfo;Информация о потоке выполнения (ПКМ на процессе в cpu);asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/tinfo;;
+tinypad;Текстовый редактор;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/develop/tinypad/trunk;http://board.kolibrios.org/viewtopic.php?t=39;https://wiki.kolibrios.org/wiki/Tinypad/ru
+tmpdisk;Управление виртуальными RAM дисками /tmp;c--;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/cmm/tmpdisk;http://board.kolibrios.org/viewtopic.php?t=2172;
+unz;Распаковщик архивов ZIP и 7Z;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/fs/unz;http://board.kolibrios.org/viewtopic.php?t=3639;
+vmode;Изменение разрешения экрана при использовании видеодрайвера;?? (c?);http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/data/common/vmode;;http://wiki.kolibrios.org/wiki/VMode
+zkey;Виртуальная клавиатура;;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/zkey/trunk;http://board.kolibrios.org/viewtopic.php?t=1109;http://wiki.kolibrios.org/wiki/Zkey/ru
+dbgboard;Доска отладки и сообщений;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/dbgboard;;
+clipview;Просмотрщик содержимого буфера обмена;c--;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/cmm/clipview;http://board.kolibrios.org/viewtopic.php?t=3396;
+diff;Визуальное сравнение двух текстовых файлов;c--;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/cmm/diff;http://board.kolibrios.org/viewtopic.php?t=3436;
+fasm;Ассемблер;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/develop/fasm/1.73;http://board.kolibrios.org/viewtopic.php?t=1514;https://wiki.kolibrios.org/wiki/Fasm/ru
+h2d2b;Преобразование чисел HEX/DEC/BIN;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/develop/h2d2b/trunk;http://board.kolibrios.org/viewtopic.php?t=117;
+heed;HEX-редактор;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/develop/heed/trunk;http://board.kolibrios.org/viewtopic.php?t=1285;
+mstate;Проверка состояния мыши;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/develop/mstate;;
+mtdbg;Дебаггер;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/develop/mtdbg;http://board.kolibrios.org/viewtopic.php?t=358;https://wiki.kolibrios.org/wiki/Mtdbg/ru
+scancode;Отображение SCAN-кодов клавиш клавиатуры;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/develop/scancode/trunk;;
