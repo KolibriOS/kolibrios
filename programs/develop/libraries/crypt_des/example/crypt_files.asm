@@ -11,7 +11,7 @@ include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../../../dll.inc'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Шифрование алгоритмом DES 05.03.13',0 ;подпись окна
+caption db 'Шифрование алгоритмом DES 21.05.25',0 ;подпись окна
 
 struct FileInfoBlock
 	Function dd ?
@@ -112,13 +112,13 @@ align 4
 still:
 	mcall SF_WAIT_EVENT
 
-	cmp al,1
+	cmp al,EV_REDRAW
 	jz red_win
-	cmp al,2
+	cmp al,EV_KEY
 	jz key
-	cmp al,3
+	cmp al,EV_BUTTON
 	jz button
-	cmp al,6 ;мышь
+	cmp al,EV_MOUSE
 	jne @f
 		jmp mouse
 	@@:
@@ -410,52 +410,7 @@ l_libs_start:
 	lib_4 l_libs lib_name_4, library_path, system_dir_4, import_box_lib
 l_libs_end:
 
-align 4
-import_libimg:
-	dd alib_init1
-	img_is_img  dd aimg_is_img
-	img_info    dd aimg_info
-	img_from_file dd aimg_from_file
-	img_to_file dd aimg_to_file
-	img_from_rgb dd aimg_from_rgb
-	img_to_rgb  dd aimg_to_rgb
-	img_to_rgb2 dd aimg_to_rgb2
-	img_decode  dd aimg_decode
-	img_encode  dd aimg_encode
-	img_create  dd aimg_create
-	img_destroy dd aimg_destroy
-	img_destroy_layer dd aimg_destroy_layer
-	img_count   dd aimg_count
-	img_lock_bits dd aimg_lock_bits
-	img_unlock_bits dd aimg_unlock_bits
-	img_flip    dd aimg_flip
-	img_flip_layer dd aimg_flip_layer
-	img_rotate  dd aimg_rotate
-	img_rotate_layer dd aimg_rotate_layer
-	img_draw    dd aimg_draw
-
-	dd 0,0
-	alib_init1   db 'lib_init',0
-	aimg_is_img  db 'img_is_img',0 ;определяет по данным, может ли библиотека сделать из них изображение
-	aimg_info    db 'img_info',0
-	aimg_from_file db 'img_from_file',0
-	aimg_to_file db 'img_to_file',0
-	aimg_from_rgb db 'img_from_rgb',0
-	aimg_to_rgb  db 'img_to_rgb',0 ;преобразование изображения в данные RGB
-	aimg_to_rgb2 db 'img_to_rgb2',0
-	aimg_decode  db 'img_decode',0 ;автоматически определяет формат графических данных
-	aimg_encode  db 'img_encode',0
-	aimg_create  db 'img_create',0
-	aimg_destroy db 'img_destroy',0
-	aimg_destroy_layer db 'img_destroy_layer',0
-	aimg_count   db 'img_count',0
-	aimg_lock_bits db 'img_lock_bits',0
-	aimg_unlock_bits db 'img_unlock_bits',0
-	aimg_flip    db 'img_flip',0
-	aimg_flip_layer db 'img_flip_layer',0
-	aimg_rotate  db 'img_rotate',0
-	aimg_rotate_layer db 'img_rotate_layer',0
-	aimg_draw    db 'img_draw',0
+include '../../libs-dev/libimg/import.inc'
 
 align 4
 import_proclib: ;описание экспортируемых функций
@@ -465,57 +420,7 @@ dd 0,0
 	aOpenDialog_Init db 'OpenDialog_init',0
 	aOpenDialog_Start db 'OpenDialog_start',0
 
-align 4
-import_buf2d:
-	init dd sz_init
-	buf2d_create dd sz_buf2d_create
-	buf2d_create_f_img dd sz_buf2d_create_f_img
-	buf2d_clear dd sz_buf2d_clear
-	buf2d_draw dd sz_buf2d_draw
-	buf2d_delete dd sz_buf2d_delete
-	;buf2d_line dd sz_buf2d_line
-	;buf2d_rect_by_size dd sz_buf2d_rect_by_size
-	;buf2d_filled_rect_by_size dd sz_buf2d_filled_rect_by_size
-	;buf2d_circle dd sz_buf2d_circle
-	;buf2d_img_hdiv2 dd sz_buf2d_img_hdiv2
-	;buf2d_img_wdiv2 dd sz_buf2d_img_wdiv2
-	buf2d_conv_24_to_8 dd sz_buf2d_conv_24_to_8
-	;buf2d_conv_24_to_32 dd sz_buf2d_conv_24_to_32
-	;buf2d_bit_blt dd sz_buf2d_bit_blt
-	;buf2d_bit_blt_transp dd sz_buf2d_bit_blt_transp
-	;buf2d_bit_blt_alpha dd sz_buf2d_bit_blt_alpha
-	;buf2d_curve_bezier dd sz_buf2d_curve_bezier
-	buf2d_convert_text_matrix dd sz_buf2d_convert_text_matrix
-	buf2d_draw_text dd sz_buf2d_draw_text
-	;buf2d_crop_color dd sz_buf2d_crop_color
-	;buf2d_offset_h dd sz_buf2d_offset_h
-	;buf2d_flood_fill dd sz_buf2d_flood_fill
-	;buf2d_set_pixel dd sz_buf2d_set_pixel
-	dd 0,0
-	sz_init db 'lib_init',0
-	sz_buf2d_create db 'buf2d_create',0
-	sz_buf2d_create_f_img db 'buf2d_create_f_img',0
-	sz_buf2d_clear db 'buf2d_clear',0
-	sz_buf2d_draw db 'buf2d_draw',0
-	sz_buf2d_delete db 'buf2d_delete',0
-	;sz_buf2d_line db 'buf2d_line',0
-	;sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0
-	;sz_buf2d_filled_rect_by_size db 'buf2d_filled_rect_by_size',0
-	;sz_buf2d_circle db 'buf2d_circle',0
-	;sz_buf2d_img_hdiv2 db 'buf2d_img_hdiv2',0
-	;sz_buf2d_img_wdiv2 db 'buf2d_img_wdiv2',0
-	sz_buf2d_conv_24_to_8 db 'buf2d_conv_24_to_8',0
-	;sz_buf2d_conv_24_to_32 db 'buf2d_conv_24_to_32',0
-	;sz_buf2d_bit_blt db 'buf2d_bit_blt',0
-	;sz_buf2d_bit_blt_transp db 'buf2d_bit_blt_transp',0
-	;sz_buf2d_bit_blt_alpha db 'buf2d_bit_blt_alpha',0
-	;sz_buf2d_curve_bezier db 'buf2d_curve_bezier',0
-	sz_buf2d_convert_text_matrix db 'buf2d_convert_text_matrix',0
-	sz_buf2d_draw_text db 'buf2d_draw_text',0
-	;sz_buf2d_crop_color db 'buf2d_crop_color',0
-	;sz_buf2d_offset_h db 'buf2d_offset_h',0
-	;sz_buf2d_flood_fill db 'buf2d_flood_fill',0
-	;sz_buf2d_set_pixel db 'buf2d_set_pixel',0
+include '../../buf2d/import.inc'
 
 align 4
 import_des: ;описание экспортируемых функций
@@ -525,22 +430,7 @@ dd 0,0
 	sz_des_encryption db 'des_encryption',0
 	sz_des_decryption db 'des_decryption',0
 
-align 4
-import_box_lib:
-	;dd sz_init1
-	edit_box_draw dd sz_edit_box_draw
-	edit_box_key dd sz_edit_box_key
-	edit_box_mouse dd sz_edit_box_mouse
-	;edit_box_set_text dd sz_edit_box_set_text
-
-	dd 0,0
-	;sz_init1 db 'lib_init',0
-	sz_edit_box_draw db 'edit_box_draw',0
-	sz_edit_box_key db 'edit_box_key',0
-	sz_edit_box_mouse db 'edit_box_mouse',0
-	;sz_edit_box_set_text db 'edit_box_set_text',0
-
-mouse_dd dd 0x0
+include '../../box_lib/import.inc'
 
 align 4
 buf_0: dd 0 ;указатель на буфер изображения
@@ -564,12 +454,13 @@ buf_1:
 edit1 edit_box 58, 140,8, 0xffffff, 0xff, 0x80ff, 0, 0x8000, 8, txt_key, mouse_dd, ed_focus+ed_always_focus,8,8
 
 txt_openfile db 'Откройте файл для шифрования или дешифрования.',0
-txt_buf rb 80
 txt_key db 'des_0123',0
-mem_key rb 120
 
 align 16
 i_end:
+	txt_buf rb 80
+	mem_key rb 120
+	mouse_dd rd 1
 	procinfo process_information
 	sc system_colors 
 	rb 2048

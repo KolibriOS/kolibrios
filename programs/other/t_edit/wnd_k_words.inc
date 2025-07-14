@@ -80,7 +80,7 @@ pushad
 	@@:
 
 	mov dword[w_scr_t3.all_redraw],1
-	stdcall [scrollbar_ver_draw], w_scr_t3
+	stdcall [scrollbar_v_draw], w_scr_t3
 	stdcall [tl_draw], tree3
 	stdcall [edit_box_draw], edit3
 	mcall SF_REDRAW,SSF_END_DRAW

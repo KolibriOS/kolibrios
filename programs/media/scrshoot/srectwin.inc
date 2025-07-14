@@ -259,99 +259,10 @@ aOpenDialog_Init	db 'OpenDialog_init',0
 aOpenDialog_Start	db 'OpenDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
 ;---------------------------------------------------------------------
-align 4
-Box_lib_import:
-;init_lib		dd a_init
-;version_lib		dd a_version
 
-edit_box_draw		dd aEdit_box_draw
-edit_box_key		dd aEdit_box_key
-edit_box_mouse		dd aEdit_box_mouse
-edit_box_set_text	dd aEdit_box_set_text
-;version_ed		dd aVersion_ed
-
-init_checkbox		dd aInit_checkbox
-check_box_draw		dd aCheck_box_draw
-check_box_mouse 	dd aCheck_box_mouse
-;version_ch	dd	aVersion_ch
-
-option_box_draw	dd aOption_box_draw
-option_box_mouse	dd aOption_box_mouse
-;version_op		dd aVersion_op
-
-PathShow_prepare	dd sz_PathShow_prepare
-PathShow_draw		dd sz_PathShow_draw
-;Version_path_show	dd szVersion_path_show
-			dd 0,0
-
-;a_init			db 'lib_init',0
-;a_version		db 'version',0
-
-aEdit_box_draw		db 'edit_box_draw',0
-aEdit_box_key		db 'edit_box_key',0
-aEdit_box_mouse		db 'edit_box_mouse',0
-aEdit_box_set_text	db 'edit_box_set_text',0
-;aVersion_ed		db 'version_ed',0
-
-
-aInit_checkbox	 db 'init_checkbox2',0
-aCheck_box_draw  db 'check_box_draw2',0
-aCheck_box_mouse db 'check_box_mouse2',0
-;aVersion_ch	 db 'version_ch2',0
-
-aOption_box_draw	db 'option_box_draw',0
-aOption_box_mouse	db 'option_box_mouse',0
-;aVersion_op		db 'version_op',0
-
-sz_PathShow_prepare	db 'PathShow_prepare',0
-sz_PathShow_draw	db 'PathShow_draw',0
-;szVersion_path_show	db 'version_PathShow',0
-;---------------------------------------------------------------------
-align 4
-import_libimg:
-	dd alib_init1
-	img_is_img  dd aimg_is_img
-	img_info    dd aimg_info
-	img_from_file dd aimg_from_file
-	img_to_file dd aimg_to_file
-	img_from_rgb dd aimg_from_rgb
-	img_to_rgb  dd aimg_to_rgb
-	img_to_rgb2 dd aimg_to_rgb2
-	img_decode  dd aimg_decode
-	img_encode  dd aimg_encode
-	img_create  dd aimg_create
-	img_destroy dd aimg_destroy
-	img_destroy_layer dd aimg_destroy_layer
-	img_count   dd aimg_count
-	img_lock_bits dd aimg_lock_bits
-	img_unlock_bits dd aimg_unlock_bits
-	img_flip    dd aimg_flip
-	img_flip_layer dd aimg_flip_layer
-	img_rotate  dd aimg_rotate
-	img_rotate_layer dd aimg_rotate_layer
-	img_draw    dd aimg_draw
-dd 0,0
-	alib_init1   db 'lib_init',0
-	aimg_is_img  db 'img_is_img',0
-	aimg_info    db 'img_info',0
-	aimg_from_file db 'img_from_file',0
-	aimg_to_file db 'img_to_file',0
-	aimg_from_rgb db 'img_from_rgb',0
-	aimg_to_rgb  db 'img_to_rgb',0
-	aimg_to_rgb2 db 'img_to_rgb2',0
-	aimg_decode  db 'img_decode',0
-	aimg_encode  db 'img_encode',0
-	aimg_create  db 'img_create',0
-	aimg_destroy db 'img_destroy',0
-	aimg_destroy_layer db 'img_destroy_layer',0
-	aimg_count   db 'img_count',0
-	aimg_lock_bits db 'img_lock_bits',0
-	aimg_unlock_bits db 'img_unlock_bits',0
-	aimg_flip    db 'img_flip',0
-	aimg_flip_layer db 'img_flip_layer',0
-	aimg_rotate  db 'img_rotate',0
-	aimg_rotate_layer db 'img_rotate_layer',0
-	aimg_draw    db 'img_draw',0
+Box_lib_import equ import_box_lib
+include '../../develop/libraries/box_lib/import.inc'
+include '../../develop/libraries/libs-dev/libimg/import.inc'
 ;---------------------------------------------------------------------
 ;width,left,top,color,shift_color,focus_border_color,\
 ;       blur_border_color,text_color,max,text,mouse_variable,flags,size,pos

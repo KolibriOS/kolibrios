@@ -1,3 +1,7 @@
+; SPDX-License-Identifier: GPL-2.0-only
+; ImgTransform - utility for creating textures from images
+; Copyright (C) 2020-2025 KolibriOS team
+
 use32
 	org 0
 	db 'MENUET01'
@@ -9,23 +13,23 @@ include '../../proc32.inc'
 include '../../KOSfuncs.inc'
 include '../../load_img.inc'
 include '../../load_lib.mac'
+include '../../develop/libraries/TinyGL/asm_fork/kosgl.inc'
 include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include '../../develop/libraries/TinyGL/asm_fork/zbuffer.inc'
 include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../develop/info3ds/info_fun_float.inc'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
-caption db 'Image transform 08.12.20',0 ;подпись окна
+caption db 'Image transform 21.05.25',0
 
 BUF_STRUCT_SIZE equ 21
-buf2d_data equ dword[edi] ;данные буфера изображения
-buf2d_w equ dword[edi+8] ;ширина буфера
-buf2d_h equ dword[edi+12] ;высота буфера
-buf2d_l equ word[edi+4]
-buf2d_t equ word[edi+6] ;отступ сверху
-buf2d_size_lt equ dword[edi+4] ;отступ слева и справа для буфера
-buf2d_color equ dword[edi+16] ;цвет фона буфера
-buf2d_bits equ byte[edi+20] ;количество бит в 1-й точке изображения
+buf2d_data equ dword[edi] ;image buffer data
+buf2d_w equ dword[edi+8] ;buffer width
+buf2d_h equ dword[edi+12] ;buffer height
+buf2d_l equ word[edi+4] ;left space
+buf2d_t equ word[edi+6] ;top space
+buf2d_color equ dword[edi+16] ;buffer background color
+buf2d_bits equ byte[edi+20] ;number of bits in 1 image pixel
 
 NAV_WND_L equ 145
 NAV_WND_T equ 1
@@ -88,13 +92,13 @@ still:
 	cmp eax,0
 	je timer_funct
 
-	cmp al,1
+	cmp al,EV_REDRAW
 	jz red_win
-	cmp al,2
+	cmp al,EV_KEY
 	jz key
-	cmp al,3
+	cmp al,EV_BUTTON
 	jz button
-	cmp al,6
+	cmp al,EV_MOUSE
 	jne @f
 		mcall SF_THREAD_INFO,procinfo,-1
 		cmp ax,word[procinfo.window_stack_position]
@@ -1428,55 +1432,8 @@ l_libs_start:
 	lib_0 l_libs lib_name_0, file_name, system_dir_0, import_proclib
 	lib_1 l_libs lib_name_1, file_name, system_dir_1, import_libimg
 	lib_2 l_libs lib_name_2, library_path, system_dir_2, import_buf2d
-	lib_3 l_libs lib_name_3, library_path, system_dir_3, import_lib_tinygl
+	lib_3 l_libs lib_name_3, library_path, system_dir_3, import_tinygl
 l_libs_end:
-
-align 4
-import_libimg:
-	dd alib_init1
-	img_is_img  dd aimg_is_img
-	img_info    dd aimg_info
-	img_from_file dd aimg_from_file
-	img_to_file dd aimg_to_file
-	img_from_rgb dd aimg_from_rgb
-	img_to_rgb  dd aimg_to_rgb
-	img_to_rgb2 dd aimg_to_rgb2
-	img_decode  dd aimg_decode
-	img_encode  dd aimg_encode
-	img_create  dd aimg_create
-	img_destroy dd aimg_destroy
-	img_destroy_layer dd aimg_destroy_layer
-	img_count   dd aimg_count
-	img_lock_bits dd aimg_lock_bits
-	img_unlock_bits dd aimg_unlock_bits
-	img_flip    dd aimg_flip
-	img_flip_layer dd aimg_flip_layer
-	img_rotate  dd aimg_rotate
-	img_rotate_layer dd aimg_rotate_layer
-	img_draw    dd aimg_draw
-
-	dd 0,0
-	alib_init1   db 'lib_init',0
-	aimg_is_img  db 'img_is_img',0 ;определяет по данным, может ли библиотека сделать из них изображение
-	aimg_info    db 'img_info',0
-	aimg_from_file db 'img_from_file',0
-	aimg_to_file db 'img_to_file',0
-	aimg_from_rgb db 'img_from_rgb',0
-	aimg_to_rgb  db 'img_to_rgb',0 ;преобразование изображения в данные RGB
-	aimg_to_rgb2 db 'img_to_rgb2',0
-	aimg_decode  db 'img_decode',0 ;автоматически определяет формат графических данных
-	aimg_encode  db 'img_encode',0
-	aimg_create  db 'img_create',0
-	aimg_destroy db 'img_destroy',0
-	aimg_destroy_layer db 'img_destroy_layer',0
-	aimg_count   db 'img_count',0
-	aimg_lock_bits db 'img_lock_bits',0
-	aimg_unlock_bits db 'img_unlock_bits',0
-	aimg_flip    db 'img_flip',0
-	aimg_flip_layer db 'img_flip_layer',0
-	aimg_rotate  db 'img_rotate',0
-	aimg_rotate_layer db 'img_rotate_layer',0
-	aimg_draw    db 'img_draw',0
 
 align 4
 import_proclib:
@@ -1490,76 +1447,9 @@ dd 0,0
 	aOpenDialog_Set_file_name db 'OpenDialog_set_file_name',0
 	aOpenDialog_Set_file_ext db 'OpenDialog_set_file_ext',0
 
-align 4
-import_buf2d:
-	init dd sz_init
-	buf2d_create dd sz_buf2d_create
-	buf2d_create_f_img dd sz_buf2d_create_f_img
-	buf2d_clear dd sz_buf2d_clear
-	buf2d_draw dd sz_buf2d_draw
-	buf2d_delete dd sz_buf2d_delete
-	buf2d_resize dd sz_buf2d_resize
-	buf2d_line dd sz_buf2d_line
-	buf2d_rect_by_size dd sz_buf2d_rect_by_size
-	buf2d_filled_rect_by_size dd sz_buf2d_filled_rect_by_size
-	buf2d_circle dd sz_buf2d_circle
-	buf2d_img_hdiv2 dd sz_buf2d_img_hdiv2
-	buf2d_img_wdiv2 dd sz_buf2d_img_wdiv2
-	buf2d_conv_24_to_8 dd sz_buf2d_conv_24_to_8
-	buf2d_conv_24_to_32 dd sz_buf2d_conv_24_to_32
-	buf2d_bit_blt dd sz_buf2d_bit_blt
-	buf2d_bit_blt_transp dd sz_buf2d_bit_blt_transp
-	buf2d_bit_blt_alpha dd sz_buf2d_bit_blt_alpha
-	buf2d_curve_bezier dd sz_buf2d_curve_bezier
-	buf2d_convert_text_matrix dd sz_buf2d_convert_text_matrix
-	buf2d_draw_text dd sz_buf2d_draw_text
-	buf2d_crop_color dd sz_buf2d_crop_color
-	buf2d_offset_h dd sz_buf2d_offset_h
-	buf2d_flood_fill dd sz_buf2d_flood_fill
-	buf2d_set_pixel dd sz_buf2d_set_pixel
-	buf2d_get_pixel dd sz_buf2d_get_pixel
-	dd 0,0
-	sz_init db 'lib_init',0
-	sz_buf2d_create db 'buf2d_create',0
-	sz_buf2d_create_f_img db 'buf2d_create_f_img',0
-	sz_buf2d_clear db 'buf2d_clear',0
-	sz_buf2d_draw db 'buf2d_draw',0
-	sz_buf2d_delete db 'buf2d_delete',0
-	sz_buf2d_resize db 'buf2d_resize',0
-	sz_buf2d_line db 'buf2d_line',0
-	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0
-	sz_buf2d_filled_rect_by_size db 'buf2d_filled_rect_by_size',0
-	sz_buf2d_circle db 'buf2d_circle',0
-	sz_buf2d_img_hdiv2 db 'buf2d_img_hdiv2',0
-	sz_buf2d_img_wdiv2 db 'buf2d_img_wdiv2',0
-	sz_buf2d_conv_24_to_8 db 'buf2d_conv_24_to_8',0
-	sz_buf2d_conv_24_to_32 db 'buf2d_conv_24_to_32',0
-	sz_buf2d_bit_blt db 'buf2d_bit_blt',0
-	sz_buf2d_bit_blt_transp db 'buf2d_bit_blt_transp',0
-	sz_buf2d_bit_blt_alpha db 'buf2d_bit_blt_alpha',0
-	sz_buf2d_curve_bezier db 'buf2d_curve_bezier',0
-	sz_buf2d_convert_text_matrix db 'buf2d_convert_text_matrix',0
-	sz_buf2d_draw_text db 'buf2d_draw_text',0
-	sz_buf2d_crop_color db 'buf2d_crop_color',0
-	sz_buf2d_offset_h db 'buf2d_offset_h',0
-	sz_buf2d_flood_fill db 'buf2d_flood_fill',0
-	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
-	sz_buf2d_get_pixel db 'buf2d_get_pixel',0
-
-align 4
-import_lib_tinygl:
-
-macro E_LIB n
-{
-	n dd sz_#n
-}
-include '../../../programs/develop/libraries/TinyGL/asm_fork/export.inc'
-	dd 0,0
-macro E_LIB n
-{
-	sz_#n db `n,0
-}
-include '../../../programs/develop/libraries/TinyGL/asm_fork/export.inc'
+include '../../develop/libraries/libs-dev/libimg/import.inc'
+include '../../develop/libraries/buf2d/import.inc'
+include '../../develop/libraries/TinyGL/asm_fork/import.inc'
 
 align 4
 buf_0: dd 0

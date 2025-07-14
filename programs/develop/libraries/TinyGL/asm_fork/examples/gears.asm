@@ -23,12 +23,6 @@ macro matr_cell c_funct,c_param,funct,param, dia
 	dia dword[esp-4*(c_param*(c_funct-funct)+(1+c_param-param))]
 }
 
-;Macro for double type parameters (8 bytes)
-macro glpush GLDoubleVar {
-	push dword[GLDoubleVar+4]
-	push dword[GLDoubleVar]
-}
-
 align 4
 start:
 	load_library name_tgl, library_path, system_path, import_tinygl
@@ -901,22 +895,8 @@ endp
 
 
 ;--------------------------------------------------
-align 4
-import_tinygl:
+include '../import.inc'
 
-macro E_LIB n
-{
-	n dd sz_#n
-}
-include '../export.inc'
-	dd 0,0
-macro E_LIB n
-{
-	sz_#n db `n,0
-}
-include '../export.inc'
-
-;--------------------------------------------------
 system_path db '/sys/lib/'
 name_tgl db 'tinygl.obj',0
 ;--------------------------------------------------

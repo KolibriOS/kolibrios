@@ -394,11 +394,11 @@ p_syntax:
 	mov ecx,ted_wnd_t
 	shl ecx,16
 	mov cx,20
-	mcall SF_DRAW_RECT,TED_PANEL_WIDTH,,[sc.work] ;рисование верхнего фонового прямоугольника
+	mcall SF_DRAW_RECT,TED_PANEL_WIDTH,,[sc.work] ;drawing the top background rectangle
 
 	stdcall [tl_draw], tree1
-	mov [ws_dir_lbox.all_redraw],1 ;для полной перерисовки дочернего скроллинга
-	stdcall [scrollbar_ver_draw], ws_dir_lbox
+	mov [ws_dir_lbox.all_redraw],1 ;for a complete redraw of the child scroll
+	stdcall [scrollbar_v_draw], ws_dir_lbox
 
 	ror ecx,16
 	add ecx,[tree1.box_height]
@@ -411,7 +411,7 @@ p_syntax:
 	sub cx,20
 	sub ecx,[tree1.box_height]
 	inc cx
-	int 0x40 ;рисование нижнего фонового прямоугольника
+	int 0x40 ;drawing the bottom background rectangle
 
 	mov ecx,ted_wnd_t
 	add ecx,25
@@ -436,7 +436,7 @@ p_syntax:
 	popad
 	ret
 
-MIN_M_WND_H equ 100 ;минимальная высота главного окна
+MIN_M_WND_H equ 100 ;minimum height of main window
 ;input:
 ; edi = pointer to tedit struct
 align 4

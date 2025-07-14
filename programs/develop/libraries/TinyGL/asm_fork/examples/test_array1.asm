@@ -1,3 +1,7 @@
+; SPDX-License-Identifier: GPL-2.0-only
+; Test array1 - example of using vertex array functions
+; Copyright (C) 2014-2025 KolibriOS team
+
 use32
 	org 0
 	db 'MENUET01'
@@ -8,6 +12,7 @@ include '../../../../../macros.inc'
 include '../../../../../KOSfuncs.inc'
 include '../../../../../load_lib.mac'
 include '../../../../../dll.inc'
+include '../kosgl.inc'
 include '../opengl_const.inc'
 
 @use_library
@@ -191,29 +196,15 @@ align 4
 Indices rb FACES_COUNT*6 ;3 points per edge, point index 2 bytes
 
 ;--------------------------------------------------
-align 4
-import_tinygl:
+include '../import.inc' ;tinygl
 
-macro E_LIB n
-{
-	n dd sz_#n
-}
-include '../export.inc'
-	dd 0,0
-macro E_LIB n
-{
-	sz_#n db `n,0
-}
-include '../export.inc'
-
-;--------------------------------------------------
 system_path db '/sys/lib/'
 name_tgl db 'tinygl.obj',0
 ;--------------------------------------------------
 
 align 4
 i_end:
-	ctx1 rb 28 ;sizeof.TinyGLContext = 28
+ctx1 TinyGLContext
 cur_dir_path rb 4096
 library_path rb 4096
 	rb 4096
