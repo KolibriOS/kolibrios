@@ -49,9 +49,9 @@ include '../../../../../load_lib.mac'
 ;--- Start of program ----------------------------------------------
 ;---------------------------------------------------------------------
 START:
-	mcall	68,11
-	mcall	66,1,1
-	mcall	40,0x27
+	mcall	SF_SYS_MISC,SSF_HEAP_INIT
+	mcall	SF_KEYBOARD,SSF_SET_INPUT_MODE,1
+	mcall	SF_SET_EVENTS_MASK,0x27
 ;---------------------------------------------------------------------	
 
 load_libraries	l_libs_start,end_l_libs
@@ -84,7 +84,7 @@ load_libraries	l_libs_start,end_l_libs
 
 	copy_path	icons_file_name,path,library_path,0
 	
-	mcall	70,fileinfo
+	mcall	SF_FILE,fileinfo
 
 	mov	[fileinfo+0],dword 0
 
@@ -93,14 +93,14 @@ load_libraries	l_libs_start,end_l_libs
 	mov	[img_size],ecx
 	
 
-	mcall	68,12
+	mcall	SF_SYS_MISC,SSF_MEM_ALLOC
 
 
 	mov	[fileinfo+16],eax
 	mov	[image_file],eax
 
 
-	mcall	70,fileinfo
+	mcall	SF_FILE,fileinfo
 	
 	xor	eax,eax
 	mov	[return_code],eax
@@ -108,8 +108,7 @@ load_libraries	l_libs_start,end_l_libs
 	push	image_file
 	call	[cnv_png_import.Start]
 	
-	mov	ecx,[image_file]
-	mcall	68,13,
+	mcall	SF_SYS_MISC,SSF_MEM_FREE,[image_file]
 	
 	cmp	[return_code],dword 0
 	jne	button.exit
@@ -151,28 +150,28 @@ load_libraries	l_libs_start,end_l_libs
 red:
 	call	draw_window
 still:
-	mcall	10
+	mcall	SF_WAIT_EVENT
 
-	cmp	eax,1
+	cmp	eax,EV_REDRAW
 	je	red
-	cmp	eax,2
+	cmp	eax,EV_KEY
 	je	key
-	cmp	eax,3
+	cmp	eax,EV_BUTTON
 	je	button
-	cmp	eax,6
+	cmp	eax,EV_MOUSE
 	je	mouse
 	jmp	still
 ;---------------------------------------------------------------------
 	key:
-	mcall	2
+	mcall	SF_GET_KEY
 	jmp	still
 ;---------------------------------------------------------------------
 	button:
-	mcall	17
+	mcall	SF_GET_BUTTON
 	cmp	ah,1
 	jne	still
 	.exit:
-	mcall	-1
+	mcall	SF_TERMINATE_PROCESS
 ;---------------------------------------------------------------------
 mouse:
 ;-----------------------------------------------
@@ -184,7 +183,7 @@ mouse:
 	jbe	.horizontal
 ; mouse event for Vertical ScrollBar
 	push	dword scroll_bar_data_vertical
-	call	[scrollbar_ver_mouse]
+	call	[scrollbar_v_mouse]
 	mov	eax,scroll_bar_data_vertical.redraw
 	xor	ebx,ebx
 	cmp	[eax],ebx
@@ -200,7 +199,7 @@ mouse:
 	jbe	.other
 ; mouse event for Horizontal ScrollBar
 	push	dword scroll_bar_data_horizontal
-	call	[scrollbar_hor_mouse]
+	call	[scrollbar_h_mouse]
 	mov	eax,scroll_bar_data_horizontal.redraw
 	xor	ebx,ebx
 	cmp	[eax],ebx	
@@ -240,7 +239,7 @@ mouse:
 .mouse_dinamic_button:
 ; mouse event for Dinamic Button 1
 	push	dword dinamic_button_data_1
-	call	[dinamic_button_mouse]
+	call	[dbutton_mouse]
 	mov	eax,dinamic_button_data_1.click
 	cmp	[eax],dword 1
 	jne	@f
@@ -249,7 +248,7 @@ mouse:
 @@:
 ; mouse event for Dinamic Button 2
 	push	dword dinamic_button_data_2
-	call	[dinamic_button_mouse]
+	call	[dbutton_mouse]
 	mov	eax,dinamic_button_data_2.click
 	cmp	[eax],dword 1
 	jne	still	;@f
@@ -283,7 +282,7 @@ analyse_out_menu_2:
 	jmp	still
 ;---------------------------------------------------------------------
 	about:
-	mcall	51,1,thread3,thread
+	mcall	SF_CREATE_THREAD,1,thread3,thread
 	jmp	still
 ;---------------------------------------------------------------------
 OpenDialog_start_0:
@@ -320,9 +319,9 @@ OpenDialog_start:
 ;---------------------------------------------------------------------
 ;---------------------------------------------------------------------
 draw_window:
-	mcall	12,1
-	mcall	0,<0,400>,<0,400>,0x03AABBCC,0x805080D0,0x005080D0
-	mcall	71,1,header_1
+	mcall	SF_REDRAW,SSF_BEGIN_DRAW
+	mcall	SF_CREATE_WINDOW,<0,400>,<0,400>,0x03AABBCC,0x805080D0,0x005080D0
+	mcall	SF_SET_CAPTION,1,header_1
 ;---------------------------------------------
 ; draw for Menu 1
 	push	dword menu_data_1
@@ -333,15 +332,15 @@ draw_window:
 ;---------------------------------------------
 ; draw for Dinamic Button	1
 	push	dword dinamic_button_data_1
-	call	[dinamic_button_draw]
+	call	[dbutton_draw]
 ; draw for Dinamic Button 2
 	push	dword dinamic_button_data_2
-	call	[dinamic_button_draw]
+	call	[dbutton_draw]
 ;---------------------------------------------
-	mcall	13,<170,200>,<25,15>,0xffffb0
+	mcall	SF_DRAW_RECT,<170,200>,<25,15>,0xffffb0
 ;	mov	bx,28
 ;	add	ebx,2 shl 16
-;	mcall	4,,0xC0000000,text_work_area,,0xffffb0
+;	mcall	SF_DRAW_TEXT,,0xC0000000,text_work_area,,0xffffb0
 ; draw for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_draw]	
@@ -357,21 +356,21 @@ draw_window:
 	
 ; draw for Vertical ScrollBar
 	push	dword scroll_bar_data_vertical
-	call	[scrollbar_ver_draw]
+	call	[scrollbar_v_draw]
 ; draw for Horizontal ScrollBar
 	push	dword scroll_bar_data_horizontal
-	call	[scrollbar_hor_draw]
+	call	[scrollbar_h_draw]
 ; reset all_redraw flag	
 	xor	eax,eax
 	mov	[scroll_bar_data_vertical.all_redraw],eax
 	mov	[scroll_bar_data_horizontal.all_redraw],eax
 ;---------------------------------------------
 	call	draw_cube
-	mcall	12,2
+	mcall	SF_REDRAW,SSF_END_DRAW
 	ret
 ;---------------------------------------------------------------------
 draw_cube:
-	mcall	13,<30,301>,<50,301>,0xafafaf
+	mcall	SF_DRAW_RECT,<30,301>,<50,301>,0xafafaf
 	mov	ecx,[scroll_bar_data_vertical.position]
 	add	ecx,50
 	shl	ecx,16
@@ -380,7 +379,7 @@ draw_cube:
 	add	ebx,30
 	shl	ebx,16
 	mov	bx,30
-	mcall	13,,,0x0
+	mcall	SF_DRAW_RECT,,,0x0
 	ret
 ;---------------------------------------------------------------------
 include 'data.inc'
