@@ -34,21 +34,25 @@ proc libini._.init ;////////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = 1 (fail) / 0 (ok) (library initialization result)                                        ;;
 ;;================================================================================================;;
-	mov	[mem.alloc], eax
-	mov	[mem.free], ebx
-	mov	[mem.realloc], ecx
-	mov	[dll.load], edx
+        mov     [mem.alloc], eax
+        mov     [mem.free], ebx
+        mov     [mem.realloc], ecx
 
-	invoke	dll.load, @IMPORT
-	or	eax, eax
-	jz	.ok
+        cmp     [dll.load], edx
+        je      .ok
 
-	xor	eax, eax
-	inc	eax
-	ret
+        mov     [dll.load], edx
 
-  .ok:	xor	eax,eax
-	ret
+        invoke  dll.load, @IMPORT
+        or      eax, eax
+        jz      .ok
+
+        xor     eax, eax
+        inc     eax
+        ret
+
+  .ok:  xor     eax,eax
+        ret
 endp
 
 ;;================================================================================================;;
@@ -60,16 +64,16 @@ proc libini._.unget_char _f ;///////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push	eax ecx
-	mov	ecx, [_f]
-	inc	[ecx + IniFile.cnt]
-	dec	esi
-	mov	eax, [ecx + IniFile.bsize]
-	cmp	[ecx + IniFile.cnt], eax
-	jle	@f
-	stdcall libini._.unload_block, [_f]
-    @@: pop	ecx eax
-	ret
+        push    eax ecx
+        mov     ecx, [_f]
+        inc     [ecx + IniFile.cnt]
+        dec     esi
+        mov     eax, [ecx + IniFile.bsize]
+        cmp     [ecx + IniFile.cnt], eax
+        jle     @f
+        stdcall libini._.unload_block, [_f]
+    @@: pop     ecx eax
+        ret
 endp
 
 ;;================================================================================================;;
@@ -81,13 +85,13 @@ proc libini._.get_char _f ;/////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	mov	ecx, [_f]
-	dec	[ecx + IniFile.cnt]
-	jns	@f
-	stdcall libini._.preload_block, [_f]
-	dec	[ecx + IniFile.cnt]
+        mov     ecx, [_f]
+        dec     [ecx + IniFile.cnt]
+        jns     @f
+        stdcall libini._.preload_block, [_f]
+        dec     [ecx + IniFile.cnt]
     @@: lodsb
-	ret
+        ret
 endp
 
 ;;================================================================================================;;
@@ -99,22 +103,22 @@ proc libini._.skip_nonblanks _f ;///////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	mov	ecx, [_f]
+        mov     ecx, [_f]
     @@: stdcall libini._.get_char, [_f]
-	cmp	al, 32
-	je	@b
-	cmp	al, 13
-	je	@b
-	cmp	al, 10
-	je	@b
-	cmp	al, 9
-	je	@b
-	cmp	al, ini.COMMENT_CHAR
-	jne	@f
-	stdcall libini._.skip_line, [_f]
-	jmp	@b
+        cmp     al, 32
+        je      @b
+        cmp     al, 13
+        je      @b
+        cmp     al, 10
+        je      @b
+        cmp     al, 9
+        je      @b
+        cmp     al, ini.COMMENT_CHAR
+        jne     @f
+        stdcall libini._.skip_line, [_f]
+        jmp     @b
     @@: stdcall libini._.unget_char, [_f]
-	ret
+        ret
 endp
 
 ;;================================================================================================;;
@@ -126,14 +130,14 @@ proc libini._.skip_spaces _f ;//////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	mov	ecx, [_f]
+        mov     ecx, [_f]
     @@: stdcall libini._.get_char, [_f]
-	cmp	al, 32
-	je	@b
-	cmp	al, 9
-	je	@b
+        cmp     al, 32
+        je      @b
+        cmp     al, 9
+        je      @b
     @@: stdcall libini._.unget_char, [_f]
-	ret
+        ret
 endp
 
 ;;================================================================================================;;
@@ -145,16 +149,16 @@ proc libini._.skip_line _f ;////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	mov	ecx, [_f]
+        mov     ecx, [_f]
     @@: stdcall libini._.get_char, [_f]
-	or	al, al
-	jz	@f
-	cmp	al, 13
-	je	@f
-	cmp	al, 10
-	jne	@b
+        or      al, al
+        jz      @f
+        cmp     al, 13
+        je      @f
+        cmp     al, 10
+        jne     @b
     @@: stdcall libini._.unget_char, [_f]
-	ret
+        ret
 endp
 
 ;;================================================================================================;;
@@ -166,16 +170,16 @@ proc libini._.unload_block _f ;/////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push	eax ebx ecx
-	mov	ebx, [_f]
-	mov	eax, [ebx + IniFile.pos]
-	add	eax, -ini.BLOCK_SIZE
-	invoke	file.seek, [ebx + IniFile.fh], eax, SEEK_SET
-	stdcall libini._.preload_block, ebx
-	add	esi, eax
-	mov	[ebx + IniFile.cnt], 0
-	pop	ecx ebx eax
-	ret
+        push    eax ebx ecx
+        mov     ebx, [_f]
+        mov     eax, [ebx + IniFile.pos]
+        add     eax, -ini.BLOCK_SIZE
+        invoke  file.seek, [ebx + IniFile.fh], eax, SEEK_SET
+        stdcall libini._.preload_block, ebx
+        add     esi, eax
+        mov     [ebx + IniFile.cnt], 0
+        pop     ecx ebx eax
+        ret
 endp
 
 ;;================================================================================================;;
@@ -187,25 +191,25 @@ proc libini._.preload_block _f ;////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push	eax ebx ecx
-	mov	ebx, [_f]
-    @@: mov	esi, [ebx + IniFile.buf]
-	push	edi
-	mov	edi, esi
-	mov	ecx, ini.BLOCK_SIZE / 4
-	xor	eax, eax
-	rep	stosd
-	pop	edi
-	invoke	file.tell, [ebx + IniFile.fh]
-	mov	[ebx + IniFile.pos], eax
-	invoke	file.read, [ebx + IniFile.fh], esi, ini.BLOCK_SIZE
-	mov	esi,[ebx + IniFile.buf]
-	cmp	eax,ini.BLOCK_SIZE
-	jl	@f
-    @@: mov	[ebx + IniFile.cnt], eax
-	mov	[ebx + IniFile.bsize], eax
-	pop	ecx ebx eax
-	ret
+        push    eax ebx ecx
+        mov     ebx, [_f]
+    @@: mov     esi, [ebx + IniFile.buf]
+        push    edi
+        mov     edi, esi
+        mov     ecx, ini.BLOCK_SIZE / 4
+        xor     eax, eax
+        rep     stosd
+        pop     edi
+        invoke  file.tell, [ebx + IniFile.fh]
+        mov     [ebx + IniFile.pos], eax
+        invoke  file.read, [ebx + IniFile.fh], esi, ini.BLOCK_SIZE
+        mov     esi,[ebx + IniFile.buf]
+        cmp     eax,ini.BLOCK_SIZE
+        jl      @f
+    @@: mov     [ebx + IniFile.cnt], eax
+        mov     [ebx + IniFile.bsize], eax
+        pop     ecx ebx eax
+        ret
 endp
 
 ;;================================================================================================;;
@@ -217,18 +221,18 @@ proc libini._.reload_block _f ;/////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push	eax ebx ecx
-	mov	ebx, [_f]
-	push	[ebx + IniFile.bsize]
-	push	esi [ebx + IniFile.cnt]
-	invoke	file.seek, [ebx + IniFile.fh], [ebx + IniFile.pos], SEEK_SET
-	stdcall libini._.preload_block, ebx
-	pop	[ebx + IniFile.cnt] esi
-	pop	eax
-	sub	eax,[ebx + IniFile.bsize]
-	sub	[ebx + IniFile.cnt], eax
-	pop	ecx ebx eax
-	ret
+        push    eax ebx ecx
+        mov     ebx, [_f]
+        push    [ebx + IniFile.bsize]
+        push    esi [ebx + IniFile.cnt]
+        invoke  file.seek, [ebx + IniFile.fh], [ebx + IniFile.pos], SEEK_SET
+        stdcall libini._.preload_block, ebx
+        pop     [ebx + IniFile.cnt] esi
+        pop     eax
+        sub     eax,[ebx + IniFile.bsize]
+        sub     [ebx + IniFile.cnt], eax
+        pop     ecx ebx eax
+        ret
 endp
 
 ; f_info - contains current file block number
@@ -249,91 +253,91 @@ locals
   buf dd ?
 endl
 
-	xor	eax, eax
-	cmp	[_delta], 0
-	je	.skip
+        xor     eax, eax
+        cmp     [_delta], 0
+        je      .skip
 
-	push	ebx ecx
-	invoke	mem.alloc, ini.BLOCK_SIZE
-	or	eax, eax
-	jz	.fail
-	mov	[buf], eax
+        push    ebx ecx
+        invoke  mem.alloc, ini.BLOCK_SIZE
+        or      eax, eax
+        jz      .fail
+        mov     [buf], eax
 
-	cmp	[_delta], 0
-	jl	.down
+        cmp     [_delta], 0
+        jl      .down
 
-	mov	ebx, [_f]
-	mov	ecx, [ebx + IniFile.cnt]
-	mov	ebx, [ebx + IniFile.fh]
-	invoke	file.tell, ebx
-	sub	eax, ecx
-	invoke	file.seek, ebx, eax, SEEK_SET
-    @@: invoke	file.seek, ebx, [_delta], SEEK_CUR
-	invoke	file.eof?, ebx
-	or	eax, eax
-	jnz	.done
-	invoke	file.read, ebx, [buf], ini.BLOCK_SIZE
-	mov	ecx, eax
-	mov	eax, [_delta]
-	neg	eax
-	sub	eax, ecx
-	invoke	file.seek, ebx, eax, SEEK_CUR
-	push	ecx
-	invoke	file.write, ebx, [buf], ecx
-	pop	ecx
-	cmp	eax, ecx
-	jz	@b
+        mov     ebx, [_f]
+        mov     ecx, [ebx + IniFile.cnt]
+        mov     ebx, [ebx + IniFile.fh]
+        invoke  file.tell, ebx
+        sub     eax, ecx
+        invoke  file.seek, ebx, eax, SEEK_SET
+    @@: invoke  file.seek, ebx, [_delta], SEEK_CUR
+        invoke  file.eof?, ebx
+        or      eax, eax
+        jnz     .done
+        invoke  file.read, ebx, [buf], ini.BLOCK_SIZE
+        mov     ecx, eax
+        mov     eax, [_delta]
+        neg     eax
+        sub     eax, ecx
+        invoke  file.seek, ebx, eax, SEEK_CUR
+        push    ecx
+        invoke  file.write, ebx, [buf], ecx
+        pop     ecx
+        cmp     eax, ecx
+        jz      @b
   .fail:
-	or	eax, -1
-	pop	ecx ebx
-	ret
+        or      eax, -1
+        pop     ecx ebx
+        ret
   .done:
-	mov	eax, [_delta]
-	neg	eax
-	invoke	file.seek, ebx, eax, SEEK_CUR
-	invoke	file.seteof, ebx
-	stdcall libini._.reload_block, [_f]
-	invoke	mem.free, [buf]
-	pop	ecx ebx
+        mov     eax, [_delta]
+        neg     eax
+        invoke  file.seek, ebx, eax, SEEK_CUR
+        invoke  file.seteof, ebx
+        stdcall libini._.reload_block, [_f]
+        invoke  mem.free, [buf]
+        pop     ecx ebx
   .skip:
-	ret
+        ret
 
   .down:
-	neg	[_delta]
+        neg     [_delta]
 
-	mov	ebx, [_f]
-	mov	ecx, [ebx + IniFile.cnt]
-	mov	ebx, [ebx + IniFile.fh]
-	invoke	file.tell, ebx
-	sub	eax, ecx
-	lea	edx, [eax - 1]
-	push	edx
-    @@: invoke	file.seek, ebx, edx, SEEK_SET
-	invoke	file.eof?, ebx
-	or	eax, eax
-	jnz	@f
-	add	edx, ini.BLOCK_SIZE
-	jmp	@b
-    @@: cmp	edx, [esp]
-	je	.skip.2
-	add	edx, -ini.BLOCK_SIZE
-	cmp	edx, [esp]
-	jl	@f
-	invoke	file.seek, ebx, edx, SEEK_SET
-	invoke	file.read, ebx, [buf], ini.BLOCK_SIZE
-	mov	ecx, eax
-	mov	eax, [_delta]
-	sub	eax, ecx
-	invoke	file.seek, ebx, eax, SEEK_CUR
-	invoke	file.write, ebx, [buf], ecx
-	jmp	@b
+        mov     ebx, [_f]
+        mov     ecx, [ebx + IniFile.cnt]
+        mov     ebx, [ebx + IniFile.fh]
+        invoke  file.tell, ebx
+        sub     eax, ecx
+        lea     edx, [eax - 1]
+        push    edx
+    @@: invoke  file.seek, ebx, edx, SEEK_SET
+        invoke  file.eof?, ebx
+        or      eax, eax
+        jnz     @f
+        add     edx, ini.BLOCK_SIZE
+        jmp     @b
+    @@: cmp     edx, [esp]
+        je      .skip.2
+        add     edx, -ini.BLOCK_SIZE
+        cmp     edx, [esp]
+        jl      @f
+        invoke  file.seek, ebx, edx, SEEK_SET
+        invoke  file.read, ebx, [buf], ini.BLOCK_SIZE
+        mov     ecx, eax
+        mov     eax, [_delta]
+        sub     eax, ecx
+        invoke  file.seek, ebx, eax, SEEK_CUR
+        invoke  file.write, ebx, [buf], ecx
+        jmp     @b
     @@:
   .skip.2:
-	add	esp, 4
-	stdcall libini._.reload_block, [_f]
-	invoke	mem.free, [buf]
-	pop	ecx ebx
-	ret
+        add     esp, 4
+        stdcall libini._.reload_block, [_f]
+        invoke  mem.free, [buf]
+        pop     ecx ebx
+        ret
 endp
 
 ;;================================================================================================;;
@@ -345,25 +349,25 @@ proc libini._.get_value_length _f ;/////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push	ebx ecx edx eax
-	mov	ebx, [_f]
-	invoke	file.tell, [ebx + IniFile.fh]
-	push	esi [ebx + IniFile.cnt] [ebx + IniFile.pos]
-	sub	eax, [ebx + IniFile.cnt]
-	mov	edx, eax
+        push    ebx ecx edx eax
+        mov     ebx, [_f]
+        invoke  file.tell, [ebx + IniFile.fh]
+        push    esi [ebx + IniFile.cnt] [ebx + IniFile.pos]
+        sub     eax, [ebx + IniFile.cnt]
+        mov     edx, eax
 
-	stdcall libini._.skip_line, [_f]
-	invoke	file.tell, [ebx + IniFile.fh]
-	sub	eax, [ebx + IniFile.cnt]
-	sub	eax, edx
-	mov	[esp + 4 * 3], eax
+        stdcall libini._.skip_line, [_f]
+        invoke  file.tell, [ebx + IniFile.fh]
+        sub     eax, [ebx + IniFile.cnt]
+        sub     eax, edx
+        mov     [esp + 4 * 3], eax
 
-	pop	eax
-	invoke	file.seek, [ebx + IniFile.fh], eax, SEEK_SET
-	stdcall libini._.preload_block, [_f]
-	pop	[ebx + IniFile.cnt] esi
-	pop	eax edx ecx ebx
-	ret
+        pop     eax
+        invoke  file.seek, [ebx + IniFile.fh], eax, SEEK_SET
+        stdcall libini._.preload_block, [_f]
+        pop     [ebx + IniFile.cnt] esi
+        pop     eax edx ecx ebx
+        ret
 endp
 
 ;;================================================================================================;;
@@ -376,10 +380,10 @@ proc libini._.string_copy ;/////////////////////////////////////////////////////
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
     @@: lodsb
-	or	al, al
-	jz	@f
-	stosb
-	jmp	@b
+        or      al, al
+        jz      @f
+        stosb
+        jmp     @b
     @@: ret
 endp
 
@@ -392,26 +396,26 @@ proc libini._.find_next_section _f ;////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push	ebx edi
+        push    ebx edi
 
     @@: stdcall libini._.skip_nonblanks, [_f]
-	cmp	al, '['
-	je	@f
-	or	al, al
-	jz	.exit_error
-	stdcall libini._.skip_line, [_f]
-	or	al, al
-	jz	.exit_error
-	jmp	@b
+        cmp     al, '['
+        je      @f
+        or      al, al
+        jz      .exit_error
+        stdcall libini._.skip_line, [_f]
+        or      al, al
+        jz      .exit_error
+        jmp     @b
     @@:
-	pop	edi ebx
-	xor	eax, eax
-	ret
+        pop     edi ebx
+        xor     eax, eax
+        ret
 
   .exit_error:
-	pop	edi ebx
-	or	eax, -1
-	ret
+        pop     edi ebx
+        or      eax, -1
+        ret
 endp
 
 ;;================================================================================================;;
@@ -425,50 +429,50 @@ proc libini._.find_section _f, _sec_name ;//////////////////////////////////////
 ;< eax = -1 (fail) / 0 (ok)                                                                       ;;
 ;< [_f.pos] = new cursor position (right after ']' char if eax = 0, at the end of file otherwise) ;;
 ;;================================================================================================;;
-	push	ebx edi
+        push    ebx edi
 
-	mov	ecx, [_f]
-	invoke	file.seek, [ecx + IniFile.fh], 0, SEEK_SET
-	stdcall libini._.preload_block, [_f]
+        mov     ecx, [_f]
+        invoke  file.seek, [ecx + IniFile.fh], 0, SEEK_SET
+        stdcall libini._.preload_block, [_f]
 
   .next_section:
-	stdcall libini._.find_next_section, [_f]
-	or	eax, eax
-	jnz	.exit_error
+        stdcall libini._.find_next_section, [_f]
+        or      eax, eax
+        jnz     .exit_error
 
-	stdcall libini._.get_char, [_f]
-	stdcall libini._.skip_spaces, [_f]
-	mov	edi, [_sec_name]
+        stdcall libini._.get_char, [_f]
+        stdcall libini._.skip_spaces, [_f]
+        mov     edi, [_sec_name]
     @@: stdcall libini._.get_char, [_f]
-	cmp	al, ']'
-	je	@f
-	or	al, al
-	jz	.exit_error
-	cmp	al, 13
-	je	.next_section
-	cmp	al, 10
-	je	.next_section
-	scasb
-	je	@b
-	cmp	byte[edi - 1], 0
-	jne	.next_section
-	dec	edi
-	stdcall libini._.unget_char, [_f]
-	stdcall libini._.skip_spaces, [_f]
-	stdcall libini._.get_char, [_f]
-	cmp	al, ']'
-	jne	.next_section
+        cmp     al, ']'
+        je      @f
+        or      al, al
+        jz      .exit_error
+        cmp     al, 13
+        je      .next_section
+        cmp     al, 10
+        je      .next_section
+        scasb
+        je      @b
+        cmp     byte[edi - 1], 0
+        jne     .next_section
+        dec     edi
+        stdcall libini._.unget_char, [_f]
+        stdcall libini._.skip_spaces, [_f]
+        stdcall libini._.get_char, [_f]
+        cmp     al, ']'
+        jne     .next_section
     @@:
-	cmp	byte[edi], 0
-	jne	.next_section
-	pop	edi ebx
-	xor	eax, eax
-	ret
+        cmp     byte[edi], 0
+        jne     .next_section
+        pop     edi ebx
+        xor     eax, eax
+        ret
 
   .exit_error:
-	pop	edi ebx
-	or	eax, -1
-	ret
+        pop     edi ebx
+        or      eax, -1
+        ret
 endp
 
 ;;================================================================================================;;
@@ -483,44 +487,44 @@ proc libini._.find_key _f, _key_name ;//////////////////////////////////////////
 ;< [_f.pos] = new cursor position (right after '=' char if eax = 0, at the end of file or right   ;;
 ;<            before '[' char otherwise)                                                          ;;
 ;;================================================================================================;;
-	push	ebx edi
+        push    ebx edi
 
   .next_value:
-	mov	edi, [_key_name]
-	stdcall libini._.skip_line, [_f]
-	stdcall libini._.skip_nonblanks, [_f]
-	or	al, al
-	jz	.exit_error
-	cmp	al, '['
-	je	.exit_error
+        mov     edi, [_key_name]
+        stdcall libini._.skip_line, [_f]
+        stdcall libini._.skip_nonblanks, [_f]
+        or      al, al
+        jz      .exit_error
+        cmp     al, '['
+        je      .exit_error
     @@: stdcall libini._.get_char, [_f]
-	or	al, al
-	jz	.exit_error
-	cmp	al, '='
-	je	@f
-	scasb
-	je	@b
-	cmp	byte[edi - 1], 0
-	jne	.next_value
-	dec	edi
-	stdcall libini._.unget_char, [_f]
-	stdcall libini._.skip_spaces, [_f]
-	stdcall libini._.get_char, [_f]
-	cmp	al, '='
-	je	@f
-	jmp	.next_value
+        or      al, al
+        jz      .exit_error
+        cmp     al, '='
+        je      @f
+        scasb
+        je      @b
+        cmp     byte[edi - 1], 0
+        jne     .next_value
+        dec     edi
+        stdcall libini._.unget_char, [_f]
+        stdcall libini._.skip_spaces, [_f]
+        stdcall libini._.get_char, [_f]
+        cmp     al, '='
+        je      @f
+        jmp     .next_value
     @@:
-	cmp	byte[edi], 0
-	jne	.next_value
+        cmp     byte[edi], 0
+        jne     .next_value
 
-	pop	edi ebx
-	xor	eax, eax
-	ret
+        pop     edi ebx
+        xor     eax, eax
+        ret
 
   .exit_error:
-	pop	edi ebx
-	or	eax, -1
-	ret
+        pop     edi ebx
+        or      eax, -1
+        ret
 endp
 
 ;;================================================================================================;;
@@ -532,31 +536,31 @@ proc libini._.low.read_value _f_addr, _buffer, _buf_len ;///////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push	edi eax
-	mov	edi, [_buffer]
-	stdcall libini._.skip_spaces, [_f_addr]
-    @@: dec	[_buf_len]
-	jz	@f
-	stdcall libini._.get_char, [_f_addr]
-	cmp	al, 13
-	je	@f
-	cmp	al, 10
-	je	@f
-	stosb
-	or	al, al
-	jnz	@b
+        push    edi eax
+        mov     edi, [_buffer]
+        stdcall libini._.skip_spaces, [_f_addr]
+    @@: dec     [_buf_len]
+        jz      @f
+        stdcall libini._.get_char, [_f_addr]
+        cmp     al, 13
+        je      @f
+        cmp     al, 10
+        je      @f
+        stosb
+        or      al, al
+        jnz     @b
     @@: stdcall libini._.unget_char, [_f_addr]
-	mov	byte[edi], 0
-	dec	edi
-    @@: cmp	edi, [_buffer]
-	jb	@f
-	cmp	byte[edi], 32
-	ja	@f
-	mov	byte[edi], 0
-	dec	edi
-	jmp	@b
-    @@: pop	eax edi
-	ret
+        mov     byte[edi], 0
+        dec     edi
+    @@: cmp     edi, [_buffer]
+        jb      @f
+        cmp     byte[edi], 32
+        ja      @f
+        mov     byte[edi], 0
+        dec     edi
+        jmp     @b
+    @@: pop     eax edi
+        ret
 endp
 
 ;;================================================================================================;;
@@ -568,25 +572,25 @@ proc libini._.str_to_int ;//////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = binary number representation (no overflow checks made)                                   ;;
 ;;================================================================================================;;
-	push	edx
+        push    edx
 
-	xor	eax, eax
-	xor	edx, edx
+        xor     eax, eax
+        xor     edx, edx
 
     @@: lodsb
-	cmp	al, '0'
-	jb	@f
-	cmp	al, '9'
-	ja	@f
-	add	eax, -'0'
-	imul	edx, 10
-	add	edx, eax
-	jmp	@b
+        cmp     al, '0'
+        jb      @f
+        cmp     al, '9'
+        ja      @f
+        add     eax, -'0'
+        imul    edx, 10
+        add     edx, eax
+        jmp     @b
 
-    @@: dec	esi
-	mov	eax, edx
-	pop	edx
-	ret
+    @@: dec     esi
+        mov     eax, edx
+        pop     edx
+        ret
 endp
 
 ;;================================================================================================;;
@@ -600,29 +604,29 @@ proc libini._.int_to_str ;//////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push	ecx edx
+        push    ecx edx
 
-	or	eax, eax
-	jns	@f
-	mov	byte[edi], '-'
-	inc	edi
-    @@: call	.recurse
-	pop	edx ecx
-	ret
+        or      eax, eax
+        jns     @f
+        mov     byte[edi], '-'
+        inc     edi
+    @@: call    .recurse
+        pop     edx ecx
+        ret
 
   .recurse:
-	cmp	eax,ecx
-	jb	@f
-	xor	edx,edx
-	div	ecx
-	push	edx
-	call	.recurse
-	pop	eax
-    @@: cmp	al,10
-	sbb	al,0x69
-	das
-	stosb
-	retn
+        cmp     eax,ecx
+        jb      @f
+        xor     edx,edx
+        div     ecx
+        push    edx
+        call    .recurse
+        pop     eax
+    @@: cmp     al,10
+        sbb     al,0x69
+        das
+        stosb
+        retn
 endp
 
 ;;================================================================================================;;
@@ -635,50 +639,50 @@ proc libini._.ascii_to_scan ;_ascii_code ;//////////////////////////////////////
 ;< eax = 0 (error) / scancode (success)                                                           ;;
 ;;================================================================================================;;
 ; /sys/keymap.key
-	sub	esp, 256
-	mov	eax, esp
-	push	ebx
-	push	'key'
-	push	'map.'
-	push	'/key'
-	push	'/sys'
-	push	eax	; buffer in the stack
-	push	0x100	; read 0x100 bytes
-	push	0
-	push	0	; from position zero
-	push	0	; subfunction: read
-	mov	ebx, esp
-	push	70
-	pop	eax
-	mcall
-	add	esp, 36
-	pop	ebx
-	test	eax, eax
-	jnz	.die
-	mov	al, [esp+256+4]	; get ASCII code
-	push	edi
+        sub     esp, 256
+        mov     eax, esp
+        push    ebx
+        push    'key'
+        push    'map.'
+        push    '/key'
+        push    '/sys'
+        push    eax     ; buffer in the stack
+        push    0x100   ; read 0x100 bytes
+        push    0
+        push    0       ; from position zero
+        push    0       ; subfunction: read
+        mov     ebx, esp
+        push    70
+        pop     eax
+        mcall
+        add     esp, 36
+        pop     ebx
+        test    eax, eax
+        jnz     .die
+        mov     al, [esp+256+4] ; get ASCII code
+        push    edi
 ; first keytable - no modifiers pressed
 ; check scancodes from 1 to 36h (inclusive)
-	lea	edi, [esp+4+1]
-	mov	edx, edi
-	mov	ecx, 36h
-	repnz	scasb
-	jz	.found
+        lea     edi, [esp+4+1]
+        mov     edx, edi
+        mov     ecx, 36h
+        repnz   scasb
+        jz      .found
 ; second keytable - Shift pressed
-	lea	edi, [esp+4+128+1]
-	mov	edx, edi
-	mov	ecx, 36h
-	repnz	scasb
-	jz	.found
-	pop	edi
+        lea     edi, [esp+4+128+1]
+        mov     edx, edi
+        mov     ecx, 36h
+        repnz   scasb
+        jz      .found
+        pop     edi
 .die:
-	xor	eax, eax
-	jmp	.ret
+        xor     eax, eax
+        jmp     .ret
 .found:
-	mov	eax, edi
-	sub	eax, edx
-	pop	edi
+        mov     eax, edi
+        sub     eax, edx
+        pop     edi
 .ret:
-	add	esp, 256
-	ret	4
+        add     esp, 256
+        ret     4
 endp

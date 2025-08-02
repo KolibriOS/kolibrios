@@ -78,6 +78,10 @@ proc lib_init ;///////////////////////////////////////////////////////////////;;
         mov     [mem.alloc], eax
         mov     [mem.free], ebx
         mov     [mem.realloc], ecx
+
+        cmp     [dll.load], edx
+        je      .ok
+
         mov     [dll.load], edx
 
         or      edx, edx
