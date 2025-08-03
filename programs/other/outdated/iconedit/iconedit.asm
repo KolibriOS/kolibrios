@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;
 ;   Modified from original icon editor
 ;
@@ -14,7 +17,7 @@
    dd     0x0 , 0x0               ; I_Param , I_Icon
 
 include 'lang.inc'
-include '..\..\..\..\macros.inc'
+include '..\..\..\macros.inc'
 
 window_x_size  equ    346
 window_y_size  equ    312
