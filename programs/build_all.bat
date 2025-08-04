@@ -375,10 +375,10 @@ echo Compressing media
 echo *
 
 kpack %BIN%\animage
-kpack %BIN%\cdp
-kpack %BIN%\gifview
-kpack %BIN%\iconedit
-kpack %BIN%\jpegview
+rem kpack %BIN%\cdp
+rem kpack %BIN%\gifview
+rem kpack %BIN%\iconedit
+rem kpack %BIN%\jpegview
 kpack %BIN%\midamp
 kpack %BIN%\midiplay
 kpack %BIN%\mixer
