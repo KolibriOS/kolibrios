@@ -521,7 +521,7 @@ bool GetUrl(dword _http_url)
 		http.get(_http_url);
 		return true;
 	} else if (!strncmp(_http_url,"https://",8)) {
-		strcpy(#new_url_full, "http://gate.aspero.pro/?site=");
+		strcpy(#new_url_full, "http://176.223.130.192:82/?site=");
 		strncat(#new_url_full, _http_url, URL_SIZE);
 		http.get(#new_url_full);
 		return true;

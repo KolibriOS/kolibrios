@@ -168,9 +168,9 @@ void StartDownloading()
 	ResetDownloadSpeed();
 	pb.back_color = 0xFFFfff;
 	if (!strncmp(#uEdit,"https:",6)) {
-		//miniprintf(#get_url, "http://gate.aspero.pro/?site=%s", #uEdit);
-		notify("'HTTPS for download temporary is not supported,\ntrying to download the file via HTTP' -W");
-		miniprintf(#uEdit, "http://%s", #uEdit+8);
+		miniprintf(#get_url, "http://176.223.130.192:82/?site=%s", #uEdit);
+		// notify("'HTTPS for download temporary is not supported,\ntrying to download the file via HTTP' -W");
+		// miniprintf(#uEdit, "http://%s", #uEdit+8);
 	}
 	strcpy(#get_url, #uEdit);
 
