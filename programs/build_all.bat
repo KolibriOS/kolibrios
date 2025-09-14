@@ -155,7 +155,7 @@ echo Building other
 echo *
 rem fasm other\archer\trunk\@rcher.asm %BIN%\@rcher
 fasm other\calc\calc.asm %BIN%\calc
-fasm other\mhc\trunk\mhc.asm %BIN%\mhc
+rem fasm other\mhc\trunk\mhc.asm %BIN%\mhc
 fasm other\period\period.asm %BIN%\period
 fasm other\rtfread\rtfread.asm %BIN%\rtfread
 
@@ -366,7 +366,7 @@ echo *
 
 rem kpack %BIN%\@rcher
 kpack %BIN%\calc
-kpack %BIN%\mhc
+rem kpack %BIN%\mhc
 kpack %BIN%\period
 kpack %BIN%\rtfread
 
