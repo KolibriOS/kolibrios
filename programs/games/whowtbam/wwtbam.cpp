@@ -1,4 +1,4 @@
-// Исходник игры "Кто хочет быть миллионером?" для Колибри ОС
+// Исходник игры "Кто хочет быть миллионером?" для КолибриОС
 // by Андрей Михайлович (Dron2004)
 
 #include <kosSyst.h>
@@ -83,7 +83,7 @@ void getFilePathName(){
 	for (tmpcnt=0; tmpcnt<strlen(ourfilename); tmpcnt++){
 		filepathname[tmpcnt+lastslashindex+1]=ourfilename[tmpcnt];
 	}
-	
+
 }
 
 void prepareFileData() { //Предварительные подсчёты
@@ -105,22 +105,22 @@ void loadquestion(){
 	int qcodee;
 
 	int skipsleft;
-	
+
 regenerate:
-	qcodee=(rtlRand()%questioncount)+1; 
-   
+	qcodee=(rtlRand()%questioncount)+1;
+
 	Byte inputbyte[1]={0x00};
-   
+
 	//Первый проход - проверяем сложность и считаем длины строк
 	tempquestionlength = 0;
 	tempanswerAlength = 0;
 	tempanswerBlength = 0;
 	tempanswerClength = 0;
 	tempanswerDlength = 0;
-	
 
-	skipsleft=qcodee; 
-	CKosFile basefile(filepathname);	
+
+	skipsleft=qcodee;
+	CKosFile basefile(filepathname);
 	//Найдём то место, откуда начинается наш вопрос
 	while (skipsleft>0){
 		basefile.Read (inputbyte,1);
@@ -132,7 +132,7 @@ regenerate:
 
 	//Проверим сложность
 	basefile.Read (inputbyte,1);
-	
+
 	// Нам нужно, чтобы сложность задаваемого вопроса соответствовала номеру задаваемого
 	// в игре вопроса (на какую сумму мы играем; вопрос на 1000000 должен быть посложнее,
 	// чем вопрос на 100 рублей :-)))
@@ -155,7 +155,7 @@ regenerate:
 			goto regenerate;
 		}
 	}
-	
+
 
 	for (int counter=0; counter <currentquestion; counter++){
 		if (askedquestions[counter]==qcodee){goto regenerate;}
@@ -163,7 +163,7 @@ regenerate:
 
 
 	askedquestions[currentquestion-1]=qcodee;
-	
+
 
 	inputbyte[0]=0x00;
 	//Считаем, сколько символов в вопросе
@@ -210,12 +210,12 @@ regenerate:
 	tempanswerD = new char[tempanswerDlength+1];
 
 
- 
+
 	// ВТОРОЙ ПРОХОД: ФОРМИРУЕМ В ПАМЯТИ ВОПРОС И ВАРИАНТЫ ОТВЕТА
 	CKosFile basefile2(filepathname);
 	inputbyte[0]=0x00;
-	skipsleft=qcodee; 
-	
+	skipsleft=qcodee;
+
 	//Найдём то место, откуда начинается наш вопрос
 	while (skipsleft>0){
 		basefile2.Read (inputbyte,1);
@@ -224,11 +224,11 @@ regenerate:
 		}
 		inputbyte[0]=0x00;
 	}
-	
+
 	basefile2.Read (inputbyte,1); // Это - сложность вопроса. Мы её уже проверили.
 
 	//Читаем вопрос
-	int currentbyte=0; 
+	int currentbyte=0;
 	while (inputbyte[0]!=0x01){
 		basefile2.Read (inputbyte,1);
 		if (inputbyte[0]!=0x01){tempquestion[currentbyte]=inputbyte[0];}
@@ -237,7 +237,7 @@ regenerate:
 	tempquestion[currentbyte]='\n';
 
 	//Читаем ответ A
-	currentbyte=0; 
+	currentbyte=0;
 	while (inputbyte[0]!=0x02){
 		basefile2.Read (inputbyte,1);
 		if (inputbyte[0]!=0x02){tempanswerA[currentbyte]=inputbyte[0];}
@@ -246,7 +246,7 @@ regenerate:
 	tempanswerA[currentbyte]='\n';
 
 	//Читаем ответ B
-	currentbyte=0; 
+	currentbyte=0;
 	while (inputbyte[0]!=0x03){
 		basefile2.Read (inputbyte,1);
 		if (inputbyte[0]!=0x03){tempanswerB[currentbyte]=inputbyte[0];}
@@ -255,7 +255,7 @@ regenerate:
 	tempanswerB[currentbyte]='\n';
 
 	//Читаем ответ C
-	currentbyte=0; 
+	currentbyte=0;
 	while (inputbyte[0]!=0x04){
 		basefile2.Read (inputbyte,1);
 		if (inputbyte[0]!=0x04){tempanswerC[currentbyte]=inputbyte[0];}
@@ -264,7 +264,7 @@ regenerate:
 	tempanswerC[currentbyte]='\n';
 
 	//Читаем ответ D
-	currentbyte=0; 
+	currentbyte=0;
 	while (inputbyte[0]!=0x08){
 		basefile2.Read (inputbyte,1);
 		if (inputbyte[0]!=0x08){tempanswerD[currentbyte]=inputbyte[0];}
@@ -275,7 +275,7 @@ regenerate:
 	basefile2.Read (inputbyte,1); // Это-правильный ответ
 	tempcorrectanswer=inputbyte[0];
 	// ВСЁ!!!!!! ГОТОВО!!!! УРА!
-	
+
 	//Считали. Теперь надо перетасовать вопросы.
 	questionlength = 0;
 	answerAlength = 0;
@@ -297,7 +297,7 @@ regenerate:
 	bool answerDfree = true;
 
 	int tmpvalue=0;
-	
+
 	//Первый вопрос
 regenA:
 	tmpvalue = (rtlRand() % 4) +1;
@@ -306,7 +306,7 @@ regenA:
 			answerAfree=false;
 			answerAlength=tempanswerAlength;
 			answerA= new char [answerAlength];
-			
+
 			for (int c=0; c<answerAlength; c++){
 				answerA[c]=tempanswerA[c];
 			}
@@ -322,7 +322,7 @@ regenA:
 			answerBfree=false;
 			answerBlength=tempanswerAlength;
 			answerB= new char [answerBlength];
-			
+
 			for (int c=0; c<answerBlength; c++){
 				answerB[c]=tempanswerA[c];
 			}
@@ -338,7 +338,7 @@ regenA:
 			answerCfree=false;
 			answerClength=tempanswerAlength;
 			answerC= new char [answerClength];
-			
+
 			for (int c=0; c<answerClength; c++){
 				answerC[c]=tempanswerA[c];
 			}
@@ -354,7 +354,7 @@ regenA:
 			answerDfree=false;
 			answerDlength=tempanswerAlength;
 			answerD= new char [answerDlength];
-			
+
 			for (int c=0; c<answerDlength; c++){
 				answerD[c]=tempanswerA[c];
 			}
@@ -374,7 +374,7 @@ regenB:
 			answerAfree=false;
 			answerAlength=tempanswerBlength;
 			answerA= new char [answerAlength];
-			
+
 			for (int c=0; c<answerAlength; c++){
 				answerA[c]=tempanswerB[c];
 			}
@@ -390,7 +390,7 @@ regenB:
 			answerBfree=false;
 			answerBlength=tempanswerBlength;
 			answerB= new char [answerBlength];
-			
+
 			for (int c=0; c<answerBlength; c++){
 				answerB[c]=tempanswerB[c];
 			}
@@ -406,7 +406,7 @@ regenB:
 			answerCfree=false;
 			answerClength=tempanswerBlength;
 			answerC= new char [answerClength];
-			
+
 			for (int c=0; c<answerClength; c++){
 				answerC[c]=tempanswerB[c];
 			}
@@ -422,7 +422,7 @@ regenB:
 			answerDfree=false;
 			answerDlength=tempanswerBlength;
 			answerD= new char [answerDlength];
-			
+
 			for (int c=0; c<answerDlength; c++){
 				answerD[c]=tempanswerB[c];
 			}
@@ -442,7 +442,7 @@ regenC:
 			answerAfree=false;
 			answerAlength=tempanswerClength;
 			answerA= new char [answerAlength];
-			
+
 			for (int c=0; c<answerAlength; c++){
 				answerA[c]=tempanswerC[c];
 			}
@@ -458,7 +458,7 @@ regenC:
 			answerBfree=false;
 			answerBlength=tempanswerClength;
 			answerB= new char [answerBlength];
-			
+
 			for (int c=0; c<answerBlength; c++){
 				answerB[c]=tempanswerC[c];
 			}
@@ -474,7 +474,7 @@ regenC:
 			answerCfree=false;
 			answerClength=tempanswerClength;
 			answerC= new char [answerClength];
-			
+
 			for (int c=0; c<answerClength; c++){
 				answerC[c]=tempanswerC[c];
 			}
@@ -490,7 +490,7 @@ regenC:
 			answerDfree=false;
 			answerDlength=tempanswerClength;
 			answerD= new char [answerDlength];
-			
+
 			for (int c=0; c<answerDlength; c++){
 				answerD[c]=tempanswerC[c];
 			}
@@ -510,7 +510,7 @@ regenD:
 			answerAfree=false;
 			answerAlength=tempanswerDlength;
 			answerA= new char [answerAlength];
-			
+
 			for (int c=0; c<answerAlength; c++){
 				answerA[c]=tempanswerD[c];
 			}
@@ -526,7 +526,7 @@ regenD:
 			answerBfree=false;
 			answerBlength=tempanswerDlength;
 			answerB= new char [answerBlength];
-			
+
 			for (int c=0; c<answerBlength; c++){
 				answerB[c]=tempanswerD[c];
 			}
@@ -542,7 +542,7 @@ regenD:
 			answerCfree=false;
 			answerClength=tempanswerDlength;
 			answerC= new char [answerClength];
-			
+
 			for (int c=0; c<answerClength; c++){
 				answerC[c]=tempanswerD[c];
 			}
@@ -558,7 +558,7 @@ regenD:
 			answerDfree=false;
 			answerDlength=tempanswerDlength;
 			answerD= new char [answerDlength];
-			
+
 			for (int c=0; c<answerDlength; c++){
 				answerD[c]=tempanswerD[c];
 			}
@@ -585,7 +585,7 @@ void draw_window(void){ //Рисуем окно
 	kos_WindowRedrawStatus(1);
 	kos_DefineAndDrawWindow(10,10,619,179+kos_GetSkinHeight(),0x74, 0xDDDDFF, 0,0, (Dword)header);
 	kos_WindowRedrawStatus(2);
-	
+
 	kos_ProcessInfo( &sPI );
 	if (sPI.rawData[70]&0x04) return; //ничего не делать если окно схлопнуто в заголовок
 
@@ -593,9 +593,9 @@ void draw_window(void){ //Рисуем окно
 	if (status==0){ //Меню
 		kos_DrawBar(0,0,610,175,0xFFFFBB);
                 kos_WriteTextToWindow (10,10,0x80,0x000000, "Љв® е®зҐв Ўлвм ¬Ё««Ё®­Ґа®¬?", 3);
-		
+
 		kos_WriteTextToWindow (10,25,0x80,0x000000, sVersion, 3);
-		
+
                 kos_WriteTextToWindow (10,70,0x80,0x770000, "<ENTER> - ­ з вм ЁЈаг", 0);
                 kos_WriteTextToWindow (10,85,0x80,0x770000, "<ESC> - ўле®¤", 0);
 
@@ -607,7 +607,7 @@ void draw_window(void){ //Рисуем окно
 		kos_DrawBar(0,0,610,175,0xEEEEFF);
 
 		kos_WriteTextToWindow (10,10,0x0,0x000000, question, questionlength-1);
-		
+
 		if (drawA==true){
 			kos_WriteTextToWindow (10,40,0x80,0x000000, "A. ", 0);
 			kos_WriteTextToWindow (30,40,0x0,0x000000, answerA, answerAlength-1);
@@ -637,12 +637,12 @@ void draw_window(void){ //Рисуем окно
 		kos_WriteTextToWindow (500,150,0x80,0x000000, summs[currentquestion-1], 0);
 
 
-	
+
 	}
 	if (status==2){ //Окно "Это - правильный ответ"
 		kos_DrawBar(0,0,610,175,0xDDFFDD);
                 kos_WriteTextToWindow (10,10,0x80,0x000000, "„ , нв® Їа ўЁ«м­л© ®вўҐв!", 0);
-		
+
                 kos_WriteTextToWindow (10,150,0x80,0x000000, "<ENTER> - Їа®¤®«¦Ёвм", 0);
 	}
 	if (status==3){ //Вы выиграли миллион, однако ж!!!
@@ -683,7 +683,7 @@ void draw_window(void){ //Рисуем окно
 
 
 
-	
+
                 kos_WriteTextToWindow (10,150,0x80,0x000000, "<ENTER> - Їа®¤®«¦Ёвм", 0);
 	}
 
@@ -696,7 +696,7 @@ void draw_window(void){ //Рисуем окно
 	if (status==-1){ //Вы ошиблись :-(
 		kos_DrawBar(0,0,610,175,0xFF8888);
                 kos_WriteTextToWindow (10,10,0x80,0x000000, "Љ б®¦ «Ґ­Ёо, ўл ®иЁЎ«Ёбм... Џа ўЁ«м­л© ®вўҐв -", 0);
-		
+
 		switch (correctanswer){
 		case 0x01:
 			kos_WriteTextToWindow (10,25,0x80,0x000000, "A. ", 0);
@@ -716,7 +716,7 @@ void draw_window(void){ //Рисуем окно
 			break;
 		}
         kos_WriteTextToWindow (10,50,0x80,0x000000, "‚ аҐ§г«мв вҐ ўл ўлЁЈа «Ё:", 0);
-	
+
 	if (currentquestion<6) {kos_WriteTextToWindow (220,50,0x80,0x000000,summs[0], 0);}
 	if ((currentquestion>5)&&(currentquestion<11)) {kos_WriteTextToWindow (220,50,0x80,0x000000,summs[5], 0);}
 	if (currentquestion>10) {kos_WriteTextToWindow (220,50,0x80,0x000000,summs[10], 0);}
@@ -733,9 +733,9 @@ void draw_window(void){ //Рисуем окно
 
 void call_friend(){
 	int tmpcodee;
-						
+
 	recode5:
-	tmpcodee =(rtlRand()%10)+1; 
+	tmpcodee =(rtlRand()%10)+1;
 	int tmpbyte;
 
 	if (currentquestion < 6 ){
@@ -747,7 +747,7 @@ void call_friend(){
 		}
 		else //Друг говорит наугад
 		{
-			
+
 			int tmpbyte2=0;
 			recode51:
 			int tmpcodee2=(rtlRand()%4)+1;
@@ -779,7 +779,7 @@ void call_friend(){
 		}
 		else //Друг говорит наугад
 		{
-			
+
 			int tmpbyte2=0;
 			recode52:
 			int tmpcodee2=(rtlRand()%4)+1;
@@ -917,7 +917,7 @@ void call_zal(){ //Подсказка зала
 				zalA=100-zalD;
 			}
 		}
-		
+
 		if ((drawB==true)&&(drawC==true)){
 			if (correctanswer==0x02){
 				zalB=maxpercent;
@@ -940,7 +940,7 @@ void call_zal(){ //Подсказка зала
 				zalB=100-zalD;
 			}
 		}
-		
+
 		if ((drawC==true)&&(drawD==true)){
 			if (correctanswer==0x03){
 				zalC=maxpercent;
@@ -1005,7 +1005,7 @@ void kos_Main(){
 					drawB = true;
 					drawC = true;
 					drawD = true;
-					
+
 					draw_window();
 			}
 			}
@@ -1023,8 +1023,8 @@ void kos_Main(){
 					drawB = true;
 					drawC = true;
 					drawD = true;
-					
-					draw_window();					
+
+					draw_window();
 				}
 			}
 			if (drawC==true){
@@ -1040,8 +1040,8 @@ void kos_Main(){
 					drawB = true;
 					drawC = true;
 					drawD = true;
-					
-					draw_window();					
+
+					draw_window();
 				}
 			}
 			if (drawD==true){
@@ -1057,11 +1057,11 @@ void kos_Main(){
 					drawB = true;
 					drawC = true;
 					drawD = true;
-					
+
 					draw_window();
 			}
 			}
-			
+
 			if (callfriendavailable==true){ //Реализация подсказки "Звонок другу"
 				if (keyCode==56){
 					callfriendavailable=false;
@@ -1082,17 +1082,17 @@ void kos_Main(){
 
 			if (na50available==true){ //Реализация подсказки "50 на 50"
 			if (keyCode==55){
-				
+
 				if (correctanswer==0x01){
 					drawA=true;
 
 						int tmpcodee;
-						
+
 						recode1:
-						tmpcodee =(rtlRand()%3)+1; 
-	
+						tmpcodee =(rtlRand()%3)+1;
+
 						int tmpbyte;
-						
+
 						switch(tmpcodee){
 						case 1:
 							drawB=true;
@@ -1107,19 +1107,19 @@ void kos_Main(){
 							drawB=false;
 							drawC=false;
 							drawD=true;
-						
+
 						}
 				}
 				if (correctanswer==0x02){
 					drawB=true;
 
 						int tmpcodee;
-						
+
 						recode2:
-						tmpcodee =(rtlRand()%3)+1; 
-	
+						tmpcodee =(rtlRand()%3)+1;
+
 						int tmpbyte;
-					
+
 
 						switch(tmpcodee){
 						case 1:
@@ -1135,18 +1135,18 @@ void kos_Main(){
 							drawA=false;
 							drawC=false;
 							drawD=true;
-						
+
 						}
 				}
 				if (correctanswer==0x03){
 					drawC=true;
 
 						int tmpcodee;
-						
+
 						recode3:
-						tmpcodee =(rtlRand()%3)+1; 
+						tmpcodee =(rtlRand()%3)+1;
 						int tmpbyte;
-						
+
 
 						switch(tmpcodee){
 						case 1:
@@ -1162,19 +1162,19 @@ void kos_Main(){
 							drawB=false;
 							drawA=false;
 							drawD=true;
-						
+
 						}
 				}
 				if (correctanswer==0x04){
 					drawA=true;
 
 						int tmpcodee;
-						
+
 						recode4:
-						tmpcodee =(rtlRand()%3)+1; 
-						
+						tmpcodee =(rtlRand()%3)+1;
+
 						int tmpbyte;
-						
+
 
 						switch(tmpcodee){
 						case 1:
@@ -1190,7 +1190,7 @@ void kos_Main(){
 							drawB=false;
 							drawC=false;
 							drawA=true;
-						
+
 						}
 				}
 				na50available=false;

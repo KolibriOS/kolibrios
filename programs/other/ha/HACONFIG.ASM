@@ -30,7 +30,7 @@ format binary as ""     ; Binary file format without extension
 use32                   ; Tell compiler to use 32 bit instructions
 org 0                   ; the base address of code, always 0x0
 
-; Заголовок исполн€емого файла  олибри ќ—
+; Заголовок исполн€емого файла  олибриќ—
 db 'MENUET01'
 dd 1
 dd START
@@ -1662,7 +1662,7 @@ but_open_dlg:
         .end_open:
         popad
         ret
- 
+
 ;данные для диалога открытия файлов
 align 4
 OpenDialog_data:
@@ -1684,12 +1684,12 @@ OpenDialog_data:
 .y:
 .y_size                 dw 320 ;+52 ; Window y size
 .y_start                dw 10  ;+54 ; Window Y position
- 
+
 default_dir db '/sys',0 ;директория по умолчанию
 communication_area_name: db 'FFFFFFFF_open_dialog',0
 open_dialog_name:  db 'opendial',0
 communication_area_default_path: db '/sys/File managers/',0
- 
+
 Filter:
 dd Filter.end - Filter.1
 .1:
