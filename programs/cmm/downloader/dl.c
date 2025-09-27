@@ -1,7 +1,11 @@
+//Copyright 2020 - 2025 by Leency
+
 #define MEMSIZE 1024 * 40
-//Copyright 2020 - 2021 by Leency
+
 #include "../lib/gui.h"
 #include "../lib/random.h"
+
+#include "../lib/obj/libini.h"
 #include "../lib/obj/box_lib.h"
 #include "../lib/obj/http.h"
 
@@ -20,6 +24,9 @@ checkbox autoclose = { T_AUTOCLOSE, false };
 char uEdit[URL_SIZE];
 char filepath[4096];
 char save_dir[4096];
+char proxy_address[4096];
+
+#include "settings.h"
 
 char* active_status;
 
@@ -32,8 +39,12 @@ progress_bar pb = {0, GAPX, 52, WIN_W - GAPX - GAPX, 17, 0, NULL, NULL,
 void main()  
 {
 	dword shared_url;
+
+	load_dll(libini,  #lib_init,1);
 	load_dll(boxlib,  #box_lib_init,0);
 	load_dll(libHTTP, #http_lib_init,1);
+
+	LoadIniConfig();
 
 	strcpy(#save_dir, DEFAULT_SAVE_DIR);
 	if (!dir_exists(#save_dir)) CreateDir(#save_dir);
@@ -168,7 +179,8 @@ void StartDownloading()
 	ResetDownloadSpeed();
 	pb.back_color = 0xFFFfff;
 	if (!strncmp(#uEdit,"https:",6)) {
-		miniprintf(#get_url, "http://176.223.130.192:82/?site=%s", #uEdit);
+		// Build: "<proxy_address><original https url>"
+		miniprintf(#get_url, "%s%s", proxy_address, #uEdit);
 		// notify("'HTTPS for download temporary is not supported,\ntrying to download the file via HTTP' -W");
 		// miniprintf(#uEdit, "http://%s", #uEdit+8);
 	}

@@ -1,10 +1,9 @@
 //Copyright 2007-2025 by Veliant & Leency
-//Asper, lev, Lrz, Barsuk, Nable, hidnplayr...
+//Asper, lev, Lrz, Barsuk, Nable, hidnplayr, Burer...
 
 //BUGS
 //if maximize a window on image load => crash
 //issues with a long line
-//add proxy settings
 
 //===================================================//
 //                                                   //
@@ -13,6 +12,7 @@
 //===================================================//
 
 #define MEMSIZE 1024 * 160
+
 #include "..\lib\gui.h"
 #include "..\lib\draw_buf.h"
 #include "..\lib\list_box.h"
@@ -21,6 +21,7 @@
 #include "..\lib\random.h"
 #include "..\lib\clipboard.h"
 
+#include "..\lib\obj\libini.h"
 #include "..\lib\obj\box_lib.h"
 #include "..\lib\obj\libimg.h"
 #include "..\lib\obj\http.h"
@@ -67,6 +68,9 @@ _http http = 0;
 progress_bar prbar;
 proc_info Form;
 
+char proxy_address[4096];
+
+#include "settings.h"
 #include "tabs.h"
 
 dword cur_img_url;
@@ -90,6 +94,7 @@ edit_box omnibox_edit = {250, 0, 0, 0xffffff,
 
 void LoadLibraries()
 {
+	load_dll(libini,      #lib_init,1);
 	load_dll(boxlib,      #box_lib_init,0);
 	load_dll(libimg,      #libimg_init,1);
 	load_dll(libHTTP,     #http_lib_init,1);
@@ -130,6 +135,7 @@ void main()
 	TOOLBAR_H = PADDING+TSZE+PADDING+2;
 
 	LoadLibraries();
+	LoadIniConfig();
     HandleParam();
 
 	omnibox_edit.left = PADDING+TSZE*2+PADDING+6;
@@ -521,10 +527,13 @@ bool GetUrl(dword _http_url)
 		http.get(_http_url);
 		return true;
 	} else if (!strncmp(_http_url,"https://",8)) {
-		strcpy(#new_url_full, "http://176.223.130.192:82/?site=");
-		strncat(#new_url_full, _http_url, URL_SIZE);
-		http.get(#new_url_full);
-		return true;
+		if (proxy_address) {
+			strcpy(#new_url_full, proxy_address);
+			strncat(#new_url_full, _http_url, URL_SIZE);
+			http.get(#new_url_full);
+			return true;
+		}
+		return false;
 	}
 	return false;
 }
