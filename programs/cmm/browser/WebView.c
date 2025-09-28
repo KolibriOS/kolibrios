@@ -68,8 +68,8 @@ _http http = 0;
 progress_bar prbar;
 proc_info Form;
 
-char settings_file[4096];
-char proxy_address[4096];
+char settings_file[256];
+char proxy_address[768];
 
 #include "settings.h"
 #include "tabs.h"

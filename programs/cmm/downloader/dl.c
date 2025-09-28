@@ -25,8 +25,8 @@ char uEdit[URL_SIZE];
 char filepath[4096];
 char save_dir[4096];
 
-char settings_file[4096];
-char proxy_address[4096];
+char settings_file[256];
+char proxy_address[768];
 
 #include "settings.h"
 
