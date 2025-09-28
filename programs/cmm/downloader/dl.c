@@ -24,6 +24,8 @@ checkbox autoclose = { T_AUTOCLOSE, false };
 char uEdit[URL_SIZE];
 char filepath[4096];
 char save_dir[4096];
+
+char settings_file[4096];
 char proxy_address[4096];
 
 #include "settings.h"
@@ -178,11 +180,8 @@ void StartDownloading()
 	if (http.transfer > 0) return;
 	ResetDownloadSpeed();
 	pb.back_color = 0xFFFfff;
-	if (!strncmp(#uEdit,"https:",6)) {
-		// Build: "<proxy_address><original https url>"
-		miniprintf(#get_url, "%s%s", proxy_address, #uEdit);
-		// notify("'HTTPS for download temporary is not supported,\ntrying to download the file via HTTP' -W");
-		// miniprintf(#uEdit, "http://%s", #uEdit+8);
+	if (!strncmp(#uEdit,"https://",8)) {
+		miniprintf(#get_url, "%s%s", #proxy_address, #uEdit);
 	}
 	strcpy(#get_url, #uEdit);
 

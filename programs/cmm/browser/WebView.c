@@ -68,6 +68,7 @@ _http http = 0;
 progress_bar prbar;
 proc_info Form;
 
+char settings_file[4096];
 char proxy_address[4096];
 
 #include "settings.h"
@@ -523,12 +524,12 @@ bool GetLocalFileData(dword _path)
 bool GetUrl(dword _http_url)
 {
 	char new_url_full[URL_SIZE+1];
-	if (!strncmp(_http_url,"http:",5)) {
+	if (!strncmp(_http_url,"http://",7)) {
 		http.get(_http_url);
 		return true;
 	} else if (!strncmp(_http_url,"https://",8)) {
-		if (proxy_address) {
-			strcpy(#new_url_full, proxy_address);
+		if (#proxy_address) {
+			strcpy(#new_url_full, #proxy_address);
 			strncat(#new_url_full, _http_url, URL_SIZE);
 			http.get(#new_url_full);
 			return true;

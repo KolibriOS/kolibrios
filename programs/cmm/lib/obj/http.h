@@ -112,7 +112,6 @@ struct _http
 dword _http::get(dword _url)
 {
 	cur_url = _url;
-	// if (streqrp(cur_url, "http://176.223.130.192:82/?site=")) cur_url += 29;
 	http_get stdcall (_url, 0, 0, #accept_language);
 	transfer = EAX;
 	return EAX;
