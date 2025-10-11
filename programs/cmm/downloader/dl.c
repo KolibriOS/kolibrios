@@ -1,4 +1,5 @@
 //Copyright 2020 - 2025 by Leency
+//Burer...
 
 #define MEMSIZE 1024 * 40
 
