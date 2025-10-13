@@ -1,0 +1,17 @@
+// SPDX-FileCopyrightText: 2025 iyzsong@envs.net
+//
+// SPDX-License-Identifier: MPL-2.0
+
+Uxn/Varvara emulator for Kolibri OS
+
+Based on https://github.com/chmod222/zuxn
+
+compile: zig build --release=fast
+result: zig-out/bin/uxn
+run: uxn SOME.rom
+control:
+  Up/Down/Left/Right
+  Ctrl/Shift/Alt/Home
+  F1: change scale (1x, 2x, 3x)
+
+TODO: file/directory stat, audio latency, open dialog?

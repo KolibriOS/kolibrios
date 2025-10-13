@@ -1,0 +1,21 @@
+// SPDX-FileCopyrightText: 2025 iyzsong@envs.net
+//
+// SPDX-License-Identifier: MPL-2.0
+
+.{
+    .name = .uxn_kolibrios,
+    .version = "0.0.0",
+    .fingerprint = 0x3aef20f25c0a0218,
+    .minimum_zig_version = "0.14.0",
+    .dependencies = .{
+        .zuxn = .{
+            .url = "git+https://github.com/chmod222/zuxn.git#fc3a76724fa87dd08039438b56fc326ac3d51e4d",
+            .hash = "zuxn-0.0.1-XnoOpbqsAgD-fU6rv_AoLffA1utIzXuae2cmnHj6SzE6",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

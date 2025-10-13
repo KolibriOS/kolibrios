@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: 2025 iyzsong@envs.net
+#
+# SPDX-License-Identifier: MPL-2.0
+
+zig-out
+.zig-cache

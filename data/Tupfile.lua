@@ -205,6 +205,7 @@ extra_files = {
  {"kolibrios/emul/chip8/roms/", SRC_PROGS .. "/emulator/chip8/roms/*"},
  {"kolibrios/emul/kwine/kwine", SRC_PROGS .. "/emulator/kwine/bin/kwine"},
  {"kolibrios/emul/kwine/lib/", SRC_PROGS .. "/emulator/kwine/bin/lib/*"},
+ {"kolibrios/emul/uxn", SRC_PROGS .. "/emulator/uxn/uxn"},
  {"kolibrios/emul/uarm/", "common/emul/uarm/*"},
  {"kolibrios/emul/zsnes/", "common/emul/zsnes/*"},
  {"kolibrios/games/BabyPainter", "common/games/BabyPainter"},
