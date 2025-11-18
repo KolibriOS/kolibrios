@@ -1,4 +1,4 @@
-include "..\..\..\..\macros.inc"
+include "..\..\..\macros.inc"
 
 initipc:
  mov eax,9
@@ -218,4 +218,3 @@ stripc: times 84 db 0
 fill_symbol db 0
 
 prc: times 52 db 0
-
