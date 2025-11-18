@@ -115,7 +115,7 @@ fasm fs\copy2\trunk\copy2.asm %BIN%\copy2
 fasm fs\copyr\trunk\copyr.asm %BIN%\copyr
 fasm fs\kfar\trunk\kfar.asm %BIN%\kfar
 rem fasm fs\mfar\trunk\mfar.asm %BIN%\mfar
-fasm fs\sysxtree\trunk\sysxtree.asm %BIN%\sysxtree
+rem fasm fs\sysxtree\trunk\sysxtree.asm %BIN%\sysxtree
 
 echo *
 echo Building network
@@ -326,7 +326,7 @@ echo *
 kpack %BIN%\copy2
 kpack %BIN%\copyr
 kpack %BIN%\kfar
-kpack %BIN%\sysxtree
+rem kpack %BIN%\sysxtree
 
 echo *
 echo Compressing network

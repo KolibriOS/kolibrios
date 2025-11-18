@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                              ;
 ;   SYSTEM X-TREE BROWSER                      ;
@@ -45,7 +48,7 @@
 ;  dd 0,0
 
 ;******************************************************************************
-include '../../../../macros.inc' ;
+include '../../../macros.inc' ;
 include 'ascl.inc'
 include 'ascgl.inc'
 
@@ -614,7 +617,7 @@ is_brow:
 	cmp	ecx, 'CUR'
 	jz	run
 
-	
+
 	mov	ebx, ac97
 	cmp	ecx, 'WAV'
 	jz	run
@@ -622,7 +625,7 @@ is_brow:
 	jz	run
 	cmp	ecx, 'XM'
 	jz	run
-	
+
 	mov	ebx, midamp
 	cmp	ecx, 'MID'
 	jz	run
@@ -1189,7 +1192,7 @@ isb1:
 ;    mov  edx,[sc.work]             ; color of work area RRGGBB
     or	     edx,0x13ffffff
     mcall
-	
+
     mcall 12, 2      ; end of window redraw
 
 ;Get proc info
@@ -1411,7 +1414,7 @@ no_openh:
     cmp byte [dlg_type],'S'    ;if byte S - is Save dialog
     jne no_saveh
     mcall 71,1,save_dlg	      ;draw in head SAVE FILE
-    
+
 no_saveh:
 
 
@@ -1865,7 +1868,7 @@ no_folico:
     je	     is_imgico
     cmp  edi,dword 'ICO'
     je	     is_imgico
-	
+
     cmp  edi,dword 'WAV'
     je	     is_imgico
     cmp  edi,dword 'MID'
