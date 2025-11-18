@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 ;
 ;   DESKTOP CONTEXT MENU
 ;   written by Ivan Poddubny
@@ -15,7 +20,7 @@
 ;               Optimisations and code refactoring.
 ;------------------------------------------------------------------------------
 include 'lang.inc'
-include '..\..\..\..\macros.inc'
+include '..\..\..\macros.inc'
 ;------------------------------------------------------------------------------
 	use32
 	org 0x0
