@@ -31,8 +31,8 @@ import  lib_libini, \
         LIBINI_enum_keys               , 'ini_enum_keys'        , \
         LIBINI_get_str                 , 'ini_get_str'          , \
         LIBINI_get_int  			   , 'ini_get_int'   		, \
-        LIBINI_get_color               , 'int_get_color'        , \
-        LIBINI_get_shortcut            , 'int_get_shortcut'     , \
+        LIBINI_get_color               , 'ini_get_color'        , \
+        LIBINI_get_shortcut            , 'ini_get_shortcut'     , \
         LIBINI_set_str            	   , 'ini_set_str'          , \
         LIBINI_set_int         		   , 'ini_set_int'          , \          
         LIBINI_set_color          	   , 'ini_set_color'
