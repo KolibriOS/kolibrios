@@ -238,7 +238,7 @@ end if
         mov     [ebp + thread_data.buffer_ptr], eax
         mov     [ebp + thread_data.passivesocknum], -1
 
-        sendFTP " 220 Welcome to KolibriOS FTP daemon"  ; fix output code
+        sendFTP "220 Welcome to KolibriOS FTP daemon"  ; fix output code
 
         diff16  "threadloop", 0, $
 threadloop:
