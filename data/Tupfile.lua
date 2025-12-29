@@ -38,7 +38,6 @@ img_files = {
  {"UNIMG", SRC_PROGS .. "/fs/unimg/unimg"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
- {"GAMES/FLPYBIRD", SRC_PROGS .. "/games/floppybird/Release/floppybird"},
  {"FONTS/TAHOMA.KF", "common/fonts/tahoma.kf"},
  -- {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},
  {"LIB/KMENU.OBJ", "common/lib/kmenu.obj"},
@@ -725,6 +724,7 @@ tup.append_table(img_files, {
  {"NETWORK/WHOIS", VAR_PROGS .. "/network/whois/whois"},
  {"SHELL", VAR_PROGS .. "/system/shell/shell"},
  {"GAMES/DINO", VAR_PROGS .. "/games/dino/dino"},
+ {"GAMES/FLPYBIRD", VAR_PROGS .. "/games/flpybird/flpybird"},
 })
 tup.append_table(extra_files, {
  {"kolibrios/utils/thashview", VAR_PROGS .. "/other/TinyHashView/thashview"},
