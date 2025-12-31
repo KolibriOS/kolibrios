@@ -18,31 +18,38 @@ void get_str_kernel_version(char *str, const char *fmt) {
             str_offset, str_dbgtag, str_cmtid, kv.abimaj, kv.abimin);
 }
 
-void get_str_cpu_info(char *str) {
-    unsigned a, b, c, d;
+// Retrieves the CPU Brand String and writes it to the provided buffer.
+// out_buffer: A buffer of at least 49 bytes (48 for string + 1 for null)
+void get_cpu_brand_string(char *out_buffer) {
+    if (!out_buffer) return;
 
-    asm ("cpuid" :
-                    "=a" (a),
-            "=b" (b),
-            "=c" (c),
-            "=d" (d):
-            "a"(0));
+    uint32_t regs[4];
 
-    str[0] = (b&0x000000ff)	>> 0;
-    str[1] = (b&0x0000ff00)	>> 8;
-    str[2] = (b&0x00ff0000)	>> 16;
-    str[3] = (b&0xff000000)	>> 24;
+    // 1. Check maximum extended function support
+    __asm__ (
+        "cpuid"
+        : "=a" (regs[0]), "=b" (regs[1]), "=c" (regs[2]), "=d" (regs[3])
+        : "a" (0x80000000)
+    );
 
-    str[4] = (d&0x000000ff)	>> 0;
-    str[5] = (d&0x0000ff00)	>> 8;
-    str[6] = (d&0x00ff0000)	>> 16;
-    str[7] = (d&0xff000000)	>> 24;
+    if (regs[0] < 0x80000004) {
+        strcpy(out_buffer, "Brand String Not Supported");
+        return;
+    }
 
-    str[8] = (c&0x000000ff)	>> 0;
-    str[9] = (c&0x0000ff00)	>> 8;
-    str[10] = (c&0x00ff0000)	>> 16;
-    str[11] = (c&0xff000000)	>> 24;
-    str[12] = '\0';
+    // 2. Extract brand string from leaves 0x80000002 to 0x80000004
+    for (uint32_t leaf = 0x80000002; leaf <= 0x80000004; leaf++) {
+        __asm__ (
+            "cpuid"
+            : "=a" (regs[0]), "=b" (regs[1]), "=c" (regs[2]), "=d" (regs[3])
+            : "a" (leaf)
+        );
+
+        // Copy the 16 bytes (4 registers * 4 bytes) from this leaf into the buffer
+        memcpy(out_buffer + (leaf - 0x80000002) * 16, regs, 16);
+    }
+
+    out_buffer[48] = '\0';
 }
 
 int cmd_ver(char param[]) {
@@ -53,8 +60,8 @@ int cmd_ver(char param[]) {
     }
 
     if (!strcmp(param, "cpu")) {
-        char str[13];
-        get_str_cpu_info(str);
+        char str[49];
+        get_cpu_brand_string(str);
         printf("%s\n\r", str);
         return TRUE;
     }

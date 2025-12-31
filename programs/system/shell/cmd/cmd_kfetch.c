@@ -26,8 +26,8 @@ int cmd_kfetch(char param[]) {
     char str_resolution[24];
     ksys_pos_t resol = _ksys_screen_size();
     sprintf(str_resolution, "%u x %u", resol.x + 1, resol.y + 1);
-    char str_cpu_info[16];
-    get_str_cpu_info(str_cpu_info);
+    char str_cpu_info[50];
+    get_cpu_brand_string(str_cpu_info);
     char str_meminfo[24];
     get_str_meminfo(str_meminfo);
 
@@ -53,7 +53,7 @@ int cmd_kfetch(char param[]) {
         "\033[0;34;40m   \033[0;31;40m     \033[0;32;40mS\033[0;34;40m@\033[0;5;34;40mX\033[0;1;35;45m.\033[0;1;34;44m8\033[0;5;35;45m \033[0;5;34;44m \033[0;1;30;45m8\033[0;5;35;44m:\033[0;5;37;45m@\033[0;1;30;40m8\033[0;31;40m.\033[0;34;40m \033[0;31;40m  \033[0;34;40m                 \033[0m\n\r"
         "\033[0;34;40m   \033[0;31;40m    \033[0;32;40m \033[0;31;40m.\033[0;32;40m;\033[0;34;40m;8\033[0;32;40m%%\033[0;5;34;40m8\033[0;34;40m8\033[0;1;30;44m8\033[0;1;30;40m8\033[0;34;40m;.\033[0;31;40m \033[0;34;40m  \033[0;31;40m \033[0;34;40m                 \033[0m\n\r"
         "\033[0;34;40m   \033[0;32;40m \033[0;31;40m     \033[0;32;40m.\033[0;31;40m.\033[0;32;40m.\033[0;31;40m.\033[0;32;40m.\033[0;31;40m:. \033[0;32;40m. \033[0;34;40m \033[0;31;40m \033[0;34;40m                   \033[0m\n\r",
-        
+
         "\033[0;36mOS\033[0m: KolibriOS ", str_os_rel_offset_dbgtag, "\033[0;36mKernel\033[0m: ", str_krn_abi_cmtid, "\033[0;36mUptime\033[0m: ", str_uptime, "\033[0;36mResolution\033[0m: ", str_resolution, "\033[0;36mCPU\033[0m: ", str_cpu_info, "\033[0;36mMemory\033[0m: ", str_meminfo
     );
 

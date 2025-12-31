@@ -21,7 +21,7 @@ int dir_check(char dir[])
 
     if ( (0 == result)||(6 == result) )  // 6 is possible ???
         return TRUE;
-    else 
+    else
         return FALSE;
 
 }
@@ -69,7 +69,7 @@ int file_check(char file[])
 
     if (0 == result)
         return TRUE;
-    else 
+    else
         return FALSE;
 }
 
@@ -158,9 +158,9 @@ int main(int argc, char **argv)
     command_execute();
 
     for (;;) {
-        //printf("\033[32;1m"); 
+        //printf("\033[32;1m");
         printf ("# ");
-        //printf("\033[0m"); 
+        //printf("\033[0m");
         command_get();
         command_execute();
     }
