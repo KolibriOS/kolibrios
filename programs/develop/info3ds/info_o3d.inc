@@ -802,7 +802,14 @@ align 4
 proc draw_3d uses eax ebx ecx edi, o_data:dword
 	mov edi,[o_data]
 	cmp dword[edi+obj_3d.poi_count],2
+if version_edit eq 0
+	jge @f
+		stdcall [buf2d_clear], buf_ogl, [buf_ogl.color]
+		jmp .end_f
+	@@:
+else
 	jl .end_f
+end if
 	stdcall [glClear], GL_COLOR_BUFFER_BIT + GL_DEPTH_BUFFER_BIT ;очистим буфер цвета и глубины
 	call [glPushMatrix]
 	bt dword[draw_mode],bit_light

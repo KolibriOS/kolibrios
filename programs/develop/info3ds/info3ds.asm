@@ -1,6 +1,10 @@
+; SPDX-License-Identifier: GPL-2.0-only
+; Info3ds - is a program for viewing the structure of *.3ds files
+; Copyright (C) 2011-2025 KolibriOS team
+
 use32
 	org 0
-	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
+	db 'MENUET01'
 	dd 1, start, i_end, mem, stacktop, file_name, sys_path
 
 version_edit equ 1
@@ -22,36 +26,34 @@ include 'convert_stl_3ds.inc'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 
-ID_ICON_CHUNK_MAIN equ 0 ;иконка главного блока
-ID_ICON_CHUNK_NOT_FOUND equ 1 ;иконка не известного блока
-ID_ICON_DATA equ 2 ;иконка для данных блока, не определенной структуры
+ID_ICON_CHUNK_MAIN equ 0 ;main block icon
+ID_ICON_CHUNK_NOT_FOUND equ 1 ;unknown block icon
+ID_ICON_DATA equ 2 ;icon for block data, undefined structure
 ID_ICON_POINT equ 8
 ID_ICON_POINT_SEL equ 9
 
-FILE_ERROR_CHUNK_SIZE equ -3 ;ошибка в размере блока
+FILE_ERROR_CHUNK_SIZE equ -3 ;block size error
 
 include 'info_o3d.inc'
 
-main_wnd_height equ 460 ;высота главного окна программы
+main_wnd_height equ 460 ;height of the main program window
 IMAGE_TOOLBAR_ICON_SIZE equ 21*21*3
 
 align 4
 fl255 dd 255.0
-open_file_data dd 0 ;указатель на память для открытия файлов 3ds
-open_file_size dd 0 ;размер открытого файла
+open_file_data dd 0 ;pointer to memory for opening 3ds files
+open_file_size dd 0
 image_data_toolbar dd 0
-icon_tl_sys dd 0 ;указатеель на память для хранения системных иконок
-icon_toolbar dd 0 ;указатеель на память для хранения иконок объектов
-fn_toolbar db 'toolbar.png',0
+icon_tl_sys dd 0 ;pointer to memory for storing system icons
+icon_toolbar dd 0 ;pointer to memory for storing object icons
 
-align 4
 level_stack dd 0
-offs_last_timer dd 0 ;последний сдвиг показаный в функции таймера
+offs_last_timer dd 0 ;last shift shown in timer function
 
 align 4
-file_3ds: ;переменные используемые при открытии файла
-.offs: dd 0 ;+0 указатель на начало блока
-.size: dd 0 ;+4 размер блока (для 1-го параметра = размер файла 3ds)
+file_3ds: ;variables used when opening a file
+.offs: dd 0 ;+0 pointer to the beginning of the block
+.size: dd 0 ;+4 block size (for 1st parameter = 3ds file size)
 rb 8*MAX_FILE_LEVEL
 
 size_one_list equ 42
@@ -81,7 +83,7 @@ start:
 	stosd
 
 	load_libraries l_libs_start,l_libs_end
-	;проверка на сколько удачно загузились библиотеки
+	;checking how successfully the libraries were loaded
 	mov	ebp,lib_0
 	.test_lib_open:
 	cmp	dword [ebp+ll_struc_size-4],0
@@ -94,7 +96,7 @@ start:
 	mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
 	mcall SF_SET_EVENTS_MASK,0xC0000027
 
-	stdcall [OpenDialog_Init],OpenDialog_data ;подготовка диалога
+	stdcall [OpenDialog_Init],OpenDialog_data ;preparation of dialogue
 
 	;kmenu initialisation
 	stdcall [kmenu_init],sc
@@ -143,70 +145,68 @@ start:
 	stdcall [tl_data_init], tree1
 	;системные иконки 16*16 для tree_list
 	include_image_file 'tl_sys_16.png', icon_tl_sys
-	;если изображение не открылось, то в icon_tl_sys будут
-	;не инициализированные данные, но ошибки не будет, т. к. буфер нужного размера
-	mov eax,dword[icon_tl_sys]
-	mov dword[tree1.data_img_sys],eax
+	mov eax,[icon_tl_sys]
+	mov [tree1.data_img_sys],eax
 
-	load_image_file 'objects.png', icon_toolbar
-	mov eax,dword[icon_toolbar]
-	mov dword[tree1.data_img],eax
+	include_image_file 'objects.png', icon_toolbar
+	mov eax,[icon_toolbar]
+	mov [tree1.data_img],eax
 
 	stdcall [buf2d_create], buf_0 ;создание буфера
 
-	load_image_file 'font8x9.bmp', image_data_toolbar
+	include_image_file '../../fs/kfar/trunk/font8x9.bmp', image_data_toolbar
 	stdcall [buf2d_create_f_img], buf_1,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит
 	stdcall [buf2d_convert_text_matrix], buf_1
 
-	load_image_file fn_toolbar, image_data_toolbar
+	include_image_file 'toolbar.png', image_data_toolbar
 
 	;работа с файлом настроек
 	copy_path ini_name,sys_path,file_name,0
 	mov dword[def_dr_mode],0
-	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_dv,1
+	stdcall [ini_get_int],file_name,ini_sec_w3d,key_dv,1
 	or eax,eax
 	jz @f
 		or dword[def_dr_mode], 1 shl bit_vertexes
 	@@:
-	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_df,1
+	stdcall [ini_get_int],file_name,ini_sec_w3d,key_df,1
 	or eax,eax
 	jz @f
 		or dword[def_dr_mode], 1 shl bit_faces
 	@@:
-	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_dff,1
+	stdcall [ini_get_int],file_name,ini_sec_w3d,key_dff,1
 	or eax,eax
 	jz @f
 		or dword[def_dr_mode], 1 shl bit_faces_fill
 	@@:
-	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_dl,1
+	stdcall [ini_get_int],file_name,ini_sec_w3d,key_dl,1
 	or eax,eax
 	jz @f
 		or dword[def_dr_mode], 1 shl bit_light
 	@@:
-	stdcall dword[ini_get_int],file_name,ini_sec_w3d,key_ds,1
+	stdcall [ini_get_int],file_name,ini_sec_w3d,key_ds,1
 	or eax,eax
 	jz @f
 		or dword[def_dr_mode], 1 shl bit_smooth
 	@@:
-	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_ox,0x0000ff
+	stdcall [ini_get_color],file_name,ini_sec_w3d,key_ox,0x0000ff
 	mov [color_ox],eax
-	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_oy,0xff0000
+	stdcall [ini_get_color],file_name,ini_sec_w3d,key_oy,0xff0000
 	mov [color_oy],eax
-	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_oz,0x00ff00
+	stdcall [ini_get_color],file_name,ini_sec_w3d,key_oz,0x00ff00
 	mov [color_oz],eax
-	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_bk,0x000000
+	stdcall [ini_get_color],file_name,ini_sec_w3d,key_bk,0x000000
 	mov [color_bk],eax
 	shr eax,8
 	mov [color_bk+4],eax
 	shr eax,8
 	mov [color_bk+8],eax
-	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_vert,0xffffff
+	stdcall [ini_get_color],file_name,ini_sec_w3d,key_vert,0xffffff
 	mov [color_vert],eax
-	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_face,0x808080
+	stdcall [ini_get_color],file_name,ini_sec_w3d,key_face,0x808080
 	mov [color_face],eax
-	stdcall dword[ini_get_color],file_name,ini_sec_w3d,key_select,0xffff00
+	stdcall [ini_get_color],file_name,ini_sec_w3d,key_select,0xffff00
 	mov [color_select],eax
 	finit
 	fild dword[color_bk+8]
@@ -262,19 +262,19 @@ still:
 	or eax,eax
 	jz timer_funct
 
-	cmp al,1
+	cmp al,EV_REDRAW
 	jne @f
 		call draw_window
 		jmp still
 	@@:
-	cmp al,2
+	cmp al,EV_KEY
 	jz key
-	cmp al,3
+	cmp al,EV_BUTTON
 	jz button
-	cmp al,6
+	cmp al,EV_MOUSE
 	jne @f
 		mcall SF_THREAD_INFO,procinfo,-1
-		cmp ax,word[procinfo+4]
+		cmp ax,word[procinfo.window_stack_position]
 		jne @f ;окно не активно
 		call mouse
 	@@:
@@ -282,7 +282,7 @@ still:
 
 align 4
 mouse:
-	stdcall [tl_mouse], dword tree1
+	stdcall [tl_mouse], tree1
 	ret
 
 align 4
@@ -385,7 +385,7 @@ pushad
 	mcall , (20 shl 16)+560, (20 shl 16)+main_wnd_height
 
 	mcall SF_THREAD_INFO,procinfo,-1
-	mov eax,dword[procinfo.box.height]
+	mov eax,[procinfo.box.height]
 	cmp eax,250
 	jge @f
 		mov eax,250
@@ -393,13 +393,14 @@ pushad
 	sub eax,65
 	mov dword[tree1.box_height],eax
 	mov word[w_scr_t1.y_size],ax ;новые размеры скроллинга
-	cmp eax,dword[buf_0.h] ;увеличиваем высоту буфера
-	jle @f
+	cmp eax,dword[buf_0.h] ;change buffer height
+	je @f
 		stdcall [buf2d_resize],buf_0,0,eax,1
-		mov dword[offs_last_timer],0 ;для обновления буфера в таймере
+		stdcall [buf2d_clear], buf_0, [buf_0.color] ;background update
+		mov dword[offs_last_timer],0 ;for update buffer in the timer
 	@@:
 
-	mov eax,dword[procinfo.box.width]
+	mov eax,[procinfo.box.width]
 	cmp eax,400
 	jge @f
 		mov eax,400
@@ -457,7 +458,7 @@ popad
 align 4
 key:
 	mcall SF_GET_KEY
-	stdcall [tl_key], dword tree1
+	stdcall [tl_key], tree1
 	jmp still
 
 
@@ -1088,53 +1089,6 @@ l_libs_start:
 l_libs_end:
 
 align 4
-import_libimg:
-	dd alib_init1
-	img_is_img  dd aimg_is_img
-	img_info    dd aimg_info
-	img_from_file dd aimg_from_file
-	img_to_file dd aimg_to_file
-	img_from_rgb dd aimg_from_rgb
-	img_to_rgb  dd aimg_to_rgb
-	img_to_rgb2 dd aimg_to_rgb2
-	img_decode  dd aimg_decode
-	img_encode  dd aimg_encode
-	img_create  dd aimg_create
-	img_destroy dd aimg_destroy
-	img_destroy_layer dd aimg_destroy_layer
-	img_count   dd aimg_count
-	img_lock_bits dd aimg_lock_bits
-	img_unlock_bits dd aimg_unlock_bits
-	img_flip    dd aimg_flip
-	img_flip_layer dd aimg_flip_layer
-	img_rotate  dd aimg_rotate
-	img_rotate_layer dd aimg_rotate_layer
-	img_draw    dd aimg_draw
-
-	dd 0,0
-	alib_init1   db 'lib_init',0
-	aimg_is_img  db 'img_is_img',0 ;определяет по данным, может ли библиотека сделать из них изображение
-	aimg_info    db 'img_info',0
-	aimg_from_file db 'img_from_file',0
-	aimg_to_file db 'img_to_file',0
-	aimg_from_rgb db 'img_from_rgb',0
-	aimg_to_rgb  db 'img_to_rgb',0 ;преобразование изображения в данные RGB
-	aimg_to_rgb2 db 'img_to_rgb2',0
-	aimg_decode  db 'img_decode',0 ;автоматически определяет формат графических данных
-	aimg_encode  db 'img_encode',0
-	aimg_create  db 'img_create',0
-	aimg_destroy db 'img_destroy',0
-	aimg_destroy_layer db 'img_destroy_layer',0
-	aimg_count   db 'img_count',0
-	aimg_lock_bits db 'img_lock_bits',0
-	aimg_unlock_bits db 'img_unlock_bits',0
-	aimg_flip    db 'img_flip',0
-	aimg_flip_layer db 'img_flip_layer',0
-	aimg_rotate  db 'img_rotate',0
-	aimg_rotate_layer db 'img_rotate_layer',0
-	aimg_draw    db 'img_draw',0
-
-align 4
 import_proclib:
 	OpenDialog_Init dd aOpenDialog_Init
 	OpenDialog_Start dd aOpenDialog_Start
@@ -1146,122 +1100,9 @@ dd 0,0
 	aOpenDialog_Set_file_name db 'OpenDialog_set_file_name',0
 	aOpenDialog_Set_file_ext db 'OpenDialog_set_file_ext',0
 
-align 4
-import_buf2d:
-	dd sz_init0
-	buf2d_create dd sz_buf2d_create
-	buf2d_create_f_img dd sz_buf2d_create_f_img
-	buf2d_clear dd sz_buf2d_clear
-	buf2d_draw dd sz_buf2d_draw
-	buf2d_delete dd sz_buf2d_delete
-	buf2d_resize dd sz_buf2d_resize
-	buf2d_line dd sz_buf2d_line
-	buf2d_rect_by_size dd sz_buf2d_rect_by_size
-	buf2d_filled_rect_by_size dd sz_buf2d_filled_rect_by_size
-	buf2d_circle dd sz_buf2d_circle
-	buf2d_img_hdiv2 dd sz_buf2d_img_hdiv2
-	buf2d_img_wdiv2 dd sz_buf2d_img_wdiv2
-	buf2d_conv_24_to_8 dd sz_buf2d_conv_24_to_8
-	buf2d_conv_24_to_32 dd sz_buf2d_conv_24_to_32
-	buf2d_bit_blt dd sz_buf2d_bit_blt
-	buf2d_bit_blt_transp dd sz_buf2d_bit_blt_transp
-	buf2d_bit_blt_alpha dd sz_buf2d_bit_blt_alpha
-	buf2d_convert_text_matrix dd sz_buf2d_convert_text_matrix
-	buf2d_draw_text dd sz_buf2d_draw_text
-	buf2d_crop_color dd sz_buf2d_crop_color
-	buf2d_offset_h dd sz_buf2d_offset_h
-	buf2d_set_pixel dd sz_buf2d_set_pixel
-	dd 0,0
-	sz_init0 db 'lib_init',0
-	sz_buf2d_create db 'buf2d_create',0
-	sz_buf2d_create_f_img db 'buf2d_create_f_img',0
-	sz_buf2d_clear db 'buf2d_clear',0
-	sz_buf2d_draw db 'buf2d_draw',0
-	sz_buf2d_delete db 'buf2d_delete',0
-	sz_buf2d_resize db 'buf2d_resize',0
-	sz_buf2d_line db 'buf2d_line',0
-	sz_buf2d_rect_by_size db 'buf2d_rect_by_size',0
-	sz_buf2d_filled_rect_by_size db 'buf2d_filled_rect_by_size',0
-	sz_buf2d_circle db 'buf2d_circle',0
-	sz_buf2d_img_hdiv2 db 'buf2d_img_hdiv2',0
-	sz_buf2d_img_wdiv2 db 'buf2d_img_wdiv2',0
-	sz_buf2d_conv_24_to_8 db 'buf2d_conv_24_to_8',0
-	sz_buf2d_conv_24_to_32 db 'buf2d_conv_24_to_32',0
-	sz_buf2d_bit_blt db 'buf2d_bit_blt',0
-	sz_buf2d_bit_blt_transp db 'buf2d_bit_blt_transp',0
-	sz_buf2d_bit_blt_alpha db 'buf2d_bit_blt_alpha',0
-	sz_buf2d_convert_text_matrix db 'buf2d_convert_text_matrix',0
-	sz_buf2d_draw_text db 'buf2d_draw_text',0
-	sz_buf2d_crop_color db 'buf2d_crop_color',0
-	sz_buf2d_offset_h db 'buf2d_offset_h',0
-	sz_buf2d_set_pixel db 'buf2d_set_pixel',0
-
-align 4
-import_box_lib:
-	dd sz_init1
-	edit_box_draw dd sz_edit_box_draw
-	edit_box_key dd sz_edit_box_key
-	edit_box_mouse dd sz_edit_box_mouse
-	edit_box_set_text dd sz_edit_box_set_text
-	scrollbar_ver_draw dd sz_scrollbar_ver_draw
-	scrollbar_hor_draw dd sz_scrollbar_hor_draw
-
-	tl_data_init dd sz_tl_data_init
-	tl_data_clear dd sz_tl_data_clear
-	tl_info_clear dd sz_tl_info_clear
-	tl_key dd sz_tl_key
-	tl_mouse dd sz_tl_mouse
-	tl_draw dd sz_tl_draw
-	tl_info_undo dd sz_tl_info_undo
-	tl_info_redo dd sz_tl_info_redo
-	tl_node_add dd sz_tl_node_add
-	tl_node_set_data dd sz_tl_node_set_data
-	tl_node_get_data dd sz_tl_node_get_data
-	tl_node_delete dd sz_tl_node_delete
-	tl_node_move_up dd sz_tl_node_move_up
-	tl_node_move_down dd sz_tl_node_move_down
-	tl_cur_beg dd sz_tl_cur_beg
-	tl_cur_next dd sz_tl_cur_next
-	tl_cur_perv dd sz_tl_cur_perv
-	tl_node_close_open dd sz_tl_node_close_open
-	tl_node_lev_inc dd sz_tl_node_lev_inc
-	tl_node_lev_dec dd sz_tl_node_lev_dec
-	tl_node_poi_get_info dd sz_tl_node_poi_get_info
-	tl_node_poi_get_next_info dd sz_tl_node_poi_get_next_info
-	tl_node_poi_get_data dd sz_tl_node_poi_get_data
-
-	dd 0,0
-	sz_init1 db 'lib_init',0
-	sz_edit_box_draw db 'edit_box_draw',0
-	sz_edit_box_key db 'edit_box_key',0
-	sz_edit_box_mouse db 'edit_box_mouse',0
-	sz_edit_box_set_text db 'edit_box_set_text',0
-	sz_scrollbar_ver_draw db 'scrollbar_v_draw',0
-	sz_scrollbar_hor_draw db 'scrollbar_h_draw',0
-
-	sz_tl_data_init db 'tl_data_init',0
-	sz_tl_data_clear db 'tl_data_clear',0
-	sz_tl_info_clear db 'tl_info_clear',0
-	sz_tl_key db 'tl_key',0
-	sz_tl_mouse db 'tl_mouse',0
-	sz_tl_draw db 'tl_draw',0
-	sz_tl_info_undo db 'tl_info_undo',0
-	sz_tl_info_redo db 'tl_info_redo',0
-	sz_tl_node_add db 'tl_node_add',0
-	sz_tl_node_set_data db 'tl_node_set_data',0
-	sz_tl_node_get_data db 'tl_node_get_data',0
-	sz_tl_node_delete db 'tl_node_delete',0
-	sz_tl_node_move_up db 'tl_node_move_up',0
-	sz_tl_node_move_down db 'tl_node_move_down',0
-	sz_tl_cur_beg db 'tl_cur_beg',0
-	sz_tl_cur_next db 'tl_cur_next',0
-	sz_tl_cur_perv db 'tl_cur_perv',0
-	sz_tl_node_close_open db 'tl_node_close_open',0
-	sz_tl_node_lev_inc db 'tl_node_lev_inc',0
-	sz_tl_node_lev_dec db 'tl_node_lev_dec',0
-	sz_tl_node_poi_get_info db 'tl_node_poi_get_info',0
-	sz_tl_node_poi_get_next_info db 'tl_node_poi_get_next_info',0
-	sz_tl_node_poi_get_data db 'tl_node_poi_get_data',0
+include '../../develop/libraries/libs-dev/libimg/import.inc'
+include '../../develop/libraries/box_lib/import.inc'
+include '../../develop/libraries/buf2d/import.inc'
 
 align 4
 import_libkmenu:
@@ -1287,23 +1128,7 @@ dd 0,0
 	akmenuitem_delete		db 'kmenuitem_delete',0
 	akmenuitem_draw 		db 'kmenuitem_draw',0
 
-align 4
-import_tinygl:
-macro E_LIB n
-{
-if defined sz_#n
-	n dd sz_#n
-end if
-}
-include '../../develop/libraries/TinyGL/asm_fork/export.inc'
-	dd 0,0
-macro E_LIB n
-{
-if used n
-	sz_#n db `n,0
-end if
-}
-include '../../develop/libraries/TinyGL/asm_fork/export.inc'
+include '../../develop/libraries/TinyGL/asm_fork/import.inc'
 
 align 4
 import_libini:
@@ -1367,9 +1192,9 @@ white_light dd 0.8, 0.8, 0.8, 1.0 ; Цвет и интенсивность освещения, генерируемог
 lmodel_ambient dd 0.3, 0.3, 0.3, 1.0 ; Параметры фонового освещения
 
 if lang eq ru_RU
-capt db 'info 3ds версия 04.05.25',0 ;подпись окна
+capt db 'info 3ds версия 22.10.25',0
 else ; Default to en_US
-capt db 'info 3ds version 04.05.25',0 ;window caption
+capt db 'info 3ds version 22.10.25',0 ;window caption
 end if
 
 align 16

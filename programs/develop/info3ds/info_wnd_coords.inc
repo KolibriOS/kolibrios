@@ -1,18 +1,19 @@
 ;
-; в этом файле собраны функции нужные для создания и
-; работы окна с координатами вершин
+; This file contains functions needed to create
+; and operate a window with vertex coordinates
 ;
 
-prop_wnd_width  equ 340 ;ширина окна со свойствами объекта
-prop_wnd_height equ 460 ;высота окна со свойствами объекта
-3d_wnd_l equ   5 ;отступ для tinygl буфера слева
-3d_wnd_t equ  23 ;отступ для tinygl буфера сверху
-3d_wnd_w equ 320
+3d_wnd_l equ   5 ;tinygl buffer left indent
+3d_wnd_t equ  23 ;tinygl buffer top indent
+3d_wnd_w equ 396
 3d_wnd_h equ 240
 SIZE_ONE_FLOAT equ 14
 MAX_OBJECT_SIZE equ (4+SIZE_ONE_FLOAT*3+1)
 
-prop_wnd_run db 0 ;переменная следящая за тем что-бы не запускать больше 1-го окна со свойствами одновременно
+align 4
+fl180 dd 180.0
+
+prop_wnd_run db 0 ;variable that ensures that no more than 1 window with properties is launched at the same time
 
 txt_q db '?',0
 txt_space:
@@ -173,20 +174,23 @@ prop_still:
 		jmp .end
 	@@:
 
-	cmp al,1 ;изм. положение окна
+	cmp al,EV_REDRAW
 	jne @f
 		call prop_red_win
 		jmp .end
 	@@:
-	cmp al,2
+	cmp al,EV_KEY
 	jne @f
 		call prop_key
 		jmp .end
 	@@:
-	cmp al,3
+	cmp al,EV_BUTTON
 	jz prop_button
-	cmp al,6
+	cmp al,EV_MOUSE
 	jne @f
+		mcall SF_THREAD_INFO,procinfo,-1
+		cmp ax,word[procinfo.window_stack_position]
+		jne @f ;window is not active
 		call prop_mouse
 	@@:
 .end:
@@ -198,20 +202,65 @@ prop_red_win:
 pushad
 	mcall SF_REDRAW,SSF_BEGIN_DRAW
 
-	xor eax,eax
+	mcall SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT
+	push eax
+	mcall SF_THREAD_INFO,procinfo,-1
+	cmp dword[procinfo.box.height],0
+	je .resize_end
+	mov eax,[procinfo.box.height]
+	sub eax,[esp]
+	sub eax,[tree3.box_top]
+	sub eax,5
+	cmp eax,48
+	jge @f
+		mov eax,48 ;min size
+	@@:
+	mov dword[tree3.box_height],eax
+	mov word[w_scr_t3.y_size],ax
+	mov ebx,[procinfo.box.width]
+	sub ebx,37
+	cmp ebx,240
+	jge @f
+		mov ebx,240
+	@@:
+	mov [tree3.box_width],ebx
+	add ebx,[tree3.box_left]
+	mov word[w_scr_t3.x_pos],bx
+	;todo: resize scroll slider
+	
+	mov eax,[tree3.box_width]
+	add eax,16
+	cmp [buf_ogl.w],eax
+	je .resize_end
+		mov [buf_ogl.w],eax
+		fild dword[buf_ogl.w]
+		fld st0
+		fdiv dword[fl180]
+		fstp dword[angle_dxm]
+		fidiv dword[buf_ogl.h]
+		fstp dword[ratio]
+		stdcall [glViewport], 0,0, [buf_ogl.w], 3d_wnd_h
+		stdcall obj_set_sizes, o3d
+	.resize_end:
+
 	mov edi,dword[capt_p] ;children window caption
 	mov bx,word[procinfo.box.left]
 	add bx,word[buf_0.l]
-	add bx,5 ;ширина боковой рамки
+	add bx,5 ;side frame width
 	shl ebx,16
-	mov bx,prop_wnd_width
+	mov bx,word[tree3.box_width]
+	add bx,37
 	mov cx,word[procinfo.box.top]
 	add cx,word[buf_0.t]
 	shl ecx,16
-	mov cx,prop_wnd_height
+	pop eax
+	add eax,[tree3.box_height]
+	add eax,[tree3.box_top]
+	add eax,5
+	mov cx,ax
 	mov edx,[sc.work]
 	or  edx,0x33000000
-	int 0x40
+	mcall SF_CREATE_WINDOW
 
 	mov esi,[sc.work_button]
 	mcall SF_DEFINE_BUTTON, (5 shl 16)+20, (266 shl 16)+20, 0x40000003
@@ -226,7 +275,7 @@ pushad
 	int 0x40
 
 	mov dword[w_scr_t3.all_redraw],1
-	stdcall [scrollbar_ver_draw],dword w_scr_t3
+	stdcall [scrollbar_v_draw], w_scr_t3
 	stdcall [tl_draw], tree3
 	stdcall [edit_box_draw], edit1
 	stdcall [edit_box_draw], edit2
@@ -316,9 +365,9 @@ prop_mouse:
 			mov ebx,3d_wnd_l
 		@@:
 		sub ebx,3d_wnd_l
-		cmp ebx,3d_wnd_w
+		cmp ebx,[buf_ogl.w]
 		jle @f
-			mov ebx,3d_wnd_w
+			mov ebx,[buf_ogl.w]
 		@@:
 		and eax,0xffff ;mouse.y
 		cmp eax,3d_wnd_t
@@ -334,14 +383,14 @@ prop_mouse:
 		fild dword[mouse_y]
 		mov [mouse_y],eax
 		fisub dword[mouse_y]
-		fdiv dword[angle_dxm] ;если курсор движется по оси y (вверх или вниз) то поворот делаем вокруг оси x
+		fdiv dword[angle_dym] ;if the cursor moves along the y axis
 		fadd dword[angle_x]
 		fstp dword[angle_x]
 
 		fild dword[mouse_x]
 		mov [mouse_x],ebx
 		fisub dword[mouse_x]
-		fdiv dword[angle_dym] ;если курсор движется по оси x (вверх или вниз) то поворот делаем вокруг оси y
+		fdiv dword[angle_dxm] ;if the cursor moves along the x axis
 		fadd dword[angle_y]
 		fstp dword[angle_y]
 
@@ -363,7 +412,7 @@ prop_mouse:
 		cmp ebx,3d_wnd_l
 		jl .end_d
 		sub ebx,3d_wnd_l
-		cmp ebx,3d_wnd_w
+		cmp ebx,[buf_ogl.w]
 		jg .end_d
 		and eax,0xffff ;mouse.y
 		cmp eax,3d_wnd_t
@@ -811,7 +860,7 @@ capt_p dd 0
 
 ;дерево с объектами в пользовательском файле
 tree3 tree_list MAX_OBJECT_SIZE,3, tl_key_no_edit+tl_list_box_mode,\
-	16,16, 0xffffff,0xb0d0ff,0x400040, 5,290,303,140, 16, 4,0, el_focus,\
+	16,16, 0xffffff,0xb0d0ff,0x10400040, 5,290,380,140, 16, 4,0, el_focus,\
 	w_scr_t3,get_point_coords
 
 edit1 edit_box 80,  76, 269, 0xffd0d0, 0xff, 0x80ff, 0, 0x8000, 32, string1, mouse_dd, 0
