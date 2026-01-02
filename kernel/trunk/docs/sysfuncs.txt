@@ -2179,7 +2179,7 @@ Parameters:
   * ecx = pointer to the buffer with size edx bytes,
     where table will be written
   * edx = size of color table
-    (up to 192 bytes; 40 bytes for base structure)
+    (must be 40 bytes for future compatibility)
 Returned value:
   * function does not return value
 Format of the color table:
@@ -2480,7 +2480,7 @@ Remarks:
 ---------------------- Constants for registers: ----------------------
   eax - SF_SET_WINDOW_SHAPE (50)
 ======================================================================
-==================== Function 51 - create thread. ====================
+============= Function 51, subfunction 1 - create thread. ============
 ======================================================================
 Parameters:
   * eax = 51 - function number
@@ -3334,14 +3334,14 @@ Remarks:
   ebx - SSF_MEM_FREE (13)
 ======================================================================
 ===================== Function 68, subfunction 14 ====================
-================= Get kernel event (GetEvent wrapper). ===============
+==== Wait for a signal from other applications/drivers. ==============
 ======================================================================
 Parameters:
   * eax = 68 - function number
   * ebx = 14 - subfunction number
   * ecx = pointer to data buffer (6 dword = 24 bytes)
 Returned value:
-  * eax = event handle
+  * eax is destroyed
   * buffer pointed to by ecx contains the following information:
     * +0: dword: EVENT.code (identifier of following data)
     * +4: 5 dword: EVENT.data, format depends on EVENT.code
@@ -3353,43 +3353,44 @@ Remarks:
   eax - SF_SYS_MISC (68)
   ebx - SSF_WAIT_SIGNAL (14)
 ======================================================================
-============= Function 68, subfunction 16 - get service. =============
+=========== Function 68, subfunction 16 - load driver. ===============
 ======================================================================
 Parameters:
   * eax = 68 - function number
   * ebx = 16 - subfunction number
-  * ecx = pointer to ASCIIZ-string with service name
+  * ecx = pointer to ASCIIZ-string with driver name
 Returned value:
-  * eax = pointer to SRV structure, 0 on error
+  * eax = driver handle, 0 on error
 Remarks:
-  * If the service is not loaded yet, the kernel attempts to load it
-    from /sys/drivers/<name>.sys.
-  * Service name is case-sensitive.
+  * If the driver is not loaded yet, it is loaded;
+    if the driver is already loaded, nothing changes.
+  * Driver name is case-sensitive.
     Maximum length of the name is 16 characters, including
     terminating null character, the rest is ignored.
+  * Driver with name "ABC" is loaded from /sys/drivers/ABC.sys.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
   ebx - SSF_GET_SERVICE (16) / SSF_LOAD_DRIVER (16)
 ======================================================================
-============ Function 68, subfunction 17 - call service. =============
+========== Function 68, subfunction 17 - control driver. =============
 ======================================================================
 Parameters:
   * eax = 68 - function number
   * ebx = 17 - subfunction number
-  * ecx = pointer to the IOCTL structure:
-    * +0:  dword: service handle (pointer to SRV)
-    * +4:  dword: io_code
+  * ecx = pointer to the control structure:
+    * +0:  dword: driver handle
+    * +4:  dword: driver function code
     * +8:  dword: pointer to input data
     * +12: dword: size of input data
     * +16: dword: pointer to output data
     * +20: dword: size of output data
 Returned value:
-  * eax = value returned by the service handler, -1 on error
+  * eax = determined by driver, -1 on error
 Remarks:
   * Function codes and the structure of input/output data
-    are defined by the service.
-  * The service handle can be obtained by subfunction 16.
+    are defined by the driver.
+  * Driver handle can be obtained by subfunction 16.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
@@ -3662,10 +3663,6 @@ Remarks:
     write beyond the size of the allocated memory and will reach the 
     beginning of the buffer again.
 
----------------------- Constants for registers: ----------------------
-  eax - SF_SYS_MISC (68)
-  ebx - SSF_MEM_ALLOC_RING (29)  
-
 ======================================================================
 =========== Function 68, subfunction 30 - unload driver. ============
 ======================================================================
@@ -3898,7 +3895,7 @@ Remarks:
   eax - SF_DEBUG (69)
   ebx - SSF_RESUME (5)
 ======================================================================
-= Fucntion 69, subfunction 6 - read from memory of debugged process. =
+== Function 69, subfunction 6 - read from memory of debugged process. ==
 ======================================================================
 Parameters:
   * eax = 69 - function number
@@ -5274,10 +5271,6 @@ Parameters:
   * ecx = pointer to futex dword
 Returned value:
   * eax = futex handle, 0 on error
-Remarks:
-  * Use subfunction 1 to destroy the futex.
-    The kernel destroys the futexes automatically when the process
-    terminates.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
@@ -5292,7 +5285,8 @@ Parameters:
 Returned value:
   * eax = 0 - successfull, -1 on error
 Remarks:
-  * The futex handle must have been created by subfunction 0
+  * The kernel destroys the futexes automatically when the process
+    terminates.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
@@ -5305,16 +5299,11 @@ Parameters:
   * ebx = 2 - subfunction number
   * ecx = futex handle
   * edx = control value
-  * esi = timeout in system ticks or 0 for infinity
+  * esi = timeout in hundredths of a second, 0 - wait forever
 Returned value:
   * eax = 0 - successfull
          -1 - timeout
          -2 - futex dword does not have the same value as edx
-Remarks:
-  * This function tests that the value at the futex dword still
-    contains the expected control value, and if so, then sleeps
-    waiting for a wake operation on the futex.
-  * The futex handle must have been created by subfunction 0
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
@@ -5329,11 +5318,6 @@ Parameters:
   * edx = number of waiters to wake
 Returned value:
   * eax = number of waiters that were woken up
-
-Remarks:
-  * This function wakes at most edx of the waiters that are
-    waiting (e.g., inside futex wait) on the futex dword
-  * The futex handle must have been created by subfunction 0
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
