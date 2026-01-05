@@ -998,7 +998,9 @@ cmdRETR:
         cmp     eax, -1
         je      .cannot_open                                    ; FIXME: this is not the correct error
 
+        push eax
         invoke  con_write_asciiz, str2
+        pop eax
 
         push    eax ebx
         mov     esi, eax
