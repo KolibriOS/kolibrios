@@ -342,7 +342,7 @@ align 4
 cmdABOR:
 
         or      [ebp + thread_data.permissions], ABORT
-        sendFTP "250 Command succesful"
+        sendFTP "250 Command successful"
         ret
 
 ;------------------------------------------------
@@ -383,7 +383,7 @@ cmdCDUP:
         invoke  con_write_asciiz, eax
         invoke  con_write_asciiz, str_newline
 
-        sendFTP "250 Command succesful"
+        sendFTP "250 Command successful"
         ret
 
 ;------------------------------------------------
@@ -448,7 +448,7 @@ cmdCWD:
         invoke  con_write_asciiz, eax
         invoke  con_write_asciiz, str_newline
 
-        sendFTP "250 Command succesful"
+        sendFTP "250 Command successful"
         ret
 
   .err:
@@ -510,7 +510,7 @@ cmdDELE:
         test    eax, eax
         jnz     .err
 
-        sendFTP "250 Command succesful"
+        sendFTP "250 Command successful"
         ret
 .err:
         sendFTP "550 No such file"
