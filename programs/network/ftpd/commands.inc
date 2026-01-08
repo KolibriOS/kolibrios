@@ -84,6 +84,7 @@ commands:               ; all commands must be in uppercase
 ;        dd 'APPE', login_first, login_first, login_first, cmd_APPE
         dd 'CDUP', login_first, login_first, login_first, cmdCDUP
         dd 'CWD',  login_first, login_first, login_first, cmdCWD
+        dd 'XCWD',  login_first, login_first, login_first, cmdCWD
         dd 'DELE', login_first, login_first, login_first, cmdDELE
 ;        dd 'HELP', login_first, login_first, login_first, cmd_HELP
         dd 'LIST', login_first, login_first, login_first, cmdLIST
@@ -96,6 +97,7 @@ commands:               ; all commands must be in uppercase
         dd 'PASV', login_first, login_first, login_first, cmdPASV
         dd 'PORT', login_first, login_first, login_first, cmdPORT
         dd 'PWD',  login_first, login_first, login_first, cmdPWD
+        dd 'XPWD',  login_first, login_first, login_first, cmdPWD
         dd 'QUIT', cmdQUIT,     cmdQUIT,     cmdQUIT,     cmdQUIT
 ;        dd 'REIN', login_first, login_first, login_first, cmd_REIN
 ;        dd 'REST', login_first, login_first, login_first, cmd_REST
