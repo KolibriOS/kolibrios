@@ -3680,7 +3680,7 @@ Remarks:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
-  ebx - 30
+  ebx - SSF_UNLOAD_DRIVER (30)
 
 ======================================================================
 =========== Function 68, subfunction 31 - get driver data. ===========
@@ -3895,7 +3895,7 @@ Remarks:
   eax - SF_DEBUG (69)
   ebx - SSF_RESUME (5)
 ======================================================================
-== Function 69, subfunction 6 - read from memory of debugged process. ==
+= Function 69, subfunction 6 - read from memory of debugged process. =
 ======================================================================
 Parameters:
   * eax = 69 - function number
@@ -5325,7 +5325,7 @@ Returned value:
 ======================================================================
 Remarks:
   * Subfunctions 4-7 are reserved and currently return -1.
-  * Subfunctions 8, 9 and 12 are not implemented and return -EBADF.
+  * Subfunctions 8-9 and 12 are not implemented and return -EBADF.
 ======================================================================
 =========== Function 77, Subfunction 10, Read from pipe. ============
 ======================================================================
@@ -5342,7 +5342,7 @@ Remarks:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
-  ebx - 10
+  ebx - SSF_PIPE_READ (10)
 ======================================================================
 =========== Function 77, Subfunction 11, Write to pipe. =============
 ======================================================================
@@ -5359,7 +5359,7 @@ Remarks:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
-  ebx - 11
+  ebx - SSF_PIPE_WRITE (11)
 ======================================================================
 ========== Function 77, Subfunction 13, Create pipe. ================
 ======================================================================
@@ -5377,7 +5377,7 @@ Remarks:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
-  ebx - 13
+  ebx - SSF_PIPE_CREATE (13)
 ======================================================================
 === Function 80 - file system interface with parameter of encoding ===
 ======================================================================
