@@ -1880,66 +1880,85 @@ help_groups:
 ;-----------------------------------------------------------------------------
 ;                   Commands format definitions
 
-; TODO: make it with macros
-
-; flags field:
-; &1: command may be called without parameters
-; &2: command may be called with parameters
-; &4: command may be called without loaded program
-; &8: command may be called with loaded program
 commands:
         dd      _aH, OnHelp, HelpSyntax, HelpHelp
-        db      0Fh
+        db      CMD_WITHOUT_PARAM or CMD_WITH_PARAM or CMD_WITHOUT_LOADED_APP or CMD_WITH_LOADED_APP
+
         dd      aHelp, OnHelp, HelpSyntax, HelpHelp
-        db      0Fh
+        db      CMD_WITHOUT_PARAM or CMD_WITH_PARAM or CMD_WITHOUT_LOADED_APP or CMD_WITH_LOADED_APP
+
         dd      aQuit, OnQuit, QuitSyntax, QuitHelp
-        db      0Dh
+        db      CMD_WITHOUT_PARAM or CMD_WITHOUT_LOADED_APP or CMD_WITH_LOADED_APP
+
         dd      aLoad, OnLoad, LoadSyntax, LoadHelp
-        db      6
+        db      CMD_WITH_PARAM or CMD_WITHOUT_LOADED_APP
+    
         dd      aReload, OnReload, ReloadSyntax, ReloadHelp
-        db      0Dh
+        db      CMD_WITHOUT_PARAM or CMD_WITHOUT_LOADED_APP or CMD_WITH_LOADED_APP
+
         dd      aTerminate, OnTerminate, TerminateSyntax, TerminateHelp
-        db      9
+        db      CMD_WITHOUT_PARAM or CMD_WITH_LOADED_APP
+
         dd      aDetach, OnDetach, DetachSyntax, DetachHelp
-        db      9
+        db      CMD_WITHOUT_PARAM or CMD_WITH_LOADED_APP
+
         dd      aSuspend, OnSuspend, SuspendSyntax, SuspendHelp
-        db      9
+        db      CMD_WITHOUT_PARAM or CMD_WITH_LOADED_APP
+
         dd      aResume, OnResume, ResumeSyntax, ResumeHelp
-        db      0Bh
+        db      CMD_WITHOUT_PARAM or CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aStep, OnStepMultiple, StepSyntax, StepHelp
-        db      0Bh
+        db      CMD_WITHOUT_PARAM or CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+    
         dd      aProceed, OnProceedMultiple, ProceedSyntax, ProceedHelp
-        db      0Bh
+        db      CMD_WITHOUT_PARAM or CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aCalc, OnCalc, CalcSyntax, CalcHelp
-        db      0Eh
+        db      CMD_WITH_PARAM or CMD_WITHOUT_LOADED_APP or CMD_WITH_LOADED_APP
+
         dd      aDump, OnDump, DumpSyntax, DumpHelp
-        db      0Bh
+        db      CMD_WITHOUT_PARAM or CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aUnassemble, OnUnassemble, UnassembleSyntax, UnassembleHelp
-        db      0Bh
+        db      CMD_WITHOUT_PARAM or CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aBp, OnBp, BpSyntax, BpHelp
-        db      0Ah
+        db      CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aBpm, OnBpmb, BpmSyntax, BpmHelp
-        db      0Ah
+        db      CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aBpmb, OnBpmb, BpmSyntax, BpmHelp
-        db      0Ah
+        db      CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aBpmw, OnBpmw, BpmSyntax, BpmHelp
-        db      0Ah
+        db      CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aBpmd, OnBpmd, BpmSyntax, BpmHelp
-        db      0Ah
+        db      CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aBl, OnBl, BlSyntax, BlHelp
-        db      0Bh
+        db      CMD_WITHOUT_PARAM or CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aBc, OnBc, BcSyntax, BcHelp
-        db      0Ah
+        db      CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aBd, OnBd, BdSyntax, BdHelp
-        db      0Ah
+        db      CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aBe, OnBe, BeSyntax, BeHelp
-        db      0Ah
+        db      CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aReg, OnReg, RSyntax, RHelp
-        db      0Ah
+        db      CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      aUnpack, OnUnpack, UnpackSyntax, UnpackHelp
-        db      9
+        db      CMD_WITHOUT_PARAM or CMD_WITH_LOADED_APP
+
         dd      aLoadSymbols, OnLoadSymbols, LoadSymbolsSyntax, LoadSymbolsHelp
-        db      0Ah
+        db      CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
         dd      0
 
 ;-----------------------------------------------------------------------------

@@ -122,7 +122,13 @@ struc fpcvt
   .sizeof:
 }
 
+;-----------------------------------------------------------------------------
+;                         Command flags
 
+CMD_WITHOUT_PARAM       = 1b    ; command may be called without parameters
+CMD_WITH_PARAM          = 10b   ; command may be called with parameters
+CMD_WITHOUT_LOADED_APP  = 100b  ; command may be called without loaded program
+CMD_WITH_LOADED_APP     = 1000b ; command may be called with loaded program
 
 ;-----------------------------------------------------------------------------
 ;                          Entry point
@@ -449,63 +455,56 @@ z1:
         mov     esi, commands
         call    find_cmd
         mov     eax, aUnknownCommand
-        jc      .x11
-
-        ; check command requirements
-        ; flags field:
-        ; &1: command may be called without parameters
-        ; &2: command may be called with parameters
-        ; &4: command may be called without loaded program
-        ; &8: command may be called with loaded program
+        jc      .cmd_procg
         mov     eax, [esi+8]
         mov     ecx, [curarg]
         cmp     byte [ecx], 0
         jz      .noargs
-        test    byte [esi+16], 2
-        jz      .x11
+        test    byte [esi+16], CMD_WITH_PARAM
+        jz      .cmd_procg
         jmp     @f
 
     .noargs:
-        test    byte [esi+16], 1
-        jz      .x11
+        test    byte [esi+16], CMD_WITHOUT_PARAM
+        jz      .cmd_procg
 
     @@:
         cmp     [debuggee_pid], 0
         jz      .nodebuggee
         mov     eax, aAlreadyLoaded
-        test    byte [esi+16], 8
-        jz      .x11
-        jmp     .x9
+        test    byte [esi+16], CMD_WITH_LOADED_APP
+        jz      .cmd_procg
+        jmp     .run_cmd
 
     .nodebuggee:
         mov     eax, need_debuggee
-        test    byte [esi+16], 4
-        jnz     .x9
+        test    byte [esi+16], CMD_WITHOUT_LOADED_APP
+        jnz     .run_cmd
 
-    .x11:
+    .cmd_procg:
         xchg    esi, eax
         call    put_message
 
         ; store cmdline for repeating
-    .x10:
+    .cmd_procg_no_put_msg:
         mov     esi, cmdline
         mov     ecx, [cmdline_len]
 
     @@:
         cmp     ecx, 0
-        jle     .we
+        jle     .wait_event
         mov     al, [esi + ecx]
         mov     [cmdline_prev + ecx], al
         dec     ecx
         jmp     @b
 
-    .we:
+    .wait_event:
         mov     [cmdline_len], 0
         jmp     waitevent
 
-    .x9:
+    .run_cmd:
         call    dword [esi+4]
-        jmp     .x10
+        jmp     .cmd_procg_no_put_msg
 
 ;-----------------------------------------------------------------------------
 ;                            Cmdline handling
