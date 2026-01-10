@@ -204,6 +204,7 @@ ksys_dll_t EXPORTS[] = {
     { "strstr", &strstr },
     { "strtok", &strtok },
     { "strxfrm", &strxfrm },
+    { "strpbrk", &strpbrk },
     { "__errno", &__errno },
     { "closedir", &closedir },
     { "opendir", &opendir },
