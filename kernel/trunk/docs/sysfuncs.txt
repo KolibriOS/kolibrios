@@ -2152,7 +2152,7 @@ Parameters:
   * ebx = 2 - subfunction number
   * ecx = pointer to the color table
   * edx = size of the color table
-    (must be 40 bytes for future compatibility)
+    (up to 192 bytes; 40 bytes for the base structure)
 Format of the color table is shown in description of subfunction 3.
 Returned value:
   * function does not return value
@@ -2179,7 +2179,7 @@ Parameters:
   * ecx = pointer to the buffer with size edx bytes,
     where table will be written
   * edx = size of color table
-    (must be 40 bytes for future compatibility)
+    (up to 192 bytes; 40 bytes for the base structure)
 Returned value:
   * function does not return value
 Format of the color table:
