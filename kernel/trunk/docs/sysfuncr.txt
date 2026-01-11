@@ -4557,8 +4557,8 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * eax = количество активных сетевых устройств
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
-   bl - SSF_DEVICE_COUNT (255)
+  eax - SF_NETWORK_GET (74)
+   bl - SSF_DEVICE_COUNT (-1 / 255)
 ======================================================================
 ==== Функция 74, подфункция 0, Получить тип сетевого устройства. =====
 ======================================================================
@@ -4570,7 +4570,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * eax = тип устройства
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_DEVICE_TYPE (0)
 ======================================================================
 ==== Функция 74, подфункция 1, Получить имя сетевого устройства. =====
@@ -4585,7 +4585,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * В случае успеха в буфер записывается имя сетевого устройства
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_DEVICE_NAME (1)
 ======================================================================
 ======= Функция 74, подфункция 2, Сброс сетевого устройства. =========
@@ -4598,7 +4598,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * eax = -1 для ошибки
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_RESET_DEVICE (2)
 ======================================================================
 ====== Функция 74, подфункция 3, Остановить сетевое устройство. ======
@@ -4611,7 +4611,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * eax = -1 для ошибки
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_STOP_DEVICE (3)
 ======================================================================
 ===== Функция 74, подфункция 4, Получить указатель на устройство =====
@@ -4624,7 +4624,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * eax = указатель, -1 для ошибки
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_DEVICE_POINTER (4)
 ======================================================================
 === Функция 74, подфункция 6, Получить количество посланых пакетов ===
@@ -4637,7 +4637,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * eax = количество с момента старта устройства, -1 для ошибки
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_TX_PACKET_COUNT (6)
 ======================================================================
 === Функция 74, подфункция 7, Получить количество принятых пакетов ===
@@ -4650,7 +4650,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * eax = количество с момента старта устройства, -1 для ошибки
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_RX_PACKET_COUNT (7)
 ======================================================================
 ==== Функция 74, подфункция 8, Получить количество посланых байт. ====
@@ -4664,7 +4664,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * ebx = старшая часть
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_TX_BYTE_COUNT (8)
 ======================================================================
 ==== Функция 74, подфункция 9, Получить количество принятых байт. ====
@@ -4678,7 +4678,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   * ebx = старшая часть
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_RX_BYTE_COUNT (9)
 ======================================================================
 ======= Функция 74, подфункция 10, Получить статус соединения. =======
@@ -4699,7 +4699,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
   10b = флаг полного дуплекса
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_LINK_STATUS (10)
 ======================================================================
 == Функция 74.11, Получить количество пакетов переданных с ошибкой. ==
@@ -4713,7 +4713,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
           устройства, -1 при ошибке
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_TX_PACKET_ERROR_COUNT (11)
 ======================================================================
 === Функция 74.12, Получить число пакетов отброшенных при отправке. ==
@@ -4727,7 +4727,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
     -1 при ошибке
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_TX_PACKET_DROP_COUNT (12)
 ======================================================================
 === Функция 74.13, Получить число пакетов утерянных при отправке. ====
@@ -4741,7 +4741,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
     -1 при ошибке
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_TX_PACKET_MISS_COUNT (13)
 
 ======================================================================
@@ -4756,7 +4756,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
     устройства, -1 при ошибке
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_RX_PACKET_ERROR_COUNT (14)
 
 ======================================================================
@@ -4771,7 +4771,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
     -1 при ошибке
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_RX_PACKET_DROP_COUNT (15)
 ======================================================================
 === Функция 74.16, Получить число пакетов утерянных при получении. ===
@@ -4785,7 +4785,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
     -1 при ошибке
 
 ---------------------- Константы для регистров: ----------------------
-  eax - SF_NETWORK_GET (74) / SF_NETWORK_DEVICE (74)
+  eax - SF_NETWORK_GET (74)
    bl - SSF_RX_PACKET_MISS_COUNT (16)
 ======================================================================
 ============== Функция 75, подфункция 0, Открыть сокет. ==============
