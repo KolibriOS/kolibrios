@@ -47,3 +47,9 @@
   перемещение по тексту:
   (ctrl+)Home, (ctrl+)End, (ctrl+)PageUp, (ctrl+)PageDown
   ctrl+Left, ctrl+Right
+
+  перемещение в панели поиска:
+  Tab         к следующему полю ввода
+  Shift-Tab   к предыдущему полю ввода
+  Enter       поиск следующего вхождения
+
