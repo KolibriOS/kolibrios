@@ -4,6 +4,11 @@
 
 include 'sort.inc'
 
+struct DEBUG_SYMBOL
+        addr    rd 1
+        string  rd 0
+ends
+
 ; compare proc for sorter
 compare:
         cmpsd
@@ -459,4 +464,69 @@ find_symbol_name:
 
   @@:
         pop     esi
+        ret
+
+;-----------------------------------------------------------------------------
+;   
+; Find the nearest symol using binary search
+;
+; in:  eax - target addres
+; out: esi - symbol name
+; destroys: ebx, ecx, edx, edi, ebp
+;
+find_near_symbol:
+        mov     edi, [symbols] 
+        
+        xor     esi, esi            ; Result
+        mov     ecx, esi            ; Left
+        mov     edx, [num_symbols]  ; Right
+        dec     edx
+        js      .end       
+
+        ; If the first address is already greater than the target
+        mov     ebp, [edi + ecx * sizeof.DEBUG_SYMBOL]
+        cmp     [ebp + DEBUG_SYMBOL.addr], eax
+        ja      .end
+
+        ; If the last address is less than or equal to the target
+        mov     ebp, [edi + edx * sizeof.DEBUG_SYMBOL]
+        cmp     [ebp + DEBUG_SYMBOL.addr], eax
+        jbe     .found
+
+    .loop:
+        cmp     ecx, edx
+        ja      .end
+
+        ; Calc middle:
+        mov     ebx, edx            ; Middle
+        sub     ebx, ecx            ; (right - left)
+        shr     ebx, 1              ;  / 2
+        add     ebx, ecx            ; + left
+
+        ; Equal
+        mov     ebp, [edi + ebx * sizeof.DEBUG_SYMBOL]
+        cmp     [ebp + DEBUG_SYMBOL.addr], eax
+        jz      .found
+        jb      .update_left
+
+        ; Update right
+        mov     edx, ebx
+        dec     edx
+        jmp     .loop
+
+    .update_left:
+        ; Save potential result
+        mov     esi, ebp
+        add     esi, DEBUG_SYMBOL.string
+
+        ; Update left
+        mov     ecx, ebx
+        inc     ecx
+        jmp     .loop
+
+    .found:
+        mov     esi, ebp
+        add     esi, DEBUG_SYMBOL.string
+
+    .end:
         ret

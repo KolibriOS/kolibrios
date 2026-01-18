@@ -2,7 +2,10 @@
 COLOR_THEME fix MOVIEOS
 
 format binary as ""
+
 include '../../macros.inc'
+include '../../KOSfuncs.inc'
+
 use32
         db      'MENUET01'
         dd      1
@@ -1146,6 +1149,105 @@ OnDump:
         ret
 
 ;-----------------------------------------------------------------------------
+;                            Print Backtrace
+
+struct STACK_FRAME
+        prev_frame      rd 1
+        ret_addr        rd 1
+ends
+
+OnBacktrace:
+        push    ebp
+
+        ; Set max depth counter
+        xor     eax, eax
+        dec     eax
+
+        mov     esi, [curarg]
+        cmp     byte [esi], 0
+        jz      .save_depth
+
+        call    get_hex_number
+        mov     esi, aParseError
+        jc      .exit
+
+        ; If depth 0
+        test    eax, eax
+        jz      .done
+
+    .save_depth:
+        mov     [bt_depth], eax
+
+        ; Get start frame addres
+        mov     ebp, [_ebp]
+        test    ebp, ebp
+        jz      .done
+
+        mov     edi, stack_frame_dump
+
+    .next:
+        mcall   SF_DEBUG, SSF_READ_MEMORY, [debuggee_pid], sizeof.STACK_FRAME, ebp
+        cmp     eax, -1
+        mov     esi, read_mem_err
+        jz      .exit
+
+        ; The address of the previous frame must be less than the current one
+        mov     eax, [edi + STACK_FRAME.prev_frame]
+        test    eax, eax
+        jz      .done
+
+        ; Save stack_frame_dump
+        push    edi
+        ; Save previous frame
+        push    ebp
+        ; Save return address
+        mov     eax, [edi + STACK_FRAME.ret_addr]
+        push    eax
+
+        ; Print frame address and return address
+        push    eax         ; pop in put_message_nodraw
+        push    ebp         ; pop in put_message_nodraw
+        mov     esi, aBacktraceFmt
+        call    put_message_nodraw
+
+        ; Restore return address
+        pop     eax
+
+        ; Find symbol by return address
+        call    find_near_symbol
+        test    esi, esi
+        jnz     .print_sym
+
+        mov     esi, aBacktraceSymStub
+
+    .print_sym:
+        call    put_message_nodraw
+        mov     esi, newline
+        call    put_message_nodraw
+
+        ; Restore previous frame
+        pop     ebp
+        ; Restore stack_frame_dump
+        pop     edi
+
+        ; The address of the previous frame must be greater than the current one.
+        cmp     [edi + STACK_FRAME.prev_frame], ebp
+        jna     .done
+
+        ; Set previous frame
+        mov     ebp,  [edi + STACK_FRAME.prev_frame]
+        dec     [bt_depth]
+        jnz     .next
+
+    .done:
+        mov     esi, newline
+
+    .exit:
+        call    put_message
+        pop     ebp
+        ret
+
+;-----------------------------------------------------------------------------
 ;                   Dissassemble block of executable event
 
 OnUnassemble:
@@ -1864,7 +1966,7 @@ include 'disasm.inc'
 
 caption_str db  'Kolibri Debugger',0
 
-begin_str db    'Kolibri Debugger, version 0.35',10
+begin_str db    'Kolibri Debugger, version 0.36',10
         db      'Hint: type "help" for help, "quit" to quit'
 newline db      10,0
 prompt  db      '> ',0
@@ -1918,6 +2020,9 @@ commands:
         db      CMD_WITH_PARAM or CMD_WITHOUT_LOADED_APP or CMD_WITH_LOADED_APP
 
         dd      aDump, OnDump, DumpSyntax, DumpHelp
+        db      CMD_WITHOUT_PARAM or CMD_WITH_PARAM or CMD_WITH_LOADED_APP
+
+        dd      aBacktrace, OnBacktrace, BacktraceSyntax, BacktraceHelp
         db      CMD_WITHOUT_PARAM or CMD_WITH_PARAM or CMD_WITH_LOADED_APP
 
         dd      aUnassemble, OnUnassemble, UnassembleSyntax, UnassembleHelp
@@ -1999,7 +2104,8 @@ help_data_msg db        'List of data commands:',10
         db      'd [<expression>]     - dump data at given address',10
         db      'u [<expression>]     - unassemble instructions at given address',10
         db      'r <register> <expression> or',10
-        db      'r <register>=<expression> - set register value',10,0
+        db      'r <register>=<expression> - set register value',10
+        db      'bt [<number>]        - display backtrace / stacktrace',10,0
 
 ;               Breakpoints commands group
 
@@ -2056,6 +2162,11 @@ aDump   db      2,'d',0
 DumpHelp db     'Dump data of debugged program',10
 DumpSyntax db   'Usage: d <expression> - dump data at specified address',10
         db      '   or: d              - continue current dump',10,0
+
+aBacktrace      db  3,'bt',0
+BacktraceHelp   db 'Display backtrace / stacktrace',10
+BacktraceSyntax db 'Usage: bt <number> - display backtrace with depth',10
+                db '   or: bt            display all backtrace',10,0
 
 aCalc   db      2,'?',0
 CalcHelp db     'Calculate value of expression',10
@@ -2120,6 +2231,11 @@ LoadSymbolsHelp db 'Load symbolic information for executable',10
 LoadSymbolsSyntax db 'Usage: load-symbols <symbols-file-name>',10,0
 
 aUnknownCommand db 'Unknown command',10,0
+
+;-----------------------------------------------------------------------------
+;                             Info messages
+aBacktraceSymStub  db '??',0
+aBacktraceFmt      db '[0x%8X] 0x%8X in ',0
 
 ;-----------------------------------------------------------------------------
 ;                             Error messages
@@ -2493,11 +2609,13 @@ disasm_cur_pos          dd ?
 disasm_cur_str          dd ?
 disasm_string           rb 256
 
-thread_info             process_information
+stack_frame_dump        rb sizeof.STACK_FRAME
+bt_depth                rd 1
 
 ;-----------------------------------------------------------------------------
 ;                  Coordinates and sizes for GUI
 
+thread_info             process_information
 data_x_size_dd          dd ?, ?
 messages_x_size_dd      dd ?, ?
 registers_x_pos_dd      dd ?, ?
