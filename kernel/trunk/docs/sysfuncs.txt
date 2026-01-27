@@ -2492,7 +2492,7 @@ Returned value:
   * otherwise eax = TID - thread identifier
 
 ---------------------- Constants for registers: ----------------------
-  eax - SF_CREATE_THREAD (51) / SF_THREAD_CONTROL (51)
+  eax - SF_CREATE_THREAD (51)
   ebx - SSF_CREATE_THREAD (1), SSF_GET_CURR_THREAD_SLOT (2),
         SSF_GET_THREAD_PRIORITY (3), SSF_SET_THREAD_PRIORITY (4)
 ======================================================================
@@ -3334,7 +3334,7 @@ Remarks:
   ebx - SSF_MEM_FREE (13)
 ======================================================================
 ===================== Function 68, subfunction 14 ====================
-==== Wait for a signal from other applications/drivers. ==============
+======= Wait for a signal from other applications/drivers. ===========
 ======================================================================
 Parameters:
   * eax = 68 - function number
@@ -3371,7 +3371,7 @@ Remarks:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
-  ebx - SSF_GET_SERVICE (16) / SSF_LOAD_DRIVER (16)
+  ebx - SSF_LOAD_DRIVER (16)
 ======================================================================
 ========== Function 68, subfunction 17 - control driver. =============
 ======================================================================
@@ -3394,7 +3394,7 @@ Remarks:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
-  ebx - SSF_CALL_SERVICE (17) / SSF_CONTROL_DRIVER (17)
+  ebx - SSF_CONTROL_DRIVER (17)
 ======================================================================
 == Function 68, subfunction 18 - load DLL, specifying the encoding. ==
 ======================================================================
@@ -4508,13 +4508,13 @@ Returned value:
 ======================================================================
 Parameters:
   * eax = 74 - function number
-  * bl = -1 (255) - subfunction number
+  * bl = -1 - subfunction number
 Returned value:
   * eax = number of active network devices
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
-   bl - SSF_DEVICE_COUNT (-1 / 255)
+   bl - SSF_DEVICE_COUNT (-1)
 ======================================================================
 ======== Function 74, Subfunction 0, Get network device type. ========
 ======================================================================
@@ -4929,7 +4929,7 @@ Returned value:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_SOCKET (75)
-   bl - SSF_GET_PAIR (10) / SSF_SOCKET_PAIR (10)
+   bl - SSF_GET_PAIR (10)
 ======================================================================
 ============ Function 76, Network options and statistics. ============
 ======================================================================
@@ -5268,9 +5268,9 @@ Returned value:
 Parameters:
   * eax = 77 - function number
   * ebx = 0 - subfunction number
-  * ecx = pointer to futex dword
+  * ecx = pointer to futex control value
 Returned value:
-  * eax = futex handle, 0 on error
+  * eax = pointer to futex handle, 0 on error
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
@@ -5281,7 +5281,7 @@ Returned value:
 Parameters:
   * eax = 77 - function number
   * ebx = 1 - subfunction number
-  * ecx = futex handle
+  * ecx = pointer to futex handle
 Returned value:
   * eax = 0 - successfull, -1 on error
 Remarks:
@@ -5297,13 +5297,13 @@ Remarks:
 Parameters:
   * eax = 77 - function number
   * ebx = 2 - subfunction number
-  * ecx = futex handle
-  * edx = control value
+  * ecx = pointer to futex handle
+  * edx = pointer to futex control value
   * esi = timeout in hundredths of a second, 0 - wait forever
 Returned value:
   * eax = 0 - successfull
          -1 - timeout
-         -2 - futex dword does not have the same value as edx
+         -2 - futex control value doesn't match
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
@@ -5314,7 +5314,7 @@ Returned value:
 Parameters:
   * eax = 77 - function number
   * ebx = 3 - subfunction number
-  * ecx = futex handle
+  * ecx = pointer to futex handle
   * edx = number of waiters to wake
 Returned value:
   * eax = number of waiters that were woken up
@@ -5325,55 +5325,60 @@ Returned value:
 ======================================================================
 Remarks:
   * Subfunctions 4-7 are reserved and currently return -1.
-  * Subfunctions 8-9 and 12 are not implemented and return -EBADF.
+  * Subfunctions 8-9 and 12 are not implemented and return -EBADF (-9).
 ======================================================================
-=========== Function 77, Subfunction 10, Read from pipe. ============
+=========== Function 77, Subfunction 10, Read from file. ============
 ======================================================================
 Parameters:
   * eax = 77 - function number
   * ebx = 10 - subfunction number
-  * ecx = pipe descriptor
+  * ecx = pointer to pipe handle
   * edx = pointer to destination buffer
   * esi = number of bytes to read
 Returned value:
-  * eax = number of bytes read, 0 on EOF, or -EBADF on error
+  * eax = number of bytes read,
+          0 on EOF,
+          -EBADF (-9) on error
 Remarks:
   * Only pipe descriptors are supported.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
-  ebx - SSF_PIPE_READ (10)
+  ebx - SSF_FILE_READ (10)
 ======================================================================
-=========== Function 77, Subfunction 11, Write to pipe. =============
+=========== Function 77, Subfunction 11, Write to file. =============
 ======================================================================
 Parameters:
   * eax = 77 - function number
   * ebx = 11 - subfunction number
-  * ecx = pipe descriptor
+  * ecx = pointer to file handle
   * edx = pointer to source buffer
   * esi = number of bytes to write
 Returned value:
-  * eax = number of bytes written, -EBADF on error, -EPIPE if no readers
+  * eax = number of bytes written,
+          -EBADF (-9) on error,
+          -EPIPE (-32) if no readers
 Remarks:
   * Only pipe descriptors are supported.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
-  ebx - SSF_PIPE_WRITE (11)
+  ebx - SSF_FILE_WRITE (11)
 ======================================================================
 ========== Function 77, Subfunction 13, Create pipe. ================
 ======================================================================
 Parameters:
   * eax = 77 - function number
   * ebx = 13 - subfunction number
-  * ecx = pointer to pipefd[2] array (two dword descriptors)
+  * ecx = pointer to pipefd[2] array (two dword handles)
   * edx = flags (only O_CLOEXEC is allowed)
 Returned value:
-  * eax = 0 on success, or negative errno value on error:
-          -EFAULT, -EINVAL, -EMFILE, -ENFILE
+  * eax = 0 on success,
+          negative errno value on error:
+          -EINVAL (-11), -EFAULT (-14), -ENFILE (-23), -EMFILE (-24)
 Remarks:
-  * On success, pipefd[0] is a read descriptor and pipefd[1] is a
-    write descriptor.
+  * On success, pipefd[0] is a read handle and pipefd[1] is a
+    write handle.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
