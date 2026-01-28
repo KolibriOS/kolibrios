@@ -21,6 +21,7 @@
 # CONFIG_NO_MSVC=full
 # CONFIG_NO_CMM=full
 # CONFIG_NO_TCC=full
+# CONFIG_NO_OB07=full
 ### Path to gcc toolchain library with -lgcc.
 ### Normally, you should not modify it,
 ### since the toolchain assumes the fixed path anyway.
