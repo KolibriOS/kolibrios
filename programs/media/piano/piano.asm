@@ -35,6 +35,7 @@ include "../../encoding.inc"
 
 START:
         mcall   SF_KEYBOARD, SSF_SET_INPUT_MODE, 1
+        call    load_keymap
         jmp     redraw
 
 ; ====================================================================
@@ -64,8 +65,7 @@ key:
         cmp     ah, KEY_ESC
         je      .help
 
-        ; check if Shift is pressed
-        ; increase note_id by 0x40
+        ; if Shift is pressed - increase note_id by 0x40
         movzx   ecx, ah
         mcall   SF_KEYBOARD, SSF_GET_CONTROL_KEYS
         xor     edx, edx
@@ -77,10 +77,7 @@ key:
 
         ; play note if valid key pressed
         .key_map_play:
-                cmp     cl, key_note_map.count
-                jae     still
-
-                mov     ah, [key_note_map + ecx]
+                mov     ah, [keymap + ecx]
                 cmp     ah, BAD_NOTE
                 je      still
 
@@ -119,8 +116,7 @@ button:
         sub     ah, 0x10
         mov     dl, ah
 
-        ; check if Shift is pressed
-        ; increase note_id by 0x40
+        ; if Shift is pressed - increase note_id by 0x40
         mcall   SF_KEYBOARD, SSF_GET_CONTROL_KEYS
         test    al, KEY_SHIFT
         jz      .no_shift
@@ -140,6 +136,29 @@ play:
         mcall   SF_SPEAKER_PLAY, SF_SPEAKER_PLAY, , , melody
 
         jmp     still
+
+; =======================================================================
+
+load_keymap:
+        call    load_default_keymap
+
+        mcall   SF_FILE, keymap_file
+        test    eax, eax
+        jnz     .notify
+        cmp     ebx, 256
+        je      .done
+        .notify:
+        call    load_default_keymap
+        mcall   SF_FILE, notify_info
+        .done:
+        ret
+
+load_default_keymap:
+        mov     esi, default_keymap
+        mov     edi, keymap
+        mov     ecx, 256
+        rep     movsb
+        ret
 
 ; =======================================================================
 
@@ -310,39 +329,57 @@ if lang eq ru_RU
 
         cp_main  cp866  "Детское Пианино [Escape - Открыть Справку]", 0
         cp_help  cp866  "Детское Пианино - Справка", 0
+
         lb_help1 cp866  "Клавиши от 1 до = и от Q до ] - верхний ряд.", 0
         lb_help2 cp866  "Клавиши от A до Enter и от Z до /, \ и Backspace - нижний ряд.", 0
         lb_help3 cp866  "Удерживайте Shift для повышения октавы на 4.", 0
-        lb_help4 cp866  "Должен звучать встроенный динамик ПК (не колонки).", 0
+        lb_help4 cp866  "Раскладку клавиатуры можно изменить через файл piano.map.", 0
+        lb_help5 cp866  "Он должен содержать 256 байт, каждый индекс - скан-код, а значение - нота.", 0
+        lb_help6 cp866  "Должен звучать встроенный динамик ПК (не колонки).", 0
+
         lb_notes cp866  "ДО    РЕ    МИ    ФА   СОЛЬ   ЛЯ    СИ    ДО", 0
 
-        WN_HELP  RECT   14,  13, 521, 106
+        nf_map   cp866  "'Детское Пианино\npiano.map отсутствует или повреждён, используется раскладка по умолчанию' -tW", 0
+
+        WN_HELP  RECT   14,  13, 617, 178
         RT_NOTES RECT   16, 183,   0,   0
 
 else if lang eq es_ES
 
         cp_main  cp850  "Piano de Juguete [Escape - Abrir Ayuda]", 0
         cp_help  cp850  "Piano de Juguete - Ayuda", 0
+
         lb_help1 cp850  "Teclas de 1 a = y de Q a ] - fila superior.", 0
         lb_help2 cp850  "Teclas de A a Enter y de Z a /, \ y Backspace - fila inferior.", 0
         lb_help3 cp850  "Mantenga Shift para subir 4 octavas.", 0
-        lb_help4 cp850  "Deberias oir el altavoz interno del PC (no los externos).", 0
+        lb_help4 cp850  "La distribución del teclado se puede cambiar mediante el archivo piano.map.", 0
+        lb_help5 cp850  "Debe contener 256 bytes: cada índice es un código de escaneo y el valor es una nota.", 0
+        lb_help6 cp850  "Deberias oir el altavoz interno del PC (no los externos).", 0
+
         lb_notes cp850  "DO    RE    MI    FA    SOL   LA    SI    DO", 0
 
-        WN_HELP  RECT   14,  13, 521, 106
+        nf_map   cp850  "'Piano de Juguete\nFalta piano.map o es inválido; se usa el mapa de teclas predeterminado' -tW", 0
+
+        WN_HELP  RECT   14,  13, 697, 178
         RT_NOTES RECT   16, 183,   0,   0
 
 else
 
         cp_main  db     "Toy Piano [Escape - Open Help]", 0
         cp_help  db     "Toy Piano - Help", 0
+
         lb_help1 db     "Keys from 1 to = and from Q to ] - top row.", 0
         lb_help2 db     "Keys from A to Enter and from Z to /, \ and Backspace - bottom row.", 0
         lb_help3 db     "Hold Shift to raise the octave by 4.", 0
-        lb_help4 db     "You should hear the built-in PC speaker (not external speakers).", 0
+        lb_help4 db     "Keyboard layout can be changed via the piano.map file.", 0
+        lb_help5 db     "It must contain 256 bytes - each index is scancode, and value is note.", 0
+        lb_help6 db     "You should hear the built-in PC speaker (not external speakers).", 0
+
         lb_notes db     "C     D     E     F     G     A     B     C", 0
 
-        WN_HELP  RECT   14,  13, 561, 106
+        nf_map  db     "'Toy Piano\npiano.map is missing or invalid, using default keymap' -tW", 0
+
+        WN_HELP  RECT   14,  13, 585, 178
         RT_NOTES RECT   20, 183,   0,   0
 
 end if
@@ -414,78 +451,100 @@ help_texts:
         dd lb_help2
         dd lb_help3
         dd lb_help4
+        dd lb_help5
+        dd lb_help6
 help_texts_end:
 
 ; =======================================================================
 
 BAD_NOTE = 0xFF
 
-; key scancode and note id
-key_note_map:
-        db BAD_NOTE     ;db 0x00, 0xFF
-        db BAD_NOTE     ;db 0x01, 0xFF
-        db 0x21         ;db 0x02, 0x31 ; '1' -> note 0x31
-        db 0x22         ;db 0x03, 0x32 ; '2' -> note 0x32
-        db 0x23         ;db 0x04, 0x33 ; '3' -> note 0x33
-        db 0x24         ;db 0x05, 0x34 ; '4' -> note 0x34
-        db 0x25         ;db 0x06, 0x35 ; '5' -> note 0x35
-        db 0x26         ;db 0x07, 0x36 ; '6' -> note 0x36
-        db 0x27         ;db 0x08, 0x37 ; '7' -> note 0x37
-        db 0x28         ;db 0x09, 0x38 ; '8' -> note 0x38
-        db 0x29         ;db 0x0A, 0x39 ; '9' -> note 0x39
-        db 0x2A         ;db 0x0B, 0x3A ; '0' -> note 0x3A
-        db 0x2B         ;db 0x0C, 0x3B ; '-' -> note 0x3B
-        db 0x2C         ;db 0x0D, 0x3C ; '=' -> note 0x3C
-        db 0x1C         ;db 0x0E, 0x2C ; Backspace -> note 0x2C
-        db BAD_NOTE     ;db 0x0F, 0xFF
+default_keymap:
+        db BAD_NOTE     ; 0x00
+        db BAD_NOTE     ; 0x01
+        db 0x21         ; 0x02  '1' -> note 0x31
+        db 0x22         ; 0x03  '2' -> note 0x32
+        db 0x23         ; 0x04  '3' -> note 0x33
+        db 0x24         ; 0x05  '4' -> note 0x34
+        db 0x25         ; 0x06  '5' -> note 0x35
+        db 0x26         ; 0x07  '6' -> note 0x36
+        db 0x27         ; 0x08  '7' -> note 0x37
+        db 0x28         ; 0x09  '8' -> note 0x38
+        db 0x29         ; 0x0A  '9' -> note 0x39
+        db 0x2A         ; 0x0B  '0' -> note 0x3A
+        db 0x2B         ; 0x0C  '-' -> note 0x3B
+        db 0x2C         ; 0x0D  '=' -> note 0x3C
+        db 0x1C         ; 0x0E  Backspace -> note 0x2C
+        db BAD_NOTE     ; 0x0F
 
-        db 0x31         ;db 0x10, 0x41 ; 'q' -> note 0x41
-        db 0x32         ;db 0x11, 0x42 ; 'w' -> note 0x42
-        db 0x33         ;db 0x12, 0x43 ; 'e' -> note 0x43
-        db 0x34         ;db 0x13, 0x44 ; 'r' -> note 0x44
-        db 0x35         ;db 0x14, 0x45 ; 't' -> note 0x45
-        db 0x36         ;db 0x15, 0x46 ; 'y' -> note 0x46
-        db 0x37         ;db 0x16, 0x47 ; 'u' -> note 0x47
-        db 0x38         ;db 0x17, 0x48 ; 'i' -> note 0x48
-        db 0x39         ;db 0x18, 0x49 ; 'o' -> note 0x49
-        db 0x3A         ;db 0x19, 0x4A ; 'p' -> note 0x4A
-        db 0x3B         ;db 0x1A, 0x4B ; '[' -> note 0x4B
-        db 0x3C         ;db 0x1B, 0x4C ; ']' -> note 0x4C
-        db 0x0C         ;db 0x1C, 0x1C ; Enter -> note 0x1C
-        db BAD_NOTE     ;db 0x1D, 0xFF
+        db 0x31         ; 0x10  'q' -> note 0x41
+        db 0x32         ; 0x11  'w' -> note 0x42
+        db 0x33         ; 0x12  'e' -> note 0x43
+        db 0x34         ; 0x13  'r' -> note 0x44
+        db 0x35         ; 0x14  't' -> note 0x45
+        db 0x36         ; 0x15  'y' -> note 0x46
+        db 0x37         ; 0x16  'u' -> note 0x47
+        db 0x38         ; 0x17  'i' -> note 0x48
+        db 0x39         ; 0x18  'o' -> note 0x49
+        db 0x3A         ; 0x19  'p' -> note 0x4A
+        db 0x3B         ; 0x1A  '[' -> note 0x4B
+        db 0x3C         ; 0x1B  ']' -> note 0x4C
+        db 0x0C         ; 0x1C  Enter -> note 0x1C
+        db BAD_NOTE     ; 0x1D
 
-        db 0x01         ;db 0x1E, 0x11 ; 'a' -> note 0x11
-        db 0x02         ;db 0x1F, 0x12 ; 's' -> note 0x12
-        db 0x03         ;db 0x20, 0x13 ; 'd' -> note 0x13
-        db 0x04         ;db 0x21, 0x14 ; 'f' -> note 0x14
-        db 0x05         ;db 0x22, 0x15 ; 'g' -> note 0x15
-        db 0x06         ;db 0x23, 0x16 ; 'h' -> note 0x16
-        db 0x07         ;db 0x24, 0x17 ; 'j' -> note 0x17
-        db 0x08         ;db 0x25, 0x18 ; 'k' -> note 0x18
-        db 0x09         ;db 0x26, 0x19 ; 'l' -> note 0x19
-        db 0x0A         ;db 0x27, 0x1A ; ';' -> note 0x1A
-        db 0x0B         ;db 0x28, 0x1B ; ''' -> note 0x1B
-        db BAD_NOTE     ;db 0x29, 0xFF
-        db BAD_NOTE     ;db 0x2A, 0xFF
+        db 0x01         ; 0x1E  'a' -> note 0x11
+        db 0x02         ; 0x1F  's' -> note 0x12
+        db 0x03         ; 0x20  'd' -> note 0x13
+        db 0x04         ; 0x21  'f' -> note 0x14
+        db 0x05         ; 0x22  'g' -> note 0x15
+        db 0x06         ; 0x23  'h' -> note 0x16
+        db 0x07         ; 0x24  'j' -> note 0x17
+        db 0x08         ; 0x25  'k' -> note 0x18
+        db 0x09         ; 0x26  'l' -> note 0x19
+        db 0x0A         ; 0x27  ';' -> note 0x1A
+        db 0x0B         ; 0x28  ''' -> note 0x1B
+        db BAD_NOTE     ; 0x29
+        db BAD_NOTE     ; 0x2A
 
-        db 0x1B         ;db 0x2B, 0x2B ; '\' -> note 0x2B
-        db 0x11         ;db 0x2C, 0x21 ; 'z' -> note 0x21
-        db 0x12         ;db 0x2D, 0x22 ; 'x' -> note 0x22
-        db 0x13         ;db 0x2E, 0x23 ; 'c' -> note 0x23
-        db 0x14         ;db 0x2F, 0x24 ; 'v' -> note 0x24
-        db 0x15         ;db 0x30, 0x25 ; 'b' -> note 0x25
-        db 0x16         ;db 0x31, 0x26 ; 'n' -> note 0x26
-        db 0x17         ;db 0x32, 0x27 ; 'm' -> note 0x27
-        db 0x18         ;db 0x33, 0x28 ; ',' -> note 0x28
-        db 0x19         ;db 0x34, 0x29 ; '.' -> note 0x29
-        db 0x1A         ;db 0x35, 0x2A ; '/' -> note 0x2A
-.count = $ - key_note_map
+        db 0x1B         ; 0x2B  '\' -> note 0x2B
+        db 0x11         ; 0x2C  'z' -> note 0x21
+        db 0x12         ; 0x2D  'x' -> note 0x22
+        db 0x13         ; 0x2E  'c' -> note 0x23
+        db 0x14         ; 0x2F  'v' -> note 0x24
+        db 0x15         ; 0x30  'b' -> note 0x25
+        db 0x16         ; 0x31  'n' -> note 0x26
+        db 0x17         ; 0x32  'm' -> note 0x27
+        db 0x18         ; 0x33  ',' -> note 0x28
+        db 0x19         ; 0x34  '.' -> note 0x29
+        db 0x1A         ; 0x35  '/' -> note 0x2A
+
+        times 256-($-default_keymap) db BAD_NOTE
+
+keymap_file:
+        dd SSF_READ_FILE
+        dd 0
+        dd 0
+        dd 256
+        dd keymap
+        db 'piano.map', 0
 
 ; =======================================================================
 
 melody  db 0x90, 0x30, 0
+keymap  rb 256
+
 mw_pos  dd 0
 hw_tid  dd 0
+
+; =======================================================================
+
+notify_info:
+        dd SSF_START_APP
+        dd 0
+        dd nf_map
+        dd 0
+        dd 0
+        db '/sys/@notify', 0
 
 ; =======================================================================
 
