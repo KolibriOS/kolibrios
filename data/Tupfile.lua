@@ -722,6 +722,7 @@ tup.append_table(img_files, {
  {"SHELL", VAR_PROGS .. "/system/shell/shell"},
  {"GAMES/DINO", VAR_PROGS .. "/games/dino/dino"},
  {"GAMES/FLPYBIRD", VAR_PROGS .. "/games/flpybird/flpybird"},
+ {"LIB/LIBC.OBJ", VAR_PROGS .. "/develop/ktcc/trunk/libc.obj/source/libc.obj"},
 })
 tup.append_table(extra_files, {
  {"kolibrios/utils/thashview", VAR_PROGS .. "/other/TinyHashView/thashview"},
@@ -745,7 +746,6 @@ if tup.getconfig('NO_GCC') ~= 'full' then
 tup.append_table(img_files, {
  {"GAMES/REVERSI", VAR_PROGS .. "/games/reversi/reversi"},
  {"LIB/BASE64.OBJ", VAR_PROGS .. "/develop/libraries/base64/base64.obj"},
- {"LIB/LIBC.OBJ", VAR_PROGS .. "/develop/ktcc/trunk/libc.obj/source/libc.obj"},
  {"LIB/ICONV.OBJ", VAR_PROGS .. "/develop/libraries/iconv/iconv.obj"},
  -- {"LIB/MTAR.OBJ", VAR_PROGS .. "/develop/libraries/microtar/mtar.obj"},
 })
