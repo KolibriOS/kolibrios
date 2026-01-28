@@ -176,10 +176,15 @@ extra_files = {
  {"kolibrios/develop/c--/manual_c--.htm", SRC_PROGS .. "/cmm/c--/manual_c--.htm"},
  {"kolibrios/develop/fpc/", "common/develop/fpc/*"},
  {"kolibrios/develop/fpc/examples/", "../programs/develop/fp/examples/src/*"},
- {"kolibrios/develop/oberon07/", "../programs/develop/oberon07/*"},
- {"kolibrios/develop/oberon07/doc/", "../programs/develop/oberon07/doc/*"},
- {"kolibrios/develop/oberon07/lib/KolibriOS/", "../programs/develop/oberon07/lib/KolibriOS/*"},
- {"kolibrios/develop/oberon07/samples/", SRC_PROGS .. "/develop/oberon07/samples/*"},
+ {"kolibrios/develop/oberon07/compiler.kex", SRC_PROGS .. "/develop/oberon07/Compiler.kex"},
+ {"kolibrios/develop/oberon07/LICENSE", SRC_PROGS .. "/develop/oberon07/LICENSE"},
+ {"kolibrios/develop/oberon07/doc/CC.txt", SRC_PROGS .. "/develop/oberon07/doc/CC.txt"},
+ {"kolibrios/develop/oberon07/doc/KOSLib.txt", SRC_PROGS .. "/develop/oberon07/doc/KOSLib.txt"},
+ {"kolibrios/develop/oberon07/doc/x86.txt", SRC_PROGS .. "/develop/oberon07/doc/x86.txt"},
+ {"kolibrios/develop/oberon07/doc/Oberon07.Report_2016_05_03.pdf", SRC_PROGS .. "/develop/oberon07/doc/Oberon07.Report_2016_05_03.pdf"},
+ {"kolibrios/develop/oberon07/lib/KolibriOS/", SRC_PROGS .. "/develop/oberon07/lib/KolibriOS/*"},
+ {"kolibrios/develop/oberon07/lib/Math/", SRC_PROGS .. "/develop/oberon07/lib/Math/*"},
+ {"kolibrios/develop/oberon07/samples/", SRC_PROGS .. "/develop/oberon07/samples/KolibriOS/*"},
  {"kolibrios/develop/tcc/lib/", SRC_PROGS ..  "/develop/ktcc/trunk/bin/lib/*"},
  {"kolibrios/develop/tcc/include/", SRC_PROGS ..  "/develop/ktcc/trunk/libc.obj/include/*"},
  {"kolibrios/develop/tcc/include/clayer/", SRC_PROGS ..  "/develop/ktcc/trunk/libc.obj/include/clayer/*"},
@@ -467,7 +472,6 @@ tup.append_table(img_files, {
  {"DEMOS/ZEROLINE", VAR_PROGS .. "/demos/zeroline/trunk/zeroline"},
  {"DEVELOP/BOARD", VAR_PROGS .. "/system/board/trunk/board"},
  {"DEVELOP/DBGBOARD", VAR_PROGS .. "/system/dbgboard/dbgboard"},
- {"DEVELOP/CEDIT", SRC_PROGS .. "/develop/cedit/CEDIT"},
  {"DEVELOP/CHARSETS", VAR_PROGS .. "/develop/charsets/charsets"},
  {"DEVELOP/COBJ", VAR_PROGS .. "/develop/cObj/trunk/cObj"},
  {"DEVELOP/ENTROPYV", VAR_PROGS .. "/develop/entropyview/entropyview"},
@@ -740,6 +744,13 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/man2html", VAR_PROGS .."/other/man2html/man2html"},
 })
 end -- tup.getconfig('NO_TCC') ~= 'full'
+
+-- Programs that require oberon07 compiler.
+if tup.getconfig('NO_OB07') ~= 'full' then
+tup.append_table(img_files, {
+ {"DEVELOP/CEDIT", VAR_PROGS .. "/develop/cedit/cedit"},
+})
+end -- tup.getconfig('NO_OB07') ~= 'full'
 
 -- Programs that require GCC to compile.
 if tup.getconfig('NO_GCC') ~= 'full' then
