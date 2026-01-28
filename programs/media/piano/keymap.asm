@@ -1,0 +1,79 @@
+; SPDX-License-Identifier: GPL-2.0-only
+;
+; Piano - Default Keymap (256 bytes)
+; Copyright (C) 2025 KolibriOS team
+;
+; Contributor Burer     - Main code
+; Contributor Doczom    - Idea
+
+; ====================================================================
+
+format binary as ""
+org 0
+
+; ====================================================================
+
+BAD_NOTE = 0xFF
+
+; ====================================================================
+
+keymap:
+        db BAD_NOTE     ; 0x00
+        db BAD_NOTE     ; 0x01
+        db 0x21         ; 0x02  '1' -> note 0x31
+        db 0x22         ; 0x03  '2' -> note 0x32
+        db 0x23         ; 0x04  '3' -> note 0x33
+        db 0x24         ; 0x05  '4' -> note 0x34
+        db 0x25         ; 0x06  '5' -> note 0x35
+        db 0x26         ; 0x07  '6' -> note 0x36
+        db 0x27         ; 0x08  '7' -> note 0x37
+        db 0x28         ; 0x09  '8' -> note 0x38
+        db 0x29         ; 0x0A  '9' -> note 0x39
+        db 0x2A         ; 0x0B  '0' -> note 0x3A
+        db 0x2B         ; 0x0C  '-' -> note 0x3B
+        db 0x2C         ; 0x0D  '=' -> note 0x3C
+        db 0x1C         ; 0x0E  Backspace -> note 0x2C
+        db BAD_NOTE     ; 0x0F
+
+        db 0x31         ; 0x10  'q' -> note 0x41
+        db 0x32         ; 0x11  'w' -> note 0x42
+        db 0x33         ; 0x12  'e' -> note 0x43
+        db 0x34         ; 0x13  'r' -> note 0x44
+        db 0x35         ; 0x14  't' -> note 0x45
+        db 0x36         ; 0x15  'y' -> note 0x46
+        db 0x37         ; 0x16  'u' -> note 0x47
+        db 0x38         ; 0x17  'i' -> note 0x48
+        db 0x39         ; 0x18  'o' -> note 0x49
+        db 0x3A         ; 0x19  'p' -> note 0x4A
+        db 0x3B         ; 0x1A  '[' -> note 0x4B
+        db 0x3C         ; 0x1B  ']' -> note 0x4C
+        db 0x0C         ; 0x1C  Enter -> note 0x1C
+        db BAD_NOTE     ; 0x1D
+
+        db 0x01         ; 0x1E  'a' -> note 0x11
+        db 0x02         ; 0x1F  's' -> note 0x12
+        db 0x03         ; 0x20  'd' -> note 0x13
+        db 0x04         ; 0x21  'f' -> note 0x14
+        db 0x05         ; 0x22  'g' -> note 0x15
+        db 0x06         ; 0x23  'h' -> note 0x16
+        db 0x07         ; 0x24  'j' -> note 0x17
+        db 0x08         ; 0x25  'k' -> note 0x18
+        db 0x09         ; 0x26  'l' -> note 0x19
+        db 0x0A         ; 0x27  ';' -> note 0x1A
+        db 0x0B         ; 0x28  ''' -> note 0x1B
+        db BAD_NOTE     ; 0x29
+        db BAD_NOTE     ; 0x2A
+
+        db 0x1B         ; 0x2B  '\' -> note 0x2B
+        db 0x11         ; 0x2C  'z' -> note 0x21
+        db 0x12         ; 0x2D  'x' -> note 0x22
+        db 0x13         ; 0x2E  'c' -> note 0x23
+        db 0x14         ; 0x2F  'v' -> note 0x24
+        db 0x15         ; 0x30  'b' -> note 0x25
+        db 0x16         ; 0x31  'n' -> note 0x26
+        db 0x17         ; 0x32  'm' -> note 0x27
+        db 0x18         ; 0x33  ',' -> note 0x28
+        db 0x19         ; 0x34  '.' -> note 0x29
+        db 0x1A         ; 0x35  '/' -> note 0x2A
+
+        times 256-($-keymap) db BAD_NOTE

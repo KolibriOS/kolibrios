@@ -533,6 +533,7 @@ tup.append_table(img_files, {
  {"MEDIA/MP3INFO", VAR_PROGS .. "/media/mp3info/mp3info"},
  {"MEDIA/PALITRA", VAR_PROGS .. "/media/palitra/trunk/palitra"},
  {"MEDIA/PIANO", VAR_PROGS .. "/media/piano/piano"},
+ {"MEDIA/PIANO.MAP", VAR_PROGS .. "/media/piano/piano.map"},
  {"MEDIA/STARTMUS", VAR_PROGS .. "/media/startmus/trunk/STARTMUS"},
  {"NETWORK/PING", VAR_PROGS .. "/network/ping/ping"},
  {"NETWORK/NETCFG", VAR_PROGS .. "/network/netcfg/netcfg"},
