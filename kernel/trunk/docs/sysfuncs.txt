@@ -5268,9 +5268,9 @@ Returned value:
 Parameters:
   * eax = 77 - function number
   * ebx = 0 - subfunction number
-  * ecx = pointer to futex control value
+  * ecx = pointer to futex control value (dwort)
 Returned value:
-  * eax = pointer to futex handle, 0 on error
+  * eax = futex handle, 0 on error
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
@@ -5281,7 +5281,7 @@ Returned value:
 Parameters:
   * eax = 77 - function number
   * ebx = 1 - subfunction number
-  * ecx = pointer to futex handle
+  * ecx = futex handle
 Returned value:
   * eax = 0 - successfull, -1 on error
 Remarks:
@@ -5297,8 +5297,8 @@ Remarks:
 Parameters:
   * eax = 77 - function number
   * ebx = 2 - subfunction number
-  * ecx = pointer to futex handle
-  * edx = pointer to futex control value
+  * ecx = futex handle
+  * edx = pointer to futex control value (dword)
   * esi = timeout in hundredths of a second, 0 - wait forever
 Returned value:
   * eax = 0 - successfull
@@ -5314,7 +5314,7 @@ Returned value:
 Parameters:
   * eax = 77 - function number
   * ebx = 3 - subfunction number
-  * ecx = pointer to futex handle
+  * ecx = futex handle
   * edx = number of waiters to wake
 Returned value:
   * eax = number of waiters that were woken up
@@ -5332,7 +5332,7 @@ Remarks:
 Parameters:
   * eax = 77 - function number
   * ebx = 10 - subfunction number
-  * ecx = pointer to pipe handle
+  * ecx = file handle
   * edx = pointer to destination buffer
   * esi = number of bytes to read
 Returned value:
@@ -5351,7 +5351,7 @@ Remarks:
 Parameters:
   * eax = 77 - function number
   * ebx = 11 - subfunction number
-  * ecx = pointer to file handle
+  * ecx = file handle
   * edx = pointer to source buffer
   * esi = number of bytes to write
 Returned value:
