@@ -5170,7 +5170,7 @@ Architecture Software Developer's Manual, Volume 3, Appendix B);
           -EINVAL (-11), -EFAULT (-14), -ENFILE (-23), -EMFILE (-24)
 Примечания:
   * В случае успеха pipefd[0] является дескриптором чтения, а pipefd[1]
-    — дескриптором записи.
+    - дескриптором записи.
 
 ---------------------- Константы для регистров: ----------------------
   eax - SF_FUTEX (77)
