@@ -7,12 +7,12 @@
 ; Contributor rgmaid - Main code
 ; Contributor Burer  - Refactoring and localization
 
-; ================================================================
+; ====================================================================
 
 use32
 org 0
 
-; ================================================================
+; ====================================================================
 
 db      "MENUET01"
 dd      1
@@ -23,28 +23,28 @@ dd      STACKTOP
 dd      0
 dd      0
 
-; ================================================================
+; ====================================================================
 
-include "../macros.inc"
-include "../KOSfuncs.inc"
-include "../encoding.inc"
-include "../proc32.inc"
-include "../dll.inc"
-include "../string.inc"
-include "../debug-fdo.inc"
+include "../../macros.inc"
+include "../../KOSfuncs.inc"
+include "../../encoding.inc"
+include "../../proc32.inc"
+include "../../dll.inc"
+include "../../string.inc"
+include "../../debug-fdo.inc"
 
-include "../libimg.inc"
+include "../develop/libraries/libs-dev/libimg/libimg.inc"
 
 include "checkbox.inc"
 
-; ================================================================
+; ====================================================================
 
 LIBS:
         library img,    "libimg.obj"
         import  img,    img.destroy,   "img_destroy", \
                         img.from_file, "img_from_file"
 
-; ================================================================
+; ====================================================================
 
 START:
         mcall   SF_KEYBOARD, SSF_SET_INPUT_MODE, 1
@@ -60,7 +60,7 @@ START:
 .exit:
         mcall   SF_TERMINATE_PROCESS
 
-; ================================================================
+; ====================================================================
 
 MODE_GUI:
 
@@ -166,7 +166,7 @@ MODE_GUI:
 .event_exit:
         mcall   SF_TERMINATE_PROCESS
 
-; ================================================================
+; ====================================================================
 
 proc draw_tabs stdcall
         ; draw tabs headers underlines
@@ -346,7 +346,7 @@ proc draw_tab_cbox stdcall
         ret
 endp
 
-; ================================================================
+; ====================================================================
 
 MODE_DAEMON:
 
@@ -464,7 +464,7 @@ MODE_DAEMON:
                 je      .event_loop
                 jmp     .wait_event
 
-; ================================================================
+; ====================================================================
 
 proc load_icons stdcall uses ebx ecx, _path, _img_ptr, _size_ptr
         invoke  img.from_file, [_path]
@@ -539,7 +539,7 @@ proc replace_2cols stdcall uses edi, imgsrc, imgsize, color_old_1, color_new_1, 
         ret
 endp
 
-; ================================================================
+; ====================================================================
 
 ICON_32_SIZE    = 32
 ICON_18_SIZE    = 18
@@ -563,7 +563,7 @@ GRID            RECT    PAD, RES_Y + PAD, CELL.W * GRID_COLS - PAD * 2, CELL.H *
 FONT_TYPE       = 0x90
 BTN_HIDE        = 0x60000000
 
-; ================================================================
+; ====================================================================
 
 if lang eq ru_RU
 
@@ -595,7 +595,7 @@ lb_tab_cbox_res db "13x13x24bpp", 0
 dg_icons32_fail db "@reshare: error, icons32 not found in %s\n", 0
 dg_icons18_fail db "@reshare: error, icons18 not found in %s\n", 0
 
-; ================================================================
+; ====================================================================
 
 DBG_ALL         = 0  ; all messages
 DBG_INFO        = 1  ; info and errors
@@ -630,7 +630,7 @@ META_SIZE       = 36
 
 tab_masks       dd ACTIVE_ICONS32, ACTIVE_ICONS18, ACTIVE_ICONS18W, ACTIVE_CHECKBOX
 
-; ================================================================
+; ====================================================================
 
 meta_name       db "RESHARE_META", 0
 
@@ -657,7 +657,7 @@ thread_name     rb 16
 
 include_debug_strings
 
-; ================================================================
+; ====================================================================
 
 I_END:
         rb      4096
