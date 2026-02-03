@@ -29,7 +29,7 @@ img_files = {
  {"ALLGAMES", "common/allgames"},
  {"HOME.PNG", "common/wallpapers/T_Home.png"},
  {"ICONS32.PNG", "common/icons32.png"},
- {"ICONS18.PNG", "common/icons18.png"},
+ {"ICONS16.PNG", "common/icons16.png"},
  {"INDEX.HTM", "common/index_htm"},
  {"KUZKINA.MID", "common/kuzkina.mid"},
  {"SINE.MP3", "common/sine.mp3"},
