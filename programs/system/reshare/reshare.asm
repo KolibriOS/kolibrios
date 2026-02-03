@@ -33,7 +33,7 @@ include "../../dll.inc"
 include "../../string.inc"
 include "../../debug-fdo.inc"
 
-include "../develop/libraries/libs-dev/libimg/libimg.inc"
+include "../../develop/libraries/libs-dev/libimg/libimg.inc"
 
 include "checkbox.inc"
 
