@@ -30,7 +30,6 @@ include "../../KOSfuncs.inc"
 include "../../encoding.inc"
 include "../../proc32.inc"
 include "../../dll.inc"
-include "../../string.inc"
 include "../../debug-fdo.inc"
 
 include "../../develop/libraries/libs-dev/libimg/libimg.inc"
@@ -47,9 +46,10 @@ LIBS:
 ; ====================================================================
 
 START:
-        mcall   SF_KEYBOARD, SSF_SET_INPUT_MODE, 1
 
         mcall   SF_SYS_MISC, SSF_HEAP_INIT
+
+        mcall   SF_KEYBOARD, SSF_SET_INPUT_MODE, 1
 
         ; check if this is second instance of app. if so - run gui, else - run daemon
         mcall   SF_SYS_MISC, SSF_MEM_OPEN, meta_name, 0, SHM_OPEN + SHM_READ
@@ -112,7 +112,7 @@ MODE_GUI:
         mcall               , <TAB_STEP * 1 + PAD *11,     BTN.Y>, , lb_tab_i18_res
         mcall               , <TAB_STEP * 2 + PAD * 2,     BTN.Y>, , lb_tab_i18w
         mcall               , <TAB_STEP * 2 + PAD * 2 + 1, BTN.Y>, ,
-        mcall               , <TAB_STEP * 2 + PAD *11,     BTN.Y>, , lb_tab_i18w_res
+        mcall               , <TAB_STEP * 2 + PAD *11,     BTN.Y>, , lb_tab_i18_res
         mcall               , <TAB_STEP * 3 + PAD * 2,     BTN.Y>, , lb_tab_cbox
         mcall               , <TAB_STEP * 3 + PAD * 2 + 1, BTN.Y>, ,
         mcall               , <TAB_STEP * 3 + PAD *11,     BTN.Y>, , lb_tab_cbox_res
@@ -124,7 +124,7 @@ MODE_GUI:
         mcall                   , <TAB_STEP * 3 + PAD, BTN.W>,               , 10 + BTN_HIDE + ACTIVE_CHECKBOX
 
         ; tabs content
-        stdcall draw_tabs
+        call    draw_tabs
 
         mcall   SF_REDRAW, SSF_END_DRAW
 
@@ -143,7 +143,7 @@ MODE_GUI:
         mov     [active_tab], 1
 
         .tab_draw:
-        stdcall draw_tabs
+        call    draw_tabs
 
         jmp     .event_loop
 
@@ -158,7 +158,7 @@ MODE_GUI:
         movzx   eax, ah
         sub     eax, 10
         mov     [active_tab], eax
-        stdcall draw_tabs
+        call    draw_tabs
 
         jmp     .event_loop
 
@@ -168,7 +168,8 @@ MODE_GUI:
 
 ; ====================================================================
 
-proc draw_tabs stdcall
+draw_tabs:
+
         ; draw tabs headers underlines
         mov     esi, [active_tab]
         xor     edi, edi
@@ -218,7 +219,6 @@ proc draw_tabs stdcall
         .tab_cbox:
         stdcall draw_tab_cbox
         ret
-endp
 
 
 proc draw_tab_icons stdcall uses ebx ecx, _shm_name, _meta_c_off, _meta_w_off
@@ -248,6 +248,9 @@ proc draw_tab_icons stdcall uses ebx ecx, _shm_name, _meta_c_off, _meta_w_off
         mov     ebx, eax
 
         stdcall draw_tab_icons_grid, ebx, ecx, edx
+
+        mcall   SF_SYS_MISC, SSF_MEM_CLOSE, [_shm_name]
+        mcall   SF_SYS_MISC, SSF_MEM_CLOSE, meta_name
 
         .done:
         ret
@@ -285,7 +288,7 @@ endl
                 jae     .end_for_icons
                 push    ecx
 
-                ; SF_PUT_IMAGE_EXT, _icon_img+icon_size*index, <_icon_w, _icon_w>, <x+x_off, y+RES_Y>, 32, 0, 0
+                ; SF_PUT_IMAGE_EXT	_icon_img+icon_size*index, <_icon_w, _icon_w>, <x+x_off, y+RES_Y>, 32, 0, 0
                 mov     ebx, [icon_size]
                 imul    ebx, ecx
                 add     ebx, [_icon_img]
@@ -306,7 +309,7 @@ endl
                 pop     ebp
                 pop     edi
 
-                ; draw number, centered in CELL.W
+                ; DrawNumber with no leading zeros, centered in CELL.W
                 mov     edx, [x]
                 add     edx, GAP
                 shl     edx, 16
@@ -342,6 +345,8 @@ proc draw_tab_cbox stdcall
                 <CHBOX_WIDTH, CHBOX_HEIGHT>, \
                 <(WIN.W - CHBOX_WIDTH)/2, (WIN.H - RES_Y - CHBOX_HEIGHT)/2 + RES_Y>
 
+        mcall   SF_SYS_MISC, SSF_MEM_CLOSE, lb_tab_cbox
+
         .done:
         ret
 endp
@@ -353,7 +358,7 @@ MODE_DAEMON:
         stdcall dll.Load, LIBS
 
         ; load shared resources from files
-        DEBUGF  DBG_INFO, "@reshare: loading resources...\n"
+        DEBUGF  DBG_INFO, "I: @reshare: loading resources...\n"
 
         stdcall load_icons, icons32_path, icons32_image, size32
         stdcall load_icons, icons18_path, icons18_image, size18
@@ -405,14 +410,14 @@ MODE_DAEMON:
         mov     dword [edi + META_CBOX_SIZE], CHBOX_IMG_SIZE
 
         .meta_done:
-        DEBUGF  DBG_INFO, "@reshare: starting in daemon mode\n"
+        DEBUGF  DBG_INFO, "I: @reshare: starting in daemon mode\n"
 
         mcall   SF_SYS_MISC, SSF_MEM_OPEN, lb_tab_cbox, CHBOX_IMG_SIZE, SHM_CREATE + SHM_WRITE
         test    eax, eax
         jz      .skip_cbox
-                mov     esi, cbox_image
+                mov		esi, cbox_image
                 mov     edi, eax
-                mov     ecx, CHBOX_IMG_SIZE
+                mov     ecx, CBOX_IMG_SIZE
                 cld
                 rep     movsb
         .skip_cbox:
@@ -430,11 +435,15 @@ MODE_DAEMON:
                 stdcall copy_image_to_shm, lb_tab_i18, size18, icons18_image
                 test    eax, eax
                 jz      .skip_i18
+                mov     [shared_i18], eax
 
                 mcall   SF_SYS_MISC, SSF_MEM_OPEN, lb_tab_i18w, [size18], SHM_CREATE + SHM_WRITE
                 test    eax, eax
                 jz      .skip_i18
                 mov     [shared_i18w], eax
+
+                invoke  img.destroy, [icons18_image]
+                mov     dword [icons18_image], 0
         .skip_i18:
 
         mcall   SF_SET_EVENTS_MASK, EVM_BACKGROUND
@@ -445,12 +454,11 @@ MODE_DAEMON:
                 pop     eax
                 cmp     eax, [sc.work]
                 je      .wait_event
-                cmp     [icons18_image], 0
+                cmp     [shared_i18], 0
                 jz      .wait_event
                 cmp     [shared_i18w], 0
                 jz      .wait_event
-                mov     ebx, [icons18_image]
-                mov     esi, [ebx + Image.Data]
+                mov     esi, [shared_i18]
                 mov     edi, [shared_i18w]
                 mov     ecx, [size18]
                 shr     ecx, 2 ; / 4 to get size in dwords
@@ -483,29 +491,8 @@ proc load_icons stdcall uses ebx ecx, _path, _img_ptr, _size_ptr
         ret
 
         .fail:
-        DEBUGF  DBG_ERR, "@reshare: error loading icons from %s\", [_path]
+        DEBUGF  DBG_ERR, "E: @reshare: error loading icons from %s\", [_path]
 
-        ret
-endp
-
-
-proc copy_image_to_shm stdcall uses ebx ecx edx esi edi, _shm_name, _size_ptr, _image_ptr
-        mov     edx, [_size_ptr]
-        mov     edx, [edx]
-        mcall   SF_SYS_MISC, SSF_MEM_OPEN, [_shm_name], edx, SHM_CREATE + SHM_WRITE
-        test    eax, eax
-        jz      .done
-        mov     ebx, [_image_ptr]
-        mov     ebx, [ebx]
-        mov     esi, [ebx + Image.Data]
-        mov     edi, eax
-        mov     ecx, [_size_ptr]
-        mov     ecx, [ecx]
-        shr     ecx, 2 ; / 4 to get size in dwords
-        cld
-        rep     movsd
-
-        .done:
         ret
 endp
 
@@ -540,9 +527,6 @@ proc replace_2cols stdcall uses edi, imgsrc, imgsize, color_old_1, color_new_1, 
 endp
 
 ; ====================================================================
-
-ICON_32_SIZE    = 32
-ICON_18_SIZE    = 18
 
 BORD            = 5
 PAD             = 8
@@ -589,11 +573,7 @@ lb_tab_cbox     db "CHECKBOX", 0
 
 lb_tab_i32_res  db "32x32x32bpp", 0
 lb_tab_i18_res  db "18x18x32bpp", 0
-lb_tab_i18w_res db "18x18x32bpp", 0
 lb_tab_cbox_res db "13x13x24bpp", 0
-
-dg_icons32_fail db "@reshare: error, icons32 not found in %s\n", 0
-dg_icons18_fail db "@reshare: error, icons18 not found in %s\n", 0
 
 ; ====================================================================
 
@@ -646,14 +626,12 @@ size32          dd 0
 size18          dd 0
 
 ; currenly selected i18w section
+shared_i18      dd 0
 shared_i18w     dd 0
 
 active_tab      dd ACTIVE_ICONS32
 
 sc              system_colors
-
-thread_info     process_information
-thread_name     rb 16
 
 include_debug_strings
 
