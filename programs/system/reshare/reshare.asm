@@ -491,8 +491,29 @@ proc load_icons stdcall uses ebx ecx, _path, _img_ptr, _size_ptr
         ret
 
         .fail:
-        DEBUGF  DBG_ERR, "E: @reshare: error loading icons from %s\", [_path]
+        DEBUGF  DBG_ERR, "E: @reshare: error loading icons from %s\n", [_path]
 
+        ret
+endp
+
+
+proc copy_image_to_shm stdcall uses ebx ecx edx esi edi, _shm_name, _size_ptr, _image_ptr
+        mov     edx, [_size_ptr]
+        mov     edx, [edx]
+        mcall   SF_SYS_MISC, SSF_MEM_OPEN, [_shm_name], edx, SHM_CREATE + SHM_WRITE
+        test    eax, eax
+        jz      .done
+        mov     ebx, [_image_ptr]
+        mov     ebx, [ebx]
+        mov     esi, [ebx + Image.Data]
+        mov     edi, eax
+        mov     ecx, [_size_ptr]
+        mov     ecx, [ecx]
+        shr     ecx, 2 ; / 4 to get size in dwords
+        cld
+        rep     movsd
+
+        .done:
         ret
 endp
 
