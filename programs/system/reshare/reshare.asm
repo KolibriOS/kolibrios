@@ -288,7 +288,7 @@ endl
                 jae     .end_for_icons
                 push    ecx
 
-                ; SF_PUT_IMAGE_EXT	_icon_img+icon_size*index, <_icon_w, _icon_w>, <x+x_off, y+RES_Y>, 32, 0, 0
+                ; SF_PUT_IMAGE_EXT      _icon_img+icon_size*index, <_icon_w, _icon_w>, <x+x_off, y+RES_Y>, 32, 0, 0
                 mov     ebx, [icon_size]
                 imul    ebx, ecx
                 add     ebx, [_icon_img]
@@ -342,8 +342,8 @@ proc draw_tab_cbox stdcall
         jz      .done
         mov     ebx, eax
         mcall   SF_PUT_IMAGE, , \
-                <CHBOX_WIDTH, CHBOX_HEIGHT>, \
-                <(WIN.W - CHBOX_WIDTH)/2, (WIN.H - RES_Y - CHBOX_HEIGHT)/2 + RES_Y>
+                <CBOX_WIDTH, CBOX_HEIGHT>, \
+                <(WIN.W - CBOX_WIDTH)/2, (WIN.H - RES_Y - CBOX_HEIGHT)/2 + RES_Y>
 
         mcall   SF_SYS_MISC, SSF_MEM_CLOSE, lb_tab_cbox
 
@@ -405,17 +405,17 @@ MODE_DAEMON:
         mov     [edi + META_I18W_W], ebx
         mov     [edi + META_I18W_C], ecx
 
-        mov     dword [edi + META_CBOX_W], CHBOX_WIDTH
-        mov     dword [edi + META_CBOX_H], CHBOX_HEIGHT
-        mov     dword [edi + META_CBOX_SIZE], CHBOX_IMG_SIZE
+        mov     dword [edi + META_CBOX_W], CBOX_WIDTH
+        mov     dword [edi + META_CBOX_H], CBOX_HEIGHT
+        mov     dword [edi + META_CBOX_SIZE], CBOX_IMG_SIZE
 
         .meta_done:
         DEBUGF  DBG_INFO, "I: @reshare: starting in daemon mode\n"
 
-        mcall   SF_SYS_MISC, SSF_MEM_OPEN, lb_tab_cbox, CHBOX_IMG_SIZE, SHM_CREATE + SHM_WRITE
+        mcall   SF_SYS_MISC, SSF_MEM_OPEN, lb_tab_cbox, CBOX_IMG_SIZE, SHM_CREATE + SHM_WRITE
         test    eax, eax
         jz      .skip_cbox
-                mov		esi, cbox_image
+                mov     esi, cbox_image
                 mov     edi, eax
                 mov     ecx, CBOX_IMG_SIZE
                 cld

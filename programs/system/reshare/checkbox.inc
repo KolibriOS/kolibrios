@@ -8,10 +8,10 @@
 
 ; ====================================================================
 
-CHBOX_WIDTH     = 13
-CHBOX_HEIGHT    = 13
-CHBOX_PIXELS    = CHBOX_WIDTH * CHBOX_HEIGHT
-CHBOX_IMG_SIZE  = CHBOX_PIXELS * 3 ; 24-bpp RGB, tight rows
+CBOX_WIDTH     = 13
+CBOX_HEIGHT    = 13
+CBOX_PIXELS    = CBOX_WIDTH * CBOX_HEIGHT
+CBOX_IMG_SIZE  = CBOX_PIXELS * 3 ; 24-bpp RGB, tight rows
 
 ; ====================================================================
 
