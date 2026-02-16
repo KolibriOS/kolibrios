@@ -135,7 +135,7 @@ start:
         mov     [sockaddr1.port], ax
 
         xchg    al, ah
-        invoke  con_printf, str1, eax
+        invoke  con_printf, str1, ini_buf, eax
         add     esp, 8
 
 ; open listening socket
@@ -341,7 +341,7 @@ thread_exit:
 ; initialized data
 
 title           db 'FTP daemon', 0
-str1            db 'Starting FTP daemon on port %u.', 0
+str1            db 'Starting FTP daemon on %s:%u', 0
 str2            db '.', 0
 str2b           db ' OK!',10,0
 str3            db 'Listen error',10,0
