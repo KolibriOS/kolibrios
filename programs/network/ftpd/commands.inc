@@ -86,7 +86,7 @@ commands:               ; all commands must be in uppercase
         dd 'CWD',  login_first, login_first, login_first, cmdCWD
         dd 'XCWD',  login_first, login_first, login_first, cmdCWD
         dd 'DELE', login_first, login_first, login_first, cmdDELE
-;        dd 'HELP', login_first, login_first, login_first, cmd_HELP
+        dd 'HELP', login_first, login_first, login_first, cmdHELP
         dd 'LIST', login_first, login_first, login_first, cmdLIST
 ;        dd 'MDTM', login_first, login_first, login_first, cmd_MDTM
 ;        dd 'MKD',  login_first, login_first, login_first, cmd_MKD
@@ -1245,6 +1245,68 @@ cmdTYPE:
 
   .ok:
         sendFTP "200 Command ok"
+        ret
+
+;------------------------------------------------
+; "HELP"
+;
+; Provide help information.
+;
+;------------------------------------------------
+align 4
+cmdHELP:
+
+        lea     edi, [ebp + thread_data.buffer]
+        mov     eax, '214 '
+        stosd
+        mov     eax, 'Help'
+        stosd
+        mov     ax, ': '
+        stosw
+        
+        mov     esi, commands               ; pointer to commands table
+        
+.next_command:
+        cmp     byte [esi], 0               ; end of table?
+        je      .list_done
+        
+        ; Copy command name (4 bytes), skip null bytes
+        mov     ecx, 4
+.copy_name:
+        mov     al, [esi]
+        test    al, al
+        jz      .skip_null
+        stosb
+.skip_null:
+        inc     esi
+        loop    .copy_name
+        
+        ; Add space after command name
+        mov     al, ' '
+        stosb
+        
+        ; Skip the four address pointers (16 bytes)
+        add     esi, 16
+        jmp     .next_command
+        
+.list_done:
+        ; Remove trailing space (if any)
+        dec     edi
+        ; Add CRLF
+        mov     ax, 0x0a0d                  ; \r\n
+        stosw
+        xor     al, al                      ; null terminator
+        stosb
+        
+        ; Calculate length
+        lea     edx, [ebp + thread_data.buffer]
+        sub     edi, edx
+
+        ; Send response
+        mcall   send, [ebp + thread_data.socketnum], edx, edi
+        ; Also log to console
+        invoke  con_write_asciiz, edx
+        
         ret
 
 ;------------------------------------------------
