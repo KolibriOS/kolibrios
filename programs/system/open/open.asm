@@ -29,10 +29,10 @@ end if
  ;===============================
 
 if lang eq ru_RU
- title db "Žâªàëâì á ¯®¬®éìî", 0
- browse_txt db "Ž¡§®à...", 0
+ title db "Å½Ã¢ÂªÃ Ã«Ã¢Ã¬ Ã¡ Â¯Â®Â¬Â®Ã©Ã¬Ã®", 0
+ browse_txt db "Å½Â¡Â§Â®Ã ...", 0
  notify_txt db "'Incorrect ", '"', "/sys/settings/assoc.ini", '"', " file' -tE", 0
- checkbox_txt db "ˆá¯®«ì§®¢ âì ¢á¥£¤ ", 0
+ checkbox_txt db "Ë†Ã¡Â¯Â®Â«Ã¬Â§Â®Â¢ Ã¢Ã¬ Â¢Ã¡Â¥Â£Â¤ ", 0
 else if lang eq et_EE
  title db "Open with", 0
  browse_txt db "Browse...", 0
@@ -175,6 +175,28 @@ end if
 
  ;===============================
 
+ ;; Helper macro: quote path into buffer_quoted if it contains spaces,
+ ;; then store pointer into is_openas+8. Otherwise store raw param_s.
+ macro set_openas_path _src {
+    stdcall string.last_index_of, [_src], ' ', 1
+    cmp     eax, -1
+    je      .no_quotes_@@
+    ;; Path has spaces - wrap in double quotes
+    mov     byte [buffer_quoted], '"'
+    stdcall string.copy, [_src], buffer_quoted + 1
+    stdcall string.length, buffer_quoted + 1
+    inc     eax                              ;; skip past null, point to end
+    mov     byte [buffer_quoted + eax], '"'
+    mov     byte [buffer_quoted + eax + 1], 0
+    mov     eax, buffer_quoted
+    mov     [is_openas + 8], eax
+    jmp     .do_open_@@
+  .no_quotes_@@:
+    mov     eax, [_src]
+    mov     [is_openas + 8], eax
+  .do_open_@@:
+ }
+
  main:
     mcall   68, 11
     stdcall dll.Load, imports
@@ -238,6 +260,8 @@ end if
  .pre_open:
     stdcall string.copy, buffer8, buffer
   @@:
+    ;; FIX: quote path if it contains spaces before launching
+    set_openas_path param_s
     mcall   70, is_openas
     cmpge   eax, 0, exit
     cmpe    edi, 0, start_dialog
@@ -396,8 +420,8 @@ end if
     jmp     .letter
   @@:
 
-    cmpl    ah, " ", @f
-    cmpg    ah, "ï", @f
+    cmpl    ah, " ", @f
+    cmpg    ah, "Ã¯", @f
     jmp     .letter
   @@:
 
@@ -406,8 +430,8 @@ end if
     jmp     .letter_big
   @@:
 
-    cmpl    ah, "€", @f
-    cmpg    ah, "Ÿ", @f
+    cmpl    ah, "â‚¬", @f
+    cmpg    ah, "Å¸", @f
     jmp     .letter_big
   @@:
 
@@ -553,6 +577,8 @@ end if
  .opendialog:
     invoke  opendialog.start, opendialog
     cmpne   [opendialog.status], 1, update
+    ;; FIX: quote path if it contains spaces before launching
+    set_openas_path param_s
     mcall   70, is_openas
 
     mov     edi, 0
@@ -568,6 +594,8 @@ end if
     mov     [param_a], eax
     invoke  libini.get_str, assoc_ini, eax, assoc_ini.exec, buffer, 256, undefined
     cmpe    byte [buffer], 0, ini_error
+    ;; FIX: quote path if it contains spaces before launching
+    set_openas_path param_s
     mcall   70, is_openas
 
     mov     edi, 1
@@ -861,9 +889,9 @@ end if
     jmp     .ret
   @@:
 
-    cmpl    bl, "€", @f
-    cmpg    bl, "Ÿ", @f
-    sub     bl, "€" - " "
+    cmpl    bl, "â‚¬", @f
+    cmpg    bl, "Å¸", @f
+    sub     bl, "â‚¬" - " "
   @@:
 
  .ret:
@@ -1060,6 +1088,7 @@ end if
  buffer6 rb 2048 ;check existance
  buffer7 rb 32   ;for sorting
  buffer8 rd 2048
+ buffer_quoted rb 2050 ;; FIX: buffer for quoted path (path + 2 quotes + null)
  paramorig rb 2048
  _stack rb 2048
  params rb 256
