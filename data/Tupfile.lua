@@ -731,7 +731,6 @@ tup.append_table(extra_files, {
  {"kolibrios/develop/TinyBasic/TinyBasic", VAR_PROGS .. "/develop/tinybasic-1.0.4/tinybasic"},
  {"kolibrios/develop/TinyBasic/bas/", SRC_PROGS .. "/develop/tinybasic-1.0.4/bas/*"},
  {"kolibrios/develop/TinyBasic/TinyBasic.man", SRC_PROGS .. "/develop/tinybasic-1.0.4/doc/tinybasic.man"},
--- {"kolibrios/utils/teatool", VAR_PROGS .. "/other/TEAtool/teatool"},
  {"kolibrios/utils/passwordgen", VAR_PROGS .. "/other/PasswordGen/passwordgen"},
  {"kolibrios/utils/kruler", VAR_PROGS .. "/other/kruler/kruler"},
  {"kolibrios/media/qr_tool", SRC_PROGS .. "/media/qr_tool/qr_tool"},
@@ -747,7 +746,6 @@ tup.append_table(img_files, {
  {"GAMES/REVERSI", VAR_PROGS .. "/games/reversi/reversi"},
  {"LIB/BASE64.OBJ", VAR_PROGS .. "/develop/libraries/base64/base64.obj"},
  {"LIB/ICONV.OBJ", VAR_PROGS .. "/develop/libraries/iconv/iconv.obj"},
- -- {"LIB/MTAR.OBJ", VAR_PROGS .. "/develop/libraries/microtar/mtar.obj"},
 })
 tup.append_table(extra_files, {
 -- {"kolibrios/3D/cubeline", VAR_PROGS .. "/demos/cubeline/trunk/cubeline"},
