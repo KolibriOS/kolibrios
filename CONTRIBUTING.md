@@ -66,6 +66,8 @@ to the end commit message body on a new line.
 
 Use **rebase** to keep your branch up to date.
 
+Despite this, commits from your branch can be **squashed** and merged into the main branch by **rebasing** if the changes do not require logical separation. Otherwise, it is entirely your responsibility to format the commits in your PR branch.
+
 ## Licensing
 
 For new source code files and for existing ones without a license, you need to add the following header to the beginning of the file:
@@ -74,6 +76,8 @@ For new source code files and for existing ones without a license, you need to a
 ; Program - Brief description.
 ; Copyright (C) 2011-2025 KolibriOS team
 ```
+
+A brief description is only required for the main source file. The files included in it may not have a description.
 
 Be careful when setting copyright and date interval. Review the file's history to verify its origin.
 
