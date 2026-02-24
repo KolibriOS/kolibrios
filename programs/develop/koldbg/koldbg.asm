@@ -172,7 +172,7 @@ else
 end if
 }
 
-include 'kosfuncs.inc'
+include '../../KOSfuncs.inc'
 include '../../macros.inc'
 
 include 'font.inc'
