@@ -25,7 +25,6 @@ img_files = {
  {"MACROS.INC", SRC_PROGS .. "/macros.inc"},
 -- {"CONFIG.INC", SRC_PROGS .. "/config.inc"},
  {"STRUCT.INC", SRC_PROGS .. "/struct.inc"},
- {"FB2READ", "common/fb2read"},
  {"ALLGAMES", "common/allgames"},
  {"HOME.PNG", "common/wallpapers/T_Home.png"},
  {"ICONS32.PNG", "common/icons32.png"},
@@ -749,6 +748,7 @@ end -- tup.getconfig('NO_TCC') ~= 'full'
 if tup.getconfig('NO_OB07') ~= 'full' then
 tup.append_table(img_files, {
  {"DEVELOP/CEDIT", VAR_PROGS .. "/develop/cedit/cedit"},
+ {"FB2READ", VAR_PROGS .. "/other/fb2reader/fb2read"},
 })
 end -- tup.getconfig('NO_OB07') ~= 'full'
 
