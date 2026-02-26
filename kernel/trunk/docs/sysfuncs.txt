@@ -1972,7 +1972,7 @@ Remarks:
     subfunction 2 of function 15.
 
 ---------------------- Constants for registers: ----------------------
-  eax - SF_BACKGROUND_GET_RECT (39)
+  eax - SF_BACKGROUND_GET (39)
 ======================================================================
 == Function 39, subfunction 3 - get rect from the background image.  =
 ======================================================================
@@ -2152,7 +2152,7 @@ Parameters:
   * ebx = 2 - subfunction number
   * ecx = pointer to the color table
   * edx = size of the color table
-    (must be 40 bytes for future compatibility)
+    (up to 192 bytes; 40 bytes for the base structure)
 Format of the color table is shown in description of subfunction 3.
 Returned value:
   * function does not return value
@@ -2179,21 +2179,21 @@ Parameters:
   * ecx = pointer to the buffer with size edx bytes,
     where table will be written
   * edx = size of color table
-    (must be 40 bytes for future compatibility)
+    (up to 192 bytes; 40 bytes for the base structure)
 Returned value:
   * function does not return value
 Format of the color table:
 each item is dword-value for color 0x00RRGGBB
-  * +0: dword: none - reserved
-  * +4: dword: none - reserved
+  * +0: dword: frame
+  * +4: dword: grab
   * +8: dword: work_dark - dark color of working area 
     used to give a user 3D-like feelings about interface elements
   * +12 = +0xC: dword: work_light - light color of working area 
     used to give a user 3D-like feelings about interface elements
   * +16 = +0x10: dword: grab_text - color of text on header
   * +20 = +0x14: dword: work - color of working area
-  * +24 = +0x18: dword: button - color of button in working area
-  * +28 = +0x1C: dword: button_text - color of text on button
+  * +24 = +0x18: dword: work_button - color of button in working area
+  * +28 = +0x1C: dword: work_button_text - color of text on button
     in working area
   * +32 = +0x20: dword: work_text - color of text in working area
   * +36 = +0x24: dword: graph - color of graphics in working area
@@ -2206,6 +2206,8 @@ Remarks:
                                         ; this function with ecx=sc
         mov     ecx, [sc.work_button_text]      ; read text color on
                                         ; button in working area
+  * The table may be longer (up to 192 bytes); extra fields are copied
+    as-is and are interpreted by skins.
   * A program itself decides to use or not to use color table.
     For usage program must simply at calls to drawing functions select
     color taken from the table.
@@ -2478,11 +2480,11 @@ Remarks:
 ---------------------- Constants for registers: ----------------------
   eax - SF_SET_WINDOW_SHAPE (50)
 ======================================================================
-==================== Function 51 - create thread. ====================
+============= Function 51, subfunction 1 - create thread. ============
 ======================================================================
 Parameters:
   * eax = 51 - function number
-  * ebx = 1 - unique subfunction
+  * ebx = 1 - subfunction number
   * ecx = address of thread entry point (starting eip)
   * edx = pointer to thread stack (starting esp)
 Returned value:
@@ -2491,6 +2493,49 @@ Returned value:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_CREATE_THREAD (51)
+  ebx - SSF_CREATE_THREAD (1), SSF_GET_CURR_THREAD_SLOT (2),
+        SSF_GET_THREAD_PRIORITY (3), SSF_SET_THREAD_PRIORITY (4)
+======================================================================
+================== Function 51, subfunction 2 ========================
+================== Get current thread slot number ====================
+======================================================================
+Parameters:
+  * eax = 51 - function number
+  * ebx = 2 - subfunction number
+Returned value:
+  * eax = slot number of the current thread
+
+======================================================================
+================== Function 51, subfunction 3 ========================
+===================== Get thread priority ============================
+======================================================================
+Parameters:
+  * eax = 51 - function number
+  * ebx = 3 - subfunction number
+  * ecx = slot number of the thread or -1 (current thread)
+Returned value:
+  * eax = -1 - error (invalid slot number or thread terminated)
+  * otherwise eax = thread priority
+Remarks:
+  * Priority range is 0..255.
+    0 is the highest priority and is set by default at creation.
+
+======================================================================
+================== Function 51, subfunction 4 ========================
+===================== Set thread priority ============================
+======================================================================
+Parameters:
+  * eax = 51 - function number
+  * ebx = 4 - subfunction number
+  * ecx = slot number of the thread or -1 (current thread)
+  * edx = new thread priority
+Returned value:
+  * eax = -1 - error (invalid slot number or thread terminated)
+  * otherwise eax = previous thread priority
+Remarks:
+  * Priority range is 0..255.
+    0 is the highest priority and is set by default at creation.
+
 ======================================================================
 ==================== Function 54, subfunction 0 ======================
 ============== Get the number of slots in the clipboard. =============
@@ -3289,61 +3334,63 @@ Remarks:
   ebx - SSF_MEM_FREE (13)
 ======================================================================
 ===================== Function 68, subfunction 14 ====================
-============ Wait for signal from another program/driver. ============
+======= Wait for a signal from other applications/drivers. ===========
 ======================================================================
 Parameters:
   * eax = 68 - function number
   * ebx = 14 - subfunction number
-  * ecx = pointer to the buffer for information (24 bytes)
+  * ecx = pointer to data buffer (6 dword = 24 bytes)
 Returned value:
+  * eax is destroyed
   * buffer pointed to by ecx contains the following information:
-    * +0: dword: identifier for following data of signal
-    * +4: dword: data of signal (20 bytes), format of which is defined
-          by the first dword
+    * +0: dword: EVENT.code (identifier of following data)
+    * +4: 5 dword: EVENT.data, format depends on EVENT.code
+Remarks:
+  * Waits indefinitely for any event in the current thread event queue.
+  * The priority byte in the buffer is cleared by the kernel.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
   ebx - SSF_WAIT_SIGNAL (14)
 ======================================================================
-============= Function 68, subfunction 16 - load driver. =============
+=========== Function 68, subfunction 16 - load driver. ===============
 ======================================================================
 Parameters:
   * eax = 68 - function number
   * ebx = 16 - subfunction number
   * ecx = pointer to ASCIIZ-string with driver name
 Returned value:
-  * eax = 0 - failed
-  * otherwise eax = driver handle
+  * eax = driver handle, 0 on error
 Remarks:
-  * If the driver was not loaded yet, it is loaded;
-    if the driver was loaded yet, nothing happens.
+  * If the driver is not loaded yet, it is loaded;
+    if the driver is already loaded, nothing changes.
   * Driver name is case-sensitive.
     Maximum length of the name is 16 characters, including
     terminating null character, the rest is ignored.
-  * Driver ABC is loaded from file /sys/drivers/ABC.sys.
+  * Driver with name "ABC" is loaded from /sys/drivers/ABC.sys.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
   ebx - SSF_LOAD_DRIVER (16)
 ======================================================================
-============ Function 68, subfunction 17 - driver control. ===========
+========== Function 68, subfunction 17 - control driver. =============
 ======================================================================
 Parameters:
   * eax = 68 - function number
   * ebx = 17 - subfunction number
   * ecx = pointer to the control structure:
-    * +0: dword: handle of driver
-    * +4: dword: code of driver function
-    * +8: dword: pointer to input data
-    * +12 = +0xC: dword: size of input data
-    * +16 = +0x10: dword: pointer to output data
-    * +20 = +0x14: dword: size of output data
+    * +0:  dword: driver handle
+    * +4:  dword: driver function code
+    * +8:  dword: pointer to input data
+    * +12: dword: size of input data
+    * +16: dword: pointer to output data
+    * +20: dword: size of output data
 Returned value:
-  * eax = determined by driver
+  * eax = determined by driver, -1 on error
 Remarks:
   * Function codes and the structure of input/output data
-    are defined by driver.
-  * Previously one must obtain driver handle by subfunction 16.
+    are defined by the driver.
+  * Driver handle can be obtained by subfunction 16.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
@@ -3411,7 +3458,7 @@ Remarks:
 Parameters:
   * eax = 68 - function number
   * ebx = 21 - subfunction number
-  * ecx = pointer to ASCIIZ-string with driver name
+  * ecx = pointer to ASCIIZ-string with path to driver file
   * edx = pointer to command line
 Returned value:
   * eax = 0 - failed
@@ -3616,9 +3663,24 @@ Remarks:
     write beyond the size of the allocated memory and will reach the 
     beginning of the buffer again.
 
+======================================================================
+=========== Function 68, subfunction 30 - unload driver. ============
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 30 - subfunction number
+  * ecx = pointer to SRV structure (driver handle)
+  * edx = pointer to command line (may be 0)
+Returned value:
+  * eax = -1 - invalid parameters
+  * eax = -2 - error while freeing driver memory
+  * otherwise eax = pointer to the next SRV structure (former SRV.fd)
+Remarks:
+  * The driver entry is called with DRV_EXIT before unloading.
+
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
-  ebx - SSF_MEM_ALLOC_RING (29)  
+  ebx - SSF_UNLOAD_DRIVER (30)
 
 ======================================================================
 =========== Function 68, subfunction 31 - get driver data. ===========
@@ -3833,7 +3895,7 @@ Remarks:
   eax - SF_DEBUG (69)
   ebx - SSF_RESUME (5)
 ======================================================================
-= Fucntion 69, subfunction 6 - read from memory of debugged process. =
+= Function 69, subfunction 6 - read from memory of debugged process. =
 ======================================================================
 Parameters:
   * eax = 69 - function number
@@ -4442,17 +4504,17 @@ Returned value:
 ---------------------- Constants for registers: ----------------------
   eax - SF_BLITTER (73)
 ======================================================================
-= Function 74, Subfunction 255, Get number of active network devices. =
+= Function 74, Subfunction -1, Get number of active network devices. =
 ======================================================================
 Parameters:
   * eax = 74 - function number
-  * bl = 255 - subfunction number
+  * bl = -1 - subfunction number
 Returned value:
   * eax = number of active network devices
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
-   bl - SSF_DEVICE_COUNT (255)
+   bl - SSF_DEVICE_COUNT (-1)
 ======================================================================
 ======== Function 74, Subfunction 0, Get network device type. ========
 ======================================================================
@@ -4605,7 +4667,7 @@ Parameters:
   * bl = 11 - subfunction number
   * bh = device number
 Returned value:
-  * eax = Number of erroneous packets received since device start, -1 on error
+  * eax = Number of erroneous packets transmitted since device start, -1 on error
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
@@ -4661,7 +4723,7 @@ Returned value:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
-   bl - SSF_RX_PACKET_DROP_COUNT (12)    
+   bl - SSF_RX_PACKET_DROP_COUNT (15)
 ======================================================================
 ==== Function 74, Subfunction 16, Get RX missed packets counter. =====
 ======================================================================
@@ -5174,19 +5236,41 @@ Returned value:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_PROTOCOL (76)
+  ebx - SSF_ETHERNET_READ_MAC (0x0000)
+  ebx - SSF_IP4_PACKETS_SENT (0x10000)
+  ebx - SSF_IP4_PACKETS_RECEIVED (0x10001)
+  ebx - SSF_IP4_READ_IP (0x10002)
+  ebx - SSF_IP4_WRITE_IP (0x10003)
+  ebx - SSF_IP4_READ_DNS (0x10004)
+  ebx - SSF_IP4_WRITE_DNS (0x10005)
+  ebx - SSF_IP4_READ_SUBNET (0x10006)
+  ebx - SSF_IP4_WRITE_SUBNET (0x10007)
+  ebx - SSF_IP4_READ_GATEWAY (0x10008)
+  ebx - SSF_IP4_WRITE_GATEWAY (0x10009)
+  ebx - SSF_ICMP_PACKETS_SENT (0x20000)
+  ebx - SSF_ICMP_PACKETS_RECEIVED (0x20001)
+  ebx - SSF_ICMP_ECHO_REPLY (0x20003)
+  ebx - SSF_UDP_PACKETS_SENT (0x30000)
+  ebx - SSF_UDP_PACKETS_RECEIVED (0x30001)
+  ebx - SSF_TCP_PACKETS_SENT (0x40000)
+  ebx - SSF_TCP_PACKETS_RECEIVED (0x40001)
+  ebx - SSF_ARP_PACKETS_SENT (0x50000)
+  ebx - SSF_ARP_PACKETS_RECEIVED (0x50001)
+  ebx - SSF_ARP_GET_ENTRY_COUNT (0x50002)
+  ebx - SSF_ARP_READ_ENTRY (0x50003)
+  ebx - SSF_ARP_ADD_STATIC_ENTRY (0x50004)
+  ebx - SSF_ARP_DEL_ENTRY (0x50005)
+  ebx - SSF_ARP_SEND_ANNOUNCE (0x50006)
+  ebx - SSF_ARP_CONFLICTS_COUNT (0x50007)
 ======================================================================
 ========== Function 77, Subfunction 0, Create futex object ===========
 ======================================================================
 Parameters:
   * eax = 77 - function number
   * ebx = 0 - subfunction number
-  * ecx = pointer to futex dword
+  * ecx = futex control value (dword)
 Returned value:
   * eax = futex handle, 0 on error
-Remarks:
-  * Use subfunction 1 to destroy the futex.
-    The kernel destroys the futexes automatically when the process
-    terminates.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
@@ -5201,7 +5285,8 @@ Parameters:
 Returned value:
   * eax = 0 - successfull, -1 on error
 Remarks:
-  * The futex handle must have been created by subfunction 0
+  * The kernel destroys the futexes automatically when the process
+    terminates.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
@@ -5213,17 +5298,12 @@ Parameters:
   * eax = 77 - function number
   * ebx = 2 - subfunction number
   * ecx = futex handle
-  * edx = control value
-  * esi = timeout in system ticks or 0 for infinity
+  * edx = futex control value (dword)
+  * esi = timeout in hundredths of a second, 0 - wait forever
 Returned value:
   * eax = 0 - successfull
-	 -1 - timeout
-	 -2 - futex dword does not have the same value as edx
-Remarks:
-  * This functionn tests that the value at the futex dword still
-    contains the expected control value, and if so, then sleeps
-    waiting for a wake operation on the futex.
-  * The futex handle must have been created by subfunction 0
+         -1 - timeout
+         -2 - futex control value doesn't match
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
@@ -5239,14 +5319,70 @@ Parameters:
 Returned value:
   * eax = number of waiters that were woken up
 
-Remarks:
-  * This function wakes at most edx of the waiters that are
-    waiting (e.g., inside futex wait) on the futex dword
-  * The futex handle must have been created by subfunction 0
-
 ---------------------- Constants for registers: ----------------------
   eax - SF_FUTEX (77)
   ebx - SSF_WAKE (3)
+======================================================================
+Remarks:
+  * Subfunctions 4-7 are reserved and currently return -1.
+  * Subfunctions 8-9 and 12 are not implemented and return -EBADF (-9).
+======================================================================
+============ Function 77, Subfunction 10, Read from file. ============
+======================================================================
+Parameters:
+  * eax = 77 - function number
+  * ebx = 10 - subfunction number
+  * ecx = file handle
+  * edx = pointer to destination buffer
+  * esi = number of bytes to read
+Returned value:
+  * eax = number of bytes read,
+          0 on EOF,
+          -EBADF (-9) on error
+Remarks:
+  * Only pipe descriptors are supported.
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_FUTEX (77)
+  ebx - SSF_FILE_READ (10)
+======================================================================
+=========== Function 77, Subfunction 11, Write to file. =============
+======================================================================
+Parameters:
+  * eax = 77 - function number
+  * ebx = 11 - subfunction number
+  * ecx = file handle
+  * edx = pointer to source buffer
+  * esi = number of bytes to write
+Returned value:
+  * eax = number of bytes written,
+          -EBADF (-9) on error,
+          -EPIPE (-32) if no readers
+Remarks:
+  * Only pipe descriptors are supported.
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_FUTEX (77)
+  ebx - SSF_FILE_WRITE (11)
+======================================================================
+========== Function 77, Subfunction 13, Create pipe. ================
+======================================================================
+Parameters:
+  * eax = 77 - function number
+  * ebx = 13 - subfunction number
+  * ecx = pointer to pipefd[2] array (two dword handles)
+  * edx = flags (only O_CLOEXEC is allowed)
+Returned value:
+  * eax = 0 on success,
+          negative errno value on error:
+          -EINVAL (-11), -EFAULT (-14), -ENFILE (-23), -EMFILE (-24)
+Remarks:
+  * On success, pipefd[0] is a read handle and pipefd[1] is a
+    write handle.
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_FUTEX (77)
+  ebx - SSF_PIPE_CREATE (13)
 ======================================================================
 === Function 80 - file system interface with parameter of encoding ===
 ======================================================================
