@@ -2,9 +2,6 @@
 ;
 ; Piano - Default Keymap (256 bytes)
 ; Copyright (C) 2025 KolibriOS team
-;
-; Contributor Burer     - Main code
-; Contributor Doczom    - Idea
 
 ; ====================================================================
 

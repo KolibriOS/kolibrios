@@ -3,11 +3,7 @@
 ; Piano - Toy Piano
 ; Copyright (C) 2019-2025 KolibriOS team
 ;
-; Contributor ???       - Initial code
-; Contributor Antonio   - Refactoring and new functionality
-; Contributor Burer     - Refactoring and Spanish translation
-; Contributor Doczom    - Refactoring and bugfixes
-; Contributor qullarwee - New keyboard layout
+; Authors: Antonio and Leency
 
 ; ====================================================================
 
