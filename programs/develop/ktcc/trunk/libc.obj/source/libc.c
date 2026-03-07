@@ -203,6 +203,7 @@ ksys_dll_t EXPORTS[] = {
     { "strspn", &strspn },
     { "strstr", &strstr },
     { "strtok", &strtok },
+    { "strtok_r", &strtok_r },
     { "strxfrm", &strxfrm },
     { "strpbrk", &strpbrk },
     { "__errno", &__errno },

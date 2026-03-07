@@ -32,6 +32,7 @@ DLLAPI char* strrchr(const char* s, int c);
 DLLAPI size_t strspn(const char* s1, const char* s2);
 DLLAPI char* strstr(const char* s1, const char* s2);
 DLLAPI char* strtok(char* s1, const char* s2);
+DLLAPI char* strtok_r(char* s1, const char* s2, char** saveptr);
 DLLAPI char* strerror(int errnum);
 DLLAPI size_t strlen(const char* s);
 DLLAPI char* strrev(char* str);
