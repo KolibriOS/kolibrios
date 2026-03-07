@@ -19,7 +19,7 @@ dd      I_END
 dd      MEM
 dd      STACKTOP
 dd      0
-dd      0
+dd      app_path_buf
 
 ; ====================================================================
 
@@ -31,6 +31,7 @@ include "../../encoding.inc"
 
 START:
         mcall   SF_KEYBOARD, SSF_SET_INPUT_MODE, 1
+        call    build_keymap_path
         call    load_keymap
         jmp     redraw
 
@@ -135,25 +136,42 @@ play:
 
 ; =======================================================================
 
-load_keymap:
-        call    load_default_keymap
+build_keymap_path:
+        ; build path: app_dir + 'piano.map'
+        lea     esi, [app_path_buf + 2]
+        lea     edi, [app_path_buf]
+        .copy:
+                lodsb
+                stosb
+                test    al, al
+                jnz     .copy
+        ; edi is one past '\0'; scan backward to the last '/'
+        .find_slash:
+                dec     edi
+                cmp     byte [edi], '/'
+                jne     .find_slash
+        inc     edi
 
-        mcall   SF_FILE, keymap_file
+        ; add 'piano.map' to the path
+        mov     eax, 'pian'
+        stosd
+        mov     eax, 'o.ma'
+        stosd
+        mov     eax, 'p'
+        stosd
+        ret
+
+; =======================================================================
+
+load_keymap:
+        mcall   SF_FILE, keymap_info
         test    eax, eax
         jnz     .notify
         cmp     ebx, 256
         je      .done
         .notify:
-        call    load_default_keymap
         mcall   SF_FILE, notify_info
         .done:
-        ret
-
-load_default_keymap:
-        mov     esi, default_keymap
-        mov     edi, keymap
-        mov     ecx, 256
-        rep     movsb
         ret
 
 ; =======================================================================
@@ -290,10 +308,10 @@ help_thread:
 
         ; draw all help text in rows
         .help_text_loop:
-                cmp     edi, help_texts_end
-                jae     .help_text_loop_done
-
                 mov     edx, [edi]
+                test    edx, edx
+                jz      .help_text_loop_done
+
                 mcall   ; draw text
 
                 add     ebx, RT_HELP.H
@@ -307,6 +325,9 @@ help_thread:
 ; =======================================================================
 
 sc              system_colors
+
+mw_pos          dd 0
+hw_tid          dd 0
 
 WN_MAIN         RECT   32, 32, BT_WHITE.W * 15 + 10, BT_WHITE.H * 2 + (5 + 4)
 
@@ -449,13 +470,15 @@ help_texts:
         dd lb_help4
         dd lb_help5
         dd lb_help6
-help_texts_end:
+        dd 0
 
 ; =======================================================================
 
 BAD_NOTE = 0xFF
 
-default_keymap:
+melody  db 0x90, 0x30, 0
+
+keymap:
         db BAD_NOTE     ; 0x00
         db BAD_NOTE     ; 0x01
         db 0x21         ; 0x02  '1' -> note 0x31
@@ -514,23 +537,9 @@ default_keymap:
         db 0x19         ; 0x34  '.' -> note 0x29
         db 0x1A         ; 0x35  '/' -> note 0x2A
 
-        times 256-($-default_keymap) db BAD_NOTE
+        times 256-($-keymap) db BAD_NOTE
 
-keymap_file:
-        dd SSF_READ_FILE
-        dd 0
-        dd 0
-        dd 256
-        dd keymap
-        db 'piano.map', 0
 
-; =======================================================================
-
-melody  db 0x90, 0x30, 0
-keymap  rb 256
-
-mw_pos  dd 0
-hw_tid  dd 0
 
 ; =======================================================================
 
@@ -544,11 +553,24 @@ notify_info:
 
 ; =======================================================================
 
+keymap_info:
+        dd SSF_READ_FILE
+        dd 0
+        dd 0
+        dd 256
+        dd keymap
+
+; =======================================================================
+
 I_END:
+
+app_path    rb 1024     ; = keymap_info + 20: acts as SF_FILE path field
+
 help_stack:
         rb 512
 help_stack_top:
         rb 1024
         align 512
+
 STACKTOP:
 MEM:
