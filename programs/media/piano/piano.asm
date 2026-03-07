@@ -19,7 +19,7 @@ dd      I_END
 dd      MEM
 dd      STACKTOP
 dd      0
-dd      app_path_buf
+dd      app_path
 
 ; ====================================================================
 
@@ -138,8 +138,8 @@ play:
 
 build_keymap_path:
         ; build path: app_dir + 'piano.map'
-        lea     esi, [app_path_buf + 2]
-        lea     edi, [app_path_buf]
+        lea     esi, [app_path + 2]
+        lea     edi, [app_path]
         .copy:
                 lodsb
                 stosb
