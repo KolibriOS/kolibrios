@@ -21,8 +21,8 @@
 //===================================================//
 
 libimg_image icons32;
-libimg_image icons16;
-libimg_image icons16w;
+libimg_image icons18;
+libimg_image icons18w;
 unsigned int size32;
 unsigned int size16;
 
@@ -73,7 +73,7 @@ void main()
 	load_dll(libimg, #libimg_init, 1);
 
 	icons32.load("/SYS/ICONS32.PNG"); size32 = icons32.h * 32 * 4;
-	icons16.load("/SYS/ICONS16.PNG"); size16 = icons16.h * 18 * 4;
+	icons18.load("/SYS/ICONS18.PNG"); size16 = icons18.h * 18 * 4;
 
 	if (GetProcessesCount("@RESHARE")>1) {
 		start_ui();
@@ -103,8 +103,8 @@ void start_daemon()
 	img_destroy stdcall(icons32.image);
 
 	shared_i16 = memopen("ICONS18", size16, SHM_CREATE + SHM_WRITE);
-	memmov(shared_i16, icons16.imgsrc, size16);
-	//img_destroy stdcall(icons16.image);
+	memmov(shared_i16, icons18.imgsrc, size16);
+	//img_destroy stdcall(icons18.image);
 
 	shared_i16w = memopen("ICONS18W", size16, SHM_CREATE + SHM_WRITE);
 
@@ -114,7 +114,7 @@ void start_daemon()
 		sc.get();
 		$pop eax
 		if (sc.work != EAX) {
-			memmov(shared_i16w, icons16.imgsrc, size16);
+			memmov(shared_i16w, icons18.imgsrc, size16);
 			replace_2cols(shared_i16w, size16, 0xffFFFfff, sc.work, 0xffCACBD6, sc.dark);
 		}
 	} while(WaitEvent()==evDesktop);
@@ -133,7 +133,7 @@ void start_daemon()
 #define BTNH 24
 #define RESY PAD+30+BTNH+BTNH
 
-enum { ACTIVE_ICONS32=1, ACTIVE_ICONS16=2, ACTIVE_ICONS16W=4, ACTIVE_CHECKBOX=8 };
+enum { ACTIVE_ICONS32=1, ACTIVE_ICONS18=2, ACTIVE_ICONS18W=4, ACTIVE_CHECKBOX=8 };
 int active_tab = ACTIVE_ICONS32;
 
 void start_ui()
@@ -190,8 +190,8 @@ void draw_tabs()
 {
 	#define TABX WINW-BTNW-PAD-BTNW-PAD-BTNW-PAD-BTNW/2
 	DrawFlatButton(           TABX, PAD+30, "ICONS32",  10+ACTIVE_ICONS32, active_tab & ACTIVE_ICONS32);
-	DrawFlatButton(PAD+BTNW*1+TABX, PAD+30, "ICONS16",  10+ACTIVE_ICONS16, active_tab & ACTIVE_ICONS16);
-	DrawFlatButton(PAD+BTNW*2+TABX, PAD+30, "ICONS16W", 10+ACTIVE_ICONS16W, active_tab & ACTIVE_ICONS16W);
+	DrawFlatButton(PAD+BTNW*1+TABX, PAD+30, "ICONS18",  10+ACTIVE_ICONS18, active_tab & ACTIVE_ICONS18);
+	DrawFlatButton(PAD+BTNW*2+TABX, PAD+30, "ICONS18W", 10+ACTIVE_ICONS18W, active_tab & ACTIVE_ICONS18W);
 	DrawFlatButton(PAD+BTNW*3+TABX, PAD+30, "CHECKBOX", 10+ACTIVE_CHECKBOX, active_tab & ACTIVE_CHECKBOX);
 	draw_tab_icons32();
 }
@@ -209,14 +209,14 @@ void draw_tab_icons32()
 		iconimg = icons32.imgsrc;
 		iconw = 32;
 		iconh = icons32.h;
-	} else if (active_tab & ACTIVE_ICONS16) {
-		iconimg = icons16.imgsrc;
+	} else if (active_tab & ACTIVE_ICONS18) {
+		iconimg = icons18.imgsrc;
 		iconw = 18;
-		iconh = icons16.h;
-	} else if (active_tab & ACTIVE_ICONS16W) {
+		iconh = icons18.h;
+	} else if (active_tab & ACTIVE_ICONS18W) {
 		iconimg = memopen("ICONS18W", NULL, SHM_READ);
 		iconw = 18;
-		iconh = icons16.h;
+		iconh = icons18.h;
 	} else {
 		PutImage(WINW-13/2, WINH-RESY-13/2+RESY, 13, 13, #checkbox_flag);
 		return;

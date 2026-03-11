@@ -23,7 +23,7 @@ IMPORT
     LibImg, K := SysUtils, Graph, File, KOSAPI, SYSTEM;
 
 CONST
-	fileName = "/sys/Icons16.png";
+	fileName = "/sys/Icons18.png";
 	SIZE* = 18;
 
 VAR

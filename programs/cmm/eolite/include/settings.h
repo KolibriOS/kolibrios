@@ -184,11 +184,11 @@ void LoadIcons()
 		icons32_default.replace_color(0x00000000, col.list_bg);
 		icons32_selected.replace_color(0x00000000, col.selec);
 	} else {
-		icons16_default.load("/sys/icons16.png");
-		icons16_selected.load("/sys/icons16.png");
-		icons16_selected.replace_2colors(0xffFFFfff, col.selec, 0xffCACBD6, selected_shadow);
+		icons18_default.load("/sys/icons18.png");
+		icons18_selected.load("/sys/icons18.png");
+		icons18_selected.replace_2colors(0xffFFFfff, col.selec, 0xffCACBD6, selected_shadow);
 		if (col.list_bg!=0xFFFfff) {
-			icons16_default.replace_2colors(0xffFFFfff, col.list_bg, 0xffCACBD6, non_white_shadow);
+			icons18_default.replace_2colors(0xffFFFfff, col.list_bg, 0xffCACBD6, non_white_shadow);
 		}
 	}
 
@@ -260,7 +260,7 @@ void BigIconsSwitch()
 		icon_size = 32; 
 		LoadIcons();
 	} else {
-		icon_size = icons16_default.w; 
+		icon_size = icons18_default.w; 
 	}
 	BigFontsChange();
 }

@@ -25,7 +25,7 @@ int ICONS_INI::get(dword _file_path, _ext, int size)
 		else if (size == 32) return i32.get(ext_pos);
 	} else {
 		exts.add(#ext);
-			icons_ini.section = "icons16";
+			icons_ini.section = "icons18";
 			i18.set(exts.count-1, icons_ini.GetInt(#ext, 2));
 
 			icons_ini.section = "icons32";
@@ -60,8 +60,8 @@ void DrawIconByExtension(dword file_path, extension, xx, yy, fairing_color)
 		selected_image = icons32_selected.image;
 		default_image = icons32_default.image;
 	} else {
-		selected_image = icons16_selected.image;
-		default_image = icons16_default.image;
+		selected_image = icons18_selected.image;
+		default_image = icons18_default.image;
 	}
 
 	if (fairing_color==col.selec) {

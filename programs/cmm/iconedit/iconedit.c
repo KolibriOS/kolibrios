@@ -160,7 +160,7 @@ _ActionsHistory actionsHistory;
 //                                                   //
 //===================================================//
 
-libimg_image icons16;
+libimg_image icons18;
 
 void main()
 {
@@ -170,18 +170,18 @@ void main()
 	load_dll(libimg, #libimg_init, 1);
 	load_dll(boxlib, #box_lib_init,0);
 
-	icons16.load("/sys/icons16.png");
-	leftbar_w = icons16.w + 16;
+	icons18.load("/sys/icons18.png");
+	leftbar_w = icons18.w + 16;
 
 	sc.get();
 	bg_dark = skin_is_dark();
 
 	semi_white = MixColors(sc.work, 0xFFFfff, bg_dark*90 + 96);
-	icons16.replace_color(0xffFFFfff, sc.work);
-	icons16.replace_color(0xffCACBD6, MixColors(sc.work, 0, 200));
+	icons18.replace_color(0xffFFFfff, sc.work);
+	icons18.replace_color(0xffCACBD6, MixColors(sc.work, 0, 200));
 
 	//fix line and rectandle color for dark skins
-	if (bg_dark) icons16.replace_color(0xff545454, 0xffD3D3D4);
+	if (bg_dark) icons18.replace_color(0xff545454, 0xffD3D3D4);
 
 	EventSetActiveColor(1, color1);
 
@@ -301,7 +301,7 @@ void DrawTopPanelButton1(dword _event, _hotkey, _x, _icon_n)
 	#define ISIZE 18
 	#define YPOS 6
 	DefineHiddenButton(_x-4, YPOS-4, ISIZE+7, ISIZE+7, button.add(_event));
-	img_draw stdcall(icons16.image, _x, YPOS, ISIZE, ISIZE, 0, _icon_n*ISIZE);
+	img_draw stdcall(icons18.image, _x, YPOS, ISIZE, ISIZE, 0, _icon_n*ISIZE);
 	if (_hotkey) key.add_n(_hotkey, _event);
 }
 
@@ -323,10 +323,10 @@ int DrawFlatPanelButton(dword _id, _x, _y, _text)
 void DrawLeftPanelButton(dword _event, _hotkey, _y, _icon_n)
 {
 	int x = 5;
-	DrawRectangle(x, _y, icons16.w + 5, icons16.w + 5, sc.work);
-	DefineHiddenButton(x, _y, icons16.w + 5, icons16.w + 5, button.add(_event));
-	img_draw stdcall(icons16.image, x+3, _y+3, icons16.w, 
-		icons16.w, 0, _icon_n*icons16.w);
+	DrawRectangle(x, _y, icons18.w + 5, icons18.w + 5, sc.work);
+	DefineHiddenButton(x, _y, icons18.w + 5, icons18.w + 5, button.add(_event));
+	img_draw stdcall(icons18.image, x+3, _y+3, icons18.w, 
+		icons18.w, 0, _icon_n*icons18.w);
 	key.add_n(_hotkey, _event);
 }
 void DrawStatusBar()
@@ -419,8 +419,8 @@ void DrawWindow()
 
 void DrawLeftPanelSelection()
 {
-	if (previousTool!=-1) DrawRectangle3D(5, previousTool*GAPV+right_bar.y-2, icons16.w+5, icons16.w+5, sc.work, sc.work);
-	DrawRectangle3D(5, currentTool*GAPV+right_bar.y-2, icons16.w+5, icons16.w+5, 0x333333, 0x777777);
+	if (previousTool!=-1) DrawRectangle3D(5, previousTool*GAPV+right_bar.y-2, icons18.w+5, icons18.w+5, sc.work, sc.work);
+	DrawRectangle3D(5, currentTool*GAPV+right_bar.y-2, icons18.w+5, icons18.w+5, 0x333333, 0x777777);
 }
 
 void DrawEditArea()
@@ -429,7 +429,7 @@ void DrawEditArea()
 	int top_side;
 	int left_side;
 
-	wrapper.x = icons16.w + 16;
+	wrapper.x = icons18.w + 16;
 	wrapper.w = Form.cwidth - right_bar.w - 10 - wrapper.x;
 	wrapper.h = Form.cheight - TOPBAR_H - 35;
 

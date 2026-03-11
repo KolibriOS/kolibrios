@@ -1971,7 +1971,7 @@ calc_ini:
 	add	edi,[img_size]
 	dec     edi
 	mov     esi,eax
-	add     esi,9 ; after [icons16]
+	add     esi,9 ; after [icons18]
 	cld
 @@:
 	lodsb
@@ -2871,7 +2871,7 @@ root_pach:
 	db '/',0
 
 icons_file_name_2 db 'buttons/'
-icons_path        db '/sys/icons16.png',0
+icons_path        db '/sys/icons18.png',0
 ini_file_name     db '/sys/File managers/icons.ini',0
 ;---------------------------------------------------------------------
 

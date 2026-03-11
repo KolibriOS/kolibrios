@@ -101,8 +101,8 @@ dword waves_pal[256];
 	collection_int selected0, selected1;
 	dword selected_count[PANES_COUNT]=0;
 
-libimg_image icons16_default;
-libimg_image icons16_selected;
+libimg_image icons18_default;
+libimg_image icons18_selected;
 libimg_image icons32_default;
 libimg_image icons32_selected;
 

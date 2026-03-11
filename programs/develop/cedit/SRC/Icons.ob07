@@ -23,7 +23,7 @@ IMPORT
 	Graph, File, SYSTEM, KOSAPI;
 
 CONST
-	fileName = "/sys/Icons16.png";
+	fileName = "/sys/Icons18.png";
 	libName = "libimg.obj";
 
 	SIZE* = 18;

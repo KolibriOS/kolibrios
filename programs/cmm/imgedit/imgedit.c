@@ -44,9 +44,9 @@ void main()
 	OpenDialog_init stdcall (#o_dialog);
 
 	/* Init UI */
-	icons18.load("/sys/icons16.png");
+	icons18.load("/sys/icons18.png");
 	icons18.replace_2colors(0xffFFFfff, COL_LIGHT, 0xffCACBD6, COL_LIGHT-0x080808);
-	icons18a.load("/sys/icons16.png");
+	icons18a.load("/sys/icons18.png");
 	icons18a.replace_2colors(0xffFFFfff, COL_BUTTON, 0xffCACBD6, 0);
 	pixie_skin.load("/sys/media/pixieskn.png");
 	Form.width = screen.w/6*5;
