@@ -24,7 +24,7 @@
 ; Ctrl+F                - поиск (+Tab для OptionBox)
 ; Ctrl+G                - переход на смещение (+Tab для OptionBox)
 ; Ctrl+B                - выделить блок
-; ESC                   - снять выделение
+; ESC                   - снять выделение/выход
 ; Ctrl+C		- копировать блок
 ; Ctrl+V		- вставить в выделенную область
 ; Ctrl+X		- вырезать выделенную область (в буфер)
@@ -2699,7 +2699,8 @@ Ctrl_END:
 	jmp	red
 ;--------------------------------------------------------------------
 ESC:
-	btr	[flags],8
+	btr	[flags], 8
+	jnc	close_prog
 	jmp	red
 ;--------------------------------------------------------------------
 copy_to_buf:
@@ -3236,7 +3237,7 @@ if lang eq ru_RU
  db 'Ctrl+F              - поиск                        '
  db 'Ctrl+G              - переход на смещение          '
  db 'Ctrl+B              - выделить блок                '
- db 'ESC                 - снять выделение              '
+ db 'ESC                 - снять выделение/выход        '
  db 'Ctrl+C              - копировать блок              '
  db 'Ctrl+V              - вставить в выделенную область'
  db 'Ctrl+X              - вырезать в буфер             '
@@ -3258,7 +3259,7 @@ else ; Default to en_US
  db 'Ctrl+F              - find                         '
  db 'Ctrl+G              - go to offset                 '
  db 'Ctrl+B              - select area                  '
- db 'ESC                 - deselect area                '
+ db 'ESC                 - deselect area/exit           '
  db 'Ctrl+C              - copy area                    '
  db 'Ctrl+V              - past into area from buf      '
  db 'Ctrl+X              - cut area into buffer         '
