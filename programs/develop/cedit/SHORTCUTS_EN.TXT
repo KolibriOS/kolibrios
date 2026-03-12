@@ -1,0 +1,55 @@
+Keyboard Shortcuts:
+
+  ctrl+A      Select all
+  ctrl+C      Copy
+  ctrl+V      Paste
+  ctrl+X      Cut
+  ctrl+L      Convert to lowercase
+  ctrl+U      Convert to uppercase
+  ctrl+F,
+  ctrl+H      Show search/replace panel
+  Esc         Close search panel; Close menu
+  shift+Esc   Hide (Minimize) search panel
+  F10         Open main menu
+  shift+F10   Open context menu
+  F3          Find next
+  shift+F3    Find previous
+  ctrl+Z      Undo
+  ctrl+Y      Redo
+  ctrl+G      Go to line...
+  ctrl+Del    Delete line
+  ctrl+D      Duplicate line
+  ctrl+Up     Move text up
+  ctrl+Down   Move text down
+  ctrl+E      Select word
+
+  Tab         Increase indent for text
+  shift+
+  Backspace   Decrease indent for selected text
+  shift+Tab   Decrease indent for text
+
+  ctrl+F2     Set/Remove bookmark
+  F2          Go to next bookmark
+  shift+F2    Go to previous bookmark
+
+  ctrl+S      Save
+  ctrl+O      Open
+  ctrl+N,
+  ctrl+T      Create new
+  ctrl+W      Close File
+  ctrl+Tab    Switch to Next Tab
+
+  ctrl+F9     Compile
+  F9          Run
+  ctrl+F8     Debug
+
+  shift+wheel Horizontal scrolling
+
+  Navigating text:
+  (ctrl+)Home, (ctrl+)End, (ctrl+)PageUp, (ctrl+)PageDown
+  ctrl+Left, ctrl+Right
+
+  Navigating in search panel:
+  Tab         Move to next input field
+  shift+Tab   Move to previous input field
+  Enter       Find next occurrence

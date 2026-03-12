@@ -28,7 +28,7 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (11-jan-2026)";
+    HEADER = "CEdit (25-jan-2026)";
 
     ShellFilter = "";
     EditFilter = "sh|inc|txt|asm|ob07|c|cpp|h|pas|pp|lua|ini|json";
@@ -1575,7 +1575,7 @@ VAR
 BEGIN
     menu := List.create(NIL);
     Menu.AddMenuItem(menu, menuIncInd, "increase    Tab");
-    Menu.AddMenuItem(menu, menuDecInd, "decrease    shift-Bksp");
+    Menu.AddMenuItem(menu, menuDecInd, "decrease    shift-Tab");
     RETURN Menu.create(menu, mainTID)
 END CreateMenuIndent;
 
@@ -1686,6 +1686,8 @@ BEGIN
     ELSE
     	IF keyCode = -1 THEN
     		key := -1
+        ELSIF (keyCode = 15) & shift THEN (* Shift-Tab *)
+            T.Indent(text, FALSE)
         ELSIF keyCode = 61 THEN (* F3 *)
             key := -1;
             IF search & (searchText # "") THEN
@@ -1755,7 +1757,7 @@ BEGIN
                     ELSE
                         SetFocus(ReplaceEdit, TRUE)
                     END
-                ELSIF keyCode = 28 THEN (* Enter *)    
+                ELSIF keyCode = 28 THEN (* Enter *)
                     IF searchOpened & (searchText # "") THEN
                         notFound := ~T.findNext(text, BKW.value)
                     END
@@ -1774,7 +1776,7 @@ BEGIN
                     ELSE
                         SetFocus(GotoEdit, TRUE)
                     END
-                ELSIF keyCode = 28 THEN (* Enter *)    
+                ELSIF keyCode = 28 THEN (* Enter *)
                     IF searchOpened & (searchText # "") THEN
                         notFound := ~T.findNext(text, BKW.value)
                     END
