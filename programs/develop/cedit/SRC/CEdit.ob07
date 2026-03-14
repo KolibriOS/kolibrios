@@ -28,7 +28,9 @@ IMPORT
     RW, Ini, EB := EditBox, Tabs, Toolbar, SB := StatusBar;
 
 CONST
-    HEADER = "CEdit (25-jan-2026)";
+    APPNAME = "CEdit";
+    VERSION = "1.0";
+    HEADER = APPNAME + " " + VERSION;
 
     ShellFilter = "";
     EditFilter = "sh|inc|txt|asm|ob07|c|cpp|h|pas|pp|lua|ini|json";
