@@ -27,13 +27,14 @@ start:
         cmp     eax, 0
         jne     ok
 nok:
-        print   'LoadDrv: Error loading driver'
-		print   'Driver must be in /sys/drivers/ folder.'
-		print   'Its name must be w/o extension and it is case-sensitive'
+        print   'E: LoadDrv: Error loading driver'
+                print   'I: Usage: loaddrv <driver_name>'
+		print   'I: Driver must be stored as /sys/drivers/<driver_name>.sys'
+		print   'I: <driver_name> must be w/o extension and it is case-sensitive'
         mov     eax, -1
         int     0x40
 ok:
-        print   'LoadDrv: Driver loaded well'
+        print   'I: LoadDrv: Driver loaded well'
         mov     eax, -1
         int     0x40
 
