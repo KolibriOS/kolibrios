@@ -602,7 +602,8 @@ $(NAME).dll: $(LIB_OBJS) $(SRC_DEP) Makefile
 #sed -f cmd2.sed libc.def > mem
 #sed -f newlib.sed mem > libc.inc
 
-install: libc.dll libc.dll.a libdll.a
+install: libc.a libc.dll libc.dll.a libdll.a
+	mv -f libc.a $(INSTALLDIR)
 	mv -f libc.dll $(SDK_DIR)/bin
 	mv -f libc.dll.a $(INSTALLDIR)/lib
 	mv -f libdll.a $(INSTALLDIR)/lib
@@ -614,7 +615,6 @@ static: $(NAME).a
 
 $(NAME).a: $(LIB_OBJS) $(SRC_DEP) Makefile
 	$(AR) $(ARFLAGS) $(NAME).a $(LIB_OBJS)
-	mv -f libc.a $(INSTALLDIR)
 
 crt/crt1.o: crt/crt1.c
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -fno-delete-null-pointer-checks crt/crt1.c -o $@
