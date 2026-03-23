@@ -800,6 +800,7 @@ if tup.getconfig('NO_NASM') ~= 'full' then
    {"kolibrios/games/wolf3d/", VAR_CONTRIB .. "/games/wolf3d/wolf3d"},
    {"kolibrios/games/wolf3d/", "common/games/wolf3d/*"},
    {"kolibrios/emul/dgen/dgen", VAR_PROGS .. "/emulator/dgen-sdl-1.33/dgen"},
+   {"kolibrios/emul/dgen/dgen_open", VAR_PROGS .. "/fs/wrap_open/wrap_open"},
    {"kolibrios/emul/dgen/dgen.html", SRC_PROGS .. "/emulator/dgen-sdl-1.33/dgen.html"},
    {"kolibrios/emul/dgen/dgenrc.html", SRC_PROGS .. "/emulator/dgen-sdl-1.33/dgenrc.html"},
   })
