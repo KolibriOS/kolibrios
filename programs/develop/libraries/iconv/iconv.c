@@ -64,8 +64,8 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf,
     char *str;
     str=*outbuf;
 
-    from=cd>>16;
-    to=cd&0xFFFF;
+    to=cd>>16;
+    from=cd&0xFFFF;
 
     switch (from)
     {
@@ -92,7 +92,7 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf,
     count1=0;
     count2=0;
 
-    while ( *inbytesleft>0 && *outbytesleft>1)
+    while (*inbytesleft>0 && *outbytesleft>1)
     {
         n=1;
 
@@ -116,7 +116,6 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf,
         count1+=converted;
         count2+=written;
     }
-    *(str+count2)='\0';
 
     if (*inbytesleft>0 && *outbytesleft==0) return -12;
     return 0;

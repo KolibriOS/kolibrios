@@ -27,7 +27,7 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 {
 	dword cd, in_len, out_len, new_buf;	
 
-	iconv_open stdcall (from_chs*10+#charsets, to_chs*10+#charsets);
+	iconv_open cdecl (to_chs*10+#charsets, from_chs*10+#charsets);
 	if (EAX==-1) {
 		debugln("iconv: unsupported charset");
 		return 0; 
@@ -37,7 +37,7 @@ dword ChangeCharset(dword from_chs, to_chs, conv_buf)
 	in_len = strlen(conv_buf)+1;
 	out_len = in_len * 2;
 	new_buf = mem_Alloc(out_len);
-	iconv stdcall (cd, #conv_buf, #in_len, #new_buf, #out_len);
+	iconv cdecl (cd, #conv_buf, #in_len, #new_buf, #out_len);
 	if (EAX!=0)
 	{
 		cd = EAX;
