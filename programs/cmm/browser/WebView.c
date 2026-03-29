@@ -57,11 +57,14 @@ TWebBrowser WB1;
 
 #include "history.h"
 
-dword PADDING = 9;
-dword TSZE = 25;
-dword STATUSBAR_H = 15;
-dword TAB_H = 20;
-dword TOOLBAR_H = 0;
+#define PADDING 9
+#define TSZE 25
+#define STATUSBAR_H 15
+#define TAB_H 20
+#define BUTTON_W 30
+#define SEARCH_GO_GAP 5
+
+dword TOOLBAR_H = PADDING+TSZE+PADDING+2;
 
 _http http = 0;
 
@@ -132,8 +135,6 @@ void HandleParam()
 void main()
 {
 	int redirect_count=0;
-
-	TOOLBAR_H = PADDING+TSZE+PADDING+2;
 
 	LoadLibraries();
 	LoadIniConfig();
@@ -297,8 +298,10 @@ void ProcessButtonClick(dword id__)
 		case SCAN_CODE_BS:
 		case BACK_BUTTON:      if (history.back()) OpenPage(history.current()); return;
 		case FORWARD_BUTTON:   if (history.forward()) OpenPage(history.current()); return;
-		case GOTOURL_BUTTON:   EventSubmitOmnibox();	return;
+		case GOTOURL_BUTTON:   EventSubmitOmnibox(false);	return;
 		case REFRESH_BUTTON:   EventRefreshPage(); return;
+		case GO_BUTTON:        EventSubmitOmnibox(true);	return;
+		case SEARCH_BUTTON:    EventSearchWeb(); return;
 		case CHANGE_ENCODING:  EventShowEncodingsList(); return;
 		case SANDWICH_BUTTON:  EventShowMainMenu(); return;
 		case VIEW_SOURCE:      EventViewSource(); return;
@@ -332,7 +335,7 @@ void ProcessKeyEvent()
 		case SCAN_CODE_KEY_N: RunProgram(#program_path, NULL); return;
 		case SCAN_CODE_KEY_J: ProcessButtonClick(DOWNLOAD_MANAGER); return;
 		case SCAN_CODE_KEY_R: ProcessButtonClick(REFRESH_BUTTON); return;
-		case SCAN_CODE_ENTER: EventSeachWeb(); return;
+		case SCAN_CODE_ENTER: EventSearchWeb(); return;
 		case SCAN_CODE_LEFT:  ProcessButtonClick(BACK_BUTTON); return;
 		case SCAN_CODE_RIGHT: ProcessButtonClick(FORWARD_BUTTON); return;
 		case SCAN_CODE_KEY_W: EventCloseActiveTab(); return;
@@ -348,7 +351,7 @@ void ProcessKeyEvent()
 		case SCAN_CODE_F2:    EventEditSource(); return;
 		case SCAN_CODE_F6:    {omnibox_edit.flags=ed_focus; DrawOmnibox();} return;
 		case SCAN_CODE_F5:    EventRefreshPage(); return;
-		case SCAN_CODE_ENTER: if (omnibox_edit.flags & ed_focus) EventSubmitOmnibox(); return;
+		case SCAN_CODE_ENTER: if (omnibox_edit.flags & ed_focus) EventSubmitOmnibox(false); return;
 		case SCAN_CODE_F12:   EventToggleDebugMode(); return;
 		case SCAN_CODE_F11:   show_images^=1; EventClearCache(); return;
 		default:              if (WB1.list.ProcessKey(key_scancode)) WB1.DrawPage(); return;
@@ -357,7 +360,7 @@ void ProcessKeyEvent()
 
 void SetElementSizes()
 {
-	omnibox_edit.width = Form.cwidth - omnibox_edit.left - 52 - 16;
+	omnibox_edit.width = Form.cwidth - BUTTON_W - SEARCH_GO_GAP - BUTTON_W - omnibox_edit.left - 52 - 16;
 	if (Form.cwidth - scroll_wv.size_x != WB1.list.w) {
 		//temporary fix for crash
 		//related to 'cur_img_url' var read
@@ -370,6 +373,7 @@ void SetElementSizes()
 	WB1.list.column_max = WB1.list.w - scroll_wv.size_x / WB1.list.font_w + 1;
 	WB1.list.visible = WB1.list.h;
 }
+
 
 
 void draw_window()
@@ -388,7 +392,10 @@ void draw_window()
 
     DrawTopPanelButton(BACK_BUTTON, PADDING-1, PADDING, 30, false);
     DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, PADDING, 31, false);
-    DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-3, PADDING, -1, burger_active); //burger menu
+    DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE + 2 , PADDING, -1, burger_active); //burger menu
+
+	DrawTopPanelButton(SEARCH_BUTTON, Form.cwidth - PADDING - TSZE - 3 - BUTTON_W, PADDING, 49, false); // Search web button
+	DrawTopPanelButton(GO_BUTTON, Form.cwidth - PADDING - TSZE - 3 - BUTTON_W - SEARCH_GO_GAP - BUTTON_W, PADDING, 12, false); // go to address button 
 
     DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.line);
 
@@ -706,19 +713,25 @@ void EventClickLink(dword _target)
 	OpenPage(#new_url);
 }
 
-void EventSubmitOmnibox()
+
+void EventSubmitOmnibox(bool force_url)
 {
 	char new_url[URL_SIZE+1];
 	if (!editURL[0]) return;
 	if (!strncmp(#editURL,"http:",5)) || (editURL[0]=='/') 
 	|| (!strncmp(#editURL,"https:",6)) || (!strncmp(#editURL,"WebView:",8)) {
 		OpenPage(#editURL);
-	} else {
-		strcpy(#new_url, "http://");
-		strncat(#new_url, #editURL, URL_SIZE-1);
-		OpenPage(#new_url);
+		return;
 	}
+	if (!force_url) && (!IsAddress()) {
+		EventSearchWeb();
+		return ;
+	}
+	strcpy(#new_url, "http://");
+	strncat(#new_url, #editURL, URL_SIZE-1);
+	OpenPage(#new_url);
 }
+
 
 void LoadInternalPage(dword _bufdata, _in_bufsize){
 	if (!_bufdata) || (!_in_bufsize) {
@@ -757,6 +770,15 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 			PageLoaded();
 		}
 	}
+}
+
+// check whether the entered text in the omnibox looks like an address or a search query
+bool IsAddress()
+{
+	if (!editURL[0]) return false ;
+	if (strchr(#editURL, ' ')) return false;
+	if (strchr(#editURL, '.')) return true;
+	return false;
 }
 
 bool UrlExtIs(dword base, ext)
@@ -813,9 +835,10 @@ void ProcessMenuClick()
 	}
 }
 
-void EventSeachWeb()
+void EventSearchWeb()
 {
 	char new_url[URL_SIZE+1];
+	// replace the spaces with '+' for the search query
 	replace_char(#editURL, ' ', '+', URL_SIZE);
 	//strcpy(#new_url, "https://html.duckduckgo.com/html/?q=");
 	strcpy(#new_url, "http://bing.com/search?q=");
