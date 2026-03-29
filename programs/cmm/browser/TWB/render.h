@@ -84,7 +84,7 @@ void TWebBrowser::RenderTextbuf()
 
 		//Is a new line fits in the maximum line width?
 		if (br * list.font_w + draw_x - left_gap >= draw_w) {
-			br = draw_w - draw_x + left_gap /list.font_w;
+			br = draw_w - draw_x / list.font_w;
 			if (br < 0) br = 0;
 			while(br) {
 				if (ESBYTE[lbp + br]==' ') {
