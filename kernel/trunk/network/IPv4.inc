@@ -1058,10 +1058,11 @@ ipv4_connect:
 
 ; Fill in local IP
         cmp     [eax + IP_SOCKET.LocalIP], 0
-        jne     @f
+        jne     .local_ip_ready
         push    [IPv4_address + 4]                                   ; FIXME: use correct local IP
         pop     [eax + IP_SOCKET.LocalIP]
 
+  .local_ip_ready:
 ; Fill in remote IP
         pushd   [edx + 4]
         pop     [eax + IP_SOCKET.RemoteIP]
