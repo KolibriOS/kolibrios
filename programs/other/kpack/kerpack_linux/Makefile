@@ -1,4 +1,4 @@
-CFLAGS=-O3
+CFLAGS=-O3 -std=c99
 all: kpack kerpack
 kpack: kpack64.o LZMAEncoder-kpack.o MatchFinder.o RangeCoder.o
 	gcc -nostartfiles -no-pie -o kpack kpack64.o LZMAEncoder-kpack.o MatchFinder.o RangeCoder.o
