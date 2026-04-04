@@ -149,15 +149,27 @@ jobs:
 
           echo "CONFIG_LANG=en_US"       >> en_US.config
           echo "CONFIG_BUILD_TYPE=en_US" >> en_US.config
-          tup variant en_US.config
+          if [ -d build-en_US ]; then
+            cmp -s en_US.config build-en_US/tup.config || cp en_US.config build-en_US/tup.config
+          else
+            tup variant en_US.config
+          fi
 
           echo "CONFIG_LANG=ru_RU"       >> ru_RU.config
           echo "CONFIG_BUILD_TYPE=ru_RU" >> ru_RU.config
-          tup variant ru_RU.config
+          if [ -d build-ru_RU ]; then
+            cmp -s ru_RU.config build-ru_RU/tup.config || cp ru_RU.config build-ru_RU/tup.config
+          else
+            tup variant ru_RU.config
+          fi
 
           echo "CONFIG_LANG=es_ES"       >> es_ES.config
           echo "CONFIG_BUILD_TYPE=es_ES" >> es_ES.config
-          tup variant es_ES.config
+          if [ -d build-es_ES ]; then
+            cmp -s es_ES.config build-es_ES/tup.config || cp es_ES.config build-es_ES/tup.config
+          else
+            tup variant es_ES.config
+          fi
 
       - name: (en_US) Build KolibriOS
         run: |
