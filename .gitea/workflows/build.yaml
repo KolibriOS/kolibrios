@@ -134,7 +134,6 @@ jobs:
             kolibri-build-${{ steps.toolchain-hash.outputs.hash }}-
 
       - name: Restore build cache timestamps
-        if: steps.cache-build.outputs.cache-hit != 'true'
         run: |
           if [ -f .build-cache-mtimes ]; then
             perl -e '
@@ -275,11 +274,11 @@ jobs:
             \( -name '*.img' -o -name '*.iso' -o -name '*.raw' \) -delete || true
 
       - name: Save build cache timestamps
-        if: success() && steps.cache-build.outputs.cache-hit != 'true'
+        if: success()
         run: find .tup build-en_US build-ru_RU build-es_ES -type f -printf '%T@ %p\n' > .build-cache-mtimes
 
       - name: Save build cache
-        if: success() && steps.cache-build.outputs.cache-hit != 'true'
+        if: success()
         uses: actions/cache/save@v4
         with:
           path: |
