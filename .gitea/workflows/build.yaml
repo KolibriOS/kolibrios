@@ -36,9 +36,6 @@ jobs:
         run: |
           git log --pretty=format:%at --name-only --diff-filter=ACMR | perl .gitea/workflows/restore-mtime.pl
           git submodule foreach --recursive 'git fetch --unshallow 2>/dev/null || true; git log --pretty=format:%at --name-only --diff-filter=ACMR | perl "$toplevel/.gitea/workflows/restore-mtime.pl"'
-          echo "::group::Sample timestamps after restore-mtime"
-          stat --format="%n %Y" kernel/trunk/kernel.asm Tupfile.lua 2>/dev/null || true
-          echo "::endgroup::"
 
       - name: Get commit hashes
         id: vars
@@ -120,32 +117,16 @@ jobs:
           key: kolibri-toolchain-${{ steps.toolchain-hash.outputs.hash }}
 
       - name: Restore build cache
-        id: cache-build
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            .tup
-            .build-cache-mtimes
-            build-en_US
-            build-ru_RU
-            build-es_ES
-          key: kolibri-build-${{ steps.toolchain-hash.outputs.hash }}-${{ steps.vars.outputs.sha_full }}
-          restore-keys: |
-            kolibri-build-${{ steps.toolchain-hash.outputs.hash }}-
-
-      - name: Restore build cache timestamps
         run: |
-          if [ -f .build-cache-mtimes ]; then
-            perl -e '
-              while (<STDIN>) {
-                chomp;
-                my ($mtime, $path) = split / /, $_, 2;
-                utime $mtime, $mtime, $path if defined $path && -e $path;
-              }
-            ' < .build-cache-mtimes
-            echo "Restored timestamps for $(wc -l < .build-cache-mtimes) cached files"
+          CACHE_DIR="/build-cache/${{ steps.toolchain-hash.outputs.hash }}"
+          if [ -d "$CACHE_DIR/.tup" ]; then
+            cp -a "$CACHE_DIR/.tup" .tup
+            cp -a "$CACHE_DIR/build-en_US" build-en_US 2>/dev/null || true
+            cp -a "$CACHE_DIR/build-ru_RU" build-ru_RU 2>/dev/null || true
+            cp -a "$CACHE_DIR/build-es_ES" build-es_ES 2>/dev/null || true
+            echo "Restored build cache from $CACHE_DIR"
           else
-            echo "No timestamp manifest found — first build"
+            echo "No build cache found — first build"
           fi
 
       - name: Configure tup
@@ -163,13 +144,7 @@ jobs:
           if [ ! -d .tup ]; then
             tup init
           fi
-
-          echo "::group::Timestamps before tup scan"
-          stat --format="%n %Y" kernel/trunk/kernel.asm Tupfile.lua 2>/dev/null || true
-          ls -la .tup/ 2>/dev/null | head -5 || echo "No .tup directory"
-          echo "::endgroup::"
-
-          tup scan 2>&1 | tail -20
+          tup scan
 
           echo "CONFIG_LANG=en_US"       >> en_US.config
           echo "CONFIG_BUILD_TYPE=en_US" >> en_US.config
@@ -273,18 +248,14 @@ jobs:
           find build-en_US/data build-ru_RU/data build-es_ES/data -maxdepth 1 -type f \
             \( -name '*.img' -o -name '*.iso' -o -name '*.raw' \) -delete || true
 
-      - name: Save build cache timestamps
-        if: success()
-        run: find .tup build-en_US build-ru_RU build-es_ES -type f -printf '%T@ %p\n' > .build-cache-mtimes
-
       - name: Save build cache
         if: success()
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            .tup
-            build-en_US
-            build-ru_RU
-            build-es_ES
-            .build-cache-mtimes
-          key: kolibri-build-${{ steps.toolchain-hash.outputs.hash }}-${{ steps.vars.outputs.sha_full }}
+        run: |
+          CACHE_DIR="/build-cache/${{ steps.toolchain-hash.outputs.hash }}"
+          rm -rf "$CACHE_DIR"
+          mkdir -p "$CACHE_DIR"
+          cp -a .tup "$CACHE_DIR/.tup"
+          cp -a build-en_US "$CACHE_DIR/build-en_US"
+          cp -a build-ru_RU "$CACHE_DIR/build-ru_RU"
+          cp -a build-es_ES "$CACHE_DIR/build-es_ES"
+          echo "Saved build cache to $CACHE_DIR ($(du -sh "$CACHE_DIR" | cut -f1))"
