@@ -116,9 +116,28 @@ jobs:
           path: /home/autobuild
           key: kolibri-toolchain-${{ steps.toolchain-hash.outputs.hash }}
 
+      - name: Get config hash
+        id: config-hash
+        run: |
+          export ROOT=${{ gitea.workspace }}
+          {
+            echo "CONFIG_KPACK_CMD= && kpack --nologo %o"
+            echo "CONFIG_KERPACK_CMD= && kerpack %o"
+            echo "CONFIG_PESTRIP_CMD= && EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o"
+            echo "CONFIG_NO_MSVC=full"
+            echo "CONFIG_INSERT_REVISION_ID=1"
+          } | sha1sum | awk '{print $1}'
+          echo "hash=$({
+            echo "CONFIG_KPACK_CMD= && kpack --nologo %o"
+            echo "CONFIG_KERPACK_CMD= && kerpack %o"
+            echo "CONFIG_PESTRIP_CMD= && EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o"
+            echo "CONFIG_NO_MSVC=full"
+            echo "CONFIG_INSERT_REVISION_ID=1"
+          } | sha1sum | awk '{print $1}')" >> $GITEA_OUTPUT
+
       - name: Restore build cache
         run: |
-          CACHE_DIR="/build-cache/${{ steps.toolchain-hash.outputs.hash }}"
+          CACHE_DIR="/build-cache/${{ steps.toolchain-hash.outputs.hash }}-${{ steps.config-hash.outputs.hash }}"
           if [ -d "$CACHE_DIR/.tup" ]; then
             cp -a "$CACHE_DIR/.tup" .tup
             cp -a "$CACHE_DIR/build-en_US" build-en_US 2>/dev/null || true
@@ -144,31 +163,18 @@ jobs:
           if [ ! -d .tup ]; then
             tup init
           fi
-          tup scan
 
           echo "CONFIG_LANG=en_US"       >> en_US.config
           echo "CONFIG_BUILD_TYPE=en_US" >> en_US.config
-          if [ -d build-en_US ]; then
-            cmp -s en_US.config build-en_US/tup.config || cp en_US.config build-en_US/tup.config
-          else
-            tup variant en_US.config
-          fi
+          [ -d build-en_US ] || tup variant en_US.config
 
           echo "CONFIG_LANG=ru_RU"       >> ru_RU.config
           echo "CONFIG_BUILD_TYPE=ru_RU" >> ru_RU.config
-          if [ -d build-ru_RU ]; then
-            cmp -s ru_RU.config build-ru_RU/tup.config || cp ru_RU.config build-ru_RU/tup.config
-          else
-            tup variant ru_RU.config
-          fi
+          [ -d build-ru_RU ] || tup variant ru_RU.config
 
           echo "CONFIG_LANG=es_ES"       >> es_ES.config
           echo "CONFIG_BUILD_TYPE=es_ES" >> es_ES.config
-          if [ -d build-es_ES ]; then
-            cmp -s es_ES.config build-es_ES/tup.config || cp es_ES.config build-es_ES/tup.config
-          else
-            tup variant es_ES.config
-          fi
+          [ -d build-es_ES ] || tup variant es_ES.config
 
       - name: (en_US) Build KolibriOS
         run: |
@@ -251,7 +257,7 @@ jobs:
       - name: Save build cache
         if: success()
         run: |
-          CACHE_DIR="/build-cache/${{ steps.toolchain-hash.outputs.hash }}"
+          CACHE_DIR="/build-cache/${{ steps.toolchain-hash.outputs.hash }}-${{ steps.config-hash.outputs.hash }}"
           rm -rf "$CACHE_DIR"
           mkdir -p "$CACHE_DIR"
           cp -a .tup "$CACHE_DIR/.tup"
