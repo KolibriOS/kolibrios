@@ -32,9 +32,16 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: Get describe
+      - name: Restore file timestamps
+        run: |
+          git log --pretty=format:%at --name-only --diff-filter=ACMR | perl .gitea/workflows/restore-mtime.pl
+          git submodule foreach --recursive 'git fetch --unshallow 2>/dev/null || true; git log --pretty=format:%at --name-only --diff-filter=ACMR | perl "$toplevel/.gitea/workflows/restore-mtime.pl"'
+
+      - name: Get commit hashes
         id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITEA_OUTPUT
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITEA_OUTPUT
+          echo "sha_full=$(git rev-parse HEAD)" >> $GITEA_OUTPUT
 
       - name: Get toolchain hash
         id: toolchain-hash
@@ -97,10 +104,10 @@ jobs:
           mv clink /home/autobuild/tools/win32/bin/clink
 
       - name: Prepare cache folder
-        run: |
-          rm /home/autobuild
-          mv /root/autobuild /home/autobuild
         if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          rm -rf /home/autobuild
+          mv /root/autobuild /home/autobuild
 
       - name: Save toolchain
         if: steps.cache-toolchain.outputs.cache-hit != 'true'
@@ -108,6 +115,19 @@ jobs:
         with:
           path: /home/autobuild
           key: kolibri-toolchain-${{ steps.toolchain-hash.outputs.hash }}
+
+      - name: Restore build cache
+        id: cache-build
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .tup
+            build-en_US
+            build-ru_RU
+            build-es_ES
+          key: kolibri-build-${{ steps.toolchain-hash.outputs.hash }}-${{ steps.vars.outputs.sha_full }}
+          restore-keys: |
+            kolibri-build-${{ steps.toolchain-hash.outputs.hash }}-
 
       - name: Configure tup
         run: |
@@ -121,24 +141,23 @@ jobs:
           echo "CONFIG_INSERT_REVISION_ID=1"                                              | tee -a en_US.config ru_RU.config es_ES.config
 
           tup -v
-          tup init
+          if [ ! -d .tup ]; then
+            tup init
+          fi
+          tup scan
 
-          # Configure en_US
           echo "CONFIG_LANG=en_US"       >> en_US.config
           echo "CONFIG_BUILD_TYPE=en_US" >> en_US.config
           tup variant en_US.config
 
-          # Configure ru_RU
           echo "CONFIG_LANG=ru_RU"       >> ru_RU.config
           echo "CONFIG_BUILD_TYPE=ru_RU" >> ru_RU.config
           tup variant ru_RU.config
-          
-          # Configure es_ES
+
           echo "CONFIG_LANG=es_ES"       >> es_ES.config
           echo "CONFIG_BUILD_TYPE=es_ES" >> es_ES.config
           tup variant es_ES.config
 
-      # -------------------------- Build en_US ------------------------- #
       - name: (en_US) Build KolibriOS
         run: |
           export PATH=/home/autobuild/tools/win32/bin:$PATH
@@ -163,7 +182,6 @@ jobs:
           name: kolibrios-en_US-${{ steps.vars.outputs.sha_short }}.raw
           path: build-en_US/data/kolibri.raw
 
-      # -------------------------- Build ru_RU ------------------------- #
       - name: (ru_RU) Build KolibriOS
         run: |
           export PATH=/home/autobuild/tools/win32/bin:$PATH
@@ -188,7 +206,6 @@ jobs:
           name: kolibrios-ru_RU-${{ steps.vars.outputs.sha_short }}.raw
           path: build-ru_RU/data/kolibri.raw
 
-      # -------------------------- Build es_ES ------------------------- #
       - name: (es_ES) Build KolibriOS
         run: |
           export PATH=/home/autobuild/tools/win32/bin:$PATH
@@ -212,3 +229,20 @@ jobs:
         with:
           name: kolibrios-es_ES-${{ steps.vars.outputs.sha_short }}.raw
           path: build-es_ES/data/kolibri.raw
+
+      - name: Trim build cache payload
+        if: success()
+        run: |
+          find build-en_US/data build-ru_RU/data build-es_ES/data -maxdepth 1 -type f \
+            \( -name '*.img' -o -name '*.iso' -o -name '*.raw' \) -delete || true
+
+      - name: Save build cache
+        if: success() && steps.cache-build.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .tup
+            build-en_US
+            build-ru_RU
+            build-es_ES
+          key: kolibri-build-${{ steps.toolchain-hash.outputs.hash }}-${{ steps.vars.outputs.sha_full }}
