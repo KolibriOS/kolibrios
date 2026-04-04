@@ -248,12 +248,6 @@ jobs:
           name: kolibrios-es_ES-${{ steps.vars.outputs.sha_short }}.raw
           path: build-es_ES/data/kolibri.raw
 
-      - name: Trim build cache payload
-        if: success()
-        run: |
-          find build-en_US/data build-ru_RU/data build-es_ES/data -maxdepth 1 -type f \
-            \( -name '*.img' -o -name '*.iso' -o -name '*.raw' \) -delete || true
-
       - name: Save build cache
         if: success()
         run: |
