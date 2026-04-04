@@ -126,12 +126,29 @@ jobs:
         with:
           path: |
             .tup
+            .build-cache-mtimes
             build-en_US
             build-ru_RU
             build-es_ES
           key: kolibri-build-${{ steps.toolchain-hash.outputs.hash }}-${{ steps.vars.outputs.sha_full }}
           restore-keys: |
             kolibri-build-${{ steps.toolchain-hash.outputs.hash }}-
+
+      - name: Restore build cache timestamps
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        run: |
+          if [ -f .build-cache-mtimes ]; then
+            perl -e '
+              while (<STDIN>) {
+                chomp;
+                my ($mtime, $path) = split / /, $_, 2;
+                utime $mtime, $mtime, $path if defined $path && -e $path;
+              }
+            ' < .build-cache-mtimes
+            echo "Restored timestamps for $(wc -l < .build-cache-mtimes) cached files"
+          else
+            echo "No timestamp manifest found — first build"
+          fi
 
       - name: Configure tup
         run: |
@@ -258,6 +275,10 @@ jobs:
           find build-en_US/data build-ru_RU/data build-es_ES/data -maxdepth 1 -type f \
             \( -name '*.img' -o -name '*.iso' -o -name '*.raw' \) -delete || true
 
+      - name: Save build cache timestamps
+        if: success() && steps.cache-build.outputs.cache-hit != 'true'
+        run: find .tup build-en_US build-ru_RU build-es_ES -type f -printf '%T@ %p\n' > .build-cache-mtimes
+
       - name: Save build cache
         if: success() && steps.cache-build.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -267,4 +288,5 @@ jobs:
             build-en_US
             build-ru_RU
             build-es_ES
+            .build-cache-mtimes
           key: kolibri-build-${{ steps.toolchain-hash.outputs.hash }}-${{ steps.vars.outputs.sha_full }}
