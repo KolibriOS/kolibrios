@@ -37,6 +37,9 @@ jobs:
         run: |
           git log --pretty=format:%at --name-only --diff-filter=ACMR | perl .gitea/workflows/restore-mtime.pl
           git submodule foreach --recursive 'git fetch --unshallow 2>/dev/null || true; git log --pretty=format:%at --name-only --diff-filter=ACMR | perl "$toplevel/.gitea/workflows/restore-mtime.pl"'
+          echo "::group::Sample timestamps after restore-mtime"
+          stat --format="%n %Y" kernel/trunk/kernel.asm Tupfile.lua 2>/dev/null || true
+          echo "::endgroup::"
 
       - name: Get commit hashes
         id: vars
@@ -145,7 +148,13 @@ jobs:
           if [ ! -d .tup ]; then
             tup init
           fi
-          tup scan
+
+          echo "::group::Timestamps before tup scan"
+          stat --format="%n %Y" kernel/trunk/kernel.asm Tupfile.lua 2>/dev/null || true
+          ls -la .tup/ 2>/dev/null | head -5 || echo "No .tup directory"
+          echo "::endgroup::"
+
+          tup scan 2>&1 | tail -20
 
           echo "CONFIG_LANG=en_US"       >> en_US.config
           echo "CONFIG_BUILD_TYPE=en_US" >> en_US.config
