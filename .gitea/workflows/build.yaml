@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # SPDX-FileCopyrightText: 2025 KolibriOS team
-# test: trigger incremental build
 
 name: 'Build system'
 
