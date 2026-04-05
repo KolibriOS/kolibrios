@@ -148,6 +148,29 @@ jobs:
             echo "No build cache found — first build"
           fi
 
+      - name: Debug cache state
+        if: always()
+        run: |
+          echo "=== .tup directory ==="
+          ls -la .tup/ 2>/dev/null || echo "No .tup directory"
+
+          echo "=== Sample generated file stats (nanosecond precision) ==="
+          stat --format='%n mtime=%y size=%s inode=%i' build-en_US/data/distribution_kit/distribution_kit/kolibri.img 2>/dev/null || echo "File not found"
+
+          echo "=== tup database mtime records ==="
+          if [ -f .tup/db ]; then
+            sqlite3 .tup/db "SELECT name, mtime, srcid FROM node WHERE name='kolibri.img' LIMIT 5;" 2>/dev/null || echo "Cannot query tup db"
+          fi
+
+          echo "=== Source file mtime sample ==="
+          stat --format='%n mtime=%y' kernel/trunk/kernel.asm 2>/dev/null || echo "File not found"
+
+          echo "=== How many generated files tup tracks ==="
+          sqlite3 .tup/db "SELECT COUNT(*) FROM node WHERE type=4;" 2>/dev/null || echo "Cannot query"
+
+          echo "=== Filesystem info ==="
+          df -T . /build-cache/ 2>/dev/null || true
+
       - name: Configure tup
         run: |
           cd ${{ gitea.workspace }}
