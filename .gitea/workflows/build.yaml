@@ -148,39 +148,36 @@ jobs:
             echo "No build cache found — first build"
           fi
 
-      - name: Debug cache state
-        if: always()
+      - name: Normalize cache timestamps
         run: |
-          echo "=== Filesystem mtime for warned files ==="
-          stat --format='mtime_ns=%Y.%y  %n' \
-            build-en_US/data/distribution_kit/distribution_kit/kolibri.img \
-            build-en_US/data/distribution_kit/Docs/Copying.txt \
-            build-en_US/data/distribution_kit/autorun.inf \
-            2>/dev/null || echo "Files not found"
-
-          echo "=== Same files in cache volume ==="
-          CACHE_DIR="/build-cache/${{ steps.toolchain-hash.outputs.hash }}-${{ steps.config-hash.outputs.hash }}"
-          stat --format='mtime_ns=%Y.%y  %n' \
-            "$CACHE_DIR/build-en_US/data/distribution_kit/distribution_kit/kolibri.img" \
-            "$CACHE_DIR/build-en_US/data/distribution_kit/Docs/Copying.txt" \
-            "$CACHE_DIR/build-en_US/data/distribution_kit/autorun.inf" \
-            2>/dev/null || echo "Files not found in cache"
-
-          echo "=== tup DB: mtime + mtime_ns for warned files ==="
-          python3 -c "
+          if [ -d .tup ]; then
+            python3 -c "
           import sqlite3, os
+
+          # 1. Zero out nanoseconds in tup database
           db = sqlite3.connect('.tup/db')
-          # Find the warned files — compare DB vs filesystem
-          for name in ['kolibri.img', 'Copying.txt', 'autorun.inf']:
-              rows = db.execute('SELECT id, dir, type, mtime, mtime_ns, name FROM node WHERE name=? AND type=4', (name,)).fetchall()
-              for r in rows:
-                  print(f'  DB: id={r[0]} dir={r[1]} mtime={r[3]} mtime_ns={r[4]} name={r[5]}')
-          # Check modify_list — files tup already considers modified
-          ml = db.execute('SELECT COUNT(*) FROM modify_list').fetchone()[0]
-          print(f'  modify_list entries: {ml}')
-          cl = db.execute('SELECT COUNT(*) FROM create_list').fetchone()[0]
-          print(f'  create_list entries: {cl}')
-          " 2>&1
+          db.execute('UPDATE node SET mtime_ns = 0')
+          db.commit()
+          print(f'Zeroed mtime_ns for {db.total_changes} nodes')
+          db.close()
+
+          # 2. Truncate file mtimes to second precision
+          count = 0
+          for d in ['build-en_US', 'build-ru_RU', 'build-es_ES']:
+              if not os.path.isdir(d):
+                  continue
+              for root, dirs, files in os.walk(d):
+                  for f in files:
+                      path = os.path.join(root, f)
+                      try:
+                          st = os.stat(path)
+                          os.utime(path, (st.st_atime, int(st.st_mtime)))
+                          count += 1
+                      except OSError:
+                          pass
+          print(f'Truncated nanoseconds for {count} files')
+          "
+          fi
 
       - name: Configure tup
         run: |
