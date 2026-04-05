@@ -151,25 +151,40 @@ jobs:
       - name: Debug cache state
         if: always()
         run: |
-          echo "=== .tup directory ==="
-          ls -la .tup/ 2>/dev/null || echo "No .tup directory"
+          echo "=== Filesystem mtime for warned files ==="
+          stat --format='mtime_ns=%Y.%y  %n' \
+            build-en_US/data/distribution_kit/distribution_kit/kolibri.img \
+            build-en_US/data/distribution_kit/Docs/Copying.txt \
+            build-en_US/data/distribution_kit/autorun.inf \
+            2>/dev/null || echo "Files not found"
 
-          echo "=== Sample generated file stats (nanosecond precision) ==="
-          stat --format='%n mtime=%y size=%s inode=%i' build-en_US/data/distribution_kit/distribution_kit/kolibri.img 2>/dev/null || echo "File not found"
+          echo "=== Same files in cache volume ==="
+          CACHE_DIR="/build-cache/${{ steps.toolchain-hash.outputs.hash }}-${{ steps.config-hash.outputs.hash }}"
+          stat --format='mtime_ns=%Y.%y  %n' \
+            "$CACHE_DIR/build-en_US/data/distribution_kit/distribution_kit/kolibri.img" \
+            "$CACHE_DIR/build-en_US/data/distribution_kit/Docs/Copying.txt" \
+            "$CACHE_DIR/build-en_US/data/distribution_kit/autorun.inf" \
+            2>/dev/null || echo "Files not found in cache"
 
-          echo "=== tup database mtime records ==="
-          if [ -f .tup/db ]; then
-            sqlite3 .tup/db "SELECT name, mtime, srcid FROM node WHERE name='kolibri.img' LIMIT 5;" 2>/dev/null || echo "Cannot query tup db"
-          fi
-
-          echo "=== Source file mtime sample ==="
-          stat --format='%n mtime=%y' kernel/trunk/kernel.asm 2>/dev/null || echo "File not found"
-
-          echo "=== How many generated files tup tracks ==="
-          sqlite3 .tup/db "SELECT COUNT(*) FROM node WHERE type=4;" 2>/dev/null || echo "Cannot query"
-
-          echo "=== Filesystem info ==="
-          df -T . /build-cache/ 2>/dev/null || true
+          echo "=== tup DB: mtime for these files ==="
+          python3 -c "
+          import sqlite3
+          db = sqlite3.connect('.tup/db')
+          # Schema discovery
+          print('Tables:', [r[0] for r in db.execute(\"SELECT name FROM sqlite_master WHERE type='table'\").fetchall()])
+          cols = db.execute('PRAGMA table_info(node)').fetchall()
+          print('node columns:', [(c[1],c[2]) for c in cols])
+          # Find the warned files
+          for name in ['kolibri.img', 'Copying.txt', 'autorun.inf']:
+              rows = db.execute('SELECT id, dir, type, mtime, name FROM node WHERE name=?', (name,)).fetchall()
+              for r in rows:
+                  print(f'  DB: id={r[0]} dir={r[1]} type={r[2]} mtime={r[3]} name={r[4]}')
+          # Count generated files (type=4 in tup)
+          for t in range(0,8):
+              cnt = db.execute('SELECT COUNT(*) FROM node WHERE type=?', (t,)).fetchone()[0]
+              if cnt > 0:
+                  print(f'  type={t}: {cnt} nodes')
+          " 2>&1
 
       - name: Configure tup
         run: |
