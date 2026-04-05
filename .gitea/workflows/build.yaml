@@ -166,24 +166,20 @@ jobs:
             "$CACHE_DIR/build-en_US/data/distribution_kit/autorun.inf" \
             2>/dev/null || echo "Files not found in cache"
 
-          echo "=== tup DB: mtime for these files ==="
+          echo "=== tup DB: mtime + mtime_ns for warned files ==="
           python3 -c "
-          import sqlite3
+          import sqlite3, os
           db = sqlite3.connect('.tup/db')
-          # Schema discovery
-          print('Tables:', [r[0] for r in db.execute(\"SELECT name FROM sqlite_master WHERE type='table'\").fetchall()])
-          cols = db.execute('PRAGMA table_info(node)').fetchall()
-          print('node columns:', [(c[1],c[2]) for c in cols])
-          # Find the warned files
+          # Find the warned files — compare DB vs filesystem
           for name in ['kolibri.img', 'Copying.txt', 'autorun.inf']:
-              rows = db.execute('SELECT id, dir, type, mtime, name FROM node WHERE name=?', (name,)).fetchall()
+              rows = db.execute('SELECT id, dir, type, mtime, mtime_ns, name FROM node WHERE name=? AND type=4', (name,)).fetchall()
               for r in rows:
-                  print(f'  DB: id={r[0]} dir={r[1]} type={r[2]} mtime={r[3]} name={r[4]}')
-          # Count generated files (type=4 in tup)
-          for t in range(0,8):
-              cnt = db.execute('SELECT COUNT(*) FROM node WHERE type=?', (t,)).fetchone()[0]
-              if cnt > 0:
-                  print(f'  type={t}: {cnt} nodes')
+                  print(f'  DB: id={r[0]} dir={r[1]} mtime={r[3]} mtime_ns={r[4]} name={r[5]}')
+          # Check modify_list — files tup already considers modified
+          ml = db.execute('SELECT COUNT(*) FROM modify_list').fetchone()[0]
+          print(f'  modify_list entries: {ml}')
+          cl = db.execute('SELECT COUNT(*) FROM create_list').fetchone()[0]
+          print(f'  create_list entries: {cl}')
           " 2>&1
 
       - name: Configure tup
