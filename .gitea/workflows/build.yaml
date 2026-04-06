@@ -19,7 +19,7 @@ jobs:
 
       - name: Check codestyle
         run: |
-          find kernel/trunk \( -iname '*.asm' -o -iname '*.inc' \) -exec bash -c 'echo "$1"; python3 .gitea/workflows/check-kernel.py "$1" < "$1"' _ {} \;
+          find kernel/trunk -iname '*.asm' -or -iname '*.inc' -exec bash -c "echo {}; cat {} | perl .gitea/workflows/checker.pl" \;
 
   build:
     name: 'Build'
@@ -31,10 +31,9 @@ jobs:
         with:
           submodules: true
 
-      - name: Get commit hash
+      - name: Get describe
         id: vars
-        run: |
-          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITEA_OUTPUT
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITEA_OUTPUT
 
       - name: Get toolchain hash
         id: toolchain-hash
