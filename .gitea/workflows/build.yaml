@@ -19,7 +19,7 @@ jobs:
 
       - name: Check codestyle
         run: |
-          find kernel/trunk -iname '*.asm' -or -iname '*.inc' -exec bash -c "echo {}; cat {} | perl .gitea/workflows/checker.pl" \;
+          find kernel/trunk \( -iname '*.asm' -o -iname '*.inc' \) -exec bash -c 'echo "$1"; python3 .gitea/workflows/check-kernel.py "$1" < "$1"' _ {} \;
 
   build:
     name: 'Build'
@@ -34,14 +34,13 @@ jobs:
 
       - name: Restore file timestamps
         run: |
-          git log --pretty=format:%at --name-only --diff-filter=ACMR | perl .gitea/workflows/restore-mtime.pl
-          git submodule foreach --recursive 'git fetch --unshallow 2>/dev/null || true; git log --pretty=format:%at --name-only --diff-filter=ACMR | perl "$toplevel/.gitea/workflows/restore-mtime.pl"'
+          git log --pretty=format:%at --name-only --diff-filter=ACMR | python3 .gitea/workflows/restore-mtime.py
+          git submodule foreach --recursive 'git fetch --unshallow 2>/dev/null || true; git log --pretty=format:%at --name-only --diff-filter=ACMR | python3 "$toplevel/.gitea/workflows/restore-mtime.py"'
 
       - name: Get commit hashes
         id: vars
         run: |
           echo "sha_short=$(git rev-parse --short HEAD)" >> $GITEA_OUTPUT
-          echo "sha_full=$(git rev-parse HEAD)" >> $GITEA_OUTPUT
 
       - name: Get toolchain hash
         id: toolchain-hash
@@ -120,13 +119,6 @@ jobs:
         id: config-hash
         run: |
           export ROOT=${{ gitea.workspace }}
-          {
-            echo "CONFIG_KPACK_CMD= && kpack --nologo %o"
-            echo "CONFIG_KERPACK_CMD= && kerpack %o"
-            echo "CONFIG_PESTRIP_CMD= && EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o"
-            echo "CONFIG_NO_MSVC=full"
-            echo "CONFIG_INSERT_REVISION_ID=1"
-          } | sha1sum | awk '{print $1}'
           echo "hash=$({
             echo "CONFIG_KPACK_CMD= && kpack --nologo %o"
             echo "CONFIG_KERPACK_CMD= && kerpack %o"
@@ -156,8 +148,6 @@ jobs:
 
       - name: Configure tup
         run: |
-          cd ${{ gitea.workspace }}
-
           export ROOT=${{ gitea.workspace }}
           echo "CONFIG_KPACK_CMD= && kpack --nologo %o"                                   | tee en_US.config ru_RU.config es_ES.config
           echo "CONFIG_KERPACK_CMD= && kerpack %o"                                        | tee -a en_US.config ru_RU.config es_ES.config
@@ -165,7 +155,6 @@ jobs:
           echo "CONFIG_NO_MSVC=full"                                                      | tee -a en_US.config ru_RU.config es_ES.config
           echo "CONFIG_INSERT_REVISION_ID=1"                                              | tee -a en_US.config ru_RU.config es_ES.config
 
-          tup -v
           if [ ! -d .tup ]; then
             tup init
           fi
@@ -255,7 +244,6 @@ jobs:
           path: build-es_ES/data/kolibri.raw
 
       - name: Save build cache
-        if: success()
         run: |
           CACHE_DIR="/build-cache/${{ steps.toolchain-hash.outputs.hash }}-${{ steps.config-hash.outputs.hash }}"
           rm -rf "$CACHE_DIR"
