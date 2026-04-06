@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # KolibriOS kernel codestyle checker for FASM assembly files.
-# Usage: cat file.asm | python3 checker.py [filename]
+# Usage: python3 check-kernel.py filename < filename
 
 import re
 import sys
