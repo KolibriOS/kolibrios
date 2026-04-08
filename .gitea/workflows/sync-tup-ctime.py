@@ -11,53 +11,42 @@ import os
 import sqlite3
 import sys
 
-dbpath = sys.argv[1] if len(sys.argv) > 1 else '.tup/db'
-if not os.path.isfile(dbpath):
-    print(f'Database not found: {dbpath}')
-    sys.exit(1)
+db_path = sys.argv[1] if len(sys.argv) > 1 else ".tup/db"
+if not os.path.isfile(db_path):
+    sys.exit(f"Database not found: {db_path}")
 
-db = sqlite3.connect(dbpath)
+db = sqlite3.connect(db_path)
+nodes = {
+    node_id: (parent_id, name)
+    for node_id, parent_id, name in db.execute(
+        "select id, dir, name from node where type in (0, 2)"
+    )
+}
+paths, updated, skipped = {}, 0, 0
 
-# Build dir_id -> (parent_id, name) mapping
-# type=0: TUP_NODE_DIR, type=2: TUP_NODE_FILE
-dirs = {}
-for row in db.execute('SELECT id, dir, name FROM node WHERE type IN (0, 2)'):
-    dirs[row[0]] = (row[1], row[2])
-
-def resolve_path(dir_id):
-    parts = []
-    while dir_id in dirs:
-        parent, name = dirs[dir_id]
-        parts.append(name)
-        dir_id = parent
-    return '/'.join(reversed(parts))
-
-updated = 0
-skipped = 0
-
-# Update all tracked node types: dirs (0), files (2), generated (4)
-for node_type in (0, 2, 4):
-    for node_id, dir_id, name, db_sec, db_ns in db.execute(
-        'SELECT id, dir, name, mtime, mtime_ns FROM node WHERE type=?',
-        (node_type,)
-    ):
-        dirpath = resolve_path(dir_id)
-        filepath = os.path.join(dirpath, name) if dirpath else name
-        try:
-            st = os.stat(filepath)
-        except OSError:
-            skipped += 1
-            continue
-
-        fs_sec = int(st.st_ctime)
-        fs_ns = st.st_ctime_ns - fs_sec * 1_000_000_000
-        if db_sec != fs_sec or db_ns != fs_ns:
-            db.execute(
-                'UPDATE node SET mtime=?, mtime_ns=? WHERE id=?',
-                (fs_sec, fs_ns, node_id),
-            )
-            updated += 1
+for node_id, dir_id, name, old_sec, old_ns in db.execute(
+    "select id, dir, name, mtime, mtime_ns from node where type in (0, 2, 4)"
+):
+    if dir_id not in paths:
+        parts, cur = [], dir_id
+        while cur in nodes:
+            cur, part = nodes[cur]
+            parts.append(part)
+        paths[dir_id] = "/".join(reversed(parts))
+    path = os.path.join(paths[dir_id], name) if paths[dir_id] else name
+    try:
+        stat = os.stat(path)
+    except OSError:
+        skipped += 1
+        continue
+    sec = int(stat.st_ctime)
+    ns = stat.st_ctime_ns - sec * 1_000_000_000
+    if sec == old_sec and ns == old_ns:
+        continue
+    db.execute("update node set mtime=?, mtime_ns=? where id=?", (sec, ns, node_id))
+    updated += 1
 
 db.commit()
 db.close()
-print(f'Updated ctime for {updated} nodes, skipped {skipped} missing files')
+
+print(f"Updated ctime for {updated} nodes, skipped {skipped} missing files")
