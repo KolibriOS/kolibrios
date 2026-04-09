@@ -1,8 +1,11 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ; Calendar for KolibriOS
 ;
 ; v1.5 - time redesign by Heavyiron
 ; v1.2 - v1.55 - new design and functionality by Leency
-; v1.1 - add change time support by DedOK 
+; v1.1 - add change time support by DedOK
 ; v1.0 - written in pure assembler by Ivushkin Andrey aka Willow
 ; also - diamond, spraid, fedesco
 ;
@@ -21,7 +24,7 @@ use32
   dd	 0x1000
   dd	 0x0
   dd	 0x0
-include '..\..\..\macros.inc'
+include '..\..\macros.inc'
 include 'lang.inc'
 include 'data.inc'
 
@@ -126,7 +129,7 @@ macro DrawRect color1,color2,color3,color4 ; pizdec... but optimized well
 	add ebx,1 shl 16
 	sub ecx,1 shl 16
 	sub bx,2
-	mcall 
+	mcall
 }
 
 
@@ -361,7 +364,7 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     je	 year_dec
     cmp  ah,179
     je	 year_inc
-	
+
     mov  ebx,10
     cmp  ah,9
     je	 key.tab
@@ -401,8 +404,8 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     jmp  upd
 
 update_clock:
-    mcall 22,0x00000000 
-    call draw_clock	
+    mcall 22,0x00000000
+    call draw_clock
     jmp  still
 
 reset:
@@ -522,7 +525,7 @@ panel_top:
 	mov ebx, eax
 	sub eax, WIN_W
 	shl ebx, 16
-	add ebx, WIN_W	
+	add ebx, WIN_W
     mcall 0,,,COL_WINDOW_BG, ,title ; define window
 	mcall 12,2
 	GetSkinHeight
@@ -532,7 +535,7 @@ panel_top:
 	mcall 13,B_WBAR_X, ,COL_TOOLBAR_BG ; draw toolbar background
 	mcall 13,B_WBAR_X,BT_WBAR_Y,COL_TOOLBAR_BG ; draw toolbar background
 	mcall 13,0*65536+B_WBAR_X,84*65536+199,0xE7E7E7
-	
+
 draw_window:
     call draw_clock
     call draw_week

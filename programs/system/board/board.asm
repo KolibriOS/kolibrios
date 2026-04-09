@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 ;------------------------------------------------------------------------------
 ; DEBUG BOARD for APPLICATIONS and KERNEL DEVELOPMENT
 ; See f63
@@ -15,8 +20,8 @@ org 0
         dd      0
 ;------------------------------------------------------------------------------
 include 'lang.inc'
-include '../../../macros.inc'
-include '../../../debug.inc'
+include '../../macros.inc'
+include '../../debug.inc'
 purge   newline
 ;SMALL FONT
 MAXSTRINGS = 45
@@ -190,7 +195,7 @@ key:
 open_boardlog:
 		mcall 70, open_log_in_tinypad
         jmp     red
-		
+
 ;------------------------------------------------------------------------------
 button:
         mcall   17                        ; get id

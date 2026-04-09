@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;-----------------------;
 ; CPU - process manager ;
 ;-----------------------;
@@ -17,10 +20,10 @@
         dd      cur_dir_path     ; path
 ;-------------------------------------------------------------------------------
 include "lang.inc" ; Language support for locales (UTF-8): de_DE, et_EE, ru_RU, it_IT, en_US.
-include "../../../macros.inc"
-include "../../../develop/libraries/box_lib/trunk/box_lib.mac"
-include "../../../KOSfuncs.inc"
-include "../../../load_lib.mac"
+include "../../macros.inc"
+include "../../develop/libraries/box_lib/trunk/box_lib.mac"
+include "../../KOSfuncs.inc"
+include "../../load_lib.mac"
 ;-------------------------------------------------------------------------------
 DISPLAY_PROCESSES = 20  ;number of processes to show
 ;-------------------------------------------------------------------------------

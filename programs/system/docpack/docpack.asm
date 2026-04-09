@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;---------------------------------------------------------------------
 ;
 ;   DOCPAK FOR KOLIBRI v1.2
@@ -44,7 +47,7 @@ macro embed_local_file fn
    dd     I_END+0x400             ; memory for app
    dd     I_END+0x400             ; esp
    dd     my_param , 0x0          ; I_Param , I_Icon
-include '../../../macros.inc'
+include '../../macros.inc'
 include 'lang.inc'      ; Language support for locales: ru_RU, en_US.
 
 start:

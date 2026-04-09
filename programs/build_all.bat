@@ -56,13 +56,13 @@ for %%i in (%BIN% %BIN%\demos %BIN%\develop %BIN%\lib %BIN%\games %BIN%\network 
 echo *
 echo Building system
 echo *
-fasm system\calendar\trunk\calendar.asm %BIN%\calendar
-fasm system\board\trunk\board.asm %BIN%\develop\board
+fasm system\calendar\calendar.asm %BIN%\calendar
+fasm system\board\board.asm %BIN%\develop\board
 fasm system\commouse\trunk\commouse.asm %BIN%\commouse
-fasm system\cpu\trunk\cpu.asm %BIN%\cpu
+fasm system\cpu\cpu.asm %BIN%\cpu
 fasm system\cpuid\trunk\cpuid.asm %BIN%\cpuid
 fasm system\skincfg\trunk\skincfg.asm %BIN%\skincfg
-fasm system\docpack\trunk\docpack.asm %BIN%\docpack
+fasm system\docpack\docpack.asm %BIN%\docpack
 fasm system\end\trunk\end.asm %BIN%\end
 fasm system\gmon\gmon.asm %BIN%\gmon
 fasm system\icon\trunk\icon.asm %BIN%\icon
