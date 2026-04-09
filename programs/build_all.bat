@@ -201,9 +201,9 @@ rem fasm games\hunter\trunk\hunter.asm %BIN%\games\hunter
 echo *
 echo Building demos
 echo *
-fasm demos\3dcube2\trunk\3dcube2.asm %BIN%\3d\3dcube2
-rem fasm demos\3detx60b\trunk\3detx60b.asm %BIN%\3d\3detx60b
-fasm demos\3dtcub10\trunk\3dtcub10.asm %BIN%\3d\3dtcub10
+fasm demos\3dcube2\3dcube2.asm %BIN%\3d\3dcube2
+rem fasm demos\3detx60b\3detx60b.asm %BIN%\3d\3detx60b
+fasm demos\3dtcub10\3dtcub10.asm %BIN%\3d\3dtcub10
 cd demos\aclock\trunk\
 nasmw -t -f bin -o ..\..\..\%BIN%\demos\aclock aclock.asm
 cd ..\..\..
