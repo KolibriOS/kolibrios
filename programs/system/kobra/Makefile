@@ -1,12 +1,12 @@
-ROOT=../../../develop/libraries/framework/trunk
+ROOT=../../develop/libraries/framework/trunk
 
-include ../../../develop/libraries/framework/trunk/config.mk
+include ../../develop/libraries/framework/trunk/config.mk
 
 # Note that kobra_st.o MUST be first and kobra.o last.
 OBJECTS=kobra_st.o $(ROOT)/stdlib/heap.o $(ROOT)/stdlib/malloc.o $(ROOT)/stdlib/stdlib.o $(ROOT)/kolibri/kolibri.o $(ROOT)/libIPC/ipc.o kobra.o
 
 # Set real path to kolibri.img if you want to use install option
-KOLIBRI_IMG=../../../../../../0.7.x-night/kolibri.img
+KOLIBRI_IMG=../../../../../0.7.x-night/kolibri.img
 
 # Path to kobra.kex on floppy (directory should be created before installing)
 DESTDIR=kobra/

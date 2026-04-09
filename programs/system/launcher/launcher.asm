@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;-----------------------------------------------------------------------------
 ;
 ;   LAUNCHER - startup of programs
@@ -28,11 +31,11 @@
 	dd 0x0		; I_Param
 	dd 0x0		; I_Icon
 ;-----------------------------------------------------------------------------
-include "../../../macros.inc"
+include "../../macros.inc"
 
 define __DEBUG__ 1
 define __DEBUG_LEVEL__ 1
-include "../../../debug-fdo.inc"
+include "../../debug-fdo.inc"
 ;-----------------------------------------------------------------------------
 START:                           ; start of execution
 	mcall	68,11
@@ -43,7 +46,7 @@ START:                           ; start of execution
 	mov	ecx,[processinfo+32]
 	test	ecx,ecx
 	jnz	@f
-	
+
 	inc	ecx	; if file size zero
 ;--------------------------------------
 @@:

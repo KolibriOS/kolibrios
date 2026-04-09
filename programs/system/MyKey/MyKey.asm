@@ -1,4 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
 ;
+
 ;   MyKey. Version 0.2.
 ;
 ;   Author:         Asper
@@ -23,13 +25,13 @@ include 'lang.inc' ; Language support for locales: it_IT, en_US.
 
 include 'string.inc'
 ;include 'macros.inc'
-include '../../../macros.inc'
+include '../../macros.inc'
 include 'ASPAPI.INC'
 ;include 'editbox_ex.mac'
-include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 ;include 'load_lib.mac'
-include '../../../develop/libraries/box_lib/load_lib.mac'
-include '../../../dll.inc'
+include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../dll.inc'
 
 include 'debug.inc'
 DEBUG	 equ 0;1

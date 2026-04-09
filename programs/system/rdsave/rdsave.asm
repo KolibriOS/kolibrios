@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;   RDsave для Kolibri (0.6.5.0 и старше)
 ;   Save RAM-disk to hard or floppy drive
 ;---------------------------------------------------------------------
@@ -25,15 +31,15 @@ dd cur_dir_path
 
 
 include 'lang.inc' ; Language support for locales: ru_RU (CP866), et_EE, it_IT, en_US.
-include '../../../macros.inc'
+include '../../macros.inc'
 if debug eq yes
-include '../../../debug.inc'
+include '../../debug.inc'
 end if
-include '../../../proc32.inc'
-include '../../../dll.inc'
-include '../../../KOSfuncs.inc'
-include '../../../load_lib.mac'
-include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../proc32.inc'
+include '../../dll.inc'
+include '../../KOSfuncs.inc'
+include '../../load_lib.mac'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'str.inc'
 
 	@use_library

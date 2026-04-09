@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;******************************************************************************
 ;   MAIN MENU
 ;******************************************************************************
@@ -41,11 +44,11 @@
 	dd bootparam   ; boot parameters
 	dd 0x0         ; path
 ;------------------------------------------------------------------------------
-include "..\..\..\macros.inc"
-include "..\..\..\struct.inc"
-include "..\..\..\gui_patterns.inc"
+include "..\..\macros.inc"
+include "..\..\struct.inc"
+include "..\..\gui_patterns.inc"
 ; Formatted debug output:
-include "..\..\..\debug-fdo.inc"
+include "..\..\debug-fdo.inc"
 __DEBUG__       = 1             ; 0 - disable debug output / 1 - enable debug output
 __DEBUG_LEVEL__ = DBG_ERR      ; set the debug level
 DBG_ALL       = 0  ; all messages

@@ -65,16 +65,16 @@ fasm system\skincfg\trunk\skincfg.asm %BIN%\skincfg
 fasm system\docpack\docpack.asm %BIN%\docpack
 fasm system\end\trunk\end.asm %BIN%\end
 fasm system\gmon\gmon.asm %BIN%\gmon
-fasm system\icon\trunk\icon.asm %BIN%\icon
+fasm system\icon\icon.asm %BIN%\icon
 fasm system\kbd\trunk\kbd.ASM %BIN%\kbd
-fasm system\launcher\trunk\launcher.asm %BIN%\launcher
-fasm system\menu\trunk\menu.asm %BIN%\@menu
+fasm system\launcher\launcher.asm %BIN%\launcher
+fasm system\menu\menu.asm %BIN%\@menu
 fasm system\mgb\trunk\mgb.asm %BIN%\mgb
-fasm system\mousemul\trunk\mousemul.asm %BIN%\mousemul
+fasm system\mousemul\mousemul.asm %BIN%\mousemul
 fasm system\PANEL\trunk\@TASKBAR.ASM %BIN%\@TASKBAR
 fasm system\pcidev\trunk\pcidev.asm %BIN%\pcidev
 fasm system\RB\trunk\@RB.ASM %BIN%\@RB
-fasm system\rdsave\trunk\rdsave.asm %BIN%\rdsave
+fasm system\rdsave\rdsave.asm %BIN%\rdsave
 fasm system\run\trunk\run.asm %BIN%\run
 fasm system\setup\trunk\setup.asm %BIN%\setup
 fasm system\skinsel\skinsel.asm %BIN%\skinsel
@@ -238,9 +238,9 @@ fasm media\midamp\trunk\midamp.asm %BIN%\nightbuild\midamp
 fasm develop\heed\trunk\heed.asm %BIN%\nightbuild\heed
 fasm develop\tinypad\trunk\tinypad.asm %BIN%\nightbuild\tinypad
 fasm system\skincfg\trunk\skincfg.asm %BIN%\nightbuild\skincfg
-fasm system\hdd_info\trunk\hdd_info.asm %BIN%\nightbuild\hdd_info
+fasm system\hdd_info\hdd_info.asm %BIN%\nightbuild\hdd_info
 fasm system\mgb\trunk\mgb.asm %BIN%\nightbuild\mgb
-fasm system\rdsave\trunk\rdsave.asm %BIN%\nightbuild\rdsave
+fasm system\rdsave\rdsave.asm %BIN%\nightbuild\rdsave
 fasm other\kpack\trunk\kpack.asm %BIN%\nightbuild\kpack
 fasm other\rtfread\rtfread.asm %BIN%\nightbuild\rtfread
 ;restore
