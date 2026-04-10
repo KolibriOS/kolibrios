@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;
 ;   TIMER (show how much system works)
 ;
@@ -17,7 +23,7 @@ use32
     dd     0x0 , 0x0        ; I_Param , I_Icon
 
 include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
-include '..\..\..\macros.inc'
+include '..\..\macros.inc'
 
 START:                      ; start of execution
     mov  eax, 40

@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;
 ; TRIANGLE SPEED TEST 3
 ; 32 triangle draw use! 12300 triangle in sec on 800Mhz processor
@@ -19,7 +22,7 @@ use32
 SCREEN_X equ 320 ;800
 SCREEN_Y equ 200 ;600
 
-include '..\..\..\macros.inc'
+include '..\..\macros.inc'
 include 'lang.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
@@ -80,7 +83,7 @@ exit:
 
 ;Draw window
 draw_window:
-    
+
     mov eax,12  ;Start
     mov ebx,1
     mcall
@@ -227,7 +230,7 @@ filled_triangle:
  mov ecx,[@@ty2]
  cmp ecx,[@@ty3]
  jge @@end_loop23
-	
+
 	mov ebx,[@@tx2]
 	shl ebx,12 ;7
 @@loop23:

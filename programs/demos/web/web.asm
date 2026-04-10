@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;"Web" demo for KolibriOS, version 0.3
 ;Copyright Alexander Meshcheryakov (Self-Perfection), 2009
 ;Contact me: alexander.s.m@gmail.com
@@ -13,7 +16,7 @@ use32
     db  'MENUET01'
     dd  0x01,__start,__end,__memory,__stack,param,0
 
-include '../../../macros.inc'
+include '../../macros.inc'
 
 background_cl = 0x000000
 foreground_cl = 0xFFFFFF
@@ -31,7 +34,7 @@ CODE
     mov     ebx, EVM_REDRAW + EVM_KEY + EVM_BUTTON
     cmovz   ebx, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE
     mcall   40
-	
+
 	;Make cursor transparent
     mov     edi, transparent_cursor
     xor     eax, eax
@@ -40,7 +43,7 @@ CODE
     mcall   37, 4, transparent_cursor, 2
     mov     ecx, eax
     mcall   37, 5
-	
+
     ;Preinit. Randomize start counter
     mcall 3
     mov     [initial_counter], eax          ;init with system time
@@ -51,7 +54,7 @@ CODE
     mov     dword [y_max], eax      ;store x_max and y_max
     shr     eax, 1
     mov     dword [radius], eax     ;store radius and x_center
-    
+
     ;Calc line_number
     mov     ax, [y_max]
     mov     dx, 0
@@ -90,7 +93,7 @@ CODE
     fninit
     fldpi
     fidiv word [half_line_number]    ;Now st0 contains angle step of line start points
-    
+
     mov eax, [line_coords_array_pointer]          ;cleanup: comment
     movzx   ecx, word [half_line_number]
     shl     ecx, 1
@@ -189,7 +192,7 @@ calculate_next_line_end_point:
         add     eax, dword [image_pointer]
         inc     eax
         mov     [eax], byte red_cl_index
-        
+
         movzx   ebx, word [esi+end_y_offset]
         movzx   eax, word [x_max]
         imul    eax, ebx
@@ -210,9 +213,9 @@ calculate_next_line_end_point:
     mov     bx, word [esi+start_y_offset]
     cmp     bx, word [esi+end_y_offset]
     jnz     general_draw_line      ;Jump to next test if dy!=0
-    
+
     pusha
-    
+
     movzx   ecx, word [esi+end_x_offset]
     sub     cx, word [esi+start_x_offset]
 
@@ -279,7 +282,7 @@ general_draw_line:
     neg     cx
     neg     edi
   @@:
-    
+
     ;compare abs(y1 - y0) and abs(x1 - x0)
     cmp     bx, cx
     jnc     @f
@@ -348,7 +351,7 @@ line_drawing_end:
     movzx ebx, [x_max]
     movzx ecx, [y_max]
     mov edx, 0x01000000     ;Window style       ;Draw nothing
-;     mov edx, 0x00000000     ;Window style 
+;     mov edx, 0x00000000     ;Window style
 ;     mov esi, 0x00000000     ;Header color (prevent odd color line on top of window in random cases)
     mcall           ;Define window
 

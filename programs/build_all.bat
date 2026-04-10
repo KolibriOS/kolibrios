@@ -183,9 +183,9 @@ echo *
 fasm games\15\trunk\15.asm %BIN%\games\15
 fasm games\arcanii\trunk\arcanii.asm %BIN%\games\arcanii
 fasm games\arcanoid\trunk\arcanoid.asm %BIN%\games\arcanoid
-cd games\c4\trunk\
+pushd games\c4\trunk\
 nasmw -f bin -o ..\..\..\%BIN%\games\c4 c4.asm
-cd ..\..\..
+popd
 fasm games\freecell\freecell.asm %BIN%\games\freecell
 fasm games\mblocks\trunk\mblocks.asm %BIN%\games\mblocks
 fasm games\phenix\trunk\phenix.asm %BIN%\games\phenix
@@ -204,28 +204,28 @@ echo *
 fasm demos\3dcube2\3dcube2.asm %BIN%\3d\3dcube2
 rem fasm demos\3detx60b\3detx60b.asm %BIN%\3d\3detx60b
 fasm demos\3dtcub10\3dtcub10.asm %BIN%\3d\3dtcub10
-cd demos\aclock\trunk\
+pushd demos\aclock\
 nasmw -t -f bin -o ..\..\..\%BIN%\demos\aclock aclock.asm
-cd ..\..\..
+popd
 fasm demos\bcdclk\bcdclk.asm %BIN%\demos\bcdclk
-fasm demos\bgitest\trunk\bgitest.asm %BIN%\fonts\bgitest
+rem fasm demos\bgitest\trunk\bgitest.asm %BIN%\fonts\bgitest
 fasm demos\colorref\colorref.asm %BIN%\demos\colorref
 fasm demos\crownscr\crownscr.asm %BIN%\3d\crownscr
 fasm demos\cslide\cslide.asm %BIN%\demos\cslide
 fasm demos\eyes\eyes.asm %BIN%\demos\eyes
 fasm demos\fire\fire.asm %BIN%\demos\fire
 fasm demos\fire2\fire2.asm %BIN%\demos\fire2
-fasm demos\firework\trunk\firework.asm %BIN%\demos\firework
+fasm demos\firework\firework.asm %BIN%\demos\firework
 fasm demos\free3d04\free3d04.asm %BIN%\3d\free3d04
-fasm demos\magnify\trunk\magnify.asm %BIN%\magnify
-fasm demos\movback\trunk\movback.asm %BIN%\demos\movback
-fasm demos\plasma\trunk\plasma.asm %BIN%\demos\plasma
-fasm demos\timer\trunk\timer.asm %BIN%\demos\timer
-fasm demos\tinyfrac\trunk\tinyfrac.asm %BIN%\demos\tinyfrac
-fasm demos\transp\trunk\transp.asm %BIN%\demos\transp
-fasm demos\trantest\trunk\trantest.asm %BIN%\demos\trantest
-fasm demos\tube\trunk\tube.asm %BIN%\demos\tube
-fasm demos\unvwater\trunk\unvwater.asm %BIN%\demos\unvwater
+rem fasm demos\magnify\trunk\magnify.asm %BIN%\magnify
+fasm demos\movback\movback.asm %BIN%\demos\movback
+fasm demos\plasma\plasma.asm %BIN%\demos\plasma
+fasm demos\timer\timer.asm %BIN%\demos\timer
+fasm demos\tinyfrac\tinyfrac.asm %BIN%\demos\tinyfrac
+fasm demos\transp\transp.asm %BIN%\demos\transp
+fasm demos\trantest\trantest.asm %BIN%\demos\trantest
+fasm demos\tube\tube.asm %BIN%\demos\tube
+fasm demos\unvwater\unvwater.asm %BIN%\demos\unvwater
 
 echo *
 echo Building depend application for fdd's nightbuild

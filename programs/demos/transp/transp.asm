@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;
 ;   TRANSPARENT EXAMPLE
 ;
@@ -17,7 +20,7 @@ use32
                dd     0x0 , 0x0               ; I_Param , I_Icon
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include '..\..\macros.inc'
 
 START:                          ; start of execution
     mov  [procinfo.box.left], 100
@@ -25,7 +28,7 @@ START:                          ; start of execution
     mov  [procinfo.box.top], 80
     mov  [procinfo.box.height],  300
     call draw_window
-red:    
+red:
     call get_transparent
     call draw_window            ; at first, draw the window
 
@@ -83,7 +86,7 @@ draw_window:
     mcall
 
     call draw_transparent
-                                   
+
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
     mcall
@@ -192,4 +195,3 @@ title     db   'Transparent',0
 
 I_END:
 procinfo process_information
-

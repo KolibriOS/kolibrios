@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ; tinyfrac.asm
 ;
 ; teeny program displays the Mandelbrot set.
@@ -82,7 +85,7 @@ use32
         dd      0,0
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include '..\..\macros.inc'
 
 START:
         call draw_fractal
@@ -173,39 +176,39 @@ still:
         call draw_fractal
         jmp  still
       no_right:
-      
+
         cmp  al,19 ;'r'
         jne  no_red
         mov  ah,3
         call colorize
         jmp  still
       no_red:
-      
+
         cmp  al,34 ;'g'
         jne  no_green
         mov  ah,4
         call colorize
         jmp  still
       no_green:
-      
+
         cmp  al,48 ;'b'
         jne  no_blue
         mov  ah,5
         call colorize
         jmp  still
       no_blue:
-      
+
         cmp  al,17 ;'w'
         jne  no_set_as_wallpaper
         mcall 15, 1, PIXWIDTH, PIXHEIGHT
 		mcall 15, 4, 1 ;mode 1-tiled, 0-stretch
         mcall 15, 5, IMGBUF, 0, PIXWIDTH*3*PIXHEIGHT
-        mcall 15, 3 
+        mcall 15, 3
       no_set_as_wallpaper:
 
         jmp  still
 
-colorize:       
+colorize:
         shr  eax,8
         sub  eax,3
         imul eax,8
@@ -392,13 +395,13 @@ scale   db      STARTSCALE
 draw_window:
       pusha
       mcall 12, 1
-	  
+
       mcall 48, 4                        ;get skin height
       lea   ecx, [50*65536+PIXHEIGHT+4+eax]
       mcall 0,<50,PIXWIDTH+9>,,0x74000000,,header_txt ;draw window
-	  
+
       call    put_image
-	  
+
       mcall 12, 2
       popa
       ret
