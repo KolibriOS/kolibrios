@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 use32
   org 0
   db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
@@ -13,8 +18,8 @@ include '../../KOSfuncs.inc'
 include '../../load_img.inc'
 include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../system/skincfg/trunk/kglobals.inc'
-include '../../system/skincfg/trunk/unpacker.inc'
+include '../../system/skincfg/kglobals.inc'
+include '../../system/skincfg/unpacker.inc'
 include 'te_data.inc'
 include 'te_work.inc' ;text work functions
 
@@ -148,7 +153,7 @@ draw_window:
 	int 0x40
 
 	stdcall [PathShow_draw], PathShow_data_1
-	
+
 	stdcall [edit_box_draw], edit1
 	stdcall [tl_draw], tree1
 

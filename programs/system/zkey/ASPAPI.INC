@@ -1,4 +1,4 @@
-include '../../../proc32.inc'
+include '../../proc32.inc'
 
 macro start_draw_window x,y,xsize,ysize,areacolor,caption
 {
@@ -125,4 +125,3 @@ macro putpixel x,y,color
   mov edx, color
   int 0x40
 }
-

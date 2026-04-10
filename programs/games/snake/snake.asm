@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;;===HEADER====================================================================================================================
 
 use32
@@ -11,7 +14,7 @@ include '../../proc32.inc'
 include '../../macros.inc'
 include '../../dll.inc'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-;include '../../system/board/trunk/debug.inc'
+;include '../../system/board/debug.inc'
 
 ;;===Define_chapter============================================================================================================
 
@@ -61,7 +64,7 @@ start:
 stdcall dll.Load,@IMPORT
     or   eax, eax
     jnz  Exit
-    
+
 align 4
 
     mov  edi, cur_dir_path
@@ -234,7 +237,7 @@ Exit:
 
     or  eax,    -1
     int 0x40
-    
+
     ;;---Exit------------------------------------------------------------------------------------------------------------------
 
 
@@ -273,7 +276,7 @@ Set_geometry:
 
     test [proc_info.wnd_state], 0x01
      jnz .by_hotkey
-    
+
 
     cmp  [window_width],    250
      jnl @f
@@ -401,7 +404,7 @@ Set_geometry:
     sub  eax, ebx
     sub  eax, 5
     sub  eax, 5
-    
+
     shr  eax, 1
     mov  [gbym1],   eax
 
@@ -497,26 +500,26 @@ Set_geometry:
     mov  cx,  ax
     add  cx,  word[gbym1]
     inc  cx
-    
+
     mov  [button_x_left],   ebx
     mov  [button_y_top],    ecx
-    
+
     add  ebx, [g_s]
     add  ebx, [g_s]
     add  ebx, [g_s]
     add  ebx, [g_s]
     add  ebx, [g_s]
-    
+
     mov  [button_x_right],  ebx
-    
+
     add  ecx,  [g_s]
     add  ecx,  [g_s]
-    
+
     mov  [button_y_middle], ecx
-    
+
     add  ecx,  [g_s]
     add  ecx,  [g_s]
-    
+
     mov  [button_y_bottom], ecx
 
   .done:
@@ -606,7 +609,7 @@ Draw_decorations:
     mov  ecx, [gbym1_shl16_gbym1]
     mov  esi, GRID_HEIGHT
     add  esi, 1
-    
+
   @@:
       mcall
     add  ecx, [gs_shl16_gs]
@@ -643,7 +646,7 @@ Draw_decorations:
     mov  ecx, [gbym1_shl16_gbym1]
     mov  esi, GRID_HEIGHT
     add  esi, 1
-    
+
   @@:
       mcall
     add  ecx, [gs_shl16_gs]
@@ -929,8 +932,8 @@ Draw_square:
     ret
 
     ;;---Draw_square-------------------------------------------------------------------------------------------------------
-    
-    
+
+
 Draw_menu_esc:
     ;;===Draw_menu_esc=====================================================================================================
 
@@ -940,9 +943,9 @@ Draw_menu_esc:
     shl  ebx, 16
     add  ebx, dword[top_strings]
       mcall     4, ,[navigation_strings_color],string_menu_esc
-    
+
     ret
-    
+
     ;;---Draw_menu_esc-----------------------------------------------------------------------------------------------------
 
 
@@ -959,10 +962,10 @@ Draw_score_string:
     ret
 
     ;;---Draw_score_string-------------------------------------------------------------------------------------------------
-    
-    
+
+
 Draw_score_number:
-    ;;===Draw_score_number================================================================================================= 
+    ;;===Draw_score_number=================================================================================================
 
     mov  edx, [window_width]
     shr  edx, 3
@@ -988,9 +991,9 @@ Draw_hiscore_string:
     shl  ebx, 16
     add  ebx, dword[bottom_top_strings]
       mcall     4, ,[hiscore_string_color],string_hi_score
-    
+
     ret
-    
+
     ;;---Draw_hiscore_string-----------------------------------------------------------------------------------------------
 
 
@@ -1004,7 +1007,7 @@ Draw_hiscore_number:
     sub  edx, 7*6+6
     shl  edx, 16
     add  edx, dword[bottom_top_strings]
-    
+
     cmp  [play_mode],   CLASSIC_MODE
      jne @f
     mov  ecx, [hi_score_classic]
@@ -1014,9 +1017,9 @@ Draw_hiscore_number:
 
   .done:
       mcall     47,0x00070000, , ,[hiscore_number_color]
-    
+
     ret
-    
+
     ;;---Draw_hiscore_number---------------------------------------------------------------------------------------------------
 
 
@@ -1080,14 +1083,14 @@ Draw_picture:
   .draw:
     mov  bl,  ah
     mov  di,  7
-    
+
   .loop:
     bt  word[esi],  di
      jnc @f
     push eax ebx ecx esi edi
       call      Draw_square
     pop  edi esi ecx ebx eax
-    
+
   @@:
     dec  di
      jns @f
@@ -1097,7 +1100,7 @@ Draw_picture:
     inc  bl
     cmp  bl,  al
      jne .loop
-    
+
     inc  bh
     cmp  di,  7
      jz  @f
@@ -1145,7 +1148,7 @@ Get_from_map:
     ;;
 
     push eax
-    
+
     and  eax, 0x0000ffff
     xor  bx,  bx
     mov  bl,  al
@@ -1253,12 +1256,12 @@ Load_level:
     mov  edi, snake_dots
     mov  ecx, 3
     rep  movsw
-    
+
     mov  esi, edx
     add  esi, LEVEL.snake_direction
     mov  eax, [esi]
     mov  [snake_direction], eax
-    
+
     mov  esi, edx
     add  esi, LEVEL.snake_direction_next
     mov  eax, [esi]
@@ -1269,7 +1272,7 @@ Load_level:
     mov  eax, [esi]
     mov  [number_of_free_dots], GRID_WIDTH*GRID_HEIGHT-3
     sub  [number_of_free_dots], eax
-    
+
     mov  ax,  word[snake_dots]
     mov  cl,  1
       call      Draw_on_map

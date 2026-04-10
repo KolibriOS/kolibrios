@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                   ;
 ;   TASK PANEL for KolibriOS  - Compile with fasm   ;
@@ -74,11 +79,11 @@ format binary as ""
         dd path         ; application pach
 ;------------------------------------------------------------------------------
 include 'lang.inc'
-include '../../../macros.inc'
-include '../../../proc32.inc'
-;include '../../../debug.inc'
-include 'MOI.INC'       ;раскладки клавиатуры
-include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../macros.inc'
+include '../../proc32.inc'
+;include '../../debug.inc'
+include 'MOI.INC'       ; keyboard layouts
+include '../../develop/libraries/box_lib/load_lib.mac'
         @use_library    ;use load lib macros
 ;------------------------------------------------------------------------------
 caps_lock_check fix 1
@@ -1156,7 +1161,7 @@ no_full:
 ;------------------------------------------------------------------------------
 include 'libini.inc'
 ;------------------------------------------------------------------------------
-include '../../../dll.inc'
+include '../../dll.inc'
 ;------------------------------------------------------------------------------
 include 'drawappl.inc'
 ;------------------------------------------------------------------------------

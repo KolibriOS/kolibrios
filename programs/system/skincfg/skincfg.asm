@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;
 ;    UNIFORM WINDOW COLOURS & SKIN
 ;
@@ -28,15 +31,15 @@ M01header.params:
 	dd cur_dir_path	; path to file
 
 include 'lang.inc'
-include '../../../proc32.inc'
-include '../../../config.inc'		;for nightbuild
-include '../../../macros.inc'
-include '../../../string.inc'
-include '../../../dll.inc'
+include '../../proc32.inc'
+include '../../config.inc'		;for nightbuild
+include '../../macros.inc'
+include '../../string.inc'
+include '../../dll.inc'
 include 'kglobals.inc'
 include 'unpacker.inc'
-include '../../../KOSfuncs.inc'
-include '../../../load_lib.mac'
+include '../../KOSfuncs.inc'
+include '../../load_lib.mac'
 	@use_library
 ;******************************************************************************
 ;--------------------------------------

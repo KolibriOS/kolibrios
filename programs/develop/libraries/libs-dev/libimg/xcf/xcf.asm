@@ -27,7 +27,7 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 include	'xcf.inc'
-;include	'../../../../../system/board/trunk/debug.inc'
+;include	'../../../../../system/board/debug.inc'
 
 MAX_LAYERS		=	255
 
@@ -821,7 +821,7 @@ endl
 
 	mov	[bottom_x1], 0
 	mov	ecx, [ebx + Image.Width]
-	mov	[bottom_length], ecx        
+	mov	[bottom_length], ecx
 
 	mov	eax, [edx + Image.Extended]
 	movsx	eax, word[eax + xcf_ext.offset_x]
@@ -858,7 +858,7 @@ endl
 
 	mov	[bottom_y1], 0
 	mov	ecx, [ebx + Image.Height]
-	mov	[bottom_length], ecx        
+	mov	[bottom_length], ecx
 
 	mov	eax, [edx + Image.Extended]
 	movsx	eax, word[eax + xcf_ext.offset_y]
@@ -972,7 +972,7 @@ endl
 	add	edi, edx
 	mov	edx, [edi]
 	jmp	.composite_found
-    @@: 
+    @@:
 	add	edi, 16
 	dec	ecx
 	jnz	.still

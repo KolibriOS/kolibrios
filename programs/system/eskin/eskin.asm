@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 use32
         org     0x0
 
@@ -10,9 +13,9 @@ use32
         dd      0x0
         dd      0x0
 
-include '../../../proc32.inc'
-include '../../../macros.inc'
-include '../../../dll.inc'
+include '../../proc32.inc'
+include '../../macros.inc'
+include '../../dll.inc'
 
 
 PATH_MAX equ 255
@@ -56,7 +59,7 @@ STARTAPP:
 
 ;----------------------------------------------------------------
 ; This is fix for files located at /kolibrios and /usbhd drives
-; It checks is the file exists for 5 times with perioud 1 second
+; It checks is the file exists for 5 times with period 1 second
 check_file_exists:
 	mov     edi, 0
 @@:

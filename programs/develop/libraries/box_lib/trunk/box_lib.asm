@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page Windows 1251 - Cyrillic
+
+
 ;*****************************************************************************
 ; Box_Lib - library of graphical components
 ; Copyright (C) KolibriOS team 2008-2020. All rights reserved.
@@ -22,8 +28,8 @@ include '../../../../KOSfuncs.inc'
 include 'box_lib.mac' ;macro which should make life easier :)
 ;include '../../../../debug.inc'
 include 'keys.inc'
-include '../../../../system/skincfg/trunk/kglobals.inc'
-include '../../../../system/skincfg/trunk/unpacker.inc'
+include '../../../../system/skincfg/kglobals.inc'
+include '../../../../system/skincfg/unpacker.inc'
 
 ;-----------------------------------------------------------------------------
 mem.alloc   dd ? ;функция для выделения памяти
@@ -284,7 +290,7 @@ dd	sz_ted_version, 		6
 dd	sz_Frame_draw,			frame.draw
 dd	szVersion_frame,		0x00010001
 
-dd sz_progressbar_draw,     progressbar_draw	
+dd sz_progressbar_draw,     progressbar_draw
 dd sz_progressbar_progress, progressbar_progress
 
 dd sz_tooltip_init, tooltip_init

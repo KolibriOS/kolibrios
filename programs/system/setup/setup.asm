@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;;  SYSTEM SETTINGS  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -15,9 +20,9 @@ dd I_END
 dd param
 dd 0
 
-include '../../../proc32.inc'
-include '../../../macros.inc'
-include '../../../dll.inc'
+include '../../proc32.inc'
+include '../../macros.inc'
+include '../../dll.inc'
 ;---------------------------------------------------------------
 BootSettings:
 ; Set system language
@@ -80,7 +85,7 @@ BootSettings:
 	invoke	ini.get_int, sz_ini, sz_mouse, sz_acceleration, 1
 	mov	edx,eax
 	mcall	18,19,3
-	
+
 ; Set mouse double click delay
 	invoke	ini.get_int, sz_ini, sz_mouse, sz_double_click_delay, 1
 	mov	edx,eax

@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;Огромная благодарность всем, кто помогал: кодом/советом/дизайном ...
 
 use32
@@ -17,8 +23,8 @@ include '../../KOSfuncs.inc'
 include '../../load_img.inc'
 include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../system/skincfg/trunk/kglobals.inc'
-include '../../system/skincfg/trunk/unpacker.inc'
+include '../../system/skincfg/kglobals.inc'
+include '../../system/skincfg/unpacker.inc'
 include 'lang.inc'
 
 include 't_data.inc'
@@ -111,7 +117,7 @@ mov	ebp,lib0
 			cmp byte[eax],'.' ;фильтруем файлы с именами '.' и '..'
 			je .filter
 			;0x10000 ;1*2^16 - где 1 номер иконки с книгой
-			stdcall [tl_node_add], tree1,0x10000,eax 
+			stdcall [tl_node_add], tree1,0x10000,eax
 			stdcall [tl_cur_next], tree1
 			.filter:
 			add eax,304

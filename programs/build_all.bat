@@ -58,30 +58,30 @@ echo Building system
 echo *
 fasm system\calendar\calendar.asm %BIN%\calendar
 fasm system\board\board.asm %BIN%\develop\board
-fasm system\commouse\trunk\commouse.asm %BIN%\commouse
+rem fasm system\commouse\trunk\commouse.asm %BIN%\commouse
 fasm system\cpu\cpu.asm %BIN%\cpu
-fasm system\cpuid\trunk\cpuid.asm %BIN%\cpuid
-fasm system\skincfg\trunk\skincfg.asm %BIN%\skincfg
+rem fasm system\cpuid\trunk\cpuid.asm %BIN%\cpuid
+fasm system\skincfg\skincfg.asm %BIN%\skincfg
 fasm system\docpack\docpack.asm %BIN%\docpack
-fasm system\end\trunk\end.asm %BIN%\end
+fasm system\end\end.asm %BIN%\end
 fasm system\gmon\gmon.asm %BIN%\gmon
 fasm system\icon\icon.asm %BIN%\icon
-fasm system\kbd\trunk\kbd.ASM %BIN%\kbd
+rem fasm system\kbd\trunk\kbd.ASM %BIN%\kbd
 fasm system\launcher\launcher.asm %BIN%\launcher
 fasm system\menu\menu.asm %BIN%\@menu
-fasm system\mgb\trunk\mgb.asm %BIN%\mgb
+rem fasm system\mgb\trunk\mgb.asm %BIN%\mgb
 fasm system\mousemul\mousemul.asm %BIN%\mousemul
-fasm system\PANEL\trunk\@TASKBAR.ASM %BIN%\@TASKBAR
-fasm system\pcidev\trunk\pcidev.asm %BIN%\pcidev
-fasm system\RB\trunk\@RB.ASM %BIN%\@RB
+fasm system\taskbar\TASKBAR.ASM %BIN%\@TASKBAR
+rem fasm system\pcidev\trunk\pcidev.asm %BIN%\pcidev
+rem fasm system\RB\trunk\@RB.ASM %BIN%\@RB
 fasm system\rdsave\rdsave.asm %BIN%\rdsave
-fasm system\run\trunk\run.asm %BIN%\run
-fasm system\setup\trunk\setup.asm %BIN%\setup
-fasm system\skinsel\skinsel.asm %BIN%\skinsel
-fasm system\ss\trunk\@ss.asm %BIN%\@ss
-fasm system\vrr\trunk\vrr.asm %BIN%\vrr
-fasm system\vrr_m\trunk\vrr_m.asm %BIN%\vrr_m
-fasm system\zkey\trunk\zkey.asm %BIN%\zkey
+fasm system\run\run.asm %BIN%\run
+fasm system\setup\setup.asm %BIN%\setup
+rem fasm system\skinsel\skinsel.asm %BIN%\skinsel
+rem fasm system\ss\trunk\@ss.asm %BIN%\@ss
+rem fasm system\vrr\trunk\vrr.asm %BIN%\vrr
+rem fasm system\vrr_m\trunk\vrr_m.asm %BIN%\vrr_m
+fasm system\zkey\zkey.asm %BIN%\zkey
 
 echo *
 echo Building develop
@@ -237,9 +237,9 @@ fasm media\animage\animage.asm %BIN%\nightbuild\animage
 fasm media\midamp\trunk\midamp.asm %BIN%\nightbuild\midamp
 fasm develop\heed\trunk\heed.asm %BIN%\nightbuild\heed
 fasm develop\tinypad\trunk\tinypad.asm %BIN%\nightbuild\tinypad
-fasm system\skincfg\trunk\skincfg.asm %BIN%\nightbuild\skincfg
+fasm system\skincfg\skincfg.asm %BIN%\nightbuild\skincfg
 fasm system\hdd_info\hdd_info.asm %BIN%\nightbuild\hdd_info
-fasm system\mgb\trunk\mgb.asm %BIN%\nightbuild\mgb
+rem fasm system\mgb\trunk\mgb.asm %BIN%\nightbuild\mgb
 fasm system\rdsave\rdsave.asm %BIN%\nightbuild\rdsave
 fasm other\kpack\trunk\kpack.asm %BIN%\nightbuild\kpack
 fasm other\rtfread\rtfread.asm %BIN%\nightbuild\rtfread

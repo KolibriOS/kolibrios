@@ -1,4 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
 ;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;   ZKEY. Version 0.51.
 ;   Virtual keyboard for KolibriOS.
 ;
@@ -20,7 +25,7 @@ use32
         dd     0
         dd     0
 
-include '../../../macros.inc'
+include '../../macros.inc'
 include "ASPAPI.INC"
 
 N_KEYCOLOR equ 0x00677889 ; Normal button color
@@ -168,19 +173,19 @@ draw_window:
   mul   byte [keyboard_mode]
   add   eax, SwitchText
   stdcall draw_button, 513,28,46,20,106,0x00700000,eax,6,TEXTCOLOR       ; Scan/ASCII switch
-  
+
   xor   al, al
   xchg  al, [red_type]
   test  al, 2
   jnz   .skip_end_draw_window ; if we draw switch button without redraw window then end_draw_window not need
-  
+
 @@:
  .draw_indicators_area:
   call lights_on
 
   end_draw_window
-  
-.skip_end_draw_window:  
+
+.skip_end_draw_window:
 ret
 
 get_zkey_window_slot_number:
@@ -197,14 +202,14 @@ still:
         call    get_receiver_window_slot_number
         call    get_receiver_window_keyboard_mode ; return in ecx keyboard_mode for set_keyboard_mode
         call    set_keyboard_mode
-; delete_switch_button 
-        mov eax, 8 
+; delete_switch_button
+        mov eax, 8
         mov edx, BT_DEL + 0x00700000
-        int     0x40 
+        int     0x40
 
         mov    byte [red_type], 2
         call    draw_window.draw_switch_button
- 
+
         mov     eax, 10               ; Wait for an event in the queue.
         int     0x40
 
@@ -486,4 +491,3 @@ PROCINFO_BUFF process_information
         rb 4096
 STACKTOP:
 MEM:
-

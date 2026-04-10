@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;
 ; END
 ;
@@ -7,7 +10,7 @@
 ;
 ; 15.02.2007 merge old END with new one (fron Veliant & Leency) by Heavyiron
 
-include "..\..\..\macros.inc"
+include "..\..\macros.inc"
 
 meos_app_start
 code
@@ -43,7 +46,7 @@ draw:
     xor edx, edx
     mcall
 
-   
+
     mov al,8
     mcall ,58 shl 16 + 32,59 shl 16 + 34, 1 shl 30 + 1
     inc edx
@@ -55,7 +58,7 @@ draw:
     inc edx
     mcall ,144 shl 16 + 43
 
-    mov  al,12 		   ;end of redraw 
+    mov  al,12 		   ;end of redraw
     mov  ebx,2
     mcall
 

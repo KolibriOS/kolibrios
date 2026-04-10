@@ -1,11 +1,16 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 window_h=85
 window_w=430
 ;--- другие макросы ---
-include '../../../KOSfuncs.inc'
-include '../../../load_lib.mac'
-include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../KOSfuncs.inc'
+include '../../load_lib.mac'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'txtbut.inc'
-include '../../../macros.inc'
+include '../../macros.inc'
 include 'run.mac'
 include 'lang.inc' ; Language support for locales: ru_RU (CP866), it_IT, en_US.
 use32

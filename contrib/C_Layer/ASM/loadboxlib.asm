@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 format coff
 use32                                   ; Tell compiler to use 32 bit instructions
 
@@ -8,7 +11,7 @@ include '../../../programs/macros.inc'
 purge section,mov,add,sub
 
 include '../../../programs/develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../programs/system/run/trunk/txtbut.inc'
+include '../../../programs/system/run/txtbut.inc'
 include '../../../programs/dll.inc'
 
 public init_boxlib as '_kolibri_boxlib_init'

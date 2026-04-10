@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 use32
 	org 0
 	db 'MENUET01'
@@ -9,8 +14,8 @@ include '../../proc32.inc'
 include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include '../../dll.inc'
-include '../../system/skincfg/trunk/kglobals.inc'
-include '../../system/skincfg/trunk/unpacker.inc'
+include '../../system/skincfg/kglobals.inc'
+include '../../system/skincfg/unpacker.inc'
 include 'strlen.inc'
 include 'obj_codes.inc'
 
@@ -352,7 +357,7 @@ still:
 	cmp al,3
 	jz button
 	cmp al,6
-	jne @f 
+	jne @f
 		call mouse
 	@@:
 
@@ -624,7 +629,7 @@ button:
 	stdcall dword[tl_data_clear], tree1
 	stdcall dword[tl_data_clear], tree2
 	stdcall [buf2d_delete],buf_fon ;удаляем буфер
-	stdcall [buf2d_delete],buf_font ;удаляем буфер  
+	stdcall [buf2d_delete],buf_font ;удаляем буфер
 	stdcall [buf2d_delete],buf_skin1
 	stdcall [buf2d_delete],buf_skin2
 	stdcall [buf2d_delete],buf_skin3
@@ -662,7 +667,7 @@ but_open_proj:
 	mov [open_file_size],ecx
 	stdcall mem.ReAlloc,[open_file_data],ecx
 	mov [open_file_data],eax
-	
+
 	mov [run_file_70.Function], 0
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
@@ -779,7 +784,7 @@ but_save_proj:
 	add edi,4
 
 	stdcall [edit_box_set_text], edit1,openfile_path
-	mov ecx,[open_file_size] ;ecx - размер сохраняемого файла       
+	mov ecx,[open_file_size] ;ecx - размер сохраняемого файла
 	mov [run_file_70.Function], 2
 	mov [run_file_70.Position], 0
 	mov [run_file_70.Flags], 0
@@ -1367,7 +1372,7 @@ import_buf2d_lib:
 	buf2d_convert_text_matrix dd sz_buf2d_convert_text_matrix
 	buf2d_draw_text dd sz_buf2d_draw_text
 	;buf2d_crop_color dd sz_buf2d_crop_color
-	buf2d_offset_h dd sz_buf2d_offset_h	
+	buf2d_offset_h dd sz_buf2d_offset_h
 dd 0,0
 	sz_lib_init db 'lib_init',0
 	sz_buf2d_create db 'buf2d_create',0
@@ -1459,7 +1464,7 @@ import_box_lib:
 	;version_text_edit dd sz_ted_version
 
 dd 0,0
- 
+
 	alib_init2 db 'lib_init',0
 
 	aEdit_box_draw	db 'edit_box_draw',0
@@ -1473,7 +1478,7 @@ dd 0,0
 
 	aScrollbar_ver_draw  db 'scrollbar_v_draw',0
 	aScrollbar_hor_draw  db 'scrollbar_h_draw',0
-  
+
 	sz_tl_data_init db 'tl_data_init',0
 	sz_tl_data_clear db 'tl_data_clear',0
 	sz_tl_info_clear db 'tl_info_clear',0
