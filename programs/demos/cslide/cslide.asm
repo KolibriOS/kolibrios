@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                          ;
 ;   Color Slider Control Demonstration     ;
@@ -20,8 +23,8 @@ use32
                dd     0x0 , 0x0               ; I_Param , I_Icon
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
-include '..\..\..\KOSfuncs.inc'
+include '..\..\macros.inc'
+include '..\..\KOSfuncs.inc'
 START:                          ; start of execution
 
     call draw_window            ; at first, draw the window
@@ -50,7 +53,7 @@ still:
 
   button:                       ; button
     mcall SF_GET_BUTTON         ; get id
-    
+
     shr  eax,8
 
     cmp  eax,1                   ; button id=1 ?
@@ -72,7 +75,7 @@ draw_window:
     mcall SF_REDRAW, SSF_BEGIN_DRAW
     mcall SF_CREATE_WINDOW, <100,200>, <100,200>, 0x14ffffff, , title
     mcall SF_REDRAW, SSF_END_DRAW
-	
+
     call draw_slider_info
 
     xor  ecx,ecx
@@ -151,7 +154,7 @@ ret
 
 draw_slider_info:
 ;Repaint value background
-   mcall SF_DRAW_RECT, 144*65536+36, 72*65536+9, 0x00ffffff 
+   mcall SF_DRAW_RECT, 144*65536+36, 72*65536+9, 0x00ffffff
 ;Draw Color Box
    xor edx, edx
    movzx ecx,word [slider_1+12]
@@ -164,7 +167,7 @@ draw_slider_info:
    mov ebx, 0x00860035
    mov ecx, 0x00590040
    mov eax, SF_DRAW_RECT
-   mcall 
+   mcall
 ;draw current value of slider
    mov ecx, edx
    mov eax, SF_DRAW_NUMBER

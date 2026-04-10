@@ -1,4 +1,10 @@
-include '..\..\..\macros.inc'
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
+include '..\..\macros.inc'
 use32
         org     0x0
 
@@ -199,7 +205,7 @@ put_big_point:
 
 ;DATA
 align 4
-   
+
 count1	dd my_img
 count2 dd 0
 curtime dd 0

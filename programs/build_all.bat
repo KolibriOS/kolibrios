@@ -207,16 +207,16 @@ fasm demos\3dtcub10\3dtcub10.asm %BIN%\3d\3dtcub10
 cd demos\aclock\trunk\
 nasmw -t -f bin -o ..\..\..\%BIN%\demos\aclock aclock.asm
 cd ..\..\..
-fasm demos\bcdclk\trunk\bcdclk.asm %BIN%\demos\bcdclk
+fasm demos\bcdclk\bcdclk.asm %BIN%\demos\bcdclk
 fasm demos\bgitest\trunk\bgitest.asm %BIN%\fonts\bgitest
-fasm demos\colorref\trunk\colorref.asm %BIN%\demos\colorref
-fasm demos\crownscr\trunk\crownscr.asm %BIN%\3d\crownscr
-fasm demos\cslide\trunk\cslide.asm %BIN%\demos\cslide
-fasm demos\eyes\trunk\eyes.asm %BIN%\demos\eyes
-fasm demos\fire\trunk\fire.asm %BIN%\demos\fire
-fasm demos\fire2\trunk\fire2.asm %BIN%\demos\fire2
+fasm demos\colorref\colorref.asm %BIN%\demos\colorref
+fasm demos\crownscr\crownscr.asm %BIN%\3d\crownscr
+fasm demos\cslide\cslide.asm %BIN%\demos\cslide
+fasm demos\eyes\eyes.asm %BIN%\demos\eyes
+fasm demos\fire\fire.asm %BIN%\demos\fire
+fasm demos\fire2\fire2.asm %BIN%\demos\fire2
 fasm demos\firework\trunk\firework.asm %BIN%\demos\firework
-fasm demos\free3d04\trunk\free3d04.asm %BIN%\3d\free3d04
+fasm demos\free3d04\free3d04.asm %BIN%\3d\free3d04
 fasm demos\magnify\trunk\magnify.asm %BIN%\magnify
 fasm demos\movback\trunk\movback.asm %BIN%\demos\movback
 fasm demos\plasma\trunk\plasma.asm %BIN%\demos\plasma

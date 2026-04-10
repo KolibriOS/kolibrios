@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;
 ;   Fisheye Raycasting Engine Etc. FREE3D for MENUETOS by Dieter Marfurt
 ;   Version 0.4 (requires some texture-files to compile (see Data Section))
@@ -36,7 +39,7 @@ use32
                dd     APP_MEM;0x100000        ; esp
                dd     0x0 , 0x0               ; I_Param , I_Icon
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include '..\..\macros.inc'
 COLOR_ORDER equ OTHER
 include 'gif_lite.inc'
 
@@ -296,7 +299,7 @@ m_right:                                  ; turn right
 draw_window:
 
 	mcall	12,1
-	
+
 	mcall 48, 4                             ;get skin width
 	lea	ecx, [50*65536+484+eax]             ;[y start] *65536 + [y size] + [skin_height]
 	mcall	0,<50,649>,,0x74ffffff,,title   ;draw window

@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;
 ; EYES FOR MENUET
 ;
@@ -22,7 +25,7 @@ use32
   dd 0x0
   dd 0x0
 
-include '..\..\..\macros.inc'
+include '..\..\macros.inc'
 ENTRANCE: ; start of code
 
 ; ==== main ====

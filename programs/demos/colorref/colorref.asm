@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;  COLORREF.ASM - COLOR REFERENCE
 ;
 ;  Compile with FASM for Menuet
@@ -15,7 +18,7 @@ use32
          dd   0x0,0x0              ; I_Param , I_Icon
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include '..\..\macros.inc'
 wide:    dd   0                    ; screen pixels width
 mouse:   dd   0                    ; 1=right,2=left [mouse click]
 
@@ -148,7 +151,7 @@ draw_window:
     mov  edx,0x14000000            ; work area color (type II)
     mov  edi,title                ; frame color
     mcall
-   
+
     call palette                   ; display color palette
 
     mcall 12, 2
@@ -267,7 +270,7 @@ help:
 	add ecx, 236
 	sub ecx, eax
 
-	
+
     mov  ebx,5*65536+190           ; x and width
     mov  edx,0x465e8f              ; dark denim color
     mov  eax,13                    ; write text funx
@@ -294,7 +297,7 @@ h1: push ecx
     jne  h2                        ; nope
     mov  eax,2                     ; yep, burn it
     mcall
-h2: 
+h2:
 	call draw_window
 
     ret

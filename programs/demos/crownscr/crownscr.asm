@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;
 ;    Crown_s Soft Screensaver v1.13m
 ;       WWW: http://www.crown-s-soft.com
@@ -34,8 +37,8 @@ copyrightlen:
 
 include "lang.inc"
 include "figuresi.inc"
-include "..\..\..\macros.inc"
-include "..\..\..\KOSfuncs.inc"
+include "..\..\macros.inc"
+include "..\..\KOSfuncs.inc"
 start:
     cmp     dword[params], '@ss'
     setz    [screensaver]
@@ -96,7 +99,7 @@ red:
 
 still:
     mcall SF_WAIT_EVENT_TIMEOUT, delay			; wait here for event
-	
+
     cmp  eax,1			; redraw request ?
     je	 red
     cmp  eax,2			; key in buffer ?
@@ -117,7 +120,7 @@ jmp  still
 key:
 	cmp  [screensaver], 0
 	jnz  close
-	
+
     mcall SF_GET_KEY
 
     cmp  al,1			; is key in buffer ?
