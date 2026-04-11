@@ -1,3 +1,7 @@
+
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ;   MENU / DIALOG EXAMPLE
@@ -18,7 +22,7 @@ use32
                dd     0x0 , 0x0               ; I_Param , I_Icon
 
 include 'lang.inc'
-include '..\..\..\..\macros.inc'
+include '..\..\..\macros.inc'
 include 'dialogs1.inc'
 
 menu_history dd 0x0

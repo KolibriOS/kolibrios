@@ -72,7 +72,7 @@ img_files = {
 
 -- For russian build, add russian-only files.
 if build_type == "ru_RU" then tup.append_table(img_files, {
- {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/trunk/rus/example.asm"},
+ {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/rus/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy_ru"},
  {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
@@ -83,7 +83,7 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
  {"SETTINGS/SYSPANEL.INI", "ru_RU/settings/syspanel.ini"},
 }) elseif build_type == "en_US" then tup.append_table(img_files, {
  {"WELCOME.HTM", VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
- {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/trunk/example.asm"},
+ {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
  {"GAMES/DESCENT", "common/games/descent"},
@@ -92,7 +92,7 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey.ini"},
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
 }) elseif build_type == "es_ES" then tup.append_table(img_files, {
- {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/trunk/example.asm"},
+ {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
  {"GAMES/DESCENT", "common/games/descent"},
@@ -101,7 +101,7 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey.ini"},
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
 }) elseif build_type == "it_IT" then tup.append_table(img_files, {
- {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/trunk/example.asm"},
+ {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
  {"GAMES/DESCENT", "common/games/descent"},
@@ -110,7 +110,7 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
  {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
 }) else tup.append_table(img_files, {
- {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/trunk/example.asm"},
+ {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
  {"GAMES/DESCENT", "common/games/descent"},
@@ -483,11 +483,11 @@ tup.append_table(img_files, {
  {"DEVELOP/MTDBG", VAR_PROGS .. "/develop/mtdbg/mtdbg"},
  {"DEVELOP/MSTATE", VAR_PROGS .. "/develop/mstate/mstate"},
  {"DEVELOP/SCANCODE", VAR_PROGS .. "/develop/scancode/trunk/scancode"},
- {"DEVELOP/EXAMPLES/CIRCLE", VAR_PROGS .. "/develop/examples/circle/trunk/circle"},
+ {"DEVELOP/EXAMPLES/CIRCLE", VAR_PROGS .. "/develop/examples/circle/circle"},
  {"DEVELOP/EXAMPLES/COLORREF", VAR_PROGS .. "/demos/colorref/colorref"},
  {"DEVELOP/EXAMPLES/CONGET", VAR_PROGS .. "/develop/libraries/console_coff/examples/test_gets"},
  {"DEVELOP/EXAMPLES/CSLIDE", VAR_PROGS .. "/demos/cslide/cslide"},
- {"DEVELOP/EXAMPLES/THREAD", VAR_PROGS .. "/develop/examples/thread/trunk/thread"},
+ {"DEVELOP/EXAMPLES/THREAD", VAR_PROGS .. "/develop/examples/thread/thread"},
  {"File Managers/KFAR", VAR_PROGS .. "/fs/kfar/trunk/kfar"},
  {"File Managers/OPENDIAL", VAR_PROGS .. "/fs/opendial/opendial"},
  {"LOD", VAR_PROGS .. "/fs/lod/lod"},

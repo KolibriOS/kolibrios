@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ; <--- description --->
 ; compiler:     FASM 1.67
 ; name:         Basic window example for KolibriOS
@@ -9,7 +15,7 @@
 
 ; <--- include all KolibriOS stuff --->
 include "lang.inc" ; Language support for locales: ru_RU (CP866), fr_FR, en_US.
-include "..\..\..\..\macros.inc"
+include "..\..\..\macros.inc"
 
 
 ; <--- start of KolibriOS application --->

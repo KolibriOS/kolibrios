@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;   Picture browser by lisovin@26.ru
 ;   Modified by Ivan Poddubny - v.0.3
 ;   Modified by Diamond - v.0.4
@@ -37,7 +43,7 @@
 include    'lang.inc'
 ; Language support for locales: ru_RU (CP866), en_US, de_DE.
 include    '..\..\..\..\macros.inc'
-include    '..\..\..\..\develop\examples\editbox\trunk\editbox.inc'
+include    '..\..\..\..\develop\examples\editbox\editbox.inc'
 ;include    'macros.inc'
 ;include    'EDITBOX.INC'
 use_edit_box

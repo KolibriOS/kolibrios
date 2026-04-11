@@ -1,3 +1,7 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+
 ;
 ;    SHAPED WINDOW - BASIC EXAMPLE
 ;
@@ -16,7 +20,7 @@ use32
                 dd      E_END                   ; esp
                 dd      0, 0                    ; no params, no path
 
-include '..\..\..\..\macros.inc'
+include '..\..\..\macros.inc'
 
 
 

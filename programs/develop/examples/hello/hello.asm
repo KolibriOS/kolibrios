@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ; Hello, World! - Programm example for CMD shell
 ; Compile with FASM
 ;

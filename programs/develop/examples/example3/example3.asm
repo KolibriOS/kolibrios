@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 ;
 ;   MENU EXAMPLE
 ;
@@ -13,11 +18,11 @@
   dd     mem, stacktop, file_name, sys_path
 
 include 'lang.inc'
-include '../../../../macros.inc'
-include '../../../../proc32.inc'
-include '../../../../KOSfuncs.inc'
-include '../../../../load_lib.mac'
-include '../../../../dll.inc'
+include '../../../macros.inc'
+include '../../../proc32.inc'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
+include '../../../dll.inc'
 
 KMENUITEM_NORMAL equ 0
 KMENUITEM_SUBMENU equ 1
@@ -94,7 +99,7 @@ start:                             ; start of execution
 	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_Help, [main_menu_Help]
 	stdcall [ksubmenu_add], [main_menu], eax
 
-  red: 
+  red:
     call draw_window               ; draw window
 	stdcall [kmainmenu_draw], [main_menu]
 
@@ -108,7 +113,7 @@ still:
     cmp  eax,3
     jz   button
 	cmp  eax,6
-	jne  @f 
+	jne  @f
 		call mouse
 		jmp still
 	@@:

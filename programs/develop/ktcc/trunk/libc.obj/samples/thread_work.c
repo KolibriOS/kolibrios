@@ -1,6 +1,6 @@
 /*
  * An example of using threads to create a copy of a window.
- * Built on top of the /programs/develop/examples/thread/trunk/thread.asm example.
+ * Built on top of the /programs/develop/examples/thread/thread.asm example.
  *
  * Created by turbocat (Maxim Logaev) 2021.
  */
