@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 use32
 	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
@@ -11,7 +17,7 @@ include '../../../load_lib.mac'
 include '../../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include '../../../develop/libraries/TinyGL/asm_fork/zbuffer.inc'
 include 'vox_3d.inc'
-include '../trunk/str.inc'
+include '../str.inc'
 include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load

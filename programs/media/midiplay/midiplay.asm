@@ -1,9 +1,12 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;
 ;    Ok, this is the sceleton that MENUET 0.01 understands.
 ;    Do not change the header bits for now. Compile with nasm.
 ;
 
-include '..\..\..\macros.inc'
+include '..\..\macros.inc'
 
 use32
  org    0x0
@@ -295,6 +298,3 @@ errorlen2:
 base db 0x0
 
 I_END:
-
-
-

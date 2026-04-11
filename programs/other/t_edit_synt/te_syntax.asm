@@ -50,7 +50,7 @@ start:
 	stdcall [tl_data_init], tree1
 
 ; читаем файл с курсорами и линиями
-	include_image_file '..\..\media\log_el\trunk\tl_sys_16.png', icon_tl_sys
+	include_image_file '..\..\media\log_el\tl_sys_16.png', icon_tl_sys
 	mov eax,[icon_tl_sys]
 	mov [tree1.data_img_sys],eax
 ;---------------------------------------------------------------------

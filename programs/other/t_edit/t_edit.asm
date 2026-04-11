@@ -93,7 +93,7 @@ mov	ebp,lib0
 	stdcall img_to_gray, [bmp_icon],eax,(TOOLBAR_ICONS_SIZE)/3
 ;---------------------------------------------------------------------
 ; внедряем файл с курсорами и линиями
-	include_image_file '..\..\media\log_el\trunk\tl_sys_16.png', icon_tl_sys
+	include_image_file '..\..\media\log_el\tl_sys_16.png', icon_tl_sys
 	mov eax,dword[icon_tl_sys]
 	mov dword[tree1.data_img_sys],eax
 ; внедряем файл с иконками узлов

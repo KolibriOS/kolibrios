@@ -164,17 +164,16 @@ echo Building media
 echo *
 rem media\ac97snd\trunk\ac97snd.asm ac97snd
 fasm media\animage\animage.asm %BIN%\animage
-fasm media\cdp\trunk\cdp.asm %BIN%\cdp
-fasm media\gifview\trunk\gifview.asm %BIN%\gifview
-fasm media\iconedit\trunk\iconedit.asm %BIN%\iconedit
-fasm media\jpegview\trunk\jpegview.asm %BIN%\jpegview
-fasm media\midamp\trunk\midamp.asm %BIN%\midamp
-fasm media\midiplay\trunk\midiplay.asm %BIN%\midiplay
-fasm media\mixer\trunk\mixer.asm %BIN%\mixer
-
-fasm media\mv\trunk\mv.asm %BIN%\mv
-fasm media\pic4\trunk\pic4.asm %BIN%\pic4
-fasm media\sb\trunk\sb.asm %BIN%\sb
+rem fasm media\cdp\trunk\cdp.asm %BIN%\cdp
+rem fasm media\gifview\trunk\gifview.asm %BIN%\gifview
+rem fasm media\iconedit\trunk\iconedit.asm %BIN%\iconedit
+rem fasm media\jpegview\trunk\jpegview.asm %BIN%\jpegview
+fasm media\midamp\midamp.asm %BIN%\midamp
+fasm media\midiplay\midiplay.asm %BIN%\midiplay
+rem fasm media\mixer\trunk\mixer.asm %BIN%\mixer
+rem fasm media\mv\trunk\mv.asm %BIN%\mv
+fasm media\pic4\pic4.asm %BIN%\pic4
+rem fasm media\sb\trunk\sb.asm %BIN%\sb
 fasm media\scrshoot\scrshoot.asm %BIN%\scrshoot
 
 echo *
@@ -234,7 +233,7 @@ echo __nightbuild fix yes >> config.inc
 fasm media\kiv\kiv.asm %BIN%\nightbuild\kiv
 fasm media\scrshoot\scrshoot.asm %BIN%\nightbuild\scrshoot
 fasm media\animage\animage.asm %BIN%\nightbuild\animage
-fasm media\midamp\trunk\midamp.asm %BIN%\nightbuild\midamp
+fasm media\midamp\midamp.asm %BIN%\nightbuild\midamp
 fasm develop\heed\trunk\heed.asm %BIN%\nightbuild\heed
 fasm develop\tinypad\trunk\tinypad.asm %BIN%\nightbuild\tinypad
 fasm system\skincfg\skincfg.asm %BIN%\nightbuild\skincfg
