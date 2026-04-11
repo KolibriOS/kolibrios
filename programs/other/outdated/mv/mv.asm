@@ -42,8 +42,8 @@
 
 include    'lang.inc'
 ; Language support for locales: ru_RU (CP866), en_US, de_DE.
-include    '..\..\..\..\macros.inc'
-include    '..\..\..\..\develop\examples\editbox\editbox.inc'
+include    '..\..\..\macros.inc'
+include    '..\..\..\develop\examples\editbox\editbox.inc'
 ;include    'macros.inc'
 ;include    'EDITBOX.INC'
 use_edit_box
