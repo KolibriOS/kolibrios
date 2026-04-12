@@ -772,6 +772,7 @@ tup.append_table(extra_files, {
  {"kolibrios/games/nsider", VAR_PROGS .. "/games/nsider/nsider"},
  {"kolibrios/games/fridge/", VAR_PROGS .. "/games/fridge/fridge"},
  {"kolibrios/games/solitare", VAR_PROGS .. "/games/solitare/solitare"},
+ {"kolibrios/games/arkanoid", VAR_PROGS .. "/games/arkanoid/arkanoid"},
  {"kolibrios/develop/lua/lua", VAR_CONTRIB .. "/other/lua-5.2.0/lua"},
  {"kolibrios/develop/lua/calc.lua", "../contrib/other/lua-5.2.0/calc.lua"},
  {"kolibrios/develop/lua/console.lua", "../contrib/other/lua-5.2.0/console.lua"},
