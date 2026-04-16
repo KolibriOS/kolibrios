@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                           ;
 ; FILE COPY - system module for copy        ;
@@ -24,7 +30,7 @@
     dd      param_area , 0x0      ; I_Param , I_Icon
 
 include 'lang.inc'              ; Language support for locales: ru_RU (CP866), en_US.
-include '..\..\..\macros.inc'   ; very useful stuff for MeOS
+include '..\..\macros.inc'   ; very useful stuff for MeOS
 include 'ascl.inc'
 
 START:                          ; start of execution

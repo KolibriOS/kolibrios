@@ -111,8 +111,8 @@ fasm develop\libraries\libs-dev\libio\libio.asm %BIN%\lib\libio.obj
 echo *
 echo Building fs
 echo *
-fasm fs\copy2\trunk\copy2.asm %BIN%\copy2
-fasm fs\copyr\trunk\copyr.asm %BIN%\copyr
+rem fasm fs\copy2\trunk\copy2.asm %BIN%\copy2
+fasm fs\copyr\copyr.asm %BIN%\copyr
 fasm fs\kfar\trunk\kfar.asm %BIN%\kfar
 rem fasm fs\mfar\trunk\mfar.asm %BIN%\mfar
 rem fasm fs\sysxtree\trunk\sysxtree.asm %BIN%\sysxtree
@@ -323,7 +323,7 @@ echo *
 echo Compressing fs
 echo *
 
-kpack %BIN%\copy2
+rem kpack %BIN%\copy2
 kpack %BIN%\copyr
 kpack %BIN%\kfar
 rem kpack %BIN%\sysxtree

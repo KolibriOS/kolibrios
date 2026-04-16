@@ -296,8 +296,8 @@ extra_files = {
  {"kolibrios/utils/cnc_editor/cnc_editor", VAR_PROGS .. "/other/cnc_editor/cnc_editor"},
  {"kolibrios/utils/cnc_editor/kolibri.NC", SRC_PROGS .. "/other/cnc_editor/kolibri.NC"},
  {"kolibrios/utils/kfm/kfm.ini", "common/File Managers/kfm.ini"},
- {"kolibrios/utils/kfm/kfm_keys_eng.txt", SRC_PROGS .. "/fs/kfm/trunk/docs/english/kfm_keys.txt"},
- {"kolibrios/utils/kfm/kfm_keys_rus.txt", SRC_PROGS .. "/fs/kfm/trunk/docs/russian/dos_kolibri/kfm_keys.txt"},
+ {"kolibrios/utils/kfm/kfm_keys_eng.txt", SRC_PROGS .. "/fs/kfm/docs/english/kfm_keys.txt"},
+ {"kolibrios/utils/kfm/kfm_keys_rus.txt", SRC_PROGS .. "/fs/kfm/docs/russian/dos_kolibri/kfm_keys.txt"},
  {"kolibrios/utils/fNav/", "common/File Managers/fNav/*"},
  {"kolibrios/utils/NDN/", "common/File Managers/ndn/*"},
  {"kolibrios/utils/NDN/COLORS/", "common/File Managers/ndn/COLORS/*"},
@@ -632,7 +632,7 @@ tup.append_table(extra_files, {
  {"kolibrios/media/zsea/plugins/rotate.obj", VAR_PROGS .. "/media/zsea/plugins/rotate/rotate.obj"},
  {"kolibrios/media/zsea/plugins/scaling.obj", VAR_PROGS .. "/media/zsea/plugins/scaling/scaling.obj"},
  {"kolibrios/utils/AMDtemp", VAR_PROGS .. "/system/amd_temp_view/AMDtemp"},
- {"kolibrios/utils/kfm/kfm", VAR_PROGS .. "/fs/kfm/trunk/kfm"},
+ {"kolibrios/utils/kfm/kfm", VAR_PROGS .. "/fs/kfm/kfm"},
  {"kolibrios/utils/tedit/t_edit", VAR_PROGS .. "/other/t_edit/t_edit"},
  {"kolibrios/3D/blocks/block.bin", VAR_PROGS .. "/bcc32/games/blocks/block.bin"}
 })
