@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;;      h2d2b v0.5 big fonts by Leency      ;;
 ;;      09.11.2016                          ;;
 
@@ -17,11 +23,11 @@ use32
     db  'MENUET01'
     dd  1,start,i_end,e_end,e_end,0,sys_path
 
-include '../../../proc32.inc'
-include '../../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
-include '../../../KOSfuncs.inc'
-include '../../../load_lib.mac'
-include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../proc32.inc'
+include '../../macros.inc' ; макросы облегчают жизнь ассемблерщиков!
+include '../../KOSfuncs.inc'
+include '../../load_lib.mac'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
 include 'lang.inc'      ; Language support for locales: ru_RU (CP866), en_US.
 
 @use_library

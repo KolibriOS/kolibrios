@@ -16,10 +16,10 @@ This file will need to be placed in the same directory as dependencies, to build
 2. Collecting the dependencies:
 
 - sound.lib
-Source code can be found at \programs\develop\sdk\trunk\sound\src
+Source code can be found at \programs\develop\sdk\sound\src
 Building this is beyond the scope of this document for now.
 Alternatively, you can download latest compiled version from the autobuild server.
-http://builds.kolibrios.org/eng/data/programs/develop/sdk/trunk/sound/src/sound.lib
+http://builds.kolibrios.org/eng/data/programs/develop/sdk/sound/src/sound.lib
 
 - ufmod.obj
 Source code is at \programs\develop\libraries\ufmod

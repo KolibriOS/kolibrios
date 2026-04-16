@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;-----------------------------------------------------------------------------
 ; project name:      TINYPAD
 ; compiler:          flat assembler 1.67.21
@@ -24,10 +27,10 @@
 
 include 'lang.inc'
 
-include '../../../config.inc'		;for nightbuild
-include '../../../macros.inc'		; useful stuff
-include '../../../struct.inc'
-include '../../../proc32.inc'
+include '../../config.inc'		;for nightbuild
+include '../../macros.inc'		; useful stuff
+include '../../struct.inc'
+include '../../proc32.inc'
 
 include 'external/libio.inc'
 
@@ -44,7 +47,7 @@ FALSE = 0
 
 ;define __DEBUG__ 1
 ;define __DEBUG_LEVEL__ 1
-;include '../../../debug-fdo.inc'
+;include '../../debug-fdo.inc'
 
 ; compiled-in options
 
@@ -611,7 +614,7 @@ include 'tp-editor.asm'
 include 'tp-recode.asm'
 include 'tp-clipboard.asm'
 
-include '../../../dll.inc'
+include '../../dll.inc'
 
 ;-----------------------------------------------------------------------------
 __section @DATA ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

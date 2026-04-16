@@ -1,5 +1,5 @@
 if tup.getconfig("NO_FASM") ~= "" or (tup.getconfig("NO_MSVC") ~= "" and tup.getconfig("NO_GCC") ~= "") then return end
-HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../../../.." or tup.getconfig("HELPERDIR")
+HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../../.." or tup.getconfig("HELPERDIR")
 tup.include(HELPERDIR .. "/use_fasm.lua")
 
 OBJS = tup.foreach_rule("*.asm", FASM .. " %f %o", "%B.obj")

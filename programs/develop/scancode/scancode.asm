@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;
 ;   KEYBOARD SCANCODE EXAMPLE
 ;
@@ -5,7 +11,7 @@
 ;
 
 include "lang.inc"
-include "..\..\..\macros.inc"
+include "..\..\macros.inc"
 
     use32
     org    0x0
@@ -165,7 +171,7 @@ draw_window:
     or   edx, 0x34000000
     mov  edi, title                ; WINDOW LABEL
     mcall
-                                   
+
     mov  eax, 4
     mov  ebx, 15*65536+10
     xor  ecx, ecx

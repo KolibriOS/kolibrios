@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;   Author: M. Lisovin
 ;   Compile with FASM for Menuet
 ;
@@ -15,7 +18,7 @@ use32
                dd     0x0 , 0x0               ; I_Param , I_Icon
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include '..\..\macros.inc'
 
 START:                          ; start of execution
   red:
@@ -107,5 +110,3 @@ draw_window:
 I_END:
  keyid: rb 1
  scan_keyid: rb 1
-
-

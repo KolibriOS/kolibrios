@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ; Программа для преобразования чисел из строки
 ;   в формат float, double, а также из 10 или 16 ричного
 ;   во float.
@@ -14,12 +20,12 @@ use32
     db	'MENUET01'
     dd	1,start,i_end,e_end,e_end,0,sys_path
 
-include '../../../proc32.inc'
-include '../../../macros.inc'
-include '../../../KOSfuncs.inc'
-include '../../../load_lib.mac'
-include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
-include '../../../develop/info3ds/info_fun_float.inc'
+include '../../proc32.inc'
+include '../../macros.inc'
+include '../../KOSfuncs.inc'
+include '../../load_lib.mac'
+include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/info3ds/info_fun_float.inc'
 include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 
 @use_library

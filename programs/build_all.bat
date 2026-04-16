@@ -86,17 +86,17 @@ fasm system\zkey\zkey.asm %BIN%\zkey
 echo *
 echo Building develop
 echo *
-fasm develop\cmd\trunk\cmd.asm %BIN%\cmd
-fasm develop\fasm\trunk\fasm.asm %BIN%\develop\fasm
-fasm develop\h2d2b\trunk\h2d2b.asm %BIN%\develop\h2d2b
-fasm develop\heed\trunk\heed.asm %BIN%\demos\heed
+rem fasm develop\cmd\trunk\cmd.asm %BIN%\cmd
+fasm develop\fasm\1.73\fasm.asm %BIN%\develop\fasm
+fasm develop\h2d2b\h2d2b.asm %BIN%\develop\h2d2b
+fasm develop\heed\heed.asm %BIN%\demos\heed
 rem fasm develop\hexview\trunk\hexview.asm hexview
-fasm develop\keyascii\trunk\keyascii.asm %BIN%\develop\keyascii
+fasm develop\keyascii\keyascii.asm %BIN%\develop\keyascii
 fasm develop\mtdbg\mtdbg.asm %BIN%\develop\mtdbg
 rem fasm develop\param\trunk\param.asm param
-fasm develop\scancode\trunk\scancode.asm %BIN%\develop\scancode
-fasm develop\tinypad\trunk\tinypad.asm %BIN%\tinypad
-fasm develop\cObj\trunk\cObj.asm %BIN%\develop\cObj
+fasm develop\scancode\scancode.asm %BIN%\develop\scancode
+fasm develop\tinypad\tinypad.asm %BIN%\tinypad
+fasm develop\cObj\cObj.asm %BIN%\develop\cObj
 
 echo *
 echo Building systems libraries
@@ -234,8 +234,8 @@ fasm media\kiv\kiv.asm %BIN%\nightbuild\kiv
 fasm media\scrshoot\scrshoot.asm %BIN%\nightbuild\scrshoot
 fasm media\animage\animage.asm %BIN%\nightbuild\animage
 fasm media\midamp\midamp.asm %BIN%\nightbuild\midamp
-fasm develop\heed\trunk\heed.asm %BIN%\nightbuild\heed
-fasm develop\tinypad\trunk\tinypad.asm %BIN%\nightbuild\tinypad
+fasm develop\heed\heed.asm %BIN%\nightbuild\heed
+fasm develop\tinypad\tinypad.asm %BIN%\nightbuild\tinypad
 fasm system\skincfg\skincfg.asm %BIN%\nightbuild\skincfg
 fasm system\hdd_info\hdd_info.asm %BIN%\nightbuild\hdd_info
 rem fasm system\mgb\trunk\mgb.asm %BIN%\nightbuild\mgb
