@@ -15,11 +15,12 @@ Forward|Ctrl+>
 Посмотреть исходник|Ctrl+U
 Редактировать исходник|F2";
 char main_menu[] = 
-"Открыть файл...|Ctrl+O 
-Новое окно|Ctrl+N 
+"Открыть файл...|Ctrl+O
+Новое окно|Ctrl+N
 -
-История|Ctrl+H 
-Менеджер загрузок  |Ctrl+J 
+История|Ctrl+H
+Менеджер загрузок|Ctrl+J
+Настройки|Ctrl+E
 Очистить кэш|Ctrl+F5
 Обновить браузер";
 char link_menu[] =
@@ -55,11 +56,12 @@ Forward|Ctrl+>
 View source|Ctrl+U
 Edit source|F2";
 char main_menu[] = 
-"Open local file...|Ctrl+O 
-New window|Ctrl+N 
+"Open local file...|Ctrl+O
+New window|Ctrl+N
 -
 History|Ctrl+H 
-Download Manager  |Ctrl+J 
+Download Manager|Ctrl+J
+Settings|Ctrl+E
 Clear cache|Ctrl+F5
 Update browser";
 char link_menu[] =
@@ -101,7 +103,7 @@ enum {
 	REFRESH_BUTTON,  GOTOURL_BUTTON,   CHANGE_ENCODING,
 	GO_BUTTON,       SEARCH_BUTTON,    SANDWICH_BUTTON,
 	OPEN_FILE,       NEW_WINDOW,       VIEW_HISTORY,    DOWNLOAD_MANAGER,
-	CLEAR_CACHE,     UPDATE_BROWSER,   IN_NEW_TAB,      IN_NEW_WINDOW,
+	OPEN_SETTINGS,   CLEAR_CACHE,      UPDATE_BROWSER,  IN_NEW_TAB,       IN_NEW_WINDOW,
 	COPY_LINK_URL,   DOWNLOAD_LINK_CT, TAB_ID, 
 	TAB_CLOSE_ID = 900
 };
@@ -113,4 +115,4 @@ char editbox_icons[] = FROM "res/editbox_icons.raw";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
-char version[]="WebView 3.94";
+char version[]="WebView 3.95";

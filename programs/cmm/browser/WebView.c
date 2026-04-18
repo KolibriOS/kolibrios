@@ -73,6 +73,7 @@ proc_info Form;
 
 char settings_file[256];
 char proxy_address[768];
+char search_engine[768];
 
 #include "settings.h"
 #include "tabs.h"
@@ -309,6 +310,7 @@ void ProcessButtonClick(dword id__)
 		case VIEW_HISTORY:     OpenPage(URL_SERVICE_HISTORY); return;
 		case DOWNLOAD_MANAGER: EventOpenDownloader(""); return;
 		case UPDATE_BROWSER:   EventUpdateBrowser(); return;
+		case OPEN_SETTINGS:    RunProgram("/sys/@open", #settings_file); return;
 		case CLEAR_CACHE:      EventClearCache(); return;
 		case IN_NEW_TAB:       EventClickLink(TARGET_NEW_TAB); return;
 		case IN_NEW_WINDOW:    EventClickLink(TARGET_NEW_WINDOW); return;
@@ -330,6 +332,7 @@ void ProcessKeyEvent()
 	{
 		case SCAN_CODE_KEY_O: EventOpenDialog(); return;
 		case SCAN_CODE_KEY_H: ProcessButtonClick(VIEW_HISTORY); return;
+		case SCAN_CODE_KEY_E: ProcessButtonClick(OPEN_SETTINGS); return;
 		case SCAN_CODE_KEY_U: EventViewSource(); return;
 		case SCAN_CODE_KEY_T: EventOpenNewTab(URL_SERVICE_HOMEPAGE); return;
 		case SCAN_CODE_KEY_N: RunProgram(#program_path, NULL); return;
@@ -840,8 +843,7 @@ void EventSearchWeb()
 	char new_url[URL_SIZE+1];
 	// replace the spaces with '+' for the search query
 	replace_char(#editURL, ' ', '+', URL_SIZE);
-	//strcpy(#new_url, "https://html.duckduckgo.com/html/?q=");
-	strcpy(#new_url, "http://bing.com/search?q=");
+	strcpy(#new_url, #search_engine);
 	strncat(#new_url, #editURL, URL_SIZE);
 	OpenPage(#new_url);
 }
