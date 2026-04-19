@@ -17,7 +17,7 @@ default:
 	objcopy tte -O binary
 
 TCC:
-	kos32-tcc -DTCC_BUILD tte.c getline.c notify.c -lck -o tte -I ../../develop/ktcc/trunk/libc/include
+	kos32-tcc -DTCC_BUILD tte.c getline.c notify.c -lck -o tte -I ../../develop/ktcc/libc.obj/include
 
 clean:
 	rm *.o

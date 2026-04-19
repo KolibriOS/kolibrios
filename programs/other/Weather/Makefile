@@ -1,5 +1,5 @@
-KTCC_DIR = ../../develop/ktcc/trunk
-KLIBC = ../../develop/ktcc/trunk/libc.obj
+KTCC_DIR = ../../develop/ktcc
+KLIBC = ../../develop/ktcc/libc.obj
 
 NAME = weather
 

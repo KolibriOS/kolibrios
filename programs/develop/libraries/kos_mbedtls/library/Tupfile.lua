@@ -2,7 +2,7 @@ if tup.getconfig("NO_GCC") ~= "" or tup.getconfig("NO_FASM") ~= "" then return e
 HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../../../../" or tup.getconfig("HELPERDIR")
 tup.include(HELPERDIR .. "/use_gcc.lua")
 
-KLIBC_DIR = HELPERDIR .. "develop/ktcc/trunk/libc.obj" 
+KLIBC_DIR = HELPERDIR .. "develop/ktcc/libc.obj"
 
 CFLAGS = " -c -nostdinc -I../include -I.. -I ".. KLIBC_DIR .. "/include -DGNUC -fno-common -Os -fno-delete-null-pointer-checks  -fno-ident -fno-builtin -fno-leading-underscore -D__TINYC__ -D_FILE_OFFSET_BITS=64 "
 

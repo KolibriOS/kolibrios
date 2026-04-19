@@ -40,7 +40,7 @@ jobs:
         id: toolchain-hash
         run: |
           a=$(find ${{ gitea.workspace }}/programs/develop/cmm/ -type f -print0 | sort -z | xargs -0 sha1sum)
-          b=$(sha1sum ${{ gitea.workspace }}/programs/develop/ktcc/trunk/bin/kos32-tcc)
+          b=$(sha1sum ${{ gitea.workspace }}/programs/develop/ktcc/bin/kos32-tcc)
           c=$(find ${{ gitea.workspace }}/programs/develop/objconv/ -type f -print0 | sort -z | xargs -0 sha1sum)
           d=$(find ${{ gitea.workspace }}/programs/other/kpack/kerpack_linux/ -type f -print0 | sort -z | xargs -0 sha1sum)
           e=$(find ${{ gitea.workspace }}/programs/other/kpack/linux/ -type f -print0 | sort -z | xargs -0 sha1sum)
@@ -67,7 +67,7 @@ jobs:
       - name: Install TCC
         if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
-          cp ${{ gitea.workspace }}/programs/develop/ktcc/trunk/bin/kos32-tcc /home/autobuild/tools/win32/bin/kos32-tcc
+          cp ${{ gitea.workspace }}/programs/develop/ktcc/bin/kos32-tcc /home/autobuild/tools/win32/bin/kos32-tcc
           chmod +x /home/autobuild/tools/win32/bin/kos32-tcc
 
       - name: Build and install objconv
@@ -132,7 +132,7 @@ jobs:
           echo "CONFIG_LANG=ru_RU"       >> ru_RU.config
           echo "CONFIG_BUILD_TYPE=ru_RU" >> ru_RU.config
           tup variant ru_RU.config
-          
+
           # Configure es_ES
           echo "CONFIG_LANG=es_ES"       >> es_ES.config
           echo "CONFIG_BUILD_TYPE=es_ES" >> es_ES.config

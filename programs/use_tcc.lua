@@ -1,6 +1,6 @@
-TCC = "kos32-tcc -B" .. tup.getcwd().. "/develop/ktcc/trunk/bin"
+TCC = "kos32-tcc -B" .. tup.getcwd().. "/develop/ktcc/bin"
 
-CFLAGS = "-I" .. tup.getcwd().. "/develop/ktcc/trunk/libc.obj/include "
+CFLAGS = "-I" .. tup.getcwd().. "/develop/ktcc/libc.obj/include "
 LFLAGS = ""
 LIBS = ""
 
@@ -8,7 +8,7 @@ OBJS = {}
 
 function compile_tcc(input, output)
   if not output then output = '%B.o' end
-  tup.append_table(OBJS, 
+  tup.append_table(OBJS,
         tup.foreach_rule(input, TCC .. " -c " .. CFLAGS .. " %f -o %o", output)
   )
 end

@@ -1,4 +1,4 @@
-TCC_DIR=../../../ktcc/trunk
+TCC_DIR=../../../ktcc
 CC=$(TCC_DIR)/bin/kos32-tcc
 
 CFLAGS=-I../include -I$(TCC_DIR)/libc/include -Dpowf=pow
@@ -10,9 +10,9 @@ OBJS= clip.o vertex.o api.o list.o init.o matrix.o texture.o \
       arrays.o specbuf.o glu.o kosgl.o
 
 all: $(OBJS)
-	ar -crs libtinygl.a *.o 
+	ar -crs libtinygl.a *.o
 .o:
-	$(CC) $(CFLAGS) -c $*.c 
+	$(CC) $(CFLAGS) -c $*.c
 clean:
 	rm *.o *.a
 install:

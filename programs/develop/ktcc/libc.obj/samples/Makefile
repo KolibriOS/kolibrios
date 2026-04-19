@@ -2,7 +2,7 @@ KTCC = kos32-tcc
 FASM = 	fasm
 KPACK = kpack
 
-CFLAGS = -I../include -B../../bin -I../../../../../../contrib/sdk/sources/SDL-1.2.2_newlib/include
+CFLAGS = -I../include -B../../bin -I../../../../../contrib/sdk/sources/SDL-1.2.2_newlib/include
 LIBS   = -lbox_lib -lshell -lSDL -lsound -lnetwork -lrasterworks -limg -ldialog -lmsgbox
 
 BIN = \
@@ -28,9 +28,9 @@ BIN = \
 	pipe.kex \
 	defgen.kex \
 	futex.kex
-	
+
 all: $(BIN)
-	
+
 %.kex : %.c
 	$(KTCC) $(CFLAGS) $(LDFLAGS)  $< -o $@ $(LIBS)
 	$(KPACK) --nologo $@
@@ -38,6 +38,6 @@ all: $(BIN)
 %.kex : %.asm
 	$(FASM) $< $@
 	$(KPACK) --nologo $@
-	
+
 clean:
 	rm *.kex clayer/*.kex

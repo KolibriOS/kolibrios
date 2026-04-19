@@ -1,4 +1,4 @@
-KTCC_DIR=../../develop/ktcc/trunk
+KTCC_DIR=../../develop/ktcc
 KLIBC_DIR = ../../develop/libraries/kolibri-libc
 
 NAME=thashview

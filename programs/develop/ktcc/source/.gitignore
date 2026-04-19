@@ -4,7 +4,7 @@ a.out
 *.exe
 *.log
 tcc_g
-tcc
+# tcc
 /*-tcc
 tc2.c
 doc
@@ -49,7 +49,7 @@ tests/vla_test
 .gdb_history
 tcc.1
 tcc.pod
-config.h
+# config.h
 config.mak
 config.texi
 tags
@@ -62,11 +62,11 @@ lib/x86_64-win32
 lib/i386-win32
 lib/arm
 lib/arm64
-tcc-doc.info
-conftest*
+# tcc-doc.info
+# conftest*
 tiny_libmaker
 *.dSYM
 *~
 \#*
 .#*
-win32/*
+# win32/*

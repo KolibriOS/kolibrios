@@ -1,4 +1,4 @@
-KTCC_DIR = ../kolibrios-nextgen/programs/develop/ktcc/trunk
+KTCC_DIR = ../kolibrios-nextgen/programs/develop/ktcc
 KLIBC = $(KTCC_DIR)/libc.obj
 
 NAME = dino

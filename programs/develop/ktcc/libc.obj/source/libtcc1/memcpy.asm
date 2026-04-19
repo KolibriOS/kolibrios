@@ -1,7 +1,10 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 format ELF
 
 section '.text' executable
-include '../../../../../../proc32.inc'
+include '../../../../../proc32.inc'
 
 public memcpy
 

@@ -1,7 +1,8 @@
 // BOXLIB example (scrollbar, progressbar)
 // ! without kolibri_gui !
 // Writed by maxcodehack
-// TCC version is in /programs/develop/ktcc/trunk/samples
+// TCC version is in /programs/develop/ktcc/libc.obj/samples/clayer/boxlib.c
+
 #include <kos32sys.h>
 #include <stdlib.h>
 
@@ -83,7 +84,7 @@ scrollbar scroll = {15, WIN_W - 26, WIN_H - 29, 0, 0, 2, 215, 15, 0,0x707070,0xD
 progressbar pg = {0, 10, 10, 270, 35, 1, 0, 200, 0xB4B4B4, 0x2728FF, 0xA9A9A9};
 
 void draw_window(){
-        BeginDraw(); 
+        BeginDraw();
         DrawWindow(215,100,WIN_W,WIN_H,title,win_bg_color,0x34);
         scrollbar_v_draw(&scroll);
         progressbar_draw(&pg);
@@ -109,7 +110,7 @@ void draw_window(){
 int main()
 {
 	kolibri_boxlib_init();
-	
+
 	set_wanted_events_mask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	while(1)
 	{
@@ -118,17 +119,17 @@ int main()
 			case evButton:
 				if (get_os_button() == 1) exit(0);
 				break;
-		  
+
 			case evKey:
 				get_key();
 				break;
-			 
+
 			case evReDraw:
 				draw_window();
 				break;
 			case evMouse:
 				scrollbar_v_mouse(&scroll);
-				
+
 				// Wheel scrolling
 				// Quite unstable
 				/*
@@ -140,7 +141,7 @@ int main()
 						scroll.position += scroll_strong;
 					else if((short)wheels < 0 && scroll.position > 0)
 						scroll.position -= scroll_strong;
-					
+
 					scrollbar_v_draw(&scroll);
 				}
 				*/
