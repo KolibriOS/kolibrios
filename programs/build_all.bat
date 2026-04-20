@@ -60,19 +60,19 @@ fasm system\calendar\calendar.asm %BIN%\calendar
 fasm system\board\board.asm %BIN%\develop\board
 rem fasm system\commouse\trunk\commouse.asm %BIN%\commouse
 fasm system\cpu\cpu.asm %BIN%\cpu
-rem fasm system\cpuid\trunk\cpuid.asm %BIN%\cpuid
+fasm testing\cpuid\cpuid.asm %BIN%\cpuid
 fasm system\skincfg\skincfg.asm %BIN%\skincfg
 fasm system\docpack\docpack.asm %BIN%\docpack
 fasm system\end\end.asm %BIN%\end
 fasm system\gmon\gmon.asm %BIN%\gmon
 fasm system\icon\icon.asm %BIN%\icon
-rem fasm system\kbd\trunk\kbd.ASM %BIN%\kbd
+fasm testing\kbd\kbd.ASM %BIN%\kbd
 fasm system\launcher\launcher.asm %BIN%\launcher
 fasm system\menu\menu.asm %BIN%\@menu
-rem fasm system\mgb\trunk\mgb.asm %BIN%\mgb
+fasm testing\mgb\mgb.asm %BIN%\mgb
 fasm system\mousemul\mousemul.asm %BIN%\mousemul
 fasm system\taskbar\TASKBAR.ASM %BIN%\@TASKBAR
-rem fasm system\pcidev\trunk\pcidev.asm %BIN%\pcidev
+fasm testing\pcidev\pcidev.asm %BIN%\pcidev
 rem fasm system\RB\trunk\@RB.ASM %BIN%\@RB
 fasm system\rdsave\rdsave.asm %BIN%\rdsave
 fasm system\run\run.asm %BIN%\run
@@ -238,7 +238,7 @@ fasm develop\heed\heed.asm %BIN%\nightbuild\heed
 fasm develop\tinypad\tinypad.asm %BIN%\nightbuild\tinypad
 fasm system\skincfg\skincfg.asm %BIN%\nightbuild\skincfg
 fasm system\hdd_info\hdd_info.asm %BIN%\nightbuild\hdd_info
-rem fasm system\mgb\trunk\mgb.asm %BIN%\nightbuild\mgb
+fasm testing\mgb\mgb.asm %BIN%\nightbuild\mgb
 fasm system\rdsave\rdsave.asm %BIN%\nightbuild\rdsave
 fasm other\kpack\trunk\kpack.asm %BIN%\nightbuild\kpack
 fasm other\rtfread\rtfread.asm %BIN%\nightbuild\rtfread

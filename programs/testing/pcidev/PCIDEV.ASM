@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;***************************************************************
 ; project name:    PCI Device Enumeration
 ; target platform: KolibriOS
@@ -29,10 +32,10 @@
 	dd file_name	; I_Param
 	dd path		; APPLICATION PATH
 ;-----------------------------------------------------------------------------
-include 'lang.inc'	;language support
-include '../../../KOSfuncs.inc'
-include '../../../macros.inc'
-include	'../../../load_lib.mac'
+include 'lang.inc' ; Language support for locales: it_IT, en_US
+include '../../KOSfuncs.inc'
+include '../../macros.inc'
+include	'../../load_lib.mac'
 ;-----------------------------------------------------------------------------
 @use_library	; load_lib macro
 ;-----------------------------------------------------------------------------

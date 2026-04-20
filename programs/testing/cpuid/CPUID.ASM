@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;******************************************************************************
 ; project name:  CPUID                                                        *
 ; platform:      KolibriOS, x86 (IA-32), x86-64 achitectures                  *
@@ -15,8 +18,7 @@
 ;                your changes to the maintainer or make about post changes    *
 ;                at forum  http://board.kolibrios.org/viewtopic.php?f=42&t=594*
 ;-----------------------------------------------------------------------------*
-; English comments                                                            *
-;------------------------------------------------------------------------------
+
 use32
   org    0x0
   db     'MENUET01'
@@ -28,10 +30,10 @@ use32
   dd     0x0
   dd     path
 
-include '..\..\..\develop\libraries\box_lib\load_lib.mac'
-include '..\..\..\macros.inc'
-include '../../../gui_patterns.inc'
-include '../../../KOSfuncs.inc'
+include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../macros.inc'
+include '../../gui_patterns.inc'
+include '../../KOSfuncs.inc'
 include 'lang.inc' ; Language support for locales: it_IT, en_US.
 include 'draw.inc'
 include 'brand.inc'     ; brand ID decoding

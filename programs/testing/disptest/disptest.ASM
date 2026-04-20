@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 ;------------------------------------------------------------------------------
 ; Display Test for KolibriOS
 ;------------------------------------------------------------------------------
@@ -13,12 +18,12 @@
 
 ; <--- include all MeOS stuff --->
 include "lang.inc" ; Language support for locales: ru_RU (CP866), en_US.
-include "../../../macros.inc"
+include "../../macros.inc"
 
 ; <--- start of MenuetOS application --->
 MEOS_APP_START
 
-;include "..\..\..\debug.inc"
+;include "../../debug.inc"
 
 
 ; <--- start of code --->

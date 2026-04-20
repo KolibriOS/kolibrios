@@ -1,4 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
 ;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ; Kolibri Bus Disconnect
 ;   Test for bus disconnect
 ;
@@ -6,7 +11,7 @@
 ;
 ;
 
-include '..\..\..\macros.inc'
+include '../../macros.inc'
 include 'lang.inc' ; Language support for locales: it_IT, en_US.
 
 memsize = 1000h
@@ -613,4 +618,3 @@ I_END:
 sc      system_colors
 val_hdd dd ?
 val_sgd dd ?
-
