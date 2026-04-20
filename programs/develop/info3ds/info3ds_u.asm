@@ -2,6 +2,8 @@
 ; Info3ds_u - is a program for viewing the structure of *.3ds files
 ; Copyright (C) 2015-2025 KolibriOS team
 
+; Text encoded with Code Page 866 - Cyrillic
+
 use32
 	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
@@ -149,7 +151,7 @@ start:
 	mov eax,dword[icon_toolbar]
 	mov dword[tree1.data_img],eax
 
-	include_image_file '../../fs/kfar/trunk/font8x9.bmp', image_data_toolbar
+	include_image_file '../../fs/kfar/font8x9.bmp', image_data_toolbar
 	stdcall [buf2d_create_f_img], buf_1,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит

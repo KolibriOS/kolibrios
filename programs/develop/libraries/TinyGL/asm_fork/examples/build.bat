@@ -1,6 +1,6 @@
 if not exist bin mkdir bin
 @copy *.png bin\*.png
-if not exist bin\font8x9.bmp @copy ..\..\..\..\..\fs\kfar\trunk\font8x9.bmp bin\font8x9.bmp
+if not exist bin\font8x9.bmp @copy ..\..\..\..\..\fs\kfar\font8x9.bmp bin\font8x9.bmp
 if not exist bin\tinygl.obj @fasm.exe -m 16384 ..\tinygl.asm bin\tinygl.obj
 
 @fasm.exe -m 16384 test0.asm bin\test0.kex

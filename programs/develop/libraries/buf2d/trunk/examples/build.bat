@@ -1,6 +1,6 @@
 if not exist bin mkdir bin
 
-if not exist bin\font8x9.bmp @copy ..\..\..\..\..\fs\kfar\trunk\font8x9.bmp bin\font8x9.bmp
+if not exist bin\font8x9.bmp @copy ..\..\..\..\..\fs\kfar\font8x9.bmp bin\font8x9.bmp
 @copy foto.jpg bin\foto.jpg
 @copy img0.png bin\img0.png
 @copy img1.png bin\img1.png

@@ -1,4 +1,3 @@
-
 ; png.asm - location for general purpose libpng functions
 
 ; Last changed in libpng 1.6.25 [September 1, 2016]
@@ -13,7 +12,7 @@
 DEBUG equ 0
 
 include '../../../../../../KOSfuncs.inc'
-include '../../../../../../fs/kfar/trunk/zlib/deflate.inc'
+include '../../../../../../fs/kfar/zlib/deflate.inc'
 include 'pngtokos.inc' ;integrate png to kos
 
 ;files from libpng

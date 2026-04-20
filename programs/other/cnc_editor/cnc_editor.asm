@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 use32
 	org 0
 	db 'MENUET01'
@@ -58,7 +64,7 @@ start:
 	stdcall [buf2d_create], buf_0 ;создание буфера
 
 	;шрифт делаем до создания панели (для экономии указателя image_data_toolbar)
-	include_image_file '..\..\fs\kfar\trunk\font6x9.bmp', image_data_toolbar, buf_1.w,buf_1.h
+	include_image_file '..\..\fs\kfar\font6x9.bmp', image_data_toolbar, buf_1.w,buf_1.h
 	stdcall [buf2d_create_f_img], buf_1,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит
@@ -508,7 +514,7 @@ key:
 		stdcall [tl_key], tree1
 		jmp .end0
 	@@:
-	
+
 	cmp ah,178 ;Up
 	jne @f
 		call but_selection_move_up
@@ -790,7 +796,7 @@ endl
 	xor eax,eax
 	shr ecx,2
 	rep stosd
-	
+
 	;*** пишем информацию в память
 	mov edi,[open_file_data]
 	mov ebx,ObjData
@@ -857,7 +863,7 @@ align 4
 		dec edx
 		jnz .cycle1
 	.cycle1end:
-	
+
 	jmp @f
 	.err_save:
 		notify_window_run txt_err_save_txt_file_1
@@ -1414,7 +1420,7 @@ align 4
 		.end1:
 		stdcall found_parent_obj,ebx ;get figure number in ecx
 		stdcall figure_update_coords,ObjData,ecx
-		
+
 		mov eax,[nCount]
 		mov dword[offs_last_timer],0
 		jmp .end_f
@@ -2218,10 +2224,9 @@ thread_n_file:
 stacktop:
 	sys_path rb 1024
 	file_name:
-		rb 1024 ;4096 
+		rb 1024 ;4096
 	library_path rb 1024
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256
 mem:
-

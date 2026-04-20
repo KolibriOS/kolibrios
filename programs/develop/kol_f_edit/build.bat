@@ -8,7 +8,7 @@ if not exist bin\icon.bmp @copy icon.bmp bin\icon.bmp
 if not exist bin\base.bmp @copy base.bmp bin\base.bmp
 if not exist bin\left.bmp @copy left.bmp bin\left.bmp
 if not exist bin\oper.bmp @copy oper.bmp bin\oper.bmp
-if not exist bin\font6x9.bmp @copy ..\..\fs\kfar\trunk\font6x9.bmp bin\font6x9.bmp
+if not exist bin\font6x9.bmp @copy ..\..\fs\kfar\font6x9.bmp bin\font6x9.bmp
 if not exist bin\asm.syn @copy ..\..\other\t_edit\info\asm.syn bin\asm.syn
 
 copy *.ced bin\*.ced

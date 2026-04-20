@@ -21,7 +21,7 @@
 ; in this structure and is required for decompressing the LZ compressed
 ; data in PNG files.
 
-include '../../../../../../fs/kfar/trunk/zlib/zlib.inc'
+include '../../../../../../fs/kfar/zlib/zlib.inc'
 
 ; zlib.inc declares a magic type 'uInt' that limits the amount of data that zlib
 ; can handle at once.  This type need be no larger than 16 bits (so maximum of
@@ -74,7 +74,7 @@ ends
 ; from chromaticities the sum of the Y values is assumed to be 1.0
 
 struct png_XYZ
-	red_X dd ? ;png_fixed_point 
+	red_X dd ? ;png_fixed_point
 	red_Y dd ?
 	red_Z dd ?
 	green_X dd ?

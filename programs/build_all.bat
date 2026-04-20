@@ -113,7 +113,7 @@ echo Building fs
 echo *
 rem fasm fs\copy2\trunk\copy2.asm %BIN%\copy2
 fasm fs\copyr\copyr.asm %BIN%\copyr
-fasm fs\kfar\trunk\kfar.asm %BIN%\kfar
+fasm fs\kfar\kfar.asm %BIN%\kfar
 rem fasm fs\mfar\trunk\mfar.asm %BIN%\mfar
 rem fasm fs\sysxtree\trunk\sysxtree.asm %BIN%\sysxtree
 

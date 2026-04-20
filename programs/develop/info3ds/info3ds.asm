@@ -2,6 +2,8 @@
 ; Info3ds - is a program for viewing the structure of *.3ds files
 ; Copyright (C) 2011-2025 KolibriOS team
 
+; Text encoded with Code Page 866 - Cyrillic
+
 use32
 	org 0
 	db 'MENUET01'
@@ -154,7 +156,7 @@ start:
 
 	stdcall [buf2d_create], buf_0 ;создание буфера
 
-	include_image_file '../../fs/kfar/trunk/font8x9.bmp', image_data_toolbar
+	include_image_file '../../fs/kfar/font8x9.bmp', image_data_toolbar
 	stdcall [buf2d_create_f_img], buf_1,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит

@@ -2,6 +2,8 @@
 ; ImgTransform - utility for creating textures from images
 ; Copyright (C) 2020-2025 KolibriOS team
 
+; Text encoded with Code Page 866 - Cyrillic
+
 use32
 	org 0
 	db 'MENUET01'
@@ -54,7 +56,7 @@ start:
 
 	stdcall [buf2d_create], buf_0 ;создание буфера
 
-	include_image_file '../../../programs/fs/kfar/trunk/font6x9.bmp', image_data_toolbar, buf_font.w,buf_font.h
+	include_image_file '../../../programs/fs/kfar/font6x9.bmp', image_data_toolbar, buf_font.w,buf_font.h
 	stdcall [buf2d_create_f_img], buf_font,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_font,1 ;делаем буфер прозрачности 8 бит

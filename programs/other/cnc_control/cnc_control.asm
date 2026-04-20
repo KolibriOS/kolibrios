@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;CNC CONTROL
 ;Igor Afanasyev (aka IgorA) and Sergey Efremenkov (aka theonlymirage), 2020
 
@@ -65,7 +71,7 @@ start:
 	stdcall [buf2d_create], buf_0 ;создание буфера
 
 	;шрифт делаем до создания панели (для экономии указателя image_data_toolbar)
-	include_image_file '..\..\fs\kfar\trunk\font6x9.bmp', image_data_toolbar, buf_1.w,buf_1.h
+	include_image_file '..\..\fs\kfar\font6x9.bmp', image_data_toolbar, buf_1.w,buf_1.h
 	stdcall [buf2d_create_f_img], buf_1,[image_data_toolbar] ;создаем буфер
 	stdcall mem.Free,[image_data_toolbar] ;освобождаем память
 	stdcall [buf2d_conv_24_to_8], buf_1,1 ;делаем буфер прозрачности 8 бит
@@ -408,10 +414,10 @@ popad
 align 4
 key:
 	mcall SF_GET_KEY
-	
+
         stdcall [edit_box_key], editFileName
         stdcall [edit_box_key], editCommand
-        
+
 	mov ecx,eax
 	mcall SF_KEYBOARD,SSF_GET_CONTROL_KEYS
 	bt eax,2 ;left Ctrl
@@ -805,10 +811,10 @@ mouse_dd dd 0
 last_time dd 0
 
 align 16
-sc system_colors 
+sc system_colors
 
 align 16
-procinfo process_information 
+procinfo process_information
 
 align 4
 buf_0: dd 0 ;указатель на буфер изображения
@@ -925,4 +931,3 @@ stacktop:
 	filename_area rb 256
 	pi rb 1024
 mem:
-

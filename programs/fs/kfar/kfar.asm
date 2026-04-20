@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 use32
         db      'MENUET01'
         dd      1
@@ -15,8 +21,8 @@ max_width = 255
 min_height = 8
 max_height = 255
 
-include '../../../KOSfuncs.inc'
-include '../../../macros.inc'
+include '../../KOSfuncs.inc'
+include '../../macros.inc'
 include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 include 'font.inc'
 include 'sort.inc'
