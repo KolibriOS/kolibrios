@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ; project name:   SYSTREE FILE COPIER
 ; version:        1.2
 ; Mario79 23/10/06
@@ -26,9 +32,9 @@
     dd      0x10000        ; esp
     dd      0x0 , 0x0      ; I_Param , I_Icon
 
-include 'lang.inc'
-include '..\..\..\..\macros.inc'       ; very useful stuff for MeOS
-STRLEN = 48                ; maximal length of filename
+include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US, de_DE.
+include '..\..\..\macros.inc'
+STRLEN = 48                ; maximum filename length
 
 
 START:                     ; start of execution
@@ -315,9 +321,9 @@ get_param_info:
 
 source_info:                 ; SOURCE FILEINFO
  .subfunction	 dd   0 	      ; 0=READ
- .start        dd   0        
- .size_high    dd   0 	     
- .size         dd   0	      
+ .start        dd   0
+ .size_high    dd   0
+ .size         dd   0
  .return	      dd   0x10000
  .name:
      db   '/hd0/1/kernel/kernel.mnt',0   ; ASCIIZ dir & filename
@@ -325,9 +331,9 @@ source_info:                 ; SOURCE FILEINFO
 
 dest_info:                   ; DESTINATION FILEINFO
  .subfunction	 dd   2 	      ; 0=WRITE
- .start        dd   0        
- .size_high    dd   0 	     
- .size         dd   0	      
+ .start        dd   0
+ .size_high    dd   0
+ .size         dd   0
  .return	      dd   0x10000
  .name:
      db   '/sys/kernel.mnt',0   ; ASCIIZ dir & filename

@@ -1,10 +1,13 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                           ;
 ;    Audio CD player; code by Dmitry Yushko - dma@bn.by     ;
 ;                                                           ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-include "..\..\..\..\macros.inc"
+include "..\..\..\macros.inc"
 include "lang.inc"
 
 FALSE  equ 0

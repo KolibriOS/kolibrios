@@ -240,7 +240,7 @@ fasm system\skincfg\skincfg.asm %BIN%\nightbuild\skincfg
 fasm system\hdd_info\hdd_info.asm %BIN%\nightbuild\hdd_info
 fasm testing\mgb\mgb.asm %BIN%\nightbuild\mgb
 fasm system\rdsave\rdsave.asm %BIN%\nightbuild\rdsave
-fasm other\kpack\trunk\kpack.asm %BIN%\nightbuild\kpack
+fasm other\kpack\kpack.asm %BIN%\nightbuild\kpack
 fasm other\rtfread\rtfread.asm %BIN%\nightbuild\rtfread
 ;restore
 echo __CPU_type fix %res% > config.inc
@@ -299,7 +299,7 @@ echo *
 echo Compressing develop
 echo *
 
-kpack %BIN%\cmd
+rem kpack %BIN%\cmd
 kpack %BIN%\develop\fasm
 kpack %BIN%\develop\h2d2b
 kpack %BIN%\demos\heed

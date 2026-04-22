@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ; CMD - Command line interpreter
 ; copyleft Chemist dmitry_gt@tut.by
 ;
@@ -18,7 +21,7 @@ use32
  dd 0x0
  dd 0x0
 
-include "..\..\..\..\macros.inc"
+include "..\..\..\macros.inc"
 include "lang.inc" ; Language support for locales: de_DE, en_US.
 START:
 

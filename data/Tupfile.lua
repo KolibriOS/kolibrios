@@ -428,7 +428,7 @@ tup.append_table(img_files, {
  {"GMON", VAR_PROGS .. "/system/gmon/gmon"},
  {"HDD_INFO", VAR_PROGS .. "/system/hdd_info/hdd_info"},
  {"KBD", VAR_PROGS .. "/testing/kbd/kbd"},
- {"KPACK", VAR_PROGS .. "/other/kpack/trunk/kpack"},
+ {"KPACK", VAR_PROGS .. "/other/kpack/kpack"},
  {"LAUNCHER", VAR_PROGS .. "/system/launcher/launcher"},
  {"LOADDRV", VAR_PROGS .. "/system/loaddrv/loaddrv"},
  {"MAGNIFY", VAR_PROGS .. "/system/magnify/magnify"},
