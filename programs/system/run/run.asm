@@ -8,7 +8,7 @@ window_w=430
 ;--- другие макросы ---
 include '../../KOSfuncs.inc'
 include '../../load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include 'txtbut.inc'
 include '../../macros.inc'
 include 'run.mac'

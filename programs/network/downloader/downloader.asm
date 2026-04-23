@@ -36,7 +36,7 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../dll.inc'
 include '../../debug-fdo.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../develop/libraries/http/http.inc'
 
 virtual at 0

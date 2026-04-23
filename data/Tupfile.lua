@@ -508,7 +508,7 @@ tup.append_table(img_files, {
  {"GAMES/TETRIS", VAR_PROGS .. "/games/tetris/tetris"},
  {"GAMES/C4", VAR_PROGS .. "/games/c4/c4"},
  {"LIB/ARCHIVER.OBJ", VAR_PROGS .. "/fs/kfar/kfar_arc/kfar_arc.obj"},
- {"LIB/BOX_LIB.OBJ", VAR_PROGS .. "/develop/libraries/box_lib/trunk/box_lib.obj"},
+ {"LIB/BOX_LIB.OBJ", VAR_PROGS .. "/develop/libraries/box_lib/box_lib.obj"},
  {"LIB/BUF2D.OBJ", VAR_PROGS .. "/develop/libraries/buf2d/trunk/buf2d.obj"},
  {"LIB/CONSOLE.OBJ", VAR_PROGS .. "/develop/libraries/console_coff/console.obj"},
  {"LIB/CNV_PNG.OBJ", VAR_PROGS .. "/media/zsea/plugins/png/cnv_png.obj"},

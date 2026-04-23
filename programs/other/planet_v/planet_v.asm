@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;Огромная благодарность Maxxxx32, Diamond, Heavyiron
 ;и другим программистам, а также Теплову Алексею
 use32
@@ -10,7 +16,7 @@ include '../../macros.inc'
 include '../../KOSfuncs.inc'
 include '../../load_img.inc'
 include '../../load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 
 min_window_w equ 485 ;минимальная ширина окна
 min_window_h equ 325 ;минимальная высота окна
@@ -62,7 +68,7 @@ start:
   stdcall dword[ini_get_str],file_name,ini_sec,ini_ext,txt_tile_type_0,dword[tree1.info_capt_len],ini_ext.def
   cmp byte[txt_tile_type_0],0
   je @f
-    stdcall dword[tl_node_add], tree1, 0, txt_tile_type_0 
+    stdcall dword[tl_node_add], tree1, 0, txt_tile_type_0
   jmp @b
 @@:
   mov byte[ini_ext.number],'0' ;считываем параметр от ext0 который будет выбран в списке
@@ -84,7 +90,7 @@ start:
 	mov eax,[tree_sys_icon]
 	mov [tree1.data_img_sys],eax
 	mov [tree2.data_img_sys],eax
-	
+
 	load_image_file 'tl_nod_16.bmp',tree_nod_icon
 	mov eax,[tree_nod_icon]
 	mov [tree1.data_img],eax
@@ -904,4 +910,3 @@ plugin_path rb 4096
 openfile_path rb 4096
 filename_area rb 256
 mem:
-

@@ -90,7 +90,7 @@ include '../../config.inc'		;for nightbuild
 include '../../macros.inc'
 include '../../proc32.inc'
 ;include '../../debug.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../develop/libraries/box_lib/load_lib.mac'
 include 'lang.inc' ; Language support for locales: it_IT, ru_RU (CP866), en_US
 	@use_library

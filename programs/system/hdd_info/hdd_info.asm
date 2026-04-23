@@ -41,12 +41,12 @@ SECONDARY_CHANNEL equ 0x177
 ;  Fnc 01: 10-1,14-1,18-1,1c-1,BMA-0x18e1,0x18d1
 ; Регистр по смещению 0х10 для функции 02 содержит 0x1c01 (порты 0х1с00-0х1с07)
 
-include 'lang.inc'	; language support
+include 'lang.inc' ; Language support for locales: it_IT, en_US.
 
 ; Режимы Legacy, Native и пр. меняются через BIOS.
 include '../../config.inc'		;for nightbuild
 include '../../macros.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../KOSfuncs.inc'
 include '../../load_lib.mac'
 	@use_library

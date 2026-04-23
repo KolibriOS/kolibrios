@@ -24,7 +24,7 @@ frame_1:
   .y      = 10
   .width  = 350
   .height = 55
-;--------------------------------------  
+;--------------------------------------
 frame_2:
   .x      = 5
   .y      = 75
@@ -47,7 +47,7 @@ include '../../../../macros.inc'
 include '../../../../proc32.inc'
 include '../../../../dll.inc'
 include '../../../../debug-fdo.inc'
-include '../../box_lib/trunk/box_lib.mac'
+include '../../box_lib/box_lib.mac'
 include '../../http/http.inc'
 
 virtual at 0
@@ -114,7 +114,7 @@ still:
 
         cmp     eax, EV_BUTTON
         je      button
-        
+
         cmp     eax, EV_MOUSE
         je      mouse
 
@@ -127,9 +127,9 @@ key:
 
         cmp     ax, 13 shl 8
         je      download
-        
+
         jmp     still
-;---------------------------------------------------------------------        
+;---------------------------------------------------------------------
 button:
 
         mcall   17      ; get id
@@ -232,7 +232,7 @@ draw_window:
         mov     [frame_data.font_backgr_color],eax
         mov     eax,[sc.work_text]
         mov     [frame_data.font_color],eax
-        
+
         push    dword frame_data
         call    [Frame_draw]
 ;-----------------------------------
@@ -255,7 +255,7 @@ draw_window:
 ; draw buttons
         mcall   8,<frame_1.x+frame_1.width-(68+15+50+15),68>,<frame_1.y+30,16>,22,[sc.work_button] ; reload
         mcall   ,<frame_1.x+frame_1.width-(50+15),50>,<frame_1.y+30,16>, 24 ; stop
-        
+
         mcall   , <frame_2.x+frame_2.width-(54+15),54>,<frame_2.y+30,16>,26 ; save
 ;-----------------------------------
 ; draw buttons text
@@ -264,11 +264,11 @@ draw_window:
         mcall   4, <frame_1.x+frame_1.width-(68+15+50+15)+10,frame_1.y+35>, , button_text.1
         mcall   , <frame_1.x+frame_1.width-(50+15)+15,frame_1.y+35>, , button_text.2
         mcall   , <frame_2.x+frame_2.width-(54+15)+10,frame_2.y+35>, , button_text.3
-        
+
         mcall   13,<frame_2.x+17,frame_2.width-15*2>,<frame_2.y+10,15>,0xffffff
         push    dword PathShow_data_1
         call    [PathShow_draw]
-        
+
         mcall   12, 2   ; end window redraw
 
         ret
@@ -430,5 +430,3 @@ stacktop:
 ;---------------------------------------------------------------------
 I_END:
 ;---------------------------------------------------------------------
-
-

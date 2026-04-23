@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;unz - распаковщик, использующий archiver.obj. Поддерживает zip и 7z.
 
 ;unz [-o output path] [-f file for unpack] [-f ...] [-h] file.zip
@@ -42,7 +48,7 @@ include 'lang.inc' ; Language support for locales: ru_RU (CP866), es_ES, en_US.
 include '../../macros.inc'
 include '../../proc32.inc'
 include "../../string.inc"
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../dll.inc'
 ;include '../../debug.inc'
 include 'debug.inc'
@@ -917,5 +923,3 @@ stackDlg:
 stack_top:
 
 end_mem:
-
-

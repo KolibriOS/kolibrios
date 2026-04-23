@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 ;*****************************************************************************
 ; Open Dialog - for Kolibri OS
 ; Copyright (c) 2009-2013, Marat Zakiyanov aka Mario79, aka Mario
@@ -41,7 +46,7 @@
 ; window X size ; +4
 ; dw 0
 ;
-; window X position ; +6 
+; window X position ; +6
 ; dw 0
 ;
 ; window y size ; +8
@@ -83,7 +88,7 @@ include '../../macros.inc'
 ;include '../../debug-fdo.inc'
 include '../../KOSfuncs.inc'
 include '../../load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 ;include 'macros.inc'
 ;include 'load_lib.mac'
 ;include 'box_lib.mac'
@@ -98,7 +103,7 @@ START:
 	mcall	66,1,1
 	mcall	40,0x27
 	call	get_communication_area
-	
+
 	call	get_active_pocess
 
 load_libraries	l_libs_start,end_l_libs
@@ -114,7 +119,7 @@ load_libraries	l_libs_start,end_l_libs
 	mov	esi,start_pach
 	mov	edi,previous_dir_path
 	call	copy_dir_name.1
-	
+
 	call	load_root_directory
 	call	load_start_directory
 	call	sort_directory
@@ -236,21 +241,21 @@ key:
 	jb	still
 	cmp	ah,13
 	jbe	.12
-; compare for "q,w,e,r,t,y,u,i,o,p,([),(])"	
+; compare for "q,w,e,r,t,y,u,i,o,p,([),(])"
 	cmp	ah,16
 	jb	still
 	cmp	ah,27
 	jbe	.12
-; compare for "a,s,d,f,g,h,j,k,l,(;),('),(`)"	
+; compare for "a,s,d,f,g,h,j,k,l,(;),('),(`)"
 	cmp	ah,30
 	jb	still
 	cmp	ah,41
 	jbe	.12
-; compare for "(\),z,x,c,v,b,n,m,(,),(.),(/)"	
+; compare for "(\),z,x,c,v,b,n,m,(,),(.),(/)"
 	cmp	ah,43
 	jb	still
 	cmp	ah,53
-	jbe	.12	
+	jbe	.12
 	jmp	still
 .extended_key:
 	mov	[extended_key],0
@@ -270,7 +275,7 @@ key:
 	je	.7
 	cmp	ah,82	; Insert
 	je	.8
-	
+
 	cmp	ah,29
 	je	key_ctrl_up
 	cmp	ah,157
@@ -318,7 +323,7 @@ key:
 	inc	ebx	; 1 - arrow down
 ;---------------------------------
 	call	.key_action
-	
+
 ;	movzx	ecx,word [file_browser_data_1.start_draw_cursor_line]
 ;	mcall	47,0x80000,,<50,0>,0x40000000,0xffffff
 ;	movzx	ecx,word [file_browser_data_1.size_y]
@@ -456,11 +461,11 @@ user_selected_name_action:
 	mov	[edi-1],byte '/'
 	mov	esi,user_selected_name
 	call	copy_dir_name
-	
+
 	mov	eax,[communication_area]
 	mov	[eax],word 1
 	jmp	button.exit
-;---------------------------------------------------------------------	
+;---------------------------------------------------------------------
 select_disk:
 	call	check_alt
 .1:
@@ -554,7 +559,7 @@ NumPad_minus_Up:
 NumPad_invert_Up:
 	call	check_ctrl
 	jmp	key.11
-;---------------------------------------	
+;---------------------------------------
 check_alt:
 	xor	eax,eax
 	mov	al,[alt_flag]
@@ -565,7 +570,7 @@ check_alt:
 @@:
 	add	esp,4
 	jmp	still
-;---------------------------------------	
+;---------------------------------------
 check_ctrl:
 	xor	eax,eax
 	mov	al,[ctrl_flag]
@@ -671,13 +676,13 @@ button:
 @@:
 	cmp	[open_dialog_type],2	;Select dir
 	je	file_no_folder
-	
+
 	cmp	[open_dialog_type],1	;Save file
 	jne	@f
 
 	mov	al,[focus_pointer]
 	test	al,al
-	jne	file_no_folder	
+	jne	file_no_folder
 @@:
 	xor	ebx,ebx
 	jmp	key.7
@@ -825,10 +830,10 @@ mouse:
 	mov	eax,[scroll_bar_data_vertical.max_area]
 	cmp	eax,[scroll_bar_data_vertical.cur_area]
 	jbe	.menu_bar	;still
-	
+
 	push	dword scroll_bar_data_vertical
 	call	[scrollbar_ver_mouse]
-	
+
 	cmp	[scroll_bar_data_vertical.redraw],0
 	je	.menu_bar	;still
 	mov	[scroll_bar_data_vertical.redraw],0
@@ -903,7 +908,7 @@ mouse:
 	xor	ebx,ebx
 	mov	bx,ax	; EBX mouse y
 	shr	eax,16	; EAX mouse x
-	
+
 	mov	cx,[file_browser_data_1.start_x]
 	mov	dx,[file_browser_data_1.start_y]
 
@@ -914,7 +919,7 @@ mouse:
 	jb	.mouse_next	; min y
 
 	add	cx,[file_browser_data_1.size_x]
-	cmp	ax,cx	
+	cmp	ax,cx
 	ja	.mouse_next	; max x
 
 	add	dx,[file_browser_data_1.size_y]
@@ -1025,7 +1030,7 @@ analyse_out_menu_3:
 	jne	still
 	mov	[filter_flag],1
 	call	load_next_dir.1
-	jmp	still	
+	jmp	still
 ;---------------------------------------------------------------------
 get_communication_area:
 	xor	eax,eax
@@ -1059,7 +1064,7 @@ get_communication_area:
 	ret
 ;---------------------------------------------------------------------
 load_start_directory:
-	mov	eax,[communication_area]	
+	mov	eax,[communication_area]
 	test	eax,eax
 	jz	.1
 	movzx	ebx,word [eax]
@@ -1084,7 +1089,7 @@ load_start_directory:
 .2:
 	mov	edi,dir_path
 	call	copy_dir_name
-	
+
 ;	call	load_directory
 ;	mov	eax,[N_error]
 ;	test	eax,eax
@@ -1249,9 +1254,9 @@ file_no_folder:
 @@:
 	mov	edi,eax
 	add	edi,16	;12
-	mov	esi,file_name	
+	mov	esi,file_name
 	call	copy_dir_name
-	
+
 	pop	esi
 	mov	al,[focus_pointer]
 	test	al,al
@@ -1315,7 +1320,7 @@ load_root_directory:
 	test	eax,eax
 	jz	.continue
 	mov	[root1_folder_block],eax
-	
+
 	mov	ebp,0
 .start_copy_device_patch:
 	imul	edi,[retrieved_devices_table_counter],10
@@ -1552,14 +1557,14 @@ draw_window:
 ;---------------------------------------------------------------------
 draw_open_button_label:
 	cmp	[do_not_draw_open_button_label],1
-	je	.exit_1 
+	je	.exit_1
 
 	cmp	[open_dialog_type],1
 	jne	.exit_1
 
 	cmp	[focus_pointer],1
 	je	draw_save_button_label
-	
+
 	pusha
 	mov	ebx,[open_button_coordinates]
 	test	ebx,ebx
@@ -1569,15 +1574,15 @@ draw_open_button_label:
 	shl	edx,2
 	add	edx,message_open_dialog_button
 	mov	edx,[edx]
-	
+
 	mov	eax,[file_browser_data_1.folder_block]
 	test	eax,eax
 	jz	.1
-	
+
 	mov	eax,[file_browser_data_1.selected_BDVK_adress]
 	test	[eax],byte 0x10
 	jz	@f
-	
+
 	mov	edx,message_0	; Open Dir
 	jmp	.1
 @@:
@@ -1620,10 +1625,10 @@ copy_new_file_name:
 	stosb
 	test	al,al
 	jnz	@r
-	
+
 	sub	edi,user_selected_name
 	dec	edi
-	
+
 	mov	esi,edit1
 	mov	[esi+48],edi ;ed_size
 	mov	[esi+52],edi ;ed_pos
@@ -1643,15 +1648,15 @@ prepare_system_colors:
 	mov	[menu_data_1.menu_col],eax
 	mov	[menu_data_2.menu_col],eax
 	mov	[menu_data_3.menu_col],eax
-	
-	mov	[scroll_bar_data_vertical.bckg_col],eax 
+
+	mov	[scroll_bar_data_vertical.bckg_col],eax
 
 	mov	eax,[w_work_button]
 	mov	[menu_data_1.frnt_col],eax
 	mov	[menu_data_2.frnt_col],eax
 	mov	[menu_data_3.frnt_col],eax
 
-	mov	[scroll_bar_data_vertical.frnt_col],eax 
+	mov	[scroll_bar_data_vertical.frnt_col],eax
 
 	mov	eax,[w_work_button]
 	mov	[menu_data_1.menu_sel_col],eax
@@ -1662,13 +1667,13 @@ prepare_system_colors:
 	mov	[menu_data_1.bckg_text_col],eax
 	mov	[menu_data_2.bckg_text_col],eax
 	mov	[menu_data_3.bckg_text_col],eax
-	
+
 	mov	eax,[w_work_button_text]
 	mov	[menu_data_1.frnt_text_col],eax
 	mov	[menu_data_2.frnt_text_col],eax
 	mov	[menu_data_3.frnt_text_col],eax
-	
-	mov	[scroll_bar_data_vertical.line_col],eax 
+
+	mov	[scroll_bar_data_vertical.line_col],eax
 	ret
 ;---------------------------------------------------------------------
 draw_for_fs_errors:
@@ -1689,7 +1694,7 @@ draw_for_fs_errors:
 	mcall	4,,0x90000000,load_directory_error_type
 
 	add	ebx,20
-	mcall	4,,,dir_path	
+	mcall	4,,,dir_path
 
 	mov	eax,[error_type]
 	shl	eax,2
@@ -1697,7 +1702,7 @@ draw_for_fs_errors:
 	mov	edx,[eax]
 	add	ebx,20
 	mcall	4
-	
+
 	add	ebx,20
 	mcall	,,,error_help_text
 
@@ -1731,7 +1736,7 @@ draw_for_fs_errors:
 	mcall	4,,,message_cancel_button
 
 	ret
-;---------------------------------------------------------------------	
+;---------------------------------------------------------------------
 draw_file_name:
 	mov	esi,user_selected_name
 	cld
@@ -1742,7 +1747,7 @@ draw_file_name:
 	sub	esi,user_selected_name
 	mov	eax,esi
 	dec	eax
-	
+
 	mov	edi,edit1
 	mov	[edi+48],eax ;ed_size
 	mov	[edi+52],eax ;ed_pos
@@ -1755,7 +1760,7 @@ draw_file_name:
 	mov	[edi],eax
 	add	ebx,70
 	mov	[edi+4],ebx
-	
+
 	mov	eax,[file_browser_data_1.y]
 	mov	ebx,eax
 	shr	ebx,16
@@ -1763,10 +1768,10 @@ draw_file_name:
 	add	eax,ebx
 	add	eax,5
 	mov	[edi+8],eax
-	
+
 	push	dword name_editboxes
-	call	[edit_box_draw] 
-	
+	call	[edit_box_draw]
+
 	mov	bx,[file_browser_data_1.start_x]
 	add	bx,5
 	shl	ebx,16
@@ -1785,7 +1790,7 @@ draw_dir_path:
 	add	ebx,3
 	and	eax,0xffff
 	sub	eax,5
-	
+
 	mov	[PathShow_data_1.area_size_x],ax
 	mov	[PathShow_data_1.start_x],bx
 ;--------------------------------------
@@ -1796,7 +1801,7 @@ draw_dir_path:
 ;	push	ebx ecx
 ;	mcall	,,<21,1>,
 ;	pop	ecx ebx
-; left line	
+; left line
 ;	push	ebx
 ;	mov	bx,1
 ;	mov	cx,15
@@ -1810,7 +1815,7 @@ draw_dir_path:
 ;	shl	ebx,16
 ;	mov	bx,1
 ;	mcall	13
-;-------------------------------------- 
+;--------------------------------------
 	mov	ebx,[file_browser_data_1.x]
 	sub	ebx,2
 	add	ebx,1 shl 16
@@ -1819,29 +1824,29 @@ draw_dir_path:
 ; prepare for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_prepare]
-	
+
 ; draw for PathShow
 	push	dword PathShow_data_1
 	call	[PathShow_draw]
-	
+
 	ret
 ;---------------------------------------------------------------------
 draw_draw_file_browser1:
 	call	draw_dir_path
 	cmp	[open_dialog_type],1
-	jne	@f	
+	jne	@f
 	call	draw_file_name
 @@:
 	xor	eax,eax
 	inc	eax
 	mov	[file_browser_data_1.all_redraw],eax
 	mov	[scroll_bar_data_vertical.all_redraw],eax
-	
+
 	push	dword file_browser_data_1
 	call	[FileBrowser_draw]
 
 	call	draw_open_button_label
-	
+
 	call	prepare_scrollbar_data
 
 	call	draw_scrollbar
@@ -1902,7 +1907,7 @@ get_active_pocess:
 	mov	ecx,[ebx+30]	; PID
 	mcall	18,21
 	mov	[active_process],eax	; WINDOW SLOT
-	mov	ebx,[communication_area]	
+	mov	ebx,[communication_area]
 	test	ebx,ebx
 	jz	.1
 	mov	[ebx+12],eax	; WINDOW SLOT to com. area
@@ -1979,7 +1984,7 @@ calc_ini:
 	je      @f
 	cmp     al,byte '['
 	jne	@r
-	
+
 @@:
 	mov	[file_browser_data_1.ini_file_end],esi
 	ret
@@ -2000,7 +2005,7 @@ load_ini:
 	mov	ecx,[file_info+32]
 	mov	[fileinfo.size],ecx
 	mov	[img_size],ecx
-	
+
 	mcall	68,12
 	test	eax,eax
 	jz	memory_get_error
@@ -2029,10 +2034,10 @@ load_icons:
 	mcall	70,fileinfo
 	test	eax,eax
 	jz	@f
-	
+
 	mov	edi,icons_path
 
-	mov	[fileinfo.name],edi 
+	mov	[fileinfo.name],edi
 	mov	[fileinfo.subfunction],dword 5
 	mov	[fileinfo.size],dword 0
 	mov	[fileinfo.return],dword file_info
@@ -2045,7 +2050,7 @@ load_icons:
 	mov	ecx,[file_info+32]
 	mov	[fileinfo.size],ecx
 	mov	[img_size],ecx
-	
+
 	mcall	68,12
 	test	eax,eax
 	jz	memory_get_error
@@ -2099,12 +2104,12 @@ load_directory:
 ;	call	copy_dir_name.1
 ;	mcall	70,dirinfo
 ;	test	eax,eax
-;	jz	@f	
+;	jz	@f
 	xor	ebx,ebx
 	mov	[file_browser_data_1.folder_data],ebx
 	jmp	.error
 @@:
-	
+
 	mov	ecx,[dir_header.totl_blocks]
 	mov	[dirinfo.size],ecx
 	imul	ecx,304
@@ -2119,13 +2124,13 @@ load_directory:
 	mcall	70,dirinfo
 	test	eax,eax
 	jnz	.error
-	
+
 ; test for empty directory
 	mov	eax,[dirinfo.return]
 	mov	eax,[eax+4]
 	test	eax,eax
 	jz	@f
-	
+
 	call	delete_point_dir
 ;	call	files_name_normalize
 	call	check_filter
@@ -2143,7 +2148,7 @@ clear_data_fb_and_sb:
 	xor	eax,eax
 	mov	[file_browser_data_1.start_draw_cursor_line],ax
 	mov	[file_browser_data_1.start_draw_line],eax
-	mov	[scroll_bar_data_vertical.position],eax 
+	mov	[scroll_bar_data_vertical.position],eax
 	ret
 ;---------------------------------------------------------------------
 check_filter:
@@ -2170,7 +2175,7 @@ delete_unsupported_BDFE:
 	add	ebx,4
 	xor	ecx,ecx
 	dec	ecx
-	
+
 	mov	eax,[file_browser_data_1.folder_data]
 	add	eax,32+40
 	sub	eax,304
@@ -2187,17 +2192,17 @@ delete_unsupported_BDFE:
 @@:
 	test	[eax-40],byte 0x10
 	jnz	.start
-	
+
 	cmp	[open_dialog_type],2	; Select dir
 	je	.delete
-	
+
 	push	eax ebx
 	mov	esi,eax
 	call	search_expansion
 	test	eax,eax
 	pop	ebx eax
 	jnz	.delete
-	
+
 	push	eax ebx ecx esi
 	mov	edi,[communication_area]
 	add	edi,4100
@@ -2205,7 +2210,7 @@ delete_unsupported_BDFE:
 	test	eax,eax
 	pop	esi ecx ebx eax
 	jz	.start
-	
+
 ;-------------------------------------------
 .delete:
 	dec	dword [ebx]
@@ -2222,7 +2227,7 @@ delete_unsupported_BDFE:
 	cld
 	rep	movsd
 	pop	ecx
-	
+
 	jmp	.1
 .end:
 	ret
@@ -2244,14 +2249,14 @@ search_expansion:
 	jb	.end_err
 	cmp	al,'.'
 	jne	@b
-	
+
 	add	esi,2
 	sub	ebx,esi
 	mov	[expansion_length],ebx
 	cld
 	xor	eax,eax
 	ret
-	
+
 .end_err:
 	cld
 	xor	eax,eax
@@ -2267,7 +2272,7 @@ compare_expansion:
 	jb	.end_err
 	mov	ecx,[expansion_length]
 	inc	edi
-	
+
 	push	esi edi
 @@:
 	cld
@@ -2291,7 +2296,7 @@ compare_expansion:
 	pop	edi esi
 	xor	eax,eax
 	ret
-	
+
 .end_err:
 	xor	eax,eax
 	inc	eax
@@ -2565,10 +2570,10 @@ end_l_libs:
 align	4
 UNPACK_import:
 ;unpack_Version 		dd aUnpack_Version
-;unpack_PluginLoad		dd aUnpack_PluginLoad	
+;unpack_PluginLoad		dd aUnpack_PluginLoad
 ;unpack_OpenFilePlugin		dd aUnpack_OpenFilePlugin
 ;unpack_ClosePlugin		dd aUnpack_ClosePlugin
-;unpack_ReadFolder		dd aUnpack_ReadFolder	
+;unpack_ReadFolder		dd aUnpack_ReadFolder
 ;unpack_SetFolder		dd aUnpack_SetFolder
 ;unpack_GetFiles		dd aUnpack_GetFiles
 ;unpack_GetOpenPluginInfo	dd aUnpack_GetOpenPluginInfo
@@ -2629,7 +2634,7 @@ aCP_Check	db 'Check_Header',0
 aCP_Assoc	db 'Associations',0
 ;---------------------------------------------------------------------
 align	4
-Box_lib_import: 
+Box_lib_import:
 ;init_lib	dd a_init
 ;version_lib	dd a_version
 
@@ -2736,7 +2741,7 @@ open_dialog_title_pointer:
 	dd title_1
 	dd title_2
 	dd 0
-	
+
 message_open_dialog_button:
 	dd message_0
 	dd message_1
@@ -2889,14 +2894,14 @@ message_ExitDir_button:
 
 message_file_name:
 	db 'File name:',0
-	
+
 message_0:
 	db ' Open ',0
 message_1:
 	db ' Save ',0
 message_2:
 	db 'Select',0
-	
+
 title_0:
 	db 'Open Dialog',0
 title_1:
@@ -3190,7 +3195,7 @@ features_table:
 .date_table:
 	db '00.00.0000 00:00 '
 ;---------------------------------------------------------------------
-example_name_temp:	
+example_name_temp:
 	db 'temp1.asm',0
 ;---------------------------------------------------------------------
 IM_END:

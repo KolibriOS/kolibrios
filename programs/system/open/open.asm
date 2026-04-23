@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
     DEBUG = 0
 
     LIST_WIDTH  = 256
@@ -18,7 +24,7 @@ M01header.params:
     include "../../macros.inc"
     include "../../dll.inc"
     include "../../string.inc"
-    include "../../develop/libraries/box_lib/trunk/box_lib.mac"
+    include "../../develop/libraries/box_lib/box_lib.mac"
 
     include "lang.inc" ; Language support for locales: ru_RU (CP866), et_EE, it_IT, en_US.
 

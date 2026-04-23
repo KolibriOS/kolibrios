@@ -10,7 +10,7 @@ include '../../../programs/proc32.inc'
 include '../../../programs/macros.inc'
 purge section,mov,add,sub
 
-include '../../../programs/develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../../programs/develop/libraries/box_lib/box_lib.mac'
 include '../../../programs/system/run/txtbut.inc'
 include '../../../programs/dll.inc'
 

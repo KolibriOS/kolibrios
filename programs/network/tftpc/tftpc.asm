@@ -32,7 +32,7 @@ include '../../proc32.inc'
 include '../../macros.inc'
 include '../../develop/libraries/libs-dev/libio/libio.inc'
 include '../../dll.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 
 include '../../network.inc'
 include '../../debug-fdo.inc'

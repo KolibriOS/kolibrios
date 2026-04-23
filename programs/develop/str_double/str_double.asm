@@ -24,7 +24,7 @@ include '../../proc32.inc'
 include '../../macros.inc'
 include '../../KOSfuncs.inc'
 include '../../load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../develop/info3ds/info_fun_float.inc'
 include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.
 

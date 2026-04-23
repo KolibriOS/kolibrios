@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 
 use32                ; транслятор, использующий 32 разрядных команды
     org 0                ; базовый адрес кода, всегда 0x0
@@ -15,7 +20,7 @@ include "../../../macros.inc"
 include "../../../proc32.inc"
 include "API.INC"
 include "../../../dll.inc"
-include '../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../../develop/libraries/box_lib/box_lib.mac'
 ;include '../../../KOSfuncs.inc'
 ;include '../../../load_lib.mac'
 
@@ -412,4 +417,3 @@ i_end:
 
         rb 4096
 mem:
-

@@ -1,3 +1,8 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Formatting Disk Utility ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -46,7 +51,7 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
 include '../../dll.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac' ;for uses checkBox and editBox
+include '../../develop/libraries/box_lib/box_lib.mac' ;for uses checkBox and editBox
 include '../../load_lib.mac'
 @use_library
 

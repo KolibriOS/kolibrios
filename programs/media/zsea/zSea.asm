@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page Windows 1251 - Cyrillic
+
+
 ;*****************************************************************************
 ;*****************************************************************************
 ; zSea - advanced image viewer for KolibriOS
@@ -44,7 +50,7 @@ include 'lang.inc'
 ;include 'editbox_ex.mac'
 ;include 'proc32.inc'
 include '../../macros.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../proc32.inc'
 ;include 'debug.inc'
 include '../../KOSfuncs.inc'

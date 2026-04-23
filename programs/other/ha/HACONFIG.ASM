@@ -45,7 +45,7 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../dll.inc'
 include '../../KOSfuncs.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac' ;компоненты checkBox и editBox
+include '../../develop/libraries/box_lib/box_lib.mac' ;компоненты checkBox и editBox
 include '../../load_lib.mac'      ;макрос для загрузки библиотек
 @use_library
 

@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page Windows 1251 - Cyrillic
+
+
 ; Keyboard indicators v0.2
 ; by Albom and IgorA
 
@@ -15,7 +21,7 @@ use32
 include '../../macros.inc'
 include '../../proc32.inc'
 include '../../develop/libraries/box_lib/load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 ;include 'mem.inc'
 ;include 'dll.inc'
 include 'lang.inc' ; Language support for locales: it_IT, en_US.

@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;
 ;   Screenshooter for Kolibri
 ;
@@ -22,7 +28,7 @@ format binary as ""
 
 title equ 'Screenshooter v1.21' ; Заголовок окна
 include '../../load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../config.inc'		;for nightbuild
 include '../../proc32.inc'
 include '../../macros.inc'

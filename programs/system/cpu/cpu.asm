@@ -21,7 +21,7 @@
 ;-------------------------------------------------------------------------------
 include "lang.inc" ; Language support for locales (UTF-8): de_DE, et_EE, ru_RU, it_IT, en_US.
 include "../../macros.inc"
-include "../../develop/libraries/box_lib/trunk/box_lib.mac"
+include "../../develop/libraries/box_lib/box_lib.mac"
 include "../../KOSfuncs.inc"
 include "../../load_lib.mac"
 ;-------------------------------------------------------------------------------

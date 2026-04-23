@@ -1,0 +1,170 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
+;заголовок приложения
+use32                    ; транслятор, использующий 32 разрядных команды
+    org 0                ; базовый адрес кода, всегда 0
+    db 'MENUET01'        ; идентификатор исполняемого файла (8 байт)
+    dd 1                 ; версия формата заголовка исполняемого файла
+    dd start             ; адрес, на который система передаёт управление
+    ; после загрузки приложения в память
+    dd i_end             ; размер приложения
+    dd mem               ; Объем используемой памяти, для стека отведем 0х100 байт и выровним на грницу 4 байта
+    dd mem               ; расположим позицию стека в области памяти, сразу за телом программы. Вершина стека в диапазоне памяти, указанном выше
+    dd 0                 ; указатель на строку с параметрами.
+    dd cur_dir_path      ; указатель на адрес, куда помещается строка, содержащая путь до программы в момент запуска.
+
+include '../../../../macros.inc'
+include '../box_lib.mac'
+include '../../../../KOSfuncs.inc'
+include '../../../../load_lib.mac'
+    @use_library         ;use load lib macros
+start:
+;universal load library/librarys
+sys_load_library  library_name, library_path, system_path, import_box_lib
+;if return code =-1 then exit, else nornary work
+    cmp      eax,-1
+    jz       exit
+    mcall    SF_SET_EVENTS_MASK,0x80000027 ;установить маску для ожидаемых событий
+
+    push     dword check1     ;подсчёт дины текста для Checkbox'ов
+    call     [init_checkbox]
+
+    push     dword check2
+    call     [init_checkbox]
+
+red_win:
+    call     draw_window      ;первоначально необходимо нарисовать окно
+align 4
+still:                        ;основной обработчик
+    mcall    SF_WAIT_EVENT
+    dec      eax
+    jz       red_win
+    dec      eax
+    jz       key
+    dec      eax
+    jz       button
+
+    push    dword edit1
+    call    [edit_box_mouse]
+
+    push    dword edit2
+    call    [edit_box_mouse]
+
+    push    dword check1
+    call    [check_box_mouse]
+
+    push    dword check2
+    call    [check_box_mouse]
+
+    push    dword Option_boxs
+    call    [option_box_mouse]
+
+    push    dword Option_boxs2
+    call    [option_box_mouse]
+
+    jmp     still           ;если ничего из перечисленного то снова в цикл
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+button:
+    mcall   SF_GET_BUTTON
+    test    ah,ah          ;если в ah 0, то перейти на обработчик событий still
+    jz      still
+exit:
+    mcall   SF_TERMINATE_PROCESS
+key:
+    mcall   SF_GET_KEY
+
+    push    dword edit1
+    call    [edit_box_key]
+
+    push    dword edit2
+    call    [edit_box_key]
+
+    jmp     still
+
+;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+align 4
+draw_window:                ;рисование окна приложения
+    mcall   SF_REDRAW, SSF_BEGIN_DRAW
+    mcall   SF_CREATE_WINDOW,(50*65536+390),(30*65536+200),0x33AABBCC,0x805080DD,hed
+
+    push    dword edit1
+    call    [edit_box_draw]
+
+    push    dword edit2
+    call    [edit_box_draw]
+
+    push    dword check1
+    call    [check_box_draw]
+
+    push    dword check2
+    call    [check_box_draw]
+
+    push    dword Option_boxs
+    call    [option_box_draw]
+
+    push    dword Option_boxs2
+    call    [option_box_draw]
+
+    mcall   SF_REDRAW, SSF_END_DRAW
+   ret
+;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+;DATA данные
+;Всегда соблюдать последовательность в имени.
+system_path     db '/sys/lib/'
+library_name    db 'box_lib.obj',0
+; Если есть желание разъединить, то нужно использовать следующию конструкцию
+;system_path      db '/sys/lib/box_lib.obj',0
+;... любая последовательность других команд и определений.
+;library_name     db 'box_lib.obj',0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+include '../import.inc' ;creating a function import table
+
+
+check1 check_box2 (10 shl 16 + 12),(45 shl 16 + 12),5,0x80AABBCC,0,0,check_text1,ch_flag_en
+check2 check_box2 (10 shl 16 + 12),(60 shl 16 + 12),6,0x80AABBCC,0,0,check_text2
+
+edit1 edit_box 350,3,5,0xffffff,0x6f9480,0,0xAABBCC,0,308,hed,mouse_dd,ed_focus,hed_end-hed-1,hed_end-hed-1
+edit2 edit_box 350,3,25,0xffffff,0x6a9480,0,0,0,99,ed_buffer,mouse_dd,ed_figure_only
+
+op1  option_box option_group1,10,90,6,12,0xffffff,0,0,op_text.1,op_text.e1-op_text.1
+op2  option_box option_group1,10,105,6,12,0xFFFFFF,0,0,op_text.2,op_text.e2-op_text.2
+op3  option_box option_group1,10,120,6,12,0xffffff,0,0,op_text.3,op_text.e3-op_text.3
+op11 option_box option_group2,120,90,6,12,0xffffff,0,0,op_text.1,op_text.e1-op_text.1
+op12 option_box option_group2,120,105,6,12,0xffffff,0,0,op_text.2,op_text.e2-op_text.2
+op13 option_box option_group2,120,120,6,12,0xffffff,0,0,op_text.3,op_text.e3-op_text.3
+
+option_group1    dd op1    ;указатели, они отображаются по умолчанию, когда выводится
+option_group2    dd op12   ;приложение
+Option_boxs    dd  op1,op2,op3,0
+Option_boxs2   dd  op11,op12,op13,0
+
+hed db     'BOXs load from lib <Lrz> date 27.04.2009',0
+hed_end:
+
+rb  256
+check_text1  db 'First checkbox',0
+check_text2 db 'Second checkbox',0
+
+op_text:        ; Сопровождающий текст для Optionbox'а
+.1 db 'Option_Box #1'
+.e1:
+.2 db 'Option_Box #2'
+.e2:
+.3 db 'Option_Box #3'
+.e3:
+ed_buffer    rb 100
+;-----------------------
+;sc      system_colors
+
+mouse_dd        rd 1
+p_info    process_information
+cur_dir_path    rb 4096
+library_path    rb 4096
+i_end:
+rb 1024
+mem:

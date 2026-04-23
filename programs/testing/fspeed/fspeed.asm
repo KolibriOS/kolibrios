@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;*****************************************************************************
 ; File Speed - for KolibriOS
 ; Copyright (c) 2014, Marat Zakiyanov aka Mario79, aka Mario
@@ -42,7 +45,7 @@ include	'../../macros.inc'
 define __DEBUG__ 1
 define __DEBUG_LEVEL__ 1
 include	'../../debug-fdo.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../KOSfuncs.inc'
 include '../../load_lib.mac'
 	@use_library
@@ -56,11 +59,11 @@ ends
 ;-----------------------------------------------------------------------------
 START:
         DEBUGF 1,'FSPEED: start of programm\n'
-;-----------------------------------------------------------------------------	
+;-----------------------------------------------------------------------------
 	mcall	68,11
 	test	eax,eax
-	jz	exit	
-;-----------------------------------------------------------------------------	
+	jz	exit
+;-----------------------------------------------------------------------------
 load_libraries l_libs_start,end_l_libs
 ;if return code =-1 then exit, else nornary work
 	inc	eax
@@ -151,7 +154,7 @@ draw_window:
 	mov	[check1.text_color],eax
 	push	dword check1
 	call	[check_box_draw]
-	
+
 	mcall	8,<5,80>,<25,15>,2,[w_work_button]
 	mcall	,<400-65,50>,,3
 	mov	ecx,[w_work_button_text]
@@ -162,11 +165,11 @@ draw_window:
 	or	ecx,0x80000000
 	mcall	,<10,47>,,check_box_warning_text
 	mcall	,<10,65>,,result_table_text
-	
+
 	mov	edx,ecx
 	and	edx,0xffffff
 	mcall	38,<5,400-15>,<59,59>
-; draw result table	
+; draw result table
 	mov	ebx,10 shl 16+77
 	mov	ebp,result_table
 	mov	ecx,18
@@ -174,7 +177,7 @@ draw_window:
 @@:
 	push	ecx
 	mov	ecx,[w_work_text]
-	or	ecx,0x80000000	
+	or	ecx,0x80000000
 	mcall	4,,,[ebp+RESULT_SLOT.text]
 	push	ebx
 	mov	edx,ebx
@@ -197,7 +200,7 @@ testing:
 	mcall	70,fileinfo
 	test	eax,eax
 	jz	@f
-	
+
         DEBUGF 1,'FSPEED: file not found %s\n',fname
 	jmp	still
 ;--------------------------------------
@@ -232,7 +235,7 @@ read_chunk:
 	mov	eax,[file_info+32] ; file size
 	cmp	[ebp+RESULT_SLOT.chunk_size],eax
 	jb	@f
-	
+
 	xor	eax,eax ; small file size for current chunk size
 	mov	[ebp+RESULT_SLOT.read_speed],eax
 	ret
@@ -251,19 +254,19 @@ read_chunk:
 ;--------------------------------------
 .loop:
 	mcall	70,fileread
-	
+
 	mcall	26,9 ; check current time
 	cmp	esi,eax
 	jbe	.end
-; correct offset	
+; correct offset
 	mov	edx,[ebp+RESULT_SLOT.chunk_size]
 	add	[fileread.offset],edx ; current offset
-; check offset and file size	
+; check offset and file size
 	mov	edx,[file_info+32] ; file size
 	sub	edx,[ebp+RESULT_SLOT.chunk_size]
 	cmp	[fileread.offset],edx
-	jbe	@f	
-	
+	jbe	@f
+
 	xor	edx,edx
 	mov	[fileread.offset],edx ; zero current offset
 ;--------------------------------------
@@ -271,14 +274,14 @@ read_chunk:
 	inc	ecx
 	jmp	.loop
 ;--------------------------------------
-.end:	
+.end:
 	mov	eax,[ebp+RESULT_SLOT.chunk_size]
 	xor	edx,edx
 	mul	ecx
 	shr	eax,10+4 ;div 1024 ; div 16
 	shl	edx,18
 	add	eax,edx
-	mov	[ebp+RESULT_SLOT.read_speed],eax ; speed KB/s	
+	mov	[ebp+RESULT_SLOT.read_speed],eax ; speed KB/s
         DEBUGF 1,'FSPEED: read chunk size: %s iterations: %d speed: %d KB/s\n',\
 		[ebp+RESULT_SLOT.text],ecx,eax
 	mcall	68,13,[fileread.return]
@@ -311,19 +314,19 @@ write_chunk:
 ;--------------------------------------
 .loop:
 	mcall	70,filewrite
-	
+
 	mcall	26,9 ; check current time
 	cmp	esi,eax
 	jbe	.end
-; correct offset	
+; correct offset
 	mov	edx,[ebp+RESULT_SLOT.chunk_size]
 	add	[filewrite.offset],edx ; current offset
-; check offset and file size	
+; check offset and file size
 	mov	edx,[file_info+32] ; file size
 	sub	edx,[ebp+RESULT_SLOT.chunk_size]
 	cmp	[filewrite.offset],edx
-	jbe	@f	
-	
+	jbe	@f
+
 	xor	edx,edx
 	mov	[filewrite.offset],edx ; zero current offset
 ;--------------------------------------
@@ -331,14 +334,14 @@ write_chunk:
 	inc	ecx
 	jmp	.loop
 ;--------------------------------------
-.end:	
+.end:
 	mov	eax,[ebp+RESULT_SLOT.chunk_size]
 	xor	edx,edx
 	mul	ecx
 	shr	eax,10+4 ;div 1024 ; div 16
 	shl	edx,18
 	add	eax,edx
-	mov	[ebp+RESULT_SLOT.write_speed],eax ; speed KB/s	
+	mov	[ebp+RESULT_SLOT.write_speed],eax ; speed KB/s
         DEBUGF 1,'FSPEED: write chunk size: %s iterations: %d speed: %d KB/s\n',\
 		[ebp+RESULT_SLOT.text],ecx,eax
 	mcall	68,13,[filewrite.data]

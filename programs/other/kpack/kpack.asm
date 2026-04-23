@@ -29,7 +29,7 @@ include '../../config.inc' ; for nightbuild
 include '../../KOSfuncs.inc'
 include '../../macros.inc'
 include '../../gui_patterns.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../load_lib.mac'
   @use_library
 

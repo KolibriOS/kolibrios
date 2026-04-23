@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 use32
 	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
@@ -7,7 +13,7 @@ include '../../../../macros.inc'
 include '../../../../proc32.inc'
 include '../../../../KOSfuncs.inc'
 include '../../../../load_lib.mac'
-include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../../../develop/libraries/box_lib/box_lib.mac'
 include '../../../../dll.inc'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
@@ -462,11 +468,11 @@ i_end:
 	mem_key rb 120
 	mouse_dd rd 1
 	procinfo process_information
-	sc system_colors 
+	sc system_colors
 	rb 2048
 stacktop:
 	sys_path rb 1024
-	file_name rb 1024 ;4096 
+	file_name rb 1024 ;4096
 	library_path rb 1024
 	plugin_path rb 4096
 	openfile_path rb 4096

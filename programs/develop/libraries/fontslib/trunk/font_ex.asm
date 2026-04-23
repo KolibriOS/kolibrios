@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ; Copyright (c) 2009, <Lrz>
 ; All rights reserved.
 ;
@@ -39,7 +45,7 @@ use32		     ; транслятор, использующий 32 разрядных команды
 include '../../../../macros.inc'
 include '../../../../KOSfuncs.inc'
 include '../../../../load_lib.mac'
-include '../../box_lib/trunk/box_lib.mac'
+include '../../box_lib/box_lib.mac'
 	@use_library	;use load lib macros
 start:
 ;universal load library/librarys
@@ -58,10 +64,10 @@ sys_load_libraries l_libs_start,end_l_libs
 	mov  dword [con_colors+4],eax
 
 ;       mcall   66,1,0
-       call [initialization_font]	; инициализация списка шрифтов 
+       call [initialization_font]	; инициализация списка шрифтов
        push dword (8 shl 16 +16)	; поиск нужного шрифта в наборе шрифтов (пока доступен только 8х16)
        call [get_font]
-	test	eax,eax 		;нашли ? 
+	test	eax,eax 		;нашли ?
 	jnz	exit
 ;;;;;;;;;;;;;;;;;;;;
 	mcall	40,0x27 	;установить маску для ожидаемых событий
@@ -86,7 +92,7 @@ button:
 	mcall	17	;получить идентификатор нажатой клавиши
 	test ah,ah	;если в ah 0, то перейти на обработчик событий still
 	jz  still
-exit:	
+exit:
 	call	[free_fulder_info]
 	call	[free_font]
 	mcall	-1
@@ -95,7 +101,7 @@ key:
 
 	push	dword edit1
 	call	[edit_box_key]
- 
+
 
 	mcall	13,<20,650>,<40,16>, dword[con_colors+4]
 
@@ -120,7 +126,7 @@ draw_window:		;рисование окна приложения
 	or   edx,0x34000000
 	mov  edi,hed
 	mcall			 ;нарисовать окно приложения
-	
+
 	push	dword edit1
 	call	[edit_box_draw]
 ;
@@ -149,7 +155,7 @@ system_path1	  db '/sys/lib/'
 library_name1	  db 'box_lib.obj',0
 
 align 4
-import_box_lib:   
+import_box_lib:
 
 edit_box_draw	dd	aEdit_box_draw
 edit_box_key	dd	aEdit_box_key

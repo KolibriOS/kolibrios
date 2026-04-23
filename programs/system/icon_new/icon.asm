@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ICON_STRIP	equ '/sys/icons32.png'
 ICON_INI	equ '/sys/settings/icon.ini'
 ICON_SIZE	equ 68	  ;размер области для иконки с надписью
@@ -38,7 +44,7 @@ BegData 	equ fiStdIco.point
 include 'lang.inc'      ; Language support for locales: ru_RU (CP866), en_US.
 include '../../macros.inc'
 include '../../proc32.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../dll.inc'
 include '../../debug.inc'
 

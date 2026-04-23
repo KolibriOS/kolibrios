@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 use32
 	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
@@ -8,7 +14,7 @@ include '../../../../proc32.inc'
 include '../../../../KOSfuncs.inc'
 include '../../../../load_img.inc'
 include '../../../../load_lib.mac'
-include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../../../develop/libraries/box_lib/box_lib.mac'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 caption db 'Просмотр информации Exif 11.03.16',0 ;подпись окна
@@ -47,7 +53,7 @@ start:
 
 	stdcall mem.Alloc,[memory_file_size]
 	mov dword[open_file],eax
-	
+
 	call but_new_file
 
 align 4
@@ -434,7 +440,7 @@ pushad
 	stdcall [exif_get_child], h_child,h_child_siz,0x0202
 	cmp dword[h_child_siz],0
 	je .no_found_child
-	
+
 	;0x0201 - Preview Image Start
 	stdcall [exif_get_child], h_child,h_child,0x0201
 	cmp dword[h_child],0
@@ -669,10 +675,10 @@ dd 0,0
 	sz_exif_get_child db 'exif_get_child',0
 
 
-sc system_colors 
+sc system_colors
 
 align 16
-procinfo process_information 
+procinfo process_information
 
 align 4
 buf_0: dd 0 ;указатель на буфер изображения
@@ -717,7 +723,7 @@ i_end:
 	rb 2048
 stacktop:
 	sys_path rb 1024
-	file_name rb 4096 
+	file_name rb 4096
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256

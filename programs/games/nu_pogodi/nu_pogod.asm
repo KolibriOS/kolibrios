@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 use32
 	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
@@ -7,7 +13,7 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
 include '../../load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac' ;макросы для задания элементов box_lib
+include '../../develop/libraries/box_lib/box_lib.mac' ;макросы для задания элементов box_lib
 include '../../dll.inc'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc, dll.Load
@@ -526,7 +532,7 @@ MoveEggs:
 		dec byte[zaac_status]
 		jmp .no_zaac_move ;заяц пока не двигается
 	@@:
-	
+
 	bt dword[rand_x],6 ;заяц от фонаря меняет статус
 	jc @f
 		xor byte[pos_wolf],val_zaac ;высовываем/засовываем зайца
@@ -633,7 +639,7 @@ user_is_select:
 	stdcall [tl_node_get_data], tree1
 	or eax,eax ;если имя игры пустое
 	jz @f
-		mov esi,eax	
+		mov esi,eax
 		mov edi,ini_name
 		mov ecx,FILE_NAME_MAX
 		cld
@@ -676,7 +682,7 @@ InitAll:
 	mov	[game_delay_b],eax
 	stdcall [ini_get_int],file_name,ini_sec_game,key_delay_min,15
 	mov	[game_delay_min],eax
-	
+
 	stdcall [ini_get_color],file_name,ini_sec_color,key_color_fon,0xffffff
 	mov	[color_fon],eax
 	stdcall [ini_get_color],file_name,ini_sec_color,key_color_shadows,0xd0d0d0
@@ -806,7 +812,7 @@ still: ;главный цикл
 
 	cmp byte[game_select_mode],0
 	jne .select_mode
-	
+
 	mcall SF_SYSTEM_GET,SSF_TIME_COUNT
 	mov ebx,[last_time]
 	add ebx,[game_spd] ;delay
@@ -1002,7 +1008,7 @@ pop esi
 		rol ecx,16
 		int 0x40 ;рисование нижнего поля
 	@@:
-	
+
 	xor ebx,ebx
 	mov bx,buf2d_l
 	mov ecx,[displ_h]
@@ -1052,7 +1058,7 @@ proc draw_rect_border, client_rect:dword, user_box:dword
 		mov ecx,dword[esi+4] ;+4 = top
 		shl ecx,16
 		mov cx,word[esi+12] ;+12 = height
-		inc cx 
+		inc cx
 		mcall SF_DRAW_RECT ;left
 
 		mov eax,dword[esi] ;+0 left
@@ -1345,7 +1351,7 @@ import_buf2d_lib:
 	buf2d_convert_text_matrix dd sz_buf2d_convert_text_matrix
 	buf2d_draw_text dd sz_buf2d_draw_text
 	buf2d_crop_color dd sz_buf2d_crop_color
-	buf2d_offset_h dd sz_buf2d_offset_h	
+	buf2d_offset_h dd sz_buf2d_offset_h
 	dd 0,0
 	sz_lib_init db 'lib_init',0
 	sz_buf2d_create db 'buf2d_create',0

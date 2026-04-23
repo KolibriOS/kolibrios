@@ -1,6 +1,9 @@
 ; SPDX-License-Identifier: NOASSERTION
 ;
 
+; Text encoded with Code Page 866 - Cyrillic
+
+
 ;   RTF READER FOR KOLIBRI >= 0.7.7.0
 ;   Written in pure assembler by Ivushkin Andrey aka Willow
 ;   Menu_bar and scroll_bar from box_lib provided by dunkaist
@@ -62,7 +65,7 @@ AR_OFFSET               equ     10
 
 include '../../config.inc' ;for nightbuild
 include '../../macros.inc' ; Macros facilitate the life of assemblers!
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../KOSfuncs.inc'
 include '../../load_lib.mac'
 

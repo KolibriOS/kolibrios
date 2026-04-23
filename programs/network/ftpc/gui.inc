@@ -1,10 +1,13 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 include '../../load_img.inc'
 include '../../develop/libraries/libs-dev/libimg/libimg.inc'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../load_lib.mac'
 
 @use_library
- 
+
 icon_tl_sys dd 0
 icon_tl_nod dd 0
 icon_buttons dd 0
@@ -82,7 +85,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
 
         or dword[tree1.style], 8 ;tl_cursor_pos_limited - restrict cursor move to existing nodes
         or dword[tree2.style], 8 ;tl_cursor_pos_limited
-        
+
         ; read icons
         mcall   SF_SYS_MISC, SSF_MEM_OPEN, str_icon_18,, 0
         or      eax, eax
@@ -228,7 +231,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         mcall   SF_DEFINE_BUTTON, <TLIST2_X+TLIST_SZ-BT_SZ_X,BT_SZ_X>, <80,20>, 6, BT_COL
         ; string "mkd"
         mcall   SF_DRAW_TEXT, <TLIST2_X+TLIST_SZ-BT_SZ_X+5,80+5>, 0xb0000000+STR_COL, str_mkd
-        
+
         ; draw "cancel" button
         ;mcall   SF_DEFINE_BUTTON, <555,55>, <308,25>, 10, BT_COL
         ; string "Cancel"
@@ -243,7 +246,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         ;--------------------------
         stdcall [tl_draw], tree1
         stdcall [tl_draw], tree2
-     
+
         mov     dword[wScr.all_redraw], 1
         stdcall [scrollbar_ver_draw], wScr
 
@@ -360,7 +363,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
       @@:
         cmp     ah, 1
         je      .exit
-        
+
         jmp     .still
 
     .print:
@@ -456,7 +459,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         mov     ecx, [esp]
         add     ecx, buf_buffer2
         sub     ecx, edi
-        
+
         repne   scasb
 
         ; check if the (last) entry is incomplete
@@ -466,7 +469,7 @@ gui: ;//////////////////////////////////////////////////////////////////////////
         rep     scasb
         test    ecx, ecx
         jz      .store_last_entry
-        
+
         dec     edx
         jnz     @b
 
@@ -776,7 +779,7 @@ populate_local_tree_list: ;/////////////////////////////////////////////////////
     je      .outer ; more BDFEs to come
 
   .done:
-    ret    
+    ret
 
 
 MIN_M_WND_H equ 500 ;
@@ -894,7 +897,7 @@ search: ;///////////////////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< al = 0 (not found) / 1 (found)                                                                 ;;
 ;;================================================================================================;;
-    
+
     push    ebx ecx edx esi edi
     ; if length of haystack < length of needle
     cmp     ecx, edx
@@ -1077,7 +1080,7 @@ edit_volume edit_box TLIST_SZ-60, TLIST1_X, 80, 0xffffff, 0x94AECE, 0, \
 ; editbox for search
 edit_search edit_box TLIST_SZ-30, TLIST2_X, 22, 0xffffff, 0x94AECE, 0, \
     0xAABBCC, 0x10000000, 99, filter,mouse_dd, 0
- 
+
 ; A subsidiary structure for scrolling
 align 4
 wScr:
@@ -1200,7 +1203,7 @@ tedit0:
     .mode_color  db 1 ;+195
     .mode_invis  db 0 ;+196
     .gp_opt      db 0 ;+197
-    dd 0 ;.fun_on_key_ctrl_all dd but_ctrl_all ;+198 
+    dd 0 ;.fun_on_key_ctrl_all dd but_ctrl_all ;+198
     dd 0,0,0 ;reserved
     .buffer_size       dd 4096 ;+214
     .fun_find_err      dd 0 ;+218

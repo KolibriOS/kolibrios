@@ -1,3 +1,9 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
+; Text encoded with Code Page 866 - Cyrillic
+
+
 use32
 	org 0
 	db 'MENUET01' ;идентиф. исполняемого файла всегда 8 байт
@@ -8,7 +14,7 @@ include '../../../../proc32.inc'
 include '../../../../KOSfuncs.inc'
 include '../../../../load_img.inc'
 include '../../../../load_lib.mac'
-include '../../../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../../../develop/libraries/box_lib/box_lib.mac'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
 caption db 'NNP example 28.05.22',0 ;подпись окна
@@ -90,7 +96,7 @@ Math_random:
 	fild  dword[esp]
 	fmul  dword[@f]
 	pop   edx
-	ret 
+	ret
 align 4
 @@:
 	db 0,0,128,55 ;dd 1.0/65536.0
@@ -299,7 +305,7 @@ but_calc:
 	add       esp,32
 	pop       ebp edi esi
 	ret
-align 4        
+align 4
 .172:
 	dd POINTS_COUNT
 
@@ -436,7 +442,7 @@ NNP_DrawInBuf:
 	ja        .cycle_0
 	add       esp,32
 	pop       ebp esi ebx
-	ret 
+	ret
 
 align 4
 f_0_5 dd 0.5
@@ -721,10 +727,10 @@ dd 0,0
 	sz_strlen db 'strlen',0
 	sz_sprintf db 'sprintf',0
 
-sc system_colors 
+sc system_colors
 
 align 16
-procinfo process_information 
+procinfo process_information
 
 align 4
 buf_0: dd 0 ;указатель на буфер изображения
@@ -740,7 +746,7 @@ i_end:
 	rb 2048
 stacktop:
 	sys_path rb 1024
-	file_name rb 4096 
+	file_name rb 4096
 	plugin_path rb 4096
 	openfile_path rb 4096
 	filename_area rb 256

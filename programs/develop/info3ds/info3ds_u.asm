@@ -1,4 +1,5 @@
 ; SPDX-License-Identifier: GPL-2.0-only
+
 ; Info3ds_u - is a program for viewing the structure of *.3ds files
 ; Copyright (C) 2015-2025 KolibriOS team
 
@@ -17,7 +18,7 @@ include '../../KOSfuncs.inc'
 include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../load_img.inc'
 include '../../load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include '../../develop/libraries/TinyGL/asm_fork/kosgl.inc'
 include '../../develop/libraries/TinyGL/asm_fork/opengl_const.inc'
 include 'lang.inc' ; Language support for locales: ru_RU (CP866), en_US.

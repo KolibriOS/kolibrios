@@ -1,3 +1,6 @@
+; SPDX-License-Identifier: NOASSERTION
+;
+
 ;*****************************************************************************
 ; Color Dialog - for KolibriOS
 ; Copyright (c) 2013, Marat Zakiyanov aka Mario79, aka Mario
@@ -76,7 +79,7 @@ include '../../macros.inc'
 include '../../proc32.inc'
 include '../../KOSfuncs.inc'
 include '../../load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 ;include 'lang.inc'
 ;include '../../debug.inc'
 @use_library
@@ -126,7 +129,7 @@ load_libraries	l_libs_start,end_l_libs
 	mov	[palette_SIZE_Y],eax
 	mov	[tone_SIZE_X],eax
 	mov	[tone_SIZE_Y],eax
-	
+
 	;set the last used color as a current one
 	mov	eax,[communication_area]
 	add	eax,28
@@ -195,8 +198,8 @@ button:
 	ja	@f
 
 	sub	ah,30
-	
-	;click on a colors History 
+
+	;click on a colors History
 	movzx	eax,ah
 	shl	eax,2
 	add	eax,[communication_area]
@@ -419,7 +422,7 @@ prepare_color_from_scrollbars_position:
 align 4
 key:
 	mcall	SF_GET_KEY
-	
+
 	test word[edit1.flags],10b ;ed_focus
 	jne @f
 	cmp	ah,027	; Esc

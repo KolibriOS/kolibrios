@@ -27,7 +27,7 @@ include "../../macros.inc"
 include "../../KOSfuncs.inc"
 include "../../encoding.inc"
 include "../../dll.inc"
-include "../../develop/libraries/box_lib/trunk/box_lib.mac"
+include "../../develop/libraries/box_lib/box_lib.mac"
 include "parser.inc"
 
 imports:

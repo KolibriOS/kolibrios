@@ -37,7 +37,7 @@ include "../../debug-fdo.inc"
 include "../../proc32.inc"
 include "../../dll.inc"
 include "../../struct.inc"
-include "../../develop/libraries/box_lib/trunk/box_lib.mac"
+include "../../develop/libraries/box_lib/box_lib.mac"
 include "../../network.inc"
 
 struct  PixelFormat
@@ -614,5 +614,3 @@ framebuffer             rb 1280*1024*3  ; framebuffer
 thread_stack:
                         rb 0x1000
 IM_END:
-
-

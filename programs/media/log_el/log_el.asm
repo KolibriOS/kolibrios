@@ -49,7 +49,7 @@ include '../../proc32.inc'
 include '../../KOSfuncs.inc'
 include '../../load_img.inc'
 include '../../load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include 'le_pole.inc'
 include 'le_signal.inc'
 

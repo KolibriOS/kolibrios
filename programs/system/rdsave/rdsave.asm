@@ -39,7 +39,7 @@ include '../../proc32.inc'
 include '../../dll.inc'
 include '../../KOSfuncs.inc'
 include '../../load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/box_lib.mac'
+include '../../develop/libraries/box_lib/box_lib.mac'
 include 'str.inc'
 
 	@use_library
