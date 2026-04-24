@@ -24,6 +24,7 @@ typedef int iconv_t;
 #define KOI8_RU 3
 #define ISO8859_5 4
 #define UTF_8 5
+#define UTF_16LE 6
 
 int strcmp (const char* a, const char* b) {
     return (*a && *b && (*a == *b)) ? ((*(a+1) || *(b+1)) ? (strcmp(a+1, b+1)) : (0)) : ((*a > *b) ? (1) : (-1));
@@ -35,6 +36,7 @@ int strcmp (const char* a, const char* b) {
 #include "koi8_ru.h"
 #include "iso8859_5.h"
 #include "utf8.h"
+#include "utf16le.h"
 
 int encoding(const char *what) {
     if (!strcmp(what,"CP866")) return CP866;
@@ -43,6 +45,7 @@ int encoding(const char *what) {
     if (!strcmp(what,"KOI8-RU")) return KOI8_RU;
     if (!strcmp(what,"ISO8859-5")) return ISO8859_5;
     if (!strcmp(what,"UTF-8")) return UTF_8;
+    if (!strcmp(what,"UTF-16LE")) return UTF_16LE;
     return -1;
 }
 
@@ -75,6 +78,7 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf,
         case ISO8859_5: mbtowc=iso8859_5_mbtowc; break;
         case KOI8_RU: mbtowc=koi8_ru_mbtowc; break;
         case UTF_8: mbtowc=utf8_mbtowc; break;
+        case UTF_16LE: mbtowc=utf16le_mbtowc; break;
         default: return -2;
     }
 
@@ -86,6 +90,7 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf,
         case ISO8859_5: wctomb=iso8859_5_wctomb; break;
         case KOI8_RU: wctomb=koi8_ru_wctomb; break;
         case UTF_8: wctomb=utf8_wctomb; break;
+        case UTF_16LE: wctomb=utf16le_wctomb; break;
         default: return -3;
     }
 
@@ -101,13 +106,18 @@ size_t iconv(iconv_t cd, const char **inbuf, size_t *inbytesleft, char **outbuf,
         //    printf("%d\n",n);
         converted = (mbtowc)(0,&pwc,((*inbuf)+count1),n);
 
+        if (converted==RET_TOOFEW(0) && n>=(int)*inbytesleft) break;
         n++;
         }    while (converted==RET_TOOFEW(0));
 
-        if (converted<0) return -10; 
+        if (converted<0) return -10;
         //written=  (cp866_wctomb)(0,str+count2,pwc,1);
-        written = (wctomb)(0,str+count2,pwc,1);
-        if (written<0) written=0;//return -11; 
+        written = (wctomb)(0,str+count2,pwc,*outbytesleft);
+        if (written<0) {
+            if (written == RET_TOOSMALL)
+                return -12;  // Output buffer too small - fatal
+            written = 0;
+        }
 
         //printf("Conv:%d Wri:%d In:%d Out:%d UTF:%x UCS:%x 866:%s\n",converted, written, *inbytesleft,*outbytesleft,*((*inbuf)+count1),pwc, str);
 
