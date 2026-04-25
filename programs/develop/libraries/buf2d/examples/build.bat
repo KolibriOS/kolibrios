@@ -1,10 +1,10 @@
 if not exist bin mkdir bin
 
-if not exist bin\font8x9.bmp @copy ..\..\..\..\..\fs\kfar\font8x9.bmp bin\font8x9.bmp
+if not exist bin\font8x9.bmp @copy ..\..\..\..\fs\kfar\font8x9.bmp bin\font8x9.bmp
 @copy foto.jpg bin\foto.jpg
 @copy img0.png bin\img0.png
 @copy img1.png bin\img1.png
-if not exist bin\vaz2106.vox @copy ..\..\..\..\..\media\voxel_editor\trunk\vaz2106.vox bin\vaz2106.vox
+if not exist bin\vaz2106.vox @copy ..\..\..\..\media\voxel_editor\vaz2106.vox bin\vaz2106.vox
 
 @fasm.exe -m 16384 e0_dr_lines.asm bin\e0_dr_lines.kex
 @fasm.exe -m 16384 e1_scaling.asm bin\e1_scaling.kex

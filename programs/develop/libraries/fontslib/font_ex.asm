@@ -42,10 +42,10 @@ use32		     ; транслятор, использующий 32 разрядных команды
     dd mem		    ; расположим позицию стека в области памяти, сразу за телом программы. Вершина стека в диапазоне памяти, указанном выше
     dd 0x0		; указатель на строку с параметрами.
     dd way_of_ini
-include '../../../../macros.inc'
-include '../../../../KOSfuncs.inc'
-include '../../../../load_lib.mac'
-include '../../box_lib/box_lib.mac'
+include '../../../macros.inc'
+include '../../../KOSfuncs.inc'
+include '../../../load_lib.mac'
+include '../box_lib/box_lib.mac'
 	@use_library	;use load lib macros
 start:
 ;universal load library/librarys

@@ -22,7 +22,7 @@
 ;; References:                                                                                    ;;
 ;;   1. GIF LITE v3.0 (2004-2007)                                                                 ;;
 ;;      by Willow and Diamond                                                                     ;;
-;;      svn://kolibrios.org/programs/media/gifview/trunk/gif_lite.inc                             ;;
+;;      /programs/other/outdated/gifview/gif_lite.inc                                             ;;
 ;;   2. "GIF File Format Summary"                                                                 ;;
 ;;      from "Encyclopedia of Graphics File Formats" by O'Reilly                                  ;;
 ;;      http://www.fileformat.info/format/gif/                                                    ;;

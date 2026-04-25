@@ -3,6 +3,6 @@ if not exist bin mkdir bin
 @kpack bin\crypt_files.kex
 if not exist bin\toolbar.png @copy toolbar.png bin\toolbar.png
 if not exist bin\font8x9.bmp @copy ..\..\..\..\fs\kfar\font8x9.bmp bin\font8x9.bmp
-@fasm.exe -m 16384 ..\trunk\crypt_des.asm bin\crypt_des.obj
+@fasm.exe -m 16384 ..\crypt_des.asm bin\crypt_des.obj
 @kpack bin\crypt_des.obj
 pause

@@ -1,6 +1,6 @@
-ROOT=../../develop/libraries/framework/trunk
+ROOT=../../develop/libraries/framework
 
-include ../../develop/libraries/framework/trunk/config.mk
+include ../../develop/libraries/framework/config.mk
 
 # Note that kobra_st.o MUST be first and kobra.o last.
 OBJECTS=kobra_st.o $(ROOT)/stdlib/heap.o $(ROOT)/stdlib/malloc.o $(ROOT)/stdlib/stdlib.o $(ROOT)/kolibri/kolibri.o $(ROOT)/libIPC/ipc.o kobra.o
