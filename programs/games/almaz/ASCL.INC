@@ -1,5 +1,3 @@
-lang equ ru_RU ; ru_RU en_US fr_FR de_DE fi_FI
-
 ;
 ;   Assembler
 ;     SMALL
@@ -8,6 +6,8 @@ lang equ ru_RU ; ru_RU en_US fr_FR de_DE fi_FI
 ;
 ;  Ver 0.14 By Pavlushin Evgeni (RUSSIA)
 ;  www.waptap@mail.ru
+;
+;  Note: lang is passed by the build system with -dlang=...
 
 ;Please compile aplications on FASM ver1.54 or higer!!!
 
@@ -50,7 +50,7 @@ open:
     mov  ebx,fileinfo
     int  0x40
     mov  eax,[file_load_area+2]
-    shr  eax,9 ; ØÆ§•´®¨ ≠† 512 ® Ø‡®°†¢®¨ 1 - ØÆ´„Á®¨ Á®·´Æ °´Æ™Æ¢
+    shr  eax,9 ; –ø–æ–¥–µ–ª–∏–º –Ω–∞ 512 –∏ –ø—Ä–∏–±–∞–≤–∏–º 1 - –ø–æ–ª—É—á–∏–º —á–∏—Å–ª–æ –±–ª–æ–∫–æ–≤
     inc  eax
     mov  dword [fileinfo+8],eax
     mov  eax,58

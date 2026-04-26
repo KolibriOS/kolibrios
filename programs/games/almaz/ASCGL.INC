@@ -1,4 +1,3 @@
-lang equ ru_RU
 
 ;
 ;   Assembler
@@ -462,9 +461,9 @@ nbc:
 	xor ecx,ecx
 	ret
 end if
-bounce:	
+bounce:
 	mov otv,1
-exit:	
+exit:
 }
 
 macro rgbtobgr image
@@ -816,13 +815,13 @@ _null = 0x1000 ; 0x1000
 ;    end if
 ;sss:
 
-    mov  esi,gifsrc           ;Указатель на ГИФ фаил в памяти
-    mov  edi,imgsrc           ;Указатель на список картинок
+    mov  esi,gifsrc           ;╨г╨║╨░╨╖╨░╤В╨╡╨╗╤М ╨╜╨░ ╨У╨Ш╨д ╤Д╨░╨╕╨╗ ╨▓ ╨┐╨░╨╝╤П╤В╨╕
+    mov  edi,imgsrc           ;╨г╨║╨░╨╖╨░╤В╨╡╨╗╤М ╨╜╨░ ╤Б╨┐╨╕╤Б╨╛╨║ ╨║╨░╤А╤В╨╕╨╜╨╛╨║
 
     if defined gif_hash_offset
-    mov  eax,gif_hash_offset    ;Рабочая область минимум 4096*4 байт
+    mov  eax,gif_hash_offset    ;╨а╨░╨▒╨╛╤З╨░╤П ╨╛╨▒╨╗╨░╤Б╤В╤М ╨╝╨╕╨╜╨╕╨╝╤Г╨╝ 4096*4 ╨▒╨░╨╣╤В
     else
-    mov  eax,hasharea         ;Рабочая область минимум 4096*4 байт
+    mov  eax,hasharea         ;╨а╨░╨▒╨╛╤З╨░╤П ╨╛╨▒╨╗╨░╤Б╤В╤М ╨╝╨╕╨╜╨╕╨╝╤Г╨╝ 4096*4 ╨▒╨░╨╣╤В
     end if
 
     call ReadGIF
@@ -1103,13 +1102,13 @@ local Gif_output, next, loop2
 
 _null fix 0x1000 ; 0x1000
 
-    mov  esi,gifsrc           ;Указатель на ГИФ фаил в памяти
-    mov  edi,imgsrc           ;Указатель на список картинок
+    mov  esi,gifsrc           ;╨г╨║╨░╨╖╨░╤В╨╡╨╗╤М ╨╜╨░ ╨У╨Ш╨д ╤Д╨░╨╕╨╗ ╨▓ ╨┐╨░╨╝╤П╤В╨╕
+    mov  edi,imgsrc           ;╨г╨║╨░╨╖╨░╤В╨╡╨╗╤М ╨╜╨░ ╤Б╨┐╨╕╤Б╨╛╨║ ╨║╨░╤А╤В╨╕╨╜╨╛╨║
 
     if defined gif_hash_offset
-    mov  eax,gif_hash_offset    ;Рабочая область минимум 4096*4 байт
+    mov  eax,gif_hash_offset    ;╨а╨░╨▒╨╛╤З╨░╤П ╨╛╨▒╨╗╨░╤Б╤В╤М ╨╝╨╕╨╜╨╕╨╝╤Г╨╝ 4096*4 ╨▒╨░╨╣╤В
     else
-    mov  eax,hasharea         ;Рабочая область минимум 4096*4 байт
+    mov  eax,hasharea         ;╨а╨░╨▒╨╛╤З╨░╤П ╨╛╨▒╨╗╨░╤Б╤В╤М ╨╝╨╕╨╜╨╕╨╝╤Г╨╝ 4096*4 ╨▒╨░╨╣╤В
     end if
 
     call ReadGIF

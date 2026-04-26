@@ -1,6 +1,3 @@
-@erase lang.inc
-@echo lang fix ru_RU >lang.inc
-@fasm ALMAZ.asm ALMAZ
-@erase lang.inc
+@fasm -dlang=ru_RU ALMAZ.asm ALMAZ
 @kpack ALMAZ
 @pause
