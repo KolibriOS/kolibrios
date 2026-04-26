@@ -89,7 +89,7 @@ void RESULTS::drop()
 
 void SearchThread()
 {  
-	int prev_first, prev_cur_y;
+	int prev_first, prev_cur_y, clicked_item;
 
 	load_dll(Proc_lib, #OpenDialog_init,0);
 	OpenDialog_init stdcall (#open_folder_dialog);
@@ -112,15 +112,17 @@ void SearchThread()
 				SelectList_Draw();
 			} else {
 				SelectList_DrawLine(select_list.cur_y);
+
+				clicked_item = mouse.y - select_list.y / select_list.item_h + select_list.first;
 				
 				if (select_list.MouseOver(mouse.x, mouse.y)) 
 				{
 						if (mouse.key&MOUSE_LEFT) && (mouse.up) {
-							if (prev_cur_y == select_list.cur_y) EventRunFile();
+							if ((prev_cur_y == select_list.cur_y) && (clicked_item < results.count)) EventRunFile();
 						}
 
 						if (mouse.key&MOUSE_RIGHT) && (mouse.up) {
-							EventShowFileInFolder();
+							if ((prev_cur_y == select_list.cur_y) && (clicked_item < results.count)) EventShowFileInFolder();
 						}
 				}
 			}
