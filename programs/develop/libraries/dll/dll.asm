@@ -170,8 +170,8 @@ dd APP_STARTUP_THUNK
 export                              \
     dll.Load,           'dll_load',  \        
     dll.Link,           'dll_link',  \         
-    dll.GetProcAddress, 'dll_sym'    
-                         
+    dll.GetProcAddress, 'dll_sym',   \          
+    dll.LoadLibrary,    'dll_loadlib'       
                          
 pNotify:
           dd	    7, 0

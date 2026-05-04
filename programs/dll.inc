@@ -1,6 +1,6 @@
 ;-----------------------------------------------------------------------------
 ; load one or more DLL file in COFF format and try to import functions by our list
-; if first function in import list begins with 'lib_', call it as DLL initialization
+; load each library via dll.LoadLibrary, then resolve imports via dll.Link
 ; return eax = 1 as fail, if anyone of .obj file not found in /sys/lib
 ; return 0 if all fine, but 0 not garantees in succesfull import - see dll.Link comment
 ; dirties all registers! eax, ebx, ecx, edx, esi, edi
@@ -11,32 +11,14 @@ proc dll.Load, import_table:dword
         or      edx, edx
         jz      .exit
         push    esi
-        mov     esi, [esi + 4]
-
-        mov     edi, esi
-        cmp     byte[esi], '/'
-        jz      .load_lib
-
-        mov     edi, s_libdir.fname
-    @@:
-        lodsb
-        stosb
-        or      al, al
-        jnz     @b
-
-        mov     edi, s_libdir
-  .load_lib:
-        mcall   68, 19, edi ;s_libdir
-        or      eax, eax
+        push    edx
+        stdcall dll.LoadLibrary, dword[esi + 4]
+        pop     edx
+        test    eax, eax
         jz      .fail
         stdcall dll.Link, eax, edx
-        push    eax
-        mov     eax, [eax]
-        cmp     dword[eax], 'lib_'
-        pop     eax
-        jnz     @f
-        stdcall dll.Init, [eax + 4]
-    @@:
+        test    eax, eax
+        jz      .fail
         pop     esi
         add     esi, 8
         jmp     .next_lib
@@ -87,6 +69,39 @@ proc dll.Init, dllentry:dword
         ret
 endp
 ;-----------------------------------------------------------------------------
+; load single library by name or full path, initialize it
+; if first function in export table begins with 'lib_', call it as DLL initialization
+; return eax = pointer to export table, or 0 on failure
+proc dll.LoadLibrary, lib_path:dword
+        push    ebx esi edi
+        mov     esi, [lib_path]
+        mov     edi, esi
+        cmp     byte[esi], '/'
+        jz      .do_load
+
+        mov     edi, s_libdir.fname
+    @@:
+        lodsb
+        stosb
+        or      al, al
+        jnz     @b
+
+        mov     edi, s_libdir
+  .do_load:
+        mcall   68, 19, edi
+        or      eax, eax
+        jz      .fail
+
+        mov     edx, [eax]
+        cmp     dword[edx], 'lib_'
+        jnz     .done
+        stdcall dll.Init, [eax + 4]
+  .done:
+  .fail:
+        pop     edi esi ebx
+        ret
+endp
+;-----------------------------------------------------------------------------
 ; scans export table for a sz_name function
 ; returns in eax function address or 0 if not found
 proc dll.GetProcAddress, exp:dword, sz_name:dword
@@ -133,7 +148,7 @@ proc strcmp, str1:dword, str2:dword
         ret
 endp
 ;-----------------------------------------------------------------------------
-if defined dll.Load
+if defined dll.Load | defined dll.LoadLibrary
 s_libdir:
   db '/sys/lib/'
   .fname rb 32
