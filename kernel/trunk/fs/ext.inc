@@ -175,6 +175,87 @@ inodeBuffer         INODE
 align3  rb  800h-EXTFS.align3
 ends
 
+ext_report_unsupported_features:
+        mov     ecx, [ebx+SUPERBLOCK.incompatibleFlags]
+        and     ecx, not INCOMPATIBLE_SUPPORT
+        movi    edx, 1
+        mov     eax, incompat_feature_report_table
+.loop:
+        test    ecx, ecx
+        jz      .done
+        shr     ecx, 1
+        jnc     @f
+        DEBUGF  1, "K : %s: 0x%x (%s)\n", ext_msg_incompat_feature, edx, [eax]
+@@:
+        shl     edx, 1
+        add     eax, 4
+        jmp     .loop
+.done:
+        ret
+
+; ext incompatible features from the superblock
+; See: https://www.kernel.org/doc/html/latest/filesystems/ext4/super.html#super-incompat
+iglobal
+ext_msg_feature:
+.compression    db 'compression', 0
+.filetype       db 'filetype', 0
+.recover        db 'recover', 0
+.journal_dev    db 'journal_dev', 0
+.meta_bg        db 'meta_bg', 0
+.extents        db 'extents', 0
+.64bit          db '64bit', 0
+.mmp            db 'mmp', 0
+.flex_bg        db 'flex_bg', 0
+.ea_inode       db 'ea_inode', 0
+.dirdata        db 'dirdata', 0
+.csum_seed      db 'csum_seed', 0
+.largedir       db 'largedir', 0
+.inline_data    db 'inline_data', 0
+.encrypt        db 'encrypt', 0
+.casefold       db 'casefold', 0
+.unknown        db 'unknown', 0
+
+ext_msg_incompat_feature db "EXT: unsupported incompatible feature", 0
+
+align 4
+incompat_feature_report_table:
+        dd      ext_msg_feature.compression
+        dd      ext_msg_feature.filetype
+        dd      ext_msg_feature.recover
+        dd      ext_msg_feature.journal_dev
+        dd      ext_msg_feature.meta_bg
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.extents
+        dd      ext_msg_feature.64bit
+        dd      ext_msg_feature.mmp
+        dd      ext_msg_feature.flex_bg
+        dd      ext_msg_feature.ea_inode
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.dirdata
+        dd      ext_msg_feature.csum_seed
+        dd      ext_msg_feature.largedir
+        dd      ext_msg_feature.inline_data
+        dd      ext_msg_feature.encrypt
+        dd      ext_msg_feature.casefold
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+        dd      ext_msg_feature.unknown
+incompat_feature_report_table_end:
+endg
+
+assert (incompat_feature_report_table_end - incompat_feature_report_table) / 4 = 32
+
 ; mount if it's a valid EXT partition
 ext2_create_partition:
 ;   in:
@@ -196,7 +277,10 @@ ext2_create_partition:
         cmp     [ebx+SUPERBLOCK.state], 1
         ja      .fail
         test    [ebx+SUPERBLOCK.incompatibleFlags], not INCOMPATIBLE_SUPPORT
-        jnz     .fail
+        jz      .features_supported
+        call    ext_report_unsupported_features
+        jmp     .fail
+.features_supported:
         cmp     [ebx+SUPERBLOCK.sectorsPerBlockLog], 6  ; 64KB
         ja      .fail
         cmp     [ebx+SUPERBLOCK.inodeSize], 512
