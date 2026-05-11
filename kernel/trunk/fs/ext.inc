@@ -5,6 +5,8 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+prologue@proc equ omit_frame_pointer_prologue
+epilogue@proc equ omit_frame_pointer_epilogue
 
 ; EXT external functions
 ;   in:
@@ -767,6 +769,7 @@ extfsExtentAlloc:
 
 extfsGetExtent:
 ; in: ecx = starting file block
+;     [ebp+EXTFS.inodeBuffer]
 ; out: eax = first block number, ecx = extent size
         push    ebx edx esi
         lea     esi, [ebp+EXTFS.inodeBuffer]
@@ -993,9 +996,11 @@ writeInode:
         stc
         jmp     .ret
 
-readInode:
-; in: eax = inode number, ebx -> inode buffer
-        push    edx edi esi ecx ebx
+proc readInode uses ecx edx ebx esi edi
+; in: eax = inode number
+;     ebx = inode buffer
+;     ebp = PARTITION pointer
+; out: cf = success / CF = fail
         mov     edi, ebx
         call    getInodeLocation
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
@@ -1026,8 +1031,8 @@ readInode:
 .zero_rest:
         xor     eax, eax
         rep stosb
-        pop     ebx ecx esi edi edx
         ret
+endp
 
 indirectBlockAlloc:
 ;   in:
@@ -1784,136 +1789,181 @@ unlinkInode:
         pop     eax
         ret
 
-findInode:
 ; in: esi -> path string in UTF-8
-;   out:
-; edi -> file name in UTF-8
-; esi = last inode number
-; [ebp+EXTFS.inodeBuffer] = last inode
-; ecx = parent inode number
-; CF=1 -> file not found, edi=0 -> error
+;     ebp = PARTITION pointer
+; out:
+;     edi -> file name in UTF-8
+;     esi = last inode number
+;     [ebp+EXTFS.inodeBuffer] = last inode
+;     ecx = parent inode number
+;     CF=1 -> file not found, edi=0 -> error
+proc findInode uses ebx, _at_inode
+locals
+        .cur_inode dd ?
+        .last_component_name dd ?
+endl
         mov     [ebp+EXTFS.symlink_depth], SYMLINK_MAX_DEPTH
-        push    esi
-        lea     esi, [ebp+EXTFS.rootInodeBuffer]
-        lea     edi, [ebp+EXTFS.inodeBuffer]
-        movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
-        mov     edx, esi
-        rep movsb
-        pop     esi
-        pushd   ebx 0 ROOT_INODE
-        mov     edi, esi
-        cmp     [edx+INODE.fileSize], 0
-        jz      .not_found
-.skip_root_slashes:
-        cmp     byte [esi], '/'
-        jne     @f
-        inc     esi
-        jmp     .skip_root_slashes
-@@:
-        cmp     byte [esi], 0
-        jnz     .next_path_part
-        xor     eax, eax
-        pop     esi ecx ebx
-        ret
-
-@@:
-        pop     esi esi
-.error:
-        pop     esi ecx ebx
-        xor     edi, edi
-        stc
-        ret
-
-.next_path_part:
-        push    [edx+INODE.fileSize]
-        xor     ecx, ecx
-.folder_block_cycle:
-        push    ecx
-        call    extfsGetExtent
-        jc      @b
-        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
-        call    extfsReadBlock
-        jc      @b
-        push    esi edx
-        mov     edx, ebx
-        add     edx, [ebp+EXTFS.bytesPerBlock]
-.start_rec:
-        cmp     [ebx+DIRENTRY.inodeNumber], 0
-        jz      .next_rec
-        push    esi
-        movzx   ecx, [ebx+DIRENTRY.nameLength]
-        lea     edi, [ebx+DIRENTRY.name]
-        repz cmpsb
-        jz      .test_find
-@@: ; doesn't match
-        pop     esi
-.next_rec:
-        movzx   ecx, [ebx+DIRENTRY.entryLength]
-        jecxz   .stop
-        add     ebx, ecx
-        cmp     ebx, edx
-        jb      .start_rec
-        jmp     .stop
-
-.test_find:
-        cmp     byte [esi], 0
-        je      @f
-        cmp     byte [esi], '/'
-        jne     @b
-.skip_slashes:
-        inc     esi
-        cmp     byte [esi], '/'
-        je      .skip_slashes
-@@:
-        pop     edx
-.stop:
-        pop     edx edi ecx eax
-; ebx -> matched directory entry, esi -> name without parent, or not changed
-        cmp     edi, esi
-        jnz     @f
-        sub     eax, [ebp+EXTFS.bytesPerBlock]
-        jle     .not_found
-        push    eax
-        inc     ecx
-        jmp     .folder_block_cycle
-
-@@:
-        pop     eax
-        mov     [esp], eax
-        mov     eax, [ebx+DIRENTRY.inodeNumber]
         lea     ebx, [ebp+EXTFS.inodeBuffer]
-        push    eax
+        mov     eax, [_at_inode]
+        mov     [.cur_inode], eax
+.next_path_part:
+.skip_slashes:
+        cmp     byte[esi], '/'
+        jnz     @f
+        inc     esi
+        jmp     .skip_slashes
+@@:
+        cmp     byte[esi], 0
+        jz      .found
+        mov     [.last_component_name], esi
+        stdcall ext._.lookup, [_at_inode]
+        jc      .error
+        jnz     .not_found
+        mov     eax, [edx+DIRENTRY.inodeNumber]
+        mov     [.cur_inode], eax
         call    readInode
         jc      .error
         movzx   eax, [ebx+INODE.accessMode]
         and     eax, TYPE_MASK
 ; check if symlink
         cmp     eax, FLAG_SYMLINK
-        jz      .resolve_symlink
-
-        cmp     byte [esi], 0
-        je      .ret
-        mov     edx, ebx
+        jz      .symlink
         cmp     eax, DIRECTORY
-        jz      .next_path_part
-        xor     edi, edi    ; path folder is a file
-        jmp     @f
-
-.not_found:
-        mov     esi, edi
-        call    strlen
-        mov     al, '/'
-        repnz scasb
-        mov     edi, esi
-        jnz     @f
-        xor     edi, edi    ; path folder not found
+        jz      .directory
+; all other file types: fifo, device, etc
+        cmp     byte[esi], 0
+        jz      .found
+        jmp     .error
+.symlink:
+        stdcall ext._.resolve_symlink
+        jc      .error
+        test    eax, eax
+        jz      @f
+        mov     [_at_inode], eax
 @@:
+        jmp     .next_path_part
+.directory:
+        cmp     byte[esi], 0
+        jz      .found
+        mov     eax, [.cur_inode]
+        mov     [_at_inode], eax
+        jmp     .next_path_part
+.found:
+        mov     eax, [.cur_inode]
+        call    readInode
+        jc      .error
+        jmp     .ret
+.not_found:
+        call    ext._.path_strlen
+        cmp     byte[esi+ecx], 0
         movi    eax, ERROR_FILE_NOT_FOUND
+        jz      .last_component_not_found
+.error:
+        mov     [.last_component_name], 0
+.last_component_not_found:
         stc
 .ret:
-        pop     esi ecx ebx
+        mov     edi, [.last_component_name]
+        mov     esi, [.cur_inode]
+        mov     ecx, [_at_inode]
         ret
+endp
 
+; in: esi -- path
+; out: ecx -- length
+proc ext._.path_strlen
+        mov     ecx, esi
+.next_byte:
+        cmp     byte[ecx], 0
+        jz      .done
+        cmp     byte[ecx], '/'
+        jz      .done
+        inc     ecx
+        jmp     .next_byte
+.done:
+        sub     ecx, esi
+        ret
+endp
+
+; in: edx - DIRENTRY pointer
+; in: esi -- path
+; out: ZF = match / zf = no match
+proc ext._.compare_rec uses edi
+        cmp     [edx+DIRENTRY.inodeNumber], 0
+        jz      .no_match
+        stdcall ext._.path_strlen
+        cmp     cl, [edx+DIRENTRY.nameLength]
+        jnz     .ret
+        mov     eax, esi
+        lea     edi, [edx+DIRENTRY.name]
+        repz cmpsb
+        jz      .ret
+        mov     esi, eax
+.no_match:
+        test    esp, esp        ; clear ZF
+.ret:
+        ret
+endp
+
+; in: esi -- path
+;     edx -- directory block pointer
+; out: ZF / zf -- found / not found
+proc ext._.lookup_block _block_len
+.next_rec:
+        stdcall ext._.compare_rec
+        jz      .found
+        movzx   ecx, [edx+DIRENTRY.entryLength]
+        jecxz   .not_found      ; is this possible?
+        add     edx, ecx
+        sub     [_block_len], ecx
+        ja      .next_rec
+.not_found:
+        test    esp, esp        ; zf
+.found:
+        ret
+endp
+
+; in: _at_inode -- lookup dir inode
+;     esi -- path
+; out: CF/cf -- error / no error, ZF/zf -- found / not found
+;      ebx -- INODE structure
+proc ext._.lookup _at_inode
+locals
+        .cur_block dd ?
+endl
+        mov     [.cur_block], 0
+        mov     eax, [_at_inode]
+        lea     ebx, [ebp+EXTFS.inodeBuffer]
+        call    readInode
+        jc      .error
+.next_block:
+        mov     ecx, [.cur_block]
+        call    extfsGetExtent
+        jc      .error
+        push    ebx
+        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
+        call    extfsReadBlock
+        pop     ebx
+        jc      .error
+        mov     edx, [ebp+EXTFS.mainBlockBuffer]
+        stdcall ext._.lookup_block, [ebp+EXTFS.bytesPerBlock]
+        ; ebx -> matched directory entry
+        ; esi -> name without parent, or not changed
+        jz      .found
+        mov     eax, [ebp+EXTFS.bytesPerBlock]
+        sub     [ebx+INODE.fileSize], eax
+        jbe     .not_found
+        inc     [.cur_block]
+        jmp     .next_block
+.not_found:
+        test    esp, esp        ; cf, zf
+.found:
+.error:
+        ret
+endp
+
+; in: ebp -- EXTFS partition struct
+proc ext._.resolve_symlink
 .resolve_symlink:
         dec     [ebp+EXTFS.symlink_depth]
         jns     @f
@@ -2022,35 +2072,13 @@ findInode:
 
 ; The target path starts with '/', it is absolute.
         inc     esi
-        mov     dword [esp], ROOT_INODE
-        mov     dword [esp+4], ROOT_INODE
-
-        push    esi
-        lea     esi, [ebp+EXTFS.rootInodeBuffer]
-        lea     edi, [ebp+EXTFS.inodeBuffer]
-        movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
-        rep movsb
-        pop     esi
-
-        lea     edx, [ebp+EXTFS.inodeBuffer]
-
-        cmp     byte [esi], 0
-        jz      .ret
-        jmp     .next_path_part
+        movi    eax, ROOT_INODE
+        jmp     .done
 
 ; The target path does not start with '/', it is relative to the current directory.
 .relative_symlink:
-        mov     eax, [esp+4]
-        mov     [esp], eax
-
-        lea     ebx, [ebp+EXTFS.inodeBuffer]
-        push    eax
-        call    readInode
-        add     esp, 4
-        jc      .error
-
-        mov     edx, ebx
-        jmp     .next_path_part
+        xor     eax, eax
+        jmp     .done
 
 .error_nested:
         pop     eax ecx edi
@@ -2060,6 +2088,14 @@ findInode:
         add     esp, 12
         pop     esi
         jmp     .error
+.error:
+.ret:
+        stc
+        ret
+.done:
+        clc
+        ret
+endp
 
 writeSuperblock:
         push    ebx
@@ -2215,24 +2251,11 @@ endp
 ;----------------------------------------------------------------
 ext_ReadFolder:
         call    ext_lock
-        cmp     byte [esi], 0
-        jz      .root_folder
-        call    findInode
+        stdcall findInode, ROOT_INODE
         jc      .error_ret
         lea     esi, [ebp+EXTFS.inodeBuffer]
         test    [esi+INODE.accessMode], FLAG_FILE
         jnz     .error_not_found
-        jmp     @f
-
-.root_folder:
-        lea     esi, [ebp+EXTFS.rootInodeBuffer]
-        lea     edi, [ebp+EXTFS.inodeBuffer]
-        movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
-        shr     ecx, 2
-        push    edi
-        rep movsd
-        pop     esi
-@@:
         cmp     [esi+INODE.fileSize], 0
         je      .error_empty_dir
         mov     edx, [ebx+16]
@@ -2420,7 +2443,7 @@ ext_ReadFolder:
 ;----------------------------------------------------------------
 ext_ReadFile:
         call    ext_lock
-        call    findInode
+        stdcall findInode, ROOT_INODE
         pushd   0 eax
         jc      .ret
         lea     esi, [ebp+EXTFS.inodeBuffer]
@@ -2529,7 +2552,7 @@ ext_GetFileInfo:
         cmp     byte [esi], 0
         jz      .volume
         call    ext_lock
-        call    findInode
+        stdcall findInode, ROOT_INODE
         jc      .ret
         lea     esi, [ebp+EXTFS.inodeBuffer]
         mov     edx, [ebx+16]
@@ -2629,7 +2652,7 @@ endp
 ;----------------------------------------------------------------
 ext_SetFileInfo:
         call    extfsWritingInit
-        call    findInode
+        stdcall findInode, ROOT_INODE
         jc      @f
         lea     edi, [ebp+EXTFS.inodeBuffer]
         test    [edi+INODE.featureFlags], EXT4_IMMUTABLE_FL
@@ -2670,7 +2693,7 @@ ext_SetFileInfo:
 ;----------------------------------------------------------------
 ext_Delete:
         call    extfsWritingInit
-        call    findInode
+        stdcall findInode, ROOT_INODE
         jc      .error
         lea     eax, [ebp+EXTFS.inodeBuffer]
         test    [eax+INODE.featureFlags], EXT4_IMMUTABLE_FL
@@ -2858,7 +2881,7 @@ initializeTimeFields:
 ;----------------------------------------------------------------
 ext_CreateFolder:
         call    extfsWritingInit
-        call    findInode
+        stdcall findInode, ROOT_INODE
         jnc     .success    ; exist
         test    edi, edi
         jz      .error
@@ -2932,14 +2955,16 @@ ext_CreateFolder:
         pop     eax
         ret
 
+iglobal
 self_link   db ".", 0
 parent_link db "..", 0
+endg
 
 ;----------------------------------------------------------------
 ext_CreateFile:
         call    extfsWritingInit
         pushd   0 0 ebx
-        call    findInode
+        stdcall findInode, ROOT_INODE
         jnc     .exist
         test    edi, edi
         jz      .error
@@ -2999,7 +3024,7 @@ ext_CreateFile:
 ;----------------------------------------------------------------
 ext_WriteFile:
         call    extfsWritingInit
-        call    findInode
+        stdcall findInode, ROOT_INODE
         pushd   0 eax
         jc      .ret
         mov     dword [esp], ERROR_ACCESS_DENIED
@@ -3138,7 +3163,7 @@ ext_WriteFile:
 ;----------------------------------------------------------------
 ext_SetFileEnd:
         call    extfsWritingInit
-        call    findInode
+        stdcall findInode, ROOT_INODE
         jc      .error2
         lea     edi, [ebp+EXTFS.inodeBuffer]
         movi    eax, ERROR_ACCESS_DENIED
@@ -3226,7 +3251,7 @@ ext_Rename:
         call    extfsWritingInit
         push    esi
         mov     esi, edi
-        call    findInode
+        stdcall findInode, ROOT_INODE
         jnc     .error
         test    edi, edi
         jz      .error
@@ -3237,7 +3262,7 @@ ext_Rename:
         jnz     .error_denied
         xchg    [esp], esi
         push    edi
-        call    findInode
+        stdcall findInode, ROOT_INODE
         pop     edi
         jc      .error
         xor     edx, edx
@@ -3286,3 +3311,5 @@ ext_Rename:
         call    ext_unlock
         pop     eax ebx
         ret
+
+restore prologue@proc,epilogue@proc

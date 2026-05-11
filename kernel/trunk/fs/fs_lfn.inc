@@ -24,6 +24,33 @@ ERROR_TOO_MANY_LINKS = 40
 
 maxPathLength = 1000h
 
+macro omit_frame_pointer_prologue procname,flag,parmbytes,localbytes,reglist {
+  local loc
+  loc = (localbytes+3) and (not 3)
+  if localbytes
+        sub     esp, loc
+  end if
+  irps reg, reglist \{ push reg \}
+  counter = 0
+  irps reg, reglist \{counter = counter+1 \}
+  parmbase@proc equ esp+counter*4+loc+4
+  localbase@proc equ esp+counter*4
+}
+
+macro omit_frame_pointer_epilogue procname,flag,parmbytes,localbytes,reglist {
+  local loc
+  loc = (localbytes+3) and (not 3)
+  irps reg, reglist \{ reverse pop reg \}
+  if localbytes
+        lea     esp, [esp+loc]
+  end if
+  if flag and 10000b
+        retn
+  else
+        retn    parmbytes
+  end if
+}
+
 image_of_eax EQU esp+32
 image_of_ebx EQU esp+20
 

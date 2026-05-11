@@ -8,33 +8,6 @@
 
 include 'xfs.inc'
 
-macro omit_frame_pointer_prologue procname,flag,parmbytes,localbytes,reglist {
-  local loc
-  loc = (localbytes+3) and (not 3)
-  if localbytes
-        sub     esp, loc
-  end if
-  irps reg, reglist \{ push reg \}
-  counter = 0
-  irps reg, reglist \{counter = counter+1 \}
-  parmbase@proc equ esp+counter*4+loc+4
-  localbase@proc equ esp
-}
-
-macro omit_frame_pointer_epilogue procname,flag,parmbytes,localbytes,reglist {
-  local loc
-  loc = (localbytes+3) and (not 3)
-  irps reg, reglist \{ reverse pop reg \}
-  if localbytes
-        lea     esp, [esp+loc]
-  end if
-  if flag and 10000b
-        retn
-  else
-        retn    parmbytes
-  end if
-}
-
 prologue@proc equ omit_frame_pointer_prologue
 epilogue@proc equ omit_frame_pointer_epilogue
 
