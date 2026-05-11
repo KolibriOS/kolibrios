@@ -9,6 +9,10 @@ Its kernel, most drivers, and many programs are written entirely in [FASM](https
 
 Based on [MenuetOS](https://www.menuetos.net/), it uses its own standards and is NOT fully POSIX or UNIX compliant.
 
+## Website
+
+Visit the [official KolibriOS website](https://kolibrios.org) for more information, downloads, and documentation.
+
 ## Contributing
 
 We would appreciate any participation in the project and always welcome new users and contributors.
