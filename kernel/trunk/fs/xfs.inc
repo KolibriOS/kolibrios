@@ -88,11 +88,21 @@ XFS_SB_FEAT_INCOMPAT_META_UUID   = 0x04 ; metadata UUID
 XFS_SB_FEAT_INCOMPAT_BIGTIME     = 0x08 ; large timestamps
 XFS_SB_FEAT_INCOMPAT_NEEDSREPAIR = 0x10 ; e.g. for upgrade to nrext64
 XFS_SB_FEAT_INCOMPAT_NREXT64     = 0x20 ; 64bit extent counters
+XFS_SB_FEAT_INCOMPAT_EXCHRANGE   = 0x40 ; exchangerange supported
+XFS_SB_FEAT_INCOMPAT_PARENT      = 0x80 ; parent pointers
+XFS_SB_FEAT_INCOMPAT_METADIR     = 0x100 ; metadata dir tree
+XFS_SB_FEAT_INCOMPAT_ZONED       = 0x200 ; zoned RT allocator
+XFS_SB_FEAT_INCOMPAT_ZONE_GAPS   = 0x400 ; RTGs have LBA gaps
 XFS_SB_FEAT_INCOMPAT_SUPPORTED   = XFS_SB_FEAT_INCOMPAT_FTYPE    OR \
                                    XFS_SB_FEAT_INCOMPAT_SPINODES OR \
                                    XFS_SB_FEAT_INCOMPAT_META_UUID OR \
                                    XFS_SB_FEAT_INCOMPAT_BIGTIME OR \
-                                   XFS_SB_FEAT_INCOMPAT_NREXT64
+                                   XFS_SB_FEAT_INCOMPAT_NREXT64 OR \
+                                   XFS_SB_FEAT_INCOMPAT_EXCHRANGE OR \
+                                   XFS_SB_FEAT_INCOMPAT_PARENT OR \
+                                   XFS_SB_FEAT_INCOMPAT_METADIR OR \
+                                   XFS_SB_FEAT_INCOMPAT_ZONED OR \
+                                   XFS_SB_FEAT_INCOMPAT_ZONE_GAPS
 
 ; bitfield lengths for packed extent
 ; MSB to LSB / left to right
