@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2026. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  RTL8169 driver for KolibriOS                                   ;;
@@ -583,10 +583,7 @@ init_board:
         mov     ecx, [esi+12]
         mov     [ebx + device.name], ecx
         DEBUGF  2, "Detected chip: %s\n", ecx
-        cmp     dword[esi], 0
-        jne     @f
         DEBUGF  1, "TxConfig = 0x%x\n", eax
-  @@:
 
         xor     eax, eax
         ret
@@ -638,6 +635,9 @@ probe:
         WRITE_GMII_REG 0x0b, 0x0000      ; w 0x0b 15 0 0
     @@:
         ; if TBI is not enabled
+        cmp     [ebx + device.mac_version], 01  ; Ten bit interface was only present on the original RTL8169
+        jne     .tbi_dis
+
         set_io  [ebx + device.io_addr], 0
         set_io  [ebx + device.io_addr], REG_PHYstatus
         in      al, dx
@@ -649,6 +649,12 @@ probe:
         and     eax, 0x0C1F
         or      eax, PHY_Cap_10_Half or PHY_Cap_10_Full or PHY_Cap_100_Half or PHY_Cap_100_Full
         WRITE_GMII_REG PHY_AUTO_NEGO_REG, ax
+        jmp     .wait_aneg
+
+  .tbi_dis:
+        DEBUGF  1, "Enabling 1000mbit modes\n"
+
+        set_io  [ebx + device.io_addr], 0
 
         ; enable 1000 Full Mode
         WRITE_GMII_REG PHY_1000_CTRL_REG, PHY_Cap_1000_Full or PHY_Cap_1000_Half ; rtl8168
@@ -656,8 +662,9 @@ probe:
         ; Enable auto-negotiation and restart auto-nigotiation
         WRITE_GMII_REG PHY_CTRL_REG, PHY_Enable_Auto_Nego or PHY_Restart_Auto_Nego
 
+  .wait_aneg:
         udelay  1                       ; 100
-        mov     ecx, 200                ; 10000
+        mov     ecx, 2000                ; 10000
         DEBUGF  1, "Waiting for auto-negotiation to complete\n"
         ; wait for auto-negotiation process
     @@: dec     ecx
@@ -670,7 +677,7 @@ probe:
         set_io  [ebx + device.io_addr], REG_PHYstatus
         in      al, dx
         jmp     @f
-  .tbi_dis:
+        DEBUGF  1, "auto-negotiation timed-out\n"
         udelay  1                       ; 100
     @@:
         DEBUGF  1, "auto-negotiation complete\n"
