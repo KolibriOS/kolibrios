@@ -136,11 +136,15 @@ EXTENTS_USED = 80000h
 TYPE_MASK = 0F000h
 FLAG_FILE = 8000h
 DIRECTORY = 4000h
+FLAG_SYMLINK = 0A000h
 DIR_FLAG_FILE = 1
 DIR_DIRECTORY = 2
+DIR_SYMLINK = 7
 KOS_HIDDEN = 2
 KOS_DIRECTORY = 10h
 READ_ONLY = 1
+SYMLINK_MAX_DEPTH = 40
+FAST_SYMLINK_MAX_SIZE = 60
 
 ; Implemented "incompatible" features:
 ; 2 = have file type in directory entry
@@ -173,6 +177,8 @@ rootInodeBuffer     INODE
 align2  rb  600h-EXTFS.align2
 inodeBuffer         INODE
 align3  rb  800h-EXTFS.align3
+symlink_workspace   rb maxPathLength
+symlink_depth       dd  ?
 ends
 
 ext_report_unsupported_features:
@@ -1683,6 +1689,7 @@ findInode:
 ; [ebp+EXTFS.inodeBuffer] = last inode
 ; ecx = parent inode number
 ; CF=1 -> file not found, edi=0 -> error
+        mov     dword [ebp+EXTFS.symlink_depth], SYMLINK_MAX_DEPTH
         push    esi
         lea     esi, [ebp+EXTFS.rootInodeBuffer]
         lea     edi, [ebp+EXTFS.inodeBuffer]
@@ -1694,6 +1701,12 @@ findInode:
         mov     edi, esi
         cmp     [edx+INODE.fileSize], 0
         jz      .not_found
+.skip_root_slashes:
+        cmp     byte [esi], '/'
+        jne     @f
+        inc     esi
+        jmp     .skip_root_slashes
+@@:
         cmp     byte [esi], 0
         jnz     .next_path_part
         xor     eax, eax
@@ -1744,7 +1757,10 @@ findInode:
         je      @f
         cmp     byte [esi], '/'
         jne     @b
+.skip_slashes:
         inc     esi
+        cmp     byte [esi], '/'
+        je      .skip_slashes
 @@:
         pop     edx
 .stop:
@@ -1766,11 +1782,15 @@ findInode:
         push    eax
         call    readInode
         jc      .error
+        movzx   eax, [ebx+INODE.accessMode]
+        and     eax, TYPE_MASK
+; check if symlink
+        cmp     eax, FLAG_SYMLINK
+        jz      .resolve_symlink
+
         cmp     byte [esi], 0
         je      .ret
         mov     edx, ebx
-        movzx   eax, [ebx+INODE.accessMode]
-        and     eax, TYPE_MASK
         cmp     eax, DIRECTORY
         jz      .next_path_part
         xor     edi, edi    ; path folder is a file
@@ -1790,6 +1810,153 @@ findInode:
 .ret:
         pop     esi ecx ebx
         ret
+
+.resolve_symlink:
+        dec     dword [ebp+EXTFS.symlink_depth]
+        jns     @f
+        movi    eax, ERROR_TOO_MANY_LINKS
+        jmp     .error
+@@:
+        cmp     dword [ebp+EXTFS.symlink_depth], SYMLINK_MAX_DEPTH - 1
+        je      .setup_extraction       ; First hop - esi in shell memory
+
+.nested_symlink:
+; Symlink path is in symlink_workspace. esi points to the remaining path (tail).
+; Shift tail by symlink size to prevent overwriting during insertion.
+        push    edi ecx eax
+        
+        ; Find tail length
+        mov     edi, esi
+        mov     ecx, -1
+        xor     al, al
+        repnz scasb
+        not     ecx                     ; ecx = tail length including null
+        
+        ; Boundary overflow check
+        mov     eax, [ebx+INODE.fileSize]
+        lea     edi, [esi + eax]
+        add     edi, ecx
+        lea     eax, [ebp+EXTFS.symlink_workspace + maxPathLength]
+        cmp     edi, eax
+        ja      .error_nested
+        
+        ; Shift
+        mov     eax, [ebx+INODE.fileSize]
+        lea     edi, [esi + ecx - 1]
+        add     edi, eax
+        lea     esi, [esi + ecx - 1]
+        
+        std
+        rep movsb
+        cld
+
+        lea     esi, [edi + 1]
+        pop     eax ecx edi
+
+.setup_extraction:
+        push    esi                     ; Save the remaining path
+        lea     edi, [ebp+EXTFS.symlink_workspace]
+
+        cmp     [ebx+INODE.fileSize], FAST_SYMLINK_MAX_SIZE
+        jbe     .fast_symlink
+
+; The target path is longer than 60 bytes, so it's stored in the file's data blocks.
+.slow_symlink:
+        xor     ecx, ecx                  ; Logical block 0 for extfsGetExtent
+        mov     edx, [ebx+INODE.fileSize]
+        cmp     edx, maxPathLength
+        jae     .error_slow
+
+        push    ecx edx edi
+        
+        call    extfsGetExtent
+        jc      .error_slow
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        call    extfsReadBlock
+        jc      .error_slow
+        
+        pop     edi edx ecx
+        
+        push    esi 
+        mov     esi, [ebp+EXTFS.tempBlockBuffer]
+        mov     ecx, edx
+        rep movsb
+        pop     esi
+        
+        jmp     .symlink_merge
+
+; The target path is short enough, it's stored in the inode's block numbers.
+.fast_symlink:
+        lea     esi, [ebx+INODE.blockNumbers]
+        mov     ecx, [ebx+INODE.fileSize]
+        rep movsb
+
+.symlink_merge:
+        pop     esi                  ; Restore the remaining path
+        
+        cmp     byte [esi], 0
+        jne     .symlink_copy_remaining
+        mov     byte [edi], 0
+        jmp     .symlink_check_type
+
+; Copy the remaining path to the symlink workspace
+.symlink_copy_remaining:
+; Skip adding '/' if the symlink already ends with it
+        cmp     byte [edi-1], '/'
+        je      @f
+        mov     byte [edi], '/'
+        inc     edi
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+
+.symlink_check_type:
+        lea     esi, [ebp+EXTFS.symlink_workspace]
+        cmp     byte [esi], '/'
+        jne     .relative_symlink
+
+; The target path starts with '/', it is absolute.
+        inc     esi
+        mov     dword [esp], ROOT_INODE
+        mov     dword [esp+4], ROOT_INODE
+        
+        push    esi
+        lea     esi, [ebp+EXTFS.rootInodeBuffer]
+        lea     edi, [ebp+EXTFS.inodeBuffer]
+        movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
+        rep movsb
+        pop     esi
+        
+        lea     edx, [ebp+EXTFS.inodeBuffer]
+        
+        cmp     byte [esi], 0
+        jz      .ret
+        jmp     .next_path_part
+
+; The target path does not start with '/', it is relative to the current directory.
+.relative_symlink:
+        mov     eax, [esp+4]
+        mov     [esp], eax
+
+        lea     ebx, [ebp+EXTFS.inodeBuffer]
+        push    eax
+        call    readInode
+        add     esp, 4
+        jc      .error
+
+        mov     edx, ebx
+        jmp     .next_path_part
+
+.error_nested:
+        pop     eax ecx edi
+        jmp     .error
+
+.error_slow:
+        add     esp, 12
+        pop     esi
+        jmp     .error
 
 writeSuperblock:
         push    ebx
