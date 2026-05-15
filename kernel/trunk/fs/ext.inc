@@ -2168,9 +2168,14 @@ ext_ReadFolder:
         mov     [edx+8], ecx
         lea     esp, [edi+32]
         mov     ecx, 20/4
-        lea     edi, [edx+12]
+        lea     edx, [edx+12]
+        xchg    edi, edx
         xor     eax, eax
         rep stosd
+        cmp     ebx, [edx+20]   ; read files vs files to read
+        jz      @f
+        movi    eax, ERROR_END_OF_FILE
+@@:
         ret
 
 .error_bad_len:
