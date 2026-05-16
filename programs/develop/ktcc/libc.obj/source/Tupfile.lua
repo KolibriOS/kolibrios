@@ -1,4 +1,8 @@
-if tup.getconfig("NO_TCC") ~= "" then return end
+FASM_SRC = {
+    "crt/crt0.asm",
+}
+
+if tup.getconfig("NO_TCC") == "" then
 
 CFLAGS = " -r -nostdinc -nostdlib -DGNUC -D_BUILD_LIBC "
 INCLUDES = " -I../include"
@@ -32,11 +36,17 @@ GAS_SRC = {
     "string/memmove.s"
 }
 
-OBJS = {"libc.c"}
+OBJS = { "libc.c" }
 
-tup.append_table(OBJS,
-  tup.foreach_rule(GAS_SRC, "as --32 %f -o %o", "%B.o")
-)
+tup.append_table(OBJS, tup.foreach_rule(GAS_SRC, "as --32 %f -o %o", "%B.o"))
 
-tup.rule(OBJS, "kos32-tcc" .. CFLAGS .. INCLUDES .. " %f -o %o " .. " && strip %o --strip-unneeded " , "libc.o")
+tup.rule(OBJS, "kos32-tcc" .. CFLAGS .. INCLUDES .. " %f -o %o " .. " && strip %o --strip-unneeded ", "libc.o")
 tup.rule("libc.o", "objconv -fcoff32 %f %o " .. tup.getconfig("KPACK_CMD"), "%B.obj")
+
+end
+
+if tup.getconfig("NO_FASM") == "" then
+
+tup.rule(FASM_SRC, "fasm %f %o", "%B.o")
+
+end

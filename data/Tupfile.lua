@@ -184,7 +184,8 @@ extra_files = {
  {"kolibrios/develop/oberon07/lib/KolibriOS/", SRC_PROGS .. "/develop/oberon07/lib/KolibriOS/*"},
  {"kolibrios/develop/oberon07/lib/Math/", SRC_PROGS .. "/develop/oberon07/lib/Math/*"},
  {"kolibrios/develop/oberon07/samples/", SRC_PROGS .. "/develop/oberon07/samples/KolibriOS/*"},
- {"kolibrios/develop/tcc/lib/", SRC_PROGS ..  "/develop/ktcc/bin/lib/*"},
+ {"kolibrios/develop/tcc/lib/", SRC_PROGS ..  "/develop/ktcc/bin/lib/*.def"},
+ {"kolibrios/develop/tcc/lib/libSDL.a", SRC_PROGS .. "/develop/ktcc/bin/lib/libSDL.a"},
  {"kolibrios/develop/tcc/include/", SRC_PROGS ..  "/develop/ktcc/libc.obj/include/*"},
  {"kolibrios/develop/tcc/include/clayer/", SRC_PROGS ..  "/develop/ktcc/libc.obj/include/clayer/*"},
  {"kolibrios/develop/tcc/include/cryptal/", SRC_PROGS .. "/develop/ktcc/libc.obj/include/cryptal/*"},
@@ -634,7 +635,10 @@ tup.append_table(extra_files, {
  {"kolibrios/utils/AMDtemp", VAR_PROGS .. "/system/amd_temp_view/AMDtemp"},
  {"kolibrios/utils/kfm/kfm", VAR_PROGS .. "/fs/kfm/kfm"},
  {"kolibrios/utils/tedit/t_edit", VAR_PROGS .. "/other/t_edit/t_edit"},
- {"kolibrios/3D/blocks/block.bin", VAR_PROGS .. "/bcc32/games/blocks/block.bin"}
+ {"kolibrios/3D/blocks/block.bin", VAR_PROGS .. "/bcc32/games/blocks/block.bin"},
+ {"kolibrios/develop/tcc/lib/crt0.o", VAR_PROGS ..  "/develop/ktcc/bin/lib/crt0.o", group = "../programs/develop/ktcc/<crt0.o>"},
+ {"kolibrios/develop/tcc/lib/tiny.o", VAR_PROGS ..  "/develop/ktcc/bin/lib/tiny.o", group = "../programs/develop/ktcc/<tiny.o>"},
+ {"kolibrios/develop/tcc/lib/libsound.a", VAR_PROGS ..  "/develop/ktcc/bin/lib/libsound.a", group = "../programs/develop/ktcc/<libsound.a>"}
 })
 -- For russian build, add russian-only programs.
 if build_type == "ru_RU" then tup.append_table(img_files, {
@@ -719,28 +723,40 @@ tup.append_table(extra_files, {
 })
 end -- tup.getconfig('NO_MSVC') ~= 'full'
 
--- Programs that require TCC to compile.
+-- Programs that require TCC to compile. TCC programs that link executables
+-- additionally need FASM (for crt0.o, tiny.o, libtcc1.a). LIBC.OBJ is a
+-- relocatable TCC translation unit and does not require FASM.
 if tup.getconfig('NO_TCC') ~= 'full' then
+if tup.getconfig('NO_FASM') ~= 'full' then
 tup.append_table(img_files, {
  {"NETWORK/WHOIS", VAR_PROGS .. "/network/whois/whois"},
  {"SHELL", VAR_PROGS .. "/system/shell/shell"},
  {"GAMES/DINO", VAR_PROGS .. "/games/dino/dino"},
  {"GAMES/FLPYBIRD", VAR_PROGS .. "/games/flpybird/flpybird"},
+})
+end -- tup.getconfig('NO_FASM') ~= 'full'
+tup.append_table(img_files, {
  {"LIB/LIBC.OBJ", VAR_PROGS .. "/develop/ktcc/libc.obj/source/libc.obj"},
 })
+if tup.getconfig('NO_FASM') ~= 'full' then
 tup.append_table(extra_files, {
  {"kolibrios/utils/thashview", VAR_PROGS .. "/other/TinyHashView/thashview"},
  {"kolibrios/demos/kmatrix", VAR_PROGS .. "/demos/kmatrix/kmatrix"},
  {"kolibrios/utils/graph", VAR_PROGS .. "/other/graph/branches/tcc_current/graph"},
  {"kolibrios/develop/TinyBasic/TinyBasic", VAR_PROGS .. "/develop/tinybasic-1.0.4/tinybasic"},
- {"kolibrios/develop/TinyBasic/bas/", SRC_PROGS .. "/develop/tinybasic-1.0.4/bas/*"},
- {"kolibrios/develop/TinyBasic/TinyBasic.man", SRC_PROGS .. "/develop/tinybasic-1.0.4/doc/tinybasic.man"},
  {"kolibrios/utils/passwordgen", VAR_PROGS .. "/other/PasswordGen/passwordgen"},
  {"kolibrios/utils/kruler", VAR_PROGS .. "/other/kruler/kruler"},
- {"kolibrios/media/qr_tool", SRC_PROGS .. "/media/qr_tool/qr_tool"},
  {"kolibrios/utils/weather", VAR_PROGS .. "/other/Weather/weather"},
- {"kolibrios/settings/weather.json", SRC_PROGS .. "/other/Weather/weather.json"},
  {"kolibrios/utils/man2html", VAR_PROGS .."/other/man2html/man2html"},
+})
+end -- tup.getconfig('NO_FASM') ~= 'full'
+tup.append_table(extra_files, {
+ {"kolibrios/develop/TinyBasic/bas/", SRC_PROGS .. "/develop/tinybasic-1.0.4/bas/*"},
+ {"kolibrios/develop/TinyBasic/TinyBasic.man", SRC_PROGS .. "/develop/tinybasic-1.0.4/doc/tinybasic.man"},
+ {"kolibrios/media/qr_tool", SRC_PROGS .. "/media/qr_tool/qr_tool"},
+ {"kolibrios/settings/weather.json", SRC_PROGS .. "/other/Weather/weather.json"},
+ {"kolibrios/develop/tcc/lib/libshell.a", VAR_PROGS .. "/develop/ktcc/bin/lib/libshell.a", group="../programs/develop/ktcc/<libshell.a>"},
+ {"kolibrios/develop/tcc/lib/libcryptal.a", VAR_PROGS .. "/develop/ktcc/bin/lib/libcryptal.a", group="../programs/develop/ktcc/<libcryptal.a>"}
 })
 end -- tup.getconfig('NO_TCC') ~= 'full'
 
@@ -808,6 +824,13 @@ if tup.getconfig('NO_NASM') ~= 'full' then
    {"kolibrios/emul/dgen/dgenrc.html", SRC_PROGS .. "/emulator/dgen-sdl-1.33/dgenrc.html"},
   })
 end
+
+if tup.getconfig("NO_FASM") ~= "full" and tup.getconfig("NO_TCC") ~= "full" then
+  tup.append_table(extra_files, {
+    {"kolibrios/develop/tcc/lib/libtcc1.a", VAR_PROGS .. "/develop/ktcc/bin/lib/libtcc1.a", group="../programs/develop/ktcc/<libtcc1.a>"}
+  })
+end
+
 -- For russian build, add russian-only programs.
 if build_type == "ru_RU" then tup.append_table(extra_files, {
  {"kolibrios/games/21days", VAR_PROGS .. "/games/21days/21days"},

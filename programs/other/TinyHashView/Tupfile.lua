@@ -1,4 +1,4 @@
-if tup.getconfig("NO_TCC") ~= "" then return end
+if tup.getconfig("NO_TCC") ~= "" or tup.getconfig("NO_FASM") ~= "" then return end
 if tup.getconfig("HELPERDIR") == ""
 then
   HELPERDIR = "../../../programs"
@@ -7,4 +7,4 @@ tup.include(HELPERDIR .. "/use_tcc.lua")
 
 LIBS = "-lcryptal -lbox_lib -ldialog"
 
-link_tcc({"thashview.c"}, "thashview"); 
+link_tcc({"thashview.c"}, "thashview", {"cryptal"});
