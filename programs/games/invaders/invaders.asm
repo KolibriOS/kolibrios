@@ -269,7 +269,6 @@ exit:
         call    draw_window
 
         decodeimg gif_bullet,gif_bullet.size,img_bullet
-        decodeimg gif_bullet2,gif_bullet2.size,img_bullet2
         decodeimg gif_ship,gif_ship.size,img_ship
         decodeimg gif_enemy1,gif_enemy1.size,img_enemy1
         decodeimg gif_enemy2,gif_enemy2.size,img_enemy2
@@ -1468,8 +1467,6 @@ enemy_img_list:
 
 gif_bullet      file 'bullet2.gif'
   .size = $ - gif_bullet
-gif_bullet2     file 'bullet2.gif'
-  .size = $ - gif_bullet2
 gif_ship        file 'ship.gif'
   .size = $ - gif_ship
 gif_enemy1      file 'enemy1.gif'
@@ -1491,7 +1488,7 @@ gif_menu2       file 'menu2.gif'
 gif_menu3       file 'menu3.gif'
   .size = $ - gif_menu3
 gif_menu4       file 'menu4.gif'
-  .size = $ - gif_menu3
+  .size = $ - gif_menu4
 gif_logo        file 'logo.gif'
   .size = $ - gif_logo
 gif_pause       file 'pause.gif'
@@ -1532,7 +1529,6 @@ IM_END:
 STARS           rb STARS_*5
 
 img_bullet      rb BULLET_X*BULLET_Y*3+8
-img_bullet2     rb BULLET_X*BULLET_Y*3+8
 img_ship        rb SHIP_X*SHIP_Y*3+8
 img_enemy1      rb ENEMY_X*ENEMY_Y*3+8
 img_enemy2      rb ENEMY_X*ENEMY_Y*3+8
@@ -1554,7 +1550,7 @@ img_bigfont     rb 28*520*3+8
 img_numbers     rb 16*200*3+8
 
 img_char        rb 28*20*3+8
-img_alienpiece  rb ALIEN_X*ALIEN_Y*3+8
+;img_alienpiece  rb ALIEN_X*ALIEN_Y*3+8
 
 highscorebuffer rb 1024
 
