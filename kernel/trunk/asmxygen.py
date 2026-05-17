@@ -400,7 +400,7 @@ class AsmElement:
         contents += doxycomment
         contents += (f"@par Source\n" +
                      f"<a href='{link_root}/{self.file}" +
-                     f"#line-{self.line}'>{self.file}:{self.line}</a>\n")
+                     f"#L{self.line}'>{self.file}:{self.line}</a>\n")
         contents += '*/\n'
         contents += declaration
         contents += '\n\n'
@@ -1038,8 +1038,9 @@ def handle_file(handled_files, asm_file_name, subdir="."):
         get_declarations(asm_file_contents, asm_file_name)
 
 if __name__ == "__main__":
-    link_root = "http://websvn.kolibrios.org/filedetails.php"
-    link_root += "?repname=Kolibri+OS&path=/kernel/trunk"
+    # Note: This URL depends on the VCS used (currently Gitea/Git)
+    # Update this if the repository hosting changes
+    link_root = "https://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/kernel/trunk"
 
     # Dict where an identifier is assicoated with a string
     # The string contains characters specifying flags
