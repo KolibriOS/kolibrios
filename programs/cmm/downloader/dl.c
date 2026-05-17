@@ -27,7 +27,7 @@ char filepath[4096];
 char save_dir[4096];
 
 char settings_file[256];
-char proxy_address[768];
+char proxy_address[256];
 
 #include "settings.h"
 
@@ -41,7 +41,7 @@ progress_bar pb = {0, GAPX, 52, WIN_W - GAPX - GAPX, 17, 0, NULL, NULL,
 
 void main()  
 {
-	dword shared_url;
+	// dword shared_url;  // only used by the disabled -mem branch (long URL via SHM)
 
 	load_dll(libini,  #lib_init,1);
 	load_dll(boxlib,  #box_lib_init,0);
@@ -66,12 +66,15 @@ void main()
 			param += 4;
 		}
 
-		if (!strncmp(#param, "-mem", 5)) {
-			//shared_url = memopen(#dl_shared, URL_SIZE+1, SHM_OPEN + SHM_WRITE);
-			strcpy(#uEdit, shared_url);
-		} else {
-			strcpy(#uEdit, #param);
-		}
+		// Disabled long-URL-via-SHM ("DL") channel. memopen was never
+		// finished (read from uninitialised ptr). Reimplement properly
+		// if passing long URLs from WebView is ever needed.
+		// if (!strncmp(#param, "-mem", 5)) {
+		//	shared_url = memopen(#dl_shared, URL_SIZE+1, SHM_OPEN + SHM_WRITE);
+		//	strcpy(#uEdit, shared_url);
+		// } else {
+		strcpy(#uEdit, #param);
+		// }
 
 		if (streq(#param, "-test")) {
 			strcpy(#uEdit, URL_SPEED_TEST);
@@ -157,7 +160,7 @@ void DrawWindow()
 	} else if (http.transfer) {
 		DrawDlButton(WIN_W-BUT_W/2, BTN_STOP, T_CANCEL);
 		DrawDownloadingProgress();
-	} else if (!http.transfer) && (filepath) {
+	} else {
 		autoclose.disabled = true;
 		DrawDlButton(GAPX, BTN_RUN, T_RUN);
 		DrawDlButton(WIN_W-BUT_W/2, BTN_DIR, T_OPEN_DIR);
@@ -177,14 +180,24 @@ void DrawWindow()
  
 void StartDownloading()
 {
-	char get_url[URL_SIZE+33];
+	char get_url[URL_SIZE + sizeof(proxy_address) + 1];
 	if (http.transfer > 0) return;
 	ResetDownloadSpeed();
 	pb.back_color = 0xFFFfff;
 	if (!strncmp(#uEdit,"https://",8)) {
-		miniprintf(#get_url, "%s%s", #proxy_address, #uEdit);
+		if (!proxy_address[0]) {
+			pb.progress_color = PB_COL_ERROR;
+			notify("'HTTPS URLs require proxy_address in app.ini' -E");
+			StopDownloading();
+			EditBox_UpdateText(#ed, ed_focus + ed_always_focus);
+			DrawWindow();
+			return;
+		}
+		strcpy(#get_url, #proxy_address);
+		strncat(#get_url, #uEdit, URL_SIZE);
+	} else {
+		strcpy(#get_url, #uEdit);
 	}
-	strcpy(#get_url, #uEdit);
 
 	if (http.get(#get_url)) {
 		pb.value = 0;
@@ -288,7 +301,7 @@ void CompleteDownload()
 
 void SaveFile(int attempt)
 {
-	int i, fi=0;
+	int i;
 	char notify_message[4296];
 	char file_name[URL_SIZE+96];
 
@@ -349,7 +362,6 @@ void SaveFile(int attempt)
 void Unarchive(dword _arc)
 {
 	char folder_name[4096];
-	strcpy(#folder_name, #save_dir);
 	strcpy(#folder_name, #filepath+strrchr(#filepath, '/'));
 	folder_name[strlen(#folder_name)-4] = '\0';
 	CreateDir(#folder_name);

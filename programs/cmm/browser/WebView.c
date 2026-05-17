@@ -72,8 +72,8 @@ progress_bar prbar;
 proc_info Form;
 
 char settings_file[256];
-char proxy_address[768];
-char search_engine[768];
+char proxy_address[256];
+char search_engine[256];
 
 #include "settings.h"
 #include "tabs.h"
@@ -533,12 +533,12 @@ bool GetLocalFileData(dword _path)
 
 bool GetUrl(dword _http_url)
 {
-	char new_url_full[URL_SIZE+1];
+	char new_url_full[URL_SIZE + sizeof(proxy_address) + 1];
 	if (!strncmp(_http_url,"http://",7)) {
 		http.get(_http_url);
 		return true;
 	} else if (!strncmp(_http_url,"https://",8)) {
-		if (#proxy_address) {
+		if (proxy_address[0]) {
 			strcpy(#new_url_full, #proxy_address);
 			strncat(#new_url_full, _http_url, URL_SIZE);
 			http.get(#new_url_full);
@@ -840,7 +840,7 @@ void ProcessMenuClick()
 
 void EventSearchWeb()
 {
-	char new_url[URL_SIZE+1];
+	char new_url[URL_SIZE + sizeof(search_engine) + 1];
 	// replace the spaces with '+' for the search query
 	replace_char(#editURL, ' ', '+', URL_SIZE);
 	strcpy(#new_url, #search_engine);
