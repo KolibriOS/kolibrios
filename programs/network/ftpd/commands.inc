@@ -102,7 +102,7 @@ commands:               ; all commands must be in uppercase
 ;        dd 'REIN', login_first, login_first, login_first, cmd_REIN
 ;        dd 'REST', login_first, login_first, login_first, cmd_REST
         dd 'RETR', login_first, login_first, login_first, cmdRETR
-;        dd 'RMD', login_first, login_first, login_first, cmd_RMD
+        dd 'RMD', login_first, login_first, login_first, cmdDELE
 ;        dd 'RNFR', login_first, login_first, login_first, cmd_RNFR
 ;        dd 'RNTO', login_first, login_first, login_first, cmd_RNTO
 ;        dd 'SITE', login_first, login_first, login_first, cmd_SITE
@@ -458,9 +458,9 @@ cmdCWD:
         ret
 
 ;------------------------------------------------
-; "DELE"
+; "DELE" & "RMD"
 ;
-; Delete a file from the server.
+; Delete a file/directory from the server.
 ;
 ;------------------------------------------------
 align 4
@@ -469,16 +469,24 @@ cmdDELE:
         test    [ebp + thread_data.permissions], PERMISSION_DELETE
         jz      permission_denied
 
-        ; Create path
-        cmp     ecx, 1024 + 5
+        ; "DELE <path>" and "RMD <path>" share this handler. Skip the
+        ; command + its trailing space to reach <path>: "RMD " = 4,
+        ; "DELE " = 5 bytes. RMD is the only 'R' command routed here.
+        mov     edx, 4                  ; strlen("RMD ")
+        cmp     byte[esi], 'R'
+        je      @f
+        cmp     byte[esi], 'r'
+        je      @f
+        mov     edx, 5                  ; strlen("DELE ")
+  @@:
+        sub     ecx, edx                ; ecx = <path> length
+        jb      .err                    ; command line shorter than prefix
+        cmp     ecx, 1024               ; <path> must fit the path buffer
         jae     .err
-
-        sub     ecx, 5
-        jb      .err
 
         call    create_path
         dec     edi
-        lea     esi, [ebp + thread_data.buffer + 5]
+        lea     esi, [ebp + thread_data.buffer + edx]
         mov     ecx, 1024
         cmp     byte [esi], '/'
         jne     .loop
@@ -515,7 +523,7 @@ cmdDELE:
         sendFTP "250 Command successful"
         ret
 .err:
-        sendFTP "550 No such file"
+        sendFTP "550 Requested action not taken"
         ret
 
 ;------------------------------------------------
