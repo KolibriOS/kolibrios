@@ -48,7 +48,16 @@ DLLAPI void free(void* ptr);
 
 DLLAPI long int strtol(const char* str, char** endptr, int base);
 
+DLLAPI int atexit(void (*func)(void));
+
 DLLAPI void exit(int status);
+
+DLLAPI void _exit(int status);
+#ifndef _Exit
+#define _Exit(status) _exit(status)
+#endif
+
+DLLAPI void abort(void);
 
 DLLAPI void srand(unsigned s);
 DLLAPI int rand(void);

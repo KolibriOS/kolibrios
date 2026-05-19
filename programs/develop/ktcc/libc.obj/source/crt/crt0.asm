@@ -1,8 +1,6 @@
 ; SPDX-License-Identifier: NOASSERTION
 ;
 
-; Text encoded with Code Page 1251 - Cyrillic
-
 ;
 ;   2021, Edited by Coldy
 ;
@@ -19,6 +17,7 @@ public start
 public start as '_start'
 
 extrn main
+extrn exit
 
 include '../../../../../proc32.inc'
 include '../../../../../macros.inc'
@@ -43,36 +42,36 @@ start:
     call push_param
 ; retrieving parameters
     mov  esi, params
-    xor  edx, edx  ; dl - идёт параметр(1) или разделители(0)
-                   ; dh - символ с которого начался параметр (1 кавычки, 0 остальное)
+    xor  edx, edx  ; dl - is it a parameter (1) or delimiters (0)
+                   ; dh - character with which the parameter started (1 quotes, 0 everything else)
     mov  ecx, 1    ; cl = 1
-                   ; ch = 0  просто ноль
+                   ; ch = 0  just zero
 .parse:
     lodsb
     test al, al
     jz   .run
     test dl, dl
     jnz  .findendparam
-                     ;{если был разделитель
+                     ;{if it was a delimiter
     cmp  al, ' '
-    jz   .parse  ;загружен пробел, грузим следующий символ
-    mov  dl, cl  ;начинается параметр
+    jz   .parse  ; space loaded, load next character
+    mov  dl, cl  ; parameter starts
     cmp  al, '"'
-    jz   @f      ;загружены кавычки
-    mov  dh, ch     ;параметр без кавычек
+    jz   @f      ; quotes loaded
+    mov  dh, ch  ; parameter without quotes
     dec  esi
     call push_param
     inc  esi
     jmp  .parse
 
   @@:
-    mov  dh, cl     ;параметр в кавычеках
-    call push_param ;если не пробел значит начинается какой то параметр
-    jmp  .parse     ;если был разделитель}
+    mov  dh, cl     ; parameter in quotes
+    call push_param ; if not a space, then some parameter starts
+    jmp  .parse     ; if it was a delimiter}
 
 .findendparam:
     test dh, dh
-    jz   @f ; без кавычек
+    jz   @f ; without quotes
     cmp  al, '"'
     jz   .clear
     jmp  .parse
@@ -91,9 +90,8 @@ start:
     push [argc]
     call main
 .exit:
-    xor  eax,eax
-    dec  eax
-    int  0x40
+    push eax
+    call dword [exit]
     dd   -1
 .crash:
     jmp  .exit

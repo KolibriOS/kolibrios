@@ -27,7 +27,9 @@ BIN = \
 	libc_test.kex \
 	pipe.kex \
 	defgen.kex \
-	futex.kex
+	futex.kex \
+	atexit_test.kex \
+	abort_test.kex
 
 all: $(BIN)
 

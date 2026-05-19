@@ -52,7 +52,10 @@ atol
 atoll
 atof
 calloc
+atexit
 exit
+_exit
+abort
 free
 itoa
 labs

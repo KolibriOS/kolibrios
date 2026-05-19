@@ -1,12 +1,31 @@
 /* Copyright (C) 2021 Logaev Maxim (turbocat2001), GPLv2 */
 
-#include <conio.h>
-#include <sys/ksys.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "atexit.h"
+
+/*
+TODO
+static void __close_all()
+{
+}
+
+static void __free_all_mem()
+{
+}
+*/
 
 void exit(int status)
 {
-    if (__con_is_load) {
-        con_exit(status);
+    __run_atexit();
+
+    if(status)
+    {
+        fprintf(stderr, "Exit code: %d\n", status);
     }
-    _ksys_exit();
+
+    //__close_all();
+    //__free_all_mem();
+
+    _exit(status);
 }

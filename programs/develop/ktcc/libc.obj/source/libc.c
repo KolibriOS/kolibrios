@@ -90,6 +90,9 @@
 #include "stdlib/atoll.c"
 #include "stdlib/calloc.c"
 #include "stdlib/exit.c"
+#include "stdlib/_exit.c"
+#include "stdlib/atexit.c"
+#include "stdlib/abort.c"
 #include "stdlib/free.c"
 #include "stdlib/itoa.c"
 #include "stdlib/labs.c"
@@ -171,6 +174,9 @@ ksys_dll_t EXPORTS[] = {
     { "atof", &atof },
     { "calloc", &calloc },
     { "exit", &exit },
+    { "_exit", &_exit },
+    { "atexit", &atexit },
+    { "abort", &abort},
     { "free", &free },
     { "itoa", &itoa },
     { "labs", &labs },
