@@ -69,8 +69,10 @@ qsort
 strtod
 __assert_fail
 ;____STRING____
+memccpy
 memchr
 memcmp
+memcpy
 strncat
 strchr
 strcat
