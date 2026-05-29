@@ -171,7 +171,7 @@ void DrawWindow()
 
 	DrawBar(GAPX, WIN_H - 58, WIN_W - GAPX - GAPX, 1, sc.light);
 	DrawBar(GAPX, WIN_H - 58 + 1, WIN_W - GAPX - GAPX, 1, sc.dark);
-	WriteText(GAPX, WIN_H - 48, 0x90, sc.work_text, T_SAVE_TO);
+	WriteTextWithBg(GAPX, WIN_H - 48, 0xD0, sc.work_text, T_SAVE_TO, sc.work);
 	WriteTextWithBg(GAPX + 108, WIN_H - 48, 0xD0, sc.work_text, #save_dir, sc.light);
 	edit_box_draw stdcall (#ed);
 	progressbar_draw stdcall(#pb);
