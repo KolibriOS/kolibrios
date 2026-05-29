@@ -128,8 +128,7 @@ void main()
 						break;
 				case SCAN_CODE_TAB:
 						show_system.checked ^= 1;
-						SelectList_LineChanged();
-						break;
+						goto _DRAW_WINDOW;
 				default:
 						if (select_list.ProcessKey(key_scancode)) {
 							SelectList_LineChanged();
@@ -157,6 +156,7 @@ void main()
 		case evReDraw:
 			sc.get();
 			DefineAndDrawWindow(Form.left, Form.top, Form.width, Form.height, 0x33, sc.work, T_APP_TITLE, 0);
+			WriteText(GAP+5, WIN_CONTENT_Y-20, 0x90, sc.work_text, T_PROC_HEADER);
 			_DRAW_WINDOW:
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window&ROLLED_UP) break;
@@ -168,7 +168,6 @@ void main()
 			}
 			right_w = Form.cwidth - RIGHT_X - GAP;
 			right_w &= ~1; // make sure the number is even
-			WriteText(GAP+5, WIN_CONTENT_Y-20, 0x90, sc.work_text, T_PROC_HEADER);
 
 			DefineButton(RIGHT_X-38,WIN_CONTENT_Y-25,18,18,BTN_SHOWHIDE_SENSORS,sc.button);
 			DrawRectangle3D(RIGHT_X-38,WIN_CONTENT_Y-25,19,18,sc.line,sc.light);
