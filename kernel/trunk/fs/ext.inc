@@ -146,6 +146,10 @@ READ_ONLY = 1
 SYMLINK_MAX_DEPTH = 40
 FAST_SYMLINK_MAX_SIZE = 60
 
+EXT2_GOOD_OLD_REV = 0
+EXT2_GOOD_OLD_INODE_SIZE = 128
+EXT2_GOOD_OLD_FIRST_INO = 11
+
 ; Implemented "incompatible" features:
 ; 2 = have file type in directory entry
 ; 40h = extents
@@ -289,6 +293,11 @@ ext2_create_partition:
 .features_supported:
         cmp     [ebx+SUPERBLOCK.sectorsPerBlockLog], 6  ; 64KB
         ja      .fail
+        cmp     [ebx+SUPERBLOCK.dynamicVersionFlag], EXT2_GOOD_OLD_REV
+        jne     @f
+        mov     [ebx+SUPERBLOCK.inodeSize], EXT2_GOOD_OLD_INODE_SIZE
+        mov     [ebx+SUPERBLOCK.firstInode], EXT2_GOOD_OLD_FIRST_INO
+@@:
         cmp     [ebx+SUPERBLOCK.inodeSize], 512
         ja      .fail
         cmp     [ebx+SUPERBLOCK.blocksPerGroup], 0
