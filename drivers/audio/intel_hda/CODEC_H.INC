@@ -515,7 +515,7 @@ HDA_AMP_VOLMASK    equ 0x7F
 
 
 ; unsolicited event handler
-HDA_UNSOL_QUEUE_SIZE	equ 64
+HDA_UNSOL_QUEUE_SIZE	equ 64	; must stay a power of 2 (used as a bitmask for wrap)
 
 struc HDA_BUS_UNSOLICITED
 {

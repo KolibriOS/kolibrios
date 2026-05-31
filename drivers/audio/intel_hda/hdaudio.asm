@@ -654,13 +654,12 @@ end if
 	stdcall hda_codec_setup_stream, eax, SDO_TAG, 0, 0x11	; Left & Right channels (Back panel)
 ;Asper+ ]
 
-	;invoke	TimerHS, 1, 0, snd_hda_automute, 0
-if USE_UNSOL_EV = 0
-    invoke  TimerHS, 1, 0, snd_hda_automute, 0
-else
-    ; Register the queue handler once at startup
-    invoke  TimerHS, 1, 0, process_unsol_events, 0
-end if
+	; Apply the initial jack state once at startup (both modes). Later changes
+	; arrive as unsolicited events when USE_UNSOL_EV is set; the deferred handler
+	; is then scheduled per event by snd_hda_queue_unsol_event. The ring-buffer
+	; pointers (unsol_events.rp/.wp) start at 0 via the zero-initialised BSS,
+	; before the IRQ is attached, so no explicit reset is needed here.
+	invoke	TimerHS, 1, 0, snd_hda_automute, 0
 
 if USE_SINGLE_MODE
 	mov	esi, msgSingleMode
@@ -2691,72 +2690,42 @@ endp
 
 align 4
 proc snd_hda_queue_unsol_event stdcall, res:dword, res_ex:dword
-    push    eax ebx ecx
-
-    ; 1. Get the current write pointer
+    ; Single-producer (HDA IRQ) lock-free enqueue. The caller azx_update_rirb
+    ; only carries EBX across iterations and reloads the rest, and TimerHS
+    ; preserves EBX too - so by using scratch regs only we need no saves.
     mov     eax, [unsol_events.wp]
+    lea     edx, [eax+1]
+    and     edx, HDA_UNSOL_QUEUE_SIZE - 1     ; next write pos (size must be 2^n)
+    cmp     edx, [unsol_events.rp]
+    je      .full                             ; ring full -> drop, keep 1 slot free
 
-    ; 2. Calculate offset in bytes (each element = 2 dwords = 8 bytes)
-    mov     ecx, eax
-    shl     ecx, 3 
+    mov     ecx, [res]
+    mov     [unsol_events.queue + eax*8], ecx
+    mov     ecx, [res_ex]
+    mov     [unsol_events.queue + eax*8 + 4], ecx
+    mov     [unsol_events.wp], edx            ; publish only after data is stored
 
-    ; 3. Write data (res and res_ex) to the circular buffer
-    mov     ebx, [res]
-    mov     [unsol_events.queue + ecx], ebx
-    mov     ebx, [res_ex]
-    mov     [unsol_events.queue + ecx + 4], ebx
-
-    ; 4. Increment wp and apply mask 63 (circular wrap 0..63)
-    inc     eax
-    and     eax, HDA_UNSOL_QUEUE_SIZE - 1
-    mov     [unsol_events.wp], eax
-
-    ; 5. Wake up the handler (our workqueue analog).
-    ; TimerHS will safely call process_unsol_events outside the interrupt context.
     invoke  TimerHS, 1, 0, process_unsol_events, 0
-
-    pop     ecx ebx eax
+.full:
     ret
 endp
 
 align 4
 proc process_unsol_events stdcall, data:dword
-    push    eax ebx ecx edx
-
+    ; Runs from TimerHS (single consumer). Uses only EAX (scratch) and calls
+    ; snd_hda_automute, which preserves every register, so nothing is saved.
 .loop:
-    ; Check if there are new events (rp != wp)
     mov     eax, [unsol_events.rp]
     cmp     eax, [unsol_events.wp]
     je      .done
-
-    ; Calculate read offset
-    mov     ecx, eax
-    shl     ecx, 3
-
-    ; Read res (and res_ex, if needed for tag parsing)
-    mov     ebx, [unsol_events.queue + ecx]         ; res
-    mov     edx, [unsol_events.queue + ecx + 4]     ; res_ex
-
-    ; Increment read pointer circularly
+    ; The event payload is at [unsol_events.queue + eax*8] (res) and +4 (res_ex).
+    ; Per-pin tag parsing is not implemented yet, so just re-evaluate jack state.
     inc     eax
     and     eax, HDA_UNSOL_QUEUE_SIZE - 1
     mov     [unsol_events.rp], eax
-
-    ; ========================================================
-    ; PROCESSING LOGIC GOES HERE
-    ; ebx now contains the codec response, from which you can
-    ; extract the tag to identify which pin generated the event.
-    ; ========================================================
-    pusha
     stdcall snd_hda_automute, 0
-    popa
-
-    ; Loop back to check if more events accumulated while
-    ; we were processing the previous one.
     jmp     .loop
-
 .done:
-    pop     edx ecx ebx eax
     ret
 endp
 
