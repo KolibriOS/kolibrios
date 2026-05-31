@@ -658,7 +658,7 @@ end if
 if USE_UNSOL_EV = 0
     invoke  TimerHS, 1, 0, snd_hda_automute, 0
 else
-    ; Регистрируем обработчик очереди один раз на старте
+    ; Register the queue handler once at startup
     invoke  TimerHS, 1, 0, process_unsol_events, 0
 end if
 
@@ -2743,10 +2743,9 @@ proc process_unsol_events stdcall, data:dword
     mov     [unsol_events.rp], eax
 
     ; ========================================================
-    ; YOUR PROCESSING LOGIC GOES HERE
+    ; PROCESSING LOGIC GOES HERE
     ; ebx now contains the codec response, from which you can
     ; extract the tag to identify which pin generated the event.
-    ; For starters, you can just call the general function:
     ; ========================================================
     pusha
     stdcall snd_hda_automute, 0
