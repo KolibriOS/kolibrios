@@ -654,7 +654,14 @@ end if
 	stdcall hda_codec_setup_stream, eax, SDO_TAG, 0, 0x11	; Left & Right channels (Back panel)
 ;Asper+ ]
 
-	invoke	TimerHS, 1, 0, snd_hda_automute, 0
+	;invoke	TimerHS, 1, 0, snd_hda_automute, 0
+if USE_UNSOL_EV = 0
+    invoke  TimerHS, 1, 0, snd_hda_automute, 0
+else
+    ; Регистрируем обработчик очереди один раз на старте
+    invoke  TimerHS, 1, 0, process_unsol_events, 0
+end if
+
 if USE_SINGLE_MODE
 	mov	esi, msgSingleMode
 	invoke	SysMsgBoardStr
@@ -2664,24 +2671,95 @@ proc  snd_hda_automute stdcall, data:dword
 endp
 
 
-;Asper remember to add this functions:
-proc  snd_hda_queue_unsol_event stdcall, par1:dword, par2:dword
-;if DEBUG
-;        push    esi
-;        mov     esi, msgUnsolEvent
-;        invoke  SysMsgBoardStr
-;        pop     esi
-;end if
-if USE_UNSOL_EV = 1
-	;Test. Do not make queue, process immediately!
-	;stdcall here snd_hda_read_pin_sense stdcall, nid:dword, trigger_sense:dword
-	;and then mute/unmute pin based on the results
-	invoke	TimerHS, 1, 0, snd_hda_automute, 0
-end if
-	ret
-endp
-;...
+; ;Asper remember to add this functions:
+; proc  snd_hda_queue_unsol_event stdcall, par1:dword, par2:dword
+; ;if DEBUG
+; ;        push    esi
+; ;        mov     esi, msgUnsolEvent
+; ;        invoke  SysMsgBoardStr
+; ;        pop     esi
+; ;end if
+; if USE_UNSOL_EV = 1
+; 	;Test. Do not make queue, process immediately!
+; 	;stdcall here snd_hda_read_pin_sense stdcall, nid:dword, trigger_sense:dword
+; 	;and then mute/unmute pin based on the results
+; 	invoke	TimerHS, 1, 0, snd_hda_automute, 0
+; end if
+; 	ret
+; endp
+; ;...
 
+align 4
+proc snd_hda_queue_unsol_event stdcall, res:dword, res_ex:dword
+    push    eax ebx ecx
+
+    ; 1. Get the current write pointer
+    mov     eax, [unsol_events.wp]
+
+    ; 2. Calculate offset in bytes (each element = 2 dwords = 8 bytes)
+    mov     ecx, eax
+    shl     ecx, 3 
+
+    ; 3. Write data (res and res_ex) to the circular buffer
+    mov     ebx, [res]
+    mov     [unsol_events.queue + ecx], ebx
+    mov     ebx, [res_ex]
+    mov     [unsol_events.queue + ecx + 4], ebx
+
+    ; 4. Increment wp and apply mask 63 (circular wrap 0..63)
+    inc     eax
+    and     eax, HDA_UNSOL_QUEUE_SIZE - 1
+    mov     [unsol_events.wp], eax
+
+    ; 5. Wake up the handler (our workqueue analog).
+    ; TimerHS will safely call process_unsol_events outside the interrupt context.
+    invoke  TimerHS, 1, 0, process_unsol_events, 0
+
+    pop     ecx ebx eax
+    ret
+endp
+
+align 4
+proc process_unsol_events stdcall, data:dword
+    push    eax ebx ecx edx
+
+.loop:
+    ; Check if there are new events (rp != wp)
+    mov     eax, [unsol_events.rp]
+    cmp     eax, [unsol_events.wp]
+    je      .done
+
+    ; Calculate read offset
+    mov     ecx, eax
+    shl     ecx, 3
+
+    ; Read res (and res_ex, if needed for tag parsing)
+    mov     ebx, [unsol_events.queue + ecx]         ; res
+    mov     edx, [unsol_events.queue + ecx + 4]     ; res_ex
+
+    ; Increment read pointer circularly
+    inc     eax
+    and     eax, HDA_UNSOL_QUEUE_SIZE - 1
+    mov     [unsol_events.rp], eax
+
+    ; ========================================================
+    ; YOUR PROCESSING LOGIC GOES HERE
+    ; ebx now contains the codec response, from which you can
+    ; extract the tag to identify which pin generated the event.
+    ; For starters, you can just call the general function:
+    ; ========================================================
+    pusha
+    stdcall snd_hda_automute, 0
+    popa
+
+    ; Loop back to check if more events accumulated while
+    ; we were processing the previous one.
+    jmp     .loop
+
+.done:
+    pop     edx ecx ebx eax
+    ret
+endp
 
 align 4
 proc  fdword2str stdcall, flags:dword	; bit 0 - skipLeadZeroes; bit 1 - newLine; other bits undefined
@@ -3057,6 +3135,7 @@ aspinlock	 dd SPINLOCK_FREE
 
 codec CODEC
 ctrl AC_CNTRL
+unsol_events HDA_BUS_UNSOLICITED
 
 ;Asper: BDL must be aligned to 128 according to HDA specification.
 pcmout_bdl	 rd 1
