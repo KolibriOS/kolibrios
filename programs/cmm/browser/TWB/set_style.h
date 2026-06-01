@@ -89,7 +89,7 @@ void TWebBrowser::tag_font()
 		}
 	}
 	else {
-		if (bg_colors.count>1) text_colors.pop();
+		if (text_colors.count>1) text_colors.pop();
 		if (bg_colors.count>1) bg_colors.pop(); //never pop the last color
 	}
 }
@@ -190,8 +190,9 @@ void TWebBrowser::tag_ol_ul_dt()
 
 void TWebBrowser::tag_li()
 {
-	//if (style.nav) return;
-	if (tag.opened) {
+	if (style.nav) {
+		chrncat(#linebuf, ' ', sizeof(TWebBrowser.linebuf));
+	} else if (tag.opened) {
 		if (!style.tag_list.level) style.tag_list.upd_level(1, 'u');
 		if (!style.pre) NewLine();
 		if (style.tag_list.order_type() == 'u') {

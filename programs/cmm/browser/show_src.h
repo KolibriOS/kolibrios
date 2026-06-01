@@ -16,13 +16,10 @@ void SourceBufAdd(dword _mode, src)
 
 	if (font_found_pointer = strstr(src, "</font>")) {
 		opened_font_counter--;
-		src = font_found_pointer+2;
 	}
 
-	src = src_orig;
-	if (font_found_pointer = strstr(src, "<font ")) {
+	if (font_found_pointer = strstr(src_orig, "<font ")) {
 		opened_font_counter++;
-		src = font_found_pointer+2;
 	}
 }
 

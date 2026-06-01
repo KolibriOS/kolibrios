@@ -59,4 +59,6 @@ void _cache::clear()
 	type.drop();
 	current_buf = NULL;
 	current_size = NULL;
+	current_type = NULL;
+	current_charset = NULL;
 }
