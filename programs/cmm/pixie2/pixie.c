@@ -29,7 +29,7 @@
 char default_dir[] = "/sys";
 od_filter filter2 = { 15, "MP3\0WAV\0XM\0\0" };
 
-#define ABOUT_MESSAGE "                   v2.94 Final
+#define ABOUT_MESSAGE "                   v2.95 Final
 
           A tiny music folder player.
     Supports MP3, WAV, XM audio file formats.
@@ -415,6 +415,7 @@ void EventStopPlaying()
 void EventStartPlaying()
 {
 	word i;
+	dword dl_run_id;
 	char item_path[4096];
 	char notify_message[512];
 	EventStopPlaying();
@@ -433,7 +434,17 @@ void EventStartPlaying()
 	DrawPlayList();
 	DrawTopPanel();
 	//start_playing_time = 
-	player_run_id = RunProgram("/sys/media/ac97snd", #item_path);	
+	player_run_id = RunProgram("/sys/media/ac97snd", #item_path);
+	if (player_run_id < 0) {
+		dl_run_id = RunProgram("/sys/network/dl", "-e http://builds.kolibrios.org/en_US/data/programs/media/ac97snd/ac97snd.bin|/sys/media/ac97snd");
+		// wait for the downloader to finish (it autocloses on completion), up to ~30s
+		for (i=0; i<50; i++) {
+			pause(10);
+			if (!GetProcessSlot(dl_run_id)) break;
+		}
+		player_run_id = RunProgram("/sys/media/ac97snd", #item_path);
+		if (player_run_id < 0) notify("'AC97SND backend not found and its download failed :('-E");
+	}
 	//player_run_id = RunProgram("/kolibrios/media/minimp3", #item_path);	
 	sprintf(#notify_message,"'Now playing:\n%s' -St",#current_filename);
 	if (!repeat) && (window_mode==WINDOW_MODE_SMALL)
