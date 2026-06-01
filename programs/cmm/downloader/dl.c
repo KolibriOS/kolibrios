@@ -32,6 +32,7 @@ char proxy_address[256];
 #include "settings.h"
 
 char* active_status;
+int save_path_set = false;
 
 edit_box ed = {WIN_W-GAPX-GAPX,GAPX,20,0xffffff,0x94AECE,0xffffff,0xffffff,
 	0x10000000, sizeof(uEdit)-2, #uEdit, 0, ed_focus + ed_always_focus, 19, 19};
@@ -41,6 +42,8 @@ progress_bar pb = {0, GAPX, 52, WIN_W - GAPX - GAPX, 17, 0, NULL, NULL,
 
 void main()  
 {
+	dword save_path_separator_pos;
+	dword path_pointer;
 	// dword shared_url;  // only used by the disabled -mem branch (long URL via SHM)
 
 	load_dll(libini,  #lib_init,1);
@@ -56,14 +59,21 @@ void main()
 	InitDownload();
 
 	if (param) {
+		path_pointer = #param;
+		//save path specified? Example: https://example.com/file|/sys/media/ac97snd
+		if (save_path_separator_pos = strchr(#param, '|')) {
+			save_path_set = true;
+			strcpy(#filepath, save_path_separator_pos+1);
+			ESBYTE[save_path_separator_pos] = '\0';
+		}
 		if (streqrp(#param, "-e ")) {
 			autoclose.checked = true;
-			param += 3;
+			path_pointer += 3;
 		}
 		if (streqrp(#param, "-eo ")) {
 			autoclose.checked = true;
 			open_file = true;
-			param += 4;
+			path_pointer += 4;
 		}
 
 		// Disabled long-URL-via-SHM ("DL") channel. memopen was never
@@ -73,12 +83,12 @@ void main()
 		//	shared_url = memopen(#dl_shared, URL_SIZE+1, SHM_OPEN + SHM_WRITE);
 		//	strcpy(#uEdit, shared_url);
 		// } else {
-		strcpy(#uEdit, #param);
-		// }
-
 		if (streq(#param, "-test")) {
 			strcpy(#uEdit, URL_SPEED_TEST);
+		} else {
+			strcpy(#uEdit, path_pointer);
 		}
+		// }
 	}
 	if (uEdit[0]) StartDownloading(); else {
 		edit_box_set_text stdcall (#ed, "http://");
@@ -172,7 +182,11 @@ void DrawWindow()
 	DrawBar(GAPX, WIN_H - 58, WIN_W - GAPX - GAPX, 1, sc.light);
 	DrawBar(GAPX, WIN_H - 58 + 1, WIN_W - GAPX - GAPX, 1, sc.dark);
 	WriteTextWithBg(GAPX, WIN_H - 48, 0xD0, sc.work_text, T_SAVE_TO, sc.work);
-	WriteTextWithBg(GAPX + 108, WIN_H - 48, 0xD0, sc.work_text, #save_dir, sc.light);
+	if (save_path_set) {
+		WriteTextWithBg(GAPX + 108, WIN_H - 48, 0xD0, sc.work_text, #filepath, sc.light);
+	} else {
+		WriteTextWithBg(GAPX + 108, WIN_H - 48, 0xD0, sc.work_text, #save_dir, sc.light);
+	}
 	edit_box_draw stdcall (#ed);
 	progressbar_draw stdcall(#pb);
 	autoclose.draw(GAPX, WIN_H - 24);
@@ -305,41 +319,47 @@ void SaveFile(int attempt)
 	char notify_message[4296];
 	char file_name[URL_SIZE+96];
 
+	//if save_path is not set then we have to combine it
+	if (!save_path_set) {
+		strcpy(#filepath, #save_dir);
+		chrcat(#filepath, '/');      ///need to check the last symbol
 
-	strcpy(#filepath, #save_dir);
-	chrcat(#filepath, '/');      ///need to check the last symbol
-
-	if (attempt > 9) {
-		notify("'Too many saving attempts' -E");
-		return;
-	}
-
-	if (attempt > 0) { 
-		chrcat(#filepath, attempt+'0'); 
-		chrcat(#filepath, '_'); 
-	}
-
-	//Content-Disposition: attachment; filename="RealFootball_2018_Nokia_5800_EN_IGP_EU_TS_101.zip"
-	if (http.header_field("content-disposition", #file_name, sizeof(file_name))) {
-		if (EDX = strstr(#file_name,"filename=\"")) { 
-			strcat(#filepath, EDX+10);
-			ESBYTE[strchr(#filepath,'\"')] = '\0';
+		if (attempt > 9) {
+			notify("'Too many saving attempts' -E");
+			return;
 		}
-	} else {
-		// Clean all slashes at the end
-		strcpy(#file_name, #uEdit);
-		while (file_name[strlen(#file_name)-1] == '/') {
-			file_name[strlen(#file_name)-1] = 0;
-		}
-		strcat(#filepath, #file_name+strrchr(#file_name, '/'));	
-	}
-	
-	for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';
 
-	while (file_exists(#filepath)) {
-		SaveFile(attempt+1);
-		return;
-	} 
+		if (attempt > 0) { 
+			chrcat(#filepath, attempt+'0'); 
+			chrcat(#filepath, '_'); 
+		}
+
+		//Content-Disposition: attachment; filename="RealFootball_2018_Nokia_5800_EN_IGP_EU_TS_101.zip"
+		if (http.header_field("content-disposition", #file_name, sizeof(file_name))) {
+			if (EDX = strstr(#file_name,"filename=\"")) { 
+				strcat(#filepath, EDX+10);
+				ESBYTE[strchr(#filepath,'\"')] = '\0';
+			}
+		} else {
+			// Clean all slashes at the end
+			strcpy(#file_name, #uEdit);
+			while (file_name[strlen(#file_name)-1] == '/') {
+				file_name[strlen(#file_name)-1] = 0;
+			}
+			strcat(#filepath, #file_name+strrchr(#file_name, '/'));	
+		}
+		
+		for (i=0; i<strlen(#filepath); i++) if(filepath[i]==':')||(filepath[i]=='?')filepath[i]='-';		
+	}
+
+	// When an explicit save path is given, overwrite it instead of
+	// auto-renaming - otherwise the fixed path always exists and recurses forever.
+	if (!save_path_set) {
+		while (file_exists(#filepath)) {
+			SaveFile(attempt+1);
+			return;
+		}
+	}
 
 	if (CreateFile(http.content_received, http.content_pointer, #filepath)==0) {
 		miniprintf(#notify_message, T_FILE_SAVED_AS, #filepath);

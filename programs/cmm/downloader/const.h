@@ -58,7 +58,7 @@
 
 char dl_shared[] = "DL";
 
-#define URL_SPEED_TEST "http://speedtest.tele2.net/100MB.zip"
+#define URL_SPEED_TEST "http://kolibrios.org/speedtest/100MB.zip"
 
 enum { 
 	BTN_EXIT=1,
