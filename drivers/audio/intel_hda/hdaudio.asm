@@ -654,12 +654,14 @@ end if
 	stdcall hda_codec_setup_stream, eax, SDO_TAG, 0, 0x11	; Left & Right channels (Back panel)
 ;Asper+ ]
 
-	; Apply the initial jack state once at startup (both modes). Later changes
-	; arrive as unsolicited events when USE_UNSOL_EV is set; the deferred handler
-	; is then scheduled per event by snd_hda_queue_unsol_event. The ring-buffer
-	; pointers (unsol_events.rp/.wp) start at 0 via the zero-initialised BSS,
-	; before the IRQ is attached, so no explicit reset is needed here.
-	invoke	TimerHS, 1, 0, snd_hda_automute, 0
+if USE_UNSOL_EV = 0
+	invoke	TimerHS, 1, 0, snd_hda_automute, 1
+else
+	; Keep the unsolicited-event mode on the event-driven path. Running
+	; snd_hda_automute at startup can issue codec commands before the new
+	; unsolicited-response flow is ready, which hangs some systems.
+	invoke	TimerHS, 1, 0, process_unsol_events, 0
+end if
 
 if USE_SINGLE_MODE
 	mov	esi, msgSingleMode
@@ -2641,7 +2643,7 @@ proc  snd_hda_automute stdcall, data:dword
 	test	eax, eax
 	jz	.out
 
-	stdcall snd_hda_read_pin_sense, edx, 1
+	stdcall snd_hda_read_pin_sense, edx, [data]
 	test	eax, AC_PINSENSE_PRESENCE
 	jnz	@f
 	xchg	ecx, esi
