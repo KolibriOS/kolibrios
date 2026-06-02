@@ -17,7 +17,7 @@ print_stats = False
 enable_warnings = True
 
 # Constants
-link_root = "http://websvn.kolibrios.org/filedetails.php?repname=Kolibri+OS&path=/kernel/trunk"
+link_root = "https://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/kernel/trunk"
 
 # fasm keywords
 keywords = [

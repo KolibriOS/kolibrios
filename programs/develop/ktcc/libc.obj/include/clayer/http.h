@@ -1,6 +1,6 @@
 /*
     This is adapded thunk for http.obj sys library
-    .h is equal to svn:\\programs\develop\libraries\http\http_en.txt 
+    .h is equal to https://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/develop/libraries/http/http_en.txt 
 
     Adapted for TCC's dynamic API by Magomed Kostoev, 2020
 */

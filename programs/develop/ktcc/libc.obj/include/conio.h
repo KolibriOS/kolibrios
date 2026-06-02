@@ -1,6 +1,6 @@
 /*
 This is adapded thunk for console.obj sys library
-.h is equal to svn:\programs\develop\libraries\console\console_en.txt
+.h is equal to https://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/develop/libraries/console/console_en.txt
 
 Adapted for tcc by Siemargl, 2016
 

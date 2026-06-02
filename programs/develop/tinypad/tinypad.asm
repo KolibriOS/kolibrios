@@ -7,7 +7,7 @@
 ; memory to compile: 3.0/9.0 MBytes (without/with size optimizations)
 ; version:           SVN (4.1)
 ; last update:       2015-07-17 (Jul 17, 2015)
-; minimal kernel:    revision #4199 (svn://kolibrios.org/kernel/trunk)
+; minimal kernel:    revision #4199 (https://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/kernel/trunk)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
 ; maintained by:     Mike Semenyako          >> mike.dld@gmail.com

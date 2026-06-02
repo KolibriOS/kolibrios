@@ -3,7 +3,7 @@
 Автор  : Михайлов Илья Андреевич aka Ghost
 Версия : 0.4
 ОС     : для полного функционирования скачайте последнне ядро, или последний дистрибутив.
-files  : svn://kolibrios.org/programs/system/gmon/
+files  : https://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/gmon
          http://iam.gorodok.net/Gmon.zip 
 forum  : meos.sysbin.com -> Программы -> GMon
 mailto : ghost.nsk@mail.ru
