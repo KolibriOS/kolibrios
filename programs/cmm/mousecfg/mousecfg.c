@@ -1,4 +1,4 @@
-// Mouse Configuration Utility ver 1.7
+// Mouse Configuration Utility ver 1.71
 
 #define MEMSIZE 4096*11
 
@@ -64,11 +64,13 @@ void main() {
 	{
 		case evMouse:
 				mouse.get();
-				IF (mouse_frame.hovered()) DrawMouseImage(mouse.lkm,mouse.pkm,mouse.mkm,mouse.vert);
-				IF (mouse.click) || (mouse.up) DrawMouseImage(0,0,0,0);
+				IF (mouse_frame.hovered()) {
+					DrawMouseImage(mouse.key&MOUSE_LEFT,mouse.key&MOUSE_RIGHT,mouse.key&MOUSE_MIDDLE,mouse.vert);
+				}
+				if (mouse.up) DrawMouseImage(0,0,0,0);
 				break;
 
-		CASE evButton:
+		case evButton:
 				id = @GetButtonID();
 				IF (1 == id) ExitApp();
 				else IF (pointer_speed.click(id)) ApplyCfg();
@@ -119,21 +121,20 @@ void main() {
 #define white  0xffffff
 #define dgrey  0x2d353d
 
-:struct IMG_PAL{ dword back, shad1, contour, left,  right, middle, mwhite; }
+struct IMG_PAL{ dword back, shad1, contour, left,  right, middle, mwhite; }
          pal = { 0xF0F2F3,0xABB0B2, dgrey,   white, white, dgrey,  white  };
 
 void DrawMouseImage(dword l,r,m,v) {
 	#define IMG_W 59
 	#define IMG_H 100
 
-	IF (l) pal.left = red;
+	IF (l) pal.left = red; else pal.left = white;
+	IF (r) pal.right = red; else pal.right = white;
 	IF (m) pal.middle = red;
-	IF (r) pal.right = red;
-	IF (v) pal.middle = yellow;
+	ELSE IF (v) pal.middle = yellow;
+	ELSE pal.middle = dgrey;
 
 	PutPaletteImage(#panels_img_data,IMG_W,IMG_H,18+30,18+16,8,#pal);
-	pal.left = pal.right = white;
-	pal.middle = dgrey;
 	IF (v) {
 		pause(10);
 		DrawMouseImage(l,r,m,0);
