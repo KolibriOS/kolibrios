@@ -1,6 +1,5 @@
-#define MEMSIZE 1024*40
-#include "..\lib\strings.h" 
-#include "..\lib\mem.h" 
+#define MEMSIZE 1024*60
+
 #include "..\lib\gui.h"
 #include "..\lib\obj\proc_lib.h"
 #include "..\lib\patterns\simple_open_dialog.h"
@@ -15,9 +14,8 @@
 
 #define WINW 570
 #define WINH 300
-#define CONX 30 //content X pos
-#define SCRX WINW-180
-#define SCRY 20
+#define CONX 28 //content X pos
+#define CONY 25 //content Y pos
 
 char default_dir[] = "/sys";
 od_filter filter2;
@@ -34,29 +32,28 @@ od_filter filter2;
 //===================================================//
 
 #ifdef LANG_RUS
-?define WINDOW_TITLE_TEXT "Внимание! Это важно."
-?define CONTENT_HEADER_TEXT "ПАПКА /KOLIBRIOS/ НЕ НАЙДЕНА"
-?define DESCRIPTION_TEXT "Попробуйте найти ее самостоятельно.
-Содержимое искомой папки показано на 
-картинке справа. В случае неверно 
-выбранной папки требуется выполнить 
-перезагрузку ПК и попробовать снова."
+?define WINDOW_TITLE_TEXT "Внимание!"
+?define CONTENT_HEADER_TEXT "KolibriOS работает в режиме дискеты"
+?define DESCRIPTION_TEXT "Многие приложения сейчас недоступны.
+
+Причина в том, что не смонтирован дополнительный системный
+каталог. Но вы можете найти и задать его вручную. Его название
+'kolibrios'. Вы также можете загрузить latest-dirstr.7z через
+WebView и найти его внутри."
 ?define MANUALLY_BUTTON_TEXT "Указать папку /kolibrios/..."
 ?define OPEN_ANYWAY_BUTTON_TEXT "Запустить APP+ (некоторые программы будут недоступны)"
 #else
-?define WINDOW_TITLE_TEXT "Warning! It's important."
-?define CONTENT_HEADER_TEXT "/KOLIBRIOS/ IS NOT MOUNTED"
-?define DESCRIPTION_TEXT "Try to find it manually. It should look
-like image on the right.
-Note: this action can be done only once 
-per 1 session of the OS running. If you 
-will choose the wrong folder then you 
-need to reboot a system to try again."
-?define MANUALLY_BUTTON_TEXT "Choose /kolibrios/ folder..."
-?define OPEN_ANYWAY_BUTTON_TEXT "Open APP+ anyway (some programs won't be available)  "
-#endif
+?define WINDOW_TITLE_TEXT "Warning!"
+?define CONTENT_HEADER_TEXT "KolibriOS is running in floppy mode"
+?define DESCRIPTION_TEXT "A lot of apps aren't available.
 
-char kolibrios_dirs[] = "..\0     3D     \0demos  \0develop\0drivers\0emul   \0games  \0grafx2";
+The reason is that additional system directory is not mounted.
+But you can find and set it manually. Its name is 'kolibrios'.
+You can also download latest-dirstr.7z via WebView and find
+it inside."
+?define MANUALLY_BUTTON_TEXT "Choose /kolibrios/ folder..."
+?define OPEN_ANYWAY_BUTTON_TEXT "Open APP+ anyway (some programs won't be available)"
+#endif
 
 //===================================================//
 //                                                   //
@@ -104,38 +101,22 @@ void draw_window()
 {
 	sc.get();
 	DefineAndDrawWindow(screen.w-WINW/2, 100, WINW, WINH+skin_h, 0x34, sc.work, WINDOW_TITLE_TEXT,0);
-	WriteTextB(CONX+2,SCRY+2,0x81,MixColors(sc.work, 0xB92234,220),CONTENT_HEADER_TEXT);
-	WriteTextB(CONX,SCRY,0x81,0xB92234,CONTENT_HEADER_TEXT);
-	draw_screen();
-	WriteTextLines(CONX,SCRY+50,0x90,sc.work_text,DESCRIPTION_TEXT,20);
-	DrawButtons();	
-}
-
-void draw_screen()
-{
-	char i;
-	int icon_n=1;
-	DrawRectangle(WINW-180-1,SCRY-1, 145+1,170+1, sc.line);
-	DrawBar(SCRX,SCRY,145,170,0xFFFfff);
-	DrawBar(SCRX+25,SCRY+5,144-25,20,0xBBDDFF);
-	for (i=0; i<8; i++) {
-		draw_icon_16(SCRX+5, i*20+SCRY+5, icon_n);
-		WriteText(SCRX+27, i*20+SCRY+11, 0x80, 0, i*8 + #kolibrios_dirs);
-		icon_n = 0;
-	}
+	draw_icon_16w(CONX+2, CONY-3, 5);
+	WriteTextB(CONX+27+2,CONY+2,0x81,MixColors(sc.work, 0xB92234,220),CONTENT_HEADER_TEXT);
+	WriteTextB(CONX+27,CONY,0x81,0xB92234,CONTENT_HEADER_TEXT);
+	WriteTextLines(CONX,CONY+42,0x90,sc.work_text,DESCRIPTION_TEXT,20);
+	DrawButtons();
 }
 
 void DrawButtons()
 {
-	DrawStandartCaptButton(CONX, WINH-80, BTN_MANUAL_SEARCH, MANUALLY_BUTTON_TEXT);
-	DrawStandartCaptButton(CONX, WINH-42, BTN_OPEN_ANYWAY, OPEN_ANYWAY_BUTTON_TEXT);
-	//DrawCaptButton(CONX, WINH-80, 300, 25, BTN_MANUAL_SEARCH, sc.button, sc.button_text, MANUALLY_BUTTON_TEXT);
-	//DrawCaptButton(CONX, WINH-42, 500, 25, BTN_OPEN_ANYWAY, sc.button, sc.button_text, OPEN_ANYWAY_BUTTON_TEXT);
+	DrawStandartCaptButton(CONX, WINH-CONY-58, BTN_MANUAL_SEARCH, MANUALLY_BUTTON_TEXT);
+	DrawStandartCaptButton(CONX, WINH-CONY-22, BTN_OPEN_ANYWAY, OPEN_ANYWAY_BUTTON_TEXT);
 }
 
 void CheckKosMounted()
 {
-	if (dir_exists("/kolibrios")) 
+	if (dir_exists("/kolibrios"))
 	{
 		if (file_exists(APP_PLUS_INI_PATH))	EventOpenApp();
 		ExitProcess();
@@ -158,13 +139,13 @@ void EventManualSearch()
 	OpenDialog_start stdcall (#o_dialog);
 	if (o_dialog.status) SetAdditionalSystemDirectory("kolibrios", #openfile_path+1);
 	pause(3);
-	CheckKosMounted();	
+	CheckKosMounted();
 }
 
 void EventOpenApp()
 {
 	if (RunProgram("/sys/syspanel", APP_PLUS_INI_PATH) < 0) {
-		notify("'App+ can not be started because\n/sys/syspanel does not exists' -E");
+		notify("'App+ cannot start because\n/sys/syspanel does not exist' -E");
 	}
 }
 
@@ -172,8 +153,10 @@ void EventButton(dword id)
 {
 	if (id==CLOSE_BTN) ExitProcess();
 	else if (id==BTN_MANUAL_SEARCH) EventManualSearch();
-	else if (id==BTN_OPEN_ANYWAY) { EventOpenApp(); ExitProcess(); }
+	else if (id==BTN_OPEN_ANYWAY) {
+		EventOpenApp();
+		ExitProcess();
+	}
 }
-
 
 stop:
