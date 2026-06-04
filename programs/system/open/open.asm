@@ -16,7 +16,7 @@
     use32
     org     0
     db      'MENUET01'
-    dd      1, main, dataend, memory, memory
+    dd      1, main, dataend, memory, stacktop
 M01header.params:
     dd      params, 0
 
@@ -1068,5 +1068,6 @@ end if
  buffer8 rd 2048
  paramorig rb 2048
  _stack rb 2048
+ stacktop:
  params rb 256
  memory:
