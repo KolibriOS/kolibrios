@@ -550,7 +550,7 @@ tup.append_table(img_files, {
  {"NETWORK/FTPD", VAR_PROGS .. "/network/ftpd/ftpd"},
  {"NETWORK/TFTPC", VAR_PROGS .. "/network/tftpc/tftpc"},
  {"NETWORK/IRCC", VAR_PROGS .. "/network/ircc/ircc"},
- {"NETWORK/DOWNLOADER", VAR_PROGS .. "/network/downloader/downloader"},
+ {"NETWORK/HTTPGET", VAR_PROGS .. "/network/httpget/httpget"},
  {"NETWORK/VNCC", VAR_PROGS .. "/network/vncc/vncc"},
  {"DRIVERS/VIDINTEL.SYS", VAR_DRVS .. "/video/vidintel.sys"},
  {"DRIVERS/3C59X.SYS", VAR_DRVS .. "/ethernet/3c59x.sys"},

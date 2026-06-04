@@ -112,7 +112,8 @@
 24 Synergy клиент       |network/synergyc
 24 DNS lookup           |network/nslookup
 61 VNC Клиент           |network/vncc
-33 Интернет загрузчик   |network/downloader
+33 HTTPGet              |network/httpget
+33 Загрузчик            |network/dl
 12 Браузер WebView      |network/webview
 #14 **** Разное
 00 Эмуляторы*         > |@6

@@ -118,8 +118,9 @@
 16 Cliente Synergy       |network/synergyc
 16 Resoluci¢n de nombres |network/nslookup
 16 VNC Viewer            |network/vncc
-16 Cliente de descarga   |network/downloader
-16 Navegador (modo texto)|network/webview
+16 HTTPGet               |network/httpget
+16 Descargas             |network/dl
+16 Navegador WebView     |network/webview
 #15    **** OTROS
 16 Reloj anal¢gico       |demos/aclock
 16 Reloj binario         |demos/bcdclk

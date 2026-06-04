@@ -113,8 +113,9 @@
 24 Synergy              |network/synergyc
 24 DNS lookup           |network/nslookup
 61 VNC Viewer           |network/vncc
-33 Downloader           |network/downloader
-12 Text-based browser   |network/webview
+33 HTTPGet              |network/httpget
+33 Downloader           |network/dl
+12 WebView Browser      |network/webview
 #13 **** SERVERS
 24 FTP                  |network/ftpd
 #14 **** OTHER

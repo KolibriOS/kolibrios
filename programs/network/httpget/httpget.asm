@@ -3,7 +3,7 @@
 ;; Copyright (C) KolibriOS team 2014-2017. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;;  downloader.asm - HTTP client for KolibriOS                     ;;
+;;  httpget.asm - HTTP client for KolibriOS                        ;;
 ;;                                                                 ;;
 ;;      hidnplayr@kolibrios.org                                    ;;
 ;;                                                                 ;;
@@ -390,7 +390,7 @@ sz_complete     db 'Download completed', 0
 sz_err_create   db 'Could not create the local file!', 0
 sz_err_full     db 'Disk full!', 0
 sz_err_http     db 'HTTP error!', 0
-title           db 'HTTP Downloader', 0
+title           db 'HTTPGet', 0
 
 OpenDialog_data:
 .type                   dd 1    ; Save
