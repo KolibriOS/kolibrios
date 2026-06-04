@@ -1343,7 +1343,7 @@ DrawWindow:
         mov     edx,[SkinH]
         add     edx,5*10000h
         mov     esi,8
-        mov     edi,ConsoleColors
+        mov     edi,[ColorsPal]
         xor     ebp,ebp
         int     40h
 @@:
@@ -1544,7 +1544,7 @@ end if
         mov     ebp,esi
         push    SF_PUT_IMAGE_EXT
         pop     eax
-        mov     edi,ConsoleColors
+        mov     edi,[ColorsPal]
         push    8
         pop     esi
         int     40h
@@ -2651,11 +2651,30 @@ OnBeErrMsg      db      'There is already enabled breakpoint on this address',10
 DumpPath        db      '/TMP0/1/'
 DumpName        db      'DUMP0000.TXT',0
 
+ColorsPal       dd      ConsoleColors
+
 even 4
 ConsoleColors   dd      0x000000,0x000080,0x008000,0x008080
                 dd      0x800000,0x800080,0x808000,0xC0C0C0
                 dd      0x1D272F,0x0000FF,0x00FF00,0x00FFFF;0x808080,0x0000FF,0x00FF00,0x00FFFF
                 dd      0xFF0000,0xFF00FF,0xFFFF00,0xFFFFFF
+
+ConsoleGraysC:  dd      0x000000 shl 2
+                dd      0x040404 shl 2
+                dd      0x181818 shl 2
+                dd      0x1C1C1C shl 2
+                dd      0x0C0C0C shl 2
+                dd      0x101010 shl 2
+                dd      0x181818 shl 2
+                dd      0x2A2A2A shl 2
+                dd      0x141414 shl 2
+                dd      0x1A1A1A shl 2
+                dd      0x2E2E2E shl 2
+                dd      0x323232 shl 2
+                dd      0x222222 shl 2
+                dd      0x262626 shl 2
+                dd      0x3A3A3A shl 2
+                dd      0x3E3E3E shl 2
 
 CurWidth        dd      MinWidth
 CurHeight       dd      MinHeight

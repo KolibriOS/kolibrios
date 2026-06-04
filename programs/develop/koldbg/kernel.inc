@@ -1852,6 +1852,8 @@ CPUWindow:
         jz      Proceed
         cmp     ah,0x44                 ; F10 - Jump over
         jz      JumpOver
+        cmp     ah,0x58                 ; F12 - Switch palette
+        jz      SwitchPal
         cmp     al,0xB1
         jz      CPUDn
         cmp     al,0xB2
@@ -1889,6 +1891,8 @@ RegWindow:
         jz      SwitchCPU
         cmp     ah,0x3B                 ; F1 - Toggle Show
         jz      ToggleShow
+        cmp     ah,0x58                 ; F12 - Switch palette
+        jz      SwitchPal
 ;
         cmp     al,0xB1                 ; dn
         jz      RegDn
@@ -1935,6 +1939,8 @@ MemWindow:
         jz      SwitchCPU
         cmp     ah,0x3B                 ; F1 - Toggle Show
         jz      ToggleShow
+        cmp     ah,0x58                 ; F12 - Switch palette
+        jz      SwitchPal
 ;
         cmp     al,0xB1                 ; down
         jz      MemDn
@@ -1980,6 +1986,8 @@ StkWindow:
         jz      SwitchCPU
         cmp     ah,0x3B                 ; F1 - Toggle Show
         jz      ToggleShow
+        cmp     ah,0x58                 ; F12 - Switch palette
+        jz      SwitchPal
         ;
         cmp     al,0xB1                 ; dn
         jz      StkDn
@@ -2324,6 +2332,12 @@ ToggleBP:
         call    PutMessage
     .Ret:
         jmp     CPUCommon
+;-----------------------------------------------------------------------------
+SwitchPal:
+        xor     [ColorsPal],ConsoleColors xor ConsoleGraysC
+        mov     [DoDraw],1
+        call    DrawWindow
+        jmp     WaitEvent
 ;-----------------------------------------------------------------------------
 ReturnTo:
         mov     ecx,1024                        ; try 1024 instructions
