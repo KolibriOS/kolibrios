@@ -890,7 +890,7 @@ import  libini, \
 param_user:     db 'anonymous',0
 rb 60
 
-param_server_addr db 'kolibrios.org'
+param_server_addr db 'ftp.kolibrios.org'
 rb 1024
 
 align 4

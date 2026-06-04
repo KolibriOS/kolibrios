@@ -199,7 +199,7 @@ str_error_addr  dd gui_str_null
 ; login window components
 edit_usr    edit_box 300,75,5,      0xffffff,0x94AECE,0,0xAABBCC,0x10000000,64,param_user,mouse_dd,ed_focus,9,9
 edit_pass   edit_box 300,75,PAD+5,  0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_password,mouse_dd,ed_pass
-edit_server edit_box 300,75,PAD*2+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,1024,param_server_addr,mouse_dd,0,13,13
+edit_server edit_box 300,75,PAD*2+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,1024,param_server_addr,mouse_dd,0,17,17
 edit_port   edit_box 50, 75,PAD*3+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_port,mouse_dd,ed_figure_only
 edit_path   edit_box 300,75,PAD*4+5,0xffffff,0x94AECE,0,0xAABBCC,0x10000000,99,param_path,mouse_dd,0
 editboxes_end:

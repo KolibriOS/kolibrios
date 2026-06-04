@@ -1062,11 +1062,11 @@ str_icon_18 db 'ICONS18',0
 ; tree list elements
 ;----------------------
 tree1 tree_list 64, 500, tl_list_box_mode, 18+ICON_LEFT_B, 18+ICON_TOP_B, \
-    0xffffff, BT_COL, 0x10000000, TLIST1_X, 105, TLIST_SZ-16, 185, 15, 4,\
+    0xffffff, BT_COL, 0x10000000, TLIST1_X, 105, TLIST_SZ-16, 210, 15, 4,\
     0, el_focus, wScr, fun_on_enter
 
 tree2 tree_list 64, 500, tl_list_box_mode, 18+ICON_LEFT_B, 18+ICON_TOP_B, \
-    0xffffff, BT_COL, 0x10000000, TLIST2_X, 105, TLIST_SZ-16, 185, 15, 4, \
+    0xffffff, BT_COL, 0x10000000, TLIST2_X, 105, TLIST_SZ-16, 210, 15, 4, \
     0, el_focus, wScr2, fun_on_enter2
 
 ; editbox for mkd
