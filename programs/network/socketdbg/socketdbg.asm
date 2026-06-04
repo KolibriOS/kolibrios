@@ -70,7 +70,7 @@ main:
         pushd   [socket_buf + SOCKET.Number]
         push    str_sock
         call    [con_printf]
-        add     esp, 4
+        add     esp, 4*4
 
         jmp     .loop
 
