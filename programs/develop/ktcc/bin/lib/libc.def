@@ -182,6 +182,7 @@ mktime
 time
 localtime
 asctime
+strftime
 difftime
 ;___LIBGEN___
 basename

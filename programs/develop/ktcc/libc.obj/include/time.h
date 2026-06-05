@@ -27,5 +27,11 @@ DLLAPI time_t time(time_t* timer);
 DLLAPI struct tm* localtime(const time_t* timer);
 DLLAPI double difftime(time_t end, time_t beginning);
 DLLAPI char* asctime(const struct tm* tm);
+/*
+ * strftime: time zones are not supported in this build, so the conversion
+ * specifiers %z and %Z are not implemented and are copied to the output
+ * literally ("%z"/"%Z"). %s (seconds since the Epoch) is likewise disabled.
+ */
+DLLAPI size_t strftime(char* str, size_t count, const char* format, const struct tm* tp);
 
 #endif

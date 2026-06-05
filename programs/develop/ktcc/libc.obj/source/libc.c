@@ -119,6 +119,7 @@
 #include "time/localtime.c"
 #include "time/mktime.c"
 #include "time/time.c"
+#include "time/strftime.c"
 
 #include "misc/basename.c"
 #include "misc/dirname.c"
@@ -297,6 +298,7 @@ ksys_dll_t EXPORTS[] = {
     { "localtime", &localtime },
     { "asctime", &asctime },
     { "difftime", &difftime },
+    { "strftime", &strftime },
     { "basename", &basename },
     { "dirname", &dirname },
     NULL

@@ -25,5 +25,6 @@ cp     clayer/logo.png /tmp0/1/tcc_samples/logo.png
 ../tcc futex.c -o /tmp0/1/tcc_samples/futex
 ../tcc atexit_test.c -o /tmp0/1/tcc_samples/atexit_test
 ../tcc abort_test.c -o /tmp0/1/tcc_samples/abort_test
+../tcc strftime_test.c -o /tmp0/1/tcc_samples/strftime_test
 "/sys/File managers/Eolite" /tmp0/1/tcc_samples
 exit

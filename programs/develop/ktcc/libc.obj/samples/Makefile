@@ -29,7 +29,8 @@ BIN = \
 	defgen.kex \
 	futex.kex \
 	atexit_test.kex \
-	abort_test.kex
+	abort_test.kex \
+	strftime_test.kex
 
 all: $(BIN)
 
