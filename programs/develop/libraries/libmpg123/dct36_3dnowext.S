@@ -27,7 +27,7 @@
  *                    <kim@comtec.co.jp>               - after  1.Apr.1999
  *
  * Modified for use with MPlayer, for details see the changelog at
- * http://svn.mplayerhq.hu/mplayer/trunk/
+ * svn://svn.mplayerhq.hu/mplayer/trunk
  * $Id: dct36_3dnow.c 18786 2006-06-22 13:34:00Z diego $
  *
  * Original disclaimer:
