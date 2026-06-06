@@ -115,4 +115,4 @@ char editbox_icons[] = FROM "res/editbox_icons.raw";
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
-char version[]="WebView 3.97";
+char version[]="WebView 3.98";

@@ -363,7 +363,7 @@ void ProcessKeyEvent()
 
 void SetElementSizes()
 {
-	omnibox_edit.width = Form.cwidth - BUTTON_W - SEARCH_GO_GAP - BUTTON_W - omnibox_edit.left - 52 - 16;
+	omnibox_edit.width = Form.cwidth - BUTTON_W - SEARCH_GO_GAP - BUTTON_W - omnibox_edit.left - 52 - 23;
 	if (Form.cwidth - scroll_wv.size_x != WB1.list.w) {
 		//temporary fix for crash
 		//related to 'cur_img_url' var read
@@ -391,7 +391,7 @@ void draw_window()
     DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, MixColors(sc.dark, sc.work, 180));
     DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, sc.line);
     DrawBar(0, PADDING, omnibox_edit.left-2, TSZE+1, sc.work);
-    DrawBar(omnibox_edit.left+omnibox_edit.width+18, PADDING, Form.cwidth-omnibox_edit.left-omnibox_edit.width-18, TSZE+1, sc.work);
+    DrawBar(omnibox_edit.left+omnibox_edit.width+24, PADDING, Form.cwidth-omnibox_edit.left-omnibox_edit.width-24, TSZE+1, sc.work);
 
     DrawTopPanelButton(BACK_BUTTON, PADDING-1, PADDING, 30, false);
     DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, PADDING, 31, false);
@@ -445,9 +445,16 @@ void EventScrollUpAndDown(int _direction)
 
 void EventToggleDebugMode()
 {
+	int cy = WB1.list.first;
 	debug_mode ^= 1;
-	if (debug_mode) notify("'Debug mode ON'-I");
-	else notify("'Debug mode OFF'-I");
+	WB1.Reparse();
+	WB1.list.first = WB1.list.cur_y = cy;
+	WB1.DrawPage();
+	if (debug_mode) {
+		DrawStatusBar("Debug mode = ON");
+	} else {
+		DrawStatusBar("Debug mode = OFF");
+	}
 }
 
 void EventAllTabsClick(dword _n)
@@ -792,11 +799,11 @@ bool UrlExtIs(dword base, ext)
 
 void DrawProgress()
 {
-	dword pct;
+	dword pct = 10, fullw = omnibox_edit.width + 23; // full omnibox width incl. icon
 	if (!http.transfer) return;
-	if (http_get_type==PAGE) && (prbar.max) pct = prbar.value*30/prbar.max; else pct = 10;
-	if (http_get_type==IMG) pct = prbar.value * 70 / prbar.max + 30;
-	DrawBar(omnibox_edit.left-1, omnibox_edit.top+20, pct*omnibox_edit.width+16/100, 2, 0x72B7EB);
+	if (http_get_type==IMG) pct = prbar.value*70/prbar.max + 30;
+	if (http_get_type==PAGE) && (prbar.max) pct = prbar.value*30/prbar.max;
+	DrawBar(omnibox_edit.left-1, omnibox_edit.top+20, pct*fullw/100, 2, 0x72B7EB);
 }
 
 void EventShowPageMenu()
@@ -918,18 +925,18 @@ void DrawStatusBar(dword _msg)
 void DrawOmnibox()
 {
 	int imgxoff;
-	DrawOvalBorder(omnibox_edit.left-2, omnibox_edit.top-3, omnibox_edit.width+18, 24, sc.line, 
+	DrawOvalBorder(omnibox_edit.left-2, omnibox_edit.top-3, omnibox_edit.width+24, 24, sc.line, 
 		sc.line, sc.line, sc.dark);
-	DrawBar(omnibox_edit.left-1, omnibox_edit.top-2, omnibox_edit.width+18, 1, 0xD8DCD8);
-	DrawBar(omnibox_edit.left-1, omnibox_edit.top-1, omnibox_edit.width+18, 1, omnibox_edit.bg_color);
+	DrawBar(omnibox_edit.left-1, omnibox_edit.top-2, omnibox_edit.width+24, 1, 0xD8DCD8);
+	DrawBar(omnibox_edit.left-1, omnibox_edit.top-1, omnibox_edit.width+24, 1, omnibox_edit.bg_color);
 	DrawBar(omnibox_edit.left-1, omnibox_edit.top, 1, 22, omnibox_edit.bg_color);
 
 	if (omnibox_edit.flags & ed_focus) omnibox_edit.flags = ed_focus; else omnibox_edit.flags = 0;
 	EditBox_UpdateText(#omnibox_edit, omnibox_edit.flags);
 	edit_box_draw stdcall(#omnibox_edit);
-	if (http.transfer) imgxoff = 16*23*3; else imgxoff = 0;
-	PutImage(omnibox_edit.left+omnibox_edit.width+1, omnibox_edit.top-1, 16, 23, imgxoff + #editbox_icons);
-	DefineHiddenButton(omnibox_edit.left+omnibox_edit.width-1, omnibox_edit.top-2, 17, 23, REFRESH_BUTTON);
+	if (http.transfer) imgxoff = 23*23*3; else imgxoff = 0;
+	PutImage(omnibox_edit.left+omnibox_edit.width, omnibox_edit.top-1, 23, 23, imgxoff + #editbox_icons);
+	DefineHiddenButton(omnibox_edit.left+omnibox_edit.width, omnibox_edit.top-2, 22, 23, REFRESH_BUTTON);
 
 	DrawProgress();
 }
