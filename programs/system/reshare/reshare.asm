@@ -121,7 +121,7 @@ MODE_GUI:
                 mov     ebx, edi
                 imul    ebx, TAB_STEP
                 push    ebx
-                add     ebx, PAD * 2
+                add     ebx, PAD * 3
                 shl     ebx, 16
                 add     ebx, BTN.Y
                 mov     edx, [esi]
@@ -129,7 +129,7 @@ MODE_GUI:
                 add     ebx, 1 shl 16   ; bold: x+1, same string
                 mcall   SF_DRAW_TEXT
                 pop     ebx
-                add     ebx, PAD * 11
+                add     ebx, PAD * 12
                 shl     ebx, 16
                 add     ebx, BTN.Y
                 mov     edx, [esi + 4]
@@ -618,9 +618,9 @@ lb_tab_i18      db "ICONS18", 0
 lb_tab_i18w     db "ICONS18W", 0
 lb_tab_cbox     db "CHECKBOX", 0
 
-lb_tab_i32_res  db "32x32x32bpp", 0
-lb_tab_i18_res  db "18x18x32bpp", 0
-lb_tab_cbox_res db "13x13x24bpp", 0
+lb_tab_i32_res  db "32x32@32b", 0
+lb_tab_i18_res  db "18x18@32b", 0
+lb_tab_cbox_res db "13x13@24b", 0
 
 ; ====================================================================
 
