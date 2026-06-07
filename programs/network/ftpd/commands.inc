@@ -89,7 +89,7 @@ commands:               ; all commands must be in uppercase
         dd 'HELP', login_first, login_first, login_first, cmdHELP
         dd 'LIST', login_first, login_first, login_first, cmdLIST
 ;        dd 'MDTM', login_first, login_first, login_first, cmd_MDTM
-;        dd 'MKD',  login_first, login_first, login_first, cmd_MKD
+        dd 'MKD',  login_first, login_first, login_first, cmdMKD
 ;        dd 'MODE', login_first, login_first, login_first, cmd_MODE
 ;        dd 'NLST', login_first, login_first, login_first, cmdNLST
         dd 'NOOP', login_first, login_first, login_first, cmdNOOP
@@ -333,6 +333,35 @@ open_datasock:
 
         ret
 
+align 4
+fs_err_table:
+        dd str_fs_error2      ; 2
+        dd str_fs_error3      ; 3
+        dd str_fs_error       ; 4
+        dd str_fs_error5      ; 5
+        dd str_fs_error6      ; 6
+        dd str_fs_error7      ; 7
+        dd str_fs_error8      ; 8
+        dd str_fs_error9      ; 9
+        dd str_fs_error10     ; 10
+        dd str_fs_error11     ; 11
+        dd str_fs_error12     ; 12
+
+console_fs_error:
+        mov     edx, 4 ;  Unknown filesystem error
+
+        cmp     eax, 2
+        jb      .print_err
+        cmp     eax, 12
+        ja      .print_err
+
+        mov     edx, eax
+
+.print_err:
+        sub     edx, 2
+        mov     edx, [fs_err_table + edx*4]
+        invoke  con_write_asciiz, edx
+        ret
 
 ;------------------------------------------------
 ; "ABOR"
@@ -1271,13 +1300,13 @@ cmdHELP:
         stosd
         mov     ax, ': '
         stosw
-        
+
         mov     esi, commands               ; pointer to commands table
-        
+
 .next_command:
         cmp     byte [esi], 0               ; end of table?
         je      .list_done
-        
+
         ; Copy command name (4 bytes), skip null bytes
         mov     ecx, 4
 .copy_name:
@@ -1288,15 +1317,15 @@ cmdHELP:
 .skip_null:
         inc     esi
         loop    .copy_name
-        
+
         ; Add space after command name
         mov     al, ' '
         stosb
-        
+
         ; Skip the four address pointers (16 bytes)
         add     esi, 16
         jmp     .next_command
-        
+
 .list_done:
         ; Remove trailing space (if any)
         dec     edi
@@ -1305,7 +1334,7 @@ cmdHELP:
         stosw
         xor     al, al                      ; null terminator
         stosb
-        
+
         ; Calculate length
         lea     edx, [ebp + thread_data.buffer]
         sub     edi, edx
@@ -1314,9 +1343,108 @@ cmdHELP:
         mcall   send, [ebp + thread_data.socketnum], edx, edi
         ; Also log to console
         invoke  con_write_asciiz, edx
-        
+
         ret
 
+;------------------------------------------------
+; "MKD"
+;
+; Create directory
+;
+;------------------------------------------------
+align 4
+cmdMKD:
+
+        test    [ebp + thread_data.permissions], PERMISSION_WRITE
+        jz      permission_denied
+
+        cmp     ecx, 1024 + 4
+        jae     .bad_request
+
+        cmp     byte [ebp + thread_data.buffer + 4], 0x20       ; argument given?
+        jb      .bad_request
+
+        call    create_path
+        dec     edi
+
+        lea     esi, [ebp + thread_data.buffer + 4]
+        mov     ecx, 1024
+        cmp     byte [esi], '/'
+        jne     .copy
+        inc     esi
+    .copy:
+        lodsb
+        cmp     al, 0x20
+        jb      .copied
+        stosb
+        loop    .copy
+    .copied:
+        mov     byte [edi], 0x00
+
+        lea     ebx, [ebp + thread_data.fpath]
+        invoke  con_write_asciiz, ebx
+        invoke  con_write_asciiz, str_newline
+        ; called fs function
+        push    ebx
+        dec     esp
+        mov     byte[esp], 0
+        push    dword 0
+        push    dword 0
+        push    dword 0
+        push    dword 0
+        push    dword SSF_CREATE_FOLDER
+        mov     ebx, esp
+        mcall   SF_FILE
+        add     esp, 6*4 + 1
+
+        test    eax, eax
+        jnz     .fs_error
+
+        ; RFC 959: reply 257 "<pathname>" created.
+        lea     edi, [ebp + thread_data.fpath]
+        mov     eax, '257 '
+        stosd
+        mov     al, '"'
+        stosb
+        lea     esi, [ebp + thread_data.work_dir]   ; current dir, ends with '/'
+    .reply_wd:
+        lodsb
+        cmp     al, 0x20
+        jb      .reply_name
+        stosb
+        jmp     .reply_wd
+    .reply_name:
+        lea     esi, [ebp + thread_data.buffer + 4] ; new dir name
+        cmp     byte [esi], '/'
+        jne     .reply_name_loop
+        inc     esi
+    .reply_name_loop:
+        lodsb
+        cmp     al, 0x20
+        jb      .reply_tail
+        stosb
+        jmp     .reply_name_loop
+    .reply_tail:
+        mov     esi, str_dir_created            ; '" created', 13, 10, 0
+    .reply_copy:
+        lodsb
+        test    al, al
+        jz      .reply_send
+        stosb
+        jmp     .reply_copy
+    .reply_send:
+        mov     ecx, [ebp + thread_data.socketnum]
+        lea     edx, [ebp + thread_data.fpath]
+        mov     esi, edi
+        sub     esi, edx
+        xor     edi, edi
+        mcall   send
+        ret
+    .fs_error:          ; real filesystem error: log it to console
+        call    console_fs_error
+    .bad_request:       ; malformed request: nothing to log
+        sendFTP "550 Create directory operation failed"
+        ret
 ;------------------------------------------------
 ; "USER"
 ;

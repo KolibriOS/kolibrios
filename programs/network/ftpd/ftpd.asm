@@ -63,13 +63,13 @@ use32
         dd      params          ; parameters
         dd      path            ; path
 
+include '../../KOSfuncs.inc'
 include '../../macros.inc'
 purge mov,add,sub
 include '../../proc32.inc'
 include '../../dll.inc'
 include '../../struct.inc'
 include '../../develop/libraries/libs-dev/libio/libio.inc'
-
 include '../../network.inc'
 
 macro sendFTP str {
@@ -356,12 +356,25 @@ str_logged_in   db 'Login ok',10,0
 str_pass_ok     db 'Password ok',10,0
 str_pass_err    db 'Password/Username incorrect',10,0
 str_pwd         db 'Current directory is "%s"\n',0
+str_dir_created db '" created', 13, 10, 0
 str_err2        db 'ERROR: cannot open the directory.',10,0
 str_datasock    db 'Passive data socket connected.',10,0
 str_datasock2   db 'Active data socket connected.',10,0
 str_alopen      db 'Data connection already open.',10,0
 str_notfound    db 'ERROR: file not found.',10,0
 str_sockerr     db 'ERROR: socket error.',10,0
+
+str_fs_error    db 'Unknown filesystem error',10,0
+str_fs_error2   db 'Function not supported for this filesystem',10,0
+str_fs_error3   db 'Unknown filesystem',10,0
+str_fs_error5   db 'File not found',10,0
+str_fs_error6   db 'End of file',10,0
+str_fs_error7   db 'Pointer outside application memory',10,0
+str_fs_error8   db 'Disk full',10,0
+str_fs_error9   db 'Filesystem error',10,0
+str_fs_error10  db 'Access denied',10,0
+str_fs_error11  db 'Device error',10,0
+str_fs_error12  db 'Filesystem out of memory',10,0
 
 str_newline     db 10, 0
 str_mask        db '*', 0
@@ -463,5 +476,4 @@ diff16 "i_end", 0, $
         alive           db ?
 
 mem:
-
 
