@@ -1,0 +1,97 @@
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bienvenida</title>
+</head>
+<body bgcolor=#fff>
+
+    <h1>
+        <font color=1BB71A>Bienvenido a KolibriOS</font>
+    </h1>
+    <pre>
+Estimados amigos,
+
+Lo que ves ahora es el sistema operativo mas compacto del mundo entero. KolibriOS es una obra de arte de la programacion basada en logica y cafe.
+
+Como nadie lee los manuales, estoy aqui para ayudar con los problemas mas comunes a los que se enfrentan los nuevos usuarios de KolibriOS. Este documento tambien es lectura obligatoria para cualquier <b>bloguero de YouTube</b> que quiera hacer un repaso del sistema :)
+
+<dd><h3><kosicon n=5> Version para disquete</h3>
+El asterisco [*] en el Menu significa que la aplicacion no esta disponible en la version para disquete, solo en la distribucion Grande (Flash/ISO/UEFI-HDD). No todos los programas estan disponibles desde el Menu, y es a proposito, para animarte a explorar los archivos de KolibriOS por tu cuenta.
+
+<h3><kosicon n=25> Si tienes problemas con el USB</h3>
+Solo se admiten los puertos USB 1.1 y USB 2.0, no USB 3+. Y si, el controlador USB esta escrito enteramente en ensamblador. Algunas placas base tienen opciones como "USB Legacy Support" o algo parecido, que pueden ayudar al sistema a detectar tu dispositivo. Ademas, puede que unos puertos de tu placa funcionen y otros no, y solo Dios sabe por que. Asi que juega con los ajustes de la BIOS/UEFI y prueba distintos puertos.
+
+<h3><kosicon n=7> Sonido</h3>
+Lista de dispositivos compatibles:
+- La mayoria de tarjetas AC97: Intel, nForce, VIA
+- Varios dispositivos HD Audio: Intel, Realtek...
+- SiS PCI audio (SiS 7012)
+- Creative Labs EMU10K1X (Dell OEM)
+- ForteMedia FM801
+- ISA Sound Blaster 16
+  <i>Solo funciona ESTE modelo en concreto,
+  no otras tarjetas con emulacion de SB16 por software</i>
+
+<h3><kosicon n=61> Video</h3>
+Por defecto, solo puedes cambiar la resolucion en la pantalla azul de arranque. Los modos que aparecen ahi los proporciona la BIOS de la tarjeta de video. Es imposible "simplemente agregar mas modos de pantalla a la lista". Si la BIOS de la tarjeta no ofrece ciertos modos, necesitas un controlador. No se puede escribir un controlador de video generico: hay que escribir uno aparte para cada modelo concreto de tarjeta.
+Los controladores de Intel y AMD para algunas tarjetas estan portados desde Linux y disponibles en la distribucion Grande.
+
+Echa un vistazo a SYSPANEL. Funciones: cambiar la resolucion dentro de KolibriOS, cursor por hardware (ya en desuso), aceleracion de operaciones bit-blit.
+
+<h3><kosicon n=25> Wi-Fi</h3>
+No compatible. Has de saber que la especificacion del Wi-Fi es tan compleja que escribir su codigo desde cero es casi imposible. Solo lo tienen los grandes SO como Windows / Linux / BSD. macOS y Haiku simplemente portaron los controladores de BSD. No digo que portarlos a KolibriOS sea imposible, pero el esfuerzo necesario seria enorme.
+
+<h3><kosicon n=25> LAN/Ethernet</h3>
+Lista de dispositivos compatibles:
+- 3c59x       3Com Fast EtherLink (3c59x/450/555/556/575/900/905/980)
+- ar81xx      Atheros 8131/8132/8151/8152/8161/8162/8171/8172
+              Killer  E2200/E2400/E2500
+- dec21x4x*   Accton EN1207B-TX, DEC 21140, ..., Virtual PC
+- forcedeth*  NVIDIA nForce chipset integrated Ethernet
+- i8255x      Intel PRO/100 (i8255x, i82562, i82801, ...), QEMU
+- i8254x      Intel PRO/1000 (i8254x), VirtualBox, Bochs, QEMU
+- mtd80x      Myson MTD803
+- pcnet32     AMD PCnet (79c970, 79c978, 79c973, ...), VirtualBox, QEMU
+- r6040       RDC Semiconductor R6040
+- rhine       VIA Rhine II and III
+- rtl8029     Realtek 8029/8019, NE2000 PCI, Bochs, QEMU
+- rtl8139     Realtek 8139 and clones, QEMU
+- rtl8169     Realtek 8110/8111/8167/8168/8169
+- sis900      SiS900, 7016
+
+* - en desarrollo
+
+Bendito sea nuestro amigo flamenco Jeffrey, que ha escrito el solito casi toda la parte de red: la pila, los controladores y un monton de aplicaciones (excepto WebView).
+
+<h3><kosicon n=12> WebView</h3>
+Nunca pretendio ser un navegador, sino mas bien un Centro de ayuda basado en marcado HTML. Cumple bien ese proposito, no crees? A juzgar por el codigo actual de WebView (fue mi primera aplicacion), nunca llegara a ser un navegador web de verdad. Por favor, ayudanos: escribe o porta algo bueno. Por ejemplo, estaria bien intentar terminar el port de NetSurf.
+
+<h3><kosicon n=9> Como lograron tanto siendo tan diminutos?</h3>
+- El nucleo, casi todos los controladores y la mayoria de aplicaciones estan escritos en lenguaje ensamblador
+- Los archivos del IMG se empaquetan con el algoritmo LZMA de 7-Zip y se descomprimen en la RAM al acceder a ellos
+- La mayoria de las imagenes se optimizan a mano: se usaron posterizacion, dithering y otras tecnicas
+- Los nombres de archivo del IMG respetan el formato 8.3 (nombre.extension), que no malgasta espacio extra de FAT12
+- Los archivos del image se combinan en un unico archivo
+- Cabecera binaria compacta en las aplicaciones, sin secciones
+- Se reutilizan recursos y se evita la duplicacion de archivos, por ejemplo:
+    ~ Muchas aplicaciones usan bibliotecas compartidas
+    ~ KFM2 y Eolite son una sola aplicacion, solo que con distinto aspecto
+    ~ APP+, Games Center y System Panel tambien son una sola aplicacion
+    ~ El juego Memory Blocks usa los iconos del sistema como imagenes
+
+
+Mas informacion: <a href=http://wiki.kolibrios.org/wiki/Hardware_Support>http://wiki.kolibrios.org/wiki/Hardware_Support</a>
+</dd>
+
+<h3><kosicon n=13> Unas ultimas palabras</h3>
+<font bg=#F9F0A3>Queremos expresar nuestra gratitud a cada colaborador de KolibriOS. Tambien nos gustaria dar las gracias en especial a Ville M. Turjanmaa, autor de MenuetOS, el predecesor de nuestro sistema.
+
+Y, por ultimo, queremos darte las gracias a ti, usuario valiente y curioso, porque lo hacemos todo por ti!
+
+Que te diviertas!</font>
+
+Atentamente,
+el equipo de KolibriOS
+
+<img src=/kolibrios/res/system/signs.png alt="Usa la distribucion Grande para ver esta imagen!">
+<!-- En algun lugar de las profundidades de la Galaxia se encienden y se apagan estrellas, nacen imperios y se convierten en polvo. En esta oscuridad y decadencia impenetrables, hay personas que aun siguen trabajando en KolibriOS. Pasara mucho tiempo y quiza tu y yo ya no estemos, y nuestros bisnietos preguntaran: "Quienes fueron aquellos locos que crearon un sistema operativo tan increible?" -->

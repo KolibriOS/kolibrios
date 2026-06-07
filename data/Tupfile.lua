@@ -72,6 +72,7 @@ img_files = {
 
 -- For russian build, add russian-only files.
 if build_type == "ru_RU" then tup.append_table(img_files, {
+ {"WELCOME.HTM", VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
  {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/rus/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy_ru"},
  {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
@@ -92,6 +93,7 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey.ini"},
  {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
 }) elseif build_type == "es_ES" then tup.append_table(img_files, {
+ {"WELCOME.HTM", VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
  {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
  {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
