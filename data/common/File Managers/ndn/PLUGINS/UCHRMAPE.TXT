@@ -1,0 +1,11 @@
+.Description=Unicode Character Map
+.Author=CandyMan
+.Version=1.0
+
+Unicode Character Map
+
+ ~F1~ Help
+ ~Esc~ Close
+ ~Ins~ Insert
+ ~Enter~ Insert and close
++ ~Enter~ Insert

@@ -1,0 +1,6 @@
+.Description=Screen Resolution Changer
+.Author=NDN Team
+.Version=1.0
+
+Change Screen Resolution
+Is this screen resolution correct?

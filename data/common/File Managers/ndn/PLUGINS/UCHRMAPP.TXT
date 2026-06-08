@@ -1,0 +1,11 @@
+.Description=Tablica znak¢w unicode
+.Author=CandyMan
+.Version=1.0
+
+Tablica znak¢w unicode
+
+ ~F1~ Pomoc
+ ~Esc~ Zamknij
+ ~Ins~ Wstaw
+ ~Enter~ Wstaw i zamknij
++ ~Enter~ Wstaw

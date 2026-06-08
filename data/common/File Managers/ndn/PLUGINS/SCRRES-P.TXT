@@ -1,0 +1,6 @@
+.Description=Zmieä rozdzielczo˜† ekranu
+.Author=NDN Team
+.Version=1.0
+
+Zmieä rozdzielczo˜† ekranu
+Czy ta rozdzielczo˜† jest prawidˆowa?

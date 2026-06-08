@@ -304,6 +304,8 @@ extra_files = {
  {"kolibrios/utils/fNav/", "common/File Managers/fNav/*"},
  {"kolibrios/utils/NDN/", "common/File Managers/ndn/*"},
  {"kolibrios/utils/NDN/COLORS/", "common/File Managers/ndn/COLORS/*"},
+ {"kolibrios/utils/NDN/PLUGINS/", "common/File Managers/ndn/PLUGINS/*"},
+ {"kolibrios/utils/NDN/SSAVERS/", "common/File Managers/ndn/SSAVERS/*"},
  {"kolibrios/utils/NDN/XLT/", "common/File Managers/ndn/XLT/*"},
  {"kolibrios/utils/tedit/t_edit.ini", SRC_PROGS .. "/other/t_edit/t_edit.ini"},
  {"kolibrios/utils/tedit/info/ASM.SYN", VAR_PROGS .. "/other/t_edit/info/asm.syn"},

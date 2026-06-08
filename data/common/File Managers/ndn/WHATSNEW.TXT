@@ -1,3 +1,88 @@
+2024-??-?? (v3.00.0011)
+  fix: hotkeys are visible after pressing Ctrl-Minus in panel
+  fix: NDN can load "PAQ" font files (in DOS version)
+  new: windows 11 ver 23H2 detection
+  fix: check "Size<0" in unpack diskette images
+  fix: help navigator loader stack modified
+  fix: sometimes crash mode switch (F4 hot key) in file viewer
+  fix: Shift-F10 in panel & Alt-C/N editor not worked as he should in russian language
+  fix: 1st page is remapped in 64-bit D3X dos extender (DOS64 version)
+  fix: show valid XMS handle number used by D3X in XMS statistics
+  fix: in Windows version PATH environment variable is searched to run program from command line in new window
+  new: DOS64 version now support files greather than 2GB (seek via Int21h.7142)
+  new: added cpuid instructions feature flags
+  new: added two "fake" drives ("." - go to up path, "\" - go to root path) on panel's drive line
+  new: hotkeys: F7 - Do copy, F8 - Do paste, all times from FileAttribute change dialog (Ctrl-[Shift]-A)
+  fix: some hotkeys in build editor fixed
+  new: additional option, find/replace string in editor inside/outside of quote
+  new: %Z in FormatStr() means ASCIIZ/PChar
+  new: cmd line param /CODEPAGE:N sets starting CodePage to N in unicode Windows version
+  fix: in unpack diskette images files with starting character #5 in name are now supported
+  fix: in unicode Windows version chars with Alt pressed are correctly received
+  fix: selected text search in editor improved/fixed
+  new: append string to all lines in block (added to editor menu)
+  new: remove string from end of lines in block (added to editor menu)
+  fix: auto Highlight of View support Unicode chars (char>#255)
+  fix: not quoted text detection in resources and RCP compiler
+  fix: MultiDialog has now visible title (bug in RCP compiler)
+  new: string "." in help files (TVHC - *.htx) will be justified to right by multi characters "."
+  fix: the best player's name and Top 10 players in games are now visible as unicode string
+  new: load font from current file in panel (8x16) also in KolibriOS/MenuetOS/SigmaOS
+  new: Alt-Ins hotkey - insert current directory to InputLine
+  new: Alt-"["/"]" hotkeys - insert left/right panel full path + selected file name to InputLine
+  fix: Insert + Shift/Ctrl/Alt hotkey now works fine in Dos versions
+  new: Ctrl-Alt-Ins hotkey unlike other views (Ctrl-Ins) make copy to clipboard of focused TLabel view
+  new: Alt-Home/End switch to first/last view in dialogs
+  new: Import/Paste file from... (hex) to internal editor
+  fix: MemoryMap also in MenuetOS/SigmaOS versions
+  fix: Jump to correct entry point in MZ header when CS<0
+  new: windows 11 ver 24H2 detection
+  new: Added "!Contains" option to Editor Find/Replace dialog. When checked, it searches for lines that
+       do not contain a string in the "Contains" dialog field
+  fix: change language menu uses commands value greater than 65535
+  fix: current ega/vga font in ascii-map is now visible in all dos versions
+
+2023-11-24 (v3.00.0010)
+  fix: some loading speed improvements in Dos version (thanks to Voland by report)
+  fix: now dos versions not will be compressed by UPX to faster loading on slow machines
+       (you can compress/decompress ndn.prg file if you need)
+  fix: trayicon was not visible in FPC versions
+  new: windows 11 ver 22H2 detection
+  new: added cpuid instructions feature flags
+  new: added to disassembler instructions: AVX VNNI, AVX512 Bfloat16, AMX, RAO-INT, CMPccXADD & others
+  new: decoder hotkeys: Alt-[ - toggles not Intel/AMD instructions, Alt-] toggles undocumented instructions
+  fix: was bug in procedure that reads disk sector in decoder (only windows versions)
+  new: additional 20 palettes from other projects
+  new: possible toggle FlatView (hide subdirectories) in FilePanel (Ctrl-Alt-V hotkey)
+  new: add in menu Options->Configuration->MiscellaneousSetups->OperatingSystem->Run when Windows starts
+  new: now export/import procedures in PE/PE+ header are sorted by name
+  fix: 2ndSky screen saver sometimes ran circularly
+  new: four internal screen savers (Radar, Snake, Text, etc.)
+  fix: NDN not crash when can't map linear frame buffer or when he not exist (Dos32 - graph mode)
+  new: Digital/Numeric Converter with (dis)-assembly functions
+  fix: Was small bug in CStr2Str() - last char in string result sometimes was cut
+  new: pressing Ctrl-F3 hotkey in decoder enables change type of display in Hex/Text mode
+  new: enabling CPUID levels ( >=3 via MSR IA32_MISC_ENABLE bit 22) after press "Detail" & "Enable CPUID" buttons
+  new: special Windows folders added (Ctrl-Alt-Shift-P hotkey)
+  new: go to environment variable folders (Ctrl-Alt-Shift-E hotkey)
+  new: find open/locked files to close file or kill process on Windows versions
+  fix: Help button doesn't work after press
+  fix: detect destination path length > 255 in Copy/Move files
+  fix: minesweeper game sometimes crash
+  fix: CR/LF command (line breaks replace) skips when detect sames file names (source & target)
+  new: show inputline current and maximal possible length
+  new: Ctrl-Ins hotkey copy active button title
+  fix: crash with some commands when zero files are in both panels
+  new: Ctrl-Left/Right switches to prev/next item in Tabs & MultiDialog
+  fix: HTML viewer checks for pressing the Esc key to abort the file loading on when it takes a long time
+  fix: HTML viewer not jumps to negative positions when scan a file
+  fix: Dos64 version works with VCPI driver (if you have memory beyond 4GB)
+  fix: Zydis V4, Capstone V5 disassemblers
+  fix: Default disabled detection VESA modes (because not works with WinNT)
+  fix: LMSW instruction in CPU detection removed
+  fix: Default disabled AutoMaximize Window (problems with Win11)
+  fix: added ENABLE_EXTENDED_FLAGS with SetConsoleMode()
+
 2022-12-26 (v3.00.0008)
   new: windows 11 & 10 ver H2 detection
   fix: update screen after change vga colors in windows

@@ -1,0 +1,12 @@
+.Description=Sudoku
+.Author=CandyMan
+.Version=1.0
+
+~C~lear
+~S~olve
+~Z~ero
+ ~F1~ Help
+ ~Esc~ Close
+ ~Ins~ Clear
+ ~F5~ Solve
++ ~Space~ Zero
