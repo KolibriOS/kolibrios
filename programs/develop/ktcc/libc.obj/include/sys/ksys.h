@@ -120,7 +120,7 @@ typedef struct {
 
 typedef union {
     struct {
-        uint32_t cpu_usage;             // CPU usage (cycles per secondgoes)
+        uint32_t cpu_usage;             // CPU usage (cycles per second)
         uint16_t pos_in_window_stack;   // position of the thread window in the window stack
         uint16_t slot_num_window_stack; // slot number in window stack
         uint16_t __reserved1;           // reserved
@@ -213,6 +213,30 @@ typedef struct {
     uint32_t depth;
     uint32_t pitch;
 } ksys_blitter_params_t;
+
+typedef struct {
+    uint8_t a, b, c, d;
+    uint8_t debug_label;
+    uint8_t ABI_low;
+    uint16_t ABI_high;
+    uint32_t commit_id;
+    uint16_t reserved;
+    uint16_t commit_count;
+} ksys_kernel_version_t;
+
+typedef struct
+{
+    uint32_t total_ram_pages;
+    uint32_t free_ram_pages;
+    uint32_t page_faults;
+    uint32_t kernel_heap_size;
+    uint32_t kernel_heap_free;
+    uint32_t kernel_heap_total_blocks;
+    uint32_t kernel_heap_free_blocks;
+    uint32_t kernel_heap_largest_free_block;
+    uint32_t kernel_heap_largest_alloc_block;
+
+} ksys_memory_info_t;
 
 #pragma pack(pop)
 
@@ -358,10 +382,10 @@ enum KSYS_SCANCODES {
     KSYS_SCANCODE_EXT_INSERT = 82,
     KSYS_SCANCODE_NUMPAD_COMMA = 83,
     KSYS_SCANCODE_EXT_DELETE = 83,
-    //84-86 doesn't exist
+    // 84-86 doesn't exist
     KSYS_SCANCODE_F11 = 87,
     KSYS_SCANCODE_F12 = 88,
-    //89,90 doesn't exist
+    // 89,90 doesn't exist
     KSYS_SCANCODE_EXT_LWIN = 91,
     KSYS_SCANCODE_EXT_RWIN = 92,
     KSYS_SCANCODE_EXT_MENU = 93,
@@ -759,6 +783,40 @@ KOSAPI void _ksys_shutdown(uint32_t shd_param)
     asm_inline("int $0x40" ::"a"(18), "b"(9), "c"(shd_param));
 }
 
+/*====== Function 18, subfunction 10 - minimize current window. ========*/
+
+KOSAPI void _ksys_minimize_current_window(void)
+{
+    asm_inline(
+        "int $0x40" ::"a"(18), "b"(10));
+}
+
+/*========== Function 18, subfunction 13 - get kernel version. =========*/
+
+KOSAPI int _ksys_get_kernel_version(ksys_kernel_version_t* info)
+{
+    int err = 0;
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(err)
+        : "a"(18), "b"(13), "c"(info)
+        : "memory");
+    return err;
+}
+
+/*========= Function 18, subfunction 15 - move mouse to center. ========*/
+
+KOSAPI int _ksys_center_mouse(void)
+{
+    int a;
+    asm_inline(
+        "int $0x40"
+        : "=a"(a)
+        : "a"(18), "b"(15));
+    return a;
+}
+
 /*========= Function 18, subfunction 16 - get size of free RAM. ========*/
 
 KOSAPI size_t _ksys_get_ram_size(void)
@@ -786,11 +844,16 @@ KOSAPI size_t _ksys_get_full_ram(void)
 /*===================== Function 18, subfunction 18 ====================*/
 /*============= Terminate process/thread by the identifier. ============*/
 
-KOSAPI void _ksys_kill_by_pid(uint32_t PID)
+KOSAPI int _ksys_kill_by_pid(uint32_t PID)
 {
-    asm_inline("int $0x40" ::"a"(18), "b"(18), "c"(PID));
+    int val;
+    asm_inline(
+        "int $0x40" 
+        : "=a"(val)
+        : "a"(18), "b"(18), "c"(PID)
+    );
+    return val;
 }
-
 /*========= Fuction 18, subfunction 19 - get/set mouse settings. ========*/
 
 typedef enum KSYS_MOUSE_SETTINGS {
@@ -817,6 +880,19 @@ KOSAPI uint32_t _ksys_set_mouse_settings(ksys_mouse_settings_t settings, uint32_
 
 #define _ksys_set_mouse_pos(X, Y) _ksys_set_mouse_settings(KSYS_MOUSE_SET_POS, X * 65536 + Y)
 
+/*===================== Function 18, subfunction 20 ====================*/
+
+KOSAPI int _ksys_get_memory_info(ksys_memory_info_t* info)
+{
+    int total;
+    asm_inline(
+        "int $0x40"
+        : "=a"(total)
+        : "a"(18), "b"(20), "c"(info)
+        : "memory");
+    return total;
+}
+
 /*===================== Function 18, subfunction 21 ====================*/
 /*=====Get the slot number of the process / thread by identifier.. =====*/
 
@@ -828,6 +904,186 @@ KOSAPI int _ksys_get_thread_slot(int PID)
         : "=a"(val)
         : "a"(18), "b"(21), "c"(PID));
     return val;
+}
+
+/*===================== Function 18, subfunction 22 ====================*/
+
+typedef enum KSYS_WIN_REMOTE_CONTROL {
+    WIN_MINIMIZE_BY_SLOT = 0,
+    WIN_MINIMIZE_BY_PID = 1,
+    WIN_RESTORE_BY_SLOT = 2,
+    WIN_RESTORE_BY_PID = 3
+} ksys_win_remote_control_t;
+
+KOSAPI int _ksys_window_remote_control(ksys_win_remote_control_t type, uint32_t param)
+{
+    int result;
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(result)
+        : "a"(18), "b"(22), "c"(type), "d"(param));
+    return result;
+}
+
+/*===================== Function 18, subfunction 23 ====================*/
+
+KOSAPI int _ksys_minimize_all_windows(void)
+{
+    int count;
+    asm_inline(
+        "int $0x40"
+        : "=a"(count)
+        : "a"(18), "b"(23));
+    return count;
+}
+
+/*===================== Function 18, subfunction 24 ====================*/
+
+KOSAPI void _ksys_set_draw_limits(unsigned int x, unsigned int y)
+{
+    asm_inline(
+        "int $0x40" ::"a"(18), "b"(24), "c"(x), "d"(y));
+}
+
+/*===================== Function 18, subfunction 25 ====================*/
+
+typedef enum KSYS_ZPOS {
+    KSYS_ZPOS_DESKTOP = -2,
+    KSYS_ZPOS_ALWAYS_BACK = -1,
+    KSYS_ZPOS_NORMAL = 0,
+    KSYS_ZPOS_ALWAYS_TOP = 1
+} ksys_zpos_t;
+
+/*=========== Function 18, subfunction 25, subsubfunction 1 ============*/
+
+KOSAPI ksys_zpos_t _ksys_get_window_zposition(int32_t pid)
+{
+    ksys_zpos_t result_eax;
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(result_eax)
+        : "a"(18), "b"(25), "c"(1), "d"(pid));
+
+    return result_eax;
+}
+
+/*=========== Function 18, subfunction 25, subsubfunction 2 ============*/
+
+KOSAPI int _ksys_set_window_zposition(int32_t pid, ksys_zpos_t position)
+{
+    int err;
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(err)
+        : "a"(18), "b"(25), "c"(2), "d"(pid), "S"(position));
+
+    return err;
+}
+
+/*==================== Function 21, subfunction 2  =====================*/
+
+typedef enum KSYS_KEYBOARD_LAYOUT {
+    KSYS_KEYBOARD_LAYOUT_NORMAL = 1,
+    KSYS_KEYBOARD_LAYOUT_SHIFT = 2,
+    KSYS_KEYBOARD_LAYOUT_ALT = 3
+} ksys_keyboard_layout_t;
+
+KOSAPI int _ksys_set_keyboard_layout(ksys_keyboard_layout_t mode, const char* table)
+{
+    int err;
+    asm_inline(
+        "int $0x40"
+        : "=a"(err)
+        : "a"(21), "b"(2), "c"(mode), "d"(table));
+    return err;
+}
+
+typedef enum KSYS_LANG {
+    KSYS_LANG_ENG = 1,
+    KSYS_LANG_FI = 2,
+    KSYS_LANG_GER = 3,
+    KSYS_LANG_RU = 4
+} ksys_lang_t;
+
+KOSAPI int _ksys_set_keyboard_lang(ksys_lang_t lang)
+{
+    int err;
+    asm_inline(
+        "int $0x40"
+        : "=a"(err)
+        : "a"(21), "b"(2), "c"(9), "d"(lang));
+    return err;
+}
+
+/*==================== Function 21, subfunction 5  =====================*/
+
+KOSAPI int _ksys_set_lang(ksys_lang_t lang)
+{
+    int err;
+    asm_inline(
+        "int $0x40"
+        : "=a"(err)
+        : "a"(21), "b"(5), "c"(lang));
+
+    return err;
+}
+
+/*==================== Function 21, subfunction 11  =====================*/
+
+KOSAPI int _ksys_allow_HD(int param)
+{
+    int err;
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(err)
+        : "a"(21), "b"(11), "c"(param));
+
+    return err;
+}
+
+/*==================== Function 21, subfunction 12  =====================*/
+
+KOSAPI int _ksys_allow_PCI(int param)
+{
+    int err;
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(err)
+        : "a"(21), "b"(12), "c"(param));
+
+    return err;
+}
+
+typedef enum KSYS_SET_TIME_ERR {
+    KSYS_SET_TIME_OK = 0,
+    KSYS_SET_TIME_WRONG_PARAM = 1,
+    KSYS_SET_TIME_CMOS = 2
+} ksys_set_time_err;
+
+/*============================ Function 22  ============================*/
+KOSAPI ksys_set_time_err _ksys_set_time(ksys_time_t time)
+{
+    ksys_set_time_err err;
+    asm_inline(
+        "int $0x40"
+        : "=a"(err)
+        : "a"(22), "b"(0), "c"(time));
+    return err;
+}
+
+KOSAPI ksys_set_time_err _ksys_set_date(ksys_date_t date)
+{
+    ksys_set_time_err err;
+    asm_inline(
+        "int $0x40"
+        : "=a"(err)
+        : "a"(22), "b"(1), "c"(date));
+    return err;
 }
 
 /*============= Function 23 - wait for event with timeout. =============*/
@@ -842,17 +1098,40 @@ KOSAPI uint32_t _ksys_wait_event_timeout(uint32_t timeout)
     return val;
 }
 
-/*=== Function 26, subfunction 2 - get keynoard layout. ==*/
+/*========= Function 26, subfunction 2 - get keyboard layout. ==========*/
 
-typedef enum KSYS_KEYBOARD_LAYOUT {
-    KSYS_KEYBOARD_LAYOUT_NORMAL = 1,
-    KSYS_KEYBOARD_LAYOUT_SHIFT = 2,
-    KSYS_KEYBOARD_LAYOUT_ALT = 3
-} ksys_keyboard_layout_t;
-
-KOSAPI uint32_t _ksys_keyboard_layout(ksys_keyboard_layout_t layout, unsigned char *buf)
+KOSAPI int _ksys_keyboard_layout(ksys_keyboard_layout_t layout, unsigned char* buf)
 {
-    asm_inline("int $0x40" ::"a"(26), "b"(2), "c"(layout), "d"(buf) : "memory");
+    int err;
+    asm_inline(
+        "int $0x40" 
+        :"=a"(err)
+        :"a"(26), "b"(2), "c"(layout), "d"(buf) : "memory");
+    return err;
+}
+
+KOSAPI ksys_lang_t _ksys_get_keyboard_lang(void)
+{
+    ksys_lang_t lang;
+    asm_inline(
+        "int $0x40"
+        : "=a"(lang)
+        : "a"(26), "b"(2), "c"(9));
+    return lang;
+}
+
+/*======= Function 26, subfunction 5 - get the system language. ========*/
+
+KOSAPI ksys_lang_t _ksys_get_lang(void)
+{
+    ksys_lang_t lang;
+
+    asm_inline(
+        "int $0x40"
+        : "=a"(lang)
+        : "a"(26), "b"(5));
+
+    return lang;
 }
 
 /*=== Function 26, subfunction 9 - get the value of the time counter. ==*/
@@ -877,6 +1156,30 @@ KOSAPI uint64_t _ksys_get_ns_count(void)
         "int $0x40"
         : "=A"(val)
         : "a"(26), "b"(10));
+    return val;
+}
+
+/*===================== Function 26, subfunction 11 ====================*/
+
+KOSAPI int _ksys_get_HD(void)
+{
+    int val;
+    asm_inline(
+        "int $0x40"
+        : "=a"(val)
+        : "a"(26), "b"(11));
+    return val;
+}
+
+/*===================== Function 26, subfunction 12 ====================*/
+
+KOSAPI int _ksys_get_PCI(void)
+{
+    int val;
+    asm_inline(
+        "int $0x40"
+        : "=a"(val)
+        : "a"(26), "b"(12));
     return val;
 }
 
@@ -1088,7 +1391,7 @@ KOSAPI void _ksys_get_system_colors(ksys_colors_table_t* color_table)
 
 /*============ Function 48, subfunction 4 - get skin height. ===========*/
 
-KOSAPI uint32_t _ksys_get_skin_height()
+KOSAPI uint32_t _ksys_get_skin_height(void)
 {
     unsigned height;
     asm_inline(
@@ -1166,7 +1469,7 @@ KOSAPI int _ksys_clip_set(int n, char* buffer)
 /*===================== Function 54, subfunction 3 =====================*/
 /*================ Delete the last slot in the clipboard ===============*/
 
-KOSAPI int _ksys_clip_pop()
+KOSAPI int _ksys_clip_pop(void)
 {
     unsigned val;
     asm_inline(
@@ -1179,7 +1482,7 @@ KOSAPI int _ksys_clip_pop()
 /*===================== Function 54, subfunction 4 =====================*/
 /*===================== Alarm reset the lock buffer ====================*/
 
-KOSAPI int _ksys_clip_unlock()
+KOSAPI int _ksys_clip_unlock(void)
 {
     unsigned val;
     asm_inline(
@@ -1210,7 +1513,7 @@ KOSAPI void _ksys_debug_puts(const char* s)
 KOSAPI void ksys_draw_bitmap_palette(void* bitmap, int x, int y, int w, int h, int bpp, void* palette, int offset)
 {
     asm_inline(
-        "pushl %%ebp,\n\t"            // save EBP register
+        "pushl %%ebp\n\t"             // save EBP register
         "movl 0x24(%%ebp), %%ebp\n\t" // 0x24 - "offset" param
         "int $0x40\n\t"
         "popl %%ebp" // restore EBP register
@@ -1643,7 +1946,7 @@ KOSAPI void _ksys_set_window_title(const char* title)
 
 /*============= Function 73 - blitter =============*/
 
-KOSAPI void _ksys_blitter(uint32_t flags, ksys_blitter_params_t *params)
+KOSAPI void _ksys_blitter(uint32_t flags, ksys_blitter_params_t* params)
 {
     int res;
     asm_inline(
