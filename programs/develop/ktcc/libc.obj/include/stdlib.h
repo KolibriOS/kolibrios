@@ -66,6 +66,8 @@ DLLAPI void __assert_fail(const char* expr, const char* file, int line, const ch
 DLLAPI void qsort(void* base0, size_t n, size_t size, int (*compar)(const void*, const void*));
 
 DLLAPI double strtod(const char* s, char** sret);
+DLLAPI long double strtold(const char* s, char** sret);
+DLLAPI float strtof(const char* s, char** sret);
 DLLAPI double atof(const char* ascii);
 
 DLLAPI int atoi(const char* s);

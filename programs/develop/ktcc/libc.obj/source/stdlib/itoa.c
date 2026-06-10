@@ -1,12 +1,9 @@
-#include <string.h>
 #include <sys/ksys.h>
 
-char* __reverse(char* str)
+char* __reverse(char* str, size_t len)
 {
     char tmp, *src, *dst;
-    size_t len;
     if (str != NULL) {
-        len = strlen(str);
         if (len > 1) {
             src = str;
             dst = src + len - 1;
@@ -36,7 +33,7 @@ void itoa(int n, char s[])
     if (sign < 0)
         s[i++] = '-';
 
-    __reverse(s);
+    __reverse(s, i);
     s[i] = '\0';
     return;
 }

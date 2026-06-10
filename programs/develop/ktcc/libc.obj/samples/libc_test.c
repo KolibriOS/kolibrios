@@ -69,11 +69,80 @@ int main()
     assert(!strcmp(end, ".00 Rub"));
 
     end = NULL;
-    assert(strtod(start, &end) == 100.0);
+    double expected_d = 100.0;
+    double result_d = strtod(start, &end);
+    assert(result_d == expected_d);
+    assert(!strcmp(end, " Rub"));
+
+    end = NULL;
+    float expected_f = 100.0f;
+    float result_f = strtof(start, &end);
+    assert(result_f == expected_f);
+    assert(!strcmp(end, " Rub"));
+
+    end = NULL;
+    long double expected_ld = 100.0;
+    long double result_ld = strtold(start, &end);
+    assert(result_ld == expected_ld);
     assert(!strcmp(end, " Rub"));
 
     char* st3 = "21.3e3Hello World!";
     assert(atof(st3) == 21300.0);
+
+    char* st4 = "12345";
+    float fpart;
+    int ipart;
+    sscanf(st4, "%3f%d", &fpart, &ipart);
+    assert(fpart == 123.0);
+    assert(ipart == 45);
+
+    char* st5 = "123.45";
+    float fval;
+    sscanf(st5, "%f", &fval);
+    assert(fval == 123.45f);
+
+    double dval;
+    sscanf(st5, "%lf", &dval);
+    assert(dval == 123.45);
+
+    long double ldval;
+    sscanf(st5, "%Lf", &ldval);
+    assert(ldval == 123.45);
+
+    float gval;
+    sscanf(st5, "%g", &gval);
+    assert(gval == 123.45f);
+
+    float eval;
+    sscanf(st5, "%e", &eval);
+    assert(eval == 123.45f);
+
+    /* Signed exponent must be parsed (regression guard for e+/e-). */
+    assert(strtod("12e+3", NULL) == 12000.0);
+    float epos;
+    sscanf("12E+3", "%f", &epos);
+    assert(epos == 12000.0f);
+    double eneg = strtod("3000e-3", NULL);
+    assert(eneg > 2.9 && eneg < 3.1);
+
+    /* Uppercase float specifiers behave like lowercase in scanf. */
+    float gup;
+    assert(sscanf("123.45", "%G", &gup) == 1);
+    assert(gup == 123.45f);
+
+    /* No valid number: value 0, endptr unchanged, scanf reports no match. */
+    char* sdot = ".";
+    char* edot;
+    assert(strtod(sdot, &edot) == 0.0);
+    assert(edot == sdot);
+    float fdot;
+    assert(sscanf(".", "%f", &fdot) == 0);
+
+    /* Malformed exponent: value ends before 'e', sign preserved. */
+    char* sbad = "-1.5e";
+    char* ebad;
+    assert(strtod(sbad, &ebad) == -1.5);
+    assert(*ebad == 'e');
 
     int nums[10] = { 5, 3, 9, 1, 8, 4, 2, 0, 7, 6 };
     qsort(nums, 10, sizeof(int), (int (*)(const void*, const void*))comp);

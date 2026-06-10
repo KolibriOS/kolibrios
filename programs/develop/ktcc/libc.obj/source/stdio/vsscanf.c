@@ -73,6 +73,7 @@ int vsscanf(const char* buffer, const char* format, va_list ap)
     const char* q = buffer;
     const char* qq;
     uintmax_t val = 0;
+    long double val_ld = 0.0;
     int rank = rank_int; /* Default rank */
     unsigned int width = UINT_MAX;
     int base;
@@ -220,6 +221,15 @@ int vsscanf(const char* buffer, const char* format, va_list ap)
                 case 'n': /* # of characters consumed */
                     val = (q - buffer);
                     goto set_integer;
+                
+                case 'e': /* Float / double / long double */
+                case 'E':
+                case 'f':
+                case 'F':
+                case 'g':
+                case 'G':
+                    sign = 1;
+                    goto scan_float;
 
                 scan_int:
                     q = skipspace(q);
@@ -268,6 +278,40 @@ int vsscanf(const char* buffer, const char* format, va_list ap)
                             break;
                         case rank_ptr:
                             *va_arg(ap, void**) = (void*)(uintptr_t)val;
+                            break;
+                        }
+                    }
+                break;
+                    
+                scan_float:
+                    q = skipspace(q);
+                    if (!*q) {
+                        bail = bail_eof;
+                        break;
+                    }
+                    val_ld = strntold(q, (char**)&qq, width);
+                    if (qq == q) {
+                        bail = bail_err;
+                        break;
+                    }
+                    q = qq;
+                    if (!(flags & FL_SPLAT))
+                        converted++;
+                set_float:
+                    if (!(flags & FL_SPLAT)) {
+                        switch (rank) {
+                        case rank_long:
+                            *va_arg(ap, double*)
+                                = val_ld;
+                            break;
+                        case rank_longlong:
+                            *va_arg(ap, long double*)
+                                = val_ld;
+                            break;
+                        case rank_int:
+                        default:
+                            *va_arg(ap, float*)
+                                = val_ld;
                             break;
                         }
                     }
