@@ -34,7 +34,7 @@ img_files = {
  {"SINE.MP3", "common/sine.mp3"},
  {"LANG.INC", build_type .. "/lang.inc"},
  {"NOTIFY3.PNG", "common/notify3.png"},
- {"UNIMG", SRC_PROGS .. "/fs/unimg/unimg"},
+ {"UNIMG", VAR_PROGS .. "/cmm/misc/unimg.com"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
  {"FONTS/TAHOMA.KF", "common/fonts/tahoma.kf"},

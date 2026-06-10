@@ -260,7 +260,7 @@ inline fastcall void GetCurDir( ECX, EDX)
    previous but here virtual folders like
    '/' and '/tmp' are not recognised as FOLDERS
    by GetFileInfo() => BDVK.isfolder attribute :( */
-bool real_dir_exists(dword fpath)
+:bool real_dir_exists(dword fpath)
 {
 	BDVK fpath_atr;
 	if (GetFileInfo(fpath, #fpath_atr) != 0) return false; 
