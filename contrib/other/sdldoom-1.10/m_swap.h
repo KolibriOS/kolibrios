@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -15,7 +15,7 @@
 // for more details.
 //
 // DESCRIPTION:
-//	Endianess handling, swapping 16bit and 32bit.
+//	Endianness handling, swapping 16bit and 32bit.
 //
 //-----------------------------------------------------------------------------
 
@@ -29,7 +29,7 @@
 #endif
 
 
-// Endianess handling.
+// Endianness handling.
 // WAD files are stored little endian.
 #ifdef sparc
 #define __BIG_ENDIAN__

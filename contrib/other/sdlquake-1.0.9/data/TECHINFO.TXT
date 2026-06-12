@@ -83,7 +83,7 @@ again.
 leaving it set so Quake will then run in that mode.  We suggest that you
 test a mode by pressing the 'T' key before setting it by pressing the Enter
 key.  Note that a selection made with the Enter key remains in effect only
-until Quake is exited (or a new mode is set).  You must explictly make a mode
+until Quake is exited (or a new mode is set).  You must explicitly make a mode
 the default mode by pressing the 'D' key in order to automatically set that
 mode when you start Quake up in the future.
 
@@ -830,7 +830,7 @@ CDAudio_Play: Bad track number N.
    are that a CD other than Quake is in the player, or a custom level has
    specified an invalid track number.
 
-CDAudio_Play: Can not play data.
+CDAudio_Play: cannot play data.
    A valid track was requested to be played, but it was a not an audio track.
    The probable causes are the same as for a bad track number.
 
@@ -872,7 +872,7 @@ Most normal configuration can be done via the game menus.
 There are two types of Quake servers: dedicated and listen.  A listen server
 is a machine that is used to play the game and also hosts the game for other
 players.  A dedicated server only hosts the game; it runs in text mode and
-does not let anyone play on that machine.  A single player game is really 
+does not let anyone play on that machine.  A single player game is really
 just a 1 player listen server that doesn't listen for network connections.
 
 Dedicated vs Listen.  I'll try to make this simple: it is always better to
@@ -944,7 +944,7 @@ Command line parameters
 	If you do not specify a number <n> after -listen it will default to 8.
 	The maximum allowed value is 16.  A dedicated Quake server stays in
 	text mode.  This is the Quake console with most commands still
-	available; those that make no sense (like vid_mode) are ommitted.
+	available; those that make no sense (like vid_mode) are omitted.
 
 Console Variables
 -----------------
@@ -961,10 +961,10 @@ hostname
 sys_ticrate
    Only used by dedicated servers.  This determines the rate at which the
    server will send out updates to the clients.  The default value is 0.05
-   (20 updatesper second).  For servers where bandwidth is limited, using
+   (20 updates per second).  For servers where bandwidth is limited, using
    modems or the internet for example, it is advisable to lower this value
    to 0.1 (10 updates per second).  This will have a very minor effect on
-   responsiveness, but will half to outbound bandwitdh required making the
+   responsiveness, but will half to outbound bandwidth required making the
    modem players a lot happier.
 
 
@@ -1018,13 +1018,13 @@ Beame & Whiteside TCP/IP
 ------------------------
 
 This is the only DOS TCP/IP stack supported in the test release.
-It is not shareware...it's what we use on our network (in case you
+It is not shareware... it's what we use on our network (in case you
 were wondering why this particular stack).  This has been "tested"
 extensively over ethernet and you should encounter no problems
 with it.  Their SLIP and PPP have not been tested.  When connecting
-to a server using TCP/IP (UDP actually), you specifiy it's "dot notation"
+to a server using TCP/IP (UDP actually), you specify it's "dot notation"
 address (like 123.45.67.89).  You only need to specify the unique portion
-of the adress.  For example, if your IP address is 123.45.12.34
+of the address.  For example, if your IP address is 123.45.12.34
 and the server's is 123.45.56.78, you could use "connect 56.78".
 
 Playing over the Internet
@@ -1078,8 +1078,8 @@ uart:      16550
 port:      3f8
 irq:       4
 baud:      57600
-CTS:       ignored 
-DSR:       ignored 
+CTS:       ignored
+DSR:       ignored
 CD:        ignored
 clear:     ATZ
 startup:
@@ -1150,7 +1150,7 @@ change these
    ignore all 3 lines.
 
 Quake always uses no parity, 8 data bits, and 1 stop bit; these
-values can not be changed.  The baud, port, irq, and uart type can
+values cannot be changed.  The baud, port, irq, and uart type can
 not be changed on an enabled port, you must disable it first.
 
 
@@ -1206,9 +1206,9 @@ You need to increase the number specified by "FILES=" in the DOS
 config.sys file.
 
 Severe lag using TCP/IP under Win95:
-	- Occasionaly when you first connect in to a Quake game using Win95
+	- Occasionally when you first connect in to a Quake game using Win95
 TCP/IP you will experience severe lag and not be able to control your
-player's actions.  This usually clears up in 10 to 15 seconds.  
+player's actions.  This usually clears up in 10 to 15 seconds.
 	- There is apparently a strange limbo state for Microsoft's File and
 Print sharing.  This has been seen when it was installed and then later
 removed, but it still appears on the menus.  For some unknown reason
@@ -1297,7 +1297,7 @@ Nokia ECM 4896M Trellis V.32:
 AT Z %C0 /N0
 
 Nuvotel IFX 14.4 (internal):
-&F \N1 &D2 
+&F \N1 &D2
 
 Practical Peripherals 14400FX v.32bis:
 AT Z S46=0 &Q0 &D2
@@ -1376,7 +1376,7 @@ USR 14.4k Dual Standard
 ATB0&R1&B1&N6Q0X4&A0&D2&H0&I0&K0&M0M1
 
 USR (model?):
-&F E1 V1 X4 &C1 &D2 &N0             
+&F E1 V1 X4 &C1 &D2 &N0
 
 ViVa 14.4k:
 AT&F&Q6\N0%C0&D2N0S37=9
@@ -1568,10 +1568,10 @@ Watch out for limbo subsystems
 ------------------------------
 Microsoft's File and Print sharing and IPX protocol stack have both been
 known to cause strange problems when they are in a limbo state.  The limbo
-state is seems to be an uninstall that did not complete succesfully.  Both
+state seems to be an uninstall that did not complete successfully.  Both
 of these cause poor network play performance. If you are experiencing
-severe lag, check the File and Print services.  If you the warning "IPX
-driver send failue: 04", check the IPX protocol stack.  They need to be
+severe lag, check the File and Print services.  If you get the warning "IPX
+driver send failure: 04", check the IPX protocol stack.  They need to be
 either completely installed or removed; the problems only occur when they
 get into this strange semi-installed state.
 
@@ -1591,7 +1591,7 @@ Where <key> is a valid key control and <command> is a valid quake command.
 
 Example:
 To bind the j key to the 'jump' command, you would type:
-bind j +jump			
+bind j +jump
 and press enter.
 
 Non-printable keys such as 'page up' and buttons from the mouse/joystick are
@@ -1660,7 +1660,7 @@ MOUSE3 (mouse button 3)
 
 * Can only be bound on the command line or in a .cfg file.
 
-The ESC key cannot be bound. 
+The ESC key cannot be bound.
 
 
 ==========================================
@@ -1768,7 +1768,7 @@ Quake servers on the local network, "+connect 192.12.34.56" or
 Quake server.
 
 There is another way to not show the demos; one that also keeps your
-customizations in a seperate directory from the data files in the
+customizations in a separate directory from the data files in the
 Quake distribution.
 
 Do this in the quake directory (the directory where you installed Quake;
@@ -1792,7 +1792,7 @@ that file.
 Now you can run "q" and quake will start off with the main menu displayed
 instead of running the demos.
 
-You can also make a seperate subdirectory for this if you'd like.  For
+You can also make a separate subdirectory for this if you'd like.  For
 example, make a directory named "mine" in the quake directory.  Create
 the "quake.rc" file as specified above in this directory.  Use
 "-game mine" instead of "-game ." in your batch file.
@@ -1844,21 +1844,21 @@ tilde ('~') key. Press tilde ('~') again or ESC to exit.
 
 
 ============================================================================
-==              Quake Bug Report - Primary information                    ==   
+==              Quake Bug Report - Primary information                    ==
 ============================================================================
 
-Date:  
-Name:  
-Phone number:  
+Date:
+Name:
+Phone number:
 E-mail address:  (please include this, we redirect tons of mail)
-Game Title:  
-Version #: 
+Game Title:
+Version #:
 Operating system (i.e., DOS 6.0 or Windows 95):
-Computer type:  
+Computer type:
 BIOS date:
 BIOS version:
-Processor type:  
-Processor speed:  
+Processor type:
+Processor speed:
 Do you program at school/work?
 Do you provide tech. support at school/work?
 Please state the problem you encountered:
@@ -1873,7 +1873,7 @@ and write it down here:
 ==              Quake Bug Report - Secondary information                  ==
 ============================================================================
 
------------------------------- Video Related ------------------------------ 
+------------------------------ Video Related ------------------------------
 
 Video Card Manufacturer:
 Video Card Model:
@@ -1888,7 +1888,7 @@ built into board BIOS, or manufacturer provided TSR)
 
 ------------------------------ Sound Related ------------------------------
 
-Audio card brand and model:  
+Audio card brand and model:
 
 If DOS or a DOS box, please run the command "set > set.txt" then
 attach "set.txt" to the end of the report.
@@ -1900,14 +1900,6 @@ What type of network connection was established when the error occurred?
 If modem, Modem brand and model:
 
 If network, Network card brand and model:
-            Network protocol/configuration:  
+            Network protocol/configuration:
 
 ---------------------------------------------------------------------------
-
-
-
-
-
-
-
-                                                                          

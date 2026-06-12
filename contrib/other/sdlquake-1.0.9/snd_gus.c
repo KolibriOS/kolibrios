@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -314,7 +314,7 @@ static void add_field(char *instring, int section, long offset)
    field_buffers[current_field_buffer].offset=offset;
 }
 
-// Identical to fgets except the string is trucated at the first ';',
+// Identical to fgets except the string is truncated at the first ';',
 // carriage return or line feed.
 static char *stripped_fgets(char *s, int n, FILE *f)
 {
@@ -331,7 +331,7 @@ static char *stripped_fgets(char *s, int n, FILE *f)
 }
 
 //***************************************************************************
-// Externally accessable routines
+// Externally accessible routines
 //***************************************************************************
 // Opens an .INI file. Works like fopen
 FILE *ini_fopen(const char *filename, const char *modes)
@@ -646,7 +646,7 @@ void ClearGf1Ints(void)
    SetGf18(DMA_CONTROL,0x00);
    SetGf18(ADLIB_CONTROL,0x00);
    SetGf18(RECORD_CONTROL,0x00);
-		
+
    GetGf18(DMA_CONTROL);
    GetGf18(RECORD_CONTROL);
    for (i=0;i<32;i++);
@@ -702,7 +702,7 @@ static qboolean GUS_GetIWData(void)
    if (i==0xFFFF)
       return(false);
 
-   // Get chip revision - can not be zero
+   // Get chip revision - cannot be zero
    dos_outportb(CodecRegisterSelect,CODEC_MODE_AND_ID);
    if ((dos_inportb(CodecRegisterSelect) & 0x7F) != CODEC_MODE_AND_ID)
       return(false);
@@ -771,7 +771,7 @@ static qboolean GUS_GetMAXData(void)
    if (i==0xFFFF)
       return(false);
 
-   // Get chip revision - can not be zero
+   // Get chip revision - cannot be zero
    dos_outportb(CodecRegisterSelect,CODEC_MODE_AND_ID);
    if ((dos_inportb(CodecRegisterSelect) & 0x7F) != CODEC_MODE_AND_ID)
       return(false);
@@ -1095,11 +1095,11 @@ qboolean GUS_Init(void)
 		if (rc)
 		{
 			shm->speed = Q_atoi(com_argv[rc+1]);
-	
+
 			// Make sure rate not too high
 			if (shm->speed>48000)
 				shm->speed=48000;
-	
+
 			// Adjust speed to match one of the possible CODEC rates
 			for (CodecRate=CodecRates;CodecRate->Rate!=0;CodecRate++)
 			{
@@ -1112,11 +1112,11 @@ qboolean GUS_Init(void)
 			}
 		}
 
-	
+
 		// Always do 16 bit stereo
 		shm->channels = 2;
 		shm->samplebits = 16;
-	
+
 		// allocate buffer twice the size we need so we can get aligned buffer
 		dma_buffer = dos_getmemory(BUFFER_SIZE*2);
 		if (dma_buffer==NULL)

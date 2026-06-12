@@ -943,7 +943,7 @@ become known when you try to connect to a server, you search for local
 servers, or you start a server.
 
 For multi-homed machines (machines with more than one network adapter
-and IP adress), you can force WinQuake to bind to a specific IP
+and IP address), you can force WinQuake to bind to a specific IP
 address.  There is a command line option "-ip" that takes an IP
 address as its parameter.
 
@@ -1015,8 +1015,8 @@ address will become known when: you try to connect to a server,
 you search for local servers, or you start a server.
 
 For multi-homed machines (machines with more than one network
-adapter and IP adress), you can now force WinQuake to bind to a
-specific IP adress.  There is a new command line option "-ip" that
+adapter and IP address), you can now force WinQuake to bind to a
+specific IP address.  There is a new command line option "-ip" that
 takes an IP address as its parameter.
 
 Added vid_fullscreen_mode and ability to select that mode by
@@ -1093,7 +1093,7 @@ and updated documentation.
 
 Corrected SciTech's U.S. Mail address in documentation.
 
-Added joystick bug decriptions and workarounds.
+Added joystick bug descriptions and workarounds.
 
 
 

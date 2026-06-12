@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -31,7 +31,7 @@ file when the game is quit:
 cvar_t	r_draworder = {"r_draworder","1"};
 cvar_t	scr_screensize = {"screensize","1",true};
 
-Cvars must be registered before use, or they will have a 0 value instead of the float interpretation of the string.  Generally, all cvar_t declarations should be registered in the apropriate init function before any console commands are executed:
+Cvars must be registered before use, or they will have a 0 value instead of the float interpretation of the string.  Generally, all cvar_t declarations should be registered in the appropriate init function before any console commands are executed:
 Cvar_RegisterVariable (&host_framerate);
 
 
@@ -64,11 +64,11 @@ typedef struct cvar_s
 } cvar_t;
 
 void 	Cvar_RegisterVariable (cvar_t *variable);
-// registers a cvar that allready has the name, string, and optionally the
+// registers a cvar that already has the name, string, and optionally the
 // archive elements set.
 
 void 	Cvar_Set (char *var_name, char *value);
-// equivelant to "<name> <variable>" typed at the console
+// equivalent to "<name> <variable>" typed at the console
 
 void	Cvar_SetValue (char *var_name, float value);
 // expands value to a string and calls Cvar_Set

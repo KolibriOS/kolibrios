@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -56,7 +56,7 @@ unsigned		d_8to24table[256];
 unsigned char	d_15to8table[65536];
 
 cvar_t	vid_mode = {"vid_mode","0",false};
- 
+
 static qboolean        mouse_avail;
 static qboolean        mouse_active;
 static int   mx, my;
@@ -129,33 +129,33 @@ static int XLateKey(XKeyEvent *ev)
 
 	switch(keysym)
 	{
-		case XK_KP_Page_Up:	 
+		case XK_KP_Page_Up:
 		case XK_Page_Up:	 key = K_PGUP; break;
 
-		case XK_KP_Page_Down: 
+		case XK_KP_Page_Down:
 		case XK_Page_Down:	 key = K_PGDN; break;
 
-		case XK_KP_Home: 
+		case XK_KP_Home:
 		case XK_Home:	 key = K_HOME; break;
 
-		case XK_KP_End:  
+		case XK_KP_End:
 		case XK_End:	 key = K_END; break;
 
-		case XK_KP_Left: 
+		case XK_KP_Left:
 		case XK_Left:	 key = K_LEFTARROW; break;
 
-		case XK_KP_Right: 
+		case XK_KP_Right:
 		case XK_Right:	key = K_RIGHTARROW;		break;
 
-		case XK_KP_Down: 
+		case XK_KP_Down:
 		case XK_Down:	 key = K_DOWNARROW; break;
 
-		case XK_KP_Up:   
+		case XK_KP_Up:
 		case XK_Up:		 key = K_UPARROW;	 break;
 
 		case XK_Escape: key = K_ESCAPE;		break;
 
-		case XK_KP_Enter: 
+		case XK_KP_Enter:
 		case XK_Return: key = K_ENTER;		 break;
 
 		case XK_Tab:		key = K_TAB;			 break;
@@ -186,7 +186,7 @@ static int XLateKey(XKeyEvent *ev)
 
 		case XK_BackSpace: key = K_BACKSPACE; break;
 
-		case XK_KP_Delete: 
+		case XK_KP_Delete:
 		case XK_Delete: key = K_DEL; break;
 
 		case XK_Pause:	key = K_PAUSE;		 break;
@@ -194,18 +194,18 @@ static int XLateKey(XKeyEvent *ev)
 		case XK_Shift_L:
 		case XK_Shift_R:	key = K_SHIFT;		break;
 
-		case XK_Execute: 
-		case XK_Control_L: 
+		case XK_Execute:
+		case XK_Control_L:
 		case XK_Control_R:	key = K_CTRL;		 break;
 
-		case XK_Alt_L:	
-		case XK_Meta_L: 
-		case XK_Alt_R:	
+		case XK_Alt_L:
+		case XK_Meta_L:
+		case XK_Alt_R:
 		case XK_Meta_R: key = K_ALT;			break;
 
 		case XK_KP_Begin: key = '5';	break;
 
-		case XK_KP_Insert: 
+		case XK_KP_Insert:
 		case XK_Insert:key = K_INS; break;
 
 		case XK_KP_Multiply: key = '*'; break;
@@ -241,14 +241,14 @@ static int XLateKey(XKeyEvent *ev)
 			if (key >= 'A' && key <= 'Z')
 				key = key - 'A' + 'a';
 			break;
-	} 
+	}
 
 	return key;
 }
 
 static Cursor CreateNullCursor(Display *display, Window root)
 {
-    Pixmap cursormask; 
+    Pixmap cursormask;
     XGCValues xgc;
     GC gc;
     XColor dummycolour;
@@ -285,8 +285,8 @@ static void install_grabs(void)
 	if (in_dgamouse.value) {
 		int MajorVersion, MinorVersion;
 
-		if (!XF86DGAQueryVersion(dpy, &MajorVersion, &MinorVersion)) { 
-			// unable to query, probalby not supported
+		if (!XF86DGAQueryVersion(dpy, &MajorVersion, &MinorVersion)) {
+			// unable to query, probably not supported
 			Con_Printf( "Failed to detect XF86DGA Mouse\n" );
 			in_dgamouse.value = 0;
 		} else {
@@ -355,8 +355,8 @@ static void HandleEvents(void)
 				if (dgamouse) {
 					mx += (event.xmotion.x + win_x) * 2;
 					my += (event.xmotion.y + win_y) * 2;
-				} 
-				else 
+				}
+				else
 				{
 					mx += ((int)event.xmotion.x - mwx) * 2;
 					my += ((int)event.xmotion.y - mwy) * 2;
@@ -414,7 +414,7 @@ static void HandleEvents(void)
 
 }
 
-static void IN_DeactivateMouse( void ) 
+static void IN_DeactivateMouse( void )
 {
 	if (!mouse_avail || !dpy || !win)
 		return;
@@ -425,7 +425,7 @@ static void IN_DeactivateMouse( void )
 	}
 }
 
-static void IN_ActivateMouse( void ) 
+static void IN_ActivateMouse( void )
 {
 	if (!mouse_avail || !dpy || !win)
 		return;
@@ -508,7 +508,7 @@ void	VID_SetPalette (unsigned char *palette)
 		g = pal[1];
 		b = pal[2];
 		pal += 3;
-		
+
 		v = (255<<24) + (r<<0) + (g<<8) + (b<<16);
 		*table++ = v;
 	}
@@ -539,7 +539,7 @@ void	VID_SetPalette (unsigned char *palette)
 	}
 }
 
-void CheckMultiTextureExtensions(void) 
+void CheckMultiTextureExtensions(void)
 {
 	void *prjobj;
 
@@ -638,7 +638,7 @@ qboolean VID_Is8bit(void)
 	return is8bit;
 }
 
-void VID_Init8bitPalette(void) 
+void VID_Init8bitPalette(void)
 {
 	// Check for 8bit Extensions and initialize them.
 	int i;
@@ -685,7 +685,7 @@ void VID_Init8bitPalette(void)
 		qglColorTableEXT(GL_SHARED_TEXTURE_PALETTE_EXT, GL_RGB, 256, GL_RGB, GL_UNSIGNED_BYTE, (void *) thePalette);
 		is8bit = true;
 	}
-	
+
 	dlclose(prjobj);
 }
 
@@ -745,7 +745,7 @@ void VID_Init(unsigned char *palette)
 	Cvar_RegisterVariable (&in_dgamouse);
 	Cvar_RegisterVariable (&m_filter);
 	Cvar_RegisterVariable (&gl_ztrick);
-	
+
 	vid.maxwarpwidth = WARP_WIDTH;
 	vid.maxwarpheight = WARP_HEIGHT;
 	vid.colormap = host_colormap;
@@ -791,7 +791,7 @@ void VID_Init(unsigned char *palette)
 
 	// Get video mode list
 	MajorVersion = MinorVersion = 0;
-	if (!XF86VidModeQueryVersion(dpy, &MajorVersion, &MinorVersion)) { 
+	if (!XF86VidModeQueryVersion(dpy, &MajorVersion, &MinorVersion)) {
 		vidmode_ext = false;
 	} else {
 		Con_Printf("Using XFree86-VidModeExtension Version %d.%d\n", MajorVersion, MinorVersion);
@@ -806,7 +806,7 @@ void VID_Init(unsigned char *palette)
 
 	if (vidmode_ext) {
 		int best_fit, best_dist, dist, x, y;
-		
+
 		XF86VidModeGetAllModeLines(dpy, scrnum, &num_vidmodes, &vidmodes);
 
 		// Are we going fullscreen?  If so, let's change video mode
@@ -849,7 +849,7 @@ void VID_Init(unsigned char *palette)
 	attr.colormap = XCreateColormap(dpy, root, visinfo->visual, AllocNone);
 	attr.event_mask = X_MASK;
 	if (vidmode_active) {
-		mask = CWBackPixel | CWColormap | CWSaveUnder | CWBackingStore | 
+		mask = CWBackPixel | CWColormap | CWSaveUnder | CWBackingStore |
 			CWEventMask | CWOverrideRedirect;
 		attr.override_redirect = True;
 		attr.backing_store = NotUseful;
@@ -950,7 +950,7 @@ void IN_MouseMove (usercmd_t *cmd)
 {
 	if (!mouse_avail)
 		return;
-   
+
 	if (m_filter.value)
 	{
 		mx = (mx + old_mouse_x) * 0.5;
@@ -967,10 +967,10 @@ void IN_MouseMove (usercmd_t *cmd)
 		cmd->sidemove += m_side.value * mx;
 	else
 		cl.viewangles[YAW] -= m_yaw.value * mx;
-	
+
 	if (in_mlook.state & 1)
 		V_StopPitchDrift ();
-		
+
 	if ( (in_mlook.state & 1) && !(in_strafe.state & 1))
 	{
 		cl.viewangles[PITCH] += m_pitch.value * my;
@@ -993,5 +993,3 @@ void IN_Move (usercmd_t *cmd)
 {
 	IN_MouseMove(cmd);
 }
-
-

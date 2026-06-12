@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -498,7 +498,7 @@ void CDAudio_Play(byte track, qboolean looping)
 
 	if (!initialized || !enabled)
 		return;
-	
+
 	if (!cd.valid)
 		return;
 
@@ -523,7 +523,7 @@ void CDAudio_Play(byte track, qboolean looping)
 
 	if (cd.track[track].isData)
 	{
-		Con_DPrintf("CDAudio_Play: Can not play data.\n");
+		Con_DPrintf("CDAudio_Play: Cannot play data.\n");
 		return;
 	}
 
@@ -571,7 +571,7 @@ void CDAudio_Stop(void)
 {
 	if (!initialized || !enabled)
 		return;
-	
+
 	cdRequest->headerLength = 13;
 	cdRequest->unit = 0;
 	cdRequest->command = COMMAND_STOP_AUDIO;
@@ -598,13 +598,13 @@ void CDAudio_Resume(void)
 {
 	if (!initialized || !enabled)
 		return;
-	
+
 	if (!cd.valid)
 		return;
 
 	if (!wasPlaying)
 		return;
-	
+
 	cdRequest->headerLength = 13;
 	cdRequest->unit = 0;
 	cdRequest->command = COMMAND_RESUME_AUDIO;
@@ -822,7 +822,7 @@ int CDAudio_Init(void)
 			"disabled.  Use \"-nocdaudio\" if you\n"
 			"wish to avoid this message in the\n"
 			"future.  See README.TXT for help.\n"
-			);			
+			);
 		return -1;
 	}
 	if (regs.x.bx > 1)
@@ -838,7 +838,7 @@ int CDAudio_Init(void)
 			"MSCDEX version 2.00 or later\n"
 			"required for music. See README.TXT\n"
 			"for help.\n"
-			);			
+			);
 		Con_DPrintf("CDAudio_Init: MSCDEX version 2.00 or later required.\n");
 		return -1;
 	}

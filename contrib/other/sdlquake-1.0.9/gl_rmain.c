@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 entity_t	r_worldentity;
 
-qboolean	r_cache_thrash;		// compatability
+qboolean	r_cache_thrash;		// compatibility
 
 vec3_t		modelorg, r_entorigin;
 entity_t	*currententity;
@@ -35,7 +35,7 @@ mplane_t	frustum[4];
 
 int			c_brush_polys, c_alias_polys;
 
-qboolean	envmap;				// true during envmap command capture 
+qboolean	envmap;				// true during envmap command capture
 
 int			currenttexture = -1;		// to avoid unnecessary texture sets
 
@@ -247,7 +247,7 @@ void R_DrawSpriteModel (entity_t *e)
 	VectorMA (e->origin, frame->down, up, point);
 	VectorMA (point, frame->right, right, point);
 	glVertex3fv (point);
-	
+
 	glEnd ();
 
 	glDisable (GL_ALPHA_TEST);
@@ -401,7 +401,7 @@ void GL_DrawAliasShadow (aliashdr_t *paliashdr, int posenum)
 		} while (--count);
 
 		glEnd ();
-	}	
+	}
 }
 
 
@@ -475,7 +475,7 @@ void R_DrawAliasModel (entity_t *e)
 
 	ambientlight = shadelight = R_LightPoint (currententity->origin);
 
-	// allways give the gun some light
+	// always give the gun some light
 	if (e == &cl.viewent && ambientlight < 24)
 		ambientlight = shadelight = 24;
 
@@ -515,7 +515,7 @@ void R_DrawAliasModel (entity_t *e)
 
 	shadedots = r_avertexnormal_dots[((int)(e->angles[1] * (SHADEDOT_QUANT / 360.0))) & (SHADEDOT_QUANT - 1)];
 	shadelight = shadelight / 200.0;
-	
+
 	an = e->angles[1]/180*M_PI;
 	shadevector[0] = cos(-an);
 	shadevector[1] = sin(-an);
@@ -551,7 +551,7 @@ void R_DrawAliasModel (entity_t *e)
     GL_Bind(paliashdr->gl_texturenum[currententity->skinnum][anim]);
 
 	// we can't dynamically colormap textures, so they are cached
-	// seperately for the players.  Heads are just uncolored.
+	// separately for the players.  Heads are just uncolored.
 	if (currententity->colormap != vid.colormap && !gl_nocolors.value)
 	{
 		i = currententity - cl_entities;
@@ -606,7 +606,7 @@ void R_DrawEntitiesOnList (void)
 	if (!r_drawentities.value)
 		return;
 
-	// draw sprites seperately, because of alpha blending
+	// draw sprites separately, because of alpha blending
 	for (i=0 ; i<cl_numvisedicts ; i++)
 	{
 		currententity = cl_visedicts[i];
@@ -679,11 +679,11 @@ void R_DrawViewModel (void)
 	j = R_LightPoint (currententity->origin);
 
 	if (j < 24)
-		j = 24;		// allways give some light on gun
+		j = 24;		// always give some light on gun
 	ambientlight = j;
 	shadelight = j;
 
-// add dynamic lights		
+// add dynamic lights
 	for (lnum=0 ; lnum<MAX_DLIGHTS ; lnum++)
 	{
 		dl = &cl_dlights[lnum];
@@ -770,7 +770,7 @@ void R_SetFrustum (void)
 {
 	int		i;
 
-	if (r_refdef.fov_x == 90) 
+	if (r_refdef.fov_x == 90)
 	{
 		// front side is visible
 
@@ -1154,6 +1154,6 @@ void R_RenderView (void)
 	{
 //		glFinish ();
 		time2 = Sys_FloatTime ();
-		Con_Printf ("%3i ms  %4i wpoly %4i epoly\n", (int)((time2-time1)*1000), c_brush_polys, c_alias_polys); 
+		Con_Printf ("%3i ms  %4i wpoly %4i epoly\n", (int)((time2-time1)*1000), c_brush_polys, c_alias_polys);
 	}
 }

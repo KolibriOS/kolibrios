@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -53,7 +53,7 @@ int vrs320x200x256planar[] = {
 	VRS_BYTE_RMW, SC_DATA, ~0x08, 0x04,
 	VRS_BYTE_OUT, GC_INDEX, GRAPHICS_MODE,
 	VRS_BYTE_RMW, GC_DATA, ~0x13, 0x00,
-	VRS_BYTE_OUT, GC_INDEX, MISCELLANOUS,
+	VRS_BYTE_OUT, GC_INDEX, MISCELLANEOUS,
 	VRS_BYTE_RMW, GC_DATA, ~0x02, 0x00,
 
 	VRS_BYTE_OUT, SC_INDEX, SYNC_RESET,
@@ -122,7 +122,7 @@ int vrs320x240x256planar[] = {
 	VRS_BYTE_RMW, SC_DATA, ~0x08, 0x04,
 	VRS_BYTE_OUT, GC_INDEX, GRAPHICS_MODE,
 	VRS_BYTE_RMW, GC_DATA, ~0x13, 0x00,
-	VRS_BYTE_OUT, GC_INDEX, MISCELLANOUS,
+	VRS_BYTE_OUT, GC_INDEX, MISCELLANEOUS,
 	VRS_BYTE_RMW, GC_DATA, ~0x02, 0x00,
 
 	VRS_BYTE_OUT, SC_INDEX, SYNC_RESET,
@@ -205,7 +205,7 @@ int vrs320x350x256planar[] = {
 	VRS_BYTE_RMW, SC_DATA, ~0x08, 0x04,
 	VRS_BYTE_OUT, GC_INDEX, GRAPHICS_MODE,
 	VRS_BYTE_RMW, GC_DATA, ~0x10, 0x00,
-	VRS_BYTE_OUT, GC_INDEX, MISCELLANOUS,
+	VRS_BYTE_OUT, GC_INDEX, MISCELLANEOUS,
 	VRS_BYTE_RMW, GC_DATA, ~0x02, 0x00,
 	VRS_BYTE_OUT, MISC_OUTPUT, 0xA3,	// 350-scan-line scan rate
 
@@ -312,7 +312,7 @@ int vrs320x400x256planar[] = {
 	VRS_BYTE_RMW, SC_DATA, ~0x08, 0x04,
 	VRS_BYTE_OUT, GC_INDEX, GRAPHICS_MODE,
 	VRS_BYTE_RMW, GC_DATA, ~0x10, 0x00,
-	VRS_BYTE_OUT, GC_INDEX, MISCELLANOUS,
+	VRS_BYTE_OUT, GC_INDEX, MISCELLANEOUS,
 	VRS_BYTE_RMW, GC_DATA, ~0x02, 0x00,
 
 	VRS_BYTE_OUT, SC_INDEX, SYNC_RESET,
@@ -393,7 +393,7 @@ int vrs320x480x256planar[] = {
 	VRS_BYTE_RMW, SC_DATA, ~0x08, 0x04,
 	VRS_BYTE_OUT, GC_INDEX, GRAPHICS_MODE,
 	VRS_BYTE_RMW, GC_DATA, ~0x10, 0x00,
-	VRS_BYTE_OUT, GC_INDEX, MISCELLANOUS,
+	VRS_BYTE_OUT, GC_INDEX, MISCELLANEOUS,
 	VRS_BYTE_RMW, GC_DATA, ~0x02, 0x00,
 
 	VRS_BYTE_OUT, SC_INDEX, SYNC_RESET,
@@ -536,14 +536,14 @@ vmode_t	vgavidmodes[] = {
 	NULL,
 	"360x200", NULL, 360, 200, (200.0/360.0)*(320.0/240.0),
 	384, 1, 1, &extra360x200x256planar, VGA_InitMode,
-	VGA_SwapBuffers, 
+	VGA_SwapBuffers,
 	VGA_SetPalette, VGA_BeginDirectRect, VGA_EndDirectRect
 },
 {
 	NULL,
 	"320x240", NULL, 320, 240, (240.0/320.0)*(320.0/240.0),
 	320, 1, 1, &extra320x240x256planar, VGA_InitMode,
-	VGA_SwapBuffers, 
+	VGA_SwapBuffers,
 	VGA_SetPalette, VGA_BeginDirectRect, VGA_EndDirectRect
 },
 {
@@ -557,43 +557,42 @@ vmode_t	vgavidmodes[] = {
 	NULL,
 	"320x350", NULL, 320, 350, (350.0/320.0)*(320.0/240.0),
 	320, 1, 1, &extra320x350x256planar, VGA_InitMode,
-	VGA_SwapBuffers, 
+	VGA_SwapBuffers,
 	VGA_SetPalette, VGA_BeginDirectRect, VGA_EndDirectRect
 },
 {
 	NULL,
 	"360x350", NULL, 360, 350, (350.0/360.0)*(320.0/240.0),
 	384, 1, 1, &extra360x350x256planar, VGA_InitMode,
-	VGA_SwapBuffers, 
+	VGA_SwapBuffers,
 	VGA_SetPalette, VGA_BeginDirectRect, VGA_EndDirectRect
 },
 {
 	NULL,
 	"320x400", NULL, 320, 400, (400.0/320.0)*(320.0/240.0), 320,
 	1, 1, &extra320x400x256planar, VGA_InitMode,
-	VGA_SwapBuffers, 
+	VGA_SwapBuffers,
 	VGA_SetPalette, VGA_BeginDirectRect, VGA_EndDirectRect
 },
 {
 	NULL,
 	"360x400", NULL, 360, 400, (400.0/360.0)*(320.0/240.0),
 	384, 1, 1, &extra360x400x256planar, VGA_InitMode,
-	VGA_SwapBuffers, 
+	VGA_SwapBuffers,
 	VGA_SetPalette, VGA_BeginDirectRect, VGA_EndDirectRect
 },
 {
 	NULL,
 	"320x480", NULL, 320, 480, (480.0/320.0)*(320.0/240.0),
 	320, 1, 1, &extra320x480x256planar, VGA_InitMode,
-	VGA_SwapBuffers, 
+	VGA_SwapBuffers,
 	VGA_SetPalette, VGA_BeginDirectRect, VGA_EndDirectRect
 },
 {
 	NULL,
 	"360x480", NULL, 360, 480, (480.0/360.0)*(320.0/240.0),
 	384, 1, 1, &extra360x480x256planar, VGA_InitMode,
-	VGA_SwapBuffers, 
+	VGA_SwapBuffers,
 	VGA_SetPalette, VGA_BeginDirectRect, VGA_EndDirectRect
 },
 };
-

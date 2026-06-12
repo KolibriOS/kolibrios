@@ -20,7 +20,7 @@ on 3DFX hardware.
 Installation
 ------------
 
-Mount the Quake2 CD as one would usually mount a CDROM, this can be 
+Mount the Quake2 CD as one would usually mount a CDROM, this can be
 accomplished by using the command:
 
 		mount /dev/cdrom /mnt
@@ -35,7 +35,7 @@ As root.  Once the CD is mounted, run the setup script on the CD as root.
 The script will ask some questions about what options you want to install
 and automatically install the software into /usr/local/games/quake2.
 
-Make sure you have the appropirate hardware, drivers and libraries installed
+Make sure you have the appropriate hardware, drivers and libraries installed
 for the renderer you are going to play on.
 
 Quake2 for Linux supports the following renderers:
@@ -60,14 +60,14 @@ Quake2 for Linux supports the following renderers:
   Quake2 to grab the mouse, select 'Windowed Mouse' from the video menu,
   or type '_windowed_mouse 0' at the console.  Do the reverse to release it.
   You can bind keys to grab and release the mouse in the console, like so:
-    bind i "_windowed_mouse 1"  
-    bind o "_windowed_mouse 0"  
+    bind i "_windowed_mouse 1"
+    bind o "_windowed_mouse 0"
   Then "i" will grab the mouse and "o" will release it.
 
 - ref_gl
   This render can be run with two different OpenGL drivers:  Mesa 3-D
-  ontop of Linux GLIDE, or 3DFX's mini-OpenGL Quake driver. 
-  For Mesa 3-D, the necessary libMesaGL.so.2.6 is included with this archive.  
+  ontop of Linux GLIDE, or 3DFX's mini-OpenGL Quake driver.
+  For Mesa 3-D, the necessary libMesaGL.so.2.6 is included with this archive.
   You must copy it to /usr/lib or /usr/local/lib and run ldconfig (as root)
   in order to use it.  You can do this as follows:
     tar cf - lib*GL* | (cd /usr/lib; tar xf -)
@@ -89,7 +89,7 @@ Quake2 for Linux supports the following renderers:
   or in /etc/quake2.conf
 
   **NOTE:  There is a problem on libc5 systems where a vid_restart (causing
-  a reload of the video system) will crash.  There doesn't seem to be a 
+  a reload of the video system) will crash.  There doesn't seem to be a
   solution to this yet.  It looks to be some sort of ld.so dynamic loading
   interaction with SVGALib and ref_gl.so.  A work around is to start in
   software mode (./quake2 +set vid_ref soft), then use the menu to set your
@@ -99,13 +99,13 @@ Quake2 for Linux supports the following renderers:
   works fine on there.
 
 - ref_glx
-  ref_glx should run on many different hardward OpenGL implementations under
+  ref_glx should run on many different hardware OpenGL implementations under
   Linux and X11.  This binary is an X11 application and must be run under
-  X11.  It will work with Mesa 3-D as a standard glX based OpenGL 
+  X11.  It will work with Mesa 3-D as a standard glX based OpenGL
   applications.  If the Mesa 3-D library is compiled with 3DFX support,
   you can have Mesa 3-D support 3DFX hardware under X11 by setting the
-  enviroment variable "MESA_GLX_FX" to "fullscreen" for fullscreen mode
-  and "window" for windowed mode, eg. "export MESA_GLX_FX=fullscreen" for sh 
+  environment variable "MESA_GLX_FX" to "fullscreen" for fullscreen mode
+  and "window" for windowed mode, eg. "export MESA_GLX_FX=fullscreen" for sh
   or "setenv MESA_GLX_FX fullscreen" for csh.
 
   As with ref_gl, the "gl_driver" cvar indicates the shared library to load
@@ -141,7 +141,7 @@ are given up after the renderer is loaded.  You can switch renderers on the
 fly if you run quake2 as root (su or log in as root).
 
 NOTE:  When the quake2 binary is run in dedicated server mode
-(+set dedicated 1), no special permissions are required and 
+(+set dedicated 1), no special permissions are required and
 /etc/quake2.conf is not read since no renderer is loaded.
 
 ----
@@ -210,9 +210,8 @@ most modern Linux installations now.
 
 -----------------------------------------------------------------------------
 
-Linux Quake2 is an unsupported product.  Usage of this product is bound by 
+Linux Quake2 is an unsupported product.  Usage of this product is bound by
 the legal notice found on the distribution Quake2 CDROM.
 
 /// Zoid
 zoid@idsoftware.com
-

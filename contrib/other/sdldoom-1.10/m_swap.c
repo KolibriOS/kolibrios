@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -17,7 +17,7 @@
 // $Log:$
 //
 // DESCRIPTION:
-//	Endianess handling, swapping 16bit and 32bit.
+//	Endianness handling, swapping 16bit and 32bit.
 //
 //-----------------------------------------------------------------------------
 
@@ -34,7 +34,7 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 // Swap 16bit, that is, MSB and LSB byte.
 unsigned short SwapSHORT(unsigned short x)
 {
-    // No masking with 0xFF should be necessary. 
+    // No masking with 0xFF should be necessary.
     return (x>>8) | (x<<8);
 }
 
@@ -47,5 +47,3 @@ unsigned long SwapLONG( unsigned long x)
 	| ((x<<8) & 0xff0000)
 	| (x<<24);
 }
-
-

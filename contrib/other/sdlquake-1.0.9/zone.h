@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -40,10 +40,10 @@ strings from command input.  There is only about 48K for it, allocated at
 the very bottom of the hunk.
 
 Cache_??? Cache memory is for objects that can be dynamically loaded and
-can usefully stay persistant between levels.  The size of the cache
+can usefully stay persistent between levels.  The size of the cache
 fluctuates from level to level.
 
-To allocate a cachable object
+To allocate a cacheable object
 
 
 Temp_??? Temp memory is used for file loading and surface caching.  The size
@@ -65,7 +65,7 @@ surface cache
 
 <--- high hunk used
 
-cachable memory
+cacheable memory
 
 <--- low hunk used
 
@@ -122,10 +122,7 @@ void *Cache_Check (cache_user_t *c);
 void Cache_Free (cache_user_t *c);
 
 void *Cache_Alloc (cache_user_t *c, int size, char *name);
-// Returns NULL if all purgable data was tossed and there still
+// Returns NULL if all purgeable data was tossed and there still
 // wasn't enough room.
 
 void Cache_Report (void);
-
-
-

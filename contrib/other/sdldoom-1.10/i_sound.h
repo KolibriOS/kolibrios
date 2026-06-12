@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -33,7 +33,7 @@
 // Init at program start...
 void I_InitSound();
 
-// ... shut down and relase at program termination.
+// ... shut down and release at program termination.
 void I_ShutdownSound(void);
 
 

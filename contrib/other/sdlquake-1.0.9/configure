@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # Guess values for system-dependent variables and create Makefiles.
-# Generated automatically using autoconf version 2.13 
+# Generated automatically using autoconf version 2.13
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
 #
 # This configure script is free software; the Free Software Foundation
@@ -477,9 +477,9 @@ else
 fi
 if test ! -r $srcdir/$ac_unique_file; then
   if test "$ac_srcdir_defaulted" = yes; then
-    { echo "configure: error: can not find sources in $ac_confdir or .." 1>&2; exit 1; }
+    { echo "configure: error: cannot find sources in $ac_confdir or .." 1>&2; exit 1; }
   else
-    { echo "configure: error: can not find sources in $srcdir" 1>&2; exit 1; }
+    { echo "configure: error: cannot find sources in $srcdir" 1>&2; exit 1; }
   fi
 fi
 srcdir=`echo "${srcdir}" | sed 's%\([^/]\)/*$%\1%'`
@@ -543,7 +543,7 @@ for ac_dir in $srcdir $srcdir/.. $srcdir/../..; do
   fi
 done
 if test -z "$ac_aux_dir"; then
-  { echo "configure: error: can not find install-sh or install.sh in $srcdir $srcdir/.. $srcdir/../.." 1>&2; exit 1; }
+  { echo "configure: error: cannot find install-sh or install.sh in $srcdir $srcdir/.. $srcdir/../.." 1>&2; exit 1; }
 fi
 ac_config_guess=$ac_aux_dir/config.guess
 ac_config_sub=$ac_aux_dir/config.sub
@@ -786,7 +786,7 @@ fi
 
 # Make sure we can run config.sub.
 if ${CONFIG_SHELL-/bin/sh} $ac_config_sub sun4 >/dev/null 2>&1; then :
-else { echo "configure: error: can not run $ac_config_sub" 1>&2; exit 1; }
+else { echo "configure: error: cannot run $ac_config_sub" 1>&2; exit 1; }
 fi
 
 echo $ac_n "checking host system type""... $ac_c" 1>&6
@@ -798,7 +798,7 @@ NONE)
   case $nonopt in
   NONE)
     if host_alias=`${CONFIG_SHELL-/bin/sh} $ac_config_guess`; then :
-    else { echo "configure: error: can not guess host type; you must specify one" 1>&2; exit 1; }
+    else { echo "configure: error: cannot guess host type; you must specify one" 1>&2; exit 1; }
     fi ;;
   *) host_alias=$nonopt ;;
   esac ;;
@@ -1239,13 +1239,13 @@ else
   /*)
   ac_cv_path_SDL_CONFIG="$SDL_CONFIG" # Let the user override the test with a path.
   ;;
-  ?:/*)			 
+  ?:/*)
   ac_cv_path_SDL_CONFIG="$SDL_CONFIG" # Let the user override the test with a dos path.
   ;;
   *)
   IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
   ac_dummy="$PATH"
-  for ac_dir in $ac_dummy; do 
+  for ac_dir in $ac_dummy; do
     test -z "$ac_dir" && ac_dir=.
     if test -f $ac_dir/$ac_word; then
       ac_cv_path_SDL_CONFIG="$ac_dir/$ac_word"
@@ -1302,7 +1302,7 @@ char*
 my_strdup (char *str)
 {
   char *new_str;
-  
+
   if (str)
     {
       new_str = malloc ((strlen (str) + 1) * sizeof(char));
@@ -1310,7 +1310,7 @@ my_strdup (char *str)
     }
   else
     new_str = NULL;
-  
+
   return new_str;
 }
 
@@ -1366,7 +1366,7 @@ fi
   fi
   if test "x$no_sdl" = x ; then
      echo "$ac_t""yes" 1>&6
-     :     
+     :
   else
      echo "$ac_t""no" 1>&6
      if test "$SDL_CONFIG" = "no" ; then
@@ -1389,7 +1389,7 @@ fi
 #include "SDL.h"
 
 int main() {
- return 0; 
+ return 0;
 ; return 0; }
 EOF
 if { (eval echo configure:1396: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
@@ -1408,9 +1408,9 @@ else
   cat conftest.$ac_ext >&5
   rm -rf conftest*
    echo "*** The test program failed to compile or link. See the file config.log for the"
-          echo "*** exact error that occured. This usually means SDL was incorrectly installed"
+          echo "*** exact error that occurred. This usually means SDL was incorrectly installed"
           echo "*** or that you have moved SDL since it was installed. In the latter case, you"
-          echo "*** may want to edit the sdl-config script: $SDL_CONFIG" 
+          echo "*** may want to edit the sdl-config script: $SDL_CONFIG"
 fi
 rm -f conftest*
           CFLAGS="$ac_save_CFLAGS"
@@ -1422,8 +1422,8 @@ rm -f conftest*
      { echo "configure: error: *** SDL version $SDL_VERSION not found!" 1>&2; exit 1; }
 
   fi
-  
-  
+
+
   rm -f conf.sdltest
 
 CFLAGS="$CFLAGS $SDL_CFLAGS -DSDL"
@@ -1742,4 +1742,3 @@ EOF
 chmod +x $CONFIG_STATUS
 rm -fr confdefs* $ac_clean_files
 test "$no_create" = yes || ${CONFIG_SHELL-/bin/sh} $CONFIG_STATUS || exit 1
-

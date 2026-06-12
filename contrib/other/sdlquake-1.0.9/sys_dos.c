@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -68,7 +68,7 @@ extern char	start_of_memory __asm__("start");
 
 //=============================================================================
 
-// this is totally dependent on cwsdpmi putting the stack right after tge
+// this is totally dependent on cwsdpmi putting the stack right after the
 // global data
 
 // This does evil things in a Win95 DOS box!!!
@@ -78,7 +78,7 @@ extern byte end;
 void Sys_InitStackCheck (void)
 {
 	int		i;
-	
+
 	for (i=0 ; i<128*1024 ; i++)
 		(&end)[i] = CHECKBYTE;
 }
@@ -86,11 +86,11 @@ void Sys_InitStackCheck (void)
 void Sys_StackCheck (void)
 {
 	int		i;
-	
+
 	for (i=0 ; i<128*1024 ; i++)
 		if ( (&end)[i] != CHECKBYTE )
 			break;
-	
+
 	Con_Printf ("%i undisturbed stack bytes\n", i);
 	if (end != CHECKBYTE)
 		Sys_Error ("System stack overflow!");
@@ -99,49 +99,49 @@ void Sys_StackCheck (void)
 
 //=============================================================================
 
-byte        scantokey[128] = 
-					{ 
-//  0           1       2       3       4       5       6       7 
-//  8           9       A       B       C       D       E       F 
-	0  ,    27,     '1',    '2',    '3',    '4',    '5',    '6', 
-	'7',    '8',    '9',    '0',    '-',    '=',    K_BACKSPACE, 9, // 0 
-	'q',    'w',    'e',    'r',    't',    'y',    'u',    'i', 
-	'o',    'p',    '[',    ']',    13 ,    K_CTRL,'a',  's',      // 1 
-	'd',    'f',    'g',    'h',    'j',    'k',    'l',    ';', 
-	'\'' ,    '`',    K_SHIFT,'\\',  'z',    'x',    'c',    'v',      // 2 
-	'b',    'n',    'm',    ',',    '.',    '/',    K_SHIFT,'*', 
-	K_ALT,' ',   0  ,    K_F1, K_F2, K_F3, K_F4, K_F5,   // 3 
-	K_F6, K_F7, K_F8, K_F9, K_F10,0  ,    0  , K_HOME, 
-	K_UPARROW,K_PGUP,'-',K_LEFTARROW,'5',K_RIGHTARROW,'+',K_END, //4 
-	K_DOWNARROW,K_PGDN,K_INS,K_DEL,0,0,             0,              K_F11, 
-	K_F12,0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,        // 5 
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0, 
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,        // 6 
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0, 
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0         // 7 
-					}; 
+byte        scantokey[128] =
+					{
+//  0           1       2       3       4       5       6       7
+//  8           9       A       B       C       D       E       F
+	0  ,    27,     '1',    '2',    '3',    '4',    '5',    '6',
+	'7',    '8',    '9',    '0',    '-',    '=',    K_BACKSPACE, 9, // 0
+	'q',    'w',    'e',    'r',    't',    'y',    'u',    'i',
+	'o',    'p',    '[',    ']',    13 ,    K_CTRL,'a',  's',      // 1
+	'd',    'f',    'g',    'h',    'j',    'k',    'l',    ';',
+	'\'' ,    '`',    K_SHIFT,'\\',  'z',    'x',    'c',    'v',      // 2
+	'b',    'n',    'm',    ',',    '.',    '/',    K_SHIFT,'*',
+	K_ALT,' ',   0  ,    K_F1, K_F2, K_F3, K_F4, K_F5,   // 3
+	K_F6, K_F7, K_F8, K_F9, K_F10,0  ,    0  , K_HOME,
+	K_UPARROW,K_PGUP,'-',K_LEFTARROW,'5',K_RIGHTARROW,'+',K_END, //4
+	K_DOWNARROW,K_PGDN,K_INS,K_DEL,0,0,             0,              K_F11,
+	K_F12,0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,        // 5
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,        // 6
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0         // 7
+					};
 
-byte        shiftscantokey[128] = 
-					{ 
-//  0           1       2       3       4       5       6       7 
-//  8           9       A       B       C       D       E       F 
-	0  ,    27,     '!',    '@',    '#',    '$',    '%',    '^', 
-	'&',    '*',    '(',    ')',    '_',    '+',    K_BACKSPACE, 9, // 0 
-	'Q',    'W',    'E',    'R',    'T',    'Y',    'U',    'I', 
-	'O',    'P',    '{',    '}',    13 ,    K_CTRL,'A',  'S',      // 1 
-	'D',    'F',    'G',    'H',    'J',    'K',    'L',    ':', 
-	'"' ,    '~',    K_SHIFT,'|',  'Z',    'X',    'C',    'V',      // 2 
-	'B',    'N',    'M',    '<',    '>',    '?',    K_SHIFT,'*', 
-	K_ALT,' ',   0  ,    K_F1, K_F2, K_F3, K_F4, K_F5,   // 3 
-	K_F6, K_F7, K_F8, K_F9, K_F10,0  ,    0  , K_HOME, 
-	K_UPARROW,K_PGUP,'_',K_LEFTARROW,'%',K_RIGHTARROW,'+',K_END, //4 
-	K_DOWNARROW,K_PGDN,K_INS,K_DEL,0,0,             0,              K_F11, 
-	K_F12,0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,        // 5 
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0, 
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,        // 6 
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0, 
-	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0         // 7 
-					}; 
+byte        shiftscantokey[128] =
+					{
+//  0           1       2       3       4       5       6       7
+//  8           9       A       B       C       D       E       F
+	0  ,    27,     '!',    '@',    '#',    '$',    '%',    '^',
+	'&',    '*',    '(',    ')',    '_',    '+',    K_BACKSPACE, 9, // 0
+	'Q',    'W',    'E',    'R',    'T',    'Y',    'U',    'I',
+	'O',    'P',    '{',    '}',    13 ,    K_CTRL,'A',  'S',      // 1
+	'D',    'F',    'G',    'H',    'J',    'K',    'L',    ':',
+	'"' ,    '~',    K_SHIFT,'|',  'Z',    'X',    'C',    'V',      // 2
+	'B',    'N',    'M',    '<',    '>',    '?',    K_SHIFT,'*',
+	K_ALT,' ',   0  ,    K_F1, K_F2, K_F3, K_F4, K_F5,   // 3
+	K_F6, K_F7, K_F8, K_F9, K_F10,0  ,    0  , K_HOME,
+	K_UPARROW,K_PGUP,'_',K_LEFTARROW,'%',K_RIGHTARROW,'+',K_END, //4
+	K_DOWNARROW,K_PGDN,K_INS,K_DEL,0,0,             0,              K_F11,
+	K_F12,0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,        // 5
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,        // 6
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0,
+	0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0  ,    0         // 7
+					};
 
 void TrapKey(void)
 {
@@ -214,7 +214,7 @@ void *dos_getmaxlockedmem(int *size)
 	static char				*msg = "Locking data...";
 	int						m, n;
 	byte					*x;
- 
+
 // first lock all the current executing image so the locked count will
 // be accurate.  It doesn't hurt to lock the memory multiple times
 	last_locked = __djgpp_selector_limit + 1;
@@ -309,10 +309,10 @@ void *dos_getmaxlockedmem(int *size)
 			 j -= 0x100000)
 		{
 			info.size = j;
-	
+
 			if (!__dpmi_lock_linear_region(&info))
 				goto Locked;
-	
+
 			write (STDOUT, ".", 1);
 		}
 
@@ -386,10 +386,10 @@ returns -1 if not present
 int	Sys_FileTime (char *path)
 {
 	struct	stat	buf;
-	
+
 	if (stat (path,&buf) == -1)
 		return -1;
-	
+
 	return buf.st_mtime;
 }
 
@@ -479,8 +479,8 @@ void Sys_Shutdown(void)
 }
 
 
-#define SC_RSHIFT       0x36 
-#define SC_LSHIFT       0x2a 
+#define SC_RSHIFT       0x36
+#define SC_LSHIFT       0x2a
 void Sys_SendKeyEvents (void)
 {
 	int k, next;
@@ -499,20 +499,20 @@ void Sys_SendKeyEvents (void)
 		next = keybuf[(keybuf_tail-2)&(KEYBUF_SIZE-1)];
 		if (next == 0xe1)
 			continue;                               // pause key bullshit
-		if (k==0xc5 && next == 0x9d) 
-		{ 
+		if (k==0xc5 && next == 0x9d)
+		{
 			Key_Event (K_PAUSE, true);
-			continue; 
-		} 
+			continue;
+		}
 
-		// extended keyboard shift key bullshit 
-		if ( (k&0x7f)==SC_LSHIFT || (k&0x7f)==SC_RSHIFT ) 
-		{ 
-			if ( keybuf[(keybuf_tail-2)&(KEYBUF_SIZE-1)]==0xe0 ) 
-				continue; 
-			k &= 0x80; 
-			k |= SC_RSHIFT; 
-		} 
+		// extended keyboard shift key bullshit
+		if ( (k&0x7f)==SC_LSHIFT || (k&0x7f)==SC_RSHIFT )
+		{
+			if ( keybuf[(keybuf_tail-2)&(KEYBUF_SIZE-1)]==0xe0 )
+				continue;
+			k &= 0x80;
+			k |= SC_RSHIFT;
+		}
 
 		if (k==0xc5 && keybuf[(keybuf_tail-2)&(KEYBUF_SIZE-1)] == 0x9d)
 			continue; // more pause bullshit
@@ -543,7 +543,7 @@ void Sys_Printf (char *fmt, ...)
 {
 	va_list		argptr;
 	char		text[1024];
-	
+
 	va_start (argptr,fmt);
 	vsprintf (text,fmt,argptr);
 	va_end (argptr);
@@ -568,13 +568,13 @@ void Sys_Quit (void)
 	byte	*d;
 	char			ver[6];
 	int			i;
-	
 
-// load the sell screen before shuting everything down
+
+// load the sell screen before shutting everything down
 	if (registered.value)
-		d = COM_LoadHunkFile ("end2.bin"); 
+		d = COM_LoadHunkFile ("end2.bin");
 	else
-		d = COM_LoadHunkFile ("end1.bin"); 
+		d = COM_LoadHunkFile ("end1.bin");
 	if (d)
 		memcpy (screen, d, sizeof(screen));
 
@@ -588,14 +588,14 @@ void Sys_Quit (void)
 // do the text mode sell screen
 	if (d)
 	{
-		memcpy ((void *)real2ptr(0xb8000), screen,80*25*2); 
-	
+		memcpy ((void *)real2ptr(0xb8000), screen,80*25*2);
+
 	// set text pos
-		regs.x.ax = 0x0200; 
-		regs.h.bh = 0; 
-		regs.h.dl = 0; 
+		regs.x.ax = 0x0200;
+		regs.h.bh = 0;
+		regs.h.dl = 0;
 		regs.h.dh = 22;
-		dos_int86 (0x10); 
+		dos_int86 (0x10);
 	}
 	else
 		printf ("couldn't load endscreen.\n");
@@ -604,10 +604,10 @@ void Sys_Quit (void)
 }
 
 void Sys_Error (char *error, ...)
-{ 
+{
     va_list     argptr;
     char        string[1024];
-    
+
     va_start (argptr,error);
     vsprintf (string,error,argptr);
     va_end (argptr);
@@ -616,19 +616,19 @@ void Sys_Error (char *error, ...)
 	fprintf(stderr, "Error: %s\n", string);
 // Sys_AtExit is called by exit to shutdown the system
 	exit(0);
-} 
+}
 
 
 int Sys_FileOpenRead (char *path, int *handle)
 {
 	int	h;
 	struct stat	fileinfo;
-    
+
 	h = open (path, O_RDONLY|O_BINARY, 0666);
 	*handle = h;
 	if (h == -1)
 		return -1;
-	
+
 	if (fstat (h,&fileinfo) == -1)
 		Sys_Error ("Error fstating %s", path);
 
@@ -640,7 +640,7 @@ int Sys_FileOpenWrite (char *path)
 	int     handle;
 
 	umask (0);
-	
+
 	handle = open(path,O_RDWR | O_BINARY | O_CREAT | O_TRUNC
 	, 0666);
 
@@ -890,7 +890,7 @@ int main (int c, char **v)
 	static	char	cwd[1024];
 
 	printf ("Quake v%4.2f\n", VERSION);
-	
+
 // make sure there's an FPU
 	signal(SIGNOFP, Sys_NoFPUExceptionHandler);
 	signal(SIGABRT, Sys_DefaultExceptionHandler);
@@ -927,7 +927,7 @@ int main (int c, char **v)
 		dos_registerintr(9, TrapKey);
 
 //Sys_InitStackCheck ();
-	
+
 	Host_Init(&quakeparms);
 
 //Sys_StackCheck ();
@@ -949,5 +949,3 @@ int main (int c, char **v)
 		oldtime = newtime;
 	}
 }
-
-

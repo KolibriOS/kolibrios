@@ -23,14 +23,14 @@ BuildRoot:	/var/tmp/%{name}-%{version}
 Summary:	Quake for Linux
 
 %description
-"Quake is the biggest, baddest, and bloodiest 3-D action game ever 
+"Quake is the biggest, baddest, and bloodiest 3-D action game ever
 conceived" - PC GAMER
 
 "The most important PC game ever" - PC ZONE
 
 ""Quake": Bloody Amazing" - USA TODAY
 
-"The Vanguard of a terrifying new level of immersive interactivity" - 
+"The Vanguard of a terrifying new level of immersive interactivity" -
 COMPUTER GAMING WORLD
 
 From the creators of DOOM and DOOM II comes the most intense, technologically
@@ -38,7 +38,7 @@ advanced 3-D experience ever captured on CD ROM.  Features free and fluid
 motion, ambient sound and lighting, and unmatched multiplayer capabilities
 (play with up to 15 others).
 
-This package contians the Quake data files needed to play the game.
+This package contains the Quake data files needed to play the game.
 
 %install
 
@@ -57,4 +57,3 @@ This package contians the Quake data files needed to play the game.
 /sbin/ldconfig
 
 EOF
-

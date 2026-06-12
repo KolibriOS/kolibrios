@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -35,7 +35,7 @@
 void I_Init (void);
 
 // Called by startup code
-// to get the ammount of memory to malloc
+// to get the amount of memory to malloc
 // for the zone management.
 byte*	I_ZoneBase (int *size);
 
@@ -49,7 +49,7 @@ int I_GetTime (void);
 // Called by D_DoomLoop,
 // called before processing any tics in a frame
 // (just after displaying a frame).
-// Time consuming syncronous operations
+// Time consuming synchronous operations
 // are performed here (joystick reading).
 // Can call D_PostEvent.
 //
@@ -59,7 +59,7 @@ void I_StartFrame (void);
 //
 // Called by D_DoomLoop,
 // called before processing each tic in a frame.
-// Quick syncronous operations are performed here.
+// Quick synchronous operations are performed here.
 // Can call D_PostEvent.
 void I_StartTic (void);
 

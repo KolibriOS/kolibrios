@@ -71,24 +71,24 @@ since it was written specifically with supporting GLQuake in mind.
 lib3dfxgl.so requires that GLIDE be installed.
 
 3. The binary "glquake.glx" is linked against standard OpenGL libraries.
-It should run on many different hardward OpenGL implementations under
+It should run on many different hardware OpenGL implementations under
 Linux and X11.  This binary is an X11 application and must be run under
-X11.  It will work with Mesa 3-D as a standard glX based OpenGL 
+X11.  It will work with Mesa 3-D as a standard glX based OpenGL
 applications.  If the Mesa 3-D library is compiled with 3DFX support,
 you can have Mesa 3-D support 3DFX hardware under X11 by setting the
-enviroment variable "MESA_GLX_FX" to "fullscreen" for fullscreen mode
-and "window" for windowed mode, eg. "export MESA_GLX_FX=fullscreen" for sh 
+environment variable "MESA_GLX_FX" to "fullscreen" for fullscreen mode
+and "window" for windowed mode, eg. "export MESA_GLX_FX=fullscreen" for sh
 or "setenv MESA_GLX_FX fullscreen" for csh.
 
 For glquake, you must also have SVGALib or later installed (1.3.0 or later
-prefered).  GLQuake uses SVGALib for mouse and keyboard handling.
+preferred).  GLQuake uses SVGALib for mouse and keyboard handling.
 
 If you have gpm and/or selection running, you will have to terminate them
 before running GLQuake since they will not give up the mouse when GLQuake
 attempts to run.  You can kill gpm by typing 'killall gpm' as root.
 
-You must run GLQuake as root or setuid root since it needs to access things 
-such as sound, keyboard, mouse and the 3DFX video.  Future versions may not 
+You must run GLQuake as root or setuid root since it needs to access things
+such as sound, keyboard, mouse and the 3DFX video.  Future versions may not
 require root permissions.
 
 Additional notes for X11 Quake

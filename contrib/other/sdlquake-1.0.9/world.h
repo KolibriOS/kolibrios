@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -65,7 +65,7 @@ int SV_TruePointContents (vec3_t p);
 edict_t	*SV_TestEntityPosition (edict_t *ent);
 
 trace_t SV_Move (vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, int type, edict_t *passedict);
-// mins and maxs are reletive
+// mins and maxs are relative
 
 // if the entire move stays in a solid volume, trace.allsolid will be set
 

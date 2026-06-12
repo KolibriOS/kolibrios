@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -44,14 +44,14 @@ void D_AddFile (char *file);
 // D_DoomMain()
 // Not a globally visible function, just included for source reference,
 // calls all startup code, parses command line options.
-// If not overrided by user input, calls N_AdvanceDemo.
+// If not overridden by user input, calls N_AdvanceDemo.
 //
 void D_DoomMain (void);
 
 // Called by IO functions when input is detected.
 void D_PostEvent (event_t* ev);
 
-	
+
 
 //
 // BASE LEVEL

@@ -62,7 +62,7 @@ bool	MGLAPI MGL_destroyDC(MGLDC *dc);
 
 ulong	MGLAPI MGL_getTicks(void);
 ulong	MGLAPI MGL_getTickResolution(void);
-void	MGLAPI MGL_delay(m_int millseconds);
+void	MGLAPI MGL_delay(m_int milliseconds);
 void	MGLAPI MGL_beep(m_int freq,m_int milliseconds);
 void	MGLAPI MGL_suspend(void);
 void	MGLAPI MGL_resume(void);

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -33,11 +33,11 @@ rcsid[] = "$Id:$";
 
 
 //
-// PSPRITE ACTIONS for waepons.
+// PSPRITE ACTIONS for weapons.
 // This struct controls the weapon animations.
 //
 // Each entry is:
-//   ammo/amunition type
+//   ammo/ammunition type
 //  upstate
 //  downstate
 // readystate
@@ -54,7 +54,7 @@ weaponinfo_t	weaponinfo[NUMWEAPONS] =
 	S_PUNCH,
 	S_PUNCH1,
 	S_NULL
-    },	
+    },
     {
 	// pistol
 	am_clip,
@@ -63,7 +63,7 @@ weaponinfo_t	weaponinfo[NUMWEAPONS] =
 	S_PISTOL,
 	S_PISTOL1,
 	S_PISTOLFLASH
-    },	
+    },
     {
 	// shotgun
 	am_shell,
@@ -126,13 +126,5 @@ weaponinfo_t	weaponinfo[NUMWEAPONS] =
 	S_DSGUN,
 	S_DSGUN1,
 	S_DSGUNFLASH1
-    },	
+    },
 };
-
-
-
-
-
-
-
-

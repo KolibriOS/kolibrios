@@ -15,7 +15,7 @@ IBM PC and Compatibles
 Pentium processor or better
 VGA Compatible Display or better
 8MB RAM minimum, 16MB recommended (16 MB required for running under Win95)
-CD-ROM drive Required 
+CD-ROM drive Required
 MS-DOS 5.0 or better or Windows 95 (does NOT run under Windows NT)
 Hard Drive (30MB for Shareware, 80 MB for Registered)
 
@@ -138,7 +138,7 @@ short sound F/X delay.
 
 UltraSound PnP and PnP Pro
 --------------------------
-You must make sure that you do NOT have IWSBOS or MegaEm loaded. 
+You must make sure that you do NOT have IWSBOS or MegaEm loaded.
 
 Setup
 -----
@@ -151,8 +151,8 @@ and in the IW.INI (PnP) file to determine what port settings to use.
 
 Troubleshooting Windows 95 (DOS Box)
 ------------------------------------
-We recommend that you restart your computer in MS-DOS Mode.  DOS Box 
-may or may not work, so use at your own risk.  
+We recommend that you restart your computer in MS-DOS Mode.  DOS Box
+may or may not work, so use at your own risk.
 
 CD Audio Input
 --------------
@@ -229,7 +229,7 @@ results as using a Boot Disk.  To create a Quake Shortcut, do the following:
 ==                  Known Problems                  ==
 ======================================================
 
-Problem: Zombies sometime get stuck on the ground and connot get back up.
+Problem: Zombies sometime get stuck on the ground and cannot get back up.
 (You can still hear them, but you cannot kill them. This bug makes it
 impossible to get 100% kills on whatever level it occurs on.)
 Solution: There is no workaround for this bug.
@@ -240,7 +240,7 @@ Solution: If you get stuck, use the 'kill' console command. It is a good
 idea to save your game often.
 
 Problem: View centering problems. Sometimes during a game, the view will not
-center properly.  The end result is the player view looking up torwards the
+center properly.  The end result is the player view looking up towards the
 ceiling while walking.
 Solution: Exit to the next level or use the 'kill' console command..
 
@@ -290,18 +290,18 @@ also refer to our web page, www.idsoftware.com, or call 1-800-idgames.
 When sending support e-mail, cut and paste the following into your e-mail
 message and fill in the blanks:
 
-Date:  
-Name:  
-Phone number:  
+Date:
+Name:
+Phone number:
 E-mail address:  (please include this, we redirect tons of mail)
-Game Title:  
-Version #:  
+Game Title:
+Version #:
 Operating system (i.e., DOS 6.0 or Windows 95):
-Computer type:  
+Computer type:
 BIOS date:
 BIOS version:
-Processor type:  
-Processor speed:  
+Processor type:
+Processor speed:
 Do you program at school/work?
 Do you provide tech. support at school/work?
 Please state the problem you encountered:
@@ -440,7 +440,7 @@ You can turn off joystick reading during the game by typing "joystick 0" at
 the Quake command console.
 
 You MUST configure your buttons from the configure keys menu before they will
-work.  There is no default configuration. 
+work.  There is no default configuration.
 
 If your joystick or interface card improperly sets the third or fourth
 joystick buttons, type "joybuttons 2" at the quake console or in your
@@ -449,7 +449,7 @@ joystick buttons, type "joybuttons 2" at the quake console or in your
 The "mlook" button command now lets the joystick as well as the mouse control
 pitch angles.
 
-The "sidestep" buttom command works on joysticks as with mice and keyboard
+The "sidestep" button command works on joysticks as with mice and keyboard
 movement.
 
 The "invert mouse up/down" menu option also inverts the joystick pitch

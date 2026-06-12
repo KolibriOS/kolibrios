@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -61,8 +61,8 @@ Command execution takes a null terminated string, breaks it into tokens,
 then searches for a command or variable that matches the first token.
 
 Commands can come from three sources, but the handler functions may choose
-to dissallow the action or forward it to a remote server if the source is
-not apropriate.
+to disallow the action or forward it to a remote server if the source is
+not appropriate.
 
 */
 
@@ -96,11 +96,11 @@ char	*Cmd_Argv (int arg);
 char	*Cmd_Args (void);
 // The functions that execute commands get their parameters with these
 // functions. Cmd_Argv () will return an empty string, not a NULL
-// if arg > argc, so string operations are allways safe.
+// if arg > argc, so string operations are always safe.
 
 int Cmd_CheckParm (char *parm);
 // Returns the position (1 to argc-1) in the command's argument list
-// where the given parameter apears, or 0 if not present
+// where the given parameter appears, or 0 if not present
 
 void Cmd_TokenizeString (char *text);
 // Takes a null terminated string.  Does not need to be /n terminated.
@@ -118,4 +118,3 @@ void	Cmd_ForwardToServer (void);
 void	Cmd_Print (char *text);
 // used by command functions to send output to either the graphics console or
 // passed as a print message to the client
-

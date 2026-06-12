@@ -24,7 +24,7 @@ enum
   BCJ2_DEC_STATE_ORIG_1,
   BCJ2_DEC_STATE_ORIG_2,
   BCJ2_DEC_STATE_ORIG_3,
-  
+
   BCJ2_DEC_STATE_ORIG,
   BCJ2_DEC_STATE_OK
 };
@@ -42,7 +42,7 @@ enum
 CBcj2Dec / CBcj2Enc
 bufs sizes:
   BUF_SIZE(n) = lims[n] - bufs[n]
-bufs sizes for BCJ2_STREAM_CALL and BCJ2_STREAM_JUMP must be mutliply of 4:
+bufs sizes for BCJ2_STREAM_CALL and BCJ2_STREAM_JUMP must be a multiple of 4:
     (BUF_SIZE(BCJ2_STREAM_CALL) & 3) == 0
     (BUF_SIZE(BCJ2_STREAM_JUMP) & 3) == 0
 */
@@ -110,7 +110,7 @@ typedef struct
 
   UInt32 ip;
 
-  /* 32-bit ralative offset in JUMP/CALL commands is
+  /* 32-bit relative offset in JUMP/CALL commands is
        - (mod 4 GB)   in 32-bit mode
        - signed Int32 in 64-bit mode
      We use (mod 4 GB) check for fileSize.
@@ -124,7 +124,7 @@ typedef struct
   Byte temp[4 * 2];
 
   unsigned flushPos;
-  
+
   UInt16 probs[2 + 256];
 } CBcj2Enc;
 

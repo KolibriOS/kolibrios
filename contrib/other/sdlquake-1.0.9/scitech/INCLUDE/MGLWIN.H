@@ -124,7 +124,7 @@ bool	MGLAPI MGL_activatePalette(MGLDC *dc,bool unrealize);
  * app is not active and allow Windows to re-map your bitmap colors on the
  * fly. This function should be passed a pointer to the currently active
  * MGL Windowed DC and a flag to indicate whether the app is in the background
- * or not.   
+ * or not.
  */
 
 void	MGLAPI MGL_appActivate(MGLDC *winDC,bool active);
@@ -133,7 +133,7 @@ void	MGLAPI MGL_appActivate(MGLDC *winDC,bool active);
 
 ulong	MGLAPI MGL_getTicks(void);
 ulong	MGLAPI MGL_getTickResolution(void);
-void	MGLAPI MGL_delay(m_int millseconds);
+void	MGLAPI MGL_delay(m_int milliseconds);
 void	MGLAPI MGL_beep(m_int freq,m_int milliseconds);
 
 /* Fullscreen specific routines */

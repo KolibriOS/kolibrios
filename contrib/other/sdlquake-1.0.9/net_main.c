@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -203,7 +203,7 @@ static void MaxPlayers_f (void)
 
 	if (sv.active)
 	{
-		Con_Printf ("maxplayers can not be changed while a server is running.\n");
+		Con_Printf ("maxplayers cannot be changed while a server is running.\n");
 		return;
 	}
 
@@ -436,7 +436,7 @@ JustDoIt:
 		PrintSlist();
 		PrintSlistTrailer();
 	}
-	
+
 	return NULL;
 }
 
@@ -480,7 +480,7 @@ qsocket_t *NET_CheckNewConnections (void)
 			return ret;
 		}
 	}
-	
+
 	if (recording)
 	{
 		vcrConnect.time = host_time;
@@ -625,7 +625,7 @@ struct
 int NET_SendMessage (qsocket_t *sock, sizebuf_t *data)
 {
 	int		r;
-	
+
 	if (!sock)
 		return -1;
 
@@ -648,7 +648,7 @@ int NET_SendMessage (qsocket_t *sock, sizebuf_t *data)
 		vcrSendMessage.r = r;
 		Sys_FileWrite (vcrFile, &vcrSendMessage, 20);
 	}
-	
+
 	return r;
 }
 
@@ -656,7 +656,7 @@ int NET_SendMessage (qsocket_t *sock, sizebuf_t *data)
 int NET_SendUnreliableMessage (qsocket_t *sock, sizebuf_t *data)
 {
 	int		r;
-	
+
 	if (!sock)
 		return -1;
 
@@ -679,7 +679,7 @@ int NET_SendUnreliableMessage (qsocket_t *sock, sizebuf_t *data)
 		vcrSendMessage.r = r;
 		Sys_FileWrite (vcrFile, &vcrSendMessage, 20);
 	}
-	
+
 	return r;
 }
 
@@ -695,7 +695,7 @@ message to be transmitted.
 qboolean NET_CanSendMessage (qsocket_t *sock)
 {
 	int		r;
-	
+
 	if (!sock)
 		return false;
 
@@ -705,7 +705,7 @@ qboolean NET_CanSendMessage (qsocket_t *sock)
 	SetNetTime();
 
 	r = sfunc.CanSendMessage(sock);
-	
+
 	if (recording)
 	{
 		vcrSendMessage.time = host_time;
@@ -714,7 +714,7 @@ qboolean NET_CanSendMessage (qsocket_t *sock)
 		vcrSendMessage.r = r;
 		Sys_FileWrite (vcrFile, &vcrSendMessage, 20);
 	}
-	
+
 	return r;
 }
 

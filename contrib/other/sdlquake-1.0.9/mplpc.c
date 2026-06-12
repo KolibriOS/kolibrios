@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -174,7 +174,7 @@ RTQ_NODE
    {
       RTQ_NODE *self; // Ring zero address of this node
       RTQ_NODE *left; // Ring zero address of preceding node
-      RTQ_NODE *right; // Ring zero address of succeding node
+      RTQ_NODE *right; // Ring zero address of succeeding node
       BYTE *      rtqDatum;  // Ring 3 Datum of Buffer (start of preface)
       BYTE *      rtqInsert; // Ring 3 insertion position
       WORD     rtqLen; // Length of buffer, excluding preface

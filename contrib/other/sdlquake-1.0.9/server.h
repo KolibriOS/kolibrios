@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -40,10 +40,10 @@ typedef struct
 	qboolean	loadgame;			// handle connections specially
 
 	double		time;
-	
+
 	int			lastcheck;			// used by PF_checkclient
 	double		lastchecktime;
-	
+
 	char		name[64];			// map name
 #ifdef QUAKE2
 	char		startspot[64];
@@ -56,7 +56,7 @@ typedef struct
 	char		*lightstyles[MAX_LIGHTSTYLES];
 	int			num_edicts;
 	int			max_edicts;
-	edict_t		*edicts;			// can NOT be array indexed, because
+	edict_t		*edicts;			// cannot be array indexed, because
 									// edict_t is variable sized, but can
 									// be used to reference the world ent
 	server_state_t	state;			// some actions are only valid during load
@@ -97,14 +97,14 @@ typedef struct client_s
 	edict_t			*edict;				// EDICT_NUM(clientnum+1)
 	char			name[32];			// for printing to other people
 	int				colors;
-		
+
 	float			ping_times[NUM_PING_TIMES];
 	int				num_pings;			// ping_times[num_pings%NUM_PING_TIMES]
 
 // spawn parms are carried from level to level
 	float			spawn_parms[NUM_SPAWN_PARMS];
 
-// client known data for deltas	
+// client known data for deltas
 	int				old_frags;
 } client_t;
 
@@ -202,7 +202,7 @@ extern	cvar_t	coop;
 extern	cvar_t	fraglimit;
 extern	cvar_t	timelimit;
 
-extern	server_static_t	svs;				// persistant server info
+extern	server_static_t	svs;				// persistent server info
 extern	server_t		sv;					// local server
 
 extern	client_t	*host_client;

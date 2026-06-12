@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -78,9 +78,9 @@ void VCR_Shutdown (void)
 int VCR_GetMessage (qsocket_t *sock)
 {
 	int	ret;
-	
+
 	if (host_time != next.time || next.op != VCR_OP_GETMESSAGE || next.session != *(long *)(&sock->driverdata))
-		Sys_Error ("VCR missmatch");
+		Sys_Error ("VCR mismatch");
 
 	Sys_FileRead(vcrFile, &ret, sizeof(int));
 	if (ret != 1)
@@ -103,7 +103,7 @@ int VCR_SendMessage (qsocket_t *sock, sizebuf_t *data)
 	int	ret;
 
 	if (host_time != next.time || next.op != VCR_OP_SENDMESSAGE || next.session != *(long *)(&sock->driverdata))
-		Sys_Error ("VCR missmatch");
+		Sys_Error ("VCR mismatch");
 
 	Sys_FileRead(vcrFile, &ret, sizeof(int));
 
@@ -118,7 +118,7 @@ qboolean VCR_CanSendMessage (qsocket_t *sock)
 	qboolean	ret;
 
 	if (host_time != next.time || next.op != VCR_OP_CANSENDMESSAGE || next.session != *(long *)(&sock->driverdata))
-		Sys_Error ("VCR missmatch");
+		Sys_Error ("VCR mismatch");
 
 	Sys_FileRead(vcrFile, &ret, sizeof(int));
 
@@ -149,7 +149,7 @@ qsocket_t *VCR_CheckNewConnections (void)
 	qsocket_t	*sock;
 
 	if (host_time != next.time || next.op != VCR_OP_CONNECT)
-		Sys_Error ("VCR missmatch");
+		Sys_Error ("VCR mismatch");
 
 	if (!next.session)
 	{

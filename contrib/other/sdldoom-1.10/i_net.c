@@ -39,7 +39,7 @@ void _cdecl mf_init();
         ((unsigned short int)((((unsigned short int)(x) & 0x00ff) << 8) | \
                               (((unsigned short int)(x) & 0xff00) >> 8)))
 #endif
-          
+
 #ifndef htonl
 #define htonl(x) ntohl(x)
 #endif
@@ -122,12 +122,12 @@ int CreateOutputUDPSocket(int remote_ip)
 void PacketSend (void)
 {
  int c;
- doomdata_t sw; 
- 
- 
+ doomdata_t sw;
+
+
  //printf("ERROR Packet Send\n\r");
 
-                
+
  // byte swap
  sw.checksum = htonl(netbuffer->checksum);
  sw.player = netbuffer->player;
@@ -139,7 +139,7 @@ void PacketSend (void)
   sw.cmds[c].forwardmove = netbuffer->cmds[c].forwardmove;
   sw.cmds[c].sidemove = netbuffer->cmds[c].sidemove;
   sw.cmds[c].angleturn = htons(netbuffer->cmds[c].angleturn);
-  sw.cmds[c].consistancy = htons(netbuffer->cmds[c].consistancy);
+  sw.cmds[c].consistency = htons(netbuffer->cmds[c].consistency);
   sw.cmds[c].chatchar = netbuffer->cmds[c].chatchar;
   sw.cmds[c].buttons = netbuffer->cmds[c].buttons;
  }
@@ -183,10 +183,10 @@ void I_InitNetwork (void)
     boolean             trueval = true;
     int                 i;
     int                 p;
-        
+
     doomcom = malloc (sizeof (*doomcom) );
     memset (doomcom, 0, sizeof(*doomcom) );
-    
+
     // set up for network
     i = M_CheckParm ("-dup");
     if (i && i< myargc-1)
@@ -199,12 +199,12 @@ void I_InitNetwork (void)
     }
     else
         doomcom-> ticdup = 1;
-        
+
     if (M_CheckParm ("-extratic"))
         doomcom-> extratics = 1;
     else
         doomcom-> extratics = 0;
-                
+
     p = M_CheckParm ("-port");
     if (p && p<myargc-1)
     {

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -98,7 +98,7 @@ struct qsockaddr
 //	note:
 //		There are two address forms used above.  The short form is just a
 //		port number.  The address that goes along with the port is defined as
-//		"whatever address you receive this reponse from".  This lets us use
+//		"whatever address you receive this response from".  This lets us use
 //		the host OS to solve the problem of multiple host addresses (possibly
 //		with no routing between them); the host will use the right address
 //		when we reply to the inbound connection request.  The long from is
@@ -126,7 +126,7 @@ typedef struct qsocket_s
 	qboolean		disconnected;
 	qboolean		canSend;
 	qboolean		sendNext;
-	
+
 	int				driver;
 	int				landriver;
 	int				socket;
@@ -289,7 +289,7 @@ int			NET_GetMessage (struct qsocket_s *sock);
 
 int			NET_SendMessage (struct qsocket_s *sock, sizebuf_t *data);
 int			NET_SendUnreliableMessage (struct qsocket_s *sock, sizebuf_t *data);
-// returns 0 if the message connot be delivered reliably, but the connection
+// returns 0 if the message cannot be delivered reliably, but the connection
 //		is still considered valid
 // returns 1 if the message was sent properly
 // returns -1 if the connection died
@@ -303,7 +303,7 @@ void		NET_Close (struct qsocket_s *sock);
 // should be called when it is convenient
 
 // Server calls when a client is kicked off for a game related misbehavior
-// like an illegal protocal conversation.  Client calls when disconnecting
+// like an illegal protocol conversation.  Client calls when disconnecting
 // from a server.
 // A netcon_t number will not be reused until this function is called for it
 

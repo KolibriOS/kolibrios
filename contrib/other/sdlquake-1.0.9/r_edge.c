@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -24,13 +24,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #if 0
 // FIXME
-the complex cases add new polys on most lines, so dont optimize for keeping them the same
+the complex cases add new polys on most lines, so don't optimize for keeping them the same
 have multiple free span lists to try to get better coherence?
 low depth complexity -- 1 to 3 or so
 
 this breaks spans at every edge, even hidden ones (bad)
 
-have a sentinal at both ends?
+have a sentinel at both ends?
 #endif
 
 
@@ -202,7 +202,7 @@ addedge:
 }
 
 #endif	// !id386
-	
+
 
 #if	!id386
 
@@ -242,29 +242,29 @@ nextedge:
 		if (pedge->u < pedge->prev->u)
 			goto pushback;
 		pedge = pedge->next;
-			
+
 		pedge->u += pedge->u_step;
 		if (pedge->u < pedge->prev->u)
 			goto pushback;
 		pedge = pedge->next;
-			
+
 		pedge->u += pedge->u_step;
 		if (pedge->u < pedge->prev->u)
 			goto pushback;
 		pedge = pedge->next;
-			
+
 		pedge->u += pedge->u_step;
 		if (pedge->u < pedge->prev->u)
 			goto pushback;
 		pedge = pedge->next;
-			
-		goto nextedge;		
-		
+
+		goto nextedge;
+
 pushback:
 		if (pedge == &edge_aftertail)
 			return;
-			
-	// push it back to keep it sorted		
+
+	// push it back to keep it sorted
 		pnext_edge = pedge->next;
 
 	// pull the edge out of the edge list
@@ -397,7 +397,7 @@ newtop:
 
 		// set last_u on the new span
 		surf->last_u = iu;
-				
+
 gotposition:
 	// insert before surf2
 		surf->next = surf2;
@@ -568,7 +568,7 @@ newtop:
 
 			// set last_u on the new span
 			surf->last_u = iu;
-				
+
 gotposition:
 		// insert before surf2
 			surf->next = surf2;
@@ -598,7 +598,7 @@ void R_GenerateSpans (void)
 
 // generate spans
 	for (edge=edge_head.next ; edge != &edge_tail; edge=edge->next)
-	{			
+	{
 		if (edge->surfs[0])
 		{
 		// it has a left surface, so a surface is going away for this span
@@ -636,7 +636,7 @@ void R_GenerateSpansBackward (void)
 
 // generate spans
 	for (edge=edge_head.next ; edge != &edge_tail; edge=edge->next)
-	{			
+	{
 		if (edge->surfs[0])
 			R_TrailingEdge (&surfaces[edge->surfs[0]], edge);
 
@@ -652,7 +652,7 @@ void R_GenerateSpansBackward (void)
 ==============
 R_ScanEdges
 
-Input: 
+Input:
 newedges[] array
 	this has links to edges, which have links to surfaces
 
@@ -682,7 +682,7 @@ void R_ScanEdges (void)
 	edge_head.next = &edge_tail;
 	edge_head.surfs[0] = 0;
 	edge_head.surfs[1] = 1;
-	
+
 	edge_tail.u = (r_refdef.vrectright << 20) + 0xFFFFF;
 	edge_tail_u_shift20 = edge_tail.u >> 20;
 	edge_tail.u_step = 0;
@@ -690,7 +690,7 @@ void R_ScanEdges (void)
 	edge_tail.next = &edge_aftertail;
 	edge_tail.surfs[0] = 1;
 	edge_tail.surfs[1] = 0;
-	
+
 	edge_aftertail.u = -1;		// force a move
 	edge_aftertail.u_step = 0;
 	edge_aftertail.next = &edge_sentinel;
@@ -700,7 +700,7 @@ void R_ScanEdges (void)
 	edge_sentinel.u = 2000 << 24;		// make sure nothing sorts past this
 	edge_sentinel.prev = &edge_aftertail;
 
-//	
+//
 // process all scan lines
 //
 	bottom = r_refdef.vrectbottom - 1;
@@ -727,7 +727,7 @@ void R_ScanEdges (void)
 			VID_UnlockBuffer ();
 			S_ExtraUpdate ();	// don't let sound get messed up if going slow
 			VID_LockBuffer ();
-		
+
 			if (r_drawculledpolys)
 			{
 				R_DrawCulledPolys ();
@@ -770,5 +770,3 @@ void R_ScanEdges (void)
 	else
 		D_DrawSurfaces ();
 }
-
-

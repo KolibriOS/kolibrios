@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -57,7 +57,7 @@
 #define MELEERANGE		(64*FRACUNIT)
 #define MISSILERANGE	(32*64*FRACUNIT)
 
-// follow a player exlusively for 3 seconds
+// follow a player exclusively for 3 seconds
 #define	BASETHRESHOLD	 	100
 
 
@@ -67,7 +67,7 @@
 //
 
 // both the head and tail of the thinker list
-extern	thinker_t	thinkercap;	
+extern	thinker_t	thinkercap;
 
 
 void P_InitThinkers (void);
@@ -138,7 +138,7 @@ typedef struct
     fixed_t	y;
     fixed_t	dx;
     fixed_t	dy;
-    
+
 } divline_t;
 
 typedef struct
@@ -285,5 +285,3 @@ P_DamageMobj
 // $Log:$
 //
 //-----------------------------------------------------------------------------
-
-

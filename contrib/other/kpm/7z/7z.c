@@ -51,7 +51,7 @@ int test_archive(const char *path)
 
     if (InFile_Open(&archiveStream.file, path))
     {
-        printf("can not open input file");
+        printf("cannot open input file");
         return -1;
     }
 
@@ -430,7 +430,7 @@ void do_7z_unpack(const char *srcpath)
                 }
                 else if (OutFile_OpenUtf16(&outFile, destPath))
                 {
-                    PrintError("can not open output file");
+                    PrintError("cannot open output file");
                     res = SZ_ERROR_FAIL;
                     break;
                 }
@@ -439,14 +439,14 @@ void do_7z_unpack(const char *srcpath)
 
                 if (File_Write(&outFile, outBuffer + offset, &processedSize) != 0 || processedSize != outSizeProcessed)
                 {
-                    PrintError("can not write output file\n");
+                    PrintError("cannot write output file\n");
                     res = SZ_ERROR_FAIL;
                     break;
                 }
 
                 if (File_Close(&outFile))
                 {
-                    PrintError("can not close output file\n");
+                    PrintError("cannot close output file\n");
                     res = SZ_ERROR_FAIL;
                     break;
                 }
@@ -476,4 +476,3 @@ void do_install(list_t *install)
         list_del_pkg(pkg);
     };
 };
-

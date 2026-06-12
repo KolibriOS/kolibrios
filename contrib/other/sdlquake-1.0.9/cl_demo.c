@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -91,16 +91,16 @@ int CL_GetMessage (void)
 {
 	int		r, i;
 	float	f;
-	
+
 	if	(cls.demoplayback)
 	{
-	// decide if it is time to grab the next message		
-		if (cls.signon == SIGNONS)	// allways grab until fully connected
+	// decide if it is time to grab the next message
+		if (cls.signon == SIGNONS)	// always grab until fully connected
 		{
 			if (cls.timedemo)
 			{
 				if (host_framecount == cls.td_lastframe)
-					return 0;		// allready read this frame's message
+					return 0;		// already read this frame's message
 				cls.td_lastframe = host_framecount;
 			// if this is the second frame, grab the real td_starttime
 			// so the bogus time on the first frame doesn't count
@@ -112,7 +112,7 @@ int CL_GetMessage (void)
 					return 0;		// don't need another message yet
 			}
 		}
-		
+
 	// get the next message
 		fread (&net_message.cursize, 4, 1, cls.demofile);
 		VectorCopy (cl.mviewangles[0], cl.mviewangles[1]);
@@ -121,7 +121,7 @@ int CL_GetMessage (void)
 			r = fread (&f, 4, 1, cls.demofile);
 			cl.mviewangles[0][i] = LittleFloat (f);
 		}
-		
+
 		net_message.cursize = LittleLong (net_message.cursize);
 		if (net_message.cursize > MAX_MSGLEN)
 			Sys_Error ("Demo message > MAX_MSGLEN");
@@ -131,17 +131,17 @@ int CL_GetMessage (void)
 			CL_StopPlayback ();
 			return 0;
 		}
-	
+
 		return 1;
 	}
 
 	while (1)
 	{
 		r = NET_GetMessage (cls.netcon);
-		
+
 		if (r != 1 && r != 2)
 			return r;
-	
+
 	// discard nop keepalive message
 		if (net_message.cursize == 1 && net_message.data[0] == svc_nop)
 			Con_Printf ("<-- server to client keepalive\n");
@@ -151,7 +151,7 @@ int CL_GetMessage (void)
 
 	if (cls.demorecording)
 		CL_WriteDemoMessage ();
-	
+
 	return r;
 }
 
@@ -217,7 +217,7 @@ void CL_Record_f (void)
 
 	if (c == 2 && cls.state == ca_connected)
 	{
-		Con_Printf("Can not record - already connected to server\nClient demo recording must be started before connecting\n");
+		Con_Printf("cannot record - already connected to server\nClient demo recording must be started before connecting\n");
 		return;
 	}
 
@@ -228,16 +228,16 @@ void CL_Record_f (void)
 		Con_Printf ("Forcing CD track to %i\n", cls.forcetrack);
 	}
 	else
-		track = -1;	
+		track = -1;
 
 	sprintf (name, "%s/%s", com_gamedir, Cmd_Argv(1));
-	
+
 //
 // start the map up
 //
 	if (c > 2)
 		Cmd_ExecuteString ( va("map %s", Cmd_Argv(2)), src_command);
-	
+
 //
 // open the demo file
 //
@@ -253,7 +253,7 @@ void CL_Record_f (void)
 
 	cls.forcetrack = track;
 	fprintf (cls.demofile, "%i\n", cls.forcetrack);
-	
+
 	cls.demorecording = true;
 }
 
@@ -284,7 +284,7 @@ void CL_PlayDemo_f (void)
 // disconnect from server
 //
 	CL_Disconnect ();
-	
+
 //
 // open the demo file
 //
@@ -326,9 +326,9 @@ void CL_FinishTimeDemo (void)
 {
 	int		frames;
 	float	time;
-	
+
 	cls.timedemo = false;
-	
+
 // the first frame didn't count
 	frames = (host_framecount - cls.td_startframe) - 1;
 	time = realtime - cls.td_starttime;
@@ -356,12 +356,11 @@ void CL_TimeDemo_f (void)
 	}
 
 	CL_PlayDemo_f ();
-	
+
 // cls.td_starttime will be grabbed at the second frame of the demo, so
 // all the loading time doesn't get counted
-	
+
 	cls.timedemo = true;
 	cls.td_startframe = host_framecount;
 	cls.td_lastframe = -1;		// get a new message this frame
 }
-

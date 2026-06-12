@@ -15,7 +15,7 @@ in CALL instructions to increase the compression ratio.
   In:
     data     - data buffer
     size     - size of data
-    ip       - current virtual Instruction Pinter (IP) value
+    ip       - current virtual Instruction Pointer (IP) value
     state    - state variable for x86 converter
     encoding - 0 (for decoding), 1 (for encoding)
   

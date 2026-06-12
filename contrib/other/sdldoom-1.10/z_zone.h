@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -39,7 +39,7 @@
 #define PU_DAVE		4	// anything else Dave wants static
 #define PU_LEVEL		50	// static until level exited
 #define PU_LEVSPEC		51      // a special thinker in a level
-// Tags >= 100 are purgable whenever needed.
+// Tags >= 100 are purgeable whenever needed.
 #define PU_PURGELEVEL	100
 #define PU_CACHE		101
 

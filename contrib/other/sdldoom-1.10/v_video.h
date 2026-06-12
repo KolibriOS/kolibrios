@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -29,7 +29,7 @@
 
 #include "doomdef.h"
 
-// Needed because we are refering to patches.
+// Needed because we are referring to patches.
 #include "r_data.h"
 
 //

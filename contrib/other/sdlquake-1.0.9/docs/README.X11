@@ -60,7 +60,7 @@ Installation
 ------------
 
 Boot DOS (I know, but you need it to run the Quake install program) and
-install Quake from your Quake CD to a DOS parition.
+install Quake from your Quake CD to a DOS partition.
 
 Boot Linux and make a directory for Quake.  Copy everything from the DOS Quake
 directory into it.  i.e.:
@@ -104,4 +104,3 @@ Dave Taylor <ddt@crack.com> for basic Linux support.
 id Software for Quake and making me port it. :)
 
 Lots of people on #linux, #quake for testing.
-

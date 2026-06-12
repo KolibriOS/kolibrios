@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 qboolean		insubmodel;
 entity_t		*currententity;
 vec3_t			modelorg, base_modelorg;
-								// modelorg is the viewpoint reletive to
+								// modelorg is the viewpoint relative to
 								// the currently rendering entity
 vec3_t			r_entorigin;	// the currently rendering entity in world
 								// coordinates
@@ -86,7 +86,7 @@ void R_RotateBmodel (void)
 // TODO: share work with R_SetUpAliasTransform
 
 // yaw
-	angle = currententity->angles[YAW];		
+	angle = currententity->angles[YAW];
 	angle = angle * M_PI*2 / 360;
 	s = sin(angle);
 	c = cos(angle);
@@ -103,7 +103,7 @@ void R_RotateBmodel (void)
 
 
 // pitch
-	angle = currententity->angles[PITCH];		
+	angle = currententity->angles[PITCH];
 	angle = angle * M_PI*2 / 360;
 	s = sin(angle);
 	c = cos(angle);
@@ -121,7 +121,7 @@ void R_RotateBmodel (void)
 	R_ConcatRotations (temp2, temp1, temp3);
 
 // roll
-	angle = currententity->angles[ROLL];		
+	angle = currententity->angles[ROLL];
 	angle = angle * M_PI*2 / 360;
 	s = sin(angle);
 	c = cos(angle);
@@ -479,7 +479,7 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 			rejectpt[0] = (float)node->minmaxs[pindex[0]];
 			rejectpt[1] = (float)node->minmaxs[pindex[1]];
 			rejectpt[2] = (float)node->minmaxs[pindex[2]];
-			
+
 			d = DotProduct (rejectpt, view_clipplanes[i].normal);
 			d -= view_clipplanes[i].dist;
 
@@ -497,7 +497,7 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 				clipflags &= ~(1<<i);	// node is entirely on screen
 		}
 	}
-	
+
 // if a leaf node, draw stuff
 	if (node->contents < 0)
 	{
@@ -526,7 +526,7 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 	}
 	else
 	{
-	// node is just a decision point, so go down the apropriate sides
+	// node is just a decision point, so go down the appropriate sides
 
 	// find which side of the node we are on
 		plane = node->plane;
@@ -546,7 +546,7 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 			dot = DotProduct (modelorg, plane->normal) - plane->dist;
 			break;
 		}
-	
+
 		if (dot >= 0)
 			side = 0;
 		else
@@ -670,5 +670,3 @@ void R_RenderWorld (void)
 		}
 	}
 }
-
-

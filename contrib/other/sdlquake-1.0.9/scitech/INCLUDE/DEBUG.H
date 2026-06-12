@@ -149,7 +149,7 @@ extern main();
 #endif
 
 /* We have the following defines to define the calling conventions for
- * publicly accesible functions:
+ * publicly accessible functions:
  *
  *  _PUBAPI - Compiler default calling conventions for all public 'C' functions
  *  _ASMAPI - Calling conventions for all public assembler functions
@@ -159,7 +159,7 @@ extern main();
  *  _VARAPI - Modifiers for variables; Watcom C++ mangles C++ globals
  */
 
-#define _PUBAPI	
+#define _PUBAPI
 #define _ASMAPI __cdecl
 
 #if defined(_MSC_VER) && defined(_WIN32) && !defined(__SC__)
@@ -253,7 +253,7 @@ typedef int             ibool;		/* Integer boolean type			*/
 /* Includes Windows headers, as they define TRUE and FALSE */
 
 #ifdef	__WINDOWS__
-#ifndef _WINDOWS_                   /* Dont include if already included */
+#ifndef _WINDOWS_                   /* Don't include if already included */
 #ifndef __WIN386__
 #define STRICT
 #define	WIN32_LEAN_AND_MEAN
