@@ -34,7 +34,6 @@ img_files = {
  {"SINE.MP3", "common/sine.mp3"},
  {"LANG.INC", build_type .. "/lang.inc"},
  {"NOTIFY3.PNG", "common/notify3.png"},
- {"UNIMG", VAR_PROGS .. "/cmm/misc/unimg.com"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
  {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
  {"FONTS/TAHOMA.KF", "common/fonts/tahoma.kf"},
@@ -698,6 +697,7 @@ tup.append_table(img_files, {
  {"MEDIA/ICONEDIT", VAR_PROGS .. "/cmm/iconedit/iconedit.com"},
  {"NETWORK/DL", VAR_PROGS .. "/cmm/downloader/dl.com"},
  {"NETWORK/WEBVIEW", VAR_PROGS .. "/cmm/browser/WebView.com"},
+ {"UNIMG", VAR_PROGS .. "/cmm/misc/unimg.com"},
 })
 tup.append_table(extra_files, {
  {"kolibrios/drivers/drvinst.kex", VAR_PROGS .. "/cmm/drvinst/drvinst.com"},
