@@ -13,6 +13,7 @@
 #include "const.h"
 
 bool open_file = false;
+bool invisible = false;
 
 dword speed;
 
@@ -58,7 +59,7 @@ void main()
 	sc.get();
 	InitDownload();
 
-	if (param) {
+	if (param[0]) {
 		path_pointer = #param;
 		//save path specified? Example: https://example.com/file|/sys/media/ac97snd
 		if (save_path_separator_pos = strchr(#param, '|')) {
@@ -66,11 +67,19 @@ void main()
 			strcpy(#filepath, save_path_separator_pos+1);
 			ESBYTE[save_path_separator_pos] = '\0';
 		}
-		if (streqrp(#param, "-e ")) {
+		// invisible window
+		if (!strncmp(#param, "-i ", 3)) {
+			autoclose.checked = true;
+			invisible = true;
+			path_pointer += 3;
+		}
+		// autoclose
+		if (!strncmp(#param, "-e ", 3)) {
 			autoclose.checked = true;
 			path_pointer += 3;
 		}
-		if (streqrp(#param, "-eo ")) {
+		// autoclose and open file
+		if (!strncmp(#param, "-eo ", 4)) {
 			autoclose.checked = true;
 			open_file = true;
 			path_pointer += 4;
@@ -151,6 +160,8 @@ void DrawDlButton(int x, id, t)
  
 void DefineWindow()
 {  
+	if (invisible) return;
+
 	sc.get();
 	pb.frame_color = ed.border_color = ed.focus_border_color = sc.line;
 	DefineAndDrawWindow(110 + random(300), 100 + random(300), WIN_W+9, 
@@ -161,6 +172,9 @@ void DefineWindow()
 void DrawWindow()
 {
 	#define BUT_Y 58;
+
+	if (invisible) return;
+
 	if (!http.transfer) && (!filepath) {
 		DrawBar(GAPX, 102, WIN_W - GAPX - GAPX+1, 24+1, sc.work);
 		DeleteButton(BTN_DIR);
@@ -220,6 +234,7 @@ void StartDownloading()
 		DrawWindow();
 	} else {
 		pb.progress_color = PB_COL_ERROR;
+		if (invisible) ExitProcess();
 		notify(T_ERROR_STARTING_DOWNLOAD);
 		StopDownloading();
 		EditBox_UpdateText(#ed, ed_focus + ed_always_focus);
@@ -305,7 +320,9 @@ void MonitorProgress()
 void CompleteDownload()
 {
 	SaveFile(0);
-	if (autoclose.checked) ExitProcess();
+	if (autoclose.checked) {
+		ExitProcess();
+	}
 	pb.value = pb.max;
 	pb.progress_color = PB_COL_COMPLETE;
 	StopDownloading();
@@ -318,6 +335,8 @@ void SaveFile(int attempt)
 	int i;
 	char notify_message[4296];
 	char file_name[URL_SIZE+96];
+	bool quote = false;
+	dword filename_pos;
 
 	//if save_path is not set then we have to combine it
 	if (!save_path_set) {
@@ -336,11 +355,19 @@ void SaveFile(int attempt)
 
 		//Content-Disposition: attachment; filename="RealFootball_2018_Nokia_5800_EN_IGP_EU_TS_101.zip"
 		if (http.header_field("content-disposition", #file_name, sizeof(file_name))) {
-			if (EDX = strstr(#file_name,"filename=\"")) { 
-				strcat(#filepath, EDX+10);
+			filename_pos = strstr(#file_name,"filename=");
+			if (filename_pos) { 
+				if (ESBYTE[filename_pos] == '\"') {
+					quote = true;
+					filename_pos++;
+				}
+				strcat(#filepath, filename_pos+9);
 				ESBYTE[strchr(#filepath,'\"')] = '\0';
+				ESBYTE[strchr(#filepath,' ')] = '\0';
+				ESBYTE[strchr(#filepath,';')] = '\0';
 			}
-		} else {
+		}
+		if (!filename_pos) {
 			// Clean all slashes at the end
 			strcpy(#file_name, #uEdit);
 			while (file_name[strlen(#file_name)-1] == '/') {
