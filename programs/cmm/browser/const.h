@@ -108,11 +108,9 @@ enum {
 	TAB_CLOSE_ID = 900
 };
 
-char editbox_icons[] = FROM "res/editbox_icons.raw";
-
 #define WIN_W 850
 #define WIN_H 920
 
 #define DEFAULT_URL URL_SERVICE_HOMEPAGE
 
-char version[]="WebView 3.98";
+char version[]="WebView 4";

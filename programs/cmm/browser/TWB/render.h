@@ -160,8 +160,11 @@ bool TWebBrowser::RenderImage(dword cur_img)
 
 	if (img_y + img_h >= canvas.bufh) canvas.IncreaseBufSize();
 
-	if (secondrun) 
+	if (secondrun)
 	{	
+		if (bg_colors.get_last() - bg_colors.get(0)) {
+			canvas.DrawBar(draw_x, draw_y, img_w, list.item_h, bg_colors.get_last());
+		}
 		if (ESDWORD[cur_img+20] != IMAGE_BPP32) {
 			img_convert stdcall(cur_img, 0, IMAGE_BPP32, 0, 0);
 			$push eax

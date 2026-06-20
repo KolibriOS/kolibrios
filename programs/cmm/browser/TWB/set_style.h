@@ -304,6 +304,9 @@ void TWebBrowser::tag_img()
 {
 	char img_path[4096]=0;
 	dword base64img;
+	dword img_data=0, img_size=0;
+
+	if (!secondrun) return;
 
 	if (!tag.get_value_of("data-large-image")) 
 		if (!tag.get_value_of("data-src")) 
@@ -334,16 +337,22 @@ void TWebBrowser::tag_img()
 		if (EAX) goto IMGOK; else goto NOIMG;
 	}
 
-	if (cache.has(#img_path)) {
-		img_decode stdcall (cache.current_buf, cache.current_size, 0);
-		if (EAX) goto IMGOK; else goto NOIMG;
+	if (cache2.is_contain(#img_path)) 
+	{
+		read_file(cache2.path.get(cache2.cur), #img_data, #img_size);
+		if (img_size) {
+			img_decode stdcall (img_data, img_size, 0);
+			if (EAX) goto IMGOK;
+		} else {
+			//cache2.url.set_null(cache2.cur);
+		}
 	} else {
 		if (img_url.get_pos_by_name(#img_path)==-1) img_url.add(#img_path);
-		goto NOIMG;
 	}
+	goto NOIMG;
 
 IMGOK:
-	if (RenderImage(EAX)) return;
+	if (RenderImage(EAX)) goto IMG_END;
 
 NOIMG:
 	if (tag.get_value_of("title")) || (tag.get_value_of("alt")) {
@@ -361,6 +370,8 @@ NOIMG:
 	RenderTextbuf();
 	style.image = false;
 	text_colors.pop();
+IMG_END:
+	free(img_data);
 }
 
 struct TABLE {

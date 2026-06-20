@@ -78,7 +78,6 @@ char search_engine[256];
 #include "settings.h"
 #include "tabs.h"
 
-dword cur_img_url;
 dword shared_url;
 dword http_get_type=PAGE;
 dword render_start_time;
@@ -90,6 +89,10 @@ od_filter filter2 = { 22, "TXT\0HTM\0HTML\0DOCX\0\0" };
 char editURL[URL_SIZE+1];
 edit_box omnibox_edit = {250, 0, 0, 0xffffff,
 	0x94AECE, 0xffffff, 0xffffff,0x10000000,URL_SIZE-2,#editURL,0,,19,19};
+
+int   img_downloaders[256];
+int   img_downloaders_count = 0;
+bool  img_loading = false;
 
 //===================================================//
 //                                                   //
@@ -140,8 +143,9 @@ void main()
 	LoadLibraries();
 	LoadIniConfig();
     HandleParam();
+	cache2.load();
 
-	omnibox_edit.left = PADDING+TSZE*2+PADDING+6;
+	omnibox_edit.left = PADDING+TSZE*3+PADDING+8;
 	omnibox_edit.top = PADDING+3;
 
 	WB1.list.SetFont(8, 14, 10011000b);
@@ -202,9 +206,8 @@ void main()
 			break;
 
 		case evReDraw:
-			DefineAndDrawWindow(GetScreenWidth()-WIN_W/2-random(80),GetScreenHeight()-WIN_H/2-random(80),
-			//DefineAndDrawWindow(0,0,
-				WIN_W,WIN_H,0x73,0,0,0);
+			DefineAndDrawWindow(GetScreenWidth()-WIN_W/2-random(80),
+				skin_h-WIN_H/2-random(80),WIN_W,WIN_H,0x73,0,0,0);
 			GetProcessInfo(#Form, SelfInfo);
 			ProcessMenuClick();
 			sc.get();
@@ -217,12 +220,13 @@ void main()
 		case evNetwork:
 			if (http.transfer <= 0) break;
 			http.receive();
-
 			if (http.receive_result != 0) break;
+
 			if (debug_mode) {
 				EAX = http.transfer;
 				debugln(#EAX.http_msg.http_header);
 			}
+
 			if (http.status_code >= 300) && (http.status_code < 400)
 			{
 				// Handle redirects
@@ -232,7 +236,6 @@ void main()
 				} else {
 					StopLoading();
 					redirect_count = 0;
-					if (http_get_type==IMG) goto _IMG_RES;
 					notify("'Too many redirects.' -E");
 				}
 			} else {
@@ -256,18 +259,6 @@ void main()
 					free(http.content_pointer);
 					DrawOmnibox();
 				}
-				else if (http_get_type==IMG) {
-					_IMG_RES:
-					if (http.status_code >= 200) && (http.status_code < 300) {
-						cache.add(cur_img_url, http.content_pointer, http.content_received, IMG, NULL);
-					} else {
-						cache.add(cur_img_url, 0, 0, IMG, NULL);
-					}
-					http.hfree();
-					free(http.content_pointer);
-					GetImg(false);
-				}
-				debugln("end evNetwork");
 			}
 			break;
 		default:
@@ -276,6 +267,7 @@ void main()
 				ESDWORD[shared_url] = '\0';
 				ActivateWindow(GetProcessSlot(Form.ID));
 			}
+			if (img_loading) CheckImgDownloads();
 	}
 }
 
@@ -290,7 +282,7 @@ void ProcessButtonClick(dword id__)
 {
 	switch (id__)
 	{
-		case 1: ExitProcess();
+		case 1: cache2.save(); ExitProcess();
 		case TAB_CLOSE_ID...TAB_CLOSE_ID+TABS_MAX: EventTabClose(id__ - TAB_CLOSE_ID); return;
 		case TAB_ID...TAB_ID+TABS_MAX: EventAllTabsClick(id__ - TAB_ID); return;
 		case ENCODINGS...ENCODINGS+6: EventManuallyChangeEncoding(id__-ENCODINGS); return;
@@ -363,7 +355,7 @@ void ProcessKeyEvent()
 
 void SetElementSizes()
 {
-	omnibox_edit.width = Form.cwidth - BUTTON_W - SEARCH_GO_GAP - BUTTON_W - omnibox_edit.left - 52 - 23;
+	omnibox_edit.width = Form.cwidth - omnibox_edit.left - 51;
 	if (Form.cwidth - scroll_wv.size_x != WB1.list.w) {
 		//temporary fix for crash
 		//related to 'cur_img_url' var read
@@ -391,14 +383,15 @@ void draw_window()
     DrawBar(0,TOOLBAR_H-2, Form.cwidth,1, MixColors(sc.dark, sc.work, 180));
     DrawBar(0,TOOLBAR_H-1, Form.cwidth,1, sc.line);
     DrawBar(0, PADDING, omnibox_edit.left-2, TSZE+1, sc.work);
-    DrawBar(omnibox_edit.left+omnibox_edit.width+24, PADDING, Form.cwidth-omnibox_edit.left-omnibox_edit.width-24, TSZE+1, sc.work);
+    DrawBar(omnibox_edit.left+omnibox_edit.width+2, PADDING, Form.cwidth-omnibox_edit.left-omnibox_edit.width-2, TSZE+1, sc.work);
 
     DrawTopPanelButton(BACK_BUTTON, PADDING-1, PADDING, 30, false);
     DrawTopPanelButton(FORWARD_BUTTON, PADDING+TSZE+PADDING-2, PADDING, 31, false);
-    DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE + 2 , PADDING, -1, burger_active); //burger menu
 
-	DrawTopPanelButton(SEARCH_BUTTON, Form.cwidth - PADDING - TSZE - 3 - BUTTON_W, PADDING, 49, false); // Search web button
-	DrawTopPanelButton(GO_BUTTON, Form.cwidth - PADDING - TSZE - 3 - BUTTON_W - SEARCH_GO_GAP - BUTTON_W, PADDING, 12, false); // go to address button 
+    DrawTopPanelButton(SANDWICH_BUTTON, Form.cwidth-PADDING-TSZE-4, PADDING, -1, burger_active); //burger menu
+    
+	//DrawTopPanelButton(SEARCH_BUTTON, Form.cwidth - PADDING - TSZE - 3 - BUTTON_W, PADDING, 49, false); // Search web button
+	//DrawTopPanelButton(GO_BUTTON, Form.cwidth - PADDING - TSZE - 3 - BUTTON_W - SEARCH_GO_GAP - BUTTON_W, PADDING, 12, false); // go to address button 
 
     DrawBar(0,Form.cheight - STATUSBAR_H, Form.cwidth,1, sc.line);
 
@@ -492,8 +485,10 @@ void EventCopyLinkToClipboard()
 
 void StopLoading()
 {
-	if (http.stop()) pause(10);
+	http.stop();
+	//if (http.stop()) pause(10);
 	prbar.value = 0;
+	img_loading = false;
 }
 
 //rewrite into 
@@ -572,6 +567,8 @@ void OpenPage(dword _open_URL)
 	if (strrchr(#new_url, '#')) {
 		anchors.take_anchor_from(#new_url);
 	}
+
+	debug("\nWebView GET => ");	debugln(#new_url);
 
 	/*
 	There could be several possible types of addresses:
@@ -773,9 +770,9 @@ void LoadInternalPage(dword _bufdata, _in_bufsize){
 			WB1.DrawPage();
 		}
 		http.hfree();
-		if (WB1.img_url.count) { 
-			GetImg(true);
-			DrawOmnibox(); 
+		if (WB1.img_url.count) {
+			GetImg();
+			DrawOmnibox();
 		} else {
 			PageLoaded();
 		}
@@ -925,18 +922,18 @@ void DrawStatusBar(dword _msg)
 void DrawOmnibox()
 {
 	int imgxoff;
-	DrawOvalBorder(omnibox_edit.left-2, omnibox_edit.top-3, omnibox_edit.width+24, 24, sc.line, 
+	DrawOvalBorder(omnibox_edit.left-2, omnibox_edit.top-3, omnibox_edit.width+2, 24, sc.line, 
 		sc.line, sc.line, sc.dark);
-	DrawBar(omnibox_edit.left-1, omnibox_edit.top-2, omnibox_edit.width+24, 1, 0xD8DCD8);
-	DrawBar(omnibox_edit.left-1, omnibox_edit.top-1, omnibox_edit.width+24, 1, omnibox_edit.bg_color);
+	DrawBar(omnibox_edit.left-1, omnibox_edit.top-2, omnibox_edit.width+2, 1, 0xD8DCD8);
+	DrawBar(omnibox_edit.left-1, omnibox_edit.top-1, omnibox_edit.width+2, 1, omnibox_edit.bg_color);
 	DrawBar(omnibox_edit.left-1, omnibox_edit.top, 1, 22, omnibox_edit.bg_color);
+
+	if (http.transfer) || (img_loading) { imgxoff = 67; } else imgxoff = 66;
+    DrawTopPanelButton(REFRESH_BUTTON, PADDING+TSZE*2+PADDING+2, PADDING, imgxoff, false);
 
 	if (omnibox_edit.flags & ed_focus) omnibox_edit.flags = ed_focus; else omnibox_edit.flags = 0;
 	EditBox_UpdateText(#omnibox_edit, omnibox_edit.flags);
 	edit_box_draw stdcall(#omnibox_edit);
-	if (http.transfer) imgxoff = 23*23*3; else imgxoff = 0;
-	PutImage(omnibox_edit.left+omnibox_edit.width, omnibox_edit.top-1, 23, 23, imgxoff + #editbox_icons);
-	DefineHiddenButton(omnibox_edit.left+omnibox_edit.width, omnibox_edit.top-2, 22, 23, REFRESH_BUTTON);
 
 	DrawProgress();
 }
@@ -1001,37 +998,64 @@ void HandleRedirect()
 	free(redirect_url);
 }
 
-dword GetImg(bool _new)
+void GetImg()
 {
 	int i;
-	if (!show_images) return;
-	http_get_type = IMG;
+	char cur_downloader_path[4096];
+	char local_path[64];
+	dword cur_img_url;
 
-	for (i = 0; i < WB1.img_url.count; i++)
-	{
+	if (!show_images) || (!WB1.img_url.count) return;
+
+	img_downloaders_count = math.min(WB1.img_url.count, 256);
+	CreateDir("/tmp0/1/Cache");
+
+	for (i = 0; i < img_downloaders_count; i++) {
 		cur_img_url = WB1.img_url.get(i);
-		if (cache.has(cur_img_url)==false) {
-			prbar.max = WB1.img_url.count;
-			prbar.value = i;
-			if (GetUrl(cur_img_url)) {
-				DrawStatusBar(cur_img_url); 
-				DrawProgress(); 
-				return;
-			}
+		if (cache2.is_contain(cur_img_url)) continue;
+		sprintf(#local_path, "/tmp0/1/Cache/wv_%i_%i.png", Form.ID, cache2.url.count + 1);
+		sprintf(#cur_downloader_path, "-i %s|%s", cur_img_url, #local_path);
+		cache2.add(cur_img_url, #local_path);
+		img_downloaders[i] = RunProgram("/sys/network/dl", #cur_downloader_path);
+	}
+
+	img_loading = true;
+	prbar.max = img_downloaders_count;
+	prbar.value = 0;
+}
+
+void CheckImgDownloads()
+{
+	int i;
+	int done_count = 0;
+
+	for (i = 0; i < img_downloaders_count; i++) {
+		if (!img_downloaders[i]) || (!GetProcessSlot(img_downloaders[i])) {
+			img_downloaders[i] = 0; 
+			done_count++;
 		}
 	}
-	if (_new) return;
-	DrawOmnibox();
-	DrawStatusBar(T_RENDERING);
-	WB1.Reparse();
-	WB1.DrawPage();
-	PageLoaded();
+
+	if (done_count < img_downloaders_count) {
+		prbar.max = img_downloaders_count;
+		prbar.value = done_count;
+		DrawProgress();
+		sprintf(#param, "Downloading images: %i/%i...", prbar.value, prbar.max);
+		DrawStatusBar(#param);		
+	} else {
+		DrawStatusBar(T_RENDERING);
+		WB1.Reparse();
+		WB1.DrawPage();
+		PageLoaded();
+		img_loading = false;
+		DrawOmnibox();
+	}
 }
 
 void PageLoaded()
 {
 	DrawStatusBar(sprintf(#param, T_DONE_IN_SEC, GetStartTime()-render_start_time/100, 
-		GetStartTime()-render_start_time*10));	
+		GetStartTime()-render_start_time*10));
 }
 
 stop:

@@ -62,3 +62,67 @@ void _cache::clear()
 	current_type = NULL;
 	current_charset = NULL;
 }
+
+
+struct _cache2
+{
+	collection url;
+	collection path;
+	dword cur;
+
+	void add();
+	bool is_contain();
+	void clear();
+
+	void save();
+	void load();
+} cache2;
+
+void _cache2::add(dword _url, _path)
+{
+	if (!is_contain(_url)) {
+		url.add(_url);
+		path.add(_path);
+	}
+}
+
+bool _cache2::is_contain(dword _url)
+{
+	cur = url.get_pos_by_name(_url);
+	if (cur == -1) return false;
+	return true;
+}
+
+void _cache2::clear()
+{
+	url.drop();
+	path.drop();
+}
+
+void _cache2::save()
+{
+	dword buf, buf_size, i;
+	buf_size = url.data_size + path.data_size + url.count + url.count + 7;
+	buf = malloc(buf_size);
+	strcpy(buf, "[img]\n");
+	for ( i = 0 ; i < path.count ; i++ ) {
+		if (!url.get(i)) continue;
+		strcat(buf, url.get(i));
+		strcat(buf, "=");
+		strcat(buf, path.get(i));
+		strcat(buf, "\n");
+	}
+	strcat(buf, "\0");
+	CreateFile(math.min(buf_size, strlen(buf)), buf, "/tmp0/1/Cache/_list_db.ini");
+	free(buf);
+}
+
+void _cache2::load()
+{
+	ini_enum_keys stdcall ("/tmp0/1/Cache/_list_db.ini", "img", #_cache2_load_sections);
+}
+
+byte _cache2_load_sections(dword key_value, key_name, sec_name, f_name)
+{
+	cache2.add(key_name, key_value);
+}
