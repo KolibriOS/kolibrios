@@ -1,9 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2013-2015. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2013-2026. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ; fetch the UTF-8 character in addrspace:offs to char
 macro fetch_utf8_char addrspace, offs, char
@@ -42,11 +43,8 @@ macro fetch_utf8_char addrspace, offs, char
 }
 
 ; Worker macro for all encodings.
-; Common part for all encodings: map characters 0-0x7F trivially,
-; translate pseudographics.
-; Pseudographics for the boot screen:
-; 0x2500 -> 0xC4, 0x2502 -> 0xB3, 0x250C -> 0xDA, 0x2510 -> 0xBF,
-; 0x2514 -> 0xC0, 0x2518 -> 0xD9, 0x252C -> 0xC2, 0x2534 -> 0xC1, 0x2551 -> 0xBA
+; Common for all encodings: map characters 0-0x7F trivially,
+;   translate 'box drawing' pseudographics (used on boot screen).
 macro convert_utf8 encoding, [arg]
 { common
   local ..addrspace, offs, char
@@ -57,24 +55,26 @@ macro convert_utf8 encoding, [arg]
   end virtual
   while offs < ..addrspace#.size
     fetch_utf8_char ..addrspace, offs, char
-    if char = 0x2500
+    ; Encode 'Box Drawing' glyphs from Unicode into CP437/850/866
+    if char = 0x2500            ; '─' U+2500 - Box Drawings Light Horizontal
       db 0xC4
-    else if char = 0x2502
+    else if char = 0x2502       ; '│' U+2502 - Box Drawings Light Vertical
       db 0xB3
-    else if char = 0x250C
+    else if char = 0x250C       ; '┌' U+250C - Box Drawings Light Down and Right
       db 0xDA
-    else if char = 0x2510
+    else if char = 0x2510       ; '┐' U+2510 - Box Drawings Light Down and Left
       db 0xBF
-    else if char = 0x2514
+    else if char = 0x2514       ; '└' U+2514 - Box Drawings Light Up and Right
       db 0xC0
-    else if char = 0x2518
+    else if char = 0x2518       ; '┘' U+2518 - Box Drawings Light Up and Left
       db 0xD9
-    else if char = 0x252C
+    else if char = 0x252C       ; '┬' U+252C - Box Drawings Light Down and Horizontal
       db 0xC2
-    else if char = 0x2534
+    else if char = 0x2534       ; '┴' U+2534 - Box Drawings Light Up and Horizontal
       db 0xC1
-    else if char = 0x2551
+    else if char = 0x2551       ; '║' U+2551 - Box Drawings Double Vertical
       db 0xBA
+    ; Code points 0x20 to 0x7F are common for CP437/850/866, Latin-1 and UTF-8
     else if char < 0x80
       db char
     else
@@ -112,7 +112,8 @@ declare_encoding cp866
 }
 
 ; Latin-1 encoding
-; 0x00-0xFF - trivial map
+;   Mapping is trivial, as Unicode defined the first 256 code points (0x00-0xFF)
+;   to correspond to the characters and numerical values of Latin-1.
 declare_encoding latin1
 {
   if char < 0x100
@@ -123,20 +124,28 @@ declare_encoding latin1
 }
 
 ; CP850 encoding
+;   Code points 0x00 to 0x7F are common for CP437/850/866
+;   Code points mapped below are common for CP437/850
 declare_encoding cp850
 {
-  if char = 0xBF
+  if char = 0xBF        ; '¿' U+00BF - Inverted Question Mark
     db 0xA8
-  else if char = 0xE1
+  else if char = 0xE1   ; 'á' U+00E1 - Latin Small Letter A with Acute
     db 0xA0
-  else if char = 0xE9
+  else if char = 0xE9   ; 'é' U+00E9 - Latin Small Letter E with Acute
     db 0x82
-  else if char = 0xED
+  else if char = 0xED   ; 'í' U+00ED - Latin Small Letter I with Acute
     db 0xA1
-  else if char = 0xF3
+  else if char = 0xF3   ; 'ó' U+00F3 - Latin Small Letter O with Acute
     db 0xA2
-  else if char = 0xFA
+  else if char = 0xFA   ; 'ú' U+00FA - Latin Small Letter U with Acute
     db 0xA3
+  else if char = 0xF1   ; 'ñ' U+00F1 - Latin Small Letter N with Tilde
+    db 0xA4
+  else if char = 0xFC   ; 'ü' U+00FC - Latin Small Letter U with Diaeresis
+    db 0x81
+  else if char = 0xE4   ; 'ä' U+00E4 - Latin Small Letter A with Diaeresis
+    db 0x84
   else
     err Failed to convert to CP850
   end if
