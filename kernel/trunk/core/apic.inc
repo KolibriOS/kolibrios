@@ -237,7 +237,7 @@ LAPIC_init:
 align 4
 IOAPIC_read:
 ; in : EAX - IOAPIC register
-; out: EAX - readed value
+; out: EAX - read value
         push    esi
         mov     esi, [ioapic_cur]
         mov     esi, [IOAPIC_base + esi*4]

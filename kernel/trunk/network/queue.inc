@@ -33,7 +33,7 @@ ends
 ; The following macros share these inputs:
 
 ; ptr           = pointer to where the queue data is located
-; size          = number of slots/entrys in the queue
+; size          = number of slots/entries in the queue
 ; entry_size    = size of one slot, in bytes
 ; failaddr      = the address where macro will jump to when there is no data in the queue
 

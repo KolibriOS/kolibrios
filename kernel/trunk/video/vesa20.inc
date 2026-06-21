@@ -939,7 +939,7 @@ dl_dy equ esp+0
   .no_hline:
         cmp     ebp, esi
         jle     .x_rules        ; |y2-y1| < |x2-x1|  ?
-        cmp     [dl_y2], ebx    ; make sure y1 is at the begining
+        cmp     [dl_y2], ebx    ; make sure y1 is at the beginning
         jge     .no_reverse1
         neg     dword [dl_dx]
         mov     edx, [dl_x2]
@@ -966,7 +966,7 @@ dl_dy equ esp+0
         mov     esi, eax        ; esi = dx
         jmp     .y_rules
   .x_rules:
-        cmp     [dl_x2], eax    ; make sure x1 is at the begining
+        cmp     [dl_x2], eax    ; make sure x1 is at the beginning
         jge     .no_reverse2
         neg     dword [dl_dy]
         mov     edx, [dl_x2]

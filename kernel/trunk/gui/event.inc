@@ -37,7 +37,7 @@ align 4
 @@:
         mov     [ebx+EVENT.fd], eax
         mov     [eax+EVENT.bk], ebx
-        mov     ebx, eax             ; previos <- current
+        mov     ebx, eax             ; previous <- current
         add     eax, sizeof.EVENT    ; new current
         loop    @b
         pop     eax                  ; here it became the end

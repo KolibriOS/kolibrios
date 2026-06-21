@@ -154,7 +154,7 @@ The bit 0 is ignored for OUT transfers, for IN transfers it controls whether
 the device can transfer less data than 'size' bytes. If the bit is 0, a small
 transfer is an error; if the bit is 1, a small transfer is OK.
 All other bits are reserved and should be zero.
-The returned value is NULL if an error occured and non-NULL if the transfer
+The returned value is NULL if an error occurred and non-NULL if the transfer
 was successfully queued. If an error will occur later, the callback function
 will be notified.
 
@@ -171,7 +171,7 @@ corresponding USB*TransferAsync.
 The parameter 'length' is the number of bytes transferred. For
 control transfers, this includes 8 bytes from SETUP stage, so
 0 means that SETUP stage failed and 'size'+8 means full transfer.
-The parameter 'status' is nonzero if an error occured.
+The parameter 'status' is nonzero if an error occurred.
 USB_STATUS_OK           = 0     ; no error
 USB_STATUS_CRC          = 1     ; CRC error
 USB_STATUS_BITSTUFF     = 2     ; bit stuffing violation

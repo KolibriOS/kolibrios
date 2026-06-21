@@ -171,7 +171,7 @@ endg
 ;-----------------------------------------------------------------------------
 ;****************************************************
 ;*    SEND TO ATAPI DEVICE PACKET COMMAND,          *
-;* THAT MEANS TRASMIT ONE DATA SECTOR OF SIZE       *
+;* THAT MEANS TRANSMIT ONE DATA SECTOR OF SIZE      *
 ;*     2048 BYTE FROM DEVICE TO HOST                *
 ;* Input parameters are passed through global       *
 ;* variables:                                       *
@@ -320,7 +320,7 @@ align 4
 ;-----------------------------------------------------------------------------
 ;***********************************************
 ;*  SEND TO ATAPI DEVICE PACKET COMMAND,       *
-;*     THAT DOESNT MEAN TRANSMIT DATA          *
+;*     THAT DOESN'T MEAN TRANSMIT DATA         *
 ;* Input parameters are passed through global  *
 ;* variables:                                  *
 ;* ChannelNumber - channel number;             *
@@ -440,7 +440,7 @@ align 4
 ;* If the function finished successfully:           *
 ;* in ATABasePortAddr - base address of HDD;        *
 ;* in DevErrorCode - zero.                          *
-;* If error has occured then in DevErrorCode will   *
+;* If error has occurred then in DevErrorCode will  *
 ;* be the error code.                               *
 ;****************************************************
 SendCommandToHDD_1:

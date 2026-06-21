@@ -115,7 +115,7 @@ int2strnz:
         ret
 
 ;-------------------------------------------------------
-;Write message about incorrect v_mode and write message about jmp on swith v_mode
+; Write message about incorrect v_mode and about jmp on switching v_mode
 v_mode_error:
         _setcursor 19,2
         mov     si, fatalsel
@@ -226,7 +226,7 @@ calc_vmodes_table:
         cmp     [es:mi.GreenMaskSize], 5
         jne     .l0
 ;        mov     [es:mi.BitsPerPixel],15
-        jmp     @f                         ; 15 bpp isnt supported ATM
+        jmp     @f                         ; 15 bpp is not currently supported
 
 
 .l0:
@@ -437,7 +437,7 @@ if ~ defined extended_primary_loader
 
         mov     si, modes_table
 ;        cmp     ax,modes_table
-;        jb      .zerro           ;check on correct if bellow
+;        jb      .zerro           ;check on correct if below
 ;        cmp     ax,word [end_cursor]
 ;        ja      .zerro           ;check on correct if anymore
 end if
@@ -797,4 +797,3 @@ set_vmode:
 ;=============================================================================
 ;=============================================================================
 ;=============================================================================
-

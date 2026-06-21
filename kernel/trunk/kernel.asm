@@ -73,7 +73,7 @@ pci_data_sel   =  pci_data_32-gdts
 ;;   Included files:
 ;;
 ;;   Kernel16.inc
-;;    - Booteng.inc   English text for bootup
+;;    - Booteng.inc   English text for boot up
 ;;    - Bootcode.inc  Hardware setup
 ;;    - Pci16.inc     PCI functions
 ;;
@@ -1951,7 +1951,7 @@ sysfn_deactivate:         ; 18.1 = DEACTIVATE WINDOW
 
         movzx   esi, word [WIN_STACK + ecx*2]
         cmp     esi, 1
-        je      .nowindowdeactivate ; already deactive
+        je      .nowindowdeactivate ; already deactivated
 
         mov     edi, ecx
         shl     edi, BSF sizeof.WDATA
@@ -2242,7 +2242,7 @@ sysfn_min_rest_window:
 @@:
         or      eax, eax ; eax - number of slot
         jz      .error
-        cmp     eax, max_processes    ; varify maximal slot number
+        cmp     eax, max_processes    ; verify maximum slot number
         ja      .error
         movzx   eax, word [WIN_STACK + eax*2]
         shr     ecx, 1
@@ -3262,7 +3262,7 @@ align 4
 ; @param ecx number start arrea of ports
 ; @param ebx sub function 0 - reserve, 1 - free
 ; @param eax 46 - number function
-; @returns  eax = 0 - succesful eax = 1 - error
+; @returns  eax = 0 - successful eax = 1 - error
 syscall_reserveportarea:        ; ReservePortArea and FreePortArea
 
         call    r_f_port_area
@@ -3275,7 +3275,7 @@ syscall_reserveportarea:        ; ReservePortArea and FreePortArea
 ;  * ecx = number start arrea of ports
 ;  * edx = number end arrea of ports (include last number of port)
 ;Return value:
-;  * eax = 0 - succesful
+;  * eax = 0 - successful
 ;  * eax = 1 - error
 ;  * The system has reserve this ports:
 ;    0..0x2d, 0x30..0x4d, 0x50..0xdf, 0xe5..0xff (include last number of port).
@@ -4123,7 +4123,7 @@ syscall_getpixel:                       ; GetPixel
 align 4
 syscall_getarea:
 ;eax = 36
-;ebx = pointer to bufer for img BBGGRRBBGGRR...
+;ebx = pointer to buffer for img BBGGRRBBGGRR...
 ;ecx = [size x]*65536 + [size y]
 ;edx = [start x]*65536 + [start y]
         pushad
@@ -4347,7 +4347,7 @@ set_screen:
         mov     [display_height_standard], eax
 @@:
         call    calculate_fast_getting_offset_for_WinMapAddress
-; for Qemu or non standart video cards
+; for Qemu or non standard video cards
 ; Unfortunately [BytesPerScanLine] does not always
 ;                             equal to [_display.width] * [ScreenBPP] / 8
         call    calculate_fast_getting_offset_for_LFB
@@ -4438,7 +4438,7 @@ undefined_syscall:                      ; Undefined system call
 align 4
 ; @brief Check if given memory region lays in lower 2gb (userspace memory) or not
 ; @param base Base address of region
-; @param len Lenght of region
+; @param len Length of region
 ; @return ZF = 1 if region in userspace memory,
 ;         ZF = 0 otherwise
 proc is_region_userspace stdcall, base:dword, len:dword

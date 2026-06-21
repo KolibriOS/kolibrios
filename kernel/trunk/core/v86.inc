@@ -245,7 +245,7 @@ ends
 ;     ecx = expected end address (CS:IP)
 ;     edx = IRQ to hook or -1 if not required
 ; out: structure pointed to by ebx is filled with new values
-;     eax = 1 - exception has occured, cl contains code
+;     eax = 1 - exception has occurred, cl contains code
 ;     eax = 2 - access to disabled i/o port, ecx contains port address
 ;     eax = 3 - IRQ is already hooked by another VM
 ; destroys: nothing

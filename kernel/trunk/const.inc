@@ -100,7 +100,7 @@ CAPS_3DNOW     =    69 ;
 CAPS_3DNOWEXT  =    70 ;
 CAPS_LAHF      =    71 ;
 CAPS_CMP_LEG   =    72 ;
-CAPS_SVM       =    73 ;secure virual machine
+CAPS_SVM       =    73 ;secure virtual machine
 CAPS_ALTMOVCR8 =    74 ;
 
 ; CPU MSR names
@@ -171,7 +171,7 @@ EFLAGS_TF      =    0x000100  ; trap flag
 EFLAGS_IF      =    0x000200  ; interrupt flag
 EFLAGS_DF      =    0x000400  ; direction flag
 EFLAGS_OF      =    0x000800  ; overflow flag
-EFLAGS_IOPL    =    0x003000  ; i/o priviledge level
+EFLAGS_IOPL    =    0x003000  ; i/o privilege level
 EFLAGS_NT      =    0x004000  ; nested task flag
 EFLAGS_RF      =    0x010000  ; resume flag
 EFLAGS_VM      =    0x020000  ; virtual 8086 mode flag
@@ -1054,4 +1054,3 @@ struct  IRQH
         data            dd ?   ;user-specific data
         num_ints        dd ?   ;how many times handled
 ends
-

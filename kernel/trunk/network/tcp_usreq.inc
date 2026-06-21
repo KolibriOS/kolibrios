@@ -125,7 +125,7 @@ tcp_connect:
         mov     [eax + TCP_SOCKET.LocalIP], edx
         popa
 
-; Find a local port, if user didnt define one
+; Find a local port, if user didn't define one
         cmp     [eax + TCP_SOCKET.LocalPort], 0
         jne     @f
         call    socket_find_port

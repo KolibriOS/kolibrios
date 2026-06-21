@@ -26,7 +26,7 @@
 
 ;Тут определены все сообщения, которые нужны в процессе отладки, и совсем не нужны в рабочей копии программы.
 If DEBUG
-cseg_msg        db '       - Adress of code segment',0
+cseg_msg        db '       - Address of code segment',0
 stack_msg       db 'Set stack & segments is have completed',0
 show_string     db 'Have loaded size:'
 show_decode     db '      ',0
@@ -38,7 +38,7 @@ lm_l_found      db '[loader] is found',0
 lm_lf_timeout   db 'timeout is found',0
 lm_lf_default   db 'name default is found and end parsing section',0
 lm_lf_section   db 'found section [',0
-lm_lf_default_f db 'found default parametr',0
+lm_lf_default_f db 'found default parameter',0
 lm_l_end        db 'section [loader] is end',0
 show_all_sect   db 'SHOW ALL Sections',0
 no_show_only_w  db 'Not show sections - only work on default sect',0

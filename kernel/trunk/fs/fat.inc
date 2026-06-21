@@ -49,7 +49,7 @@ fat_change          db  ?   ; 1=fat has changed
 createOption        db  ?
                     rb  1
 Lock                MUTEX   ; currently operations with one partition
-; can not be executed in parallel since the legacy code is not ready
+; cannot be executed in parallel since the legacy code is not ready
 SECTORS_PER_FAT     dd  ?
 NUMBER_OF_FATS      dd  ?
 SECTORS_PER_CLUSTER dd  ?
@@ -59,7 +59,7 @@ FAT_START           dd  ?   ; start of fat table
 ROOT_START          dd  ?   ; start of rootdir (only fat16)
 ROOT_SECTORS        dd  ?   ; count of rootdir sectors (only fat16)
 DATA_START          dd  ?   ; start of data area (=first cluster 2)
-LAST_CLUSTER        dd  ?   ; last availabe cluster
+LAST_CLUSTER        dd  ?   ; last available cluster
 ADR_FSINFO          dd  ?   ; used only by fat32
 fatRESERVED         dd  ?
 fatBAD              dd  ?

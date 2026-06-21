@@ -17,7 +17,7 @@
 ;   parts of USB subsystem. The most important is usb_new_device,
 ;   which is called when a new device has been connected (over some time),
 ;   has been reset and is ready to start configuring.
-; * IRQ handlers are very restricted. They can not take any locks,
+; * IRQ handlers are very restricted. They cannot take any locks,
 ;   since otherwise a deadlock is possible: imagine that a code has taken the
 ;   lock and was interrupted by IRQ handler. Now IRQ handler would wait for
 ;   releasing the lock, and a lock owner would wait for exiting IRQ handler

@@ -326,7 +326,7 @@ endg
 
 iglobal
 ; The function 'disk_scan_partitions' needs three sector-sized buffers for
-; MBR, bootsector and fs-temporary sector data. It can not use the static
+; MBR, bootsector and fs-temporary sector data. It cannot use the static
 ; buffers always, since it can be called for two or more disks in parallel.
 ; However, this case is not typical. We reserve three static 512-byte buffers
 ; and a flag that these buffers are currently used. If 'disk_scan_partitions'

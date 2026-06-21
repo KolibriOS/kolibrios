@@ -769,7 +769,7 @@ proc usb_hub_port_status stdcall, pipe:dword, status:dword, buffer:dword, length
 ; 5d. If the current status is 'connected', store the current time as connect
 ; time and set the corresponding bit for usb_hub_process_deferred.
 ; Otherwise, set connect time to -1.
-; If current time is -1, pretend that the event occured one tick later and
+; If current time is -1, pretend that the event occurred one tick later and
 ; store zero.
         mov     edx, [eax+usb_hub.ConnectedTimePtr]
         test    byte [eax+usb_hub.StatusData], 1 shl PORT_CONNECTION

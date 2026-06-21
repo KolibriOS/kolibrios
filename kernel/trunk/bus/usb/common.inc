@@ -62,7 +62,7 @@ USB_FLAG_CAN_FREE   = 2
 ; to device disconnect, so it must remain valid until return from disconnect
 ; callback provided by the driver
 USB_FLAG_EXTRA_WAIT = 4
-; The pipe was in wait list, while another event occured;
+; The pipe was in wait list, while another event occurred;
 ; when the first wait will be done, reinsert the pipe to wait list
 USB_FLAG_DISABLED   = 8
 ; The pipe is temporarily disabled so that it is not visible to hardware

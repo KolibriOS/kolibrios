@@ -38,11 +38,11 @@ macro use_parse_loader
         mov     bx, cx  ;cохраним в регистры значения счетчика и указателя
         mov     ax, di
 
-;       mov     word [bp-4],.start  ;is alredy set, see up
+;       mov     word [bp-4],.start  ;is already set, see up
         mov     si, parse_loader
         mov     cx, parse_loader_e - parse_loader
         repe cmpsb
-        jnz     error.rest_value        ;цепочка не совпала :( перейдем далее  т.е. будем снова искать)) 
+        jnz     error.rest_value        ;цепочка не совпала :( перейдем далее  т.е. будем снова искать))
 
         ;сохраним указательна loader, что бы потом больше его не искать
         mov     point_loader, ax
@@ -50,16 +50,16 @@ macro use_parse_loader
         add     bx, cx
         mov     cx, bx
 
-if DEBUG        
+if DEBUG
         pusha
         mov     si, lm_l_found
         call    printplain
         popa
-end if  
+end if
 ;/////////////////end check [loader]. [loader] is found
 ;parsing section [loader]
 ;first found end section,let's found '[' -it's start next section
-;in previosly steep bx =cx we are not need save cx, save only di - point 
+;in previously steep bx =cx we are not need save cx, save only di - point
         mov     dx, di
 @@:
         call    get_firs_sym
@@ -69,25 +69,25 @@ end if
 
 .loader_f_end:
         sub     bx, cx  ;bx = n byte presend in section [loader]
-        mov     di, dx  ;restore di 
-;////////////////parse parametrs in section [loader]
+        mov     di, dx  ;restore di
+;////////////////parse parameters in section [loader]
 ;//timeout=5
 ;//default=main
 ;        mov    di,dx   ;set pointer on section [loader]   i think it's not need
         mov     cx, bx  ;set counter for parsing section [loader] cx= кол-ву символов в секции [loader]
-        mov     ret_on_ch, .get_next_str; return point 
+        mov     ret_on_ch, .get_next_str; return point
 ;;;;;;; parse timeout & default
 .get_next_str:
         call    get_firs_sym    ;get first symbol on new line
 
         test    cx, cx
         jz      .end_loader
-;        jcxz   .end_loader     ;завершение парсинга значений timeout & default 
+;        jcxz   .end_loader     ;завершение парсинга значений timeout & default
         cmp     al, 't'
         jz      .loader_timeout
         cmp     al, 'd'
         jnz     .get_next_str
-;//////[loader].default 
+;//////[loader].default
 ;input di point to data cx=size [loader]
         mov     bx, cx
         mov     ax, di
@@ -114,10 +114,10 @@ end if
         repe scasb
         test    cx, cx
         jz      .end_loader
-        
+
         cmp     ah, byte [es:di-1]   ;find '='
         jnz     .get_next_str
-        
+
         repe scasb                 ;cut ' '
         inc     cx
         dec     di
@@ -153,7 +153,7 @@ end if
         mov     cx, bx  ;set size default section
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;проверка на =loader
 ;save in reg point and счетчик
-;check on loader 
+;check on loader
         mov     bx, ax
         mov     ax, dx
 
@@ -169,7 +169,7 @@ end if
         mov     di, ax
 
 ;/////////////////////////////
-;       mov     ret_on_ch,.start_d     ;set return 
+;       mov     ret_on_ch,.start_d     ;set return
         mov     si, di  ;установим указатель на нашу секцию, которая по дефолту
 
         push    di      ;save point di
@@ -191,19 +191,19 @@ end if
 .start_d:
         call    get_firs_sym    ;get first symbol on new line
 .first_ret_d:                     ;первый возврат
-        jcxz    .correct_exit   ;.end_loader     ;found or not found parametrs in section  exit in section
+        jcxz    .correct_exit   ;.end_loader     ;found or not found parameters in section  exit in section
         cmp     al, '['
         jz      .found_sect_d
         jmp     .start_d
 ;просматриваем ini файл с начала в поисках секции указаной как default
-;идет проверка на наличее значения timeout, для более быстрой работы, этот параметр должен быть уже обработан,т.е. в этом случае при его =0 будет сформирован указатель только на дефолтную секцию, иначе информация будет собрана по всем секциям и составлены указатели в блоке памяти        
+;идет проверка на наличее значения timeout, для более быстрой работы, этот параметр должен быть уже обработан,т.е. в этом случае при его =0 будет сформирован указатель только на дефолтную секцию, иначе информация будет собрана по всем секциям и составлены указатели в блоке памяти
 .found_sect_d:
 
 ;check on name section
         mov     bx, cx
         mov     ax, di
         push    si      ;save point
-        
+
 ;        mov     si,parse_loader
         mov     cx, save_cx_d;load size section
         push    es
@@ -214,7 +214,7 @@ end if
         push    cs
         pop     ds
         pop     si
- 
+
         jnz     .not_compare_d_s        ;цепочка не совпала :( перейдем далее )) значит не исключение
         cmp     byte[es:di], ']'
         jnz     .not_compare_d_s        ;нет в конце нашей секции завершающего символа :(
@@ -227,13 +227,13 @@ end if
         pop     di
         mov     point_default, ax       ;point to [
 
-if DEBUG        
+if DEBUG
         pusha
         mov     si, lm_lf_default_f
         call    printplain
         popa
-end if  
-        
+end if
+
         jmp     .get_next_str
 
 .not_compare_d_s:
@@ -247,12 +247,12 @@ end if
         pop     di
 
 
-if DEBUG        
+if DEBUG
         pusha
         mov     si, lm_lf_default
         call    printplain
         popa
-end if  
+end if
         jmp     .get_next_str
 
 ;//////////[loader].timeout
@@ -280,10 +280,10 @@ end if
         mov     ax, 0x3d20         ;cut al=' ' ah='='
         repe scasb
         jcxz    .timeout_sec_end_d          ;not found param timeout
-        
+
         cmp     ah, byte [es:di-1]   ;find '='
         jnz     .get_next_str
-        
+
         repe scasb                 ;cut ' '
         inc     cx
         dec     di
@@ -307,12 +307,12 @@ end if
         mov     word [value_timeout], bx
 ;       pop     cx
 
-if DEBUG        
+if DEBUG
         pusha
         mov     si, lm_lf_timeout
         call    printplain
         popa
-end if  
+end if
 
         jmp     @f
 .timeout_sec_end_d:
@@ -325,11 +325,11 @@ end if
 
 ;///////here end block loader
 .end_loader:
-if DEBUG        
+if DEBUG
         pusha
         mov     si, lm_l_end
         call    printplain
         popa
-end if  
+end if
 
 }

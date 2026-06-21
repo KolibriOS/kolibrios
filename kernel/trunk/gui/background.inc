@@ -508,7 +508,7 @@ align 4
 align 4
 syscall_putarea_backgr: ; sysfn 25
 ;eax = 25
-;ebx = pointer to bufer for img BBGGRRBBGGRR...
+;ebx = pointer to buffer for img BBGGRRBBGGRR...
 ;ecx = [size x]*65536 + [size y]
 ;edx = [start x]*65536 + [start y]
         pushad

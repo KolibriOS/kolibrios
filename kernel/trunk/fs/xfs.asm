@@ -141,7 +141,7 @@ proc xfs_create_partition uses ebx esi edi
         mov     [edi+XFS.Disk], eax
         mov     [edi+XFS.FSUserFunctions], xfs._.user_functions
         ; here we initialize only one mutex (for the entire partition)
-        ; XFS potentially allows parallel r/w access to different AGs, keep it in mind
+        ; Note: XFS potentially allows parallel r/w access to different Allocation Groups
         lea     ecx, [edi+XFS.Lock]
         call    mutex_init
 

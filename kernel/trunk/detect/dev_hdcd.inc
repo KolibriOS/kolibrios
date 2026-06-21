@@ -222,7 +222,7 @@ ReadHDD_ID:
         ret
 ;-----------------------------------------------------------------------------
 uglobal
-; Standart base addresses of channels 1 or 2
+; Standard base addresses of channels 1 or 2
 StandardATABases dw ?, ? ; 1F0h, 170h
 ; Channel number
 ChannelNumber   db ?
@@ -263,7 +263,7 @@ endg
 ;* If the function finished successfully:           *
 ;* in ATABasePortAddr - base address of HDD;        *
 ;* in DevErrorCode - zero.                          *
-;* If error has occured then in DevErrorCode will   *
+;* If error has occurred then in DevErrorCode will   *
 ;* be the error code.                               *
 ;****************************************************
 SendCommandToHDD:
@@ -391,7 +391,7 @@ ReadCD_ID:
         ; Check time
         dec     ecx
         jz      @@Error1_1 ; time out error
-        ; Check readyness
+        ; Check readiness
         in      al, dx
         test    al, 80h    ; BSY signal state
         jnz     @@WaitCompleet_1

@@ -114,7 +114,7 @@ num_variable_mtrrs      dd      0       ; number of variable-range MTRRs
 endg
 
 ; Helper procedure for MTRR initialization.
-; Takes MTRR configured by BIOS and tries to recongifure them
+; Takes MTRR configured by BIOS and tries to reconfigure them
 ; in order to allow non-UC data at top of 4G memory.
 ; Example: if low part of physical memory is 3.5G = 0xE0000000 bytes wide,
 ; BIOS can configure two MTRRs so that the first MTRR describes [0, 4G) as WB
@@ -555,8 +555,8 @@ end virtual
 ; and appending a maximal-size hole would create a range covering top of 4G,
 ; create a maximal-size WB range and return to this step.
 ; Example: for [0,0xBC000000) the following steps would consider
-; variants [0,0x80000000)+(another range to be splitted) and
-; [0,0x100000000)-(another range to be splitted); we forbid the last variant,
+; variants [0,0x80000000)+(another range to be split) and
+; [0,0x100000000)-(another range to be split); we forbid the last variant,
 ; so the first variant must be used.
         bsr     ecx, dword [edi + mtrr_range.length]
         xor     edx, edx

@@ -118,7 +118,7 @@ fileName = 52h
 
 struct NTFS PARTITION
 Lock                MUTEX   ; Currently operations with one partition
-; can not be executed in parallel since the legacy code is not ready.
+; cannot be executed in parallel since the legacy code is not ready.
 sectors_per_cluster dd  ?
 mft_cluster         dd  ?   ; location
 mftmirr_cluster     dd  ?   ; location
@@ -411,7 +411,7 @@ ntfs_create_partition:
         add     eax, 1000h
         mov     [ebp+NTFS.secondIndexBuffer], eax
         mov     [ebp+NTFS.cur_index_size], 8
-; reserve adress space for bitmap buffer and load some part of bitmap
+; reserve address space for bitmap buffer and load some part of bitmap
         mov     eax, dword [ebp+NTFS.Length]
         xor     edx, edx
         div     [ebp+NTFS.sectors_per_cluster]

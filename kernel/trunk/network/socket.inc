@@ -1164,7 +1164,7 @@ socket_send_local_initialized:
         call    socket_check
         jz      .invalid
 
-        ; allright, shove in the data!
+        ; alright, shove in the data!
         push    eax
         add     eax, STREAM_SOCKET.rcv
         call    socket_ring_write
@@ -1366,7 +1366,7 @@ socket_pair:
         mov     [eax + SOCKET.rcv_proc], socket_receive_local
         mov     [eax + SOCKET.PID], 0
 
-        ; Link the two sockets to eachother
+        ; Link the two sockets to each other
         mov     [eax + SOCKET.device], ebx
         mov     [ebx + SOCKET.device], eax
 

@@ -138,7 +138,7 @@ endl
         jb      .drop_no_socket                 ; If not, drop the packet
         mov     [dataoffset], eax
 
-        sub     ecx, eax                                                ; substract TCP header size from total segment size
+        sub     ecx, eax                                                ; subtract TCP header size from total segment size
         jb      .drop_no_socket                                         ; If total segment size is less then the advertised header size, drop packet
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: %u bytes of data\n", ecx
 
@@ -330,7 +330,7 @@ endl
   .opt_maxseg:
         lodsb
         cmp     al, 4
-        jne     .no_options                     ; error occured, ignore all options!
+        jne     .no_options                     ; error occurred, ignore all options!
 
         test    [edx + TCP_header.Flags], TH_SYN
         jz      @f
@@ -440,7 +440,7 @@ endl
 ; According to Van Jacobson, there are two common cases for an uni-directional data transfer.
 ;
 ; General rule: the packets has no control flags, is in-sequence,
-;   window width didnt change and we're not retransmitting.
+;   window width didn't change and we're not retransmitting.
 ;
 ; Second rules:
 ;  -  If the length is 0 and the ACK moved forward, we're the sender side of the transfer.
@@ -958,7 +958,7 @@ endl
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Processing duplicate ACK\n"
 
 ; If we have outstanding data, other than a window probe, this is a completely duplicate ACK
-; (window info didnt change) The ACK is the biggest we've seen and we've seen exactly our rexmt threshold of them,
+; (window info didn't change) The ACK is the biggest we've seen and we've seen exactly our rexmt threshold of them,
 ; assume a packet has been dropped and retransmit it. Kludge snd_nxt & the congestion window so we send only this one packet.
 
         test    [ebx + TCP_SOCKET.timer_flags], timer_flag_retransmission
@@ -1155,7 +1155,7 @@ endl
 ;-----------------------------------------------------------------------------------
 
 ; If the window gives us less then sstresh packets in flight, open exponentially.
-; Otherwise, open lineary
+; Otherwise, open linearly
 
         mov     esi, [ebx + TCP_SOCKET.SND_CWND]
         mov     eax, [ebx + TCP_SOCKET.t_maxseg]
@@ -1242,7 +1242,7 @@ endl
 
 ;-----------------------------------------------------------------------------------
 ;
-; State specific ACK handeling
+; State specific ACK handling
 ;
 ;-----------------------------------------------------------------------------------
 
@@ -1483,7 +1483,7 @@ endl
 
 ;;; TODO: reassemble packets queue
 
-; If we didnt have time to re-transmit the SYN,
+; If we didn't have time to re-transmit the SYN,
 ; Use its rtt as our initial srtt & rtt var.
 
         mov     eax, [ebx + TCP_SOCKET.t_rtt]

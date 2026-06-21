@@ -142,7 +142,7 @@ init_video:
         add     esi, edx
 .ok:
         call    calculate_fast_getting_offset_for_WinMapAddress
-; for Qemu or non standart video cards
+; for Qemu or non standard video cards
 ; Unfortunately [BytesPerScanLine] does not always
 ; equal to [_display.width] * [ScreenBPP] / 8
         call    calculate_fast_getting_offset_for_LFB
@@ -245,4 +245,3 @@ set_framebuffer:
         mov     eax, cr3
         mov     cr3, eax                        ;flush TLB
         jmp     .exit
-

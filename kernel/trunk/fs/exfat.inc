@@ -38,7 +38,7 @@ ClstHeap_change     db  ?   ; 1=Cluster Heap has changed
 createOption        db  ?
                     rb  2
 Lock                MUTEX   ; currently operations with one partition
-; can not be executed in parallel since the legacy code is not ready
+; cannot be executed in parallel since the legacy code is not ready
 FAT_START           dd  ?   ; start of fat table
 ROOT_START          dd  ?   ; start of rootdir
 SECTORS_PER_CLUSTER dd  ?
@@ -48,7 +48,7 @@ NUMBER_OF_FATS      dd  ?
 CLUSTER_HEAP_START  dd  ?
 CLUSTER_COUNT       dd  ?
 DATA_START          dd  ?   ; start of data area (=first cluster 2)
-LAST_CLUSTER        dd  ?   ; last availabe cluster
+LAST_CLUSTER        dd  ?   ; last available cluster
 fatRESERVED         dd  ?
 fatBAD              dd  ?
 fatEND              dd  ?
@@ -1877,8 +1877,8 @@ exFAT_ReadFolder:
 ;------------------------------------------------------------------------------
 .done:
 ; DEBUGF  1, "K : exFAT_ReadFolder.done \n"
-; DEBUGF  1, "K : exFAT_ReadFolder TotalBloks: %x\n", [edx+8]
-; DEBUGF  1, "K : exFAT_ReadFolder Read Bloks: %x\n", [edx+4]
+; DEBUGF  1, "K : exFAT_ReadFolder TotalBlocks: %x\n", [edx+8]
+; DEBUGF  1, "K : exFAT_ReadFolder Read Blocks: %x\n", [edx+4]
         add     esp, 262*2+12
         pushd   0
 ; DEBUGF  1, "K : exFAT_ReadFolder.done ECX: %x\n", ecx

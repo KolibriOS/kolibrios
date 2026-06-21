@@ -91,7 +91,7 @@ CRLF              equ 13, 10  ; Remove 13 for Linux
 MAX_BYTES         equ 13
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MODE MACROSES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MODE MACROS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 macro use16
 {
@@ -130,7 +130,7 @@ local aux
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; DISPLAYING MACROSES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; DISPLAYING MACROS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 macro display_address address*
@@ -176,8 +176,8 @@ local aux, size, digit
   end repeat
 }
 
-; The macro below in some situations doesn't adds a space to separate things unfortunatelly, so for readability ensurance
-; another one will be used instead...
+; In some situations the following macro doesn't add a space to separate things,
+; so to ensure readability, another macro is used instead...
 ;macro display_args [args]
 ;{
 ;common
@@ -259,7 +259,7 @@ forward
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;; INSTRUCTIONS & PREFIXES MACROSES ;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;; INSTRUCTIONS & PREFIXES MACROS ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 macro prefix mnemonic
@@ -351,7 +351,7 @@ local aux
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; DATA MACROSES ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; DATA MACROS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 macro data_define mnemonic
@@ -503,7 +503,7 @@ local aux
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; LISTING CONTROL MACROSES ;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; LISTING CONTROL MACROS ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 macro virtual [args]
@@ -526,7 +526,7 @@ macro enable_listing
 {
   detect_mode
 
-  match =0, _MACROSES_INSTALLED
+  match =0, _MACROS_INSTALLED
   \{
     match instructions, INSTRUCTIONS
     \\{
@@ -561,7 +561,7 @@ macro enable_listing
     \\}
   \}
 
-  _MACROSES_INSTALLED equ 1
+  _MACROS_INSTALLED  equ 1
   _LISTING            equ 1
 }
 
@@ -629,7 +629,7 @@ macro disable [feature*]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; INITIALIZATION ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-_MACROSES_INSTALLED equ 0
+_MACROS_INSTALLED  equ 0
 _ON_VIRTUAL         equ 0
 
 disable resolve_equates

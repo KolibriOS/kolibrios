@@ -196,7 +196,7 @@ Parameters:
 Returned value:
   * function does not return value
 Remarks:
-  * You can not use B=1 and C=1 at the same time, since both use edi.
+  * You cannot use B=1 and C=1 at the same time, since both use edi.
   * When SSS=0, font may be smoothed, depending on system setting.
   * User buffer structure:
 Xsize       dd
@@ -225,7 +225,7 @@ Remarks:
 ======================================================================
 =============== Function 7 - draw image in the window. ===============
 ======================================================================
-Paramters:
+Parameters:
   * eax = 7 - function number
   * ebx = pointer to the image in the format BBGGRRBBGGRR...
   * ecx = [size on axis x]*65536 + [size on axis y]
@@ -363,7 +363,7 @@ Remarks:
     in the system table and identifier (Process/Thread IDentifier =
     PID/TID), which do not vary with time for given thread.
     After completion of the thread its slot can be anew used
-    for another thread. The thread identifier can not be assigned
+    for another thread. The thread identifier cannot be assigned
     to other thread even after completion of this thread.
     Identifiers, assigned to new threads, grow monotonously.
   * If the thread has not yet defined the window by call to
@@ -684,7 +684,7 @@ Remarks:
   eax - SF_GET_BUTTON (17)
 ======================================================================
 ===================== Function 18, subfunction 1 =====================
-============= Make deactive the window of the given thread. ==========
+================ Deactivate the window of a given thread. ============
 ======================================================================
 Parameters:
   * eax = 18 - function number
@@ -1120,20 +1120,20 @@ Parameters:
 Returned value:
   * function does not return value
 
--------------- Subsubfunction 6 - get doubleclick delay. -------------
+-------------- Subsubfunction 6 - get double-click delay. ------------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
   * ecx = 6 - subsubfunction number
 Returned value:
-  * eax = current doubleclick delay (100 = 1 second)
+  * eax = current double-click delay (100 = 1 second)
 
--------------- Subsubfunction 7 - set doubleclick delay. -------------
+-------------- Subsubfunction 7 - set double-click delay. ------------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
   * ecx = 7 - subsubfunction number
-  * dl  = new value for doubleclick delay (100 = 1 second)
+  * dl  = new value for double-click delay (100 = 1 second)
 Returned value:
   * function does not return value
 
@@ -1765,7 +1765,7 @@ Remarks:
 ======================================================================
 =================== Function 36 - read screen area. ==================
 ======================================================================
-Paramters:
+Parameters:
   * eax = 36 - function number
   * ebx = pointer to the previously allocated memory area,
         where will be placed the image in the format BBGGRRBBGGRR...
@@ -1841,7 +1841,7 @@ events:
 
   * bit 23 is set = horizontal scroll is used
 
-  * bit 24 is set = doubleclick by left button
+  * bit 24 is set = double-click by left button
 
 -------------------- Subfunction 4 - load cursor ---------------------
 Parameters:
@@ -2101,7 +2101,7 @@ Remarks:
   * The given length must not exceed 60.
   * The exactly given amount of digits is output. If number is small
     and can be written by smaller amount of digits, it is supplemented
-    by leading zeroes; if the number is big and can not be written by
+    by leading zeroes; if the number is big and cannot be written by
     given amount of digits, extra digits are not drawn.
 
 ---------------------- Constants for registers: ----------------------
@@ -2186,9 +2186,9 @@ Format of the color table:
 each item is dword-value for color 0x00RRGGBB
   * +0: dword: frame
   * +4: dword: grab
-  * +8: dword: work_dark - dark color of working area 
+  * +8: dword: work_dark - dark color of working area
     used to give a user 3D-like feelings about interface elements
-  * +12 = +0xC: dword: work_light - light color of working area 
+  * +12 = +0xC: dword: work_light - light color of working area
     used to give a user 3D-like feelings about interface elements
   * +16 = +0x10: dword: grab_text - color of text on header
   * +20 = +0x14: dword: work - color of working area
@@ -2924,7 +2924,7 @@ execution of some functions; by the agreement kernel messages
 begins from the prefix "K : ".
 For view of the debug board the application 'board' was created,
 which reads data from the buffer and displays them in its window.
-'board' interpretes the sequence of codes 13,10 as newline.
+'board' interprets the sequence of codes 13,10 as newline.
 A character with null code in an end of line is not necessary,
 but also does not prevent.
 Because debugger has been written, the value of the debug board
@@ -2979,7 +2979,7 @@ Remarks:
   * The function cannot be used together with 68.11, 68.12, 68.13.
     The function call will be ignored after creation of process heap
     with function 68.11.
-        
+
 ---------------------- Constants for registers: ----------------------
   eax - SF_MEMORY_RESIZE (64)
 ======================================================================
@@ -3562,12 +3562,12 @@ Remarks:
     FPU and/or SSE.
 
 Attention:
-  1) If the user handler gets a stack overflow exception (#SS), then the 
+  1) If the user handler gets a stack overflow exception (#SS), then the
      starting address of the backup stack must be set in the ESI register.
-     If an exception (#SS) occurs, additional data will be written to this 
+     If an exception (#SS) occurs, additional data will be written to this
      reserve stack (see the EXCEPT_STACK structure in sys32.inc).
-     Upon completion of processing of this exception, the user handler must 
-     additionally reset the busy bit (bit number 0) of the reserve stack in 
+     Upon completion of processing of this exception, the user handler must
+     additionally reset the busy bit (bit number 0) of the reserve stack in
      the LockAccess field of the EXCEPT_STACK structure.
 
   2) You can use the "controlled exception" mode to check the correctness
@@ -3629,7 +3629,7 @@ Returned value:
 Remarks:
   * function loads file and unpacks, if necessary
   * Before this call one must initialize process heap by call to
-    subfunction 11.  
+    subfunction 11.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_SYS_MISC (68)
@@ -3660,7 +3660,7 @@ Returned value:
 Remarks:
   * The requested size must be an exact multiple of pagesize (4 Kb)
   * The function allocates memory in such a way that you can read and
-    write beyond the size of the allocated memory and will reach the 
+    write beyond the size of the allocated memory and will reach the
     beginning of the buffer again.
 
 ======================================================================
@@ -4671,7 +4671,7 @@ Returned value:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
-   bl - SSF_TX_PACKET_ERROR_COUNT (11)   
+   bl - SSF_TX_PACKET_ERROR_COUNT (11)
 ======================================================================
 === Function 74, Subfunction 12, Get TX dropped packets counter. =====
 ======================================================================
@@ -4684,7 +4684,7 @@ Returned value:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
-   bl - SSF_TX_PACKET_DROP_COUNT (12)    
+   bl - SSF_TX_PACKET_DROP_COUNT (12)
 ======================================================================
 ==== Function 74, Subfunction 13, Get TX missed packets counter. =====
 ======================================================================
@@ -4697,7 +4697,7 @@ Returned value:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
-   bl - SSF_TX_PACKET_MISS_COUNT (13)    
+   bl - SSF_TX_PACKET_MISS_COUNT (13)
    ======================================================================
 ==== Function 74, Subfunction 14, Get RX error packets counter. ======
 ======================================================================
@@ -4710,7 +4710,7 @@ Returned value:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
-   bl - SSF_RX_PACKET_ERROR_COUNT (14)   
+   bl - SSF_RX_PACKET_ERROR_COUNT (14)
 ======================================================================
 === Function 74, Subfunction 15, Get RX dropped packets counter. =====
 ======================================================================
@@ -4736,7 +4736,7 @@ Returned value:
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_NETWORK_GET (74)
-   bl - SSF_RX_PACKET_MISS_COUNT (16)  
+   bl - SSF_RX_PACKET_MISS_COUNT (16)
 ======================================================================
 ============== Function 75, Subfunction 0, Open socket. ==============
 ======================================================================
@@ -5230,7 +5230,7 @@ Parameters:
   * eax = 76 - function number
   * high half of ebx = 5 (ARP)
   * bh = device number
-  * bl = 7 (Read # IP address conflicts that have occured)
+  * bl = 7 (Read # IP address conflicts that have occurred)
 Returned value:
   * eax = # IP address conflicts (-1 on error)
 
@@ -5283,7 +5283,7 @@ Parameters:
   * ebx = 1 - subfunction number
   * ecx = futex handle
 Returned value:
-  * eax = 0 - successfull, -1 on error
+  * eax = 0 - successful, -1 on error
 Remarks:
   * The kernel destroys the futexes automatically when the process
     terminates.
@@ -5301,7 +5301,7 @@ Parameters:
   * edx = futex control value (dword)
   * esi = timeout in hundredths of a second, 0 - wait forever
 Returned value:
-  * eax = 0 - successfull
+  * eax = 0 - successful
          -1 - timeout
          -2 - futex control value doesn't match
 

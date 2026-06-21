@@ -48,16 +48,16 @@ error_ini_f3 db      '>Error: cannot read ini file',0
 error_ini_nf db      '>Error: unrecognized error when loading ini file',0
 not_found_sec_loader db '>Not found section [loader]',0
 not_found_def_sect   db '>Not found value default in section [loader]',0
-default_eq_loader    db '>Error in section [loader] parametr default=loader',0
-found_equal_default  db '>Found equal parametr default will be use first value',0
-found_equal_timeout  db '>Found equal parametr timeout will be use first value',0
+default_eq_loader    db '>Error in section [loader] parameter default=loader',0
+found_equal_default  db '>Found equal parameter default will be use first value',0
+found_equal_timeout  db '>Found equal parameter timeout will be use first value',0
 set_default_timeout_val db '>Section timeout has incorrect value, will be use default value',0
 error_ini_common db  ">I will use predefined settings and try to boot. Let's hope for the best..."
              db      13,10,"Press any key to continue...",0
 load_ini     db      '>Ini file loaded successfully',0
 parse_ini_end db     '>End parsing ini file',0
 point_to_default_sec_not_found db '>Point to default section is not found in ini file',0
-incorect_section_define db ">Incorect section define not found ']'",0
+incorect_section_define db ">Incorrect section define not found ']'",0
 default_section_name    db '"Section unname"'
 
 start_msg db      "Press any key to change default section, press [Enter] to continue booting"

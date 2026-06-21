@@ -28,11 +28,11 @@
 ; Данный модуль позволяет стандартно произвести разбор ini файла
 ; (и с использованием полученных данных ОС будет загружаться дальше).
 ; В начале найдем открывающий "[" - это будет указывать на начало
-; секции. Поддерживается 1 секция это [loader], остальные секции могут иметь 
+; секции. Поддерживается 1 секция это [loader], остальные секции могут иметь
 ; любые имена, но они должны быть заключены в в скобки []
 macro  use_parse
 {
-;input cx=size of ini file 
+;input cx=size of ini file
 parse_start:
 ;es:di as 2000:0000 new segment
 ;установим указатель на загруженный блок
@@ -52,7 +52,7 @@ parse_start:
 ;///////////check [loader]
         cld
 
-        mov     ret_on_ch, .start    ;set return 
+        mov     ret_on_ch, .start    ;set return
         mov     al, byte [es:di]
         push    word .first_ret
         cmp     al, ' '
@@ -64,7 +64,7 @@ parse_start:
 .start:
         call    get_firs_sym    ;get first symbol on new line
 .first_ret:                     ;первый возврат
-;        jcxz   .end_file       ;.end_loader     ;found or not found parametrs in section  exit in section
+;        jcxz   .end_file       ;.end_loader     ;found or not found parameters in section  exit in section
         test    cx, cx
         jz      error.not_loader
         cmp     al, '['
@@ -76,7 +76,7 @@ use_parse_loader
 if DEBUG
         xor     ax, ax
         int     16h
-end if  
+end if
 ;////// вывод графического экрана, выбор, секции под дефолту
 use_any_sec
 ;парсинг выбраной или дефолтной секции т.е. разбор параметров выполнение сценария
@@ -94,8 +94,8 @@ use_parse_def_sect
 
 ;        mov     si,parse_ini_end
 ;        call    printplain
-;        
-;if DEBUG        
+;
+;if DEBUG
 ;        pusha
 ;        mov     ax,cx
 ;        mov     cx,0x0a
@@ -107,12 +107,12 @@ use_parse_def_sect
 ;        call    printplain
 ;
 ;        popa
-;end if  
+;end if
         jmp     $
 
 ;///////////////////procedure //////////
 ;input es:di - is pointer to date
-;cx - counter 
+;cx - counter
 ;return: cx - status if =0 - end of date else es:di point to first symbol on new line
 
 }

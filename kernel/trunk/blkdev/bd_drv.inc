@@ -250,7 +250,7 @@ bd_write_cache_chain:
 ;-----------------------------------------------------------------
 int13_call:
 ; Because this code uses fixed addresses,
-; it can not be run simultaniously by many threads.
+; it cannot be run simultaneously by many threads.
 ; In current implementation it is protected by common mutex 'ide_status'
         mov     word [OS_BASE + 510h], 10h          ; packet length
         mov     word [OS_BASE + 512h], cx           ; number of sectors

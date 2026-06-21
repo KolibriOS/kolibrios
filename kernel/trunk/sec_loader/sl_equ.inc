@@ -38,10 +38,10 @@ flag_found_RS           equ     0x2     ;found RS value
 flag_found_GTRFMS       equ     0x4     ;found type RamFS
 flag_found_RamdiskSector equ    0x8     ;found RamdiskSector
 flag_found_RamdiskCluster equ   0x16    ;found RamdiskCluster
-;statick data эти данные не предопределяются в течении выполнения всей программы.
+;static data эти данные не предопределяются в течении выполнения всей программы.
 save_cx         equ     word [bp-2]     ;save cx size ini file
 ret_on_ch       equ     word [bp-4]     ;point to return   разрушаемое значение
-save_cx_d       equ     word [bp-6]     ;save cx - size default section and working section                                
+save_cx_d       equ     word [bp-6]     ;save cx - size default section and working section
 status_flag     equ     word [bp-8]     ;status flag
 point_loader    equ     word [bp-10]
 point_default   equ     word [bp-12]    ;point to default
@@ -67,7 +67,7 @@ point_to_16     equ     word [bp-46]
 point_to_16     equ     word [bp-48]
 point_to_17     equ     word [bp-50]
 point_to_18     equ     word [bp-52]
-;here array for fast scroling  16 word - poin to start section
+;here array for fast scrolling  16 word - point to start section
 point_to_point_def      equ     word [bp-54]
 point_to_eframe equ     word [bp-56]    ;point on point frame
 
@@ -77,8 +77,8 @@ point_to_eframe equ     word [bp-56]    ;point on point frame
 find_sec_di     equ     word [bp-58]    ;тут будет храниться di
 info_real_mode_size     equ     word [bp-60];тут храниться информация о занятой области т.е. размер, можно узнать сколько осталось места вычислив
 free_ad_memory  equ     word    [bp-62] ;сколько у нас расширенной памяти для формирования рам диска и загрузки модулей
-show_errors_sect equ    word    [bp-64] ;переменая которая хранит биты ошибок для каждой логической секции. 
-save_descript_size      equ     word    [bp-66] ;save descript size previos section сохраним размер предыдущей секции которую выводили
+show_errors_sect equ    word    [bp-64] ;переменая которая хранит биты ошибок для каждой логической секции.
+save_descript_size      equ     word    [bp-66] ;save descript size previous section сохраним размер предыдущей секции которую выводили
 save_ramdisksize        equ     dword   [bp-70] ;save size of ramdisk in byte
 save_file_size          equ     dword   [bp-74] ;save size of reading file
 set_ramfs               equ     word    [bp-76] ;определенный тип файловой системы,нужно для формирования рам диска

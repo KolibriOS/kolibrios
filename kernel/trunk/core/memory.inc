@@ -1340,7 +1340,7 @@ proc load_pe_driver stdcall, file:dword, cmdline:dword
         jz      .fail
 
         mov     esi, eax
-        push    ebx  ;  base addres driver
+        push    ebx  ;  base address driver
         push    [cmdline]
         push    DRV_ENTRY
         call    eax

@@ -670,7 +670,7 @@ proc new_sys_threads
         mov     edi, eax
         shl     edi, BSF sizeof.APPDATA
         add     edi, SLOT_BASE
-        mov     edx, edi      ;edx=edi - pointer to infomation about new thread
+        mov     edx, edi      ;edx=edi - pointer to information about new thread
         mov     ecx, sizeof.APPDATA/4
         xor     eax, eax
         cld

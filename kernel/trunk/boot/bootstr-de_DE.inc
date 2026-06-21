@@ -23,9 +23,9 @@ novesa    db      "Anzeige: EGA/CGA ",13,10,0
 s_vesa    db      "Vesa-Version: "
   .ver    db      "?.?",13,10,0
 
-gr_mode   db      "Wahlen Sie einen videomode: ",13,10,0
+gr_mode   cp850   "Wählen Sie einen Videomodus: ",13,10,0
 
-ask_bd     db      "Add-Festplatten sichtbar BIOS in V86-Modus emuliert? [1-ja, 2 nein]: ",0
+ask_bd     db      "Add-Festplatten sichtbar BIOS in V86-Modus emuliert? [1-ja, 2-nein]: ",0
 
 if defined extended_primary_loader
 bdev      db      "Lade die Ramdisk von [1-Diskette; 2-kolibri.img]: ",0
@@ -41,8 +41,8 @@ prnotfnd  db      "Fatal - Videomodus nicht gefunden.",0
 
 not386    db      "Fatal - CPU 386+ benoetigt.",0
 fatalsel  db      "Fatal - Grafikmodus nicht unterstuetzt.",0
-pres_key  db      "Drucken Sie eine beliebige Taste, um eine neue videomode wahlen.",0
-badsect   db      13,10,186," Fatal - Sektorfehler, Andere Diskette neutzen.",0
+pres_key  cp850   "Drücken Sie eine beliebige Taste, um eine neue Videomodus wählen.",0
+badsect   db      13,10,186," Fatal - Sektorfehler, Andere Diskette benutzen.",0
 memmovefailed db  13,10,186," Fatal - Int 0x15 Fehler.",0
 okt       db      " ... OK"
 linef     db      13,10,0
@@ -98,9 +98,9 @@ _r2 latin1 '║                   │  640x480  VGA 16 colors       │ │',13,
 _rs latin1 '║                   │  ????x????@??  SVGA VESA      │ │',13,10,0
 _bt latin1 '║                   └───────────────────────────────┴─┘',13,10,0
 
-remark1 db      "Die Standardwerte sind fur die meisten gewahlt, aber nicht fur jedermann.",0
+remark1 cp850   "Die Standardwerte sind für die meisten gewählt, aber nicht für jedermann.",0
 remark2 db      "Wenn das System nicht bootet, das Option [b] deaktivieren versuchen. Wenn es",0
-remark3 db      "nach dem Booten hangen bleibt, aktivieren Sie Option [c], deaktivieren [d]",0
+remark3 cp850   "nach dem Booten hängen bleibt, aktivieren Sie Option [c], deaktivieren [d]",0
 remark4 db      "und machen Fotos.",0
 remarks dw      remark1, remark2, remark3, remark4
 num_remarks = 4

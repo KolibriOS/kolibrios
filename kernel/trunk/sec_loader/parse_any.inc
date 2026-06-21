@@ -43,7 +43,7 @@ macro use_any_sec
 ;узнаем работу предыдущего шага т.е. чему = timeout, если он 0, то визуальная часть не будет отображена на дисплее с выбором загрузочных секций.
 ;иначе мы ее должны отобразить и ждать заявленое время для выбора и конигурирования пукнктов секции от пользователя.
 
-if DEBUG        
+if DEBUG
         pusha
         mov     ax, word [value_timeout];идет проверка на наличее значения timeout, для более быстрой работы, этот параметр должен быть уже обработан,т.е. в этом случае при его =0 будет сформирован указатель только на дефолтную секцию, иначе информация будет собрана по всем секциям и составлены указатели в блоке памяти
 ;        mov     ax,cx
@@ -57,7 +57,7 @@ if DEBUG
         call    printplain
 ;
         popa
-end if  
+end if
 
         test    ax, ax
         jz      .parse_run_only
@@ -113,7 +113,7 @@ end if
         sti
 
 ;процедура формирования буфера для скролинга секций
-;if DEBUG        
+;if DEBUG
 ;        pusha
 ;       mov     ax,point_default
 ;        mov     ax,cx
@@ -121,7 +121,7 @@ end if
 ;        mov     di,show_db1
 ;        mov     dword[ds:di],'    '
 ;       mov     word [ds:di+4],'  '
-;        call    decode                                                                    
+;        call    decode
 ;Show size
 ;        mov     si,show_db1
 ;        call    printplain
@@ -129,7 +129,7 @@ end if
 ;       xor     ax,ax
 ;       int     0x16
 ;        popa
-;end if  
+;end if
 ;;;;;;;;;;;;;размер предыдущей сеции установим =0
         mov     save_descript_size, 18
 ;отобразить black screen
@@ -165,7 +165,7 @@ show_timer_message
         mov     [es:8*4], ebx
         mov     dword [timer_], ebx
         sti
-        
+
         push    ax
 clear_timer_msg
         pop     ax
@@ -201,7 +201,7 @@ clear_timer_msg
         mov     ax, [si]
         mov     point_default, ax
         jmp     .show_active_cursor
-@@:     
+@@:
         call    find_before_sect
         jmp     .show_all_scr
 
@@ -255,7 +255,7 @@ clear_timer_msg
 
 
 
-; тут мы будем парсить только дефолтную секцию и выполнять ее ничего не предлагая пользователю из диалогов. 
+; тут мы будем парсить только дефолтную секцию и выполнять ее ничего не предлагая пользователю из диалогов.
 .parse_run_only:
 if DEBUG
         pusha
@@ -286,7 +286,7 @@ end if
 macro show_bl_sc
 {
 ;;;;;;;;;;;;;;;
-;очистим экран и выведем меню 
+;очистим экран и выведем меню
 ; draw frames
         xor     ax, ax
 if DEBUG
@@ -428,10 +428,10 @@ macro get_frame_buffer
 .first_bl_sc:
         jmp     get_firs_sym.first_sp
 
-.start_hbl:              
+.start_hbl:
         call    get_firs_sym    ;get first symbol on new line
         test    cx, cx
-        jz      error.correct_exit_bl   ;critical error not found default point it's not possible because it's param chacking before
+        jz      error.correct_exit_bl   ;critical error not found default point it's not possible because it's param checking before
         cmp     al, '['
         jnz     .start_hbl
 
@@ -445,11 +445,11 @@ macro get_frame_buffer
         call    get_firs_sym    ;get first symbol on new line
 .first_ret_bl_sc:                     ;первый возврат
         test    cx, cx
-        jz      error.correct_exit_bl   ;critical error not found default point it's not possible because it's param chacking before
+        jz      error.correct_exit_bl   ;critical error not found default point it's not possible because it's param checking before
 .analisist_al:
         cmp     al, '['
         jnz     .start_bl
-;просматриваем ini файл с начала в поисках секции указаной как default 
+;просматриваем ini файл с начала в поисках секции указаной как default
 ;поиск фрейма в котором содержиться значение default
 .found_sect_bl:
         cmp     di, point_loader
@@ -465,7 +465,7 @@ macro get_frame_buffer
 
 .save_point_def:
 ;итак далее мы должны заполнить frame буфер адресов секций, что бы потом по нему быстро перемещаться не вычисляя снова адреса
-        mov     di, si  ;указатель на начало 
+        mov     di, si  ;указатель на начало
         mov     cx, bx
         lea     si, point_to_hframe
         mov     dx, size_show_section+1  ;т.к. у нас структура содержит размер между первым и вторым указателем, то нам нужно на 1 адрес больше обсчитать секций.
@@ -481,7 +481,7 @@ macro get_frame_buffer
 .start_mfb:
         call    get_firs_sym    ;get first symbol on new line
 .first_ret_mfb:                     ;первый возврат
-        jcxz    .val_buff_comp  ;.end_loader     ;found or not found parametrs in section  exit in section
+        jcxz    .val_buff_comp  ;.end_loader     ;found or not found parameters in section  exit in section
         cmp     al, '['
         jnz     .start_mfb
 
@@ -494,7 +494,7 @@ macro get_frame_buffer
         sub     si, 2
         dec     dx
         jnz     .start_mfb
-;bufer is full
+;buffer is full
         jmp     @f
 .val_buff_comp:
         push    save_cx
@@ -554,7 +554,7 @@ end if
 }
 
 macro show_descript
-;Этот макрос показывает краткое описание, если оно есть у секции в пункте 
+;Этот макрос показывает краткое описание, если оно есть у секции в пункте
 ;Section description
 {
 local .start_p_sh_d
@@ -575,7 +575,7 @@ local .show_mess_prev_eq
 .start_p_sh_d:
         call    get_firs_sym    ;get first symbol on new line
         test    cx, cx
-        jz      .exit   ;нету? ну ладно - следующее значение тогда ) 
+        jz      .exit   ;нету? ну ладно - следующее значение тогда )
         cmp     al, 'd'
         jnz     .start_p_sh_d
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -595,10 +595,10 @@ local .show_mess_prev_eq
         mov     ax, 0x3d20         ;cut al=' ' ah='='
         repe scasb
         jcxz    .rest_value_loop_sh_d          ;not found param timeout
-        
+
         cmp     ah, byte [es:di-1]   ;find '='
         jnz     .rest_value_loop_sh_d
-        
+
         repe scasb                 ;cut ' '
         inc     cx
         dec     di
@@ -614,12 +614,12 @@ local .show_mess_prev_eq
 
         push    0xb800
         pop     es
-        
+
         mov     di, 1040
         mov     bx, 18
         mov     find_sec_di, di
         mov     save_cx_d, bx
-;;;;;;;;;;;;;;;;;;;;;;;;;;      
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;clean string
 
         push    di
@@ -651,7 +651,7 @@ local .show_mess_prev_eq
         cmp     al, "'"
         jnz     .end_sh_desc_sec
 
-.loop_message:        
+.loop_message:
         mov     cx, 38
 @@:
         lodsb
@@ -661,7 +661,7 @@ local .show_mess_prev_eq
         jz      .end_sh_desc_sec
         stosw
         loop    @b
-        
+
         add     find_sec_di, 160
         mov     di, find_sec_di
         dec     save_cx_d

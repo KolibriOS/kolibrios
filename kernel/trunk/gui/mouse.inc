@@ -340,7 +340,7 @@ mouse._.move_handler:
         call    mouse._.find_sys_window_under_cursor
         call    mouse._.check_sys_window_actions
 
-        ; if now we are resizing the window, dont change the cursor
+        ; if now we are resizing the window, don't change the cursor
         mov     bl, [mouse.active_sys_window.action]
         and     bl, mouse.WINDOW_RESIZE_S_FLAG or mouse.WINDOW_RESIZE_W_FLAG or mouse.WINDOW_RESIZE_E_FLAG
         test    bl, bl
@@ -390,14 +390,14 @@ mouse._.move_handler:
         shl     esi, BSF sizeof.WDATA
         add     esi, window_data
 
-        ; if resizing cursor we need (eax) isnt set already, set it
+        ; if resizing cursor we need (eax) is not set already, set it
         cmp     eax, [esi + WDATA.cursor]
         je      @f
 
         ; DEBUGF  1, "changing cursor to resizing\n"
         xchg    eax, [esi + WDATA.cursor] ; set resizing cursor, prev cursor goes to eax
         ; save previous cursor (will be restored when we'll get out of the resizing area)
-        ; if we change resizing cursor to resizing cursor then dont update previous cursor
+        ; if we change resizing cursor to resizing cursor then don't update previous cursor
         cmp     eax, [def_cursor_hresize]
         je      @f
         cmp     eax, [def_cursor_vresize]

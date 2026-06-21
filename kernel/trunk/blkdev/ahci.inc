@@ -160,7 +160,7 @@ struct PORT_DATA
     clb           dd ? ; Command list base
     fb            dd ? ; FIS base
     ctba_arr      rd 32 ; ctba_arr[0] = clb[0].ctba, ... and so on.
-    port          dd ? ; address of correspoding HBA_PORT structure
+    port          dd ? ; address of corresponding HBA_PORT structure
     portno        dd ? ; port index, 0..31
     drive_type    db ? ; drive type
     sector_count  dq ? ; number of sectors
@@ -1413,7 +1413,7 @@ proc ahci_find_cmdslot stdcall, pdata: dword
 endp
 
 
-proc _memset stdcall, dest:dword, val:byte, cnt:dword ; doesnt clobber any registers
+proc _memset stdcall, dest:dword, val:byte, cnt:dword ; doesn't clobber any registers
         ;DEBUGF  DBG_INFO, "memset(%x, %u, %u)\n", [dest], [val], [cnt]
         push    eax ecx edi
         mov     edi, dword [dest]
@@ -1427,7 +1427,7 @@ endp
 ; Swaps byte order in words
 ; base - address of first word
 ; len - how many words to swap bytes in
-; doesnt clobber any registers
+; doesn't clobber any registers
 proc swap_bytes_in_words stdcall, base: dword, len: dword
         push    eax ebx ecx
         xor     ecx, ecx

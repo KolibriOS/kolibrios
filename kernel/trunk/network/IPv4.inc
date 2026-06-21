@@ -194,7 +194,7 @@ macro ipv4_checksum ptr {
         pop     ecx
 
         neg     word [ptr+10]           ; zero will stay zero so we just get the checksum
-        add     word [ptr+10], bx       ;  , else we will get (new checksum - old checksum) in the end, wich should be 0 :)
+        add     word [ptr+10], bx       ;  , else we will get (new checksum - old checksum) in the end, which should be 0 :)
         pop     ebx
 
 }
@@ -276,7 +276,7 @@ ipv4_input:
 ; Check if the packet is fragmented
 
         test    [edx + IPv4_header.FlagsAndFragmentOffset], 1 shl 5     ; Is 'more fragments' flag set ?
-        jnz     .has_fragments                                          ; If so, we definately have a fragmented packet
+        jnz     .has_fragments                                          ; If so, we definitely have a fragmented packet
 
         test    [edx + IPv4_header.FlagsAndFragmentOffset], 0xff1f      ; If flag is not set, but there is a fragment offset, the packet is last in series of fragmented packets
         jnz     .is_last_fragment
@@ -284,7 +284,7 @@ ipv4_input:
 ;-------------------------------------------------------------------
 ; No, it's just a regular IP packet, pass it to the higher protocols
 
-  .handle_it:                                                   ; We reach here if packet hasnt been fragmented, or when it already has been re-constructed
+  .handle_it:                                                   ; We reach here if packet hasn't been fragmented, or when it already has been re-constructed
 
         movzx   esi, [edx + IPv4_header.VersionAndIHL]          ; Calculate Header length by using IHL field
         and     esi, 0x0000000f                                 ;
@@ -482,7 +482,7 @@ ipv4_input:
         mov     [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.PrevPtr], edi
         mov     [esi + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.Owner], ebx
 
-        mov     cx, [edx + IPv4_header.TotalLength]                                     ; Note: This time we don't substract Header length
+        mov     cx, [edx + IPv4_header.TotalLength]                                     ; Note: This time we don't subtract Header length
         xchg    cl, ch
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Packet size=%u\n", cx
         add     ax, cx
@@ -543,11 +543,11 @@ ipv4_input:
         rep movsb                                                                       ;
 
         push    eax
-        push    [edx + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.Owner]                                       ; we need to remeber the owner, in case this is the last packet
-        push    [edx + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr]                                     ; Set edx to the next pointer
+        push    [edx + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.Owner]                     ; we need to remember the owner, in case this is the last packet
+        push    [edx + sizeof.NET_BUFF + IPv4_FRAGMENT_entry.NextPtr]                   ; Set edx to the next pointer
         push    edx                                                                     ; Push pointer to fragment onto stack
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_input: Next Fragment: 0x%x\n", edx
-        call    net_buff_free                                                          ; free the previous fragment buffer (this uses the value from stack)
+        call    net_buff_free                                                           ; free the previous fragment buffer (this uses the value from stack)
         pop     edx ebx eax
         cmp     edx, -1                                                                 ; Check if it is last fragment in chain
         jne     .rebuild_packet_loop

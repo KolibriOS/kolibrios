@@ -69,7 +69,7 @@ ReadRepCounter  DB ?
 ; Recalibration operation repetition counter
 RecalRepCounter DB ?
 endg
-; Memory area for storing the readed sector
+; Memory area for storing the read sector
 ;FDD_DataBuffer:  times 512 db 0   ;DB 512 DUP (?)
 fdd_motor_status db 0
 timer_fdd_motor  dd 0
@@ -142,7 +142,7 @@ FDCDataOutput:
 
 ;******************************************
 ;*   READ BYTE FROM FDC DATA PORT         *
-;* Procedure doesnt have input params.    *
+;* Procedure doesn't have input params.   *
 ;* Output :                               *
 ;* AL - byte read.                        *
 ;******************************************
@@ -198,7 +198,7 @@ WaitFDCInterrupt:
 @@TestRS_2:
         call    change_task
         cmp     [FDD_IntFlag], 0
-        jnz     @@End_7           ; interrupt occured
+        jnz     @@End_7           ; interrupt occurred
         mov     eax, [timer_ticks]
         sub     eax, [TickCounter]
         cmp     eax, 200;50 ;25   ;5 ; wait 5 ticks
@@ -429,7 +429,7 @@ SeekTrack:
         jne     @@Err
         ; Does the head number match the specified one?
 ; The H bit (Head Address) in ST0 will always return a "0" (c) 82077AA datasheet,
-; description of SEEK command. So we can not verify the proper head.
+; description of SEEK command. So we cannot verify the proper head.
 ;        mov     AL, [FDC_ST0]
 ;        and     AL, 100b
 ;        shr     AL, 2

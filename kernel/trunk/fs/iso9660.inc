@@ -945,7 +945,7 @@ iso9660_Read:
         sub     esp, 4 ; for ptr on memory page
         call    iso9660_find_file
         mov     esi, eax
-        mov     edi, [ebx + f70s0arg.buf] ; ptr to programm buffer
+        mov     edi, [ebx + f70s0arg.buf] ; ptr to program buffer
 
         test    byte[esi + ISO9660_DIRECTORY_RECORD.flags], 10b ; check dir
         jnz     iso9660_find_file.not_found
@@ -971,7 +971,7 @@ end virtual
 
         mov     dword[.var_fs_err], 0 ; ENOERR
         mov     [.var_offset_copy], edx ; offset to start copy
-        mov     dword[.var_count_copied_data], 0 ; count copping byte
+        mov     dword[.var_count_copied_data], 0 ; count copied bytes
 
         ; check end offset (offset+size_buff <= size)
         mov     ecx, [esi + ISO9660_DIRECTORY_RECORD.data_length]

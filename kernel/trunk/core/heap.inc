@@ -859,7 +859,7 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         add     edx, ebx                ; must be below 2Gb app limit
         js      .error
 
-        shr     ebx, 12                 ; chek block attributes
+        shr     ebx, 12                 ; check block attributes
         lea     ebx, [page_tabs + ebx*4]
         mov     eax, [ebx - 4]          ; block attributes
         test    al, MEM_BLOCK_USED
@@ -886,7 +886,7 @@ proc user_unmap stdcall, base:dword, offset:dword, size:dword
         add     ebx, [base]
 
   .unmap:
-        mov     eax, [edx]              ; get page addres
+        mov     eax, [edx]              ; get page address
         test    al, 1                   ; page mapped ?
         jz      @F
         test    eax, PG_SHARED          ; page shared ?

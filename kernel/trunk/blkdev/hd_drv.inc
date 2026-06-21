@@ -267,7 +267,7 @@ IDE_transfer:
 ; check buffer pages physical addresses and fill the scatter-gather list
 ; buffer may be not aligned and may have size not divisible by page size
 ; [edi] = block physical address, [edi+4] = block size in bytes
-; block addresses can not cross 10000h borders
+; block addresses cannot cross 10000h borders
         mov     ecx, esi
         and     ecx, 0xFFF
         jz      .aligned

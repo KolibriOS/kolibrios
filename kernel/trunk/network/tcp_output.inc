@@ -124,7 +124,7 @@ endl
 ;------------------------
 ; check for window shrink
 
-; If FIN has been sent, but not ACKed, but we havent been called to retransmit, esi will be -1
+; If FIN has been sent, but not ACKed, but we haven't been called to retransmit, esi will be -1
 ; Otherwise, window shrank after we sent into it.
 
         jge     .not_persist
@@ -265,7 +265,7 @@ endl
         test    dl, TH_SYN + TH_RST                     ; we need to send a SYN or RST
         jnz     .send
 
-        mov     ebx, [eax + TCP_SOCKET.SND_UP]          ; when urgent pointer is beyond start of send bufer
+        mov     ebx, [eax + TCP_SOCKET.SND_UP]          ; when urgent pointer is beyond start of send buffer
         cmp     ebx, [eax + TCP_SOCKET.SND_UNA]
         ja      .send
 
@@ -274,7 +274,7 @@ endl
         test    dl, TH_FIN
         jz      .enter_persist                          ; no reason to send, enter persist state
 
-; Do so if we didnt do it already
+; Do so if we didn't do it already
 
         test    [eax + TCP_SOCKET.t_flags], TF_SENTFIN
         jz      .send

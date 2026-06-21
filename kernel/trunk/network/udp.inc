@@ -115,7 +115,7 @@ udp_input:
 
         ; First validate, checksum
 
-        neg     [esi + UDP_header.Checksum]     ; substract checksum from 0
+        neg     [esi + UDP_header.Checksum]     ; subtract checksum from 0
         jz      .no_checksum                    ; if checksum is zero, it is considered valid
 
         ; otherwise, we will re-calculate the checksum and add it to this value, thus creating 0 when it is correct
@@ -345,7 +345,7 @@ udp_connect:
         mov     [eax + UDP_SOCKET.LocalIP], edx
         popa
 
-; Find a local port, if user didnt define one
+; Find a local port, if user didn't define one
         cmp     [eax + UDP_SOCKET.LocalPort], 0
         jne     @f
         call    socket_find_port

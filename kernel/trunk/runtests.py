@@ -111,7 +111,7 @@ def prepare_test_img():
         img_data = img.read()
     img = common.Floppy(img_data)
 
-    # Remove unuseful folders
+    # Remove useless folders
     img.delete_path("GAMES")
     img.delete_path("DEMOS")
     img.delete_path("3D")
@@ -209,9 +209,9 @@ def test_umka():
                 test_dir = os.path.dirname(umka_shell_command_file)
                 for line in f:
                     parts = line.split()
-                    for dependant in ("disk_add", "ramdisk_init"):
+                    for dependent in ("disk_add", "ramdisk_init"):
                        try:
-                            idx = parts.index(dependant)
+                            idx = parts.index(dependent)
                             relative_img_path = parts[idx + 1]
                             dep_path = f"{test_dir}/{relative_img_path}"
                             deps.add(os.path.realpath(dep_path))
