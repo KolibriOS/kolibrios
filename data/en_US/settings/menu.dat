@@ -122,7 +122,7 @@
 00 Emulators*         > |@6
 16 Analog clock         |aclock
 16 Binary clock         |demos/bcdclk
-29 FB2 Reader           |fb2read
+18 FB2 Reader           |fb2read
 53 Timer                |timer
 45 Screenshooter        |scrshoot
 45 Easyshot             |easyshot

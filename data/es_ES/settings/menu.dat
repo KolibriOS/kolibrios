@@ -125,6 +125,7 @@
 16 Reloj anal¢gico       |demos/aclock
 16 Reloj binario         |demos/bcdclk
 16 Contador              |demos/timer
+18 FB2 Reader            |fb2read
 16 Capturar de pantalla  |scrshoot
 16 Calendario            |calendar
 16 Lector de RTF         |rtfread
