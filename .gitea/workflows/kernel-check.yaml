@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# SPDX-FileCopyrightText: 2025 KolibriOS team
+
+name: 'Check kernel codestyle'
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+    paths:
+      - 'kernel/**'
+      - '.gitea/workflows/kernel-check.yaml'
+      - '.gitea/utils/check-kernel-codestyle.py'
+
+jobs:
+  codestyle:
+    name: "Check kernel codestyle"
+    runs-on: kolibri-toolchain
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            kernel/trunk
+            .gitea/utils
+
+      - name: Check codestyle
+        run: |
+          find kernel/trunk \
+            \( -iname '*.asm' -or -iname '*.inc' \) \
+            -exec sh -c '
+              for file do
+                echo "$file"
+                python3 .gitea/utils/check-kernel-codestyle.py "$file"
+              done
+            ' sh {} +
