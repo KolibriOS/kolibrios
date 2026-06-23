@@ -1,0 +1,202 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# SPDX-FileCopyrightText: 2026 KolibriOS team
+
+# This workflow is for commits in PRs to test them before merging.
+# All PRs MUST be tested before merging, and if I see Maxim turn this off again
+# I'll kick his ass.
+
+# Serious things you have here, guys...
+
+name: 'Test PR'
+
+# Test build for every pull request
+on:
+  pull_request:
+    branches:
+      - 'main'
+
+jobs:
+  build:
+    name: 'Build (${{ matrix.lang }})'
+    runs-on: kolibri-toolchain
+    # one parallel job per language variant
+    strategy:
+      matrix:
+        lang: [en_US, ru_RU, es_ES]
+
+    steps:
+      # shallow clone is enough: PR builds embed no revision id, and the
+      # artifact name uses the short head sha (no git describe)
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TOOLCHAIN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+      # cache the toolchain sources by hash to not rebuild them every time
+      - name: Get toolchain hash
+        id: toolchain-hash
+        run: |
+          a=$(find ${{ gitea.workspace }}/programs/develop/cmm/ -type f -print0 | sort -z | xargs -0 sha1sum)
+          b=$(sha1sum ${{ gitea.workspace }}/programs/develop/ktcc/bin/kos32-tcc)
+          c=$(find ${{ gitea.workspace }}/programs/develop/objconv/ -type f -print0 | sort -z | xargs -0 sha1sum)
+          d=$(find ${{ gitea.workspace }}/programs/other/kpack/kerpack_linux/ -type f -print0 | sort -z | xargs -0 sha1sum)
+          e=$(find ${{ gitea.workspace }}/programs/other/kpack/linux/ -type f -print0 | sort -z | xargs -0 sha1sum)
+          f=$(find ${{ gitea.workspace }}/programs/develop/clink/ -type f -print0 | sort -z | xargs -0 sha1sum)
+          echo hash=$(echo $a $b $c $d $e $f | sha1sum | awk '{print $1}') >> $GITEA_OUTPUT
+
+      # restore previously cached toolchain by hash (restore-only, PRs don't save)
+      - name: Restore toolchain
+        id: cache-toolchain
+        uses: actions/cache/restore@v4
+        with:
+          path: /home/autobuild
+          key: kolibri-toolchain-${{ steps.toolchain-hash.outputs.hash }}
+
+      # build toolchain if cache miss or obsolote
+      - name: Build and install C--
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          cd ${{ gitea.workspace }}/programs/develop/cmm/
+          make -f Makefile.lin32
+          chmod +x c--
+          mv c-- /home/autobuild/tools/win32/bin/c--
+          cp ${{ gitea.workspace }}/programs/cmm/c--/c--.ini /home/autobuild/tools/win32/bin/c--.ini
+          make -f Makefile.lin32 clean
+
+      - name: Install TCC
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          cp ${{ gitea.workspace }}/programs/develop/ktcc/bin/kos32-tcc /home/autobuild/tools/win32/bin/kos32-tcc
+          chmod +x /home/autobuild/tools/win32/bin/kos32-tcc
+
+      - name: Build and install objconv
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          cd ${{ gitea.workspace }}/programs/develop/objconv/
+          g++ -o /home/autobuild/tools/win32/bin/objconv -O2 *.cpp
+          chmod +x /home/autobuild/tools/win32/bin/objconv
+
+      - name: Build and install kerpack and kpack
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          export PATH=/home/autobuild/tools/win32/bin:$PATH
+          cd ${{ gitea.workspace }}/programs/other/kpack/kerpack_linux/
+          make
+          chmod +x kerpack
+          chmod +x kpack
+          mv kerpack /home/autobuild/tools/win32/bin/.
+          mv kpack /home/autobuild/tools/win32/bin/.
+
+      - name: Build and install clink
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          cd ${{ gitea.workspace }}/programs/develop/clink
+          gcc main.c -o clink
+          chmod a+x clink
+          mv clink /home/autobuild/tools/win32/bin/clink
+
+      # move freshly built toolchain into the path that gets cached
+      - name: Prepare cache folder
+        run: |
+          rm /home/autobuild
+          mv /root/autobuild /home/autobuild
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TUP ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+      # restore tup cache (this PR head, else fall back to main); PRs don't save it
+      - name: Cache Tup
+        id: cache-tup
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .tup
+            build-${{ matrix.lang }}
+          key: tup-${{ gitea.event.pull_request.head.sha }}
+          restore-keys: |
+            tup-
+
+      # check if a cache was restored or if we need to start fresh build
+      - name: Check if cache was restored
+        id: check-tup-cache
+        run: |
+          if [ -d ${{ gitea.workspace}}/.tup ] ; then
+            echo "cache_restored=true" >> $GITEA_OUTPUT
+          fi
+
+      # cache restore resets file ctimes
+      # tup keys change detection on ctime
+      # so realign its DB to avoid rebuilding everything
+      - name: Sync tup DB with filesystem ctime
+        if: steps.check-tup-cache.outputs.cache_restored == 'true'
+        run: python3 .gitea/utils/sync-tup-ctime.py
+
+      # write the variant config
+      - name: Configure tup
+        run: |
+          export ROOT=${{ gitea.workspace }}
+          echo "CONFIG_KPACK_CMD= && kpack --nologo %o"                                   > ${{ matrix.lang }}.config
+          echo "CONFIG_KERPACK_CMD= && kerpack %o"                                       >> ${{ matrix.lang }}.config
+          echo "CONFIG_PESTRIP_CMD= && EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o" >> ${{ matrix.lang }}.config
+          echo "CONFIG_NO_MSVC=full"                                                     >> ${{ matrix.lang }}.config
+          echo "CONFIG_INSERT_REVISION_ID=0"                                             >> ${{ matrix.lang }}.config
+          echo "CONFIG_LANG=${{ matrix.lang }}"                                          >> ${{ matrix.lang }}.config
+          echo "CONFIG_BUILD_TYPE=${{ matrix.lang }}"                                    >> ${{ matrix.lang }}.config
+
+      # initialize the tup DB and register the variant
+      - name: Init tup
+        if: steps.check-tup-cache.outputs.cache_restored != 'true'
+        run: |
+          export ROOT=${{ gitea.workspace }}
+          tup init
+          tup variant ${{ matrix.lang }}.config
+
+      # build the image for language variant
+      - name: Build KolibriOS
+        run: |
+          export PATH=/home/autobuild/tools/win32/bin:$PATH
+          source kos32-export-env-vars ${{ gitea.workspace }}
+          tup build-${{ matrix.lang }}
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ARTIFACTS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+      # short head sha to pin the PR iteration in the artifact names
+      - name: Get short SHA
+        id: vars
+        run: echo "sha=$(git rev-parse --short HEAD)" >> $GITEA_OUTPUT
+
+      # rename build outputs to their final names so artifacts are bare files
+      - name: Rename images
+        run: |
+          for ext in img iso raw; do
+            cp "build-${{ matrix.lang }}/data/kolibri.$ext" \
+               "kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.$ext"
+          done
+
+      #publish the three images, named by PR number + sha
+      - name: Upload floppy image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.img
+          path: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.img
+          retention-days: 2
+
+      - name: Upload CD image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.iso
+          path: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.iso
+          retention-days: 2
+
+      - name: Upload raw image
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.raw
+          path: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.raw
+          retention-days: 2
