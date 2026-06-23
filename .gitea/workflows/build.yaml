@@ -1,41 +1,40 @@
 # SPDX-License-Identifier: GPL-2.0-only
-# SPDX-FileCopyrightText: 2025 KolibriOS team
+# SPDX-FileCopyrightText: 2026 KolibriOS team
+
+# This workflow is for commits in main branch
+# to get OS night build images and deploy them to the server
+
 
 name: 'Build system'
 
+# Official build of the main branch
 on:
-  pull_request:
+  push:
     branches:
       - 'main'
 
 jobs:
-  codestyle:
-    name: "Check kernel codestyle"
-    runs-on: kolibri-toolchain
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check codestyle
-        run: |
-          find kernel/trunk -iname '*.asm' -or -iname '*.inc' -exec bash -c "echo {}; cat {} | perl .gitea/workflows/checker.pl" \;
-
   build:
-    name: 'Build'
+    name: 'Build (${{ matrix.lang }})'
     runs-on: kolibri-toolchain
+    # one parallel job per language variant
+    strategy:
+      matrix:
+        lang: [en_US, ru_RU, es_ES]
 
     steps:
+      # full history is needed for the revision id (commit count)
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: true
           fetch-depth: 0
+          filter: blob:none
 
-      - name: Get describe
-        id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITEA_OUTPUT
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TOOLCHAIN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+      # cache the toolchain sources by hash to not rebuild them every time
       - name: Get toolchain hash
         id: toolchain-hash
         run: |
@@ -47,13 +46,15 @@ jobs:
           f=$(find ${{ gitea.workspace }}/programs/develop/clink/ -type f -print0 | sort -z | xargs -0 sha1sum)
           echo hash=$(echo $a $b $c $d $e $f | sha1sum | awk '{print $1}') >> $GITEA_OUTPUT
 
+      # restore previously cached toolchain by hash
       - name: Restore toolchain
         id: cache-toolchain
-        uses: actions/cache/restore@v4
+        uses: actions/cache@v4
         with:
           path: /home/autobuild
           key: kolibri-toolchain-${{ steps.toolchain-hash.outputs.hash }}
 
+      # build toolchain if cache miss or obsolote
       - name: Build and install C--
         if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
@@ -96,119 +97,180 @@ jobs:
           chmod a+x clink
           mv clink /home/autobuild/tools/win32/bin/clink
 
+      # move freshly built toolchain into the path that gets cached
       - name: Prepare cache folder
         run: |
           rm /home/autobuild
           mv /root/autobuild /home/autobuild
         if: steps.cache-toolchain.outputs.cache-hit != 'true'
 
-      - name: Save toolchain
-        if: steps.cache-toolchain.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: /home/autobuild
-          key: kolibri-toolchain-${{ steps.toolchain-hash.outputs.hash }}
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TUP ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+      # cache tup DB and this language's build dir, keyed by commit;
+      - name: Cache Tup
+        id: cache-tup
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tup
+            build-${{ matrix.lang }}
+          key: tup-${{ gitea.sha }}
+          restore-keys: |
+            tup-
+
+      # check if a cache was restored or if we need to start fresh build
+      - name: Check if cache was restored
+        id: check-tup-cache
+        run: |
+          if [ -d ${{ gitea.workspace}}/.tup ] ; then
+            echo "cache_restored=true" >> $GITEA_OUTPUT
+          fi
+
+      # cache restore resets file ctimes
+      # tup keys change detection on ctime
+      # so realign its DB to avoid rebuilding everything
+      - name: Sync tup DB with filesystem ctime
+        if: steps.check-tup-cache.outputs.cache_restored == 'true'
+        run: python3 .gitea/utils/sync-tup-ctime.py
+
+      # write the variant config
       - name: Configure tup
         run: |
-          cd ${{ gitea.workspace }}
-
           export ROOT=${{ gitea.workspace }}
-          echo "CONFIG_KPACK_CMD= && kpack --nologo %o"                                   | tee en_US.config ru_RU.config es_ES.config
-          echo "CONFIG_KERPACK_CMD= && kerpack %o"                                        | tee -a en_US.config ru_RU.config es_ES.config
-          echo "CONFIG_PESTRIP_CMD= && EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o"  | tee -a en_US.config ru_RU.config es_ES.config
-          echo "CONFIG_NO_MSVC=full"                                                      | tee -a en_US.config ru_RU.config es_ES.config
-          echo "CONFIG_INSERT_REVISION_ID=1"                                              | tee -a en_US.config ru_RU.config es_ES.config
+          echo "CONFIG_KPACK_CMD= && kpack --nologo %o"                                   > ${{ matrix.lang }}.config
+          echo "CONFIG_KERPACK_CMD= && kerpack %o"                                       >> ${{ matrix.lang }}.config
+          echo "CONFIG_PESTRIP_CMD= && EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o" >> ${{ matrix.lang }}.config
+          echo "CONFIG_NO_MSVC=full"                                                     >> ${{ matrix.lang }}.config
+          echo "CONFIG_INSERT_REVISION_ID=1"                                             >> ${{ matrix.lang }}.config
+          echo "CONFIG_LANG=${{ matrix.lang }}"                                          >> ${{ matrix.lang }}.config
+          echo "CONFIG_BUILD_TYPE=${{ matrix.lang }}"                                    >> ${{ matrix.lang }}.config
 
-          tup -v
+      # initialize the tup DB and register the variant
+      - name: Init tup
+        if: steps.check-tup-cache.outputs.cache_restored != 'true'
+        run: |
+          export ROOT=${{ gitea.workspace }}
           tup init
+          tup variant ${{ matrix.lang }}.config
 
-          # Configure en_US
-          echo "CONFIG_LANG=en_US"       >> en_US.config
-          echo "CONFIG_BUILD_TYPE=en_US" >> en_US.config
-          tup variant en_US.config
-
-          # Configure ru_RU
-          echo "CONFIG_LANG=ru_RU"       >> ru_RU.config
-          echo "CONFIG_BUILD_TYPE=ru_RU" >> ru_RU.config
-          tup variant ru_RU.config
-
-          # Configure es_ES
-          echo "CONFIG_LANG=es_ES"       >> es_ES.config
-          echo "CONFIG_BUILD_TYPE=es_ES" >> es_ES.config
-          tup variant es_ES.config
-
-      # -------------------------- Build en_US ------------------------- #
-      - name: (en_US) Build KolibriOS
+      # build the image for language variant
+      - name: Build KolibriOS
         run: |
           export PATH=/home/autobuild/tools/win32/bin:$PATH
           source kos32-export-env-vars ${{ gitea.workspace }}
-          tup build-en_US
+          tup build-${{ matrix.lang }}
 
-      - name: (en_US) Upload floppy image
-        uses: actions/upload-artifact@v3
-        with:
-          name: kolibrios-en_US-${{ steps.vars.outputs.sha_short }}.img
-          path: build-en_US/data/kolibri.img
 
-      - name: (en_US) Upload CD image
-        uses: actions/upload-artifact@v3
-        with:
-          name: kolibrios-en_US-${{ steps.vars.outputs.sha_short }}.iso
-          path: build-en_US/data/kolibri.iso
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ARTIFACTS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-      - name: (en_US) Upload raw image
-        uses: actions/upload-artifact@v3
-        with:
-          name: kolibrios-en_US-${{ steps.vars.outputs.sha_short }}.raw
-          path: build-en_US/data/kolibri.raw
+      # version string (tag + commit count + sha) for the artifact names
+      - name: Get describe
+        id: vars
+        run: echo "descr=$(git describe --tags)" >> $GITEA_OUTPUT
 
-      # -------------------------- Build ru_RU ------------------------- #
-      - name: (ru_RU) Build KolibriOS
+      # rename build outputs to their final names so artifacts are bare files
+      - name: Rename images
         run: |
-          export PATH=/home/autobuild/tools/win32/bin:$PATH
-          source kos32-export-env-vars ${{ gitea.workspace }}
-          tup build-ru_RU
+          for ext in img iso raw; do
+            cp "build-${{ matrix.lang }}/data/kolibri.$ext" \
+               "kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.$ext"
+          done
 
-      - name: (ru_RU) Upload floppy image
+      #publish the three images; longer retention for the floppy image.
+      - name: Upload floppy image
         uses: actions/upload-artifact@v3
         with:
-          name: kolibrios-ru_RU-${{ steps.vars.outputs.sha_short }}.img
-          path: build-ru_RU/data/kolibri.img
+          name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.img
+          path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.img
+          retention-days: 90
 
-      - name: (ru_RU) Upload CD image
+      - name: Upload CD image
         uses: actions/upload-artifact@v3
         with:
-          name: kolibrios-ru_RU-${{ steps.vars.outputs.sha_short }}.iso
-          path: build-ru_RU/data/kolibri.iso
+          name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.iso
+          path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.iso
+          retention-days: 30
 
-      - name: (ru_RU) Upload raw image
+      - name: Upload raw image
         uses: actions/upload-artifact@v3
         with:
-          name: kolibrios-ru_RU-${{ steps.vars.outputs.sha_short }}.raw
-          path: build-ru_RU/data/kolibri.raw
+          name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.raw
+          path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.raw
+          retention-days: 15
 
-      # -------------------------- Build es_ES ------------------------- #
-      - name: (es_ES) Build KolibriOS
+  deploy:
+    name: "Publish Images"
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/vicchi/gitea-actions:3.10-slim-bullseye
+    needs: build
+
+    steps:
+      # checkout@v4 needs Node 20; the deploy container ships an older Node, so use v3 here
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          pattern: "*"
+          path: ./artifacts
+          merge-multiple: true
+
+      - name: Normalize artifacts layout
+        id: normalize
         run: |
-          export PATH=/home/autobuild/tools/win32/bin:$PATH
-          source kos32-export-env-vars ${{ gitea.workspace }}
-          tup build-es_ES
+          set -eu
 
-      - name: (es_ES) Upload floppy image
-        uses: actions/upload-artifact@v3
-        with:
-          name: kolibrios-es_ES-${{ steps.vars.outputs.sha_short }}.img
-          path: build-es_ES/data/kolibri.img
+          rm -rf ./norm-artifacts
+          mkdir -p ./norm-artifacts
 
-      - name: (es_ES) Upload CD image
-        uses: actions/upload-artifact@v3
-        with:
-          name: kolibrios-es_ES-${{ steps.vars.outputs.sha_short }}.iso
-          path: build-es_ES/data/kolibri.iso
+          find ./artifacts -type f \( \
+            -name 'kolibrios-*.img' -o \
+            -name 'kolibrios-*.iso' -o \
+            -name 'kolibrios-*.raw' \
+          \) | while read -r file; do
+            fname="$(basename "$file")"        # kolibrios-<descr>-<lang>.<ext>
+            name_without_ext="${fname%.*}"
+            lang="${name_without_ext##*-}"
 
-      - name: (es_ES) Upload raw image
-        uses: actions/upload-artifact@v3
-        with:
-          name: kolibrios-es_ES-${{ steps.vars.outputs.sha_short }}.raw
-          path: build-es_ES/data/kolibri.raw
+            mkdir -p "./norm-artifacts/$lang"
+            cp "$file" "./norm-artifacts/$lang/$fname"
+          done
+
+          # derive the version (git describe) from an artifact name:
+          # kolibrios-<descr>-<lang>.<ext> -> <descr>
+          sample="$(find ./norm-artifacts -type f -name 'kolibrios-*' | head -n1)"
+          base="$(basename "${sample%.*}")"   # kolibrios-<descr>-<lang>
+          version="${base%-*}"                # kolibrios-<descr>
+          version="${version#kolibrios-}"     # <descr>
+          echo "version=$version" >> $GITEA_OUTPUT
+
+          find ./norm-artifacts -type f -print
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.STORAGE_SERVER }} >> ~/.ssh/known_hosts
+
+      - name: Install fresh Ansible
+        run: |
+          python3 -m pip install --user --upgrade pip
+          python3 -m pip install --user 'ansible-core>=2.17,<2.18'
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          ~/.local/bin/ansible --version
+
+      - name: Run Ansible playbook
+        run: |
+          ansible-playbook .gitea/ansible/playbooks/deploy.yml \
+            -i "${{ secrets.STORAGE_SERVER }}," \
+            -u "${{ secrets.STORAGE_USER }}" \
+            -e "storage_user=${{ secrets.STORAGE_USER }}" \
+            -e "storage_path=${{ secrets.STORAGE_PATH }}" \
+            -e "version=${{ steps.normalize.outputs.version }}" \
+            -e "artifact_path=${{ gitea.workspace }}/norm-artifacts" \
+            -v

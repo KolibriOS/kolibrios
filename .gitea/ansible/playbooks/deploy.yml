@@ -1,0 +1,21 @@
+---
+- name: Sending artifacts to the server
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Creating version artefacts root folder
+      file:
+        path: "{{ storage_path }}/{{ version }}"
+        state: directory
+        owner: "{{ storage_user }}"
+        group: "{{ storage_user }}"
+        mode: '0755'
+
+    - name: Sending artifacts
+      ansible.builtin.copy:
+        src: "{{ artifact_path }}/"
+        dest: "{{ storage_path }}/{{ version }}/"
+        owner: "{{ storage_user }}"
+        group: "{{ storage_user }}"
+        mode: preserve
