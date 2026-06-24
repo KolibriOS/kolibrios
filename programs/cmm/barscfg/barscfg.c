@@ -89,7 +89,7 @@ checkbox tbMenuButton = { MENU_BUTTON };
 checkbox dkFsize = { FSIZE };
 checkbox dkAshow = { ASHOW };
 
-int dkLocation;
+int dkLocation=0;
 checkbox tbRunApplButton;
 checkbox tbClnDeskButton;
 
@@ -174,6 +174,7 @@ void DrawWindowContent()
 	dword frame_y;
 	word win_center_x = Form.cwidth / 2 + 20;
 	incn y;
+	int i;
 
 	SetDisabledMode();
 
@@ -198,7 +199,8 @@ void DrawWindowContent()
 	//DOCKY
 	frame_y = calc(y.inc(20));
 	DefineButton(22, y.inc(18), PIMG_W-1, PIMG_H-1, 200 + BT_HIDE, 0);
-	DrawPanelsImage(y.n, dkLocation+1);
+	if (!dkLocation) i=2; else i=dkLocation;
+	DrawPanelsImage(y.n, i+1);
 	WriteTextWithBg(68, y.inc(7), 0xD0, sc.work_text, CHANGE_POS, sc.work);
 	dkFsize.draw(22, y.inc(35)); 
 	dkAshow.draw(win_center_x, y.n);
