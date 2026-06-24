@@ -2424,10 +2424,10 @@ ext_ReadFile:
         pushd   0 eax
         jc      .ret
         lea     esi, [ebp+EXTFS.inodeBuffer]
-        mov     byte [esp], ERROR_ACCESS_DENIED
+        mov     dword [esp], ERROR_ACCESS_DENIED
         test    [esi+INODE.accessMode], FLAG_FILE
         jz      .ret    ; not a file
-        mov     byte [esp], ERROR_END_OF_FILE
+        mov     dword [esp], ERROR_END_OF_FILE
         mov     eax, [esi+INODE.fileSize]
         mov     edx, [esi+INODE.fileSizeHigh]
         sub     eax, [ebx+4]
@@ -3002,13 +3002,13 @@ ext_WriteFile:
         call    findInode
         pushd   0 eax
         jc      .ret
-        mov     byte [esp], ERROR_ACCESS_DENIED
+        mov     dword [esp], ERROR_ACCESS_DENIED
         test    [ebp+EXTFS.inodeBuffer.accessMode], FLAG_FILE
         jz      .ret    ; not a file
         test    [ebp+EXTFS.inodeBuffer.featureFlags], EXT4_IMMUTABLE_FL
         jnz     .error_denied
         ; TODO: check EXT4_APPEND_ONLY_FL
-        mov     byte [esp], 0
+        mov     dword [esp], ERROR_SUCCESS
         mov     eax, [ebx+4]
         mov     edx, [ebx+8]
         add     eax, [ebx+12]
@@ -3124,7 +3124,7 @@ ext_WriteFile:
         call    disk_sync
         jmp     .ret
 .error_denied:
-        mov     byte [esp], ERROR_ACCESS_DENIED
+        mov     dword [esp], ERROR_ACCESS_DENIED
 .ret:
         call    ext_unlock
         pop     eax ebx
