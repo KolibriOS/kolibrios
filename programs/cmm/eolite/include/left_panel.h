@@ -81,11 +81,15 @@ void GetDiskIconAndName(dword dev_name, icon, disc_name)
 	strcpy(disc_name, T_UNC);
 }
 
+#define DISK_COUNT 8
 void _SystemDiscs::Draw()
 {    
 	char dev_name[15], disc_name[100], i, dev_icon;
 	bool is_active=0;
-	int draw_y, draw_x;
+	#define DRAW_Y 74
+	#define DRAW_X 17
+	#define DRAW_PAD 2
+	int draw_y = DRAW_Y+DRAW_PAD;
 	
 	if (efm) { 
 		DrawSelect(2, KFM_DEV_DROPDOWN_1, location[0]);
@@ -93,36 +97,36 @@ void _SystemDiscs::Draw()
 		files.y = 40 + 17;
 	} else { 
 		Tip(56, T_DEVICES, 55, "=");
+		DrawBar(DRAW_X,DRAW_Y,SB_BLOCKW,DRAW_PAD,0xFFFFFF);
 		for (i=0; i<30; i++) DeleteButton(100+i);
 
-		draw_y = 74; 
-		draw_x = 17; 
 		for (i=0;i<list.count;i++) {
 			strcpy(#dev_name, list.get(i));
 			GetDiskIconAndName(#dev_name, #dev_icon, #disc_name);
 			if (strstr(path, #dev_name)==path) is_active=true; else is_active=false;
 
-			DrawBar(draw_x,draw_y,6,DEV_H+1,0xFFFFFF);
-			DrawBar(draw_x+6+18,draw_y,160-6-18,DEV_H+1,0xFFFFFF);
-			DefineHiddenButton(draw_x,draw_y,159,16,100+i);
+			DrawBar(DRAW_X,draw_y,6,DEV_H+1,0xFFFFFF);
+			DrawBar(DRAW_X+6+18,draw_y,160-6-18,DEV_H+1,0xFFFFFF);
+			DefineHiddenButton(DRAW_X,draw_y,159,17,100+i);
 			if (show_dev_name.checked)
 			{
 				strcat(#disc_name, #dev_name);
-				if (is_active) WriteText(draw_x+30,draw_y+5,0x80,0x555555,#disc_name);
-				WriteText(draw_x+29,draw_y+5,0x80,0,#disc_name);
+				if (is_active) WriteText(DRAW_X+30,draw_y+5,0x80,0x555555,#disc_name);
+				WriteText(DRAW_X+29,draw_y+5,0x80,0,#disc_name);
 				//if (is_active) kfont.bold = true;
-				//kfont.WriteIntoWindow(draw_x + 29, draw_y+2, 0xFFFfff, 0x000000, kfont.size.pt, #disc_name);
+				//kfont.WriteIntoWindow(DRAW_X + 29, draw_y+2, 0xFFFfff, 0x000000, kfont.size.pt, #disc_name);
 				//kfont.bold = false;
 			} else {
-				if (is_active) WriteText(draw_x+30,draw_y+5,0x80,0x555555,#dev_name);
-				WriteText(draw_x+29,draw_y+5,0x80,0,#dev_name);
+				if (is_active) WriteText(DRAW_X+30,draw_y+5,0x80,0x555555,#dev_name);
+				WriteText(DRAW_X+29,draw_y+5,0x80,0,#dev_name);
 			}
-			PutImage(draw_x+6,draw_y, 18,17, is_active*7+dev_icon*17*18*3+#devices);
+			PutImage(DRAW_X+6,draw_y, 18,17, is_active*DISK_COUNT+dev_icon*17*18*3+#devices);
+			DrawBar(DRAW_X+6, draw_y+DEV_H-1, 18, 1, 0xFFffFF);
 			draw_y += DEV_H;			
 		}
-		DrawBar(draw_x+6, draw_y, 18, 1, 0xFFFfff);
-		ActionsDraw(list.count*DEV_H+108);
-		DrawLeftPanelBg(list.count*DEV_H);
+		DrawBar(DRAW_X, draw_y, SB_BLOCKW, DRAW_PAD, 0xFFFFFF);
+		ActionsDraw(draw_y+17);
+		DrawLeftPanelBg(draw_y - DRAW_Y + 1);
 	}
 }
 

@@ -127,25 +127,27 @@ void Tip(int y, dword caption, id, arrow)
 void ActionsDraw(int actions_y)
 {
 	int i;
-	Tip(actions_y-18, T_ACTIONS, 77, "");
+	Tip(actions_y, T_ACTIONS, 77, "");
+	actions_y += 18;
 	for (i=0; actions[i*3]!=0; i++, actions_y+=DEV_H)
 	{
-		DrawBar(SB_BLOCKX,actions_y,SB_BLOCKW,DEV_H,0xFFFFFF); //белое
-		DefineButton(SB_BLOCKX,actions_y,SB_BLOCKW-1,DEV_H,actions[i*3]+BT_HIDE,0xE4DFE1);
-		WriteText(45,actions_y+4,0x80,0,actions[i*3+1]);
-		WriteText(-strlen(actions[i*3+2])*6+SIDEBAR_W-SBPAD-7,actions_y+4,0x80,0x999999,actions[i*3+2]);
+		DrawBar(SB_BLOCKX,actions_y,SB_BLOCKW,DEV_H,0xFFFFFF);
+		DefineButton(SB_BLOCKX,actions_y,SB_BLOCKW-1,DEV_H,actions[i*3]+BT_HIDE,NULL);
+		WriteText(45,actions_y+5,0x80,0,actions[i*3+1]);
+		WriteText(SIDEBAR_W-SBPAD-7-18,actions_y+5,0x80,0x999999,actions[i*3+2]);
 		PutImage(23,actions_y+2, 14,13, i*14*13*3+#factions);
 	}
 }
 
-void DrawLeftPanelBg(int actions_y)
+void DrawLeftPanelBg(int devices_h)
 {
-	int start_y = actions_y+159;
+	#define ACTIONS_H DEV_H*3 + 18
+	int start_y = ACTIONS_H + devices_h + 90;
 	int area_h;
 	DrawBar(2,41,SIDEBAR_W-2,SBPAD,waves_pal[0]);    //above devices block
-	DrawBar(SB_BLOCKX,actions_y+75,SB_BLOCKW,SBPAD,EDX);  //below devices block
-	DrawBar(2,56,SBPAD,actions_y+103,EDX);   //on the left
-	DrawBar(SIDEBAR_W-SBPAD,56,SBPAD,actions_y+103,EDX); //on the right
+	DrawBar(SB_BLOCKX,devices_h+75,SB_BLOCKW,SBPAD,EDX);  //below devices block
+	DrawBar(2,56,SBPAD,devices_h+ACTIONS_H+34,EDX);   //on the left
+	DrawBar(SIDEBAR_W-SBPAD,56,SBPAD,devices_h+ACTIONS_H+34,EDX); //on the right
 	area_h = Form.cheight-start_y-2 - status_bar_h;
 	if (area_h < 268){
 		PutPaletteImage(#blue_hl, 190, area_h, 2, start_y, 8, #waves_pal);
@@ -153,8 +155,8 @@ void DrawLeftPanelBg(int actions_y)
 		DrawBar(2,start_y,SIDEBAR_W-2, area_h-268, waves_pal[0]);
 		PutPaletteImage(#blue_hl, 190, 268, 2, Form.cheight-270-status_bar_h, 8, #waves_pal);
 	}
-	PutShadow(SB_BLOCKX,actions_y+75,SB_BLOCKW,1,1,3);
-	PutShadow(SB_BLOCKX+1,actions_y+75+1,SB_BLOCKW-2,1,1,1);
+	PutShadow(SB_BLOCKX,devices_h+75,SB_BLOCKW,1,1,3);
+	PutShadow(SB_BLOCKX+1,devices_h+75+1,SB_BLOCKW-2,1,1,1);
 	PutShadow(SB_BLOCKX,start_y,SB_BLOCKW,1,1,3);
 	PutShadow(SB_BLOCKX+1,start_y+1,SB_BLOCKW-2,1,1,1);
 }

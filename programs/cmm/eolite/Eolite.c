@@ -1,4 +1,4 @@
-//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2025
+//Leency, Veliant, Punk_Joker, PavelYakov & KolibriOS Team 2008-2026
 //GNU GPL license.
 
 /*
@@ -10,9 +10,9 @@ TODO:
   http://board.kolibrios.org/viewtopic.php?f=23&t=4521&p=77334#p77334
 */
 
-#define ABOUT_TITLE "Eolite 5.33"
-#define TITLE_EOLITE "Eolite File Manager 5.33"
-#define TITLE_KFM "Kolibri File Manager 2.33";
+#define ABOUT_TITLE "Eolite 5.34"
+#define TITLE_EOLITE "Eolite File Manager 5.34"
+#define TITLE_KFM "Kolibri File Manager 2.34";
 
 #define MEMSIZE 1024 * 250
 #include "../lib/clipboard.h"

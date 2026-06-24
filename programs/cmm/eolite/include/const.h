@@ -51,9 +51,9 @@ char *kfm_func = {
 #define T_DEVICES "Устройства"
 #define T_ACTIONS "Действия"
 char *actions[] = {
-	59, "Новый файл", "F9",
-	57, "Новая папка", "F7",
-	60, "Настройки", "F10",
+	59, "Новый файл",  " F9",
+	57, "Новая папка", " F7",
+	60, "Настройки",   "F10",
 	0,0,0
 };
 #define T_SYS  "Система "
@@ -65,6 +65,7 @@ char *actions[] = {
 #define T_NVME "NVMe disk "
 #define T_USB  "USB диск "
 #define T_RAM  "RAM диск "
+#define T_VD   "Виртуальный "
 #define T_UNC  "Неизвестно "
 
 #define WINDOW_TITLE_PROPERTIES "Свойства"
@@ -150,9 +151,9 @@ char *kfm_func = {
 #define T_DEVICES "Devices"
 #define T_ACTIONS "Actions"
 char *actions[] = {
-	59, "New file", "F9",
-	57, "New folder", "F7",
-	60, "Settings", "F10",
+	59, "New file",   " F9",
+	57, "New folder", " F7",
+	60, "Settings",   "F10",
 	0,0,0
 };
 #define T_SYS  "System "
@@ -164,6 +165,7 @@ char *actions[] = {
 #define T_NVME "NVMe disk "
 #define T_USB  "USB disk "
 #define T_RAM  "RAM disk "
+#define T_VD  "Virtual "
 #define T_UNC  "Unknown "
 
 #define WINDOW_TITLE_PROPERTIES "Properties"
@@ -257,10 +259,11 @@ char *devinfo = {
 	"nv", 4, T_NVME,
 	"tm", 5, T_RAM,
 	"us", 6, T_USB,
+	"vd", 7, T_VD,
 	0
 };
 
-#define DEV_H 17
+#define DEV_H 18
 #define DDW 110
 #define KFM2_DEVH 20
 #define SELECTY 10
