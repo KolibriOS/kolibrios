@@ -1,313 +1,122 @@
 ;;===First_menu_mode===========================================================================================================
-
 First_menu:
-    mov  byte[window_title+5],  0
-      mcall     71,1,window_title
-      mcall     40,111b                         ; set events: standart
-      mcall     66,1,1                          ; set scan codes mode for keyboard
-    mov  [is_new_record],   0
-    mov  [lives],   START_LIVES
-      call      Show_cursor
+    ; set events: standart
+    mcall   SF_SET_EVENTS_MASK, EVM_BUTTON or EVM_KEY or EVM_REDRAW
+    mcall   SF_KEYBOARD, SSF_SET_INPUT_MODE, 1
+    ; set default values
+    mov     [is_new_record], 0
+    mov     [lives], START_LIVES
+    mov     [numberScore.value], 0
+    mov     ebx, [time_wait_limit_const]
+    mov     [time_wait_limit], ebx
+    ; set name game in window_title
+    mov     byte[window_title + 5], 0
 
-    mov  [score],   0
-      call      Set_first_level_of_play_mode
-
-    mov  ebx, [time_wait_limit_const]
-    mov  [time_wait_limit], ebx
+    call    Show_cursor
+    call    Initialize_play_mode
 
   .redraw:
-      call      Set_geometry
-      mcall     12,1
-      mcall     0, , ,[window_style], ,window_title
-    test [proc_info.wnd_state], 0x04		; is rolled up?
-     jnz @f
+    call    Set_geometry
+    mcall   SF_REDRAW, SSF_BEGIN_DRAW
+    mcall   SF_CREATE_WINDOW, , ,[window_style], ,window_title
+    mcall   SF_REDRAW, SSF_END_DRAW
+    ; is rolled up?
+    test    [proc_info.wnd_state], WINDOW_STATE_ROLLED
+    jnz     .still
 
-      call      Draw_decorations
-      call      Draw_first_menu_picture
-      call      Draw_menu_strings
-      call      Draw_buttons
-  @@:
-      mcall     12,2
+    call    Draw_decorations
+    stdcall draw.Picture, 2, 24, 1, 5, [snake_picture_color], picture_first_menu_snake
+    stdcall draw.Picture, 3, 11, 8, 5, [version_picture_color], picture_first_menu_version
+    stdcall draw.Navigation, labelExit, [posLabel.yTop], 0
+    stdcall draw.Navigation, labelStart, [posLabel.yCenter], 0
+    call    Draw_buttons
+
   .still:
-      mcall     10                              ; wait for event
-                                                ; ok, what an event?
-    dec  al                                     ; has the window been moved or resized?
-     jz  .redraw                                ; 
-    dec  al                                     ; was a key pressed?
-     jz  .key                                   ; 
+    mcall   SF_WAIT_EVENT
+    cmpe    al, EV_REDRAW, .redraw
+    cmpe    al, EV_KEY, .event_key
 
-
-  .button:                                      ; a button was pressed
-      mcall     17                              ; get button number
-    shr  eax, 8                                 ; we should do it to get the real button code
-
-    cmp  eax, 1                                 ; is it close button?
-     je  Save_do_smth_else_and_exit             ; if so, jump to quit...
-    cmp  eax, 0xD0                              ; 'play' button?
-     je  Level_begin
-    cmp  eax, 0xD1                              ; 'exit' button?
-     je  Save_do_smth_else_and_exit
-    cmp  eax, 0xD2                              ; change play mode button?
-     jne @f
-      call      Change_play_mode
-      call      Delete_buttons
-      call      Draw_buttons
-     jmp .still                                 ; jump to wait for another event
+  .event_button:
+    mcall   SF_GET_BUTTON
+    cmpe    ah, BUTTON_CLOSE, Save_do_smth_else_and_exit
+    cmpe    ah, BUTTON_EXIT, Save_do_smth_else_and_exit
+    cmpe    ah, BUTTON_PLAY, Level_begin
+    cmpne   ah, BUTTON_MODE, @f
+    call    Change_play_mode
+    jmp     .still
   @@:
-    cmp  eax, 0xD3                              ; '+INC+' button?
-     jne @f
-      call      Increase_geometry
-     jmp .redraw                                ; jump to wait for another event
+    cmpne   ah, BUTTON_INC, @f
+    call    Increase_geometry
+    jmp     .redraw
   @@:
-    cmp  eax, 0xD4                              ; '-dec-' button?
-     jne @f
-      call      Decrease_geometry
-     jmp .redraw                                ; jump to wait for another event
+    cmpne   ah, BUTTON_DEC, @f
+    call    Decrease_geometry
+    jmp     .redraw
   @@:
+    jmp     .still
 
-     jmp .still                                 ; jump to wait for another event
-
-
-  .key:                                         ; a key was pressed
-      mcall     2                               ; get keycode
-
-    cmp  ah, 0x01                               ; Escape
-     je  Save_do_smth_else_and_exit
-    cmp  ah, 0x1C                               ; Enter
-     je  Level_begin
-    cmp  ah, 0x39                               ; Space
-     jne @f
-      call      Change_play_mode
-      call      Delete_buttons
-      call      Draw_buttons
-     jmp .still                                 ; jump to wait for another event
+  .event_key:
+    mcall   SF_GET_KEY
+    cmpe    ah, KEY_CODE_ESC, Save_do_smth_else_and_exit
+    cmpe    ah, KEY_CODE_ENTER, Level_begin
+    cmpne   ah, KEY_CODE_SPACE, @f
+    call    Change_play_mode
+    jmp     .still
   @@:
-    cmp  ah, [shortcut_increase]
-     jne @f
-      call      Increase_geometry
-     jmp .redraw
+    cmpne   ah, [shortcut_increase], @f
+    call    Increase_geometry
+    jmp     .redraw
   @@:
-    cmp  ah, [shortcut_decrease]
-     jne @f
-      call      Decrease_geometry
-     jmp .redraw
+    cmpne   ah, [shortcut_decrease], @f
+    call    Decrease_geometry
+    jmp     .redraw
   @@:
-     jmp .still                                 ; jump to wait for another event
-
+    jmp     .still
 ;;---First_menu_mode-----------------------------------------------------------------------------------------------------------
 
-
-;;===Some_functions============================================================================================================
-
-Draw_first_menu_picture:
-    ;;===Draw_first_menu_picture================================================================================================
-
-    mov  ax,  2*0x100+24
-    mov  cx,  1*0x100+5
-    mov  edx, [snake_picture_color]
-    mov  esi, picture_first_menu_snake
-      call      Draw_picture
-
-    mov  ax,  3*0x100+11
-    mov  cx,  8*0x100+5
-    mov  edx, [version_picture_color]
-    mov  esi, picture_first_menu_version
-      call      Draw_picture
-
-    ret
-            
-    ;;---Draw_first_menu_picture------------------------------------------------------------------------------------------------
-
-
-Draw_menu_strings:
-    ;;===Make_menu_strings======================================================================================================
-
-    mov  ebx, [window_width]
-    shr  ebx, 1
-    sub  ebx, press_to_start.size*3+6
-    shl  ebx, 16
-    add  ebx, dword[bottom_middle_strings]
-      mcall     4, ,[navigation_strings_color],press_to_start
-    mov  ebx, [window_width]
-    shr  ebx, 1
-    sub  ebx, press_esc_to_exit.size*3+6
-    shl  ebx, 16
-    add  ebx, [top_strings]
-      mcall     , ,[navigation_strings_color],press_esc_to_exit
-;      mcall     ,406*65536+TOP_STRINGS,[navigation_strings_color],press_F2_to_options
-
-    ret
-
-    ;;---Make_menu_strings------------------------------------------------------------------------------------------------------
-
-
+; -----------------------------
+; Draws game control buttons
+; -----------------------------
 Draw_buttons:
-    ;;===Draw_buttons===========================================================================================================
-
-    mov  ebx, [button_x_left]
-    shl  ebx, 16
-    mov  bx,  word[button_width_short]
-    mov  ecx, [button_y_top]
-    shl  ecx, 16
-    add  cx,  word[button_height]
-      mcall     8, , ,0x000000D0,[button_color]                             ; top left button
-    shr  ecx, 16
-    mov  bx,  cx
-    mov  edx, [button_height]
-    shr  edx, 1
-    sub  edx, 3                                                             ; ~half of font height
-    add  bx,  dx
-    ror  ebx, 16
-    mov  edx, [button_width_short]
-    shr  edx, 1
-    sub  edx, string_button_play.size*3
-    add  bx,  dx
-    ror  ebx, 16
-      mcall     4, ,[button_text_color],string_button_play
-
-    mov  ebx, [button_x_right]
-    shl  ebx, 16
-    mov  bx,  word[button_width_short]
-    mov  ecx, [button_y_top]
-    shl  ecx, 16
-    add  cx,  word[button_height]
-      mcall     8, , ,0x000000D1,                                           ; top right button
-    shr  ecx, 16
-    mov  bx,  cx
-    mov  edx, [button_height]
-    shr  edx, 1
-    sub  edx, 3                                                             ; ~half of font height
-    add  bx,  dx
-    ror  ebx, 16
-    mov  edx, [button_width_short]
-    shr  edx, 1
-    sub  edx, string_button_exit.size*3
-    add  bx,  dx
-    ror  ebx, 16
-      mcall     4, ,[button_text_color],string_button_exit
-
-    mov  ebx, [button_x_left]
-    shl  ebx, 16
-    mov  bx,  word[button_width_long]
-    mov  ecx, [button_y_middle]
-    shl  ecx, 16
-    add  cx,  word[button_height]
-      mcall     8, , ,0x000000D2,                                           ; middle button
-    shr  ecx, 16
-    mov  bx,  cx
-    mov  edi, [button_height]
-    shr  edi, 1
-    sub  edi, 3                                                             ; ~half of font height
-    add  bx,  di
-    ror  ebx, 16
-    mov  edi, [button_width_long]
-    shr  edi, 1
-    cmp  [play_mode],   0
-     jne @f
-    sub  edi, string_button_pm_classic.size*3
-    mov  edx, string_button_pm_classic
-     jmp .skip
-  @@:
-    sub  edi, string_button_pm_levels.size*3
-    mov  edx, string_button_pm_levels
-  .skip:
-    add  bx,  di
-    ror  ebx, 16
-      mcall     4, ,[button_text_color],
-
-    mov  ebx, [button_x_left]
-    shl  ebx, 16
-    mov  bx,  word[button_width_short]
-    mov  ecx, [button_y_bottom]
-    shl  ecx, 16
-    add  cx,  word[button_height]
-      mcall     8, , ,0x000000D3,                                           ; bottom left button
-    shr  ecx, 16
-    mov  bx,  cx
-    mov  edx, [button_height]
-    shr  edx, 1
-    sub  edx, 3                                                             ; ~half of font height
-    add  bx,  dx
-    ror  ebx, 16
-    mov  edx, [button_width_short]
-    shr  edx, 1
-    sub  edx, string_button_inc.size*3
-    add  bx,  dx
-    ror  ebx, 16
-      mcall     4, ,[button_text_color],string_button_inc
-
-    mov  ebx, [button_x_right]
-    shl  ebx, 16
-    mov  bx,  word[button_width_short]
-    mov  ecx, [button_y_bottom]
-    shl  ecx, 16
-    add  cx,  word[button_height]
-      mcall     8, , ,0x000000D4,
-    shr  ecx, 16
-    mov  bx,  cx
-    mov  edx, [button_height]
-    shr  edx, 1
-    sub  edx, 3                                                             ; ~half of font height
-    add  bx,  dx
-    ror  ebx, 16
-    mov  edx, [button_width_short]
-    shr  edx, 1
-    sub  edx, string_button_dec.size*3
-    add  bx,  dx
-    ror  ebx, 16
-      mcall     4, ,[button_text_color],string_button_dec
-
+    stdcall draw.Button, labelButtonPlay, BUTTON_PLAY, [button_x_left], [button_y_top], [button_width_short], [button_height]
+    stdcall draw.Button, labelButtonExit, BUTTON_EXIT, [button_x_right], [button_y_top], [button_width_short], [button_height]
+    stdcall draw.Button, [playModeLabelButton], BUTTON_MODE, [button_x_left], [button_y_middle], [button_width_long], [button_height]
+    stdcall draw.Button, labelButtonInc, BUTTON_INC, [button_x_left], [button_y_bottom], [button_width_short], [button_height]
+    stdcall draw.Button, labelButtonDec, BUTTON_DEC, [button_x_right], [button_y_bottom], [button_width_short], [button_height]
     ret
-
-    ;;---Draw_buttons----------------------------------------------------------------------------------------------------------
-
-
-Delete_buttons:
-    ;;===Delete_buttons========================================================================================================
-
-      mcall     8,,,0x800000D0
-      mcall      ,,,0x800000D1
-      mcall      ,,,0x800000D2
-      mcall      ,,,0x800000D3
-      mcall      ,,,0x800000D4
-
-    ret
-
-    ;;---Delete_buttons--------------------------------------------------------------------------------------------------------
-
-
+; -----------------------------
+; Change the game mode, redraw the game mode button
+; -----------------------------
 Change_play_mode:
-    ;;===Change_play_mode======================================================================================================
-
-    cmp  [play_mode],   LEVELS_MODE
-     jne @f
-    mov  [play_mode],   CLASSIC_MODE
-    mov  [cur_level_number],   0
-    ret
+    xor     [play_mode], LEVELS_MODE
+    call    Initialize_play_mode
+    ; redraw button mode
+    cmpne   [play_mode], CLASSIC_MODE, @f
+    mov     [playModeLabelButton], labelButtonClassic
   @@:
-    inc  [play_mode]
-
-      call      Set_first_level_of_play_mode
-
-    ret
-
-    ;;---Change_play_mode------------------------------------------------------------------------------------------------------
-
-
-Set_first_level_of_play_mode:
-    ;;===Set_first_level_of_play_mode==========================================================================================
-
-    cmp  [play_mode],   CLASSIC_MODE
-     jne @f
-    mov  [cur_level_number],   CLASSIC_MODE_FIRST_LEVEL
+    cmpne   [play_mode], LEVELS_MODE, @f
+    mov     [playModeLabelButton], labelButtonLevels
   @@:
-    cmp  [play_mode],   LEVELS_MODE
-     jne @f
-    mov  [cur_level_number],   LEVELS_MODE_FIRST_LEVEL
-  @@:
-
+    mcall   SF_DEFINE_BUTTON, , ,0x80000000 or BUTTON_MODE
+    stdcall draw.Button, [playModeLabelButton], BUTTON_MODE, [button_x_left], [button_y_middle], [button_width_long], [button_height]
     ret
-
-    ;;---Set_first_level_of_play_mode-------------------------------------------------------------------------------------------
-
-;;---Some_functions-------------------------------------------------------------------------------------------------------------
+; -----------------------------
+; Initializes the play mode state by setting configuration values
+; -----------------------------
+Initialize_play_mode:
+    cmpne   [play_mode], CLASSIC_MODE, @f
+    mov     [numberLevel.value], CLASSIC_MODE_FIRST_LEVEL
+    mov     eax, [numberHiscoreClassic]
+    mov     esi, labelChampionNameClassic
+  @@:
+    cmpne   [play_mode], LEVELS_MODE, @f
+    mov     [numberLevel.value], LEVELS_MODE_FIRST_LEVEL
+    mov     eax, [numberHiscoreLevels]
+    mov     esi, labelChampionNameLevels
+  @@:
+    mov     [numberHiscore.value], eax
+    mov     edi, [labelChampionName.value]
+    mov     ecx, CHAMPION_NAME_LENGTH
+    cld
+    rep     movsb
+    ret

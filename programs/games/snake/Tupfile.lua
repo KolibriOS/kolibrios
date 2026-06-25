@@ -1,2 +1,4 @@
 if tup.getconfig("NO_FASM") ~= "" then return end
-tup.rule("snake.asm", "fasm %f %o " .. tup.getconfig("KPACK_CMD"), "snake")
+HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../.." or tup.getconfig("HELPERDIR")
+tup.include(HELPERDIR .. "/use_fasm.lua")
+tup.rule("snake.asm", FASM .. " -dlang=" .. tup.getconfig("LANG") .. " %f %o" .. tup.getconfig("KPACK_CMD"), "snake")
