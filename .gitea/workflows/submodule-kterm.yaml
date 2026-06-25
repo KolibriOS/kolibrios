@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# SPDX-FileCopyrightText: 2026 KolibriOS team
+
+name: 'Update kterm submodule'
+
+on:
+  schedule:
+    - cron: '0 8 * * 6'      # Saturdays at 08:00 (UTC)
+  workflow_dispatch:
+
+jobs:
+  bump:
+    name: 'Bump kterm to upstream'
+    runs-on: kolibri-toolchain
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Bump kterm and open PR
+        env:
+          TOKEN: ${{ github.token }}
+          API: ${{ github.api_url }}
+          REPO: ${{ github.repository }}
+          BRANCH: chore/update-kterm
+        run: |
+          set -euo pipefail
+
+          git submodule update --remote programs/other/kterm
+          if git diff --quiet; then
+            echo "kterm is already up to date"
+            exit 0
+          fi
+
+          git config user.name  "kolibri-bot"
+          git config user.email "bot@kolibrios.org"
+          git checkout -B "$BRANCH"
+          git commit -am "kterm: bump submodule to upstream"
+          git push -f origin "$BRANCH"
+
+          # Open a PR via the Gitea API using the built-in token.
+          # 201 = created, 409 = a PR for this branch is already open (the
+          # force-push above already updated it) - both are fine.
+          http=$(curl -sS -o /tmp/pr.json -w '%{http_code}' -X POST \
+            -H "Authorization: token ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"head\":\"${BRANCH}\",\"base\":\"main\",\"title\":\"kterm: bump submodule to upstream\"}" \
+            "${API}/repos/${REPO}/pulls")
+          echo "PR API HTTP status: $http"
+          cat /tmp/pr.json; echo
+          if [ "$http" != "201" ] && [ "$http" != "409" ]; then
+            echo "Failed to create pull request"
+            exit 1
+          fi

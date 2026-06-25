@@ -1,3 +1,7 @@
 [submodule "programs/develop/oberon07"]
 	path = programs/develop/oberon07
 	url = https://github.com/AntKrotov/oberon-07-compiler.git
+[submodule "programs/other/kterm"]
+	path = programs/other/kterm
+	url = https://git.kolibrios.org/b00bl1k/kterm.git
+	branch = master
