@@ -94,6 +94,9 @@ int fat_off;
 int root_off;
 int data_off;
 
+int lfn_nonascii;
+int lfn_checksum;
+
 char cur_path[4096];
 int  cur_path_len;
 
@@ -150,7 +153,6 @@ void extract_file(dword buf, int size, int cluster)
 	while (cluster >= 2) && (cluster < 0xFF7) {
 		src = cluster_to_offset(cluster);
 		n = bpc;
-		// clamp to remaining size
 		if (written + n > size) n = size - written;
 		if (n <= 0) break;
 		// Stop on a corrupt FAT chain pointing outside the image
@@ -166,7 +168,6 @@ void make_parent_dirs(dword initial_dir)
 	char path[4096];
 	int i;
 	strncpy(#path, initial_dir, strlen(initial_dir) + 1);
-	//debugln(#path);
 	for (i = 1; path[i]; i++) {
 		if (path[i] == '/') {
 			path[i] = '\0';
@@ -183,7 +184,6 @@ int entry_short_name(int off, dword out)
 	if (!b) return -1;
 	if (b == 0xE5) return 0;
 	attr = fat_u8(off + 11);
-	if (attr & 0x0F == 0x0F) return 0;
 	if (attr & 0x08) return 0;
 
 	n = 0;
@@ -208,23 +208,110 @@ int entry_short_name(int off, dword out)
 	return n;
 }
 
-int handle_entry(int off)
+// Extracts characters from an LFN record. 
+// Zeroes the buffer when the end of line (0x0000 or 0xFFFF) is encountered.
+int get_lfn_chars(int off, dword out)
 {
-	char  name[13];
-	int   nlen, attr, cluster, size, saved_len;
+	int i, c, pos;
+	// LFN stores 13 UCS-2 chars at non-contiguous offsets 1..10, 14..25, 28..31
+	// (gaps: 11..13 attr/type/checksum, 26..27 cluster).
+	i = 1;
+	for (pos = 0; pos < 13; pos++) {
+		c = fat_u16(off + i);
+		if (c == 0x0000) || (c == 0xFFFF) { ESBYTE[out+pos] = 0; return pos; }
+		if (c > 0x7F) lfn_nonascii = 1;
+		ESBYTE[out + pos] = c & 0xFF;
+		i += 2;
+		if (i == 11) i = 14;
+		if (i == 26) i = 28;
+	}
+	ESBYTE[out + pos] = 0;
+	return pos;
+}
+
+// Returns -1 to stop iteration, 0 to continue.
+int process_one_entry(int entry_off, dword lfn_buf, dword p_seq)
+{
+	char chunk[15];
+	int b, attr, seq, chunk_len, dest_offset;
+
+	b = fat_u8(entry_off);
+	if (!b) return -1;
+	if (b == 0xE5) { ESDWORD[p_seq] = -1; return 0; }
+
+	attr = fat_u8(entry_off + 11);
+	if (attr == 0x0F) {
+		seq = b;
+		if (seq & 0x40) {
+			seq &= 0x3F;
+			if (seq < 1) || (seq > 20) { ESDWORD[p_seq] = -1; return 0; }
+			ESDWORD[p_seq] = seq;
+			lfn_nonascii = 0;
+			lfn_checksum = fat_u8(entry_off + 13);
+			EDI = lfn_buf; ECX = 65; EAX = 0; MEMSETD(EDI, ECX, EAX);
+		}
+		if (seq == ESDWORD[p_seq]) {
+			chunk_len = get_lfn_chars(entry_off, #chunk);
+			dest_offset = seq - 1;
+			dest_offset *= 13;
+			memmov(lfn_buf + dest_offset, #chunk, chunk_len);
+			ESDWORD[p_seq] = ESDWORD[p_seq] - 1;
+		} else {
+			ESDWORD[p_seq] = -1;
+		}
+	} else {
+		if (ESDWORD[p_seq] == 0) {
+			if (handle_entry(entry_off, lfn_buf) < 0) return -1;
+		} else {
+			if (handle_entry(entry_off, NULL) < 0) return -1;
+		}
+		ESDWORD[p_seq] = -1;
+		ESBYTE[lfn_buf] = 0;
+	}
+	return 0;
+}
+
+int handle_entry(int off, dword lfn_name)
+{
+	char  name[256];
+	int   nlen, attr, cluster, size, saved_len, use_lfn, sum, hi, i;
 	dword buf;
 
 	if (off < 0) || (off + 32 > img_sz) {
 		return -1;
 	}
 
-	nlen = entry_short_name(off, #name);
+	attr = fat_u8(off + 11);
+	if (attr == 0x0F) return 0;
 
-	if (nlen < 0) return -1;
-	if (nlen == 0) return 0;
-	if (name[0] == '.') return 0;
+	// Verify LFN checksum against the short-name field (off..off+10).
+	use_lfn = 0;
+	if (lfn_name) && (ESBYTE[lfn_name]) && (!lfn_nonascii) {
+		sum = 0;
+		for (i = 0; i < 11; i++) {
+			hi = sum & 1;
+			hi = hi << 7;
+			sum = sum >> 1;
+			sum = sum + hi;
+			sum = sum + fat_u8(off + i);
+			sum = sum & 0xFF;
+		}
+		if (sum == lfn_checksum) use_lfn = 1;
+	}
 
-	attr    = fat_u8(off + 11);
+	if (use_lfn) {
+		strncpy(#name, lfn_name, 255);
+		nlen = strlen(#name);
+	} else {
+		nlen = entry_short_name(off, #name);
+		if (nlen < 0) return -1;
+		if (nlen == 0) return 0;
+	}
+
+	// Skip only the "." and ".." directory entries (a real LFN name may start with '.').
+	if (name[0] == '.') && (name[1] == '\0') return 0;
+	if (name[0] == '.') && (name[1] == '.') && (name[2] == '\0') return 0;
+
 	cluster = fat_u16(off + 26);
 
 	saved_len = cur_path_len;
@@ -258,12 +345,16 @@ int handle_entry(int off)
 
 void handle_folder(int cluster)
 {
-	int off, entries, i;
+	int off, entries, i, entry_off;
+	int lfn_expected_seq;
+	char lfn_buf[260];
+
+	lfn_buf[0] = 0;
+	lfn_expected_seq = -1;
+
 	while (cluster >= 2) && (cluster < 0xFF7) {
 		off = cluster_to_offset(cluster);
 
-		// Check that offset don't go negative
-		// and we don't read over img size (img_sz)
 		if (off < 0) || (off + bpc > img_sz) {
 			notify(MSG_OOB);
 			return;
@@ -271,7 +362,8 @@ void handle_folder(int cluster)
 
 		entries = bpc / 32;
 		for (i = 0; i < entries; i++) {
-			if (handle_entry(i * 32 + off) < 0) return;
+			entry_off = i * 32 + off;
+			if (process_one_entry(entry_off, #lfn_buf, #lfn_expected_seq) < 0) return;
 		}
 		cluster = next_cluster(cluster);
 	}
@@ -288,7 +380,8 @@ void main()
 {
 	char img_file[4096];
 	char img_info[512];
-	int  i;
+	char root_lfn[260];
+	int  i, entry_off, lfn_expected_seq;
 
 	mem_init();
 
@@ -312,8 +405,8 @@ void main()
 	cur_path_len = strlen(#cur_path);
 
 	read_file(#img_file, #img_ptr, #img_sz);
- 	if (!img_ptr) || (!img_sz) {
- 		NotifyAndExit(MSG_READ, #img_file);
+	if (!img_ptr) || (!img_sz) {
+		NotifyAndExit(MSG_READ, #img_file);
 	}
 
 	fat12__open();
@@ -327,8 +420,11 @@ void main()
 		NotifyAndExit(MSG_MKDIR, #cur_path);
 	}
 
+	root_lfn[0] = 0;
+	lfn_expected_seq = -1;
 	for (i = 0; i < mre; i++) {
-		if (handle_entry(i * 32 + root_off) < 0) break;
+		entry_off = i * 32 + root_off;
+		if (process_one_entry(entry_off, #root_lfn, #lfn_expected_seq) < 0) break;
 	}
 
 	NotifyAndExit(MSG_DONE, #cur_path);
