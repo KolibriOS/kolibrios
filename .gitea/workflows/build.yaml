@@ -127,12 +127,20 @@ jobs:
             echo "cache_restored=true" >> $GITEA_OUTPUT
           fi
 
-      # cache restore resets file ctimes
-      # tup keys change detection on ctime
-      # so realign its DB to avoid rebuilding everything
+      # cache restore resets ctimes; realign tup DB to skip a full rebuild,
+      # but keep files changed since the cache's commit dirty so tup rebuilds them
       - name: Sync tup DB with filesystem ctime
         if: steps.check-tup-cache.outputs.cache_restored == 'true'
-        run: python3 .gitea/utils/sync-tup-ctime.py
+        run: |
+          DIRTY=$(mktemp)
+          BASE=$(cat .tup/build-commit 2>/dev/null || true)
+          if [ -n "$BASE" ] && git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
+            git -c core.quotePath=false diff --name-only "$BASE" HEAD > "$DIRTY"
+            echo "Cache built at $BASE; $(wc -l < "$DIRTY") changed files kept dirty"
+            python3 .gitea/utils/sync-tup-ctime.py .tup/db "$DIRTY"
+          else
+            echo "No usable cache base commit; skipping sync (tup rebuilds all)"
+          fi
 
       # write the variant config
       - name: Configure tup
@@ -160,6 +168,10 @@ jobs:
           export PATH=/home/autobuild/tools/win32/bin:$PATH
           source kos32-export-env-vars ${{ gitea.workspace }}
           tup build-${{ matrix.lang }}
+
+      # stamp the cache with its commit so later builds diff against it
+      - name: Record cache base commit
+        run: echo "${{ gitea.sha }}" > .tup/build-commit
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ARTIFACTS ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
