@@ -571,6 +571,7 @@ void
 I_InitSound()
 {
   SDL_AudioSpec wanted;
+  SDL_AudioSpec obtained;
   int i;
 
   // Secure and configure sound device first.
@@ -586,11 +587,15 @@ I_InitSound()
   wanted.channels = 2;
   wanted.samples = SAMPLECOUNT;
   wanted.callback = I_UpdateSound;
-  if ( SDL_OpenAudio(&wanted, NULL) < 0 ) {
+  if ( SDL_OpenAudio(&wanted, &obtained) < 0 ) {
     fprintf(stderr, "couldn't open audio with desired format\n");
     return;
   }
-  SAMPLECOUNT = wanted.samples;
+  // KolibriOS SDL fills the real device parameters into `obtained`
+  // (it does not write them back into `wanted` like upstream SDL),
+  // and refuses a NULL obtained. Take the actual slice size from it
+  // so the mixer in I_UpdateSound fills exactly one device buffer.
+  SAMPLECOUNT = obtained.samples;
   fprintf(stderr, " configured audio device with %d samples/slice\n", SAMPLECOUNT);
 
 

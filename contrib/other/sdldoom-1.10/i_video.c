@@ -40,14 +40,17 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
 SDL_Surface *screen;
 
+// DOOM always renders to a fixed 320x200 surface; SDL_SoftStretch scales
+// it to the (arbitrary) window size each frame.
+SDL_Surface *render;
+
+// 24bpp truecolor twin of render: the 8->24 palette conversion is done once
+// here at 320x200 (cheap), so the window-sized surface is truecolor - no
+// per-pixel palette pass, and the display needs no 8->24 shadow conversion.
+SDL_Surface *render24;
+
 // Fake mouse handling.
 boolean		grabMouse;
-
-// Blocky mode,
-// replace each 320x200 pixel with multiply*multiply pixels.
-// According to Dave Taylor, it still is a bonehead thing
-// to use ....
-static int	multiply=2;
 
 
 //
@@ -237,134 +240,21 @@ void I_FinishUpdate (void)
 	    screens[0][ (SCREENHEIGHT-1)*SCREENWIDTH + i] = 0x0;
     }
 
-    // scales the screen size before blitting it
+    // The 8bpp frame is converted to truecolor once here at 320x200; every blit
+    // below is 24bpp, so the window-sized surface gets no per-pixel palette pass
+    // and the display needs no 8->24 shadow conversion on update.
+    SDL_BlitSurface(render, NULL, render24, NULL);
+
     if ( SDL_MUSTLOCK(screen) ) {
-	if ( SDL_LockSurface(screen) < 0 ) {
-	    return;
-	}
-    }
-    if ((multiply == 1) && SDL_MUSTLOCK(screen))
-    {
-	unsigned char *olineptr;
-	unsigned char *ilineptr;
-	int y;
-
-	ilineptr = (unsigned char *) screens[0];
-	olineptr = (unsigned char *) screen->pixels;
-
-	y = SCREENHEIGHT;
-	while (y--)
-	{
-	    memcpy(olineptr, ilineptr, screen->w);
-	    ilineptr += SCREENWIDTH;
-	    olineptr += screen->pitch;
-	}
-    }
-    else if (multiply == 2)
-    {
-	unsigned int *olineptrs[2];
-	unsigned int *ilineptr;
-	int x, y, i;
-	unsigned int twoopixels;
-	unsigned int twomoreopixels;
-	unsigned int fouripixels;
-
-	ilineptr = (unsigned int *) (screens[0]);
-	for (i=0 ; i<2 ; i++) {
-	    olineptrs[i] =
-		(unsigned int *)&((Uint8 *)screen->pixels)[i*screen->pitch];
+        if ( SDL_LockSurface(screen) < 0 ) {
+            return;
         }
-
-	y = SCREENHEIGHT;
-	while (y--)
-	{
-	    x = SCREENWIDTH;
-	    do
-	    {
-		fouripixels = *ilineptr++;
-		twoopixels =	(fouripixels & 0xff000000)
-		    |	((fouripixels>>8) & 0xffff00)
-		    |	((fouripixels>>16) & 0xff);
-		twomoreopixels =	((fouripixels<<16) & 0xff000000)
-		    |	((fouripixels<<8) & 0xffff00)
-		    |	(fouripixels & 0xff);
-#ifdef __BIG_ENDIAN__
-		*olineptrs[0]++ = twoopixels;
-		*olineptrs[1]++ = twoopixels;
-		*olineptrs[0]++ = twomoreopixels;
-		*olineptrs[1]++ = twomoreopixels;
-#else
-		*olineptrs[0]++ = twomoreopixels;
-		*olineptrs[1]++ = twomoreopixels;
-		*olineptrs[0]++ = twoopixels;
-		*olineptrs[1]++ = twoopixels;
-#endif
-	    } while (x-=4);
-	    olineptrs[0] += screen->pitch/4;
-	    olineptrs[1] += screen->pitch/4;
-	}
-
     }
-    else if (multiply == 3)
-    {
-	unsigned int *olineptrs[3];
-	unsigned int *ilineptr;
-	int x, y, i;
-	unsigned int fouropixels[3];
-	unsigned int fouripixels;
-
-	ilineptr = (unsigned int *) (screens[0]);
-	for (i=0 ; i<3 ; i++) {
-	    olineptrs[i] = 
-		(unsigned int *)&((Uint8 *)screen->pixels)[i*screen->pitch];
-        }
-
-	y = SCREENHEIGHT;
-	while (y--)
-	{
-	    x = SCREENWIDTH;
-	    do
-	    {
-		fouripixels = *ilineptr++;
-		fouropixels[0] = (fouripixels & 0xff000000)
-		    |	((fouripixels>>8) & 0xff0000)
-		    |	((fouripixels>>16) & 0xffff);
-		fouropixels[1] = ((fouripixels<<8) & 0xff000000)
-		    |	(fouripixels & 0xffff00)
-		    |	((fouripixels>>8) & 0xff);
-		fouropixels[2] = ((fouripixels<<16) & 0xffff0000)
-		    |	((fouripixels<<8) & 0xff00)
-		    |	(fouripixels & 0xff);
-#ifdef __BIG_ENDIAN__
-		*olineptrs[0]++ = fouropixels[0];
-		*olineptrs[1]++ = fouropixels[0];
-		*olineptrs[2]++ = fouropixels[0];
-		*olineptrs[0]++ = fouropixels[1];
-		*olineptrs[1]++ = fouropixels[1];
-		*olineptrs[2]++ = fouropixels[1];
-		*olineptrs[0]++ = fouropixels[2];
-		*olineptrs[1]++ = fouropixels[2];
-		*olineptrs[2]++ = fouropixels[2];
-#else
-		*olineptrs[0]++ = fouropixels[2];
-		*olineptrs[1]++ = fouropixels[2];
-		*olineptrs[2]++ = fouropixels[2];
-		*olineptrs[0]++ = fouropixels[1];
-		*olineptrs[1]++ = fouropixels[1];
-		*olineptrs[2]++ = fouropixels[1];
-		*olineptrs[0]++ = fouropixels[0];
-		*olineptrs[1]++ = fouropixels[0];
-		*olineptrs[2]++ = fouropixels[0];
-#endif
-	    } while (x-=4);
-	    olineptrs[0] += 2*screen->pitch/4;
-	    olineptrs[1] += 2*screen->pitch/4;
-	    olineptrs[2] += 2*screen->pitch/4;
-	}
-
-    }
+    // Stretch the whole 320x200 frame to the window. Aspect may not match the
+    // window shape, but nothing is cropped and there are no seams.
+    SDL_SoftStretch(render24, NULL, screen, NULL);
     if ( SDL_MUSTLOCK(screen) ) {
-	SDL_UnlockSurface(screen);
+        SDL_UnlockSurface(screen);
     }
     SDL_UpdateRect(screen, 0, 0, 0, 0);
 }
@@ -393,7 +283,7 @@ void I_SetPalette (byte* palette)
 	colors[i].b = gammatable[usegamma][*palette++];
 	colors[i].unused = 0;
     }
-    SDL_SetColors(screen, colors, 0, 256);
+    SDL_SetColors(render, colors, 0, 256);
 }
 
 
@@ -401,71 +291,53 @@ void I_InitGraphics(void)
 {
 
     static int	firsttime=1;
-    Uint16 video_w, video_h, w, h;
-    Uint8 video_bpp;
+    Uint16 video_w, video_h;
     Uint32 video_flags;
+    int i;
 
     if (!firsttime)
 	return;
     firsttime = 0;
 
-    video_flags = (SDL_SWSURFACE|SDL_HWPALETTE);
+    video_flags = SDL_SWSURFACE;
     if (!!M_CheckParm("-fullscreen"))
         video_flags |= SDL_FULLSCREEN;
-
-    if (M_CheckParm("-2"))
-	multiply = 2;
-
-    if (M_CheckParm("-3"))
-	multiply = 3;
 
     // check if the user wants to grab the mouse (quite unnice)
     grabMouse = !!M_CheckParm("-grabmouse");
 
-    video_w = w = SCREENWIDTH * multiply;
-    video_h = h = SCREENHEIGHT * multiply;
-    video_bpp = 8;
+    // Window size: "-winsize <w> <h>"; defaults to 2x of 320x200.
+    video_w = SCREENWIDTH * 2;
+    video_h = SCREENHEIGHT * 2;
+    i = M_CheckParm("-winsize");
+    if (i && i < myargc-2) {
+	video_w = atoi(myargv[i+1]);
+	video_h = atoi(myargv[i+2]);
+    }
 
-    /* We need to allocate a software surface because the DOOM! code expects
-       the screen surface to be valid all of the time.  Properly done, the
-       rendering code would allocate the video surface in video memory and
-       then call SDL_LockSurface()/SDL_UnlockSurface() around frame rendering.
-       Eventually SDL will support flipping, which would be really nice in
-       a complete-frame rendering application like this.
-    */
-    switch (video_w/w) {
-        case 3:
-            multiply *= 3;
-            break;
-        case 2:
-            multiply *= 2;
-            break;
-        case 1:
-            multiply *= 1;
-            break;
-        default:
-		;
-    }
-    if ( multiply > 3 ) {
-        I_Error("Smallest available mode (%dx%d) is too large!",
-						video_w, video_h);
-    }
-    screen = SDL_SetVideoMode(video_w, video_h, 8, video_flags);
+    // 24bpp truecolor window: the kolibri framebuffer is 24bpp, so a truecolor
+    // surface avoids SDL's per-frame 8->24 shadow conversion across the whole
+    // window (the 8->24 step is done once at 320x200 in I_FinishUpdate).
+    screen = SDL_SetVideoMode(video_w, video_h, 24, video_flags);
     if ( screen == NULL ) {
         I_Error("Could not set %dx%d video mode: %s", video_w, video_h,
 							SDL_GetError());
     }
     SDL_ShowCursor(0);
-    SDL_WM_SetCaption("SDL DOOM! v1.10", "doom");
+    SDL_WM_SetCaption("SDL DOOM! v1.11", "doom");
 
-    /* Set up the screen displays */
-    w = SCREENWIDTH * multiply;
-    h = SCREENHEIGHT * multiply;
-    if (multiply == 1 && !SDL_MUSTLOCK(screen) ) {
-	screens[0] = (unsigned char *) screen->pixels;
-    } else {
-	screens[0] = (unsigned char *) malloc (SCREENWIDTH * SCREENHEIGHT);
-        if ( screens[0] == NULL )
-            I_Error("Couldn't allocate screen memory");
-    }
+    /* DOOM renders to a fixed 320x200 paletted surface; each frame it is
+       scaled to the window with SDL_SoftStretch (see I_FinishUpdate). */
+    render = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREENWIDTH, SCREENHEIGHT,
+                                  8, 0, 0, 0, 0);
+    if ( render == NULL )
+        I_Error("Cannot create render surface: %s", SDL_GetError());
+    // 24bpp truecolor copy of render, scaled to the window (see I_FinishUpdate)
+    render24 = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREENWIDTH, SCREENHEIGHT,
+                                    screen->format->BitsPerPixel,
+                                    screen->format->Rmask, screen->format->Gmask,
+                                    screen->format->Bmask, screen->format->Amask);
+    if ( render24 == NULL )
+        I_Error("Cannot create render24 surface: %s", SDL_GetError());
+    screens[0] = (unsigned char *) render->pixels;
 }

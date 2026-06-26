@@ -613,6 +613,11 @@ void IdentifyVersion (void)
       home = ".";
     sprintf(basedefault, "%s/.doomrc", home);
 
+    #ifdef _KOLIBRI
+      // the config ships as DOOMRC.TXT next to the WAD (our CWD after setcwd)
+      strcpy(basedefault, "DOOMRC.TXT");
+    #endif
+
     if (M_CheckParm ("-shdev"))
     {
 	gamemode = shareware;
