@@ -17,8 +17,8 @@ static int scrn_size_defined = 0;
 static int has_null_cursor=0;
 static void* null_cursor;
 
-#define WINDOW_BORDER_H 4
-#define WINDOW_BORDER_W 9
+#define WINDOW_BORDER_H 5
+#define WINDOW_BORDER_W 10
 
 ksys_pos_t screen_size = {0};
 
@@ -35,7 +35,12 @@ void kos_SDL_RepaintWnd(void)
     }
 
     _ksys_start_draw();
-    _ksys_create_window(win_pos_x, win_pos_y, win_size_w, win_size_h, vm_suf->hidden->__title, 0, 0x34);
+    if (vm_suf->hidden->fullscreen)
+        // borderless window (style Y=1); the surface fills the screen
+        _ksys_create_window(0, 0, vm_suf->hidden->win_size_x, vm_suf->hidden->win_size_y, vm_suf->hidden->__title, 0, 0x31);
+    else
+        // skinned window (Y=4), flag C=1: don't fill the work area
+        _ksys_create_window(win_pos_x, win_pos_y, win_size_w, win_size_h, vm_suf->hidden->__title, 0, 0x74);
 
     if (vm_suf && vm_suf->hidden->__video_buffer) {
         _ksys_draw_bitmap(vm_suf->hidden->__video_buffer, 0, 0,
@@ -94,12 +99,14 @@ SDL_Surface *kos_SetVideoMode(_THIS, SDL_Surface *current, int width, int height
     if (bpp!=24) return NULL;
  
     current->flags=flags;
+    this->hidden->fullscreen = (flags & SDL_FULLSCREEN) ? 1 : 0;
     current->w=width;
     current->h=height;
     current->pitch=width*(bpp>>3);
  
-    char info[100];
-    sprintf(info, "width = %d, height = %d, pitch = %d, bpp = %d\n", current->w, current->h, current->pitch, bpp);
+    char info[128];
+    sprintf(info, "SetVideoMode %dx%d bpp=%d fullscreen=%d flags=%08x\n",
+            current->w, current->h, bpp, this->hidden->fullscreen, (unsigned)flags);
     _ksys_debug_puts(info);
 
     current->pixels=this->hidden->__video_buffer=realloc(this->hidden->__video_buffer, current->pitch*current->h);
@@ -114,11 +121,15 @@ SDL_Surface *kos_SetVideoMode(_THIS, SDL_Surface *current, int width, int height
     vm_suf=this;
 
     if (was_initialized) {
-        unsigned newheight = height+_ksys_get_skin_height()+WINDOW_BORDER_H;
-        unsigned newwidth  = width+WINDOW_BORDER_W;
-        int win_pos_x = screen_size.x/2-newwidth/2;
-        int win_pos_y = screen_size.y/2-newheight/2;
-        _ksys_change_window(win_pos_x, win_pos_y, newwidth, newheight);
+        if (this->hidden->fullscreen) {
+            _ksys_change_window(0, 0, width, height);
+        } else {
+            unsigned newheight = height+_ksys_get_skin_height()+WINDOW_BORDER_H;
+            unsigned newwidth  = width+WINDOW_BORDER_W;
+            int win_pos_x = screen_size.x/2-newwidth/2;
+            int win_pos_y = screen_size.y/2-newheight/2;
+            _ksys_change_window(win_pos_x, win_pos_y, newwidth, newheight);
+        }
     } else {
         _ksys_set_event_mask(0x27);
         was_initialized=1;

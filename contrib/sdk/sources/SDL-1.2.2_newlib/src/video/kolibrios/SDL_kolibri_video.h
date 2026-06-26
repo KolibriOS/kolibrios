@@ -12,6 +12,7 @@ struct SDL_PrivateVideoData {
  int		 win_size_x,win_size_y;
  int		 vx_ofs,vy_ofs;
  unsigned char** __lines;
+ int		 fullscreen;	// borderless full-screen window (SDL_FULLSCREEN)
 };
 
 void kos_InitOSKeymap(_THIS);
