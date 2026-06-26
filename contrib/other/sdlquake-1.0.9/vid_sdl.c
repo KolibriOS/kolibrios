@@ -83,12 +83,15 @@ void    VID_Init (unsigned char *palette)
             Sys_Error("VID: Bad window width/height\n");
     }
 
+	// the software renderer's static tables cap at MAXWIDTH x MAXHEIGHT
+	// (r_shared.h); VID_Init clamps to the same, so size the heap for that.
+    if (vid.width > MAXWIDTH)   vid.width = MAXWIDTH;
+    if (vid.height > MAXHEIGHT) vid.height = MAXHEIGHT;
+
     flags = (SDL_SWSURFACE|SDL_HWPALETTE);
-#ifndef _KOLIBRI
     // Set video width, height and flags
     if ( COM_CheckParm ("-fullscreen") )
         flags |= SDL_FULLSCREEN;
-#endif
 
     // Initialize display 
     if (!(screen = SDL_SetVideoMode(vid.width, vid.height, 8, flags)))

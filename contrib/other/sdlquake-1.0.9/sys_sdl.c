@@ -403,14 +403,41 @@ int main (int c, char **v)
 	basedir = dirname(v[0]);
 #endif
 
-	parms.memsize = 8*1024*1024;
-	parms.membase = malloc (parms.memsize);
-	parms.basedir = basedir;
-	parms.cachedir = NULL;
-
 	COM_InitArgv(c, v);
 	parms.argc = com_argc;
 	parms.argv = com_argv;
+
+	// The video buffers (z-buffer + surface cache) are carved out of this heap
+	// and scale with the window area; a fixed 8 MB overflows at large sizes
+	// (e.g. fullscreen) and Hunk_HighAllocName fails -> Sys_Error. Grow the heap
+	// to fit the requested resolution. Must match VID_Init() in vid_sdl.c.
+	{
+		int w = 320*2, h = 200*2;	// BASEWIDTH/BASEHEIGHT defaults
+		int pnum = COM_CheckParm("-winsize");
+		int videomem;
+
+		if (pnum && pnum < com_argc-2)
+		{
+			w = Q_atoi(com_argv[pnum+1]);
+			h = Q_atoi(com_argv[pnum+2]);
+		}
+		if (w < 320) w = 320;
+		if (h < 200) h = 200;
+		// the software renderer's static tables cap at MAXWIDTH x MAXHEIGHT
+		// (r_shared.h); VID_Init clamps to the same, so size the heap for that.
+		if (w > 1280) w = 1280;
+		if (h > 1024) h = 1024;
+
+		// z-buffer (w*h shorts) + D_SurfaceCacheForRes(w, h)
+		videomem = w*h*(int)sizeof(short) + 600*1024;
+		if (w*h > 64000)
+			videomem += (w*h - 64000)*3;
+
+		parms.memsize = 8*1024*1024 + videomem;
+	}
+	parms.membase = malloc (parms.memsize);
+	parms.basedir = basedir;
+	parms.cachedir = NULL;
 
 	Sys_Init();
 
