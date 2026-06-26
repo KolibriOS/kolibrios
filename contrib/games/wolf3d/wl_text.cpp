@@ -424,6 +424,8 @@ void PageLayout (boolean shownumber)
     //
     // clear the screen
     //
+    if(screenXoffset || screenYoffset)
+        VL_ClearScreen(0);
     VWB_Bar (0,0,320,200,BACKCOLOR);
     VWB_DrawPic (0,0,H_TOPWINDOWPIC);
     VWB_DrawPic (0,8,H_LEFTWINDOWPIC);
@@ -642,6 +644,8 @@ void ShowArticle (char *article)
     oldfontnumber = fontnumber;
     fontnumber = 0;
     CA_CacheGrChunk(STARTFONT);
+    if(screenXoffset || screenYoffset)
+        VL_ClearScreen(0);
     VWB_Bar (0,0,320,200,BACKCOLOR);
     CacheLayoutGraphics ();
 #endif

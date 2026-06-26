@@ -3066,6 +3066,8 @@ IntroScreen (void)
 void
 ClearMScreen (void)
 {
+    if(screenXoffset || screenYoffset)
+        VL_ClearScreen(0);          // clear letterbox margins
 #ifndef SPEAR
     VWB_Bar (0, 0, 320, 200, BORDCOLOR);
 #else

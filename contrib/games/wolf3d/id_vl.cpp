@@ -16,7 +16,14 @@
 #define assert_ret(x) assert(x)
 #endif
 
-boolean fullscreen = true;
+boolean fullscreen = false;
+
+// Centering of the logical 320x200 layer (menus, title/intro, fonts, fullscreen
+// pics) when the resolution isn't an exact multiple of 320x200. The 3D view and
+// in-game HUD use physical coordinates and stay full-screen.
+int screenXoffset = 0;
+int screenYoffset = 0;
+
 #if defined(_arch_dreamcast)
 boolean usedoublebuffering = false;
 unsigned screenWidth = 320;
@@ -142,6 +149,9 @@ void	VL_SetVGAPlaneMode (void)
 
     scaleFactor = screenWidth/320;
     if(screenHeight/200 < scaleFactor) scaleFactor = screenHeight/200;
+
+    screenXoffset = (screenWidth  - scaleFactor * 320) / 2;
+    screenYoffset = (screenHeight - scaleFactor * 200) / 2;
 
     pixelangle = (short *) malloc(screenWidth * sizeof(short));
     CHECKMALLOCRESULT(pixelangle);
@@ -434,7 +444,7 @@ void VL_Plot (int x, int y, int color)
     ptr = VL_LockSurface(curSurface);
     if(ptr == NULL) return;
 
-    ptr[y * curPitch + x] = color;
+    ptr[(y + screenYoffset) * curPitch + x + screenXoffset] = color;
 
     VL_UnlockSurface(curSurface);
 }
@@ -459,7 +469,7 @@ byte VL_GetPixel (int x, int y)
     ptr = VL_LockSurface(curSurface);
     if(ptr == NULL) return 0;
 
-    col = ((byte *) curSurface->pixels)[y * curPitch + x];
+    col = ((byte *) curSurface->pixels)[(y + screenYoffset) * curPitch + x + screenXoffset];
 
     VL_UnlockSurface(curSurface);
 
@@ -486,7 +496,7 @@ void VL_Hlin (unsigned x, unsigned y, unsigned width, int color)
     ptr = VL_LockSurface(curSurface);
     if(ptr == NULL) return;
 
-    memset(ptr + y * curPitch + x, color, width);
+    memset(ptr + (y + screenYoffset) * curPitch + x + screenXoffset, color, width);
 
     VL_UnlockSurface(curSurface);
 }
@@ -511,7 +521,7 @@ void VL_Vlin (int x, int y, int height, int color)
 	ptr = VL_LockSurface(curSurface);
 	if(ptr == NULL) return;
 
-	ptr += y * curPitch + x;
+	ptr += (y + screenYoffset) * curPitch + x + screenXoffset;
 
 	while (height--)
 	{

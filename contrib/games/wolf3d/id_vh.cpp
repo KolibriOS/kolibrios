@@ -24,7 +24,8 @@ void VWB_DrawPropString(const char* string)
 
 	font = (fontstruct *) grsegs[STARTFONT+fontnumber];
 	height = font->height;
-	dest = vbuf + scaleFactor * (py * curPitch + px);
+	dest = vbuf + (scaleFactor * py + screenYoffset) * curPitch
+	            + scaleFactor * px + screenXoffset;
 
 	while ((ch = (byte)*string++)!=0)
 	{

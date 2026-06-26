@@ -134,6 +134,8 @@ Victory (void)
     CA_CacheGrChunk (BJCOLLAPSE3PIC);
     CA_CacheGrChunk (BJCOLLAPSE4PIC);
 
+    if(screenXoffset || screenYoffset)
+        VL_ClearScreen(0);
     VWB_Bar (0, 0, 320, 200, VIEWCOLOR);
     VWB_DrawPic (124, 44, BJCOLLAPSE1PIC);
     VW_UpdateScreen ();
@@ -165,6 +167,8 @@ Victory (void)
     CA_CacheGrChunk (C_TIMECODEPIC);
 #endif
 
+    if(screenXoffset || screenYoffset)
+        VL_ClearScreen(0);
     VWB_Bar (0, 0, 320, screenHeight / scaleFactor - STATUSLINES + 1, VIEWCOLOR);
     if (bordercol != VIEWCOLOR)
         DrawStatusBorder (VIEWCOLOR);
@@ -312,6 +316,8 @@ void
 PG13 (void)
 {
     VW_FadeOut ();
+    if(screenXoffset || screenYoffset)
+        VL_ClearScreen(0);
     VWB_Bar (0, 0, 320, 200, 0x82);     // background
 
     CA_CacheGrChunk (PG13PIC);
@@ -559,6 +565,8 @@ LevelCompleted (void)
 
     CacheLump (LEVELEND_LUMP_START, LEVELEND_LUMP_END);
     ClearSplitVWB ();           // set up for double buffering in split screen
+    if(screenXoffset || screenYoffset)
+        VL_ClearScreen(0);
     VWB_Bar (0, 0, 320, screenHeight / scaleFactor - STATUSLINES + 1, VIEWCOLOR);
 
     if (bordercol != VIEWCOLOR)

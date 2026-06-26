@@ -17,7 +17,7 @@ compile_gcc{
     "wl_cloudsky.cpp", "wl_debug.cpp", "id_sd.cpp", "wl_play.cpp", "id_vl.cpp", "wl_act2.cpp", "wl_floorceiling.cpp", "wl_dir3dspr.cpp", 
     "wl_state.cpp", "wl_atmos.cpp", "id_in.cpp", "signon.cpp", "wl_parallax.cpp", "wl_agent.cpp", "sdl_winmain.cpp", "wl_inter.cpp", "wl_text.cpp", 
     "id_pm.cpp",  "wl_draw.cpp",  "wl_menu.cpp", "wl_game.cpp", "wl_act1.cpp", "wl_main.cpp", "wl_shade.cpp", "id_us_1.cpp", "id_vh.cpp", "id_ca.cpp", 
-    "joystick_stub.cpp", "kolibri.cpp", "mame/fmopl.cpp",
+    "joystick_stub.cpp", "mame/fmopl.cpp",
 }
 
 -- SDL_mixer stubs -- 

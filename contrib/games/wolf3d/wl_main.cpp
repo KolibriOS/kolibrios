@@ -1369,7 +1369,7 @@ boolean SetViewSize (unsigned width, unsigned height)
     {
         viewscreenx = (screenWidth-viewwidth) / 2;
         viewscreeny = (screenHeight-scaleFactor*STATUSLINES-viewheight)/2;
-        screenofs = viewscreeny*screenWidth+viewscreenx;
+        screenofs = viewscreeny*bufferPitch+viewscreenx;
     }
 
 //
@@ -1721,7 +1721,6 @@ void CheckParameters(int argc, char *argv[])
         }
         else IFARG("--nosound")
             SD_Started=true;
-#ifndef _KOLIBRI 
         else IFARG("--windowed")
             fullscreen = false;
         else IFARG("--windowed-mouse")
@@ -1729,7 +1728,8 @@ void CheckParameters(int argc, char *argv[])
             fullscreen = false;
             forcegrabmouse = true;
         }
-#endif
+        else IFARG("--fullscreen")
+            fullscreen = true;
         else IFARG("--res")
         {
             if(i + 2 >= argc)
@@ -1971,13 +1971,10 @@ void CheckParameters(int argc, char *argv[])
 ==========================
 */
 
-extern void kolibri_set_win_max(void);
-
 int main (int argc, char *argv[])
 {
 #ifdef _KOLIBRI
     _ksys_setcwd(dirname(argv[0]));
-    kolibri_set_win_max();
 #endif
 
 #if defined(_arch_dreamcast)

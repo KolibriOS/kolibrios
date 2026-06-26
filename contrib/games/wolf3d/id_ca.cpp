@@ -1009,6 +1009,9 @@ void CA_CacheScreen (int chunk)
     CHECKMALLOCRESULT(pic);
     CAL_HuffExpand((byte *) source, pic, expanded, grhuffman);
 
+    if(screenXoffset || screenYoffset)
+        VL_ClearScreen(0);          // clear letterbox margins
+
     vbuf = VL_LockSurface(curSurface);
     if(vbuf != NULL)
     {
@@ -1019,7 +1022,7 @@ void CA_CacheScreen (int chunk)
                 byte col = pic[(y * 80 + (x >> 2)) + (x & 3) * 80 * 200];
                 for(i = 0; i < scaleFactor; i++)
                     for(j = 0; j < scaleFactor; j++)
-                        vbuf[(scy + i) * curPitch + scx + j] = col;
+                        vbuf[(scy + i + screenYoffset) * curPitch + scx + j + screenXoffset] = col;
             }
         }
         VL_UnlockSurface(curSurface);

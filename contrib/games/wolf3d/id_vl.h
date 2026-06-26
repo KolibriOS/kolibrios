@@ -16,6 +16,7 @@ extern SDL_Surface *screen, *screenBuffer, *curSurface;
 extern  boolean  fullscreen, usedoublebuffering;
 extern  unsigned screenWidth, screenHeight, screenBits, screenPitch, bufferPitch, curPitch;
 extern  unsigned scaleFactor;
+extern  int      screenXoffset, screenYoffset;
 
 extern	boolean  screenfaded;
 extern	unsigned bordercolor;
@@ -53,7 +54,7 @@ void VL_Vlin            (int x, int y, int height, int color);
 void VL_BarScaledCoord  (int scx, int scy, int scwidth, int scheight, int color);
 void inline VL_Bar      (int x, int y, int width, int height, int color)
 {
-    VL_BarScaledCoord(scaleFactor*x, scaleFactor*y,
+    VL_BarScaledCoord(scaleFactor*x + screenXoffset, scaleFactor*y + screenYoffset,
         scaleFactor*width, scaleFactor*height, color);
 }
 void inline VL_ClearScreen(int color)
@@ -73,7 +74,7 @@ void VL_MemToScreenScaledCoord  (byte *source, int origwidth, int origheight, in
 void inline VL_MemToScreen (byte *source, int width, int height, int x, int y)
 {
     VL_MemToScreenScaledCoord(source, width, height,
-        scaleFactor*x, scaleFactor*y);
+        scaleFactor*x + screenXoffset, scaleFactor*y + screenYoffset);
 }
 
 void VL_MaskedToScreen (byte *source, int width, int height, int x, int y);
@@ -85,7 +86,7 @@ void inline VL_LatchToScreen (SDL_Surface *source, int xsrc, int ysrc,
     int width, int height, int xdest, int ydest)
 {
     VL_LatchToScreenScaledCoord(source,xsrc,ysrc,width,height,
-        scaleFactor*xdest,scaleFactor*ydest);
+        scaleFactor*xdest + screenXoffset,scaleFactor*ydest + screenYoffset);
 }
 void inline VL_LatchToScreenScaledCoord (SDL_Surface *source, int scx, int scy)
 {
@@ -94,5 +95,5 @@ void inline VL_LatchToScreenScaledCoord (SDL_Surface *source, int scx, int scy)
 void inline VL_LatchToScreen (SDL_Surface *source, int x, int y)
 {
     VL_LatchToScreenScaledCoord(source,0,0,source->w,source->h,
-        scaleFactor*x,scaleFactor*y);
+        scaleFactor*x + screenXoffset,scaleFactor*y + screenYoffset);
 }
