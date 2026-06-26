@@ -215,7 +215,6 @@ extra_files = {
  {"kolibrios/games/bomber/bomb.bmp", SRC_PROGS .. "/games/bomber/bomb.bmp"},
  {"kolibrios/games/bomber/plane.bmp", SRC_PROGS .. "/games/bomber/plane.bmp"},
  {"kolibrios/games/bomber/tile.bmp", SRC_PROGS .. "/games/bomber/tile.bmp"},
- {"kolibrios/games/doom1/", "common/games/doom/*"},
  {"kolibrios/games/fara/fara.gfx", "common/games/fara.gfx"},
  {"kolibrios/games/jumpbump/", "common/games/jumpbump/*"},
  {"kolibrios/games/knight", "common/games/knight"},
@@ -823,14 +822,23 @@ if tup.getconfig('NO_NASM') ~= 'full' then
   tup.append_table(extra_files, {
    {"kolibrios/games/tyrian/", VAR_CONTRIB .. "/games/opentyrian/opentyrian"},
    {"kolibrios/games/tyrian/data/", "common/games/tyrian/data/*"},
-   {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
    {"kolibrios/games/quake/", VAR_CONTRIB .. "/other/sdlquake-1.0.9/sdlquake"},
+   {"kolibrios/games/quake/", "common/games/quake/*"}, -- not really gcc, but no sense without sdlquake
    {"kolibrios/games/wolf3d/", VAR_CONTRIB .. "/games/wolf3d/wolf3d"},
    {"kolibrios/games/wolf3d/", "common/games/wolf3d/*"},
+   {"kolibrios/games/doom1/", VAR_CONTRIB .. "/other/sdldoom-1.10/doom"},
+   {"kolibrios/games/doom1/", "common/games/doom/*"},
    {"kolibrios/emul/dgen/dgen", VAR_PROGS .. "/emulator/dgen-sdl-1.33/dgen"},
    {"kolibrios/emul/dgen/dgen_open", VAR_PROGS .. "/fs/wrap_open/wrap_open"},
    {"kolibrios/emul/dgen/dgen.html", SRC_PROGS .. "/emulator/dgen-sdl-1.33/dgen.html"},
    {"kolibrios/emul/dgen/dgenrc.html", SRC_PROGS .. "/emulator/dgen-sdl-1.33/dgenrc.html"},
+  })
+end
+
+-- Resolution/mode launcher for Wolf3D / DOOM / Quake (FASM-built)
+if tup.getconfig("NO_FASM") ~= "full" then
+  tup.append_table(extra_files, {
+   {"kolibrios/games/launcher/", VAR_CONTRIB .. "/games/launcher/launcher"},
   })
 end
 
