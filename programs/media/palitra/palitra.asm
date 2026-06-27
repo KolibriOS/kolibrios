@@ -1,46 +1,12 @@
-; SPDX-License-Identifier: NOASSERTION
-;
-
-; Text encoded with Code Page 866 - Cyrillic
-
-
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
 ; Program Palitra (c) Sergei Steshin (Akyltist)                                                      |
 ;----------------------------------------------------------------------------------------------------|
 ;; Charset:DOS-866 Font:Courier New Size:9pt                                                         |
 ;.....................................................................................................
-;; compiler:     FASM 1.69.31                                                                        |
-;; version:      0.3.0                                                                               |
-;; last update:  08/11/2012                                                                          |
+;; version:      0.8.0                                                                               |
+;; last update:  21 Jun 2026                                                                         |
 ;; e-mail:       dr.steshin@gmail.com                                                                |
-;.....................................................................................................
-;; History:                                                                                          |
-;; 0.1.0 - Первая версия программы.                                                                  |
-;; 0.2.0 - Исправлено попадание в сетку, берется ближайший по диагонали пиксель.                     |
-;;       - Добавлены ползунки, для регулирования rgb составляющих цвета и вывод этих составляющих.   |
-;;       - Убран вывод цвета в бинарном виде (пока за не надобностью и не актуальностью).            |
-;;       - Мелкая косметика.                                                                         |
-;; 0.3.0 - Добавлено переключение видов цветовых схем (кнопка NEXT)                                  |
-;;       - Улучшены ползунки, производится обработка нажатия рядом с ползунком.                      |
-;;       - Число сеток в цветовой схеме уменьшено с 6 до 4 (кратность 256, иначе дублирование цвета).|
-;;       - Мелкая косметика.                                                                         |
-;; 0.4.0 - Добавлено переключение между двумя цветами                                                |
-;;       - Добавлен ползунок регулирования прозрачности (без визуализации).                          |
-;;       - Добавлено выравнивание значений rgba по центру, в зависимости от длинны.                  |
-;;       - Косметические правки.                                                                     |
-;;       - Небольшая оптимизация.                                                                    |
-;; 0.5.0 - Добавлена кнопка смены фона рабочего стола (от Leency).                                   |
-;;       - Добавлено изменение фона рабочего стола градиентной заливкой.                             |
-;;       - Косметические правки.                                                                     |
-;;       - Небольшая деоптимизация.                                                                  |
-;; 0.6.0 - Добавлена возможность запуска с параметрами                                               |
-;;       - Добавлен режим H (hidden) производит замену фона рабочего стола градиентной заливкой.     |
-;;       - Большая деоптимизация.                                                                    |
-;; 0.7.0 - Добавлена пипетка - выбор на среднюю кнопку мыши                                          |
-;; 0.7.5 - Нажатие правой клавишей мыши на ячейку с цветом устанавливает не основой, а дополн. цвет  |
-;;       - Уменьшено мерцание при работе пипетки                                                     |
-;; 0.7.6 - Добавлен режим B, который производит замену фона рабочего стола шумной заливкой (e-andrew)|
 ;.....................................................................................................
 ;; All rights reserved.                                                                              |
 ;;                                                                                                   |
@@ -68,65 +34,110 @@
 
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
-; ЗАГОЛОВОК ИСПОЛНЯЕМОГО ФАЙЛА ПРИЛОЖЕНИЯ ДЛЯ КОЛИБРИ ОС                                             |
+; ╨Ч╨Р╨У╨Ю╨Ы╨Ю╨Т╨Ю╨Ъ ╨Ш╨б╨Я╨Ю╨Ы╨Э╨п╨Х╨Ь╨Ю╨У╨Ю ╨д╨Р╨Щ╨Ы╨Р ╨Я╨а╨Ш╨Ы╨Ю╨Ц╨Х╨Э╨Ш╨п ╨Ф╨Ы╨п ╨Ъ╨Ю╨Ы╨Ш╨С╨а╨Ш ╨Ю╨б                                             |
 ;----------------------------------------------------------------------------------------------------/
-  use32
-  org	 0
-  db	 'MENUET01'
-  dd	 1,START,I_END,I_MEM,stacktop,params,sys_path
+use32
+org    0
+db     'MENUET01'
+dd     1,START,I_END,I_MEM,stacktop,params,sys_path
 
-  include '../../macros.inc'
-  include '../../proc32.inc'
-  include '../../KOSfuncs.inc'
-  include '../../dll.inc'
+include '../../macros.inc'
+include '../../proc32.inc'
+include '../../KOSfuncs.inc'
+include '../../dll.inc'
 
-  WIN_W  equ 295	    ; ширина окна
-  WIN_H  equ 195	    ; высота окна
-  WIN_X  equ 250	    ; координата х окна
-  WIN_Y  equ 190	    ; координата у окна
+include 'draw_sliders.inc'
+include 'draw_utils.inc'
+include 'draw_palitra.inc'
+include 'fill_background.inc'
 
-panel:
-  file "panel.raw"
+MODE_PALITRA = 0
+MODE_PIPET   = 1
+
+WIN_W  = 380
+WIN_H  = 301
+WIN_X  = 250
+WIN_Y  = 190
+
+Left_Border=8
+SliderPanel_W = 110
+DRAWY  = 12
+PIPETY = DRAWY+ICONS+DRAWY+5+2
+
+CELLW       = 11; 11            ; not used yet, but has to be :)
+
+ICONX  = WIN_W - 40
+ICONS  = 18             ; icon size  
+
+SLIDER_Y = 61
+
+PALITRA_X = Left_Border+SliderPanel_W+12
+PALITRA_W = CELLW*(8)+8+1
+PALITRA_XW = PALITRA_X shl 16 + PALITRA_W
+PALITRA_YW = DRAWY shl 16 + PALITRA_W
+
+; list of buttons
+BTN_PALITRA  = 7
+
+BTN_GRADIENT = 20
+BTN_NOISY    = 21
+BTN_CHECKERS = 22
+BTN_SILK     = 23
+
+BTN_NEXT     = 30
+BTN_PIPET    = 31
+
+BTN_COL_SWAP = 40
 
 START:
-    mcall   SF_SYS_MISC,SSF_HEAP_INIT ; инициализация кучи
+    mcall SF_SYSTEM, SSF_WINDOW_BEHAVIOR, SSSF_SET_WB, -1, 1 ;always on top
+    mcall SF_SYS_MISC,SSF_HEAP_INIT ; ╨╕╨╜╨╕╤Ж╨╕╨░╨╗╨╕╨╖╨░╤Ж╨╕╤П ╨║╤Г╤З╨╕
+    mcall SF_SYS_MISC, SSF_MEM_OPEN, i18bg_name
+    mov [icons18bg], eax
+
     stdcall dll.Load, @IMPORT
     or      eax,eax
     jnz     bexit
-    mcall   SF_SET_EVENTS_MASK,0x27   ; устанавливаем маску событий
-    include 'params_init.inc'		  ; обработка параметров командной строки
+    mcall   SF_SET_EVENTS_MASK,EVM_REDRAW+EVM_KEY+EVM_BUTTON+EVM_MOUSE ; ╤Г╤Б╤В╨░╨╜╨░╨▓╨╗╨╕╨▓╨░╨╡╨╝ ╨╝╨░╤Б╨║╤Г ╤Б╨╛╨▒╤Л╤В╨╕╨╣
+    include 'params_init.inc'             ; ╨╛╨▒╤А╨░╨▒╨╛╤В╨║╨░ ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨╛╨▓ ╨║╨╛╨╝╨░╨╜╨┤╨╜╨╛╨╣ ╤Б╤В╤А╨╛╨║╨╕
 
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
-; ОСНОВНОЙ ЦИКЛ ПРОГРАММЫ - ОБРАБОТКА СОБЫТИЙ                                                        |
+; ╨Ю╨б╨Э╨Ю╨Т╨Э╨Ю╨Щ ╨ж╨Ш╨Ъ╨Ы ╨Я╨а╨Ю╨У╨а╨Р╨Ь╨Ь╨л - ╨Ю╨С╨а╨Р╨С╨Ю╨в╨Ъ╨Р ╨б╨Ю╨С╨л╨в╨Ш╨Щ                                                        |
 ;----------------------------------------------------------------------------------------------------/
 red:
-    call draw_main			  ; вызываем перерисовку окна приложения
+    call draw_main                        ; ╨▓╤Л╨╖╤Л╨▓╨░╨╡╨╝ ╨┐╨╡╤А╨╡╤А╨╕╤Б╨╛╨▓╨║╤Г ╨╛╨║╨╜╨░ ╨┐╤А╨╕╨╗╨╛╨╢╨╡╨╜╨╕╤П
 still:
-    mcall   SF_WAIT_EVENT	  ; функция 10 - ждать события
-    cmp     eax,1			  ; перерисовать окно ?
-    je	    red 			  ; если да - на метку red
-    cmp     eax,2			  ; нажата клавиша ?
-    je	    key 			  ; если да - на key
-    cmp     eax,3			  ; нажата кнопка ?
-    je	    button			  ; если да - на button
-    cmp     eax,6			  ; событие от мыши вне окна
-    je	    mouse			  ; если да - на button
-    jmp     still			  ; если другое событие - в начало цикла
+    mcall   SF_WAIT_EVENT         ; ╤Д╤Г╨╜╨║╤Ж╨╕╤П 10 - ╨╢╨┤╨░╤В╤М ╤Б╨╛╨▒╤Л╤В╨╕╤П
+    cmp     eax,EV_REDRAW                 ; ╨┐╨╡╤А╨╡╤А╨╕╤Б╨╛╨▓╨░╤В╤М ╨╛╨║╨╜╨╛ ?
+    je      red                           ; ╨╡╤Б╨╗╨╕ ╨┤╨░ - ╨╜╨░ ╨╝╨╡╤В╨║╤Г red
+    cmp     eax,EV_KEY                    ; ╨╜╨░╨╢╨░╤В╨░ ╨║╨╗╨░╨▓╨╕╤И╨░ ?
+    je      key                           ; ╨╡╤Б╨╗╨╕ ╨┤╨░ - ╨╜╨░ key
+    cmp     eax,EV_BUTTON                 ; ╨╜╨░╨╢╨░╤В╨░ ╨║╨╜╨╛╨┐╨║╨░ ?
+    je      button                        ; ╨╡╤Б╨╗╨╕ ╨┤╨░ - ╨╜╨░ button
+    cmp     eax,EV_MOUSE                  ; ╤Б╨╛╨▒╤Л╤В╨╕╨╡ ╨╛╤В ╨╝╤Л╤И╨╕ ╨▓╨╜╨╡ ╨╛╨║╨╜╨░
+    je      mouse                         ; ╨╡╤Б╨╗╨╕ ╨┤╨░ - ╨╜╨░ button
+    jmp     still                         ; ╨╡╤Б╨╗╨╕ ╨┤╤А╤Г╨│╨╛╨╡ ╤Б╨╛╨▒╤Л╤В╨╕╨╡ - ╨▓ ╨╜╨░╤З╨░╨╗╨╛ ╤Ж╨╕╨║╨╗╨░
 ;end_still
 
-key:					  ; нажата клавиша на клавиатуре
-    mcall   SF_GET_KEY	  ; функция 2 - считать код символа (в ah) (тут в принципе не нужна)
-    jmp     still			  ; вернуться к началу цикла
+key:                                      ; ╨╜╨░╨╢╨░╤В╨░ ╨║╨╗╨░╨▓╨╕╤И╨░ ╨╜╨░ ╨║╨╗╨░╨▓╨╕╨░╤В╤Г╤А╨╡
+    mcall   SF_GET_KEY    ; ╤Д╤Г╨╜╨║╤Ж╨╕╤П 2 - ╤Б╤З╨╕╤В╨░╤В╤М ╨║╨╛╨┤ ╤Б╨╕╨╝╨▓╨╛╨╗╨░ (╨▓ ah) (╤В╤Г╤В ╨▓ ╨┐╤А╨╕╨╜╤Ж╨╕╨┐╨╡ ╨╜╨╡ ╨╜╤Г╨╢╨╜╨░)
+    jmp     still                         ; ╨▓╨╡╤А╨╜╤Г╤В╤М╤Б╤П ╨║ ╨╜╨░╤З╨░╨╗╤Г ╤Ж╨╕╨║╨╗╨░
 ;end_key
 
 mouse:
-    cmp     [renmode],2
-    jne     left
-    call    cyrcle_draw
-    jmp     center
-  left:
     mcall   SF_MOUSE_GET,SSF_BUTTON
+    cmp     [renmode],MODE_PIPET
+    jne     left
+    push    eax
+    call    draw_pipet_preview
+    pop     eax
+    cmp     al,0
+    je      still
+    mov     [color],edx
+    mov     [renmode],MODE_PALITRA        ; MODE_PIPET => MODE_PALITRA
+    jmp     red
+  left:
     cmp     al,1b
     jne     right
     mov     [mouse_f],1
@@ -136,114 +147,129 @@ mouse:
     jne     still
     mov     [mouse_f],2
     jmp     still
-  center:
-    mcall   SF_MOUSE_GET,SSF_BUTTON
-    cmp     al,100b
-    jne     still
-    mov     [mouse_f],3
-    mov     [color],edx
-    call    draw_result
-    jmp     still			  ; вернуться к началу цикла
 ;end_mouse
 
 button:
-    mcall   SF_GET_BUTTON	  ; 17 - получить идентификатор нажатой кнопки
-    cmp     ah, 1			  ; если нажата кнопка с номером 1,
-    jz	    bexit			  ; выходим
-  ;обработка кнопки Next
-    cmp     ah, 12			  ; если нажата кнопка NEXT
-    jne     next_bg			  ; выходим
-    inc     [pnext]			  ; увеличиваем при нажатии номер палитры
-    mov     [renmode],0 		  ; включаем цветовые схемы
-    mov     eax,[pnext] 		  ; заносим значение в еах
-    cmp     al,6			  ; сравниваем с заявленным количеством палитр
-    jne     next_redraw 		  ; если не больше максимума то на вызов отрисовки
-    xor     eax,eax			  ; иначе зануляем палитру на default
-    mov     [pnext],eax 		  ; и запоминаем что сбросили палитру на default
+    mcall   SF_GET_BUTTON         ; 17 - ╨┐╨╛╨╗╤Г╤З╨╕╤В╤М ╨╕╨┤╨╡╨╜╤В╨╕╤Д╨╕╨║╨░╤В╨╛╤А ╨╜╨░╨╢╨░╤В╨╛╨╣ ╨║╨╜╨╛╨┐╨║╨╕
+    cmp     ah, 1                         ; ╨╡╤Б╨╗╨╕ ╨╜╨░╨╢╨░╤В╨░ ╨║╨╜╨╛╨┐╨║╨░ ╤Б ╨╜╨╛╨╝╨╡╤А╨╛╨╝ 1,
+    jz      bexit                         ; ╨▓╤Л╤Е╨╛╨┤╨╕╨╝
+  ;╨╛╨▒╤А╨░╨▒╨╛╤В╨║╨░ ╨║╨╜╨╛╨┐╨║╨╕ Next
+    cmp     ah, BTN_NEXT                  ; ╨╡╤Б╨╗╨╕ ╨╜╨░╨╢╨░╤В╨░ ╨║╨╜╨╛╨┐╨║╨░ NEXT
+    jne     next_bg                       ; ╨▓╤Л╤Е╨╛╨┤╨╕╨╝
+    inc     [pnext]                       ; ╤Г╨▓╨╡╨╗╨╕╤З╨╕╨▓╨░╨╡╨╝ ╨┐╤А╨╕ ╨╜╨░╨╢╨░╤В╨╕╨╕ ╨╜╨╛╨╝╨╡╤А ╨┐╨░╨╗╨╕╤В╤А╤Л
+    mov     [renmode],MODE_PALITRA        ; ╨▓╨║╨╗╤О╤З╨░╨╡╨╝ ╤Ж╨▓╨╡╤В╨╛╨▓╤Л╨╡ ╤Б╤Е╨╡╨╝╤Л
+    mov     eax,[pnext]                   ; ╨╖╨░╨╜╨╛╤Б╨╕╨╝ ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ ╨▓ ╨╡╨░╤Е
+    cmp     al,6                          ; ╤Б╤А╨░╨▓╨╜╨╕╨▓╨░╨╡╨╝ ╤Б ╨╖╨░╤П╨▓╨╗╨╡╨╜╨╜╤Л╨╝ ╨║╨╛╨╗╨╕╤З╨╡╤Б╤В╨▓╨╛╨╝ ╨┐╨░╨╗╨╕╤В╤А
+    jne     next_redraw                   ; ╨╡╤Б╨╗╨╕ ╨╜╨╡ ╨▒╨╛╨╗╤М╤И╨╡ ╨╝╨░╨║╤Б╨╕╨╝╤Г╨╝╨░ ╤В╨╛ ╨╜╨░ ╨▓╤Л╨╖╨╛╨▓ ╨╛╤В╤А╨╕╤Б╨╛╨▓╨║╨╕
+    xor     eax,eax                       ; ╨╕╨╜╨░╤З╨╡ ╨╖╨░╨╜╤Г╨╗╤П╨╡╨╝ ╨┐╨░╨╗╨╕╤В╤А╤Г ╨╜╨░ default
+    mov     [pnext],eax                   ; ╨╕ ╨╖╨░╨┐╨╛╨╝╨╕╨╜╨░╨╡╨╝ ╤З╤В╨╛ ╤Б╨▒╤А╨╛╤Б╨╕╨╗╨╕ ╨┐╨░╨╗╨╕╤В╤А╤Г ╨╜╨░ default
   next_redraw:
-    call    draw_palitra		  ; РИСУЕМ ПАЛИТРУ
-    jmp     still			  ; Уходим на ожидание другого события
+    call    draw_palitra
+    jmp     still                         ; ╨г╤Е╨╛╨┤╨╕╨╝ ╨╜╨░ ╨╛╨╢╨╕╨┤╨░╨╜╨╕╨╡ ╨┤╤А╤Г╨│╨╛╨│╨╛ ╤Б╨╛╨▒╤Л╤В╨╕╤П
   next_bg:
-    cmp     ah, 14			  ; Кнопка BACKGROUND
-    jne     next_bg2			  ; если не нажата то выходим
-    call    set_background		  ; иначе устанавливаем фон
-    jmp     still			  ; и на ожидание события
+    cmp     ah, BTN_GRADIENT
+    jne     next_bg2
+    call    fill_background_gradient
+    jmp     still
   next_bg2:
-    cmp     ah, 16			  ; Кнопка BACKGROUND
-    jne     circle_bg			  ; если не нажата то выходим
-    call    set_background2		  ; иначе устанавливаем фон
-    jmp     still			  ; и на ожидание события
-  circle_bg:
-    cmp     ah, 15			  ; Кнопка Круговая палитра
-    jne     next_end			  ; если не нажата то выходим
-    mov     [renmode],2 		  ; включаем отрисовку круговой палитры
-    call    draw_palitra		  ; РИСУЕМ ПАЛИТРУ
-    jmp     still			  ; и на ожидание события
+    cmp     ah, BTN_NOISY
+    jne     next_bg3
+    call    fill_background_noisy
+    jmp     still
+  next_bg3:
+    cmp     ah, BTN_CHECKERS
+    jne     next_bg4
+    call    fill_background_checkers
+    jmp     still
+  next_bg4:
+    cmp     ah, BTN_SILK 
+    jne     activate_pipet
+    call    fill_background_silk
+    jmp     red
+  activate_pipet:
+    cmp     ah, BTN_PIPET
+    jne     next_end
+    mov     [renmode],MODE_PIPET          ; ╨▓╨║╨╗╤О╤З╨░╨╡╨╝ ╨╛╤В╤А╨╕╤Б╨╛╨▓╨║╤Г ╨║╤А╤Г╨│╨╛╨▓╨╛╨╣ ╨┐╨░╨╗╨╕╤В╤А╤Л
+    ;call    draw_palitra                  ; ╨а╨Ш╨б╨г╨Х╨Ь ╨Я╨Р╨Ы╨Ш╨в╨а╨г
+    jmp     red
   next_end:
-    cmp     ah,13			  ; COLOR SWAP
+    cmp     ah,BTN_COL_SWAP
     jne     color_swap_end
     push    [color2]
     push    [color]
     pop     [color2]
     pop     [color]
     call    draw_result
-    jmp     still			  ; И уходим на ожидание другого события
+    jmp     still                         ; ╨Ш ╤Г╤Е╨╛╨┤╨╕╨╝ ╨╜╨░ ╨╛╨╢╨╕╨┤╨░╨╜╨╕╨╡ ╨┤╤А╤Г╨│╨╛╨│╨╛ ╤Б╨╛╨▒╤Л╤В╨╕╤П
   color_swap_end:
-    cmp     ah, 7			  ; Проверяем нажата кнопка с ID=7
-    jne     color_button		  ; Если не нажата, то идём дальше
-    call    mouse_get			  ; Иначе включаем обработчик мыши, чтобы считать значение цвета с палитры
-    jmp     still			  ; И уходим на ожидание другого события
-  color_button: 			  ; РАСЧЁТ координат для ползунков RGBA
-    push    eax 			  ; запоминаем еах
-    call    mouse_local 		  ; получаем локальные координаты
-    mov     ebx,137			  ; нижняя граница ползунка по У
-    mov     ecx,[mouse_y]		  ; занисим в есх значение курсора по У
-    sub     ebx,ecx			  ; находим разность (т.е. куда смещается ползунок)
-    mov     ecx,3			  ; заносим в есх цифру 3 (256/3=85, где 85-высота ползунков)
-    imul    ecx,ebx			  ; находим истинный параметр цвета с учётом масштаба ползунка---+
-    pop     eax 			  ; восстанавливаем еах                                          :
-  ;red_button:                            ; Красный Трекбар                                              :
-    cmp     ah, 8			  ; ID=8                                                         :
-    jne     green_button		  ; если нет, то проверяем зелёный трекбар                       :
-    mov     [cred],cl			  ; иначе присваиваем значение, красному цвету спектра    <------+
-    call    set_spectr			  ; устанавливаем спектр
-    jmp     still			  ; Уходим на ожидание другого события
+    cmp     ah, BTN_PALITRA               ; ╨Я╤А╨╛╨▓╨╡╤А╤П╨╡╨╝ ╨╜╨░╨╢╨░╤В╨░ ╨║╨╜╨╛╨┐╨║╨░ ╤Б ID=7
+    jne     color_button                  ; ╨Х╤Б╨╗╨╕ ╨╜╨╡ ╨╜╨░╨╢╨░╤В╨░, ╤В╨╛ ╨╕╨┤╤С╨╝ ╨┤╨░╨╗╤М╤И╨╡
+    call    mouse_get                     ; ╨Ш╨╜╨░╤З╨╡ ╨▓╨║╨╗╤О╤З╨░╨╡╨╝ ╨╛╨▒╤А╨░╨▒╨╛╤В╤З╨╕╨║ ╨╝╤Л╤И╨╕, ╤З╤В╨╛╨▒╤Л ╤Б╤З╨╕╤В╨░╤В╤М ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ ╤Ж╨▓╨╡╤В╨░ ╤Б ╨┐╨░╨╗╨╕╤В╤А╤Л
+    jmp     still                         ; ╨Ш ╤Г╤Е╨╛╨┤╨╕╨╝ ╨╜╨░ ╨╛╨╢╨╕╨┤╨░╨╜╨╕╨╡ ╨┤╤А╤Г╨│╨╛╨│╨╛ ╤Б╨╛╨▒╤Л╤В╨╕╤П
+  color_button:                           ; ╨а╨Р╨б╨з╨Б╨в ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В ╨┤╨╗╤П ╨┐╨╛╨╗╨╖╤Г╨╜╨║╨╛╨▓ RGBA
+    push    eax                           ; ╨╖╨░╨┐╨╛╨╝╨╕╨╜╨░╨╡╨╝ ╨╡╨░╤Е
+    call    mouse_local                   ; ╨┐╨╛╨╗╤Г╤З╨░╨╡╨╝ ╨╗╨╛╨║╨░╨╗╤М╨╜╤Л╨╡ ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л
+    mov     ecx,[mouse_y]                 ; ╨╖╨░╨╜╨╛╤Б╨╕╨╝ ╨▓ ╨╡╤Б╤Е ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ ╨║╤Г╤А╤Б╨╛╤А╨░ ╨┐╨╛ ╨г
+    sub     ecx, SLIDER_Y                 ; ╨╜╨░╤Е╨╛╨┤╨╕╨╝ ╤А╨░╨╖╨╜╨╛╤Б╤В╤М (╤В.╨╡. ╨║╤Г╨┤╨░ ╤Б╨╝╨╡╤Й╨░╨╡╤В╤Б╤П ╨┐╨╛╨╗╨╖╤Г╨╜╨╛╨║)
+
+    ; ╨Ч╨░╤Й╨╕╤В╨░ ╨╛╤В ╨▓╤Л╤Е╨╛╨┤╨░ ╨╖╨░ ╨│╤А╨░╨╜╨╕╤Ж╤Л (0 <= ecx)
+    xor     eax, eax
+    cmp     ecx, eax
+    jge     .lo_ok
+    mov     ecx, eax
+  .lo_ok:
+
+    ; 2. ╨Я╤А╨╡╨▓╤А╨░╤Й╨░╨╡╨╝ ╨┐╨╕╨║╤Б╨╡╨╗╨╕ ╨▓ ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ ╤Ж╨▓╨╡╤В╨░ (0-255)
+    ; ╨Х╤Б╨╗╨╕ ╨┐╨╛╨╗╨╖╤Г╨╜╨╛╨║ 128 ╨┐╨╕╨║╤Б╨╡╨╗╨╡╨╣, ╨░ ╨┤╨╕╨░╨┐╨░╨╖╨╛╨╜ 256 (0-255), ╤В╨╛ ╨╜╤Г╨╢╨╜╨╛ ╤Г╨╝╨╜╨╛╨╢╨╕╤В╤М ╨╜╨░ 2
+    shl     ecx, 1
+
+    ; ╨Я╨╡╤А╨╡╨▓╨╛╤А╨░╤З╨╕╨▓╨░╨╡╨╝ ╤З╨╕╤Б╨╗╨╛
+    neg     ecx
+    add     ecx, 255
+
+    ; ╨Ч╨░╤Й╨╕╤В╨░ ╨╛╤В ╨╛╤В╤А╨╕╤Ж╨░╤В╨╡╨╗╤М╨╜╨╛╨│╨╛ ╨╖╨╜╨░╤З╨╡╨╜╨╕╤П (╨╕╤Б╨┐╤А╨░╨▓╨╗╤П╨╡╤В ╨┐╤А╤Л╨╢╨╛╨║ ╨▓ 255)
+    cmp     ecx, 0
+    jge     @f
+    xor     ecx, ecx                      ; ╨Х╤Б╨╗╨╕ ╤Г╤И╨╗╨╛ ╨▓ ╨╝╨╕╨╜╤Г╤Б, ╨┐╤А╨╕╨╜╤Г╨┤╨╕╤В╨╡╨╗╤М╨╜╨╛ ╨┤╨╡╨╗╨░╨╡╨╝ ╤З╨╕╤Б╤В╤Л╨╣ 0
+@@:
+    pop     eax   
+  red_button:                             ; ╨Ъ╤А╨░╤Б╨╜╤Л╨╣ ╨в╤А╨╡╨║╨▒╨░╤А                                              :
+    cmp     ah, 8                         ; ID=8                                                         :
+    jne     green_button                  ; ╨╡╤Б╨╗╨╕ ╨╜╨╡╤В, ╤В╨╛ ╨┐╤А╨╛╨▓╨╡╤А╤П╨╡╨╝ ╨╖╨╡╨╗╤С╨╜╤Л╨╣ ╤В╤А╨╡╨║╨▒╨░╤А                       :
+    mov     [cred],cl                     ; ╨╕╨╜╨░╤З╨╡ ╨┐╤А╨╕╤Б╨▓╨░╨╕╨▓╨░╨╡╨╝ ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡, ╨║╤А╨░╤Б╨╜╨╛╨╝╤Г ╤Ж╨▓╨╡╤В╤Г ╤Б╨┐╨╡╨║╤В╤А╨░    <------+
+    call    set_spectr                    ; ╤Г╤Б╤В╨░╨╜╨░╨▓╨╗╨╕╨▓╨░╨╡╨╝ ╤Б╨┐╨╡╨║╤В╤А
+    jmp     still                         ; ╨г╤Е╨╛╨┤╨╕╨╝ ╨╜╨░ ╨╛╨╢╨╕╨┤╨░╨╜╨╕╨╡ ╨┤╤А╤Г╨│╨╛╨│╨╛ ╤Б╨╛╨▒╤Л╤В╨╕╤П
   green_button:
     cmp     ah, 9
     jne     blue_button
     mov     [cgreen],cl
     call    set_spectr
-    jmp     still			  ; Уходим на ожидание другого события
+    jmp     still                         ; ╨г╤Е╨╛╨┤╨╕╨╝ ╨╜╨░ ╨╛╨╢╨╕╨┤╨░╨╜╨╕╨╡ ╨┤╤А╤Г╨│╨╛╨│╨╛ ╤Б╨╛╨▒╤Л╤В╨╕╤П
   blue_button:
     cmp     ah, 10
     jne     alpha_button
     mov     [cblue],cl
     call    set_spectr
-    jmp     still			  ; Уходим на ожидание другого события
+    jmp     still                         ; ╨г╤Е╨╛╨┤╨╕╨╝ ╨╜╨░ ╨╛╨╢╨╕╨┤╨░╨╜╨╕╨╡ ╨┤╤А╤Г╨│╨╛╨│╨╛ ╤Б╨╛╨▒╤Л╤В╨╕╤П
   alpha_button:
     cmp     ah, 11
     jne     still
     mov     [calpha],cl
     call    set_spectr
-    jmp     still			  ; Уходим на ожидание другого события
+    jmp     still                         ; ╨г╤Е╨╛╨┤╨╕╨╝ ╨╜╨░ ╨╛╨╢╨╕╨┤╨░╨╜╨╕╨╡ ╨┤╤А╤Г╨│╨╛╨│╨╛ ╤Б╨╛╨▒╤Л╤В╨╕╤П
   bexit:
-    mcall SF_TERMINATE_PROCESS ; иначе конец программы
+    mcall SF_TERMINATE_PROCESS ; ╨╕╨╜╨░╤З╨╡ ╨║╨╛╨╜╨╡╤Ж ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╤Л
 ;end_button
 
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
-; ГЛАВНЫЙ МОДУЛЬ ОТРИСОВКИ ОКНА И ЭЛЕМЕНТОВ ПРИЛОЖЕНИЯ                                               |
+; ╨У╨Ы╨Р╨Т╨Э╨л╨Щ ╨Ь╨Ю╨Ф╨г╨Ы╨м ╨Ю╨в╨а╨Ш╨б╨Ю╨Т╨Ъ╨Ш ╨Ю╨Ъ╨Э╨Р ╨Ш ╨н╨Ы╨Х╨Ь╨Х╨Э╨в╨Ю╨Т ╨Я╨а╨Ш╨Ы╨Ю╨Ц╨Х╨Э╨Ш╨п                                               |
 ;----------------------------------------------------------------------------------------------------/
 draw_main:
-    ; функция 12: означает, что будет рисоваться окно
     mcall   SF_REDRAW,SSF_BEGIN_DRAW
-
-    ; Функция 48 - стили отображения окон
     mcall   SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
-
-    ; Функция 48 - стили отображения окон
     mcall   SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT
-    mov     ecx,eax			  ; Запоминаем высоту скина
+    mov     ecx,eax                      ; ╨Ч╨░╨┐╨╛╨╝╨╕╨╜╨░╨╡╨╝ ╨▓╤Л╤Б╨╛╤В╤Г ╤Б╨║╨╕╨╜╨░
 
     mov     edi,[runmode]
     cmp     edi,2
@@ -256,256 +282,187 @@ draw_main:
     mov     edi,hidden
     jmp     set_title
   no_dialogmode:
-    mov     edi,title			  ; Заголовок окна
+    mov     edi,title                     ; ╨Ч╨░╨│╨╛╨╗╨╛╨▓╨╛╨║ ╨╛╨║╨╜╨░
   set_title:
 
-    xor     eax,eax			  ; Очищаем eax (mov eax,0) (Функция 0)
-    mov     ebx,WIN_X shl 16+WIN_W	  ; [координата по оси x]*65536 + [размер по оси x]
-    add     ecx,WIN_Y shl 16+WIN_H	  ; Высота скина + [координата по y]*65536 + [размер по y] (168 для версии 0.2)
-    mov     edx,[sc.work]		  ; Видимо стиль окна по дефолту
-    or	    edx,0x34000000		  ; Или окно со скином фиксированных размеров
+    xor     eax,eax                       ; ╨Ю╤З╨╕╤Й╨░╨╡╨╝ eax (mov eax,0) (╨д╤Г╨╜╨║╤Ж╨╕╤П 0)
+    mov     ebx,WIN_X shl 16+WIN_W        ; [╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╨░ ╨┐╨╛ ╨╛╤Б╨╕ x]*65536 + [╤А╨░╨╖╨╝╨╡╤А ╨┐╨╛ ╨╛╤Б╨╕ x]
+    add     ecx,WIN_Y shl 16+WIN_H        ; ╨Т╤Л╤Б╨╛╤В╨░ ╤Б╨║╨╕╨╜╨░ + [╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╨░ ╨┐╨╛ y]*65536 + [╤А╨░╨╖╨╝╨╡╤А ╨┐╨╛ y] (168 ╨┤╨╗╤П ╨▓╨╡╤А╤Б╨╕╨╕ 0.2)
+    mov     edx,[sc.work]                 ; ╨Т╨╕╨┤╨╕╨╝╨╛ ╤Б╤В╨╕╨╗╤М ╨╛╨║╨╜╨░ ╨┐╨╛ ╨┤╨╡╤Д╨╛╨╗╤В╤Г
+    or      edx,0x34000000                ; ╨Ш╨╗╨╕ ╨╛╨║╨╜╨╛ ╤Б╨╛ ╤Б╨║╨╕╨╜╨╛╨╝ ╤Д╨╕╨║╤Б╨╕╤А╨╛╨▓╨░╨╜╨╜╤Л╤Е ╤А╨░╨╖╨╝╨╡╤А╨╛╨▓
 
-    int     0x40			  ; Прерывание
+    int     0x40                          ; ╨Я╤А╨╡╤А╤Л╨▓╨░╨╜╨╕╨╡
 
 
-    call    draw_palitra		  ; РИСУЕМ ПАЛИТРУ
-    call    draw_result 		  ; РИСУЕМ РЕЗУЛЬТАТ
+    call    draw_palitra                  ; ╨а╨Ш╨б╨г╨Х╨Ь ╨Я╨Р╨Ы╨Ш╨в╨а╨г
+    call    draw_result                   ; ╨а╨Ш╨б╨г╨Х╨Ь ╨а╨Х╨Ч╨г╨Ы╨м╨в╨Р╨в
 
-    ; Функция 8 - определить/удалить кнопку
-    mcall   SF_DEFINE_BUTTON, (110 shl 16)+147, (9 shl 16)+147, 0x60000007
+    mcall   SF_DEFINE_BUTTON, <PALITRA_X,PALITRA_W*2+3>, <DRAWY,PALITRA_W*2+3>, BTN_PALITRA+BT_HIDE+BT_NOFRAME
 
     inc     edx
-    mcall   , (13 shl 16)+12, (51 shl 16)+85 ; Рисуем невидимую кнопку под слайдером red
-    add     ebx,23 shl 16		  ; Добавляем
-    inc     edx 			  ; ID = 9
-    int     0x40			  ; Рисуем невидимую кнопку под слайдером green
-    add     ebx,23 shl 16		  ; Добавляем
-    inc     edx 			  ; ID = 10
-    int     0x40			  ; Рисуем невидимую кнопку под слайдером blue
-    add     ebx,23 shl 16		  ; Добавляем
-    inc     edx 			  ; ID = 11
-    int     0x40			  ; Рисуем невидимую кнопку под слайдером alpha
+    mcall   , <14,22>, <47,150>           ; ╨а╨╕╤Б╤Г╨╡╨╝ ╨╜╨╡╨▓╨╕╨┤╨╕╨╝╤Г╤О ╨║╨╜╨╛╨┐╨║╤Г ╨┐╨╛╨┤ ╤Б╨╗╨░╨╣╨┤╨╡╤А╨╛╨╝ red
+    add     ebx,25*65536                  ; ╨Ф╨╛╨▒╨░╨▓╨╗╤П╨╡╨╝
+    inc     edx                           ; ID = 9
+    int     0x40                          ; ╨а╨╕╤Б╤Г╨╡╨╝ ╨╜╨╡╨▓╨╕╨┤╨╕╨╝╤Г╤О ╨║╨╜╨╛╨┐╨║╤Г ╨┐╨╛╨┤ ╤Б╨╗╨░╨╣╨┤╨╡╤А╨╛╨╝ green
+    add     ebx,25*65536                  ; ╨Ф╨╛╨▒╨░╨▓╨╗╤П╨╡╨╝
+    inc     edx                           ; ID = 10
+    int     0x40                          ; ╨а╨╕╤Б╤Г╨╡╨╝ ╨╜╨╡╨▓╨╕╨┤╨╕╨╝╤Г╤О ╨║╨╜╨╛╨┐╨║╤Г ╨┐╨╛╨┤ ╤Б╨╗╨░╨╣╨┤╨╡╤А╨╛╨╝ blue
+    add     ebx,25*65536                  ; ╨Ф╨╛╨▒╨░╨▓╨╗╤П╨╡╨╝
+    inc     edx                           ; ID = 11
+    int     0x40                          ; ╨а╨╕╤Б╤Г╨╡╨╝ ╨╜╨╡╨▓╨╕╨┤╨╕╨╝╤Г╤О ╨║╨╜╨╛╨┐╨║╤Г ╨┐╨╛╨┤ ╤Б╨╗╨░╨╣╨┤╨╡╤А╨╛╨╝ alpha
 
-    ; Функция 8 - определить/удалить кнопку (СМЕНА ЦВЕТА)
-    mcall   , (11 shl 16)+20, (12 shl 16)+20, 0x6000000D
+    ; ╨д╤Г╨╜╨║╤Ж╨╕╤П 8 - ╨╛╨┐╤А╨╡╨┤╨╡╨╗╨╕╤В╤М/╤Г╨┤╨░╨╗╨╕╤В╤М ╨║╨╜╨╛╨┐╨║╤Г (╨б╨Ь╨Х╨Э╨Р ╨ж╨Т╨Х╨в╨Р)
+    mcall   , <14,22>, <16,20>, BTN_COL_SWAP+BT_HIDE
 
     call    draw_bottom_panel
-    call    draw_left_panel
+    call    draw_right_panel
 
-    ; функция 12: означает, что будет рисоваться окно
     mcall SF_REDRAW,SSF_END_DRAW
     ret
 
-;#___________________________________________________________________________________________________
-;****************************************************************************************************|
-; БЛОК ВСПОМОГАТЕЛЬНЫХ ПРОЦЕДУР И ФУНКЦИЙ ПРИЛОЖЕНИЯ                                                 |
-;----------------------------------------------------------------------------------------------------/
+
+
+;#_______________________________________________________
+;*******************************************************|
+; ╨С╨Ы╨Ю╨Ъ ╨Т╨б╨Я╨Ю╨Ь╨Ю╨У╨Р╨в╨Х╨Ы╨м╨Э╨л╨е ╨Я╨а╨Ю╨ж╨Х╨Ф╨г╨а ╨Ш ╨д╨г╨Э╨Ъ╨ж╨Ш╨Щ ╨Я╨а╨Ш╨Ы╨Ю╨Ц╨Х╨Э╨Ш╨п    |
+;-------------------------------------------------------/
 
 
     ;------------------------------------------------------------------------------------------------+
-    draw_left_panel:			  ; Отрисовка боковой панели
+    draw_right_panel:
     ;.................................................................................................
     ; button_next_colorsheme
-    mcall   SF_DEFINE_BUTTON, (266 shl 16)+16, (9 shl 16)+16, 0x6000000C, [sc.work_button]
-    ; circle diagram
-    add     ecx,19 shl 16		  ; move rect
-    mov     edx,0x6000000F		  ; ID = 15
-    int     0x40			  ; call
+    mcall   SF_DEFINE_BUTTON, <ICONX,ICONS+3>, <DRAWY+1,ICONS+3>, BTN_NEXT+BT_HIDE
+    mcall , , <PIPETY,  ICONS+3>, BTN_PIPET+BT_HIDE
 
-    mcall   SF_PUT_IMAGE, panel, (16 shl 16)+149, (266 shl 16)+9
+    mov     ebx,[icons18bg]
+    add     ebx,ICONS*ICONS*4*53
+    mcall   SF_PUT_IMAGE_EXT, ebx, <ICONS,ICONS>, <ICONX+2,DRAWY+3>, 32, 0, 0
 
-    ;mov     eax,13                        ; draw rect
-    ;mov     ebx,266 shl 16+16             ; [x] + [size]
-    ;mov     ecx,9 shl 16+16               ; [y] + [size]
-    ;mov     edx,0x666666                  ; RGB
-    ;push    esi                           ; backup esi
-    ;mov     esi,8                         ; counter=8
-    ;draw_lpanel:                          ; loop label
-    ;  int     0x40                        ; call draw black rect
-    ;  add     ecx,19 shl 16               ; move rect
-    ;  dec     esi                         ; decrement counter
-    ;  cmp     esi,0                       ; if counter!=zero
-    ;  jne     draw_lpanel                 ; then goto label
-    ;  mov     esi,8                       ; else counter=8
-    ;  mov     ebx,267 shl 16+14           ; [x] + [size]
-    ;  mov     ecx,10 shl 16+14            ; [y] + [size]
-    ;  mov     edx,0xF3F3F3                ; RGB
-    ;draw_lpanel2:                         ; 2 loop label
-    ;  int     0x40                        ; call draw white rect
-    ;  add     ecx,19 shl 16               ; move rect
-    ;  dec     esi                         ; decrement counter
-    ;  cmp     esi,0                       ; if counter!=0
-    ;  jne     draw_lpanel2                ; then goto label2
-    ;pop     esi                           ; restore esi
-    ; draw_left_arrow for button_next_colorsheme
-    ;mov     eax,4                         ; Write string
-    ;mov     ebx,272 shl 16+13             ; [x] + [y]
-    ;mov     ecx,0x0                       ; RGB
-    ;mov     edx,larrow                    ; string pointer
-    ;mov     esi,1                         ; count symbol
-    ;int     0x40                          ; call
-    ;mov     eax,38                        ; draw line
-    ;mov     ebx,270 shl 16+272            ; [start x] + [end x]
-    ;mov     ecx,16 shl 16+16              ; [start y] + [end y]
-    ;mov     edx,0x0                       ; RGB
-    ;int     0x40                          ; call
-    ret 				  ; return
+    ; pipet
+    mov     ebx,[icons18bg]
+    
+    add     ebx,ICONS*ICONS*4*39
+    mov     edx,(ICONX+2)*65536+PIPETY+2
+    mcall   SF_PUT_IMAGE_EXT
+
+    stdcall DrawDeepRectangle, ICONX-1, DRAWY,   ICONS+5, ICONS+5, [sc.work_graph], [sc.work_graph]
+    stdcall DrawDeepRectangle, ICONX,   DRAWY+1, ICONS+3, ICONS+3, [sc.work_light], [sc.work_dark]
+
+    stdcall DrawDeepRectangle, ICONX-1, PIPETY-1, ICONS+5, ICONS+5, [sc.work_graph], [sc.work_graph]
+    stdcall DrawDeepRectangle, ICONX,   PIPETY,   ICONS+3, ICONS+3, [sc.work_light], [sc.work_dark]
+    ;stdcall DrawDeepRectangle, ICONX+1, DRAWY+175, ICONS+1, ICONS+1, 0xFFFfff, 0xFFFfff
+
+    ret
     ;.................................................................................................
 
 
     ;------------------------------------------------------------------------------------------------+
-    draw_bottom_panel:			  ; Отрисовка нижней панели
+    draw_bottom_panel:                    ; ╨Ю╤В╤А╨╕╤Б╨╛╨▓╨║╨░ ╨╜╨╕╨╢╨╜╨╡╨╣ ╨┐╨░╨╜╨╡╨╗╨╕
     ;.................................................................................................
-    mcall   SF_DEFINE_BUTTON, (92 shl 16)+90, (169 shl 16)+16, 14, [sc.work_button]
+    mcall   SF_DEFINE_BUTTON, <PALITRA_X,95>, <WIN_H-67,24>, BTN_GRADIENT, [sc.work_button]
 
-    add     ebx, 100 shl 16
-    add     edx, 2
+    add     ebx, (PALITRA_W+4) shl 16
+    mov     edx, BTN_NOISY
+    int     0x40
+
+    mcall   , <PALITRA_X,95>, <WIN_H-37,24>, BTN_CHECKERS
+
+    add     ebx, (PALITRA_W+4) shl 16
+    mov     edx, BTN_SILK 
     int     0x40
 
     ; Write string
-    mov     ecx,[sc.work_text]		  ; RGB
-    or	    ecx, 1 shl 31
-    mcall   SF_DRAW_TEXT, (113 - 104) shl 16+174, ,bground
+    mov     ecx,[sc.work_text]
+    add     ecx, 0x90000000
+    mcall   SF_DRAW_TEXT, <7, WIN_H-62>, ,bground
 
     mov     ecx, [sc.work_button_text]
-    or	    ecx, 1 shl 31
+    add     ecx, 0x90000000
+    mcall   SF_DRAW_TEXT, <PALITRA_X+16,  WIN_H-62>, , lbl_grad
+    mcall   SF_DRAW_TEXT, <PALITRA_X+129, WIN_H-62>, , lbl_noisy
+    mcall   SF_DRAW_TEXT, <PALITRA_X+16,  WIN_H-32>, , lbl_check
+    mcall   SF_DRAW_TEXT, <PALITRA_X+129, WIN_H-32>, , lbl_silk
 
-    add     ebx, 106 shl 16
-    mov     edx, bground1
-    int     0x40
-
-    add     ebx, 107 shl 16
-    mov     edx, bground2
-    int     0x40
-
-    mcall SF_DRAW_LINE, 4 shl 16+282, 163 shl 16+163, 0x00666666
-    ret 				  ; return
+    mcall SF_DRAW_LINE, <8, WIN_W-18>, <WIN_H-80, WIN_H-80>, [sc.work_graph]
+    ret
     ;.................................................................................................
 
 mouse_global:
     ;.................................................................................................
-    ; Получаем координаты мыши
+    ; ╨Я╨╛╨╗╤Г╤З╨░╨╡╨╝ ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л ╨╝╤Л╤И╨╕
     ;.................................................................................................
     mcall   SF_MOUSE_GET,SSF_SCREEN_POSITION
-    ; eax = x*65536 + y, (x,y)=координаты курсора мыши
-    mov     ecx,eax			  ;
-    shr     ecx,16			  ; ecx = x+1
-    movzx   edx,ax			  ; edx = y+1
-    dec     ecx 			  ; ecx = x
-    dec     edx 			  ; edx = y
-    mov     [mouse_x],ecx		  ; mouse_x = x
-    mov     [mouse_y],edx		  ; mouse_y = y
-    ret 				  ; Возвращаем управление
+    ; eax = x*65536 + y, (x,y)=╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л ╨║╤Г╤А╤Б╨╛╤А╨░ ╨╝╤Л╤И╨╕
+    mov     ecx,eax                       ;
+    shr     ecx,16                        ; ecx = x+1
+    movzx   edx,ax                        ; edx = y+1
+    dec     ecx                           ; ecx = x
+    dec     edx                           ; edx = y
+    mov     [mouse_x],ecx                 ; mouse_x = x
+    mov     [mouse_y],edx                 ; mouse_y = y
+    ret                                   ; ╨Т╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╨╝ ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡
 ;end_mouse_global
 
 mouse_local:
     ;.................................................................................................
-    ; Получаем координаты мыши относительно окна
+    ; ╨Я╨╛╨╗╤Г╤З╨░╨╡╨╝ ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л ╨╝╤Л╤И╨╕ ╨╛╤В╨╜╨╛╤Б╨╕╤В╨╡╨╗╤М╨╜╨╛ ╨╛╨║╨╜╨░
     ;.................................................................................................
     mcall   SF_MOUSE_GET,SSF_WINDOW_POSITION
-	; eax = x*65536 + y, (x,y)=координаты курсора мыши
-    mov     ecx,eax			  ;
-    shr     ecx,16			  ; ecx = x+1
-    movzx   edx,ax			  ; edx = y+1
-    dec     ecx 			  ; ecx = x
-    dec     edx 			  ; edx = y
-    mov     [mouse_x],ecx		  ; mouse_x = x
-    mov     [mouse_y],edx		  ; mouse_y = y
-    ret 				  ; Возвращаем управление
+        ; eax = x*65536 + y, (x,y)=╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л ╨║╤Г╤А╤Б╨╛╤А╨░ ╨╝╤Л╤И╨╕
+    mov     ecx,eax                       ;
+    shr     ecx,16                        ; ecx = x+1
+    movzx   edx,ax                        ; edx = y+1
+    dec     ecx                           ; ecx = x
+    dec     edx                           ; edx = y
+    mov     [mouse_x],ecx                 ; mouse_x = x
+    mov     [mouse_y],edx                 ; mouse_y = y
+    ret                                   ; ╨Т╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╨╝ ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡
 ;end_mouse_local
-
-set_background:
-    ;.................................................................................................
-    ; Устанавливает фон рабочего стола
-    ;.................................................................................................
-    ; Функция 15 - работа с фоновой графикой
-    ; Подфункция 4 - установить режим отрисовки фона.
-    ; Режим отрисовки - замостить (1), растянуть (2)
-    mcall   SF_BACKGROUND_SET,SSF_MODE_BG,2
-
-    ; Функция 15 - работа с фоновой графикой
-    ; Подфункция 1 - установить размер фонового изображения.
-    mcall   SF_BACKGROUND_SET,SSF_SIZE_BG,2,2
-
-    mov     eax,[color]
-    mov     [cm+0],al
-    mov     [cm+9],al
-    shr     eax,8
-    mov     [cm+1],al
-    mov     [cm+10],al
-    shr     eax,8
-    mov     [cm+2],al
-    mov     [cm+11],al
-
-    mov     eax,[color2]
-    mov     [cm+3],al
-    mov     [cm+6],al
-    shr     eax,8
-    mov     [cm+4],al
-    mov     [cm+7],al
-    shr     eax,8
-    mov     [cm+5],al
-    mov     [cm+8],al
-
-    ; Функция 15 - работа с фоновой графикой
-    ; Подфункция 5 - поместить блок пикселей на фон.
-    ; - Указатель на данные в формате BBGGRRBBGGRR
-    ; - Cмещение в данных фонового изображения
-    ; - Размер данных в байтах = 3 * число пикселей
-    mcall   SF_BACKGROUND_SET,SSF_IMAGE_BG,cm,0,3*4
-
-    ; Функция 15 - работа с фоновой графикой
-    ; Подфункция 3 - перерисовать фон.
-    mcall   SF_BACKGROUND_SET,SSF_REDRAW_BG
-
-    stdcall save_eskin_ini, 'H '
-
-    ret
-;end_set_background
 
 desktop_get:
     ;.................................................................................................
-    ; Определяем ширину экрана
+    ; ╨Ю╨┐╤А╨╡╨┤╨╡╨╗╤П╨╡╨╝ ╤И╨╕╤А╨╕╨╜╤Г ╤Н╨║╤А╨░╨╜╨░
     ;.................................................................................................
-    ; Определяем ширину экрана (eax = [xsize]*65536 + [ysize])
-    mcall   SF_GET_SCREEN_SIZE ; xsize = размер по горизонтали - 1
-    mov     ebx,eax			  ;
-    shr     ebx,16			  ; ebx = xsize-1
-    movzx   edx,ax			  ; edx = ysize-1 (лишний код)
-    inc     ebx 			  ; ebx = xsize
-    inc     edx 			  ; edx = ysize (лишний код)
+    ; ╨Ю╨┐╤А╨╡╨┤╨╡╨╗╤П╨╡╨╝ ╤И╨╕╤А╨╕╨╜╤Г ╤Н╨║╤А╨░╨╜╨░ (eax = [xsize]*65536 + [ysize])
+    mcall   SF_GET_SCREEN_SIZE ; xsize = ╤А╨░╨╖╨╝╨╡╤А ╨┐╨╛ ╨│╨╛╤А╨╕╨╖╨╛╨╜╤В╨░╨╗╨╕ - 1
+    mov     ebx,eax                       ;
+    shr     ebx,16                        ; ebx = xsize-1
+    movzx   edx,ax                        ; edx = ysize-1 (╨╗╨╕╤И╨╜╨╕╨╣ ╨║╨╛╨┤)
+    inc     ebx                           ; ebx = xsize
+    inc     edx                           ; edx = ysize (╨╗╨╕╤И╨╜╨╕╨╣ ╨║╨╛╨┤)
     mov     [desctop_w],ebx
     mov     [desctop_h],edx
     ret
 ;end_desktop_get
 
 mouse_get:
-    mov     esi,2			  ; КОСТЫЛЬ: флаг для избежания зацикливания
+    mov     esi,2                         ; ╨Ъ╨Ю╨б╨в╨л╨Ы╨м: ╤Д╨╗╨░╨│ ╨┤╨╗╤П ╨╕╨╖╨▒╨╡╨╢╨░╨╜╨╕╤П ╨╖╨░╤Ж╨╕╨║╨╗╨╕╨▓╨░╨╜╨╕╤П
     call    mouse_global
     call    desktop_get
-    re_mouse_loop:			  ; КОСТЫЛЬ: метка для возврата если попали в сетку
+    re_mouse_loop:                        ; ╨Ъ╨Ю╨б╨в╨л╨Ы╨м: ╨╝╨╡╤В╨║╨░ ╨┤╨╗╤П ╨▓╨╛╨╖╨▓╤А╨░╤В╨░ ╨╡╤Б╨╗╨╕ ╨┐╨╛╨┐╨░╨╗╨╕ ╨▓ ╤Б╨╡╤В╨║╤Г
       mov     ebx,[desctop_w]
-      imul    ebx,[mouse_y]		  ; ebx = y*xsize
-      add     ebx,[mouse_x]		  ; ebx = y*xsize+x
+      imul    ebx,[mouse_y]               ; ebx = y*xsize
+      add     ebx,[mouse_x]               ; ebx = y*xsize+x
 
       ;.................................................................................................
-      ; Берем цвет с палитры в переменную
+      ; ╨С╨╡╤А╨╡╨╝ ╤Ж╨▓╨╡╤В ╤Б ╨┐╨░╨╗╨╕╤В╤А╤Л ╨▓ ╨┐╨╡╤А╨╡╨╝╨╡╨╜╨╜╤Г╤О
       ;.................................................................................................
-       ;mov     ebx,ecx                    ;; ebx = y*xsize+x (лишний код)
-      mcall   SF_GET_PIXEL    ; Получаем цвет в eax
-      cmp     eax,[sc.work]		  ; Сравниваем с фоном приложения
-      je      mouse_err 		  ; Если это он - то ничего не делаем
-      cmp     eax,0x222222		  ; Сравниваем с цветом сетки
-      je      mouse_err 		  ; Если это он - то ничего не делаем
-      jmp     mouse_set 		  ; КОСТЫЛЬ: прыгаем чтобы не брать цвет сетки
-    mouse_err:				  ; КОСТЫЛЬ: если попали в сетку или фон
-      inc     [mouse_y] 		  ; КОСТЫЛЬ: смещаем по диагонали сначала по х
-      inc     [mouse_x] 		  ; КОСТЫЛЬ: смещаем по диагонали потом по у
-      dec     esi			  ; КОСТЫЛЬ: Уменьшаем флаг
-      cmp     esi,0			  ; КОСТЫЛЬ: Сравниваем с нулем
-    jz	      mouse_exit		  ; КОСТЫЛЬ: Если ноль то сделали всё что могли
-    jmp    re_mouse_loop		  ; КОСТЫЛЬ: Если не ноль то попробуем взять соселний пиксель
-    mouse_set:				  ; Иначе запоминаем новый цвет
+       ;mov     ebx,ecx                    ;; ebx = y*xsize+x (╨╗╨╕╤И╨╜╨╕╨╣ ╨║╨╛╨┤)
+      mcall   SF_GET_PIXEL    ; ╨Я╨╛╨╗╤Г╤З╨░╨╡╨╝ ╤Ж╨▓╨╡╤В ╨▓ eax
+      cmp     eax,[sc.work]               ; ╨б╤А╨░╨▓╨╜╨╕╨▓╨░╨╡╨╝ ╤Б ╤Д╨╛╨╜╨╛╨╝ ╨┐╤А╨╕╨╗╨╛╨╢╨╡╨╜╨╕╤П
+      je      mouse_err                   ; ╨Х╤Б╨╗╨╕ ╤Н╤В╨╛ ╨╛╨╜ - ╤В╨╛ ╨╜╨╕╤З╨╡╨│╨╛ ╨╜╨╡ ╨┤╨╡╨╗╨░╨╡╨╝
+      cmp     eax,0x222222                ; ╨б╤А╨░╨▓╨╜╨╕╨▓╨░╨╡╨╝ ╤Б ╤Ж╨▓╨╡╤В╨╛╨╝ ╤Б╨╡╤В╨║╨╕
+      je      mouse_err                   ; ╨Х╤Б╨╗╨╕ ╤Н╤В╨╛ ╨╛╨╜ - ╤В╨╛ ╨╜╨╕╤З╨╡╨│╨╛ ╨╜╨╡ ╨┤╨╡╨╗╨░╨╡╨╝
+      jmp     mouse_set                   ; ╨Ъ╨Ю╨б╨в╨л╨Ы╨м: ╨┐╤А╤Л╨│╨░╨╡╨╝ ╤З╤В╨╛╨▒╤Л ╨╜╨╡ ╨▒╤А╨░╤В╤М ╤Ж╨▓╨╡╤В ╤Б╨╡╤В╨║╨╕
+    mouse_err:                            ; ╨Ъ╨Ю╨б╨в╨л╨Ы╨м: ╨╡╤Б╨╗╨╕ ╨┐╨╛╨┐╨░╨╗╨╕ ╨▓ ╤Б╨╡╤В╨║╤Г ╨╕╨╗╨╕ ╤Д╨╛╨╜
+      inc     [mouse_y]                   ; ╨Ъ╨Ю╨б╨в╨л╨Ы╨м: ╤Б╨╝╨╡╤Й╨░╨╡╨╝ ╨┐╨╛ ╨┤╨╕╨░╨│╨╛╨╜╨░╨╗╨╕ ╤Б╨╜╨░╤З╨░╨╗╨░ ╨┐╨╛ ╤Е
+      inc     [mouse_x]                   ; ╨Ъ╨Ю╨б╨в╨л╨Ы╨м: ╤Б╨╝╨╡╤Й╨░╨╡╨╝ ╨┐╨╛ ╨┤╨╕╨░╨│╨╛╨╜╨░╨╗╨╕ ╨┐╨╛╤В╨╛╨╝ ╨┐╨╛ ╤Г
+      dec     esi                         ; ╨Ъ╨Ю╨б╨в╨л╨Ы╨м: ╨г╨╝╨╡╨╜╤М╤И╨░╨╡╨╝ ╤Д╨╗╨░╨│
+      cmp     esi,0                       ; ╨Ъ╨Ю╨б╨в╨л╨Ы╨м: ╨б╤А╨░╨▓╨╜╨╕╨▓╨░╨╡╨╝ ╤Б ╨╜╤Г╨╗╨╡╨╝
+    jz        mouse_exit                  ; ╨Ъ╨Ю╨б╨в╨л╨Ы╨м: ╨Х╤Б╨╗╨╕ ╨╜╨╛╨╗╤М ╤В╨╛ ╤Б╨┤╨╡╨╗╨░╨╗╨╕ ╨▓╤Б╤С ╤З╤В╨╛ ╨╝╨╛╨│╨╗╨╕
+    jmp    re_mouse_loop                  ; ╨Ъ╨Ю╨б╨в╨л╨Ы╨м: ╨Х╤Б╨╗╨╕ ╨╜╨╡ ╨╜╨╛╨╗╤М ╤В╨╛ ╨┐╨╛╨┐╤А╨╛╨▒╤Г╨╡╨╝ ╨▓╨╖╤П╤В╤М ╤Б╨╛╤Б╨╡╨┤╨╜╨╕╨╣ ╨┐╨╕╨║╤Б╨╡╨╗╤М
+    mouse_set:                            ; ╨Ш╨╜╨░╤З╨╡ ╨╖╨░╨┐╨╛╨╝╨╕╨╜╨░╨╡╨╝ ╨╜╨╛╨▓╤Л╨╣ ╤Ж╨▓╨╡╤В
       cmp     [mouse_f],1
       jne     was_right
       mov     [color],eax
@@ -515,423 +472,23 @@ mouse_get:
       cmp     [mouse_f],2
       jne     mouse_exit
       mov     [color2],eax
-      call    draw_result		    ; Выводим результат
+      call    draw_result                   ; ╨Т╤Л╨▓╨╛╨┤╨╕╨╝ ╤А╨╡╨╖╤Г╨╗╤М╤В╨░╤В
     mouse_exit:
-    ret 				  ; Возвращаем управление
+    ret                                   ; ╨Т╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╨╝ ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡
 ;end_mouse_get----------------------------------------------------------------------------------------
 
-draw_palitra:
-    ; Функция 13 - нарисовать прямоугольник
-    mcall   SF_DRAW_RECT, 110 shl 16+148, 9 shl 16+148, [sc.work]
-
-    cmp     [renmode],2
-    je	    cyrcle_draw
-    ;cmp     [renmode],1
-    ;je      picker_draw
-    cmp     [renmode],0
-    je	    sheme_draw
-    ret
-
-    ;.................................................................................................
-    ; Отрисовка круговой диаграммы
-    ;.................................................................................................
-    cyrcle_draw:
-    ;mov     eax,13
-    ;mov     edx,0x666666
-    ;mov     ebx,108*65536+152
-    ;mov     ecx,125*65536+33
-    ;mcall
-    ;mov     edx,0xF3F3F3
-    ;mov     ebx,109*65536+150
-    ;mov     ecx,126*65536+31
-    ;mcall
-
-    ;mov     eax,4                         ; 4 - вывести строку текста в окно
-    ;mov     ebx,115 shl 16+131            ; [координата по оси x]*65536 + [координата по оси y]
-    ;mov     ecx,0x666666                  ; 0xX0RRGGBB (RR, GG, BB задают цвет текста)
-    ;mov     edx,hint                      ; указатель на начало строки
-    ;mov     esi,24                        ; выводить esi символов
-    ;mcall
-    ;mov     ebx,125 shl 16+144            ; [координата по оси x]*65536 + [координата по оси y]
-    ;mov     edx,hint2                     ; указатель на начало строки
-    ;mov     esi,21                        ; выводить esi символов
-    ;mcall
-
-    ;mov     edx,[color]
-    ;mov     ebx,109*65536+150
-    ;mov     ecx, 10*65536+150
-    ;mcall
-    call    mouse_local 		  ; получаем координаты мыши относительно окна
-    mov     ecx, [mouse_x]		  ; заносим в регистр
-    mov     edx, [mouse_y]		  ; заносим в регистр
-    cmp     ecx, WIN_W-10
-    jg	    cyrcle_draw_2
-    cmp     edx, WIN_H
-    jle     end_cyrcle_draw
-
-    cyrcle_draw_2:
-	mcall	SF_SLEEP,10
-    call    desktop_get
-    call    mouse_global
-
-    mov     ebx,112*65536+11
-    mov     esi,0			  ; counter=8
-    circle_loop:
-      mov     ecx, 10*65536+11
-      mov     edi,0
-      circle_loop2:
-	call	circle_pixel_read
-	mcall   SF_DRAW_RECT
-	add	ecx,11 shl 16
-	inc	edi
-	cmp	edi,13
-	jne	circle_loop2
-
-      add     ebx,11 shl 16
-      inc     esi
-      cmp     esi,13
-      jne     circle_loop
-
-    mcall   SF_DRAW_RECT, 177*65536+13, 76*65536+13, 0
-    mov     ecx, [mouse_x]
-    mov     edx, [mouse_y]
-    inc     ecx
-    inc     edx
-    mov     ebx, edx
-    imul    ebx, [desctop_w]
-    add     ebx, ecx
-    mcall   SF_GET_PIXEL
-    mov     edx,eax
-    mcall   SF_DRAW_RECT, 178*65536+11, 77*65536+11
-    ret
-    end_cyrcle_draw:
-    mcall   SF_DRAW_RECT, 111*65536+145, 9*65536+145, 0x666666
-    ret
-
-    circle_pixel_read:
-    push    ecx ebx
-    mov     ecx, [mouse_x]
-    mov     edx, [mouse_y]
-    inc     ecx
-    add     ecx, esi
-    cmp     ecx, 6
-    jl	    _cpr_exit
-    sub     ecx, 6
-    inc     edx
-    add     edx, edi
-    cmp     edx, 6
-    jl	    _cpr_exit
-    sub     edx, 6
-
-    mov     ebx, edx
-    imul    ebx, [desctop_w]
-    add     ebx, ecx
-    mcall   SF_GET_PIXEL
-    mov     edx,eax
-    pop     ebx ecx
-    ret
-
-    _cpr_exit:
-    xor     edx,edx
-    pop     ebx ecx
-    ret
-
-    ;picker_draw:
-    ;ret
-
-    ;.................................................................................................
-    ; Отрисовка фона под кнопки
-    ;.................................................................................................
-    sheme_draw:
-    mov     eax,SF_DRAW_RECT  ; Функция 13 - нарисовать прямоугольник
-    mov     edx,0x222222		  ; цвет
-    mov     ecx,9 shl 16+73		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    mov     esi,2			  ; Счетчик линий подложек
-    re_draw:
-    mov     ebx,110 shl 16+73		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    mov     edi,2			  ; Счетчик количества подложек
-    for_fon_loop:
-      int     0x40			  ; Прерывание
-      add     ebx,75 shl 16		  ; Смещаем положение линии по х
-      dec     edi			  ; Уменьшаем счетчик кнопок
-      cmp     edi,0			  ; Сравниваем с нулем
-    jnz     for_fon_loop		  ; Если не ноль то в начало цикла
-    dec     esi 			  ; Уменьшаем его
-    cmp     esi,0			  ; Сравниваем с нулем
-    mov     ecx,84 shl 16+73		  ; Начальные координаты по y [к-та y]*65536 + [размер]
-    jnz     re_draw			  ; Если не ноль то в начало цикла
-
-    ;.................................................................................................
-    ; Отрисовка кнопок по циклу
-    ;.................................................................................................
-    mov     eax,SF_DRAW_RECT  ; Функция 13 - нарисовать прямоугольник
-    mov     edx,0x0FFFFFFF		  ; цвет
-    mov     esi,4			  ; Счетчик количества абзацев (#4,8)
-    mov     ebx,99 shl 16+8		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    for_abz:
-      ;;push    esi                       ; Сохраняем значение счетчика линий в стек
-      cmp     esi,2
-      jne     x2_line
-      mov     ebx,99 shl 16+8
-      x2_line:
-      add     ebx,3 shl 16		  ; Смещаем положение линии по x
-      mov     edi,8			  ; Счетчик количества кнопок в строке
-      for_stolbik:
-	push	edi			  ; Сохраняем значение счетчика линий в стек
-	mov	edi,8			  ; Счетчик количества кнопок в строке
-	mov	ecx,  1 shl 16+8	  ; Начальные координаты по y [к-та y]*65536 + [размер]
-	cmp	esi,2
-	jg	y2_line 		  ; Если больше 4 то игнорим
-	mov	ecx,76 shl 16+8
-	y2_line:
-	add	ebx,9 shl 16		  ; Смещаем положение линии по x
-	for_loop:
-	  add	  ecx,9 shl 16		  ; Смещаем положение линии по y
-	  int	  0x40			  ; Прерывание
-	  call	  sub_red
-	  dec	  edi			  ; Уменьшаем счетчик кнопок
-	  cmp	  edi,0 		  ; Сравниваем с нулем
-	  jnz	  for_loop		  ; Если не ноль то в начало цикла
-      call    sub_green
-      pop     edi			  ; Иначе восстанавливаем счетчик линий
-      dec     edi			  ; Уменьшаем его
-      cmp     edi,0			  ; Сравниваем с нулем
-      jnz     for_stolbik		  ; Если не ноль то в начало цикла
-    call    sub_blue
-    ;;pop     esi                         ; Иначе восстанавливаем счетчик линий
-    dec     esi 			  ; Уменьшаем его
-    cmp     esi,0			  ; Сравниваем с нулем
-    jnz     for_abz			  ; Если не ноль то в начало цикла
-    ret 				  ; Возвращаем управление
-;end_draw_palitra-------------------------------------------------------------------------------------
-
-
-sub_red:
-    ;.................................................................................................
-    ; Расчёт смещений красного цвета в генерации цвета палитры
-    ;.................................................................................................
-    push    eax
-    mov     eax,[pnext]
-  ;sub_red_0                              ; palitra
-    cmp     al,0
-    jne     sub_red_1
-    sub     edx,0x40
-    jmp     sub_red_e
-  sub_red_1:				  ; random
-    cmp     al,1
-    jne     sub_red_2
-    sub     edx,0x20
-    jmp     sub_red_e
-  sub_red_2:				  ; gree
-    cmp     al,2
-    jne     sub_red_3
-    sub     edx,0x010101
-    jmp     sub_red_e
-  sub_red_3:				  ; red
-    cmp     al,3
-    jne     sub_red_4
-    sub     edx,0x0101
-    jmp     sub_red_e
-  sub_red_4:				  ; green
-    cmp     al,4
-    jne     sub_red_5
-    sub     edx,0x010001
-    jmp     sub_red_e
-  sub_red_5:				  ; blue
-    cmp     al,5
-    jne     sub_red_e
-    sub     edx,0x010100
-    jmp     sub_red_e
-  sub_red_e:
-    pop     eax
-    ret 				  ; Возвращаем управление
-;end_sub_red------------------------------------------------------------------------------------------
-
-sub_green:
-    ;.................................................................................................
-    ; Расчёт смещений красного цвета в генерации цвета палитры
-    ;.................................................................................................
-    push    eax
-    mov     eax,[pnext]
-  ;sub_green_0
-    cmp     al,0
-    jne     sub_green_1
-    sub     edx,0x4000
-    jmp     sub_green_e
-  sub_green_1:
-    cmp     al,1
-    jne     sub_green_e
-    sub     edx,0x2000
-    ;jmp     sub_green_e
-  sub_green_e:
-    pop     eax
-    ret 				  ; Возвращаем управление
-;end_sub_green----------------------------------------------------------------------------------------
-
-
-sub_blue:
-    ;.................................................................................................
-    ; Расчёт смещений красного цвета в генерации цвета палитры
-    ;.................................................................................................
-    push    eax
-    mov     eax,[pnext]
-  ;sub_blue_0
-    cmp     al,0
-    jne     sub_blue_1
-    sub     edx,0x600000
-    jmp     sub_blue_e
-  sub_blue_1:
-    cmp     al,1
-    jne     sub_blue_e
-    sub     edx,0x400000
-    ;jmp     sub_blue_e
-  sub_blue_e:
-    pop     eax
-    ret 				  ; Возвращаем управление
-;end_sub_blue-----------------------------------------------------------------------------------------
-
-draw_result:
-    ;.................................................................................................
-    ; Большая рамка вывода результата
-    ;.................................................................................................
-    mcall   SF_DRAW_RECT, 4 shl 16+98, 9 shl 16+148, 0x00666666
-    mcall   , 5 shl 16+96, 10 shl 16+146, 0x00F3F3F3
-
-    ;.................................................................................................
-    ; Отрисовка результата цвета в hex color2
-    ;.................................................................................................
-    mcall   , 16 shl 16+15, 16 shl 16+15, 0x222222
-    ; color 2 - draw color
-    mcall   , 17 shl 16+13, 17 shl 16+13, [color2]
-    ; color 1 - draw fringle
-    mcall   , 11 shl 16+15, 12 shl 16+15, 0x222222
-    ; value - draw fringle
-    mcall   , 34 shl 16+62, 16 shl 16+15
-
-    ; color 2 - draw color
-    mcall   , 12 shl 16+13, 13 shl 16+13, [color]
-    ; value - draw background
-    mcall   , 35 shl 16+60, 17 shl 16+13, 0xFFFFFF
-
-    ; Функция 47 - вывод числа в окно
-    ;ebx - параметры преобразования числа в текст (HEX)
-    mcall   SF_DRAW_NUMBER, 256+8 shl 16, [color], (45 shl 16)+20,, 0
-
-    ; функция 4: написать текст в окне
-    ; edx - рисуем '#'
-    ; esi - длина текста в байтах
-    mcall   SF_DRAW_TEXT,38*65536+20,0,hex,1
-
-    ;.................................................................................................
-    ; Отрисовка r g b значений
-    ;.................................................................................................
-    call    get_spectr
-
-    movzx   eax,[cred]			  ; красный
-    mov     ebx,9*65536+142		  ; [x начальный] *65536 + [y начальный]
-    call    draw_value			  ; выводим результат
-
-    movzx   eax,[cgreen]		  ; зеленый
-    mov     ebx,32*65536+142		  ; [x начальный] *65536 + [y начальный]
-    call    draw_value			  ; выводим результат
-
-    movzx   eax,[cblue] 		  ; синий
-    mov     ebx,55*65536+142		  ; [x начальный] *65536 + [y начальный]
-    call    draw_value			  ; выводим результат
-
-    movzx   eax,[calpha]		  ; альфа
-    mov     ebx,78*65536+142		  ; [x начальный] *65536 + [y начальный]
-    call    draw_value			  ; выводим результат
-
-    ;.................................................................................................
-    ; Выводим буквы r g b a
-    ;.................................................................................................
-    mov     eax,SF_DRAW_TEXT  ; 4 - вывести строку текста в окно
-    mov     ebx,16 shl 16+40		  ; [координата по оси x]*65536 + [координата по оси y]
-    mov     ecx,0x0			  ; 0xX0RRGGBB (RR, GG, BB задают цвет текста)
-    mov     edx,cname			  ; указатель на начало строки
-    mov     esi,1			  ; выводить esi символов
-    newline:				  ; цикл
-      int     0x40			  ; Прерывание
-      add     ebx,23 shl 16		  ; Добавляем
-      inc     edx			  ; Добавляем
-      cmp     [edx],byte 'x'		  ; Сравнение с байтом х
-    jne    newline			  ; Если не нуль или не равно
-
-    ;.................................................................................................
-    ; Отрисовка слайдеров
-    ;.................................................................................................
-    ; Функция 13 - нарисовать прямоугольник
-    mcall   SF_DRAW_RECT, 16 shl 16+4, 51 shl 16+86, 0x222222
-    add     ebx,23 shl 16		  ; Начальные координаты по x [к-та y]*65536 + [размер]
-    int     0x40
-    add     ebx,23 shl 16		  ; Начальные координаты по x [к-та y]*65536 + [размер]
-    int     0x40
-    add     ebx,23 shl 16		  ; Начальные координаты по x [к-та y]*65536 + [размер]
-    int     0x40
-
-    mcall   , 17 shl 16+2, 52 shl 16+84, 0xFA0919
-    mov     edx,0x08CE19		  ; цвет-обводки
-    add     ebx,23 shl 16		  ; Начальные координаты по x [к-та y]*65536 + [размер]
-    int     0x40
-    mov     edx,0x0909FF		  ; цвет-обводки
-    add     ebx,23 shl 16		  ; Начальные координаты по x [к-та y]*65536 + [размер]
-    int     0x40
-    mov     edx,0xE4E4E4		  ; цвет-обводки
-    add     ebx,23 shl 16		  ; Начальные координаты по x [к-та y]*65536 + [размер]
-    int     0x40
-
-    ;.................................................................................................
-    ; Отрисовка ползунков
-    ;.................................................................................................
-    mov     edx,0x0			  ; цвет-ползунков
-    mov     ebx,17 shl 16+11		  ; Начальные координаты по x [к-та x]*65536 + [размер]
-    movzx   eax,[cred]			  ; берем значение цвета
-    call    draw_slider
-    add     ebx,23 shl 16
-    movzx   eax,[cgreen]		  ; берем значение цвета
-    call    draw_slider
-    add     ebx,23 shl 16
-    movzx   eax,[cblue] 		  ; берем значение цвета
-    call    draw_slider
-    add     ebx,23 shl 16
-    movzx   eax,[calpha]		  ; берем значение цвета
-    call    draw_slider
-
-    ret 				  ; Возвращаем управление
-;end_draw_result
-
-draw_slider:
-    xor     ecx,ecx
-    mov     cl,0x3			  ; будем делить его на 3 так как ползунки длинной 85 пикселей
-    div     cl				  ; делим - целое в al остаток в ah
-    mov     cl,136			  ; нижняя точка ползунка
-    sub     cl,al			  ; cl=cl-al
-    shl     ecx,16
-    inc     ecx				  ; задаем начальное положение
-    mcall   SF_DRAW_RECT      ; Функция 13 - нарисовать прямоугольник
-    push    ebx				  ; сохраняем для следующего ползунка x+w
-    sub     ebx,8			  ; так как ширина линии 11 то отнимаем 8 чтобы кубик стал шириной 3
-    add     ebx,8 shl 16		  ; Координаты по x для квадрата на ползунке смещаем на 8 в право
-    inc     ecx 			  ; быдлокодим высоту ползунка до 3-х (1+1=2)
-    inc     ecx 			  ; (2+1=3) ну вот у нас будет кубик 3х3 на 8 в право от линии
-    int     0x40			  ; рисуем
-    pop     ebx 			  ; восстанавливаем нормальные координаты
-    ret 				  ; Возвращаем управление
-
-;end_slider
 
 draw_value:
     ;.................................................................................................
-    ; Вывод числа из строки в указанной области
+    ; ╨Т╤Л╨▓╨╛╨┤ ╤З╨╕╤Б╨╗╨░ ╨╕╨╖ ╤Б╤В╤А╨╛╨║╨╕ ╨▓ ╤Г╨║╨░╨╖╨░╨╜╨╜╨╛╨╣ ╨╛╨▒╨╗╨░╤Б╤В╨╕
     ;.................................................................................................
-    push    ebx 			  ; сохраняем присланные координаты
-    mov     ebx,10			  ; устанавливаем основание системы счисления
-    mov     edi,buff		  ; указатель на строку буфера
-	call    int2ascii   	  ; конвертируем число и ложим как строку в буфер + esi длина
-    mov     eax,SF_DRAW_TEXT  ; функция 4: написать текст в окне
-    pop     ebx 			  ; достаем из стека присланные координаты
-    cmp     esi,2			  ; ЦЕНТРИРОВАНИЕ ТЕКСТА
+    push    ebx                           ; ╤Б╨╛╤Е╤А╨░╨╜╤П╨╡╨╝ ╨┐╤А╨╕╤Б╨╗╨░╨╜╨╜╤Л╨╡ ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л
+    mov     ebx,10                        ; ╤Г╤Б╤В╨░╨╜╨░╨▓╨╗╨╕╨▓╨░╨╡╨╝ ╨╛╤Б╨╜╨╛╨▓╨░╨╜╨╕╨╡ ╤Б╨╕╤Б╤В╨╡╨╝╤Л ╤Б╤З╨╕╤Б╨╗╨╡╨╜╨╕╤П
+    mov     edi,buff              ; ╤Г╨║╨░╨╖╨░╤В╨╡╨╗╤М ╨╜╨░ ╤Б╤В╤А╨╛╨║╤Г ╨▒╤Г╤Д╨╡╤А╨░
+        call    int2ascii         ; ╨║╨╛╨╜╨▓╨╡╤А╤В╨╕╤А╤Г╨╡╨╝ ╤З╨╕╤Б╨╗╨╛ ╨╕ ╨╗╨╛╨╢╨╕╨╝ ╨║╨░╨║ ╤Б╤В╤А╨╛╨║╤Г ╨▓ ╨▒╤Г╤Д╨╡╤А + esi ╨┤╨╗╨╕╨╜╨░
+    mov     eax,SF_DRAW_TEXT  ; ╤Д╤Г╨╜╨║╤Ж╨╕╤П 4: ╨╜╨░╨┐╨╕╤Б╨░╤В╤М ╤В╨╡╨║╤Б╤В ╨▓ ╨╛╨║╨╜╨╡
+    pop     ebx                           ; ╨┤╨╛╤Б╤В╨░╨╡╨╝ ╨╕╨╖ ╤Б╤В╨╡╨║╨░ ╨┐╤А╨╕╤Б╨╗╨░╨╜╨╜╤Л╨╡ ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л
+    cmp     esi,2                         ; ╨ж╨Х╨Э╨в╨а╨Ш╨а╨Ю╨Т╨Р╨Э╨Ш╨Х ╨в╨Х╨Ъ╨б╨в╨Р
     jne     draw_value_1
     add     ebx,4 shl 16
     jmp     draw_value_e
@@ -940,10 +497,11 @@ draw_value:
     jne     draw_value_e
     add     ebx,7 shl 16
   draw_value_e:
-    mov     ecx,0x0			  ; цвет текста RRGGBB
-    mov     edx,buff			  ; указатель на начало текста
+    mov     ecx,0x0;0x10000000                 ; ╤Ж╨▓╨╡╤В ╤В╨╡╨║╤Б╤В╨░ RRGGBB
+    add     ecx,[sc.work_text]
+    mov     edx,buff                      ; ╤Г╨║╨░╨╖╨░╤В╨╡╨╗╤М ╨╜╨░ ╨╜╨░╤З╨░╨╗╨╛ ╤В╨╡╨║╤Б╤В╨░
     int     0x40
-    ret 				  ; Возвращаем управление
+    ret                                   ; ╨Т╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╨╝ ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡
 ;end_draw_value
 
   _read_params:
@@ -974,54 +532,54 @@ draw_value:
 
 hex_digit:
     ;.................................................................................................
-    ; Преобразование в ASCII (вне зависимости от системы счисления)
+    ; ╨Я╤А╨╡╨╛╨▒╤А╨░╨╖╨╛╨▓╨░╨╜╨╕╨╡ ╨▓ ASCII (╨▓╨╜╨╡ ╨╖╨░╨▓╨╕╤Б╨╕╨╝╨╛╤Б╤В╨╕ ╨╛╤В ╤Б╨╕╤Б╤В╨╡╨╝╤Л ╤Б╤З╨╕╤Б╨╗╨╡╨╜╨╕╤П)
     ;.................................................................................................
-    cmp    dl,10			  ; в dl ожидается число от 0 до 15
-    jb	   .less			  ; если dl<10 то переходим
-    add    dl,'A'-10			  ; 10->A 11->B 12->C ...
-    ret 				  ; Возвращаем управление
+    cmp    dl,10                          ; ╨▓ dl ╨╛╨╢╨╕╨┤╨░╨╡╤В╤Б╤П ╤З╨╕╤Б╨╗╨╛ ╨╛╤В 0 ╨┤╨╛ 15
+    jb     .less                          ; ╨╡╤Б╨╗╨╕ dl<10 ╤В╨╛ ╨┐╨╡╤А╨╡╤Е╨╛╨┤╨╕╨╝
+    add    dl,'A'-10                      ; 10->A 11->B 12->C ...
+    ret                                   ; ╨Т╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╨╝ ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡
     .less:
-    or	   dl,'0'			  ; Если система счисления 10-я и менее
-    ret 				  ; Возвращаем управление
+    or     dl,'0'                         ; ╨Х╤Б╨╗╨╕ ╤Б╨╕╤Б╤В╨╡╨╝╨░ ╤Б╤З╨╕╤Б╨╗╨╡╨╜╨╕╤П 10-╤П ╨╕ ╨╝╨╡╨╜╨╡╨╡
+    ret                                   ; ╨Т╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╨╝ ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡
 ;end_hex_digit
 
 int2ascii:
     ;.................................................................................................
-    ; Преобразование числа в строку
+    ; ╨Я╤А╨╡╨╛╨▒╤А╨░╨╖╨╛╨▓╨░╨╜╨╕╨╡ ╤З╨╕╤Б╨╗╨░ ╨▓ ╤Б╤В╤А╨╛╨║╤Г
     ;.................................................................................................
-    ; eax - 32-х значное число
-    ; ebx - основание системы счисления
-    ; edi - указатель на строку буфера
-    ; Возвращает заполненный буфер и esi - длина строки
+    ; eax - 32-╤Е ╨╖╨╜╨░╤З╨╜╨╛╨╡ ╤З╨╕╤Б╨╗╨╛
+    ; ebx - ╨╛╤Б╨╜╨╛╨▓╨░╨╜╨╕╨╡ ╤Б╨╕╤Б╤В╨╡╨╝╤Л ╤Б╤З╨╕╤Б╨╗╨╡╨╜╨╕╤П
+    ; edi - ╤Г╨║╨░╨╖╨░╤В╨╡╨╗╤М ╨╜╨░ ╤Б╤В╤А╨╛╨║╤Г ╨▒╤Г╤Д╨╡╤А╨░
+    ; ╨Т╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╤В ╨╖╨░╨┐╨╛╨╗╨╜╨╡╨╜╨╜╤Л╨╣ ╨▒╤Г╤Д╨╡╤А ╨╕ esi - ╨┤╨╗╨╕╨╜╨░ ╤Б╤В╤А╨╛╨║╨╕
     push    edi
-    xor     esi,esi			  ; зануляем счетчик символов
+    xor     esi,esi                       ; ╨╖╨░╨╜╤Г╨╗╤П╨╡╨╝ ╤Б╤З╨╡╤В╤З╨╕╨║ ╤Б╨╕╨╝╨▓╨╛╨╗╨╛╨▓
     convert_loop:
-    xor     edx,edx			  ; зануляем регистр под остаток
-    div     ebx 			  ; eax/ebx - остаток в edx
-    call    hex_digit			  ; преобразуем символ
-    push    edx 			  ; ложим в стек
-    inc     esi 			  ; увеличиваем счетчик
-    test    eax,eax			  ; если еще можно делить
-    jnz     convert_loop		  ; то делием еще
-    cld 				  ; ОБЯЗАТЕЛЬНО сбрасываем флаг направления DF (запись вперёд)
-    write_loop: 			  ; иначе
-    pop     eax 			  ; достаем из стека в еах
-    stosb				  ; записываем в буфер по адресу ES:(E)DI
-    dec     esi 			  ; уменьшаем счетчик
-    test    esi,esi			  ; если есть что доставать из стека
-    jnz     write_loop			  ; то достаём
-    mov     byte [edi],0		  ; иначе дописыываем нулевой байт
+    xor     edx,edx                       ; ╨╖╨░╨╜╤Г╨╗╤П╨╡╨╝ ╤А╨╡╨│╨╕╤Б╤В╤А ╨┐╨╛╨┤ ╨╛╤Б╤В╨░╤В╨╛╨║
+    div     ebx                           ; eax/ebx - ╨╛╤Б╤В╨░╤В╨╛╨║ ╨▓ edx
+    call    hex_digit                     ; ╨┐╤А╨╡╨╛╨▒╤А╨░╨╖╤Г╨╡╨╝ ╤Б╨╕╨╝╨▓╨╛╨╗
+    push    edx                           ; ╨╗╨╛╨╢╨╕╨╝ ╨▓ ╤Б╤В╨╡╨║
+    inc     esi                           ; ╤Г╨▓╨╡╨╗╨╕╤З╨╕╨▓╨░╨╡╨╝ ╤Б╤З╨╡╤В╤З╨╕╨║
+    test    eax,eax                       ; ╨╡╤Б╨╗╨╕ ╨╡╤Й╨╡ ╨╝╨╛╨╢╨╜╨╛ ╨┤╨╡╨╗╨╕╤В╤М
+    jnz     convert_loop                  ; ╤В╨╛ ╨┤╨╡╨╗╨╕╨╝ ╨╡╤Й╨╡
+    cld                                   ; ╨Ю╨С╨п╨Ч╨Р╨в╨Х╨Ы╨м╨Э╨Ю ╤Б╨▒╤А╨░╤Б╤Л╨▓╨░╨╡╨╝ ╤Д╨╗╨░╨│ ╨╜╨░╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╤П DF (╨╖╨░╨┐╨╕╤Б╤М ╨▓╨┐╨╡╤А╤С╨┤)
+    write_loop:                           ; ╨╕╨╜╨░╤З╨╡
+    pop     eax                           ; ╨┤╨╛╤Б╤В╨░╨╡╨╝ ╨╕╨╖ ╤Б╤В╨╡╨║╨░ ╨▓ ╨╡╨░╤Е
+    stosb                                 ; ╨╖╨░╨┐╨╕╤Б╤Л╨▓╨░╨╡╨╝ ╨▓ ╨▒╤Г╤Д╨╡╤А ╨┐╨╛ ╨░╨┤╤А╨╡╤Б╤Г ES:(E)DI
+    dec     esi                           ; ╤Г╨╝╨╡╨╜╤М╤И╨░╨╡╨╝ ╤Б╤З╨╡╤В╤З╨╕╨║
+    test    esi,esi                       ; ╨╡╤Б╨╗╨╕ ╨╡╤Б╤В╤М ╤З╤В╨╛ ╨┤╨╛╤Б╤В╨░╨▓╨░╤В╤М ╨╕╨╖ ╤Б╤В╨╡╨║╨░
+    jnz     write_loop                    ; ╤В╨╛ ╨┤╨╛╤Б╤В╨░╤С╨╝
+    mov     byte [edi],0                  ; ╨╕╨╜╨░╤З╨╡ ╨┤╨╛╨┐╨╕╤Б╤Л╨▓╨░╨╡╨╝ ╨╜╤Г╨╗╨╡╨▓╨╛╨╣ ╨▒╨░╨╣╤В
     pop     edi
-    ; код ниже не имеет ничего общего к функции, просто возвращает еще длинну полученной строки
+    ; ╨║╨╛╨┤ ╨╜╨╕╨╢╨╡ ╨╜╨╡ ╨╕╨╝╨╡╨╡╤В ╨╜╨╕╤З╨╡╨│╨╛ ╨╛╨▒╤Й╨╡╨│╨╛ ╨║ ╤Д╤Г╨╜╨║╤Ж╨╕╨╕, ╨┐╤А╨╛╤Б╤В╨╛ ╨▓╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╤В ╨╡╤Й╨╡ ╨┤╨╗╨╕╨╜╤Г ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╜╨╛╨╣ ╤Б╤В╤А╨╛╨║╨╕
     call    str_len
     mov     esi,eax
-    ret 				  ; и возвращаем управление
+    ret                                   ; ╨╕ ╨▓╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╨╝ ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡
 ;end_int2ascii
 
 char2byte:
     sub al,'0'
     cmp al,10
-    jb	done
+    jb  done
     add al,'0'
     and al,0x5f
     sub al,'A'-10
@@ -1032,11 +590,11 @@ char2byte:
 
 ascii2int:
     ;.................................................................................................
-    ; Преобразование строки в число
+    ; ╨Я╤А╨╡╨╛╨▒╤А╨░╨╖╨╛╨▓╨░╨╜╨╕╨╡ ╤Б╤В╤А╨╛╨║╨╕ ╨▓ ╤З╨╕╤Б╨╗╨╛
     ;.................................................................................................
-    ; esi - указатель на нультерминированную строку
-    ; ecx - основание системы счисления
-    ; Возвращает eax - число
+    ; esi - ╤Г╨║╨░╨╖╨░╤В╨╡╨╗╤М ╨╜╨░ ╨╜╤Г╨╗╤М╤В╨╡╤А╨╝╨╕╨╜╨╕╤А╨╛╨▓╨░╨╜╨╜╤Г╤О ╤Б╤В╤А╨╛╨║╤Г
+    ; ecx - ╨╛╤Б╨╜╨╛╨▓╨░╨╜╨╕╨╡ ╤Б╨╕╤Б╤В╨╡╨╝╤Л ╤Б╤З╨╕╤Б╨╗╨╡╨╜╨╕╤П
+    ; ╨Т╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╤В eax - ╤З╨╕╤Б╨╗╨╛
     push esi
     xor eax,eax
     xor ebx,ebx
@@ -1064,7 +622,7 @@ ascii2int:
 
 get_spectr:
     ;.................................................................................................
-    ; возвращает r,g,b состовляющие цвета
+    ; ╨▓╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╤В r,g,b ╤Б╨╛╤Б╤В╨░╨▓╨╗╤П╤О╤Й╨╕╨╡ ╤Ж╨▓╨╡╤В╨░
     ;.................................................................................................
     mov     ecx,[color]
     mov     [cblue],cl
@@ -1074,12 +632,12 @@ get_spectr:
     mov     [cred],cl
     shr     ecx,8
     mov     [calpha],cl
-    ret 				  ; и возвращаем управление
+    ret                                   ; ╨╕ ╨▓╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╨╝ ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡
 ;end_get_spectr
 
 set_spectr:
     ;.................................................................................................
-    ; устанавливает из r,g,b цвет
+    ; ╤Г╤Б╤В╨░╨╜╨░╨▓╨╗╨╕╨▓╨░╨╡╤В ╨╕╨╖ r,g,b ╤Ж╨▓╨╡╤В
     ;.................................................................................................
     movzx   eax,[calpha]
     shl     eax,8
@@ -1089,179 +647,113 @@ set_spectr:
     shl     eax,8
     mov     al,[cblue]
     mov     [color],eax
-    call    draw_result 		  ; Выводим результат
-    ret 				  ; и возвращаем управление
+    call    draw_result                   ; ╨Т╤Л╨▓╨╛╨┤╨╕╨╝ ╤А╨╡╨╖╤Г╨╗╤М╤В╨░╤В
+    ret                                   ; ╨╕ ╨▓╨╛╨╖╨▓╤А╨░╤Й╨░╨╡╨╝ ╤Г╨┐╤А╨░╨▓╨╗╨╡╨╜╨╕╨╡
 ;end_get_spectr
 
 str_len:
     ;.................................................................................................
-    ; определяет длину строки (вход->EDI ZS offset ; выход->EAX ZS length)
+    ; ╨╛╨┐╤А╨╡╨┤╨╡╨╗╤П╨╡╤В ╨┤╨╗╨╕╨╜╤Г ╤Б╤В╤А╨╛╨║╨╕ (╨▓╤Е╨╛╨┤->EDI ZS offset ; ╨▓╤Л╤Е╨╛╨┤->EAX ZS length)
     ;.................................................................................................
-	push ecx esi edi
+        push ecx esi edi
 
-	cld
-	xor   al, al
-	mov ecx, 0FFFFFFFFh
-	mov esi, edi
-	repne scasb
-	sub edi, esi
-	mov eax, edi
-	dec eax
+        cld
+        xor   al, al
+        mov ecx, 0FFFFFFFFh
+        mov esi, edi
+        repne scasb
+        sub edi, esi
+        mov eax, edi
+        dec eax
 
-	pop edi esi ecx
+        pop edi esi ecx
 
-	ret
+        ret
 ;end_str_len
 
 
- ;-------------------------------
-
- proc random uses ebx ecx edx, max_value
-    mov     ebx, 0
-    mov     eax, ebx
-    or	    eax, eax
-    jnz     @f
-    rdtsc
-    xor     eax, edx
-    mov     ebx, eax
-
- @@:
-    xor     edx, edx
-    mov     ecx, 127773
-    div     ecx
-    mov     ecx, eax
-    mov     eax, 16807
-    mul     edx
-    mov     edx, ecx
-    mov     ecx, eax
-    mov     eax, 2836
-    mul     edx
-    sub     ecx, eax
-    xor     edx, edx
-    mov     eax, ecx
-    mov     ebx, ecx
-    mov     ecx, 100000
-    div     ecx
-    mov     eax, edx
-
-    xor     edx, edx
-    mov     ebx, [max_value]
-    div     ebx
-    mov     eax, edx
-
-    ret
- endp
-
-set_background2:
-    mcall   SF_SYS_MISC, SSF_HEAP_INIT
-    mcall   SF_SYS_MISC, SSF_MEM_ALLOC, 256 * 256 * 3
-    mov     [image], eax
-
-    mov     edx, eax
-    mov     ecx, 256 * 256
-  @@:
-    stdcall random, 15 + 1
-    sub     al, 15 / 2
-
-    mov     bh, byte [color + 0]
-    add     bh, al
-    mov     [edx + 0], bh
-    mov     bh, byte [color + 1]
-    add     bh, al
-    mov     [edx + 1], bh
-    mov     bh, byte [color + 2]
-    add     bh, al
-    mov     [edx + 2], bh
-    add     edx, 3
-    loop    @b
-
-    mcall   SF_BACKGROUND_SET, SSF_SIZE_BG, 256, 256
-    mcall   SF_BACKGROUND_SET, SSF_MODE_BG, 1
-    mcall   SF_BACKGROUND_SET, SSF_IMAGE_BG, [image], 0, 256 * 256 * 3
-    mcall   SF_BACKGROUND_SET, SSF_REDRAW_BG
-
-    mcall   SF_SYS_MISC, SSF_MEM_FREE, [image]
-    stdcall save_eskin_ini, 'B '
-ret
-
 align 4
 proc save_eskin_ini, opt_HB:dword
-	;save to file eskin.ini
-	xor     al,al
-	mov     ecx,1024
-	mov     edi,sys_path+2
-	repne   scasb
-	sub     edi,sys_path+3
-	invoke  ini_set_str, inifileeskin, amain, aprogram, sys_path+2, edi
-	;add param 'H '
-	mov     eax,[opt_HB]
-	mov     word[params],ax
-	mov     eax,[color]
-	or      eax,0xf ;для избежания вечного цикла если eax=0
-	mov     edi,params+2
-	@@:
-	rol     eax,8
-	or      al,al
-	jnz     @f
-	mov     word[edi],'00' ;нули перед числом
-	add     edi,2
-	jmp     @b
-	@@:
-	and     al,0xf0
-	jnz     @f
-	mov     byte[edi],'0'
-	inc     edi
-	@@:
-	mov     eax,[color]
-	mov     ebx,16
-	call    int2ascii
-	mov     byte[params+10],' '
-	;add color2
-	mov     eax,[color2]
-	or      eax,0xf ;для избежания вечного цикла если eax=0
-	mov     edi,params+11
-	@@:
-	rol     eax,8
-	or      al,al
-	jnz     @f
-	mov     word[edi],'00' ;нули перед числом
-	add     edi,2
-	jmp     @b
-	@@:
-	and     al,0xf0
-	jnz     @f
-	mov     byte[edi],'0'
-	inc     edi
-	@@:
-	mov     eax,[color2]
-	mov     ebx,16
-	call    int2ascii
+        ;save to file eskin.ini
+        xor     al,al
+        mov     ecx,1024
+        mov     edi,sys_path+2
+        repne   scasb
+        sub     edi,sys_path+3
+        invoke  ini_set_str, inifileeskin, amain, aprogram, sys_path+2, edi
+        ;add param 'H '
+        mov     eax,[opt_HB]
+        mov     word[params],ax
+        mov     eax,[color]
+        or      eax,0xf ;╨┤╨╗╤П ╨╕╨╖╨▒╨╡╨╢╨░╨╜╨╕╤П ╨▓╨╡╤З╨╜╨╛╨│╨╛ ╤Ж╨╕╨║╨╗╨░ ╨╡╤Б╨╗╨╕ eax=0
+        mov     edi,params+2
+        @@:
+        rol     eax,8
+        or      al,al
+        jnz     @f
+        mov     word[edi],'00' ;╨╜╤Г╨╗╨╕ ╨┐╨╡╤А╨╡╨┤ ╤З╨╕╤Б╨╗╨╛╨╝
+        add     edi,2
+        jmp     @b
+        @@:
+        and     al,0xf0
+        jnz     @f
+        mov     byte[edi],'0'
+        inc     edi
+        @@:
+        mov     eax,[color]
+        mov     ebx,16
+        call    int2ascii
+        mov     byte[params+10],' '
+        ;add color2
+        mov     eax,[color2]
+        or      eax,0xf ;╨┤╨╗╤П ╨╕╨╖╨▒╨╡╨╢╨░╨╜╨╕╤П ╨▓╨╡╤З╨╜╨╛╨│╨╛ ╤Ж╨╕╨║╨╗╨░ ╨╡╤Б╨╗╨╕ eax=0
+        mov     edi,params+11
+        @@:
+        rol     eax,8
+        or      al,al
+        jnz     @f
+        mov     word[edi],'00' ;╨╜╤Г╨╗╨╕ ╨┐╨╡╤А╨╡╨┤ ╤З╨╕╤Б╨╗╨╛╨╝
+        add     edi,2
+        jmp     @b
+        @@:
+        and     al,0xf0
+        jnz     @f
+        mov     byte[edi],'0'
+        inc     edi
+        @@:
+        mov     eax,[color2]
+        mov     ebx,16
+        call    int2ascii
 
-	invoke  ini_set_str, inifileeskin, amain, aparam, params, 19
-	ret
+        invoke  ini_set_str, inifileeskin, amain, aparam, params, 19
+        ret
 endp
 
 ;#___________________________________________________________________________________________________
 ;****************************************************************************************************|
-; БЛОК ПЕРЕМЕННЫХ И КОНСТАНТ                                                                         |
+; ╨С╨Ы╨Ю╨Ъ ╨Я╨Х╨а╨Х╨Ь╨Х╨Э╨Э╨л╨е ╨Ш ╨Ъ╨Ю╨Э╨б╨в╨Р╨Э╨в                                                                         |
 ;----------------------------------------------------------------------------------------------------/
-circle:
-    title	db 'Palitra v0.77',0	   ; хранит имя программы
-    hidden	db 'Hidden',0
-    hex 	db '#',0		  ; для вывода решётки как текста
-    cname	db 'RGBAx'		  ; хранит разряды цветов (red,green,blue) x-метка конца
-    larrow	db 0x1A,0
-    buff	db '000',0
-    bground	db 'BACKGROUND',0	  ; имя кнопки - 14
-    bground1	db 'Gradient',0 	  ; имя кнопки - 14
-    bground2	db 'Noisy',0	     ; имя кнопки - 14
-    runmode	dd 1			  ; режим запуска (1-normal, 2-hidden, 3-colordialog)
-    color2	dd 00FFFFFFh		  ; хранит значение второго выбранного цвета
+    title       db 'Palitra v0.8',0      ; ╤Е╤А╨░╨╜╨╕╤В ╨╕╨╝╤П ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╤Л
+    hidden      db 'Hidden',0
+;    hex         db '#',0                 ; ╨┤╨╗╤П ╨▓╤Л╨▓╨╛╨┤╨░ ╤А╨╡╤И╤С╤В╨║╨╕ ╨║╨░╨║ ╤В╨╡╨║╤Б╤В╨░
+    cname       db 'RGBAx'                ; ╤Е╤А╨░╨╜╨╕╤В ╤А╨░╨╖╤А╤П╨┤╤Л ╤Ж╨▓╨╡╤В╨╛╨▓ (red,green,blue) x-╨╝╨╡╤В╨║╨░ ╨║╨╛╨╜╤Ж╨░
+    larrow      db 0x1A,0
+    buff        db '000',0
+    bground     db 'Background',0
+    lbl_grad    db 'Gradient',0
+    lbl_noisy   db 'Noisy',0
+    lbl_check   db 'Checkers',0
+    lbl_silk    db 'Silky',0
+    runmode     dd 1                      ; ╤А╨╡╨╢╨╕╨╝ ╨╖╨░╨┐╤Г╤Б╨║╨░ (1-normal, 2-hidden, 3-colordialog)
+    color2      dd 00FFFFFFh              ; ╤Е╤А╨░╨╜╨╕╤В ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ ╨▓╤В╨╛╤А╨╛╨│╨╛ ╨▓╤Л╨▒╤А╨░╨╜╨╜╨╛╨│╨╛ ╤Ж╨▓╨╡╤В╨░
 
     inifileeskin db '/sys/settings/system.ini',0
     amain       db 'style',0
     aprogram    db 'bg_program',0
     aparam      db 'bg_param',0
+
+    i18bg_name  db 'ICONS18W',0
+
 
 align 16
 @IMPORT:
@@ -1270,28 +762,29 @@ library \
     libini , 'libini.obj'
 
 import  libini, \
-	ini_set_str, 'ini_set_str'
+        ini_set_str, 'ini_set_str'
 
 I_END:
-    cm		rb 12
-    color	rd 1			  ; хранит значение выбранного цвета
-    mouse_x	rd 1			  ; хранит глобальную х координату мыши
-    mouse_y	rd 1			  ; хранит глобальную у координату мыши
-    mouse_f	rd 1			  ; хранит данные о том какая кнопка мыши была нажата
-    desctop_w	rd 1			  ; хранит ширину экрана
-    desctop_h	rd 1			  ; хранит высоту экрана
-    sc		system_colors		  ; хранит структуру системных цветов скина
-    cred	rb 1			  ; храним красный спекрт
-    cgreen	rb 1			  ; храним зеленый спектр
-    cblue	rb 1			  ; храним синий спектр
-    calpha	rb 1			  ; храним прозрачность
-    pnext	rd 1			  ; счетчик переключения палитры
-    renmode	rd 1			  ; режим отрисовки (1-цветовая схема,2-пипетка,3-круговая)
-    params	rb 20			  ; приём параметров
-    params_c	rb 9			  ; приёмник для цвета
-    image	    rd 1
+    cm          rb 12
+    color       rd 1                      ; ╤Е╤А╨░╨╜╨╕╤В ╨╖╨╜╨░╤З╨╡╨╜╨╕╨╡ ╨▓╤Л╨▒╤А╨░╨╜╨╜╨╛╨│╨╛ ╤Ж╨▓╨╡╤В╨░
+    mouse_x     rd 1                      ; ╤Е╤А╨░╨╜╨╕╤В ╨│╨╗╨╛╨▒╨░╨╗╤М╨╜╤Г╤О ╤Е ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Г ╨╝╤Л╤И╨╕
+    mouse_y     rd 1                      ; ╤Е╤А╨░╨╜╨╕╤В ╨│╨╗╨╛╨▒╨░╨╗╤М╨╜╤Г╤О ╤Г ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Г ╨╝╤Л╤И╨╕
+    mouse_f     rd 1                      ; ╤Е╤А╨░╨╜╨╕╤В ╨┤╨░╨╜╨╜╤Л╨╡ ╨╛ ╤В╨╛╨╝ ╨║╨░╨║╨░╤П ╨║╨╜╨╛╨┐╨║╨░ ╨╝╤Л╤И╨╕ ╨▒╤Л╨╗╨░ ╨╜╨░╨╢╨░╤В╨░
+    desctop_w   rd 1                      ; ╤Е╤А╨░╨╜╨╕╤В ╤И╨╕╤А╨╕╨╜╤Г ╤Н╨║╤А╨░╨╜╨░
+    desctop_h   rd 1                      ; ╤Е╤А╨░╨╜╨╕╤В ╨▓╤Л╤Б╨╛╤В╤Г ╤Н╨║╤А╨░╨╜╨░
+    sc          system_colors             ; ╤Е╤А╨░╨╜╨╕╤В ╤Б╤В╤А╤Г╨║╤В╤Г╤А╤Г ╤Б╨╕╤Б╤В╨╡╨╝╨╜╤Л╤Е ╤Ж╨▓╨╡╤В╨╛╨▓ ╤Б╨║╨╕╨╜╨░
+    cred        rb 1                      ; ╤Е╤А╨░╨╜╨╕╨╝ ╨║╤А╨░╤Б╨╜╤Л╨╣ ╤Б╨┐╨╡╨║╤В╤А
+    cgreen      rb 1                      ; ╤Е╤А╨░╨╜╨╕╨╝ ╨╖╨╡╨╗╨╡╨╜╤Л╨╣ ╤Б╨┐╨╡╨║╤В╤А
+    cblue       rb 1                      ; ╤Е╤А╨░╨╜╨╕╨╝ ╤Б╨╕╨╜╨╕╨╣ ╤Б╨┐╨╡╨║╤В╤А
+    calpha      rb 1                      ; ╤Е╤А╨░╨╜╨╕╨╝ ╨┐╤А╨╛╨╖╤А╨░╤З╨╜╨╛╤Б╤В╤М
+    pnext       rd 1                      ; ╤Б╤З╨╡╤В╤З╨╕╨║ ╨┐╨╡╤А╨╡╨║╨╗╤О╤З╨╡╨╜╨╕╤П ╨┐╨░╨╗╨╕╤В╤А╤Л
+    renmode     rd 1                      ; ╤А╨╡╨╢╨╕╨╝ ╨╛╤В╤А╨╕╤Б╨╛╨▓╨║╨╕ (0-╤Ж╨▓╨╡╤В╨╛╨▓╨░╤П ╤Б╤Е╨╡╨╝╨░,1-╨┐╨╕╨┐╨╡╤В╨║╨░)
+    params      rb 20                     ; ╨┐╤А╨╕╤С╨╝ ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨╛╨▓
+    params_c    rb 9                      ; ╨┐╤А╨╕╤С╨╝╨╜╨╕╨║ ╨┤╨╗╤П ╤Ж╨▓╨╡╤В╨░
+    bgimg_buf   rd 1                      ; buffer for a generated image
+    icons18bg   dd ?                      ; pointer to a shared memory of icons18.png with filled bg
 
-	rd 1024
+        rd 1024
 stacktop:
-	sys_path rb 1024
+        sys_path rb 1024
 I_MEM:

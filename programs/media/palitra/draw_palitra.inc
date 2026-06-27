@@ -1,9 +1,17 @@
+PIPET_CELLW        = 13
+PIPET_AREA_W       = PIPET_CELLW*PIPET_CELL_COUNT_X
+PIPET_AREA_H       = PIPET_CELLW*PIPET_CELL_COUNT_Y
+PIPET_CELL_COUNT_X = 15
+PIPET_CELL_COUNT_Y = 13
+PIPET_SELECTED_X   = PIPET_AREA_W/2+PALITRA_X
+PIPET_SELECTED_Y   = PIPET_AREA_H/2+DRAWY+2
+
 draw_palitra:
     ; Функция 13 - нарисовать прямоугольник
     ;mcall   SF_DRAW_RECT, PALITRA_XW, PALITRA_YW, [sc.work]
 
     cmp     [renmode],MODE_PIPET
-    je      cyrcle_draw
+    je      draw_pipet_preview
     ;cmp     [renmode],1
     ;je      picker_draw
     cmp     [renmode],MODE_PALITRA
@@ -13,40 +21,7 @@ draw_palitra:
     ;.................................................................................................
     ; Отрисовка круговой диаграммы
     ;.................................................................................................
-    cyrcle_draw:
-    ;mov     eax,13
-    ;mov     edx,0x666666
-    ;mov     ebx,108*65536+152
-    ;mov     ecx,125*65536+33
-    ;mcall
-    ;mov     edx,0xF3F3F3
-    ;mov     ebx,109*65536+150
-    ;mov     ecx,126*65536+31
-    ;mcall
-
-    ;mov     eax,4                         ; 4 - вывести строку текста в окно
-    ;mov     ebx,115 shl 16+131            ; [координата по оси x]*65536 + [координата по оси y]
-    ;mov     ecx,0x666666                  ; 0xX0RRGGBB (RR, GG, BB задают цвет текста)
-    ;mov     edx,hint                      ; указатель на начало строки
-    ;mov     esi,24                        ; выводить esi символов
-    ;mcall
-    ;mov     ebx,125 shl 16+144            ; [координата по оси x]*65536 + [координата по оси y]
-    ;mov     edx,hint2                     ; указатель на начало строки
-    ;mov     esi,21                        ; выводить esi символов
-    ;mcall
-
-    ;mov     edx,[color]
-    ;mov     ebx,109*65536+150
-    ;mov     ecx, 10*65536+150
-    ;mcall
-    
-PIPET_CELLW        = 13
-PIPET_AREA_W       = PIPET_CELLW*PIPET_CELL_COUNT_X
-PIPET_AREA_H       = PIPET_CELLW*PIPET_CELL_COUNT_Y
-PIPET_CELL_COUNT_X = 15
-PIPET_CELL_COUNT_Y = 13
-PIPET_SELECTED_X   = PIPET_AREA_W/2+PALITRA_X
-PIPET_SELECTED_Y   = PIPET_AREA_H/2+DRAWY+2
+    draw_pipet_preview:
 
     call    mouse_local                   ; получаем координаты мыши относительно окна
     mov     ecx, [mouse_x]                ; заносим в регистр
@@ -141,7 +116,7 @@ PIPET_SELECTED_Y   = PIPET_AREA_H/2+DRAWY+2
     mov     edi,2                         ; Счетчик количества подложек
     for_fon_loop:
       int     0x40                        ; Прерывание
-      add     ebx,(PALITRA_W+2) shl 16               ; Смещаем положение линии по х
+      add     ebx,(PALITRA_W+3) shl 16               ; Смещаем положение линии по х
       dec     edi                         ; Уменьшаем счетчик кнопок
       cmp     edi,0                       ; Сравниваем с нулем
     jnz     for_fon_loop                  ; Если не ноль то в начало цикла
@@ -164,14 +139,18 @@ PIPET_SELECTED_Y   = PIPET_AREA_H/2+DRAWY+2
       mov     ebx,(PALITRA_X-CELLW-3) shl 16+CELLW
       x2_line:
       add     ebx,3 shl 16                ; Смещаем положение линии по x
+      test    esi,1                      ; right half (esi=3/1) -> +1px for 3px gap
+      jz      @f
+      add     ebx,1 shl 16
+      @@:
       mov     edi,8                       ; Счетчик количества кнопок в строке
       for_stolbik:
         push    edi                       ; Сохраняем значение счетчика линий в стек
         mov     edi,8                     ; Счетчик количества кнопок в строке
-        mov     ecx,  (1-CELLW/3) shl 16+CELLW          ; Начальные координаты по y [к-та y]*65536 + [размер]
+        mov     ecx,  (4-CELLW/3) shl 16+CELLW          ; Начальные координаты по y [к-та y]*65536 + [размер]
         cmp     esi,2
         jg      y2_line                   ; Если больше 4 то игнорим
-        mov     ecx,(PALITRA_W+4-(CELLW/3)) shl 16+CELLW
+        mov     ecx,(PALITRA_W+7-(CELLW/3)) shl 16+CELLW
         y2_line:
         add     ebx,(CELLW+1) shl 16              ; Смещаем положение линии по x
         for_loop:
