@@ -115,7 +115,7 @@ sayerr_badsect:
         mov     si, badsect
 sayerr_plain:
         call    printplain
-        jmp     $
+        jmp     cfgmanager.wait
 @@:
         pop     si
         ret
