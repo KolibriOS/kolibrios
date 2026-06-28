@@ -1,12 +1,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2026. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 UNIXTIME_TO_KOS_OFFSET = (365*31+8)*24*60*60  ; 01.01.1970 to 01.01.2001
-
 
 ERROR_SUCCESS        = 0
 ERROR_DISK_BASE      = 1
@@ -51,8 +50,36 @@ macro omit_frame_pointer_epilogue procname,flag,parmbytes,localbytes,reglist {
   end if
 }
 
-image_of_eax EQU esp+32
-image_of_ebx EQU esp+20
+struct bdfe_hdr
+        version   dd ?
+        read_cnt  dd ?
+        total_cnt dd ?
+        zeroed    rd 5
+ends
+
+struct bdfe
+        attr     dd ?
+        nameenc  dd ?
+        ctime    dd ?
+        cdate    dd ?
+        atime    dd ?
+        adate    dd ?
+        mtime    dd ?
+        mdate    dd ?
+        size     DQ ?
+        name     rb 0
+ends
+
+FILENAME_LEN_CP866 = 264
+FILENAME_LEN_UTF   = 520
+
+struct bdfe_cp866 bdfe
+        rb FILENAME_LEN_CP866
+ends
+
+struct bdfe_utf bdfe
+        rb FILENAME_LEN_UTF
+ends
 
 ; fs api for drivers
 struct  FileSystem
@@ -97,7 +124,7 @@ fs_add:
         ; check all disks
         mov     esi, [disk_list]
 .new_disk:
-        cmp     dword[esi], disk_list
+        cmp     [esi + LHEAD.next], disk_list
         jz      .end
 
         push    edx
@@ -184,14 +211,14 @@ proc file_system_is_operation_safe stdcall, inf_struct_ptr: dword
         cmp     dword [ebx], 1 ; if 70.1
         jnz     .case2_3
         ;mov     ecx, 32
-        cmp     dword [ebx + 8], 1 ; check encoding
+        cmp     dword [ebx + 8], ENC_CP866
         jbe     .case1_304 ; if encdoing <= 1 i.e cpp866
-        mov     ecx, 560 ; if unicode then bdvk block len is 560 bytes
+        mov     ecx, sizeof.bdfe_utf
         jmp     .case1_end
 .case1_304:
-        mov     ecx, 304 ; if cp866 then bdvk block len is 304 bytes
+        mov     ecx, sizeof.bdfe_cp866
 .case1_end:
-        imul    ecx, dword [ebx + 12] ; multiply bdvk length by their count
+        imul    ecx, dword [ebx + 12] ; multiply bdfe length by their count
         add     ecx, 32 ; add result header len
         jmp     .end_switch
 
@@ -230,7 +257,7 @@ sys_fileSystemUnicode: ; with user pointer correctness checking
         jz      @f
 
         DEBUGF  1, "sysfn80 addr error\n"
-        mov     dword [image_of_eax], ERROR_MEMORY_POINTER
+        mov     [esp+SYSCALL_STACK.eax], ERROR_MEMORY_POINTER
         ret
 @@:
         jmp     fileSystemUnicode
@@ -242,7 +269,7 @@ sys_file_system_lfn: ; with user pointer correctness checking
         jz      @f
 
         DEBUGF  1, "sysfn70 addr error\n"
-        mov     dword [image_of_eax], ERROR_MEMORY_POINTER
+        mov     [esp+SYSCALL_STACK.eax], ERROR_MEMORY_POINTER
         ret
 @@:
         jmp     file_system_lfn
@@ -261,8 +288,8 @@ file_system_lfn_protected:
         call    file_system_lfn
         call    unprotect_from_terminate
         popad
-        mov     [image_of_eax], eax
-        mov     [image_of_ebx], ebx
+        mov     [esp+SYSCALL_STACK.eax], eax
+        mov     [esp+SYSCALL_STACK.ebx], ebx
         ret
 
 fileSystemUnicode:
@@ -299,7 +326,7 @@ file_system_lfn:
         mov     ecx, [ebx+8]
         mov     ebx, ebp
         call    fs_execute
-        mov     [image_of_eax], eax
+        mov     [esp+SYSCALL_STACK.eax], eax
         ret
 
 @@:
@@ -311,7 +338,7 @@ file_system_lfn:
         call    dyndisk_handler ; not returns if success
 .notfound:
         stdcall kernel_free, ebp
-        mov     dword[image_of_eax], ERROR_FILE_NOT_FOUND
+        mov     [esp+SYSCALL_STACK.eax], ERROR_FILE_NOT_FOUND
         ret
 
 .CD:
@@ -352,21 +379,21 @@ file_system_lfn:
         shl     eax, 1
         inc     eax
         shr     edi, 2
-        mov     dword[image_of_eax], ERROR_FILE_NOT_FOUND
+        mov     [esp+SYSCALL_STACK.eax], ERROR_FILE_NOT_FOUND
         bt      [edi*5+DRIVE_DATA+1], ax
         jnc     @f
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
         mov     eax, [ebx]
-        mov     dword[image_of_eax], ERROR_UNSUPPORTED_FS
+        mov     [esp+SYSCALL_STACK.eax], ERROR_UNSUPPORTED_FS
         cmp     eax, fs_NumCdServices
         jae     @f
         add     ebx, 4
         push    ebp
         call    dword[fs_CdServices + eax*4]
         pop     ebp
-        mov     [image_of_eax], eax
-        mov     [image_of_ebx], ebx
+        mov     [esp+SYSCALL_STACK.eax], eax
+        mov     [esp+SYSCALL_STACK.ebx], ebx
 @@:
         call    free_cd_channel
         and     [cd_status], 0
@@ -431,7 +458,7 @@ file_system_lfn:
         push    edx
         test    eax, eax
         jnz     @b
-        cmp     ebx, 2
+        cmp     ebx, ENC_UTF16
         jz      .uni
 @@:
         pop     eax
@@ -440,9 +467,9 @@ file_system_lfn:
         test    eax, eax
         jnz     @b
         pop     edi edx eax
-        cmp     ebx, 3
+        cmp     ebx, ENC_UTF8
         jz      @f
-        add     edi, 264
+        add     edi, FILENAME_LEN_CP866
         jmp     .maindir_loop
 
 .uni:
@@ -453,7 +480,7 @@ file_system_lfn:
         jnz     .uni
         pop     edi edx eax
 @@:
-        add     edi, 520
+        add     edi, FILENAME_LEN_UTF
         jmp     .maindir_loop
 
 .maindir_done:
@@ -464,12 +491,12 @@ file_system_lfn:
         js      @f
         mov     al, ERROR_END_OF_FILE
 @@:
-        mov     [image_of_eax], eax
-        mov     [image_of_ebx], ebx
+        mov     [esp+SYSCALL_STACK.eax], eax
+        mov     [esp+SYSCALL_STACK.ebx], ebx
         ret
 
 .access_denied:
-        mov     dword[image_of_eax], ERROR_ACCESS_DENIED
+        mov     [esp+SYSCALL_STACK.eax], ERROR_ACCESS_DENIED
         ret
 
 .deviceInfo:
@@ -478,7 +505,7 @@ file_system_lfn:
         mov     ecx, 40/4
         rep     stosd
         pop     edi
-        mov     dword [edi], 0x10 ; attributes: folder
+        mov     [edi+bdfe.attr], 0x10 ; attributes: folder
         test    ebp, ebp
         jz      @f
         mov     eax, dword[ebp+DISK.MediaInfo.Capacity]
@@ -487,10 +514,10 @@ file_system_lfn:
         bsf     ecx, ecx
         shld    edx, eax, cl
         shl     eax, cl
-        mov     [edi+36], edx
-        mov     [edi+32], eax
+        mov     [edi+bdfe.size.hi], edx
+        mov     [edi+bdfe.size.lo], eax
 @@:
-        and     dword[image_of_eax], 0
+        mov     [esp+SYSCALL_STACK.eax], 0
         ret
 
 .rootdir:   ; / - virtual root folder
@@ -502,8 +529,8 @@ file_system_lfn:
         mov     ecx, 40/4
         rep     stosd
         pop     edi
-        mov     dword [edi], 0x10 ; attributes: folder
-        and     dword[image_of_eax], 0
+        mov     [edi+bdfe.attr], 0x10 ; attributes: folder
+        mov     [esp+SYSCALL_STACK.eax], 0
         ret
 .rootdir_readfolder:
         cmp     byte [ebx], 1   ; read folder?
@@ -531,8 +558,8 @@ file_system_lfn:
         dec     ebp
         js      .rootdir_loop
         inc     dword[edx+4]
-        mov     dword[edi], 16      ; attributes: folder
-        mov     dword[edi+4], ebx   ; name encoding
+        mov     [edi+bdfe.attr], 0x10   ; attributes: folder
+        mov     [edi+bdfe.nameenc], ebx ; name encoding
         push    eax
         mov     ecx, 32/4
         add     edi, 8
@@ -540,7 +567,7 @@ file_system_lfn:
         rep stosd
         push    edi
         lea     esi, [esp+8]
-        cmp     ebx, 2
+        cmp     ebx, ENC_UTF16
         jz      .uni2
 @@:
         lodsb
@@ -548,9 +575,9 @@ file_system_lfn:
         test    eax, eax
         jnz     @b
         pop     edi eax
-        cmp     ebx, 3
+        cmp     ebx, ENC_UTF8
         jz      @f
-        add     edi, 264
+        add     edi, FILENAME_LEN_CP866
         jmp     .rootdir_loop
 
 .uni2:
@@ -560,7 +587,7 @@ file_system_lfn:
         jnz     .uni2
         pop     edi eax
 @@:
-        add     edi, 520
+        add     edi, FILENAME_LEN_UTF
         jmp     .rootdir_loop
 
 .rootdirCD:
@@ -585,8 +612,8 @@ file_system_lfn:
         dec     ebp
         js      .rootdirCD_loop
         inc     dword[edx+4]
-        mov     dword[edi], 16      ; attributes: folder
-        mov     dword[edi+4], ebx   ; name encoding
+        mov     [edi+bdfe.attr], 0x10   ; attributes: folder
+        mov     [edi+bdfe.nameenc], ebx ; name encoding
         mov     ecx, 32/4
         add     edi, 8
         xor     eax, eax
@@ -597,13 +624,13 @@ file_system_lfn:
         jz      @f
         mov     word [edi], 'cd'
         mov     [edi+2], ax
-        add     edi, 264
+        add     edi, FILENAME_LEN_CP866
         jmp     .rootdirCD_loop
 
 @@:
         mov     dword[edi], 640063h
         mov     [edi+4], eax
-        add     edi, 520
+        add     edi, FILENAME_LEN_UTF
         jmp     .rootdirCD_loop
 
 .rootdir_done:
@@ -614,8 +641,8 @@ file_system_lfn:
         js      @f
         mov     al, ERROR_END_OF_FILE
 @@:
-        mov     [image_of_eax], eax
-        mov     [image_of_ebx], ebx
+        mov     [esp+SYSCALL_STACK.eax], eax
+        mov     [esp+SYSCALL_STACK.ebx], ebx
         ret
 
 ;-----------------------------------------------------------------------------
@@ -817,9 +844,9 @@ getFullPath:
         mov     esi, ebp
         dec     edi
 .absolute:
-        cmp     byte [esp+4], 2
+        cmp     byte [esp+4], ENC_UTF16
         jz      .utf16
-        cmp     byte [esp+4], 3
+        cmp     byte [esp+4], ENC_UTF8
         jz      .utf8
         call    cp866toUTF8_string
         jns     .end

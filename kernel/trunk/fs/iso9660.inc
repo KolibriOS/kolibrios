@@ -333,9 +333,9 @@ fs_CdReadFolder:
         call    cd_get_parameters_of_file
         add     edi, 40
         mov     ax, '.'
-        cmp     dword[ebx+4], 2
+        cmp     dword[ebx+4], ENC_UTF16
         jz      .utf16
-        cmp     dword[ebx+4], 3
+        cmp     dword[ebx+4], ENC_UTF8
         jz      .utf8
         cmp     [cd_counter_block], 2
         jbe     .parentDirectory
@@ -348,7 +348,7 @@ fs_CdReadFolder:
         jc      @b
 @@:
         mov     [edi], byte 0
-        add     [cd_mem_location], 304
+        add     [cd_mem_location], sizeof.bdfe_cp866
         jmp     .get_names_from_buffer
 
 .parentDirectory:
@@ -374,7 +374,7 @@ fs_CdReadFolder:
 @@:
         pop     ecx
         mov     [edi], byte 0
-        add     [cd_mem_location], 304
+        add     [cd_mem_location], sizeof.bdfe_cp866
         jmp     .get_names_from_buffer
 
 .checkForEnd:
@@ -405,7 +405,7 @@ fs_CdReadFolder:
         jc      @b
 @@:
         mov     [edi], word 0
-        add     [cd_mem_location], 560
+        add     [cd_mem_location], sizeof.bdfe_utf
         jmp     .get_names_from_buffer
 
 .utf16ParentDirectory:
@@ -503,9 +503,9 @@ fs_CdGetFileInfo:
         mov     ecx, 16
         mov     esi, CDDataBuf+40
         add     edi, 40
-        cmp     eax, 2
+        cmp     eax, ENC_UTF16
         jz      .utf16
-        cmp     eax, 3
+        cmp     eax, ENC_UTF8
         jz      .utf8
 @@:
         lodsw
@@ -742,7 +742,7 @@ cd_compare_name:
 DESCRIPTOR_TYPE_BOOT          = 0x00    ; not used
 DESCRIPTOR_TYPE_PRIMARY       = 0x01
 DESCRIPTOR_TYPE_SUPPLEMENTARY = 0x02
-; DESCRIPTOR_TYPE_PRIMARY for Juliet(UTF-16)
+; DESCRIPTOR_TYPE_PRIMARY for Joliet(UTF-16)
 DESCRIPTOR_TYPE_PARTITION     = 0x02
 DESCRIPTOR_TYPE_TERMANATOR    = 0xff    ; end scan descriptors
 
@@ -1235,7 +1235,7 @@ end virtual
         movzx   ecx, byte[ebx - 1]
         cmp     [ebp + ISO9660.type_encoding], 0
         jnz     .ucs2
-        cmp     eax, 2
+        cmp     eax, ENC_UTF16
         je      .ascii2utf16
 @@:
         sub     ecx, 1 ; CF
@@ -1276,7 +1276,7 @@ end virtual
         jmp     .end_copy
 ;-----------------------------------------------------------------------------
 .ucs2utf16:
-        cmp     edx, 2 ; utf16 encoding
+        cmp     edx, ENC_UTF16
         jne     .ucs2utf8
         ; convert ucs2 to utf16LE
 @@:
@@ -1312,7 +1312,7 @@ end virtual
         add     edi, 264
         cmp     eax, 2
         jb      .skip
-        add     edi, 520-264
+        add     edi, FILENAME_LEN_UTF - FILENAME_LEN_CP866
 .skip:
         movzx   ecx, byte[ebx]
         add     ebx, ecx
@@ -1736,13 +1736,13 @@ iso9660_copy_name:
         cmp     [ebp + ISO9660.type_encoding], 0
         jnz     .ucs2
 
-        cmp     edx, 1 ; cp866 encoding
+        cmp     edx, ENC_CP866
         jne     @f
         ; no convert chars
         rep movsb
         jmp     .end_copy_name
 @@:
-        cmp     edx, 2 ; utf16 encoding
+        cmp     edx, ENC_UTF16
         jne     .ascii2utf8
         ; convert ascii to utf16LE
 @@:
@@ -1753,7 +1753,7 @@ iso9660_copy_name:
         jmp     .end_copy_name
 
 .ascii2utf8:
-        cmp     edx, 3 ; utf8 encoding
+        cmp     edx, ENC_UTF8
         jne     .end_copy_name
         ; convert ascii to utf8
         call    cp866toUTF8_string
@@ -1761,7 +1761,7 @@ iso9660_copy_name:
 .ucs2:
         shr     ecx, 1 ; ecx/2 - ucs2 chars
 
-        cmp     edx, 1 ; cp866 encoding
+        cmp     edx, ENC_CP866
         jne     .ucs2utf16
         ; convert ucs2 to ascii
 @@:
@@ -1773,7 +1773,7 @@ iso9660_copy_name:
 
         jmp     .end_copy_name
 .ucs2utf16:
-        cmp     edx, 2 ; utf16 encoding
+        cmp     edx, ENC_UTF16
         jne     .ucs2utf8
         ; convert ucs2 to utf16LE
 @@:
@@ -1784,7 +1784,7 @@ iso9660_copy_name:
         jmp     .end_copy_name
 
 .ucs2utf8:
-        cmp     edx, 3 ; utf8 encoding
+        cmp     edx, ENC_UTF8
         jne     .end_copy_name
         ; convert ucs2 to utf8
         mov     ebx, ecx

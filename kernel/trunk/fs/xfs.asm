@@ -615,7 +615,8 @@ proc xfs._.readdir_block _literal_area, _out_buf
         mov     eax, ebx
         mov     ebx, [ebp+XFS.cur_dirblock]
         stdcall xfs._.extent_unpack, eax
-        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], ebx
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], \
+                [ebp+XFS.extent.br_startblock.hi], ebx
         mov     edx, [_out_buf]
         jnz     .error
         mov     eax, [ebp+XFS.dir_block_magic]
@@ -664,7 +665,8 @@ proc xfs._.readdir_leaf_node uses esi, _inode_data, _out_buf
         mov     [ebp+XFS.offset_end.lo], ecx
         mov     ecx, [ebp+XFS.dir2_free_offset_blocks.hi]
         mov     [ebp+XFS.offset_end.hi], ecx
-        stdcall xfs._.walk_extent_list, edx, eax, xfs._.extent_iterate_dirblocks, xfs._.leafn_calc_entries, 0
+        stdcall xfs._.walk_extent_list, edx, eax, \
+                xfs._.extent_iterate_dirblocks, xfs._.leafn_calc_entries, 0
         jnz     .error
         mov     eax, [ebp+XFS.entries_read]
         mov     edx, [_out_buf]
@@ -685,7 +687,8 @@ proc xfs._.readdir_leaf_node uses esi, _inode_data, _out_buf
         mov     ecx, [ebp+XFS.dir2_leaf_offset_blocks.hi]
         mov     [ebp+XFS.offset_end.hi], ecx
         pop     ecx
-        stdcall xfs._.walk_extent_list, edx, eax, xfs._.extent_iterate_dirblocks, xfs._.dir_btree_skip_read, ecx
+        stdcall xfs._.walk_extent_list, edx, eax, \
+                xfs._.extent_iterate_dirblocks, xfs._.dir_btree_skip_read, ecx
 ;        jnz     .error
 .error:
 .quit:
@@ -793,7 +796,8 @@ proc xfs._.readdir_btree uses esi, _inode_data, _out_buf
         mov     [ebp+XFS.offset_end.lo], ecx
         mov     ecx, [ebp+XFS.dir2_free_offset_blocks.hi]
         mov     [ebp+XFS.offset_end.hi], ecx
-        stdcall xfs._.walk_btree, edx, eax, xfs._.extent_iterate_dirblocks, xfs._.leafn_calc_entries, 0, 1
+        stdcall xfs._.walk_btree, edx, eax, xfs._.extent_iterate_dirblocks, \
+                xfs._.leafn_calc_entries, 0, 1
         mov     eax, [ebp+XFS.entries_read]
         mov     edx, [_out_buf]
         mov     [edx+bdfe_hdr.total_cnt], eax
@@ -818,7 +822,8 @@ proc xfs._.readdir_btree uses esi, _inode_data, _out_buf
         mov     ecx, [_out_buf]
         push    ecx
         mov     ecx, esp
-        stdcall xfs._.walk_btree, edx, eax, xfs._.extent_iterate_dirblocks, xfs._.dir_btree_skip_read, ecx, 1
+        stdcall xfs._.walk_btree, edx, eax, xfs._.extent_iterate_dirblocks, \
+                xfs._.dir_btree_skip_read, ecx, 1
         pop     ecx
 .error:
 .quit:
@@ -828,9 +833,9 @@ endp
 
 proc xfs._.copy_filename uses eax
         mov     eax, [ebp+XFS.bdfe_nameenc]
-        cmp     eax, 3
+        cmp     eax, ENC_UTF8
         jz      .utf8
-        cmp     eax, 2
+        cmp     eax, ENC_UTF16
         jz      .utf16
 .cp866:
         call    unicode.utf8.decode
@@ -871,10 +876,10 @@ proc xfs._.readdir uses ebx esi edi, _start_number, _entries_to_read, _dst, _src
         mov     [ebp+XFS.requested_cnt], eax
         mov     eax, [_encoding]
         mov     [ebp+XFS.bdfe_nameenc], eax
-        mov     ecx, 304
-        cmp     eax, 1  ; CP866
+        mov     ecx, sizeof.bdfe_cp866
+        cmp     eax, ENC_CP866
         jbe     @f
-        mov     ecx, 560
+        mov     ecx, sizeof.bdfe_utf
 @@:
         mov     [ebp+XFS.bdfe_len], ecx
         mov     edx, [_dst]
@@ -1037,7 +1042,8 @@ proc xfs._.get_inode_by_addr uses ebx esi edi, _inode_buf
         mov     [ebp+XFS.offset_begin.lo], eax
         mov     [ebp+XFS.offset_begin.hi], edx
         stdcall xfs._.extent_list.seek, ecx
-        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], \
+                [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
         jnz     .error
         jmp     .common
 .btree:
@@ -1123,7 +1129,8 @@ endl
         mov     [ebp+XFS.offset_begin.lo], esi
         mov     [ebp+XFS.offset_begin.hi], 0
         stdcall xfs._.extent_list.seek, edx
-        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], \
+                [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
         jnz     .error
         mov     ebx, [ebp+XFS.cur_dirblock]
         movzx   eax, [ebp+XFS.da_node_magic]
@@ -1336,7 +1343,8 @@ proc xfs_ReadFolder uses esi edi
         stdcall xfs_read_inode, eax, edx, [ebp+XFS.cur_inode]
         test    eax, eax
         jnz     .error
-        stdcall xfs._.readdir, [ebx+f70s1arg.start_idx], [ebx+f70s1arg.count], [ebx+f70s1arg.buf], edx, [ebx+f70s1arg.encoding]
+        stdcall xfs._.readdir, [ebx+f70s1arg.start_idx], [ebx+f70s1arg.count], \
+                [ebx+f70s1arg.buf], edx, [ebx+f70s1arg.encoding]
         test    eax, eax
         jnz     .error
         mov     edx, [ebx+f70s1arg.buf]
@@ -1379,7 +1387,6 @@ endp
 proc xfs._.conv_bigtime_to_kos_epoch
 NANOSEC_PER_SEC = 1_000_000_000
 BIGTIME_TO_UNIX_OFFSET = 0x80000000     ; int32 min
-UNIXTIME_TO_KOS_OFFSET = (365*31+8)*24*60*60  ; 01.01.1970--01.01.2001
 BIGTIME_TO_KOS_OFFSET = BIGTIME_TO_UNIX_OFFSET + UNIXTIME_TO_KOS_OFFSET
 BIGTIME_TO_KOS_OFFSET_NS = BIGTIME_TO_KOS_OFFSET * NANOSEC_PER_SEC
         movbe   edx, [ecx+DQ.hi_be]
@@ -1966,7 +1973,8 @@ proc xfs._.walk_btree uses ebx esi edi, _ptr, _size, _callback_extent, _callback
         movzx   ecx, [ebx+xfs_bmbt_block.bb_numrecs]
         xchg    cl, ch
         add     ebx, [ebp+XFS.bmbt_block_size]
-        stdcall xfs._.walk_extent_list, ecx, ebx, [_callback_extent+8], [_callback_block+4], [_callback_data]
+        stdcall xfs._.walk_extent_list, ecx, ebx, [_callback_extent+8], \
+                [_callback_block+4], [_callback_data]
         jnz     .error
         mov     esi, [ebp+XFS.offset_begin.lo]
         mov     edi, [ebp+XFS.offset_begin.hi]
@@ -2067,7 +2075,8 @@ proc xfs._.extent_iterate_dirblocks _callback, _callback_data
         cmp     esi, [ebp+XFS.offset_end.lo]
         jae     .quit
 .read_dirblock:
-        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
+        stdcall xfs._.read_dirblock, [ebp+XFS.extent.br_startblock.lo], \
+                [ebp+XFS.extent.br_startblock.hi], [ebp+XFS.cur_dirblock]
         mov     edx, [ebp+XFS.cur_dirblock]
         mov     eax, [_callback]
         stdcall eax, edx, esi, edi, [_callback_data]

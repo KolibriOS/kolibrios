@@ -1638,14 +1638,14 @@ ntfs_ReadFolder:
         mov     al, '.'
         push    edi ecx
         lea     ecx, [esi+1]
-        cmp     dword[edi-36], 2
+        cmp     dword[edi-36], ENC_UTF16
         jz      .utf16sp
         rep stosb
         mov     byte [edi], 0
         pop     ecx edi
-        cmp     dword[edi-36], 3
+        cmp     dword[edi-36], ENC_UTF8
         jz      @f
-        add     edi, 264
+        add     edi, FILENAME_LEN_CP866
         ret
 
 .utf16sp:
@@ -1653,7 +1653,7 @@ ntfs_ReadFolder:
         mov     word [edi], 0
         pop     ecx edi
 @@:
-        add     edi, 520
+        add     edi, FILENAME_LEN_UTF
 .ret:
         ret
 
@@ -1678,9 +1678,9 @@ ntfs_ReadFolder:
         push    ecx esi edi
         movzx   ecx, byte [esi+fileNameLength]
         add     esi, fileName
-        cmp     dword[edi-36], 2
+        cmp     dword[edi-36], ENC_UTF16
         jz      .utf16
-        cmp     dword[edi-36], 3
+        cmp     dword[edi-36], ENC_UTF8
         jz      .utf8
 @@:
         lodsw
@@ -1689,12 +1689,12 @@ ntfs_ReadFolder:
         loop    @b
         mov     byte [edi], 0
         pop     edi esi ecx
-        add     edi, 264
+        add     edi, FILENAME_LEN_CP866
         ret
 
 .utf8:
         push    ecx
-        mov     cx, 519
+        mov     cx, FILENAME_LEN_UTF - 1
 @@:
         lodsw
         call    UTF16to8
@@ -1706,7 +1706,7 @@ ntfs_ReadFolder:
         pop     edi
 @@:
         pop     edi esi ecx
-        add     edi, 520
+        add     edi, FILENAME_LEN_UTF
         ret
 
 .utf16:

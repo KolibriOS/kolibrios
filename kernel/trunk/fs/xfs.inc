@@ -598,23 +598,3 @@ struct f70s5arg
         zero   db ?
         path   dd ?
 ends
-
-struct bdfe_hdr
-        version   dd ?
-        read_cnt  dd ?
-        total_cnt dd ?
-        zeroed    rd 5
-ends
-
-struct bdfe
-        attr     dd ?
-        nameenc  dd ?
-        ctime    dd ?
-        cdate    dd ?
-        atime    dd ?
-        adate    dd ?
-        mtime    dd ?
-        mdate    dd ?
-        size     DQ ?
-        name     db ?
-ends

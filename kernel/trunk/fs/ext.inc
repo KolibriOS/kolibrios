@@ -2356,10 +2356,10 @@ ext_ReadFolder:
         or      byte [edx], KOS_HIDDEN
 @@:
         lea     edi, [edx+40]
-        cmp     byte [edx+4], 3
+        cmp     byte [edx+4], ENC_UTF8
         jz      .utf8
         add     ecx, esi
-        cmp     byte [edx+4], 2
+        cmp     byte [edx+4], ENC_UTF16
         jz      .utf16
 @@:
         call    utf8to16
@@ -2368,7 +2368,7 @@ ext_ReadFolder:
         cmp     esi, ecx
         jc      @b
         and     byte [edi], 0
-        add     edx, 40+264
+        add     edx, sizeof.bdfe_cp866
 @@:
         pop     esi ecx edi ebx
         dec     ecx
@@ -2388,7 +2388,7 @@ ext_ReadFolder:
 .utf8:
         rep movsb
         mov     byte [edi], 0
-        add     edx, 40+520
+        add     edx, sizeof.bdfe_utf
         jmp     @b
 
 .utf16:
@@ -2397,7 +2397,7 @@ ext_ReadFolder:
         cmp     esi, ecx
         jc      .utf16
         and     word [edi], 0
-        add     edx, 40+520
+        add     edx, sizeof.bdfe_utf
         jmp     @b
 
 .end_dir:
@@ -2600,10 +2600,10 @@ ext_GetFileInfo:
         lea     esi, [ebp+EXTFS.superblock.volumeLabel]
         mov     ecx, 16
         add     edi, 40
-        cmp     eax, 3
+        cmp     eax, ENC_UTF8
         jz      .utf8
         add     ecx, esi
-        cmp     eax, 2
+        cmp     eax, ENC_UTF16
         jz      .utf16
 @@:
         call    utf8to16

@@ -1163,9 +1163,9 @@ fat_entry_to_bdfe2:
         push    edi esi
         mov     edi, esi
         mov     esi, ebp
-        cmp     byte [ebp-4], 2
+        cmp     byte [ebp-4], ENC_UTF16
         jz      .utf16
-        cmp     byte [ebp-4], 3
+        cmp     byte [ebp-4], ENC_UTF8
         jz      .utf8
 @@:
         lodsw
@@ -1174,13 +1174,13 @@ fat_entry_to_bdfe2:
         test    al, al
         jnz     @b
         pop     esi edi
-        add     esi, 264
+        add     esi, FILENAME_LEN_CP866
 .ret:
         ret
 
 .utf8:
         push    ecx
-        mov     ecx, 519
+        mov     ecx, FILENAME_LEN_UTF - 1
         call    UTF16to8_string
         pop     ecx
         jmp     @f
@@ -1192,7 +1192,7 @@ fat_entry_to_bdfe2:
         jnz     .utf16
 @@:
         pop     esi edi
-        add     esi, 520
+        add     esi, FILENAME_LEN_UTF
         ret
 
 bdfe_to_fat_entry:
