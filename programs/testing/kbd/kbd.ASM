@@ -237,15 +237,14 @@ bd_id:          dd      0       ; Идентификатор устройства
 bd_stat:        db      0       ; 0 - не найден, 1 - выключен, 2 - включен
 
 nb_name         dd      nb_nf
-bd_msk          dd      msk_i440
+bd_msk          dd      msk_none
 
 if lang eq it_IT
         nb_nf           db     11, 'Non trovato'
 else ; Default to en_US
         nb_nf           db      9, 'Not found'
 end if
-msk_i440        db      0
-nb_i440         db      4, 'i440'
+msk_none        db      0
 msk_nforce      db      0x6D, 0x80, 0xE7, 0x06, 0       ; номер регистра, маска, номер регистра, маска, ... , 0
 nb_nforce       db      6, 'nForce'
 msk_nforce2     db      0x6F, 0x10, 0
@@ -258,12 +257,12 @@ nb_sis735       db      7, 'SiS 735'
 nb_sis740       db      7, 'SiS 740'
 nb_sis741       db      7, 'SiS 741'
 nb_sis745       db      7, 'SiS 745'
+nb_sis755       db      7, 'SiS 755'
 msk_sis746      db      0x6C, 0x01, 0
 nb_sis746       db      7, 'SiS 746'
 nb_sis748       db      7, 'SiS 748'
 msk_amd751      db      0x62, 0x06, 0
 nb_amd751       db      7, 'AMD 751'
-nb_amd751s      db      8, 'AMD 751S'
 nb_amd761       db      7, 'AMD 761'
 msk_amd762      db      0x62, 0x02, 0x6A, 0x02, 0
 nb_amd762       db      7, 'AMD 762'
@@ -286,10 +285,6 @@ bd_table:       dd      0x70061022              ; AMD 751  ----
                 dd      nb_amd751
                 dd      msk_amd751
 
-                dd      0x70041022              ; AMD 751S
-                dd      nb_amd751s
-                dd      msk_amd751
-
                 dd      0x700E1022              ; AMD 761
                 dd      nb_amd761
                 dd      msk_amd751
@@ -297,10 +292,6 @@ bd_table:       dd      0x70061022              ; AMD 751  ----
                 dd      0x700C1022              ; AMD 762
                 dd      nb_amd762
                 dd      msk_amd762
-
-                dd      0x71908086              ; i440 ---
-                dd      nb_i440
-                dd      msk_i440
 
                 dd      0x01A410DE              ; nForce  ----
                 dd      nb_nforce
@@ -334,6 +325,10 @@ bd_table:       dd      0x70061022              ; AMD 751  ----
                 dd      nb_sis745
                 dd      msk_sis735
 
+                dd      0x07551039              ; SiS 755
+                dd      nb_sis755
+                dd      msk_sis735
+
                 dd      0x07461039              ; SiS 746
                 dd      nb_sis746
                 dd      msk_sis746
@@ -350,7 +345,11 @@ bd_table:       dd      0x70061022              ; AMD 751  ----
                 dd      nb_viakx133
                 dd      msk_viakt133
 
-                dd      0x06911106              ; VIA KLE133
+                dd      0x06911106              ; VIA KX133
+                dd      nb_viakx133
+                dd      msk_viakt133
+
+                dd      0x31121106              ; VIA KLE133
                 dd      nb_viakle133
                 dd      msk_viakt133
 
