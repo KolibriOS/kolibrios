@@ -1,4 +1,4 @@
-; AMDtemp -s/sd0/4/data/temp/log.grf -d"/sd0/4/data/датчик температуры com порт/sensors.sys"
+; AMDtemp -s/sd0/4/data/temp/log.grf -d"/sd0/4/data/temp sensor on serial port/sensors.sys"
 parse_cmd:
         mov     edi, PATH
         mov     ecx, 512
@@ -27,7 +27,8 @@ parse_cmd:
         add     edi, 2
         sub     ecx, 2
         call    .get_str
-        mov     [drv_ptr],eax
+        mov     [drv_path_ptr],eax
+        mov     [drv_name_ptr], dword null_str
         jmp     .still
 @@:
         cmp     byte[edi], 0
