@@ -57,7 +57,7 @@ img_files = {
  {"SETTINGS/DOCKY.INI", "common/settings/docky.ini"},
  {"SETTINGS/FB2READ.INI", "common/settings/fb2read.ini"},
  {"SETTINGS/HA.CFG", SRC_PROGS .. "/other/ha/SETTINGS/HA.CFG"},
- {"SETTINGS/ICON.INI", build_type .. "/settings/icon.ini"},
+ {"SETTINGS/ICON2EXT.INI", build_type .. "/settings/icon2ext.ini"},
  {"SETTINGS/KEYMAP.KEY", SRC_PROGS .. "/system/taskbar/KEYMAP.KEY"},
  {"SETTINGS/KOLIBRI.LBL", build_type .. "/settings/kolibri.lbl"},
  {"SETTINGS/LANG.INI", build_type .. "/settings/lang.ini"},
