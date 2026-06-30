@@ -223,14 +223,13 @@ void _http::receive()
 
 	switch(ESBYTE[new_URL]) {
 		case '.':
-			new_URL++;
-			if (ESBYTE[new_URL] == '/') {
-				new_URL++;
-			}
-			else if (ESBYTE[new_URL] == '.') && (ESBYTE[new_URL+1] == '/') {
-				_GO_UP:
+			if (ESBYTE[new_URL+1] == '/') {
 				new_URL+=2;
-				newurl[strrchr(#newurl, '/')-1] = '\0';				
+			}
+			else if (ESBYTE[new_URL+1] == '.') && (ESBYTE[new_URL+2] == '/') {
+				_GO_UP:
+				new_URL+=3;
+				newurl[strrchr(#newurl, '/')-1] = '\0';		
 			}
 			goto _DEFAULT;
 		case '?':
