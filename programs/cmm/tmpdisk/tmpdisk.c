@@ -1,4 +1,4 @@
-#define MEMSIZE 0xA0000
+#define MEMSIZE 1024*30
 #include "..\lib\kolibri.h" 
 #include "..\lib\mem.h" 
 #include "..\lib\strings.h"

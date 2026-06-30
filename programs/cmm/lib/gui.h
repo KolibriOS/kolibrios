@@ -69,8 +69,8 @@
 
 :void DrawCaptButton(dword x,y,w,h,id,color_b, color_t,text)
 {
-	dword tx = -strlen(text)*8+w/2+x;
-	dword ty = h/2-7+y;
+	dword tx = -strlen(text)*8+w/2+x+1;
+	dword ty = h/2-6+y;
 	DefineButton(x,y,w,h,id,color_b);
 	WriteText(tx+1,ty+1,0x90,MixColors(color_b,0,230),text);
 	WriteText(tx,ty,0x90,color_t,text);

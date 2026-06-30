@@ -5,32 +5,61 @@
 #include "..\lib\gui.h"
 #include "..\lib\obj\box_lib.h"
 
+//===================================================//
+//                                                   //
+//                   TRANSLATIONS                    //
+//                                                   //
+//===================================================//
+
 #ifdef LANG_RUS
-?define T_ADD_DISK " Добавить диск [Ins]"	
-?define T_DELETE_DISK " Удалить диск [Del]"
-?define INTRO_TEXT_1 "Здесь будет отображаться список"
-?define INTRO_TEXT_2 "виртуальных дисков в системе."
-?define INTRO_TEXT_3 "Попробуйте добавить один..."
-?define SIZE_TEXT "Размер нового диска в МБ:"
+?define T_WIN_TITLE "TmpDisk 0.80: Управление дисками в ОЗУ"
+?define T_ADD_DISK "Добавить диск [Ins]"	
+?define T_DELETE_DISK "Удалить диск [Del]"
+?define INTRO_TEXT_1 "Ни одного диска пока не добавлено."
+?define INTRO_TEXT_2 "Пожалуйста, добавьте tmp0, он необходим."
+?define NEW_DISK_SIZE "Новый диск:"
+?define NEW_DISK_SIZE_W 11*8
 ?define NOTIFY_TEXT_NO_DISK    "'Для начала добавьте хотя бы один диск' -W"
 ?define NOTIFY_SYSTEM_DISK0    "'Диск с номером 0 является системным и удалять его не рекомендуется. 
 В случае, если вы точно знаете, что делаете, удалить его можно с зажатой клавишей SHIFT.' -W"
 ?define NOTIFY_TEXT_DISK_LIMIT "'Достигнут предел количества виртуальных дисков' -W"
-?define FREE_RAM_TEXT "Размер свободной оперативной памяти: %i MБ"
+?define FREE_RAM_TEXT "Доступно %i MБ"
 	
 #else
-?define T_ADD_DISK " Add disk [Ins]"
-?define T_DELETE_DISK " Delete disk [Del]"
-?define INTRO_TEXT_1 " There will be list of mounted"
-?define INTRO_TEXT_2 " virtual disks."
-?define INTRO_TEXT_3 " Try to add one..."
-?define SIZE_TEXT "New Disk size in MB:"
+#ifdef LANG_SPA
+?define T_WIN_TITLE "TmpDisk 0.80: Gestor de discos RAM"
+?define T_ADD_DISK "Anadir disco [Ins]"
+?define T_DELETE_DISK "Eliminar disco [Del]"
+?define INTRO_TEXT_1 "Aun no hay discos anadidos."
+?define INTRO_TEXT_2 "Anada tmp0, es imprescindible."
+?define NEW_DISK_SIZE "Disco nuevo:"
+?define NEW_DISK_SIZE_W 12*8
+?define NOTIFY_TEXT_NO_DISK    "'Necesitas tener al menos un disco' -W"
+?define NOTIFY_SYSTEM_DISK0    "'El disco numero 0 es un disco del sistema. No se recomienda eliminarlo.
+Si sabes lo que haces, puedes eliminarlo con la tecla SHIFT pulsada.' -W"
+?define NOTIFY_TEXT_DISK_LIMIT "'Alcanzado el limite de discos virtuales' -W"
+?define FREE_RAM_TEXT "RAM libre: %i MB"
+#else
+?define T_WIN_TITLE "TmpDisk 0.80: RAM Disk Manager"
+?define T_ADD_DISK "Add disk [Ins]"
+?define T_DELETE_DISK "Delete disk [Del]"
+?define INTRO_TEXT_1 "No disks added yet."
+?define INTRO_TEXT_2 "Please add tmp0 as it is crucial."
+?define NEW_DISK_SIZE "New disk:"
+?define NEW_DISK_SIZE_W 9*8
 ?define NOTIFY_TEXT_NO_DISK    "'You need to have at least one disk' -W"
 ?define NOTIFY_SYSTEM_DISK0    "'Disc number 0 is a system disk. It is not recommended to delete it.
 In case when you know what you are doing you can delete it with the SHIFT key pressed.' -W"
 ?define NOTIFY_TEXT_DISK_LIMIT "'Reached the limit of the number of virtual disks' -W"
-?define FREE_RAM_TEXT "Free RAM size: %i MB"
+?define FREE_RAM_TEXT "Free RAM: %i MB"
 #endif
+#endif
+
+//===================================================//
+//                                                   //
+//                       DATA                        //
+//                                                   //
+//===================================================//
 
 struct path_string { unsigned char Item[10]; };
 path_string disk_list[10];
@@ -39,37 +68,48 @@ dword devbuf;
 char disk_num;
 char selected;
 
-proc_info Form;
+#define WIN_W 410
+#define WIN_H 268
+#define BTN_W 190
+#define PANEL_X 8
+#define PANEL_Y 84
+#define PANEL_W 393
+#define PANEL_H 175
 
-unsigned char icons_btn[] = FROM "img/btn.raw";
-unsigned char disk_icon[] = FROM "img/disk.raw";
-#define TOPPANELH 68
-#define BOTPANELH 26
+#define SELECTION_ACTIVE 0x0080FF
+#define SELECTION_INACTIVE 0x757489
 
-char new_disk_size[7];
-edit_box edit_disk_size= {50,0,7,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,
-	sizeof(new_disk_size)-2,#new_disk_size,0, ed_focus+ed_figure_only};
+char new_disk_size[5];
+edit_box edit_disk_size= {40,NEW_DISK_SIZE_W+14,13,0xffffff,0x94AECE,0xFFFfff,0xffffff,0x10000000,
+	sizeof(new_disk_size)-1,#new_disk_size,0, ed_focus+ed_figure_only};
+
+char tmp_path[8] = "/tmp#/1";
+char disk_size_text[16];
+
+//===================================================//
+//                                                   //
+//                       CODE                        //
+//                                                   //
+//===================================================//
 
 void Main_Window()
 {
 	word id;
-	int x;
+	proc_info Form;
 
-	#define NO_DLL_INIT
 	load_dll(boxlib, #box_lib_init,0);
 	GetNewSizeDisk();
-	edit_disk_size.left = strlen(SIZE_TEXT)*8 + 13;
 	@SetEventMask(EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE + EVM_MOUSE_FILTER);
 	loop()
 	{
-		switch(@WaitEvent()) 
+		switch(@WaitEvent())
 		{
 		case evMouse:
 			edit_box_mouse stdcall (#edit_disk_size);
 			break;
 			
 		case evButton:
-			id = @GetButtonID();               
+			id = @GetButtonID();
 			if (id==1) return;
 			if (id==10) AddDisk();
 			if (id==11) {
@@ -86,7 +126,7 @@ void Main_Window()
         case evKey:
 			GetKeys();
 			// PROCESS KEYS WHEN EDIT BOX INACTIVE
-			if ( ! edit_disk_size.flags&ed_focus)	switch(key_scancode) 
+			if (!edit_disk_size.flags&ed_focus)	switch(key_scancode)
 			{
 				case SCAN_CODE_TAB:
 					edit_disk_size.flags = ed_figure_only + ed_focus;
@@ -112,7 +152,7 @@ void Main_Window()
 					if (selected+4>disk_num) break;
 					selected+=3;
 					DrawTmpDisks();
-					break;					
+					break;
 				case SCAN_CODE_INS:
 					AddDisk();
 					break;
@@ -123,7 +163,7 @@ void Main_Window()
 					OpenTmpDisk();
 					break;
 			}
-			// PROCESS KEYS WHEN EDIT BOX ACTIVE		
+			// PROCESS KEYS WHEN EDIT BOX ACTIVE
 			else switch(key_scancode) 
 			{
 				case SCAN_CODE_TAB:
@@ -141,46 +181,51 @@ void Main_Window()
 					break;
 			}
 			break;
-         case evReDraw:			
+         case evReDraw:
 			sc.get();
-			DefineAndDrawWindow(170,150,405,290,0x74,sc.work,"Virtual Disk Manager 0.69",0);
+			DefineAndDrawWindow(screen.w-WIN_W/2,screen.h-WIN_H/2,
+				WIN_W+9, WIN_H+skin_h+4,0x74,sc.work,T_WIN_TITLE,0);
 			GetProcessInfo(#Form, SelfInfo);
 			if (Form.status_window&ROLLED_UP) break;
-
-			DrawBar(0,0,  Form.cwidth,TOPPANELH, sc.work);
-			DrawBar(0,TOPPANELH, Form.cwidth,1,  sc.line);
-			WriteText(6, 9, 0x90, sc.work_text, SIZE_TEXT);
-			DrawRectangle(edit_disk_size.left-1, edit_disk_size.top-1, edit_disk_size.width+2, 23,sc.line);
-			edit_box_draw stdcall (#edit_disk_size);
-			x = 6 + DrawStandartCaptButton(6, 36, 10, T_ADD_DISK);
-			DrawStandartCaptButton(x, 36, 11, T_DELETE_DISK);
-			PutImage(6+6, 42,  14,14, #icons_btn);
-			PutImage(x+6, 42,  14,14, 14*14*3+#icons_btn);		
-			GetDisks();
-			DrawTmpDisks();
+			DrawWindowContent();
 		}
 	}
+}
+
+void DrawWindowContent()
+{
+	char free_ram_text[60];
+
+	DrawBar(0,0, WIN_W,WIN_H, sc.work);
+	WriteText(7, 16, 0x90, sc.work_text, NEW_DISK_SIZE);
+	DrawRectangle(edit_disk_size.left-1, edit_disk_size.top-1, edit_disk_size.width+2, 23,sc.line);
+	edit_box_draw stdcall (#edit_disk_size);
+	DrawCaptButton(8, 48, BTN_W, 23, 10, 0x45975E, 0xFFFfff, T_ADD_DISK);
+	DrawCaptButton(211, 48, BTN_W, 23, 11, 0xC75C54, 0xFFFfff, T_DELETE_DISK);
+	miniprintf(#free_ram_text, FREE_RAM_TEXT, GetFreeRAM()/1024);
+	WriteText(NEW_DISK_SIZE_W+62, 16, 0x90, sc.work_text, "MB");
+	WriteText(210, 16, 0x90, sc.work_text, #free_ram_text);
+	GetDisks();
+	DrawTmpDisks();
 }
 
 
 void GetNewSizeDisk()
 {
 	int fr;
+
 	fr = GetFreeRAM() / 5 * 2;
 	fr = itoa(fr / 2048);
-	strcpy(#new_disk_size, fr);
-	EditBox_UpdateText(#edit_disk_size, edit_disk_size.flags);
-	edit_box_draw stdcall (#edit_disk_size);
+	edit_box_set_text stdcall (#edit_disk_size, fr);
 }
 
 
 void OpenTmpDisk()
 {
-	unsigned char eol_param[10];
-	if (!disk_num) return;
-	strcpy(#eol_param, "/tmp#/1");
-	eol_param[4] = disk_list[selected].Item[3];
-	RunProgram("/sys/File managers/Eolite", #eol_param);
+	if (disk_num) {
+		tmp_path[4] = disk_list[selected].Item[3];
+		RunProgram("/sys/File managers/Eolite", #tmp_path);
+	}
 }
 
 
@@ -190,11 +235,11 @@ void GetDisks()
 	unsigned char disk_name[10];
 	
 	mem_Free(devbuf);
-	devbuf= mem_Alloc(32);
+	devbuf=mem_Alloc(32);
 	ReadDir(0, devbuf, "/");
 	fcount=ESDWORD[devbuf+8];
 	mem_Free(devbuf);
-	devbuf = mem_Alloc(fcount+1*304+32);
+	devbuf=mem_Alloc(fcount+1*304+32);
 	ReadDir(fcount, devbuf, "/");
 	
 	disk_num=0;
@@ -209,37 +254,20 @@ void GetDisks()
 }
 
 
-dword GetDiskSize(dword disk_n)
-{
-	BDVK bdvk;
-	char tmp_path[8];
-	strcpy(#tmp_path, "/tmp#/1");
-	tmp_path[4] = disk_n + '0';
-	GetFileInfo(#tmp_path, #bdvk);		
-	return bdvk.sizelo;
-}
-
-unsigned int disk_pos_x[]={13,13,13,102,102,102,191,191,191,279,279,279};
-unsigned int disk_pos_y[]={79,127,175, 79,127,175, 79,127,175, 79,127,175};
+unsigned int disk_pos_x[]={21,21,21,116,116,116,211,211,211,306,306,306};
+unsigned int disk_pos_y[]={97,151,205, 97,151,205, 97,151,205, 97,151,205};
 
 void DrawTmpDisks()
 {
-	#define SELECTION_ACTIVE 0x0080FF;
-	#define SELECTION_INACTIVE 0x757489;
-	dword selection_color;
-	char free_ram_text[60];
+	dword selection_color, x, y;
 	byte i;
 
-	DrawBar(0,TOPPANELH+1, Form.cwidth,Form.cheight-TOPPANELH-BOTPANELH-2, 0xFFFFFF);
-	DrawBar(0,Form.cheight-BOTPANELH-1, Form.cwidth,1, sc.line);
-	DrawBar(0,Form.cheight-BOTPANELH, Form.cwidth,BOTPANELH, sc.work);
-	sprintf(#free_ram_text, FREE_RAM_TEXT, GetFreeRAM()/1024);
-	WriteText(10, Form.cheight-20, 0x90, sc.work_text, #free_ram_text);
+	DrawBar(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, sc.light);
+	DrawRectangle(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, sc.line);
 	if (disk_num==0)
 	{
-		WriteText(17,TOPPANELH+15,    0x90, 0x777777, INTRO_TEXT_1);
-		WriteText(17,TOPPANELH+15+15, 0x90, 0x777777, INTRO_TEXT_2);
-		WriteText(17,TOPPANELH+15+42, 0x90, 0x777777, INTRO_TEXT_3);
+		WriteText(PANEL_X+12, PANEL_Y+12, 0x90, sc.work_text, INTRO_TEXT_1);
+		WriteText(PANEL_X+12, PANEL_Y+30, 0x90, 0xFF000d, INTRO_TEXT_2);
 		return;
 	};
 	if (selected>=disk_num) selected=disk_num-1; //restore selected
@@ -247,26 +275,37 @@ void DrawTmpDisks()
 	{
 		DeleteButton(20+i);
 		if (i>=disk_num) continue;
-		DefineButton(disk_pos_x[i], disk_pos_y[i], 80, 40, 20+i, 0xFFFfff);
-		WriteText(disk_pos_x[i]+29,disk_pos_y[i]+6,  0x90, 0x222222, #disk_list[i].Item);
-		WriteText(disk_pos_x[i]+30,disk_pos_y[i]+24, 0x80, 0x555555, 
-			ConvertSize(GetDiskSize(disk_list[i].Item[3] - '0')));
-		PutImage(disk_pos_x[i]+9,disk_pos_y[i]+10, 15,9, #disk_icon);
+		x = disk_pos_x[i]; y = disk_pos_y[i];
+		DefineButton(x, y, 82, 41, 20+i, 0xFFFfff);
+		WriteText(x+35,y+6,  0x90, 0x222222, #disk_list[i].Item);
+		WriteText(x+37,y+24, 0x80, 0x555555, 
+			GetDiskSizeInMb(disk_list[i].Item[3]));
+		draw_icon_16(x+10,y+10, 51);
 		if (selected==i) {
-			if ( edit_disk_size.flags & ed_focus) 
-				selection_color = SELECTION_INACTIVE; 
-			else 
+			if (edit_disk_size.flags & ed_focus)
+				selection_color = SELECTION_INACTIVE;
+			else
 				selection_color = SELECTION_ACTIVE;
-			DrawWideRectangle(disk_pos_x[i], disk_pos_y[i], 80, 40, 2, selection_color);
-			PutPixel(disk_pos_x[i], disk_pos_y[i], 0xFFFfff);
+			DrawWideRectangle(x, y, 82, 41, 2, selection_color);
+			PutPixel(x, y, sc.light);
 		}
 	}
 }
 
+:dword GetDiskSizeInMb(dword disk_n)
+{
+	BDVK bdvk;
+	tmp_path[4]=disk_n;
+
+	GetFileInfo(#tmp_path, #bdvk);
+	miniprintf(#disk_size_text, "%i MB", bdvk.sizelo / 1048576);
+	return #disk_size_text;
+}
 
 void AddDisk()
 {
 	byte i, j, err;
+
 	if (disk_num>=10)
 	{
 		notify(NOTIFY_TEXT_DISK_LIMIT);
@@ -290,15 +329,15 @@ void AddDisk()
 	err = Console_Work();
 	if ((err!=0) && (err<7)) notify(rezult_text[err]);
 	pause(5);
-	GetDisks();
-	DrawTmpDisks();
 	GetNewSizeDisk();
+	DrawWindowContent();
 }
 
 
 void DelDisk()
 {
 	byte err;
+
 	if (disk_num==0)
 	{
 		notify(NOTIFY_TEXT_NO_DISK);
@@ -314,8 +353,8 @@ void DelDisk()
 	err = byte Console_Work();
 	if ((err!=0) && (err<7)) notify(rezult_text[err]);
 	pause(15);
-	GetDisks();
-	DrawTmpDisks();
+	GetNewSizeDisk();
+	DrawWindowContent();
 }
 
 

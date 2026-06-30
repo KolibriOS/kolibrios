@@ -2,4 +2,4 @@
 @del tmpdisk
 @rename tmpdisk.com tmpdisk
 @del warning.txt
-@pause
+if not exist tmpdisk ( @pause )
