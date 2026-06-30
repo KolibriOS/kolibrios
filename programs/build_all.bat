@@ -66,7 +66,7 @@ fasm system\docpack\docpack.asm %BIN%\docpack
 fasm system\end\end.asm %BIN%\end
 fasm system\gmon\gmon.asm %BIN%\gmon
 fasm system\icon\icon.asm %BIN%\icon
-fasm testing\kbd\kbd.ASM %BIN%\kbd
+fasm system\kbd\kbd.asm %BIN%\kbd
 fasm system\launcher\launcher.asm %BIN%\launcher
 fasm system\menu\menu.asm %BIN%\@menu
 fasm testing\mgb\mgb.asm %BIN%\mgb

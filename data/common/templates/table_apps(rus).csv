@@ -26,7 +26,7 @@ fspeed;Тестирование скорости диска;asm;http://git.kolibrios.org/KolibriOS/kolibr
 gmon;Информация о загрузке системы;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/gmon;http://board.kolibrios.org/viewtopic.php?t=470;http://wiki.kolibrios.org/wiki/Gmon/ru
 graph;Построение графиков;c (msvc);http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/graph;http://board.kolibrios.org/viewtopic.php?t=1059;http://wiki.kolibrios.org/wiki/Graph/ru
 hdd_info;Информация о физических дисках;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/hdd_info;http://board.kolibrios.org/viewtopic.php?t=1318;http://wiki.kolibrios.org/wiki/Hdd_info/ru
-kbd;Утилита, позволяющая отключить южный мост на материнской плате для экономии электроэнергии;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/testing/kbd;;http://wiki.kolibrios.org/wiki/KBD_(Kolibri_Bus_Disconnect)
+kbd;Утилита, позволяющая отключить южный мост на материнской плате для экономии электроэнергии;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/kbd;;http://wiki.kolibrios.org/wiki/KBD_(Kolibri_Bus_Disconnect)
 kpack;Cистемный упаковщик и распаковщик;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/kpack;http://board.kolibrios.org/viewtopic.php?t=355;http://wiki.kolibrios.org/wiki/Kpack/ru
 launcher;Запуск программ при старте системы;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/launcher;http://board.kolibrios.org/viewtopic.php?t=2454;
 loaddrv;Утилита для ручной загрузки драйверов;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/loaddrv;;
