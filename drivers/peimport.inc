@@ -150,6 +150,9 @@ import core,\
               LFBAddress,\
               GetDisplay,\
               SetScreen,\
+              SetLfbMode,\
+              V86start,\
+              V86machine,\
 \
               RegUSBDriver,\
               USBOpenPipe,\

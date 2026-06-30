@@ -351,6 +351,7 @@ fpu_data_size = $ - fpu_data
 
 BPSLine_calc_area   rd  MAX_SCREEN_HEIGHT
 d_width_calc_area   rd  MAX_SCREEN_HEIGHT
+win_map_allocated   rd  1       ; bytes currently allocated for win_map (grow-only)
 
 mem_block_list      rd  64*2
 mem_used_list       rd  64*2

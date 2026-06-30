@@ -4329,16 +4329,27 @@ set_screen:
         cmp     [do_not_touch_winmap], 1
         je      @f
 
-        stdcall kernel_free, [_display.win_map]
-
         mov     eax, [_display.width]
         mul     [_display.height]
         mov     [_display.win_map_size], eax
+
+; win_map is GROW-ONLY: reallocate only when the new resolution needs MORE than
+; the current allocation. Shrinking must keep the buffer - on a runtime mode
+; change the OS thread may be mid-draw and would index a freed/smaller win_map
+; out of bounds (-> #PF). Keeping the larger buffer makes stale indexes safe.
+        cmp     eax, [win_map_allocated]
+        jbe     .winmap_fits
+
+        push    eax
+        stdcall kernel_free, [_display.win_map]
+        pop     eax
+        mov     [win_map_allocated], eax
 
         stdcall kernel_alloc, eax
         mov     [_display.win_map], eax
         test    eax, eax
         jz      .epic_fail
+.winmap_fits:
 ; store for f.18.24
         mov     eax, [_display.width]
         mov     [display_width_standard], eax

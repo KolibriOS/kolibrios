@@ -71,6 +71,9 @@ __exports:
           get_display,           'GetDisplay',         \
           set_screen,            'SetScreen',          \
           set_framebuffer,       'SetFramebuffer',     \      ; gcc fastcall
+          set_lfb_mode,          'SetLfbMode',         \      ; stdcall(w,h,bpp,pitch,phys)
+          v86_start,             'V86start',           \      ; ebx=regs esi=handle ecx=end edx=irq
+          sys_v86_machine,       'V86machine',         \      ; -> dd: handle of system V86 machine
           window._.get_rect,     'GetWindowRect',      \      ; gcc fastcall
           pci_api_drv,           'PciApi',             \
           pci_read8,             'PciRead8',           \      ; stdcall

@@ -26,28 +26,95 @@ include '../macros.inc'
 
 DEBUG = 1
 
-; the start procedure (see the description above)
-START:
+; unified service protocol (same as clgd54xx / s3vid / vbeapp)
+REASON_INIT   = 1
+IOCTL_io_code = 4
+IOCTL_input   = 8
+IOCTL_output  = 16
+VBE_GET_MODES = 1
+VBE_SET_MODE  = 2
+VBE_GET_INFO  = 3
+SCREEN_BPP    = 32
+
+; the start procedure: now registers a service (for vbeapp) instead of setting
+; the mode at once. pipe/DPLL timings are left untouched (native, from BIOS);
+; the LFB is reused via GetDisplay/SetScreen. The mode is changed only on
+; SET_MODE, so loading the driver (vbeapp probing) does not disturb the screen.
+; uses ebx esi edi is required: load_pe_driver keeps START's address in esi.
+proc START c uses ebx esi edi, reason:dword, cmdline:dword
+        cmp     [reason], REASON_INIT
+        jne     .stop
 ; 1. Detect device. Abort if not found.
-        push    esi
         call    DetectDevice
         test    esi, esi
-        jz      .return0
-; 2. Detect optimal mode unless the mode is given explicitly. Abort if failed.
+        jz      .stop
+        mov     [mmio], esi             ; keep MMIO mapped (service stays resident, do not free)
+; 2. Detect native mode (EDID). Abort if failed.
 if use_predefined_mode = 0
         call    DetectMode
 end if
         cmp     [width], 0
-        jz      .return0_cleanup
-; 3. Set the detected mode.
-        call    SetMode
-; 4. Cleanup and return.
-.return0_cleanup:
-        invoke  FreeKernelSpace, esi
-.return0:
-        pop     esi
+        jz      .free_stop
+; 3. Register the service. Loading the driver does NOT change the screen — the
+;    native mode is applied only on SET_MODE (Apply in vbeapp). [width]/[height]
+;    hold the single native mode and are exposed via GET_MODES.
+        invoke  RegService, srv_name, service_proc
+        ret
+.free_stop:
+        invoke  FreeKernelSpace, [mmio]
+.stop:
         xor     eax, eax
         ret
+endp
+
+; service handler: unified protocol (GET_MODES / SET_MODE / GET_INFO)
+proc service_proc stdcall uses ebx esi edi, ioctl:dword
+        mov     edi, [ioctl]
+        mov     eax, [edi + IOCTL_io_code]
+        cmp     eax, VBE_GET_MODES
+        je      .get_modes
+        cmp     eax, VBE_SET_MODE
+        je      .set_mode
+        cmp     eax, VBE_GET_INFO
+        je      .get_info
+        or      eax, -1
+        ret
+.get_modes:
+        mov     ebx, [edi + IOCTL_output]
+        test    ebx, ebx
+        jz      .bad
+        ; a single mode: the native panel resolution
+        mov     dword [ebx], 1          ; mode count
+        mov     eax, [width]
+        mov     [ebx + 4], eax          ; width
+        mov     eax, [height]
+        mov     [ebx + 8], eax          ; height
+        mov     dword [ebx + 12], SCREEN_BPP
+        mov     dword [ebx + 16], 0     ; vbe mode (unused)
+        mov     dword [ebx + 20], 0     ; phys (reuse boot framebuffer)
+        mov     eax, [width]
+        shl     eax, 2
+        mov     [ebx + 24], eax         ; pitch = w*4
+        xor     eax, eax
+        ret
+.set_mode:
+        ; the only mode is the native one -> (re)apply it
+        mov     esi, [mmio]
+        call    SetMode                 ; [width]/[height] hold the native mode
+        xor     eax, eax
+        ret
+.get_info:
+        mov     ebx, [edi + IOCTL_output]
+        test    ebx, ebx
+        jz      .bad
+        mov     dword [ebx], 0          ; version=0 -> native driver
+        mov     dword [ebx + 4], 0      ; lfb=0 (reuse the boot framebuffer)
+        xor     eax, eax
+        ret
+.bad:
+        or      eax, -1
+        ret
+endp
 
 ; check that there is Intel videocard
 ; if so, map MMIO registers and set internal variables
@@ -465,3 +532,8 @@ pciids_num = ($ - pciids) / 2
 align 4
 deviceType      dd      ?
 edid    rb      0x80
+
+; service layer data
+align 4
+mmio            dd      ?       ; MMIO base (kept while the service is alive)
+srv_name        db      'vidintel', 0
