@@ -1541,17 +1541,19 @@ KOSAPI void _ksys_debug_puts(const char* s)
 KOSAPI void ksys_draw_bitmap_palette(void* bitmap, int x, int y, int w, int h, int bpp, void* palette, int offset)
 {
     asm_inline(
-        "pushl %%ebp\n\t"               // save EBP register
-        "movl 0x24(%%ebp), %%ebp\n\t"   // 0x24 - "offset" param
+        "pushl %%ebp\n\t"
+        "movl %%eax, %%ebp\n\t"   // EBP = offset (row delta)
+        "movl $65, %%eax\n\t"     // EAX = sysfunc number
         "int $0x40\n\t"
-        "popl %%ebp"    // restore EBP register
+        "popl %%ebp"
         :
-        : "a"(65),
+        : "a"(offset),
         "b"(bitmap),
         "c"((w << 16) + h),
         "d"((x << 16) + y),
         "S"(bpp),
-        "D"(palette));
+        "D"(palette)
+        : "memory");
 }
 
 /*========= Function 66, subfunction 1 - set keyboard input mode. ==============*/
