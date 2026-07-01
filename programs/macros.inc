@@ -461,7 +461,7 @@ macro format spec& {
            db ((($ + (not -16)) and -16 ) - $) dup 0 ; for data
            display 'W: MENUET0X formats do not support sections, ',\
                    'so this directive only supports data alignment.',\
-                   ' The memory always has the RWX flags', 13, 10
+                   'Memory always has the RWX flag', 13, 10
       \\}
       macro data args& \\{
             __data_macro_good = 0
@@ -487,12 +487,12 @@ macro format spec& {
                         err
                       end if
                   else
-                        display 'E: Not supported on MENUET01 format. Use KX format', 13, 10
+                        display 'E: Not supported in the MENUET01 format. Use the KX format', 13, 10
                         err
                   end if
             \\\}
             match =export, args \\\{
-                  display 'E: Not supported on MENUET0X formats', 13, 10
+                  display 'E: Not supported in MENUET0X formats', 13, 10
                   err
             \\\}
             match =fixups, args \\\{
@@ -523,7 +523,7 @@ macro format spec& {
       \\}
       postpone \\{
         store dword $%% at meos_header.imgsize
-        ; set stack area and set stack pointer
+        ; set stack area and stack pointer
         rb stack_size
         store dword $% at meos_header.stack_ptr
 
@@ -545,10 +545,10 @@ macro format spec& {
 
         if defined __is_02_format
                 if __tmp_main = 0
-                   display 'W: for M02 format MAIN pointer not defined.', 13, 10
+                   display 'W: MAIN pointer not defined for the MENUET02 format', 13, 10
                 end if
                 if __is_format.flag_import = 1
-                   display 'E: there is no completion of the import table block', 13, 10
+                   display 'E: The import table block is not closed', 13, 10
                    err
                end if
         end if
