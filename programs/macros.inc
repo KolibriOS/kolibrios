@@ -411,7 +411,6 @@ macro format spec& {
         meos_header.02.idata_start:     dd 0
         meos_header.02.idata_end:       dd 0
         meos_header.02.main:            dd 0
-                ;err 'FORMAT NOT SUPPORTED. This format for gcc toolchain'
 
         macro main_entry arg& \\\{
                load __tmp_main dword from meos_header.02.main
@@ -419,6 +418,7 @@ macro format spec& {
                   store dword arg at meos_header.02.main
                   __tmp_main = 1
                else
+                  display 'E: Re-declaring the main function', 13, 10
                   err
                end if
         \\\}
@@ -432,13 +432,15 @@ macro format spec& {
         if ..tmp_entry = default_entry
            store dword ptr at meos_header.entry
         else
-           err 'ERROR: Re-declaring the entry point '
+           display 'E: Re-declaring the entry point', 13, 10
+           err
         end if
       \\}
       macro stack size* \\{
         if default_stack_size = stack_size
            stack_size = size
         else
+           display 'E: Re-declaring the stack size', 13, 10
            err
         end if
       \\}
@@ -457,6 +459,9 @@ macro format spec& {
 
       macro section args& \\{
            db ((($ + (not -16)) and -16 ) - $) dup 0 ; for data
+           display 'W: MENUET0X formats do not support sections, ',\
+                   'so this directive only supports data alignment.',\
+                   ' The memory always has the RWX flags', 13, 10
       \\}
       macro data args& \\{
             __data_macro_good = 0
@@ -469,7 +474,8 @@ macro format spec& {
                         __is_KX_format.flag_import_end = 1
                         __data_macro_good = 1
                       else
-                        err 'data import defined, format supported before one import table'
+                        display 'E: import table already defined; only one is supported', 13, 10
+                        err
                       end if
                   else if defined __is_02_format
                       if __is_format.flag_import = 0
@@ -477,23 +483,28 @@ macro format spec& {
                         __is_format.flag_import = 1
                         __data_macro_good = 1
                       else
-                        err 'data import defined, format supported before one import table'
+                        display 'E: import table already defined; only one is supported', 13, 10
+                        err
                       end if
                   else
-                        err 'Not supported on MENUET0X formats. Use KX format'
+                        display 'E: Not supported on MENUET01 format. Use KX format', 13, 10
+                        err
                   end if
             \\\}
             match =export, args \\\{
-                  err 'Not supported on MENUET0X formats'
+                  display 'E: Not supported on MENUET0X formats', 13, 10
+                  err
             \\\}
             match =fixups, args \\\{
                   __data_macro_good = 1
             \\\}
             macro data args& \\\{
-                  err 'ERROR: The previous data block is not closed'
+                  display 'E: The previous data block is not closed', 13, 10
+                  err
             \\\}
             if __data_macro_good = 0
-                  err 'ERROR: Unsupported data block'
+                  display 'E: Unsupported data block', 13, 10
+                  err
             end if
       \\}
       macro end args& \\{
@@ -533,12 +544,12 @@ macro format spec& {
         end if
 
         if defined __is_02_format
-                ;load __tmp_main dword from meos_header.02.main
                 if __tmp_main = 0
-                   err 'ERROR: for M02 format MAIN pointer not defined.'
+                   display 'W: for M02 format MAIN pointer not defined.', 13, 10
                 end if
-                if defined __is_02_format & __is_format.flag_import = 1
-                   err 'ERROR: there is no completion of the import table block'
+                if __is_format.flag_import = 1
+                   display 'E: there is no completion of the import table block', 13, 10
+                   err
                end if
         end if
 
