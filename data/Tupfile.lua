@@ -100,7 +100,7 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
  {"SETTINGS/.shell", SRC_PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey.ini"},
- {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
+ {"SETTINGS/SYSPANEL.INI", "es_ES/settings/syspanel.ini"},
 }) elseif build_type == "it_IT" then tup.append_table(img_files, {
  {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
