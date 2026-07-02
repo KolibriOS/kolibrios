@@ -131,6 +131,8 @@ proc service_proc stdcall uses ebx esi edi, ioctl:dword
         mov     ebx, [edi + IOCTL_output]
         test    ebx, ebx
         jz      .bad
+        call    KmsOwnsGpu
+        jne     .no_modes               ; KMS owns the GPU -> report 0 modes (hide from picker)
         mov     eax, [mode_count]
         mov     [ebx], eax
         ; copy count*REC_SIZE bytes (count*6 dwords)
@@ -144,7 +146,14 @@ proc service_proc stdcall uses ebx esi edi, ioctl:dword
         xor     eax, eax
         ret
 
+.no_modes:
+        mov     dword [ebx], 0          ; count = 0 -> vidmode won't list vesa20 while KMS is active
+        xor     eax, eax
+        ret
+
 .set_mode:
+        call    KmsOwnsGpu
+        jne     .bad                    ; KMS owns the GPU -> refuse (VBE modeset would hang)
         mov     esi, [edi + IOCTL_input]
         test    esi, esi
         jz      .bad
@@ -157,6 +166,17 @@ proc service_proc stdcall uses ebx esi edi, ioctl:dword
         or      eax, -1
         ret
 endp
+
+; =====================================================================
+; KMS present?  After the call, `jne` means a DRM/KMS driver owns the display
+; (display_t.ddev != 0) -> vesa20 must NOT VBE-modeset it (would fight KMS and
+; hang, like VESA vs KMS in Linux). Clobbers eax; leaves the cmp flags for the caller.
+; ddev offset: x/y/w/h/bpp/vrefresh/current_lfb/lfb_pitch (32) + win_map_lock
+; RWSEM(12) + win_map/pitch/size(12) + modes(4) = +60.
+KmsOwnsGpu:
+        call    dword [GetDisplay]      ; eax = _display
+        cmp     dword [eax + 60], 0     ; display_t.ddev
+        ret
 
 ; =====================================================================
 ; Set the mode by index eax. eax=0 ok / -1 fail

@@ -114,8 +114,73 @@ key:
         mcall   2
         test    al, al                  ; al=0 -> key code in ah
         jnz     still
+        cmp     ah, 9                   ; Tab       -> next driver     (whole window)
+        je      .next_drv
+        cmp     ah, 178                 ; Up        -> selection up     (list only)
+        je      .sel_up
+        cmp     ah, 177                 ; Down      -> selection down   (list only)
+        je      .sel_down
+        cmp     ah, 180                 ; Home      -> first mode       (list only)
+        je      .sel_home
+        cmp     ah, 181                 ; End       -> last mode        (list only)
+        je      .sel_end
         cmp     ah, 8                   ; Backspace -> revert to previous mode (one-shot)
-        jne     still
+        je      .bksp
+        jmp     still
+
+.sel_up:
+        cmp     dword [modes_buf], 0
+        je      still                   ; no modes
+        mov     eax, [selected]
+        test    eax, eax
+        jz      still                   ; already at the first mode
+        dec     eax
+        mov     [selected], eax
+        call    keep_selected_visible   ; scroll if needed + redraw ONLY the list
+        jmp     still
+
+.sel_down:
+        cmp     dword [modes_buf], 0
+        je      still                   ; no modes
+        mov     eax, [selected]
+        inc     eax
+        cmp     eax, dword [modes_buf]
+        jae     still                   ; already at the last mode
+        mov     [selected], eax
+        call    keep_selected_visible   ; scroll if needed + redraw ONLY the list
+        jmp     still
+
+.sel_home:
+        cmp     dword [modes_buf], 0
+        je      still                   ; no modes
+        mov     dword [selected], 0     ; jump to the first mode
+        call    keep_selected_visible
+        jmp     still
+
+.sel_end:
+        cmp     dword [modes_buf], 0
+        je      still                   ; no modes
+        mov     eax, dword [modes_buf]
+        dec     eax                     ; jump to the last mode (count-1)
+        mov     [selected], eax
+        call    keep_selected_visible
+        jmp     still
+
+.next_drv:
+        cmp     dword [avail_count], 0
+        je      still                   ; no drivers to cycle
+        mov     eax, [sel_drv]
+        inc     eax
+        cmp     eax, [avail_count]
+        jb      @f
+        xor     eax, eax                ; wrap around to the first driver
+@@:
+        mov     [sel_drv], eax
+        call    select_driver
+        mov     dword [selected], 0     ; reset mode selection when driver changes
+        jmp     red                     ; driver changed -> redraw the whole window
+
+.bksp:
         cmp     dword [bksp_armed], 0
         je      still                   ; not armed (no Apply since last revert)
         mov     eax, [prev_appl_drv]
@@ -152,7 +217,8 @@ button:
         cmp     eax, dword [modes_buf]
         jae     still
         mov     [selected], eax
-        jmp     red
+        call    draw_mode_rows          ; clicked row is already visible -> redraw ONLY the list
+        jmp     still
 .drvsel:
         sub     eax, 200
         cmp     eax, [avail_count]
@@ -587,6 +653,40 @@ draw_mode_rows:
         inc     dword [cur_idx]
         jmp     .dmr_row
 .dmr_done:
+        ret
+
+; =====================================================================
+; Keyboard moved [selected]: scroll the viewport so the selected row stays
+; visible, then redraw ONLY the mode list (and the scrollbar slider if the
+; offset actually changed). No SF_REDRAW BEGIN/END -> the rest of the window
+; is untouched, exactly like wheel scrolling.
+keep_selected_visible:
+        mov     eax, [selected]
+        cmp     eax, [scroll_modes.position]
+        jae     .check_bottom
+        mov     [scroll_modes.position], eax    ; selected above the viewport - scroll up
+        jmp     .redraw
+.check_bottom:
+        mov     ecx, [scroll_modes.position]
+        add     ecx, [mode_vis_count]           ; first row below the viewport
+        cmp     eax, ecx
+        jb      .redraw                         ; still visible - offset unchanged
+        inc     eax
+        sub     eax, [mode_vis_count]           ; position = selected - visible + 1
+        mov     [scroll_modes.position], eax
+.redraw:
+        call    draw_mode_rows
+        cmp     dword [have_sb], 0
+        je      .ret                            ; no box_lib - list only
+        cmp     dword [modes_buf], 1
+        jbe     .ret                            ; single mode - no scrollbar
+        mov     eax, [scroll_modes.max_area]
+        cmp     eax, [scroll_modes.cur_area]
+        jbe     .ret                            ; whole list fits - no scrollbar
+        mov     dword [scroll_modes.all_redraw], 0
+        push    dword scroll_modes
+        call    [scrollbar_v_draw]              ; move slider to the new position
+.ret:
         ret
 
 ; =====================================================================
