@@ -446,6 +446,12 @@ file_system_lfn:
         ret
 
 .deviceInfo:
+        push    edi             ; clear the whole BDFE header first
+        xor     eax, eax
+        mov     ecx, 40/4
+        rep     stosd
+        pop     edi
+        mov     dword [edi], 0x10 ; attributes: folder
         test    ebp, ebp
         jz      @f
         mov     eax, dword[ebp+DISK.MediaInfo.Capacity]
@@ -461,8 +467,18 @@ file_system_lfn:
         ret
 
 .rootdir:   ; / - virtual root folder
-        cmp     byte [ebx], 5
-        jz      @b
+        cmp     byte [ebx], 5   ; get file info?
+        jnz     .rootdir_readfolder
+        mov     edi, [ebx+16]   ; buffer
+        push    edi             ; clear the whole BDFE header first
+        xor     eax, eax
+        mov     ecx, 40/4
+        rep     stosd
+        pop     edi
+        mov     dword [edi], 0x10 ; attributes: folder
+        and     dword[image_of_eax], 0
+        ret
+.rootdir_readfolder:
         cmp     byte [ebx], 1   ; read folder?
         jnz     .access_denied
         mov     ebp, [ebx+12]   ; number of blocks
