@@ -238,6 +238,15 @@ typedef struct
 
 } ksys_memory_info_t;
 
+typedef struct
+{
+    uint32_t version;
+    uint32_t blocks;
+    uint32_t num_of_files;
+    char reserver[20];
+    ksys_bdfe_t files[];
+} ksys_readdir_buff_t;
+
 #pragma pack(pop)
 
 typedef rgb_t ksys_bitmap_t;
@@ -1830,6 +1839,21 @@ KOSAPI ksys70_status_t _ksys_file_read(const char* name, uint64_t offset, uint32
     k.buf16 = buf;
     k.p20 = 0;
     k.p21 = name;
+    return _ksys70(&k);
+}
+
+/*====== Function 70, subfunction 1 -  read dir ======*/
+
+KOSAPI ksys70_status_t _ksys_read_dir(const char* path, unsigned n, unsigned encoding, ksys_readdir_buff_t* buf)
+{
+    ksys70_t k;
+    k.p00 = 1;
+    k.p04 = encoding;
+    k.p12 = n;
+    k.p16 = buf;
+    k.p20 = 0;
+    k.p21 = path;
+
     return _ksys70(&k);
 }
 
