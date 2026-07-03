@@ -125,9 +125,11 @@ CORE_SRCS:=                   			\
 			sys/iowrite.c		\
 			sys/isatty.c		\
 			sys/lseek.c		\
+			sys/mkdir.c		\
 			sys/open.c		\
 			sys/read.c           	\
 			sys/_rename.c		\
+			sys/rmdir.c		\
 			sys/stat.c		\
 			sys/unlink.c		\
 			sys/write.c          	\

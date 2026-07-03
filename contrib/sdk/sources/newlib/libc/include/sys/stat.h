@@ -152,7 +152,7 @@ int	_EXFUN(mkfifo,( const char *__path, mode_t __mode ));
 int	_EXFUN(stat,( const char *__restrict __path, struct stat *__restrict __sbuf ));
 mode_t	_EXFUN(umask,( mode_t __mask ));
 
-#define mkdir(path, mode) _ksys_mkdir(path)
+int	_EXFUN(mkdir,( const char *__path, mode_t __mode ));
 
 #if defined (__SPU__) || defined(__rtems__) || defined(__CYGWIN__) && !defined(__INSIDE_CYGWIN__)
 int	_EXFUN(lstat,( const char *__restrict __path, struct stat *__restrict __buf ));
