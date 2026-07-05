@@ -29,6 +29,7 @@ VID_ULI           = 0x10B9
 VID_TERA          = 0x6549
 VID_RDC           = 0x17F3
 VID_VMWARE        = 0x15AD
+VID_CMEDIA        = 0x13F6
 
 CTRL_ICH          = 0x2415
 CTRL_ICH0         = 0x2425
@@ -56,6 +57,11 @@ CTRL_SIS          = 0x7012
 CTRL_FM801        = 0x0801
 
 CTRL_CT0200       = 0x0006  ; Dell OEM version (EMU10K1X)
+
+CTRL_CMI8338A     = 0x0100
+CTRL_CMI8338B     = 0x0101
+CTRL_CMI8738      = 0x0111
+CTRL_CMI8738B     = 0x0112
 
 CTRL_INTEL_SCH2          =  0x080a
 CTRL_INTEL_HPT           =  0x0c0c
@@ -309,6 +315,11 @@ devices         dd (CTRL_ICH  shl 16)+VID_INTEL, intelac97
                 dd (0x5880 shl 16)+0x1274, ensoniq
 
                 dd (CTRL_CT0200 shl 16)+VID_CREATIVE, emu10k1x
+
+                dd (CTRL_CMI8338A shl 16)+VID_CMEDIA, cmi8738
+                dd (CTRL_CMI8338B shl 16)+VID_CMEDIA, cmi8738
+                dd (CTRL_CMI8738  shl 16)+VID_CMEDIA, cmi8738
+                dd (CTRL_CMI8738B shl 16)+VID_CMEDIA, cmi8738
 ; Intel HDA
                 dd (CTRL_INTEL_SCH2       shl 16)+VID_INTEL, intelhda
                 dd (CTRL_INTEL_HPT        shl 16)+VID_INTEL, intelhda
@@ -427,6 +438,7 @@ sis             db 'SIS', 0
 fm801           db 'FM801', 0
 ensoniq         db 'ENSONIQ', 0
 emu10k1x        db 'EMU10K1X', 0
+cmi8738         db 'CMI8738', 0
 intelhda        db 'HDAUDIO', 0
 sb16            db 'SB16', 0
 
