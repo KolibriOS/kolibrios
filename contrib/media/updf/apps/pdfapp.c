@@ -15,8 +15,7 @@ enum panning
 	PAN_TO_BOTTOM
 };
 
-void DrawPageSides(void);
-static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repaint);
+/* pdfapp_showpage and pdfapp_renderpage are declared in pdfapp.h */
 
 static void pdfapp_warn(pdfapp_t *app, const char *fmt, ...)
 {
@@ -111,12 +110,9 @@ static void pdfapp_open_pdf(pdfapp_t *app, char *filename, int fd)
 	/*
 	 * Open PDF and load xref table
 	 */
-kol_board_puts("FZ OPEN\n");
 	//file = fz_open_fd(fd);
-	kol_board_puts("FZ ready\n");
 	error = pdf_open_xref(&app->xref, filename, NULL);
 	if (error){
-	kol_board_puts("FZ can't open\n");
 		pdfapp_error(app, fz_rethrow(error, "cannot open document '%s'", filename));}
 	fz_close(file);
 
@@ -162,16 +158,12 @@ kol_board_puts("FZ OPEN\n");
 	/*
 	 * Start at first page
 	 */
-	 kol_board_puts("Start at first page\n");
 
 	error = pdf_load_page_tree(app->xref);
 	if (error) {
-		kol_board_puts("Can't load tree\n");
 		pdfapp_error(app, fz_rethrow(error, "cannot load page tree"));}
 
-kol_board_puts("Page counter\n");
 	app->pagecount = pdf_count_pages(app->xref);
-	kol_board_puts("All is set!\n");
 }
 
 void pdfapp_open(pdfapp_t *app, char *filename, int fd, int reload)
@@ -242,38 +234,12 @@ static fz_matrix pdfapp_viewctm(pdfapp_t *app)
 
 static void pdfapp_panview(pdfapp_t *app, int newx, int newy)
 {
+	/* vertical position is managed by the continuous scroll code in kos_main.c,
+	   here we only forbid negative offsets */
 	if (newx < 0)
 		newx = 0;
 	if (newy < 0)
 		newy = 0;
-
-	if (newx + app->image->w < app->winw)
-		newx = app->winw - app->image->w;
-	if (newy + app->image->h < app->winh)
-		newy = app->winh - app->image->h;
-
-	if (app->winw >= app->image->w)
-		newx = (app->winw - app->image->w) / 2;
-	if (app->winh >= app->image->h)
-		newy = (app->winh - app->image->h) / 2;
-
-	if (newx != app->panx || newy != app->pany)
-		winrepaint(app);
-		
-	if (newy > app->image->h) {
-
-		app->pageno++;
-		
-		
-	if (app->pageno > app->pagecount)
-		app->pageno = app->pagecount;
-
-
-			newy = 0;
-				app->pany = newy;
-			
-		pdfapp_showpage(app, 1, 1, 1);
-	}
 
 	app->panx = newx;
 	app->pany = newy;
@@ -310,7 +276,92 @@ static void pdfapp_loadpage_pdf(pdfapp_t *app)
 	pdf_age_store(app->xref->store, 3);
 }
 
-static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repaint)
+/*
+ * The KolibriOS blitter (syscall 73) always treats the image as 32-bit
+ * BGRA, so we render in colour (n=4) and, when grayscale is requested,
+ * convert each pixel to its luminance in place. Rendering into an
+ * fz_device_gray pixmap instead gives a 2-channel (gray+alpha) buffer
+ * that the blitter misreads - green tint and a horizontally doubled page.
+ */
+static void pdfapp_desaturate(fz_pixmap *pix)
+{
+	unsigned char *p = pix->samples;
+	int i, n, y;
+
+	if (pix->n != 4)
+		return;
+
+	n = pix->w * pix->h;
+	for (i = 0; i < n; i++, p += 4)
+	{
+		/* bgr order: p[0]=B, p[1]=G, p[2]=R, p[3]=A */
+		y = (p[2] * 77 + p[1] * 150 + p[0] * 29) >> 8;
+		p[0] = p[1] = p[2] = y;
+	}
+}
+
+/*
+ * Render any page into a fresh pixmap using the current view parameters
+ * (resolution, rotation, grayscale) without touching the state of the
+ * currently displayed page. Used by the continuous-scroll composer to
+ * draw neighbour pages. Returns NULL on failure.
+ */
+fz_pixmap *pdfapp_renderpage(pdfapp_t *app, int pageno)
+{
+	pdf_page *page;
+	fz_error error;
+	fz_device *dev;
+	fz_display_list *list;
+	fz_matrix ctm;
+	fz_bbox bbox;
+	fz_colorspace *colorspace;
+	fz_pixmap *pix;
+
+	if (pageno < 1 || pageno > app->pagecount)
+		return NULL;
+
+	error = pdf_load_page(&page, app->xref, pageno - 1);
+	if (error)
+		return NULL;
+
+	list = fz_new_display_list();
+	dev = fz_new_list_device(list);
+	error = pdf_run_page(app->xref, page, dev, fz_identity);
+	fz_free_device(dev);
+	if (error)
+	{
+		fz_free_display_list(list);
+		pdf_free_page(page);
+		return NULL;
+	}
+
+	/* same transform as pdfapp_viewctm, but for this page's box and rotation */
+	ctm = fz_identity;
+	ctm = fz_concat(ctm, fz_translate(0, -page->mediabox.y1));
+	ctm = fz_concat(ctm, fz_scale(app->resolution/72.0f, -app->resolution/72.0f));
+	ctm = fz_concat(ctm, fz_rotate(app->rotate + page->rotate));
+	bbox = fz_round_rect(fz_transform_rect(ctm, page->mediabox));
+
+	/* always render 32-bit BGRA for the blitter, then desaturate if needed */
+	colorspace = fz_device_bgr;
+
+	pix = fz_new_pixmap_with_rect(colorspace, bbox);
+	fz_clear_pixmap_with_color(pix, 255);
+	dev = fz_new_draw_device(app->cache, pix);
+	fz_execute_display_list(list, dev, ctm, bbox);
+	fz_free_device(dev);
+
+	if (app->grayscale)
+		pdfapp_desaturate(pix);
+
+	fz_free_display_list(list);
+	pdf_free_page(page);
+	pdf_age_store(app->xref->store, 3);
+
+	return pix;
+}
+
+void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repaint)
 {
 	char buf[256];
 	fz_device *idev;
@@ -356,23 +407,17 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 		/* Draw */
 		if (app->image)
 			fz_drop_pixmap(app->image);
-		if (app->grayscale)
-			colorspace = fz_device_gray;
-		else
-/*
-#ifdef _WIN32
-			colorspace = fz_device_bgr;
-#else
-			colorspace = fz_device_rgb;
-#endif
-*/
-			colorspace = fz_device_bgr;
-		
+		/* always render 32-bit BGRA for the blitter, then desaturate if needed */
+		colorspace = fz_device_bgr;
+
 		app->image = fz_new_pixmap_with_rect(colorspace, bbox);
 		fz_clear_pixmap_with_color(app->image, 255);
 		idev = fz_new_draw_device(app->cache, app->image);
 		fz_execute_display_list(app->page_list, idev, ctm, bbox);
 		fz_free_device(idev);
+
+		if (app->grayscale)
+			pdfapp_desaturate(app->image);
 	}
 
 	if (repaint)
@@ -381,7 +426,6 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 
 		if (app->shrinkwrap)
 		{
-			kol_board_puts ("SHRINK\n");
 			int w = app->image->w;
 			int h = app->image->h;
 			if (app->winw == w)
@@ -402,8 +446,6 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 	}
 
 	fz_flush_warnings();
-	
-	DrawPageSides();
 }
 
 static void pdfapp_gotouri(pdfapp_t *app, fz_obj *uri)
@@ -482,6 +524,35 @@ void pdfapp_inverthit(pdfapp_t *app)
 
 	if (!fz_is_empty_rect(hitbox))
 		pdfapp_invert(app, fz_transform_bbox(ctm, hitbox));
+}
+
+/*
+ * Invert on screen every character whose box lies inside app->selr
+ * (device coordinates). Inversion is its own inverse, so calling this
+ * twice with the same selr restores the original pixels - the caller
+ * uses that to move/clear the highlight without re-rendering the page.
+ */
+void pdfapp_invertselection(pdfapp_t *app)
+{
+	fz_bbox hitbox;
+	fz_matrix ctm;
+	fz_text_span *span;
+	int i;
+	int x0 = app->selr.x0, x1 = app->selr.x1;
+	int y0 = app->selr.y0, y1 = app->selr.y1;
+
+	if (!app->image || !app->page_text)
+		return;
+
+	ctm = pdfapp_viewctm(app);
+	for (span = app->page_text; span; span = span->next)
+		for (i = 0; i < span->len; i++)
+		{
+			hitbox = fz_transform_bbox(ctm, span->text[i].bbox);
+			if (hitbox.x1 >= x0 && hitbox.x0 <= x1 &&
+			    hitbox.y1 >= y0 && hitbox.y0 <= y1)
+				pdfapp_invert(app, hitbox);
+		}
 }
 
 static inline int charat(fz_text_span *span, int idx)
