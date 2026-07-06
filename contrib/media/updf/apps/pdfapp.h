@@ -1,104 +1,65 @@
 /*
- * Utility object for handling a pdf application / view
- * Takes care of PDF loading and displaying and navigation,
- * uses a number of callbacks to the GUI app.
+ * uPDF glue layer for MuPDF 1.19 (KolibriOS port).
+ * Bridges the KolibriOS GUI (kos_main.c) to the fz_context-based API.
+ * Keeps the same function names the GUI expects, so the continuous-scroll,
+ * scrollbar, drag-pan and selection code needs only minimal changes.
  */
 
-#define MINRES 54
-#define MAXRES 300
+#ifndef PDFAPP_H
+#define PDFAPP_H
+
+#include "mupdf/fitz.h"
 
 typedef struct pdfapp_s pdfapp_t;
 
-enum { ARROW, HAND, WAIT };
-
-extern void winwarn(pdfapp_t*, char *s);
-extern void winerror(pdfapp_t*, fz_error error);
-extern void wintitle(pdfapp_t*, char *title, char param[]);
-extern void winresize(pdfapp_t*, int w, int h);
-extern void winrepaint(pdfapp_t*);
-extern void winrepaintsearch(pdfapp_t*);
-extern char *winpassword(pdfapp_t*, char *filename);
-extern void winopenuri(pdfapp_t*, char *s);
-extern void wincursor(pdfapp_t*, int curs);
-extern void windocopy(pdfapp_t*);
-extern void winreloadfile(pdfapp_t*);
-extern void windrawstring(pdfapp_t*, int x, int y, char *s);
-extern void winclose(pdfapp_t*);
-extern void winhelp(pdfapp_t*);
-
 struct pdfapp_s
 {
-	/* current document params */
-	char *doctitle;
-	pdf_xref *xref;
-	pdf_outline *outline;
+	/* MuPDF state */
+	fz_context   *ctx;
+	fz_document  *doc;
+	fz_page      *page;      /* current page object */
+	fz_pixmap    *image;     /* current page rendered as BGRA */
+	fz_stext_page *stext;    /* current page text, for selection */
+	fz_matrix     ctm;       /* page-space -> device(pixmap) transform */
 
-	int pagecount;
-	fz_glyph_cache *cache;
+	char         *doctitle;
 
-	/* current view params */
-	int resolution;
-	int rotate;
-	fz_pixmap *image;
-	int grayscale;
+	/* view state */
+	int   pagecount;
+	int   pageno;            /* 1-based */
+	float resolution;        /* dpi; 72 == 100% */
+	int   rotate;            /* degrees */
+	int   grayscale;
 
-	/* current page params */
-	int pageno;
-	fz_rect page_bbox;
-	float page_rotate;
-	fz_display_list *page_list;
-	fz_text_span *page_text;
-	pdf_link *page_links;
+	/* scroll offset (managed by the GUI) */
+	int   panx, pany;
 
-	/* snapback history */
-	int hist[256];
-	int histlen;
-	int marks[10];
+	/* text selection, in page space */
+	fz_point sel_a, sel_b;
+	int      sel_valid;
 
-	/* window system sizes */
-	int winw, winh;
-	int scrw, scrh;
-	int shrinkwrap;
-
-	/* event handling state */
-	char number[256];
-	int numberlen;
-
-	int ispanning;
-	int panx, pany;
-
-	int iscopying;
-	int selx, sely;
-	/* TODO - While sely keeps track of the relative change in
-	 * cursor position between two ticks/events, beyondy shall keep
-	 * track of the relative change in cursor position from the
-	 * point where the user hits a scrolling limit. This is ugly.
-	 * Used in pdfapp.c:pdfapp_onmouse.
-	 */
-	int beyondy;
-	fz_bbox selr;
-
-	/* search state */
-	int isediting;
-	char search[512];
-	int hit;
-	int hitlen;
-
-	/* client context storage */
-	void *userdata;
+	/* legacy fields the GUI still sets during init */
+	int scrw, scrh, shrinkwrap, fd, reload;
 };
 
+/* lifecycle */
 void pdfapp_init(pdfapp_t *app);
 void pdfapp_open(pdfapp_t *app, char *filename, int fd, int reload);
 void pdfapp_close(pdfapp_t *app);
 
-char *pdfapp_version(pdfapp_t *app);
-char *pdfapp_usage(pdfapp_t *app);
+/* rendering */
+void       pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repaint);
+fz_pixmap *pdfapp_renderpage(pdfapp_t *app, int pageno);
 
+/* input: zoom/rotate/grayscale/navigation, same key codes as before
+   ( + - L R c g G [ ] ) */
 void pdfapp_onkey(pdfapp_t *app, int c);
-void pdfapp_onmouse(pdfapp_t *app, int x, int y, int btn, int modifiers, int state);
-void pdfapp_oncopy(pdfapp_t *app, unsigned short *ucsbuf, int ucslen);
-void pdfapp_onresize(pdfapp_t *app, int w, int h);
 
-void pdfapp_invert(pdfapp_t *app, fz_bbox rect);
-void pdfapp_inverthit(pdfapp_t *app);
+/* selection: a/b are in page space; the GUI supplies them from clicks */
+void  pdfapp_invertselection(pdfapp_t *app); /* toggle highlight in image */
+char *pdfapp_copyselection(pdfapp_t *app);   /* fz-allocated UTF-8, or NULL */
+
+/* map a device pixel (relative to the current image) to a page-space point */
+fz_point pdfapp_devtopage(pdfapp_t *app, int px, int py);
+
+#endif

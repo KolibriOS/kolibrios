@@ -512,3 +512,12 @@ int kos_get_key()
 	asm volatile("int $0x40":"=a"(__ret):"0"(2));
 	if(!(__ret & 0xFF)) return (__ret>>8)&0xFF; else return 0;
 }
+
+// Raw result of fn 2: bits 0-7 = status (0 = key present),
+// bits 8-15 = ASCII code, bits 16-23 = layout-independent scancode.
+unsigned kos_get_key_full()
+{
+	unsigned __ret;
+	asm volatile("int $0x40":"=a"(__ret):"0"(2));
+	return __ret;
+}

@@ -1,0 +1,21 @@
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/source/fitz/directory.c:27:0:
+C:/Kolibri/git/contrib/sdk/sources/newlib/libc/include/sys/stat.h:136:0: warning: "S_ISDIR" redefined
+ #define S_ISDIR(m) (((m)&_IFMT) == _IFDIR)
+ ^
+In file included from c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\include\mupdf\fitz.h:32:0,
+                 from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/source/fitz/directory.c:23:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\include\mupdf\fitz\system.h:182:0: note: this is the location of the previous definition
+ #define S_ISDIR(mode) ((mode) & S_IFDIR)
+ ^
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/source/fitz/noto.c:66:0: warning: "TOFU_SYMBOL" redefined
+ #define TOFU_SYMBOL
+ ^
+<command-line>:0:0: note: this is the location of the previous definition
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/source/fitz/noto.c:67:0: warning: "TOFU_EMOJI" redefined
+ #define TOFU_EMOJI
+ ^
+<command-line>:0:0: note: this is the location of the previous definition
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/source/pdf/pdf-parse.c: In function 'pdf_to_date':
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/source/pdf/pdf-parse.c:188:8: warning: implicit declaration of function 'timegm' [-Wimplicit-function-declaration]
+  utc = timegm(&tm);
+        ^

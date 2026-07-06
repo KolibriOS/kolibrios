@@ -1,0 +1,283 @@
+# Configuration for the Makefile
+
+OS := $(shell uname)
+OS := $(OS:MINGW%=MINGW)
+OS := $(OS:MSYS%=MINGW)
+OS := $(OS:Windows_NT=MINGW)
+OS := $(OS:Darwin=MACOS)
+
+WARNING_CFLAGS := -Wall -Wsign-compare
+
+# Feature configuration options
+
+ifeq ($(tesseract),yes)
+  USE_TESSERACT := yes
+  build_suffix += -tesseract
+endif
+
+ifeq ($(tofu),yes)
+  build_suffix += -tofu
+  XCFLAGS += -DTOFU
+endif
+
+ifeq ($(tofu_cjk),yes)
+  build_suffix += -tofu_cjk
+  XCFLAGS += -DTOFU_CJK
+endif
+
+# System specific features
+
+ifeq ($(findstring -fembed-bitcode,$(XCFLAGS)),)
+  # clang does not support these in combination with -fembed-bitcode
+  CFLAGS += -ffunction-sections -fdata-sections
+endif
+
+ifeq ($(OS),MACOS)
+  LDREMOVEUNREACH := -Wl,-dead_strip
+  SO := dylib
+else
+  LDREMOVEUNREACH := -Wl,--gc-sections
+  ifeq ($(OS),MINGW)
+    SO := dll
+  else
+    SO := so
+  endif
+endif
+
+ifeq "$(OS)" "ios"
+  NEONFLAGS =
+else
+  NEONFLAGS = -mneon
+endif
+
+SANITIZE_FLAGS += -fsanitize=address
+SANITIZE_FLAGS += -fsanitize=leak
+
+ifeq ($(shared),yes)
+  build_prefix += shared-
+  LIB_CFLAGS = -fPIC
+  ifeq ($(OS),MACOS)
+    LIB_LDFLAGS = -dynamiclib
+  else
+    LIB_LDFLAGS = -shared
+  endif
+else
+  LIB_CFLAGS =
+  LIB_LDFLAGS =
+endif
+
+ifeq ($(build),debug)
+  CFLAGS += -pipe -g
+  LDFLAGS += -g
+else ifeq ($(build),release)
+  CFLAGS += -pipe -O2 -DNDEBUG -fomit-frame-pointer
+  LDFLAGS += $(LDREMOVEUNREACH) -Wl,-s
+else ifeq ($(build),small)
+  CFLAGS += -pipe -Os -DNDEBUG -fomit-frame-pointer
+  LDFLAGS += $(LDREMOVEUNREACH) -Wl,-s
+else ifeq ($(build),valgrind)
+  CFLAGS += -pipe -O2 -DNDEBUG -DPACIFY_VALGRIND -fno-omit-frame-pointer
+  LDFLAGS += $(LDREMOVEUNREACH) -Wl,-s
+else ifeq ($(build),sanitize)
+  CFLAGS += -pipe -g -fno-omit-frame-pointer $(SANITIZE_FLAGS)
+  LDFLAGS += -g $(SANITIZE_FLAGS)
+else ifeq ($(build),sanitize-release)
+  CFLAGS += -pipe -O2 -DNDEBUG -fno-omit-frame-pointer $(SANITIZE_FLAGS)
+  LDFLAGS += $(LDREMOVEUNREACH) -Wl,-s $(SANITIZE_FLAGS)
+else ifeq ($(build),profile)
+  CFLAGS += -pipe -O2 -DNDEBUG -pg
+  LDFLAGS += -pg
+else ifeq ($(build),coverage)
+  CFLAGS += -pipe -g -pg -fprofile-arcs -ftest-coverage
+  LIBS += -lgcov
+else ifeq ($(build),native)
+  CFLAGS += -pipe -O2 -DNDEBUG -fomit-frame-pointer -march=native
+  LDFLAGS += $(LDREMOVEUNREACH) -Wl,-s
+else ifeq ($(build),memento)
+  CFLAGS += -pipe -g -DMEMENTO -DMEMENTO_MUPDF_HACKS
+  LDFLAGS += -g -rdynamic
+  ifneq ($(HAVE_LIBDL),no)
+    CFLAGS += -DHAVE_LIBDL
+    ifeq ($(OS),OpenBSD)
+      LIBS += -L /usr/local/lib -l execinfo
+    else
+      LIBS += -ldl
+    endif
+  endif
+else ifeq ($(build),gperf)
+  CFLAGS += -pipe -O2 -DNDEBUG -fomit-frame-pointer -DGPERF
+  LIBS += -lprofiler
+else
+  $(error unknown build setting: '$(build)')
+endif
+
+ifeq ($(OS),OpenBSD)
+  LDFLAGS += -pthread
+endif
+
+# Default system libraries
+SYS_FREETYPE_LIBS := -lfreetype2
+SYS_HARFBUZZ_LIBS := -lharfbuzz
+SYS_JBIG2DEC_LIBS := -ljbig2dec
+SYS_JPEGXR_LIBS := -ljpegxr
+SYS_LCMS2_LIBS := -llcms2
+SYS_LIBJPEG_LIBS := -ljpeg
+SYS_MUJS_LIBS := -lmujs
+SYS_OPENJPEG_LIBS := -lopenjp2
+SYS_ZLIB_LIBS := -lz
+SYS_TESSERACT_LIBS := -ltesseract
+SYS_LEPTONICA_LIBS := -llept
+
+ifneq "$(CLUSTER)" ""
+  CFLAGS += -DCLUSTER
+endif
+
+ifeq ($(OS),MINGW)
+  WINDRES := windres
+  HAVE_WIN32 := yes
+
+else ifeq ($(OS),MACOS)
+  HAVE_GLUT := yes
+  SYS_GLUT_CFLAGS := -Wno-deprecated-declarations
+  SYS_GLUT_LIBS := -framework GLUT -framework OpenGL
+  CC = xcrun cc
+  AR = xcrun ar
+  LD = xcrun ld
+  RANLIB = xcrun ranlib
+
+  ifeq (, $(shell which pkg-config))
+    $(warning "No pkg-config found, install it for proper integration of libcrypto")
+  else
+    HAVE_LIBCRYPTO := $(shell pkg-config --exists 'libcrypto >= 1.1.0' && echo yes)
+    ifeq ($(HAVE_LIBCRYPTO),yes)
+	  LIBCRYPTO_CFLAGS := $(shell pkg-config --cflags libcrypto) -DHAVE_LIBCRYPTO
+	  LIBCRYPTO_LIBS := $(shell pkg-config --libs libcrypto)
+    endif
+  endif
+
+else ifeq ($(OS),Linux)
+  HAVE_OBJCOPY := yes
+
+  ifeq ($(shell pkg-config --exists freetype2 && echo yes),yes)
+	SYS_FREETYPE_CFLAGS := $(shell pkg-config --cflags freetype2)
+	SYS_FREETYPE_LIBS := $(shell pkg-config --libs freetype2)
+  endif
+  ifeq ($(shell pkg-config --exists gumbo && echo yes),yes)
+	SYS_GUMBO_CFLAGS := $(shell pkg-config --cflags gumbo)
+	SYS_GUMBO_LIBS := $(shell pkg-config --libs gumbo)
+  endif
+  ifeq ($(shell pkg-config --exists harfbuzz && echo yes),yes)
+	SYS_HARFBUZZ_CFLAGS := $(shell pkg-config --cflags harfbuzz)
+	SYS_HARFBUZZ_LIBS := $(shell pkg-config --libs harfbuzz)
+  endif
+  ifeq ($(shell pkg-config --exists lcms2 && echo yes),yes)
+	SYS_LCMS2_CFLAGS := $(shell pkg-config --cflags lcms2)
+	SYS_LCMS2_LIBS := $(shell pkg-config --libs lcms2)
+  endif
+  ifeq ($(shell pkg-config --exists libjpeg && echo yes),yes)
+	SYS_LIBJPEG_CFLAGS := $(shell pkg-config --cflags libjpeg)
+	SYS_LIBJPEG_LIBS := $(shell pkg-config --libs libjpeg)
+  endif
+  ifeq ($(shell pkg-config --exists libopenjp2 && echo yes),yes)
+	SYS_OPENJPEG_CFLAGS := $(shell pkg-config --cflags libopenjp2)
+	SYS_OPENJPEG_LIBS := $(shell pkg-config --libs libopenjp2)
+  endif
+  ifeq ($(shell pkg-config --exists zlib && echo yes),yes)
+	SYS_ZLIB_CFLAGS := $(shell pkg-config --cflags zlib)
+	SYS_ZLIB_LIBS := $(shell pkg-config --libs zlib)
+  endif
+
+  HAVE_SYS_LEPTONICA := $(shell pkg-config --exists 'lept >= 1.7.4' && echo yes)
+  ifeq ($(HAVE_SYS_LEPTONICA),yes)
+	SYS_LEPTONICA_CFLAGS := $(shell pkg-config --cflags lept)
+	SYS_LEPTONICA_LIBS := $(shell pkg-config --libs lept)
+  endif
+
+  HAVE_SYS_TESSERACT := $(shell pkg-config --exists 'tesseract >= 4.0.0' && echo yes)
+  ifeq ($(HAVE_SYS_TESSERACT),yes)
+	SYS_TESSERACT_CFLAGS := $(shell pkg-config --cflags tesseract)
+	SYS_TESSERACT_LIBS := $(shell pkg-config --libs tesseract)
+  endif
+
+  HAVE_SYS_CURL := $(shell pkg-config --exists libcurl && echo yes)
+  ifeq ($(HAVE_SYS_CURL),yes)
+	SYS_CURL_CFLAGS := $(shell pkg-config --cflags libcurl)
+	SYS_CURL_LIBS := $(shell pkg-config --libs libcurl)
+  endif
+
+  HAVE_GLUT := yes
+  ifeq ($(HAVE_GLUT),yes)
+	SYS_GLUT_CFLAGS :=
+	SYS_GLUT_LIBS := -lglut -lGL
+  endif
+
+  HAVE_X11 := $(shell pkg-config --exists x11 xext && echo yes)
+  ifeq ($(HAVE_X11),yes)
+	X11_CFLAGS := $(shell pkg-config --cflags x11 xext)
+	X11_LIBS := $(shell pkg-config --libs x11 xext)
+  endif
+
+  HAVE_LIBCRYPTO := $(shell pkg-config --exists 'libcrypto >= 1.1.0' && echo yes)
+  ifeq ($(HAVE_LIBCRYPTO),yes)
+	LIBCRYPTO_CFLAGS := $(shell pkg-config --cflags libcrypto) -DHAVE_LIBCRYPTO
+	LIBCRYPTO_LIBS := $(shell pkg-config --libs libcrypto)
+  endif
+
+  HAVE_PTHREAD := yes
+  ifeq ($(HAVE_PTHREAD),yes)
+	PTHREAD_CFLAGS :=
+	PTHREAD_LIBS := -lpthread
+  endif
+
+endif
+
+# The following section has various cross compilation configurations.
+#
+# Invoke these as:
+#      make OS=mingw32-cross
+#
+# This does rely on the generated directory being populated with the font files.
+# On a unix-like system, run 'make generate' before doing the cross compile.
+# On Windows, run 'nmake -f scripts\fontdump.nmake' in a Visual Studio command prompt.
+
+ifeq "$(OS)" "wasm"
+  build_prefix += wasm/
+  CC = emcc
+  CXX = em++
+  AR = emar
+  HAVE_GLUT=no
+  HAVE_X11=no
+  HAVE_OBJCOPY=no
+  HAVE_LIBCRYPTO=no
+endif
+
+ifeq "$(OS)" "mingw32-cross"
+  build_prefix += $(OS)/
+  CC = i686-w64-mingw32-gcc
+  CXX = i686-w64-mingw32-g++
+  LD = i686-w64-mingw32-gcc
+  AR = i686-w64-mingw32-ar
+  WINDRES = i686-w64-mingw32-windres
+  HAVE_WIN32=yes
+endif
+
+ifeq "$(OS)" "mingw64-cross"
+  build_prefix += $(OS)/
+  CC = x86_64-w64-mingw32-gcc
+  CXX = x86_64-w64-mingw32-g++
+  LD = x86_64-w64-mingw32-gcc
+  AR = x86_64-w64-mingw32-ar
+  WINDRES = x86_64-w64-mingw32-windres
+  HAVE_WIN32=yes
+endif
+
+# Most variables when building for iOS are set up in ios/build_libs.sh,
+# which is called from the Xcode project as a "Run Script" build step.
+# The following section works for both device and simulator builds.
+ifeq "$(OS)" "ios"
+  CC = xcrun cc
+  CXX = xcrun c++
+  AR = xcrun ar
+  LD = xcrun ld
+  RANLIB = xcrun ranlib
+endif

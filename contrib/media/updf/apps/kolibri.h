@@ -182,4 +182,5 @@ int kos_random(int num);
 int kos_get_mouse_wheels(void);
 void kos_screen_max(int* x, int* y);
 int kos_get_key();
+unsigned kos_get_key_full();
 void kos_text(int x, int y, int color, const char* text, int len);

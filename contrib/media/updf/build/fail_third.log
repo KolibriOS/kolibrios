@@ -1,0 +1,357 @@
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:22:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c: In function 'FT_MulDiv_No_Round':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c:502:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c: In function 'FT_Matrix_Multiply_Scaled':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c:744:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c: In function 'FT_Matrix_Check':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c:814:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c: In function 'FT_Vector_Transform_Scaled':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c:839:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c: In function 'FT_Vector_NormLen':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c:935:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c: In function 'ft_corner_orientation':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c:1040:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c: In function 'ft_corner_is_flat':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c:1085:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:27:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c: In function 'FT_GlyphLoader_Rewind':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c:99:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c: In function 'FT_GlyphLoader_Reset':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c:123:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c: In function 'FT_GlyphLoader_Done':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c:138:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c: In function 'FT_GlyphLoader_Prepare':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c:335:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c: In function 'FT_GlyphLoader_Add':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c:373:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:29:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftlcdfil.c: In function 'ft_lcd_padding':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftlcdfil.c:392:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:31:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'ft_service_list_lookup':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:129:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'ft_validator_init':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:142:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'ft_validator_run':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:152:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'ft_validator_error':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:170:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_Stream_Free':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:270:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'ft_glyphslot_free_bitmap':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:341:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'ft_glyphslot_preset_bitmap':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:498:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'ft_glyphslot_set_bitmap':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:510:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_Done_GlyphSlot':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:683:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_Match_Size':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:2991:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'ft_synthesize_vertical_metrics':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:3019:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_Select_Metrics':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:3088:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_Request_Metrics':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:3196:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_Lookup_Renderer':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:4365:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_Get_Module_Interface':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:5023:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'ft_module_get_service':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:5068:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'ft_property_string_set':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:5250:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:34:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftrfork.c: In function 'FT_Raccess_Guess':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftrfork.c:477:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:36:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_OpenMemory':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:44:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_Close':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:52:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_Seek':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:87:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_Skip':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:98:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_Pos':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:105:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_ReadAt':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:159:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_Read':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:114:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_TryRead':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:188:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_ReleaseFrame':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:230:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_EnterFrame':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:313:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_ExtractFrame':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:210:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_ExitFrame':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:347:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_GetChar':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:363:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_GetUShort':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:382:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_GetUShortLE':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:401:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_GetUOffset':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:419:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_GetULong':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:437:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_GetULongLE':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:455:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_ReadChar':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:492:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_ReadUShort':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:537:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:34:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftrfork.c: In function 'FT_Raccess_Get_HeaderInfo':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftrfork.c:167:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:36:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_ReadUShortLE':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:582:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_ReadUOffset':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:627:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_ReadULong':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:672:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_ReadULongLE':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:717:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c: In function 'FT_Stream_ReadFields':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftstream.c:864:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:22:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c: In function 'FT_Hypot':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftcalc.c:164:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:38:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c: In function 'ft_mem_alloc':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c:61:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:27:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c: In function 'FT_GlyphLoader_New':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c:82:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:31:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_Stream_New':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:253:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'ft_glyphslot_alloc_bitmap':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:528:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_New_GlyphSlot':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:642:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_Render_Glyph_Internal':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:4790:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:38:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c: In function 'ft_mem_qalloc':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c:87:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c: In function 'ft_mem_qrealloc':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c:165:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c: In function 'ft_mem_realloc':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c:109:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:27:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c: In function 'FT_GlyphLoader_CreateExtra':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c:185:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c: In function 'FT_GlyphLoader_CheckPoints':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c:285:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c: In function 'FT_GlyphLoader_CheckSubGlyphs':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftgloadr.c:319:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:31:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_CMap_Done':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:3673:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c: In function 'FT_CMap_New':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftobjs.c:3725:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:34:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftrfork.c: In function 'FT_Raccess_Get_DataOffsets':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftrfork.c:328:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+In file included from C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftbase.c:38:0:
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c: In function 'ft_mem_free':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c:174:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c: In function 'ft_mem_dup':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c:192:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c: In function 'ft_mem_strdup':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c:205:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c: In function 'ft_mem_strcpyn':
+c:\kolibri\git\contrib\media\updfnew\mupdf-1.19.0-source\thirdparty\freetype\src\base\ftutil.c:222:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftdebug.c: In function 'ft_debug_init':
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftdebug.c:277:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   ft_debug_init( void )
+   ^
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftdebug.c: In function 'FT_Trace_Get_Count':
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftdebug.c:287:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftdebug.c: In function 'FT_Trace_Get_Name':
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftdebug.c:296:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftdebug.c: In function 'FT_Trace_Disable':
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftdebug.c:300:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   FT_Trace_Disable( void )
+   ^
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftdebug.c: In function 'FT_Trace_Enable':
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftdebug.c:312:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftsystem.c: In function 'FT_Stream_Open':
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftsystem.c:282:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftsystem.c: In function 'FT_New_Memory':
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftsystem.c:318:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftsystem.c: In function 'FT_Done_Memory':
+C:/Kolibri/git/contrib/media/uPDFnew/build/../mupdf-1.19.0-source/thirdparty/freetype/src/base/ftsystem.c:330:3: warning: visibility attribute not supported in this configuration; ignored [-Wattributes]
+   }
+   ^
