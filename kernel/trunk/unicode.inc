@@ -9,7 +9,7 @@
 
 unicode.utf8.decode:
         test    ecx, ecx
-        jz      .error
+        jz      .done
         movzx   eax, byte[esi]
         test    al, al
         jns     .read1
@@ -84,6 +84,9 @@ unicode.utf8.decode:
         add     esi, 4
         jmp     .done
 .error:
+        mov     eax, 0xFFFD
+        dec     ecx
+        inc     esi
 .done:
         ret
 
@@ -109,8 +112,10 @@ unicode.utf16.encode:
         sub     eax, 0x10000
         shl     eax, 6
         shr     ax, 6
+        ror     eax, 16
         or      eax, 0xdc00d800
         jmp     .done
-.done:
 .error:
+        mov     eax, 0xFFFD
+.done:
         ret

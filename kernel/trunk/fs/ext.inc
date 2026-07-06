@@ -2335,15 +2335,14 @@ ext_ReadFolder:
         lea     edi, [edx+40]
         cmp     byte [edx+4], 3
         jz      .utf8
-        add     ecx, esi
         cmp     byte [edx+4], 2
         jz      .utf16
 @@:
-        call    utf8to16
-        call    uni2ansi_char
+        call    unicode.utf8.decode
+        call    unicode.cp866.encode
         stosb
-        cmp     esi, ecx
-        jc      @b
+        test    ecx, ecx
+        jnz     @b
         and     byte [edi], 0
         add     edx, 40+264
 @@:
@@ -2369,10 +2368,15 @@ ext_ReadFolder:
         jmp     @b
 
 .utf16:
-        call    utf8to16
+        call    unicode.utf8.decode
+        call    unicode.utf16.encode
         stosw
-        cmp     esi, ecx
-        jc      .utf16
+        shr     eax, 16
+        jz      .utf16_no_high
+        stosw
+.utf16_no_high:
+        test    ecx, ecx
+        jnz     .utf16
         and     word [edi], 0
         add     edx, 40+520
         jmp     @b
@@ -2579,15 +2583,14 @@ ext_GetFileInfo:
         add     edi, 40
         cmp     eax, 3
         jz      .utf8
-        add     ecx, esi
         cmp     eax, 2
         jz      .utf16
 @@:
-        call    utf8to16
-        call    uni2ansi_char
+        call    unicode.utf8.decode
+        call    unicode.cp866.encode
         stosb
-        cmp     esi, ecx
-        jc      @b
+        test    ecx, ecx
+        jnz     @b
         jmp     @f
 
 .utf8:
@@ -2595,10 +2598,15 @@ ext_GetFileInfo:
         jmp     @f
 
 .utf16:
-        call    utf8to16
+        call    unicode.utf8.decode
+        call    unicode.utf16.encode
         stosw
-        cmp     esi, ecx
-        jc      .utf16
+        shr     eax, 16
+        jz      .utf16_no_high
+        stosw
+.utf16_no_high:
+        test    ecx, ecx
+        jnz     .utf16
 @@:
         xor     eax, eax
         mov     [edi], ax
