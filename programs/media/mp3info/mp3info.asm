@@ -14,7 +14,8 @@ format binary as ""
     dd     I_END                 ; size of image
     dd     0x9000                ; memory for app
     dd     0x9000                ; esp
-    dd     fileinfo2.path        ; I_Param , I_Icon
+header.cmdline:
+    dd     cmdline               ; I_Param , I_Icon
     dd     0x0
 
 include "mos_uzit.inc"
@@ -26,24 +27,30 @@ BLOCKS_TO_READ  equ     2 ; must be greater than 1
 BLOCK_SIZE equ 512 ;сколько байт в блоке
 
 START:
+        mov     eax, [header.cmdline]
+        cmp     byte[eax], 0
+        je      @f
 
-    xor  eax, eax
-    mov  [last_err], eax
-    mov  [fileinfo2+4], eax      ; start block = 0
-    mov  dword [fileinfo2+12], BLOCKS_TO_READ*BLOCK_SIZE
-    mcall 70, fileinfo2
+        mov     [fileinfo2.path_ptr], eax
+        mov     [fileSizeInfo.path_ptr], eax
+@@:
+        xor     eax, eax
+        mov     [last_err], eax
+        mov     [fileinfo2+4], eax      ; start block = 0
+        mov     dword [fileinfo2+12], BLOCKS_TO_READ*BLOCK_SIZE
+        mcall   70, fileinfo2
 
 result:
-        push eax ebx                    ;получаем размер файла в байтах
-        mcall 70, fileSizeInfo
-	
-        cmp eax, 0
-        je @f
-        mov dword[size], 16384; ebx
-        jmp result.sizeEnd
+        push    eax ebx                    ;получаем размер файла в байтах
+        mcall   70, fileSizeInfo
+        
+        cmp     eax, 0
+        je      @f
+        mov     dword[size], 16384; ebx
+        jmp     result.sizeEnd
 @@:
-        mov eax, dword[fileBuf+32]  ; на самом деле там размер 8 байт, а не 4
-        mov dword[size], eax
+        mov     eax, dword[fileBuf+32]  ; на самом деле там размер 8 байт, а не 4
+        mov     dword[size], eax
 .sizeEnd:
         pop ebx eax
         ;mov     dword [size], 16384; ebx
@@ -286,11 +293,11 @@ draw_window:
         mov  ebx,250 shl 16 + 500
         mov  ecx,250 shl 16 + 300
         mov  edx,0x34aabbcc     ; color of work area RRGGBB,8->color gl
-		mov  edi, header
+                mov  edi, header
         int  0x40
 
         Text 20,12,0x00000000,choice, choicelen-choice
-        Text 110,12,0x00000000,fileinfo2.path, 60
+        Text 110,12,0x00000000,[fileinfo2.path_ptr], 60
 
         mov     edx, dword [last_err]
         test    edx, edx
@@ -636,23 +643,28 @@ err_bad_file    db      'Bad file'
 err_bad_file_e:
 
 fileinfo2:
-  .func  dd 0            ;номер подфункции
-  .start dd 0*BLOCK_SIZE ;позиция в файле (в байтах)  *512
-         dd 0            ;(зарезервировано под старший dword позиции)
-  .size  dd 1*BLOCK_SIZE ;сколько байт читать
-  .buf   dd mp3_file     ;указатель на буфер, куда будут записаны данные
+  .func         dd 0            ;номер подфункции
+  .start        dd 0*BLOCK_SIZE ;позиция в файле (в байтах)  *512
+                dd 0            ;(зарезервировано под старший dword позиции)
+  .size         dd 1*BLOCK_SIZE ;сколько байт читать
+  .buf          dd mp3_file     ;указатель на буфер, куда будут записаны данные
+                db 0
+  .path_ptr     dd .path
+
   .path:
-     db "TEST.MP3",0   ;"/SYS/TEST.MP3",0
-     rb 256-($-.path)
+        db "TEST.MP3",0   ;"/SYS/TEST.MP3",0
+cmdline:
+        rb      256
 
 
 ;для получения корректного размера файла
 fileSizeInfo:
-dd 5 ; номер подфункции
-dd 0,0,0 ;(зарезервировано)
-dd fileBuf ;указатель на буфер, куда будут записаны данные(40 байт)
-db 0
-dd fileinfo2.path
+        dd 5 ; номер подфункции
+        dd 0,0,0 ;(зарезервировано)
+        dd fileBuf ;указатель на буфер, куда будут записаны данные(40 байт)
+        db 0
+.path_ptr:
+        dd fileinfo2.path
 
 fileBuf: db 40 dup(0)
 
