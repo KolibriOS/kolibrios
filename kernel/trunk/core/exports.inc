@@ -156,6 +156,8 @@ __exports:
 \
           acpi_get_root_ptr,     'AcpiGetRootPtr',     \
 \
+          SCR_MODE,              'SCR_MODE',           \      ; -> word: current video mode (0x12/0x13 = planar VGA/MCGA, otherwise linear)
+\
           0,                     'LFBAddress' ; must be the last one
 
 load kernel_exports_count dword from __exports + 24
