@@ -265,6 +265,20 @@ proc SwitchMode
         shr     eax, 6
         mov     [g_offset], eax
 
+        ; --- Disable interrupts across the whole hardware programming ---
+        ; Every WCRTMASK/WSEQMASK/WATTR/wcrt_multi does a NON-ATOMIC read-modify-
+        ; write on the VGA index/data port pair (out index -> in data -> out data),
+        ; and set_pixclock busy-waits ~1ms. In the preemptible KolibriOS driver
+        ; context a task switch / IRQ landing between the index and the data write
+        ; (if anything touches 0x3D4/0x3C4/0x3C0) clobbers the index and the value
+        ; lands in the WRONG CRTC/SEQ register -> scrambled timings -> stripes /
+        ; loss of sync / hang, and only INTERMITTENTLY (when preemption hits a bad
+        ; window). Linux s3fb is safe here because it holds the console lock; the
+        ; port must guard it itself. Re-enable BEFORE the SetLfbMode handoff below
+        ; (that call remaps pages and repaints and needs interrupts on). Same
+        ; approach vidintel.SetMode uses.
+        cli
+
         ; --- Unlock ---
         WCRT    0x38, 0x48
         WCRT    0x39, 0xA5
@@ -398,6 +412,10 @@ proc SwitchMode
         ; --- Screen and sync back on ---
         WCRTMASK 0x17, 0x80, 0x80
         WSEQMASK 0x01, 0x00, 0x20
+
+        ; Hardware programming done - re-enable interrupts before the kernel handoff
+        ; (SetLfbMode remaps the LFB pages and repaints; it must run with IRQs on).
+        sti
 
         ; --- Hand off to kernel ---
         push    dword [s3_lfb_phys]
