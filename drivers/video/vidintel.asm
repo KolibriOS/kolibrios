@@ -332,6 +332,16 @@ end if
 
 ; set resolution [width]*[height]
 SetMode:
+; 0. Skip if the CURRENT screen is a planar VGA/MCGA mode (no linear framebuffer
+; to reuse) - reprogramming the pipe + SetScreen from planar hangs the system.
+; SCR_MODE is the kernel's CURRENT video mode: only 0x12 (VGA) and 0x13 (MCGA)
+; are planar; every linear mode is >0x13 (boot VBE LFB modes carry bit 0x4000, a
+; runtime SetLfbMode switch sets 0x118). Same idiom the kernel itself uses
+; (cmp [SCR_MODE],0x13 / jbe). Reading the CURRENT mode (not the boot mode) means
+; this works after switching into any LFB mode, incl. linear 640x480x16/x32.
+        mov     eax, [SCR_MODE]         ; eax -> kernel SCR_MODE variable
+        cmp     word [eax], 0x13        ; planar (VGA 0x12 / MCGA 0x13)?
+        jbe     .return                 ; planar: no linear framebuffer -> do nothing
 ; 1. Program the registers of videocard.
 ; look into the PRM
         cli
