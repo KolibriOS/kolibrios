@@ -361,6 +361,207 @@ macro __func name {
 
 macro endf { end if }
 
+;----------------------------------------------------------------------------;
+;       Macro for generating an executable MENUET0X format file              ;
+;                                                                            ;
+; The code written by the author "s54820" is used as a basis.                ;
+; The author of the current code is Doczom.                                  ;
+;----------------------------------------------------------------------------;
+macro format spec& {
+    local is_meos,stack_size,default_stack_size,header, default_entry, entry_ptr
+    match =meos subtype, spec \{
+      define is_meos
+      format binary as ''
+      use32
+      org 0
+      stack_size = 2048
+      default_stack_size = stack_size
+      default_entry = entry_ptr
+      meos_header.magic:     db 'MENUET01'
+      meos_header.version:   dd 1
+      meos_header.entry:     dd entry_ptr
+      meos_header.imgsize:   dd 0xffffffff
+      meos_header.e_mem:     dd 0
+      meos_header.stack_ptr: dd 0
+      meos_header.params:    dd 0
+      meos_header.file_path: dd 0
+
+      local __is_format.flag_import, __data_macro_good
+      __is_format.flag_import = 0
+      __data_macro_good = 0
+
+      match =KX, subtype \\{
+        local __is_KX_format, __is_KX_format.flag_import_end
+        __is_KX_format = 1
+                dw 'KX'
+                dw 0
+        meos_header.kx.flags: dd 0
+        meos_header.kx.import_ptr: rd __is_KX_format.flag_import_end
+
+        store dword 2 at meos_header.version
+
+      \\}
+      match =02, subtype \\{
+        local __is_02_format, __tmp_main
+        __is_02_format = 1
+        __tmp_main = 0
+        store byte '2' at meos_header.magic+7
+
+                                        dd 0  ; subversion, all zero
+        meos_header.02.idata_start:     dd 0
+        meos_header.02.idata_end:       dd 0
+        meos_header.02.main:            dd 0
+
+        macro main_entry arg& \\\{
+               load __tmp_main dword from meos_header.02.main
+               if __tmp_main = 0
+                  store dword arg at meos_header.02.main
+                  __tmp_main = 1
+               else
+                  display 'E: Re-declaring the main function', 13, 10
+                  err
+               end if
+        \\\}
+      \\}
+
+      entry_ptr:
+
+      macro entry ptr* \\{
+        local ..tmp_entry
+        load ..tmp_entry dword from meos_header.entry
+        if ..tmp_entry = default_entry
+           store dword ptr at meos_header.entry
+        else
+           display 'E: Re-declaring the entry point', 13, 10
+           err
+        end if
+      \\}
+      macro stack size* \\{
+        if default_stack_size = stack_size
+           stack_size = size
+        else
+           display 'E: Re-declaring the stack size', 13, 10
+           err
+        end if
+      \\}
+
+      cmdline  equ [meos_header.params]
+
+      macro GetCommandLine reg \\{
+           mov     reg, [meos_header.params]
+      \\}
+
+      executable_file_path equ [meos_header.file_path]
+
+      macro GetExecutableFilePath reg \\{
+           mov     reg, [meos_header.file_path]
+      \\}
+
+      macro section args& \\{
+           db ((($ + (not -16)) and -16 ) - $) dup 0 ; for data
+           display 'W: MENUET0X formats do not support sections, ',\
+                   'so this directive only supports data alignment.',\
+                   'Memory always has the RWX flag', 13, 10
+      \\}
+      macro data args& \\{
+            __data_macro_good = 0
+            match =import, args \\\{
+                  if defined __is_KX_format
+                     if __is_format.flag_import = 0
+                        store dword $% at meos_header.kx.import_ptr
+                        store dword 0x200 at meos_header.kx.flags
+                        __is_format.flag_import = 1
+                        __is_KX_format.flag_import_end = 1
+                        __data_macro_good = 1
+                      else
+                        display 'E: import table already defined; only one is supported', 13, 10
+                        err
+                      end if
+                  else if defined __is_02_format
+                      if __is_format.flag_import = 0
+                        store dword $% at meos_header.02.idata_start
+                        __is_format.flag_import = 1
+                        __data_macro_good = 1
+                      else
+                        display 'E: import table already defined; only one is supported', 13, 10
+                        err
+                      end if
+                  else
+                        display 'E: Not supported in the MENUET01 format. Use the KX format', 13, 10
+                        err
+                  end if
+            \\\}
+            match =export, args \\\{
+                  display 'E: Not supported in MENUET0X formats', 13, 10
+                  err
+            \\\}
+            match =fixups, args \\\{
+                  __data_macro_good = 1
+            \\\}
+            macro data args& \\\{
+                  display 'E: The previous data block is not closed', 13, 10
+                  err
+            \\\}
+            if __data_macro_good = 0
+                  display 'E: Unsupported data block', 13, 10
+                  err
+            end if
+      \\}
+      macro end args& \\{
+            \\local is_data
+            match =data,args \\\{
+               define is_data
+               purge data
+               if defined __is_02_format & __is_format.flag_import = 1
+                  __is_format.flag_import = 2
+                  store dword $% at meos_header.02.idata_end
+               end if
+            \\\}
+            match =is_data,is_data \\\{
+               end args
+            \\\}
+      \\}
+      postpone \\{
+        store dword $%% at meos_header.imgsize
+        ; set stack area and stack pointer
+        rb stack_size
+        store dword $% at meos_header.stack_ptr
+
+        if used meos_header.params
+           store dword $% at meos_header.params
+           rb 256
+        end if
+
+        if used meos_header.file_path
+           store dword $% at meos_header.file_path
+           rb 1024
+        end if
+
+        store dword $% at meos_header.e_mem
+
+        if ~ definite __is_KX_format.flag_import_end
+           __is_KX_format.flag_import_end = 0
+        end if
+
+        if defined __is_02_format
+                if __tmp_main = 0
+                   display 'W: MAIN pointer not defined for the MENUET02 format', 13, 10
+                end if
+                if __is_format.flag_import = 1
+                   display 'E: The import table block is not closed', 13, 10
+                   err
+               end if
+        end if
+
+      \\}
+
+    \}
+    match =is_meos,is_meos \{
+      ; default format
+      format spec
+    \}
+}
+
 macro diff16 title,l1,l2
  {
   local s,d
