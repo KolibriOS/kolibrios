@@ -423,6 +423,51 @@ align 4
         mov     esi, [esi + PROC.dlls_list_ptr]
         call    destroy_all_hdlls
 
+; Free the process's live handle-table objects (sysfn 77): futexes and pipe
+; FILEDs. Nothing else frees them on exit: destroy_object runs only on an
+; explicit FUTEX_DESTROY call, which real programs (newlib mutexes etc.)
+; never make, and close() (77.9) with pipe_close are unwired stubs. Each
+; leaked object pins part of the FIXED 128 KB kernel malloc arena
+; (init_malloc has no grow path), so after a few thousand leaked handles
+; malloc() dies system-wide (first visible casualty: load_library can no
+; longer allocate a DLLDESCR -> every dll.obj load fails). Live htab slots
+; hold kernel pointers, free slots hold small free-list indices; the magic
+; checks keep the walk safe either way.
+        mov     esi, [esp]
+        add     esi, PROC.htab
+        mov     edi, (PROC.pdt_0 - PROC.htab)/4
+.free_handles:
+        mov     eax, [esi]
+        cmp     eax, OS_BASE
+        jb      .next_handle
+        push    esi edi
+        cmp     [eax + FUTEX.magic], 'FUTX'
+        je      .free_object
+        cmp     [eax + FILED.magic], 'PIPE'
+        jne     .keep_object
+; Pipes are process-local and all threads are gone: no waiters, no locking.
+; The last reference frees the PIPE and its ring buffer (kernel_free is
+; safe on the mirrored mapping: the page bitmap frees each frame once).
+        mov     ebx, [eax + FILED.file]
+        mov     ecx, [eax + FILED.mode]        ;F_READ=1 readers, F_WRITE=2 writers
+        dec     dword [ebx + PIPE.readers + ecx*4 - 4]
+        mov     ecx, [ebx + PIPE.readers]
+        or      ecx, [ebx + PIPE.writers]
+        jnz     .free_object
+        push    eax
+        stdcall kernel_free, [ebx + PIPE.buffer]
+        mov     eax, ebx
+        call    free
+        pop     eax
+.free_object:
+        call    free
+.keep_object:
+        pop     edi esi
+.next_handle:
+        add     esi, 4
+        dec     edi
+        jnz     .free_handles
+
         mov     esi, [esp]
         add     esi, PROC.pdt_0
         mov     edi, (0x80000000 shr 20)/4
