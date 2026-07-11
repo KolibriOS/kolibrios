@@ -105,6 +105,17 @@ proc timer_hs stdcall uses ebx, deltaStart:dword, interval:dword, \
         mov     [ebx + TIMER.Time], ecx
 ; 3. Insert the TIMER structure to the global list.
 ; 3a. Acquire the lock.
+; NB: interrupts stay disabled while the lock is held. The critical section is
+; a dozen plain stores, but if a normal-priority thread gets PREEMPTED inside
+; it, the strict-priority scheduler never runs it again while a higher-priority
+; waiter spins (osloop's check_timers waits in lock_timer_list via change_task,
+; and change_task never descends to lower-priority rings while a runnable
+; thread exists in its own) -- a permanent priority-inversion livelock that
+; froze the whole system. cli makes lock..unlock atomic wrt preemption. The
+; wait loop inside lock_timer_list still yields normally (change_task manages
+; its own IF), so waiting here with IF=0 cannot hang the system.
+        pushfd
+        cli
         call    lock_timer_list
 ; 3b. Insert an item at ebx to the tail of the timer_list.
         mov     eax, timer_list
@@ -115,6 +126,7 @@ proc timer_hs stdcall uses ebx, deltaStart:dword, interval:dword, \
         mov     [ecx + TIMER.Next], ebx
 ; 3c. Release the lock.
         call    unlock_timer_list
+        popfd
 ; 4. Return with eax = pointer to TIMER structure.
         xchg    ebx, eax
 .nothing:
@@ -128,8 +140,13 @@ cancel_timer_hs:
         push    ebx     ; save used register to be stdcall
 ; 1. Remove the TIMER structure from the global list.
 ; 1a. Acquire the lock.
+; cli for the same reason as in timer_hs: a thread preempted while holding
+; the timer-list lock is never scheduled again once a higher-priority waiter
+; starts spinning on the lock => system-wide livelock.
+        pushfd
+        cli
         call    lock_timer_list
-        mov     ebx, [esp+4+4]
+        mov     ebx, [esp+4+4+4]        ; +4 for the pushfd above
 ; 1b. Delete an item at ebx from the double-linked list.
         mov     eax, [ebx + TIMER.Next]
         mov     ecx, [ebx + TIMER.Prev]
@@ -143,6 +160,7 @@ cancel_timer_hs:
 @@:
 ; 1d. Release the lock.
         call    unlock_timer_list
+        popfd
 ; 2. Free the TIMER structure.
         xchg    eax, ebx
         call    free
