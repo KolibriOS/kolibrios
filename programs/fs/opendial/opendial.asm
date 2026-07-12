@@ -1969,24 +1969,102 @@ convert_icons:
 	ret
 ;---------------------------------------------------------------------
 calc_ini:
-	mov	eax,[image_file]
-	mov	[file_browser_data_1.ini_file_start],eax
+; Convert the new "ID=ext,ext,..." icons18 layout from the loaded ini file into
+; the "ext=ID" CR/LF text that box_lib's FileBrowser expects, storing the result
+; in converted_ini_buffer. Every scan is bounded by ini_src_end, so a truncated
+; or malformed file can never read past the loaded buffer (it has no 0 terminator).
+	pusha
+	mov	esi, [image_file]
+	mov	eax, esi
+	add	eax, [img_size]
+	mov	[ini_src_end], eax
+	mov	edi, converted_ini_buffer
+	mov	[file_browser_data_1.ini_file_start], edi
 
-	mov     edi,eax
-	add	edi,[img_size]
-	dec     edi
-	mov     esi,eax
-	add     esi,9 ; after [icons18]
-	cld
-@@:
+; find the "[icons18]" section header
+.find_section:
+	cmp	esi, [ini_src_end]
+	jae	.finished
 	lodsb
-	cmp     esi,edi
-	je      @f
-	cmp     al,byte '['
-	jne	@r
+	cmp	al, '['
+	jne	.find_section
+	cmp	dword [esi], 'icon'
+	jne	.find_section
+.skip_header:
+	cmp	esi, [ini_src_end]
+	jae	.finished
+	lodsb
+	cmp	al, 10
+	jne	.skip_header
 
-@@:
-	mov	[file_browser_data_1.ini_file_end],esi
+; convert each "ID=ext,ext,..." line until the next section or EOF
+.parse_line:
+	cmp	esi, [ini_src_end]
+	jae	.finished
+	cmp	byte [esi], '['
+	je	.finished
+	mov	edx, esi		; edx = ID start
+.find_eq:
+	cmp	esi, [ini_src_end]
+	jae	.finished
+	lodsb
+	cmp	al, '='
+	jne	.find_eq
+	lea	ebx, [esi-1]
+	sub	ebx, edx		; ebx = ID length
+
+.next_ext:
+	mov	ebp, esi		; ebp = extension start
+.scan_ext:
+	cmp	esi, [ini_src_end]
+	jae	.finished
+	lodsb
+	cmp	al, ','
+	je	.ext_sep
+	cmp	al, 13
+	je	.ext_eol
+	cmp	al, 10
+	je	.ext_eol
+	jmp	.scan_ext
+.ext_sep:
+	call	.emit_ext
+	jmp	.next_ext
+.ext_eol:
+	call	.emit_ext
+.skip_eol:				; absorb the whole CR/LF run (and blank lines)
+	cmp	esi, [ini_src_end]
+	jae	.finished
+	lodsb
+	cmp	al, 13
+	je	.skip_eol
+	cmp	al, 10
+	je	.skip_eol
+	dec	esi
+	jmp	.parse_line
+
+.finished:
+	mov	[file_browser_data_1.ini_file_end], edi
+	popa
+	ret
+
+; Emit one "ext=ID\r\n" record. esi-1 = delimiter just consumed, ebp = ext start,
+; edx/ebx = ID start/length. Empty extensions are skipped, esi is preserved.
+.emit_ext:
+	push	esi
+	lea	ecx, [esi-1]
+	sub	ecx, ebp		; ecx = extension length
+	jecxz	.emit_done		; drop empty extension
+	mov	esi, ebp
+	rep	movsb			; ext
+	mov	al, '='
+	stosb
+	mov	esi, edx
+	mov	ecx, ebx
+	rep	movsb			; ID
+	mov	ax, 0x0A0D
+	stosw				; CR, LF
+.emit_done:
+	pop	esi
 	ret
 ;---------------------------------------------------------------------
 load_ini:
@@ -2877,7 +2955,7 @@ root_pach:
 
 icons_file_name_2 db 'buttons/'
 icons_path        db '/sys/icons18.png',0
-ini_file_name     db '/sys/File managers/icons.ini',0
+ini_file_name     db '/sys/File managers/icon2ext.ini',0
 ;---------------------------------------------------------------------
 
 message:
@@ -3264,6 +3342,11 @@ dir_path_temp:
 ;---------------------------------------------------------------------
 text_work_area:
 	rb 1024
+;---------------------------------------------------------------------
+converted_ini_buffer:
+	rb 8192
+ini_src_end:
+	rd 1
 ;---------------------------------------------------------------------
 procinfo:
 process_info:

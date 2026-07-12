@@ -112,7 +112,7 @@ edit_box popin_text = {200,213,180,0xFFFFFF,0x94AECE,0xFFFFFF,0xFFFFFF,0x1000000
 
 PathShow_data FileShow = {0, 56,215, 8, 100, 1, 0, 0x0, 0xFFFfff, #file_name, #temp, 0};
 
-_ini icons_ini = { "/sys/File managers/icons.ini", NULL };
+_ini icons_ini = { "/sys/File managers/icon2ext.ini", NULL };
 
 #include "include\settings.h"
 #include "include\gui.h"

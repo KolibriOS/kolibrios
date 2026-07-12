@@ -35,7 +35,7 @@ img_files = {
  {"LANG.INC", build_type .. "/lang.inc"},
  {"NOTIFY3.PNG", "common/notify3.png"},
  {"3D/HOUSE.3DS", "common/3d/house.3ds"},
- {"File Managers/ICONS.INI", "common/File Managers/icons.ini"},
+ {"File Managers/ICON2EXT.INI", "common/File Managers/icon2ext.ini"},
  {"FONTS/TAHOMA.KF", "common/fonts/tahoma.kf"},
  -- {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},
  {"LIB/KMENU.OBJ", "common/lib/kmenu.obj"},

@@ -222,8 +222,7 @@ void SelectList_DrawLine(dword i)
 	} else {
 		strcpy(#tname, results.name.get(select_list.first + i));
 		strlwr(#tname);
-		icons_ini.section = "icons18";
-		icon = icons_ini.GetInt(#tname + strrchr(#tname, '.'), 2);
+		icon = ini_icons.get(0, #tname + strrchr(#tname, '.'), 18);
 	}
 
 	#define ICONX 7
