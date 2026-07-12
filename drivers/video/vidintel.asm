@@ -38,8 +38,9 @@ SCREEN_BPP    = 32
 
 ; the start procedure: now registers a service (for vbeapp) instead of setting
 ; the mode at once. pipe/DPLL timings are left untouched (native, from BIOS);
-; the LFB is reused via GetDisplay/SetScreen. The mode is changed only on
-; SET_MODE, so loading the driver (vbeapp probing) does not disturb the screen.
+; the framebuffer is the GMADR aperture, handed to the kernel via SetLfbMode
+; (works from any current mode, incl. planar VGA/MCGA boot). The mode is changed
+; only on SET_MODE, so loading the driver (vbeapp probing) does not disturb the screen.
 ; uses ebx esi edi is required: load_pe_driver keeps START's address in esi.
 proc START c uses ebx esi edi, reason:dword, cmdline:dword
         cmp     [reason], REASON_INIT
@@ -332,16 +333,6 @@ end if
 
 ; set resolution [width]*[height]
 SetMode:
-; 0. Skip if the CURRENT screen is a planar VGA/MCGA mode (no linear framebuffer
-; to reuse) - reprogramming the pipe + SetScreen from planar hangs the system.
-; SCR_MODE is the kernel's CURRENT video mode: only 0x12 (VGA) and 0x13 (MCGA)
-; are planar; every linear mode is >0x13 (boot VBE LFB modes carry bit 0x4000, a
-; runtime SetLfbMode switch sets 0x118). Same idiom the kernel itself uses
-; (cmp [SCR_MODE],0x13 / jbe). Reading the CURRENT mode (not the boot mode) means
-; this works after switching into any LFB mode, incl. linear 640x480x16/x32.
-        mov     eax, [SCR_MODE]         ; eax -> kernel SCR_MODE variable
-        cmp     word [eax], 0x13        ; planar (VGA 0x12 / MCGA 0x13)?
-        jbe     .return                 ; planar: no linear framebuffer -> do nothing
 ; 1. Program the registers of videocard.
 ; look into the PRM
         cli
@@ -353,7 +344,17 @@ SetMode:
         jb      @f
         mov     dl, 9Ch - 84h
 @@:
-;       or      byte [esi+71403h], 80h  ; VGACNTRL: VGA Display Disable
+; Disable the legacy VGA plane BEFORE the pipe (Intel modeset-disable sequence:
+; planes first, pipe second). After a planar VGA/MCGA boot the VGA plane is
+; still scanning and keeps the pipe busy - the pipe-disable wait below then
+; times out and SetMode silently bails via .not_disabled. Idempotent on linear
+; boots (VBE leaves the VGA plane disabled).
+        lea     ecx, [esi+71400h]       ; VGACNTRL (pre-Ironlake)
+        cmp     [deviceType], ironlake_start
+        jb      @f
+        lea     ecx, [esi+41000h]       ; Ironlake+: CPU_VGACNTRL moved
+@@:
+        or      byte [ecx+3], 80h       ; bit 31: VGA Display Disable
         and     byte [esi+70080h], not 27h      ; CURACNTR: disable cursor A
         mov     dword [esi+70084h], eax ; CURABASE: force write to CURA* regs
         and     byte [esi+700C0h], not 27h      ; CURBCNTR: disable cursor B
@@ -429,6 +430,10 @@ end if
         jnz     .dis1
 .not_disabled:
         sti
+        pusha
+        mov     esi, timeoutmsg
+        invoke  SysMsgBoardStr
+        popa
         jmp     .return
 .disabled:
         lea     eax, [esi+61183h]
@@ -454,23 +459,59 @@ end if
         and     ecx, not 15
         shl     ecx, 2
         mov     dword [edx+10188h], ecx ; DSPASTRIDE: set scanline length
-        mov     dword [edx+10184h], 0   ; DSPALINOFF: force write to DSPA* registers
-        and     byte [esi+61233h], not 80h      ; PFIT_CONTROL: disable panel fitting 
+        and     byte [esi+61233h], not 80h      ; PFIT_CONTROL: disable panel fitting
         or      byte [edx+1000Bh], 80h          ; PIPEACONF: enable pipe
 ;       and     byte [edx+1000Ah], not 0Ch      ; PIPEACONF: enable Display+Cursor Planes
-        or      byte [edx+10183h], 80h          ; DSPACNTR: enable Display Plane A
+; Program the plane source pixel format explicitly. After a planar VGA boot
+; the BIOS leaves DSPACNTR with a VGA/8bpp format, so our 32bpp framebuffer
+; gets scanned as 16bpp: picture readable but 2x-stretched with vertical
+; stripes and staircase rows. Bits [29:26] = 0110b (BGRX 8:8:8:8); clear the
+; tiled-surface bit 10 (the kernel renders into the linear aperture) and the
+; gamma-enable bit 30 - a planar VGA boot leaves it set with the 16-color VGA
+; palette loaded into the pipe LUT, posterizing 32bpp output down to a
+; 4-bit-looking picture; bypassing the LUT gives straight 8:8:8. Bit 31
+; enables the plane. From a linear VESA boot all of this is idempotent.
+        mov     eax, [edx+10180h]       ; DSPACNTR
+        and     eax, not ((0Fh shl 26) or (1 shl 30) or (1 shl 10))
+        or      eax, (0110b shl 26) or (1 shl 31)
+        mov     [edx+10180h], eax
+        mov     dword [edx+10184h], 0   ; DSPALINOFF=0: latch DSPA* writes
+        cmp     [deviceType], i965_start
+        jb      @f
+        mov     dword [edx+1019Ch], 0   ; DSPASURF=0: the actual latch on 965+
+@@:
         sti
-; 2. Notify the kernel that resolution has changed.
-        invoke  GetDisplay
-        mov     edx, [width]
-        mov     dword [eax+8], edx
-        mov     edx, [height]
-        mov     dword [eax+0Ch], edx
-        mov     [eax+18h], ecx
-        mov     eax, [width]
-        dec     eax
-        dec     edx
-        invoke  SetScreen
+        pusha
+        mov     esi, handoffmsg
+        invoke  SysMsgBoardStr
+        popa
+; 2. Notify the kernel: install the aperture (GMADR) as the linear framebuffer.
+; SetLfbMode - unlike the former GetDisplay+SetScreen combo - also switches the
+; software pipeline OUT of a planar VGA/MCGA boot mode (remaps LFB_BASE onto
+; the aperture, re-selects PUTPIXEL/GETPIXEL/cursor handlers, repaints), so
+; the old SCR_MODE bail-out is gone and the SCR_MODE import is not needed.
+; The scanout offset is programmed to zero above (DSPALINOFF/DSPASURF=0), so
+; the framebuffer physical base = GMADR: BAR0 (reg 10h) on gen2 (i830..i865),
+; BAR2 (reg 18h) on i915 and later (low dword of the 64-bit BAR; flag bits
+; stripped). ecx still holds the DSPASTRIDE pitch computed above.
+        push    ecx                     ; save pitch
+        mov     eax, 18h
+        cmp     [deviceType], i9xx_start
+        jae     @f
+        mov     al, 10h
+@@:
+        push    eax                     ; reg: GMADR BAR
+        push    10h                     ; devfn = 0:2:0
+        push    0                       ; bus 0
+        invoke  PciRead32
+        and     al, not 0xF             ; strip BAR flag bits
+        pop     ecx                     ; pitch
+        push    eax                     ; lfb_phys = GMADR
+        push    ecx                     ; pitch
+        push    SCREEN_BPP              ; bpp
+        push    dword [height]
+        push    dword [width]
+        call    dword [SetLfbMode]
 .return:
         ret
 
@@ -484,6 +525,8 @@ pciid_text      db      '0000'
                 db      ', which is ', 0
 knownmsg        db      'known',13,10,0
 unknownmsg      db      'unknown',13,10,0
+timeoutmsg      db      'vidintel: pipe disable timeout, mode unchanged',13,10,0
+handoffmsg      db      'vidintel: pipes reprogrammed, handing over to SetLfbMode',13,10,0
 
 if DEBUG
 edidmsg         db      'EDID successfully read:',13,10
