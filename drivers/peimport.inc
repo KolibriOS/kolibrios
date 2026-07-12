@@ -153,7 +153,6 @@ import core,\
               SetLfbMode,\
               V86start,\
               V86machine,\
-              SCR_MODE,\
 \
               RegUSBDriver,\
               USBOpenPipe,\
