@@ -836,8 +836,11 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
         mov     edx, [str]
         mov     eax, [edx+STREAM.notify_event]
         mov     ebx, [edx+STREAM.notify_id]
-        invoke  WaitEvent   ;eax ebx
-        jmp     .main_loop
+        mov     ecx, 300    ;3 s: only a dead/IRQ-less output device is that late
+        invoke  WaitEventTimeout    ;eax ebx ecx
+        test    eax, eax
+        jz      .dead       ;device never signalled: fail instead of hanging
+        jmp     .main_loop  ;the caller thread in the kernel forever (unkillable)
 .done:
         cmp     [state_saved], 1
         jne     @F
@@ -848,6 +851,13 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
 @@:
         xor     eax, eax
         ret
+.dead:
+        cmp     [state_saved], 1
+        jne     .fail
+
+        lea     eax, [fpu_state+15]
+        and     eax, -16
+        invoke  FpuRestore
 .fail:
         or      eax, -1
         ret
@@ -1139,7 +1149,10 @@ proc play_buffer stdcall, str:dword, flags:dword
 .wait:
         mov     eax, [edx+STREAM.notify_event]
         mov     ebx, [edx+STREAM.notify_id]
-        invoke  WaitEvent   ;eax ebx
+        mov     ecx, 300    ;refill signals every ~85 ms while alive; 3 s of
+        invoke  WaitEventTimeout    ;silence = dead device, do not hang forever
+        test    eax, eax
+        jz      .fail
 
         mov     edx, [str]
         cmp     [edx+STREAM.flags], SND_STOP

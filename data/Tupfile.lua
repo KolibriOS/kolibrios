@@ -590,6 +590,7 @@ tup.append_table(img_files, {
  {"DRIVERS/INFINITY.SYS", VAR_DRVS .. "/audio/infinity/infinity.sys"},
  {"DRIVERS/AC97.SYS", VAR_DRVS .. "/audio/ac97.sys"},
  {"DRIVERS/CMI8738.SYS", VAR_DRVS .. "/audio/cmi8738.sys"},
+ {"DRIVERS/ES1371.SYS", VAR_DRVS .. "/audio/es1371.sys"},
  {"DRIVERS/EMU10K1X.SYS", VAR_DRVS .. "/audio/emu10k1x.sys"},
  {"DRIVERS/FM801.SYS", VAR_DRVS .. "/audio/fm801.sys"},
  {"DRIVERS/VT823X.SYS", VAR_DRVS .. "/audio/vt823x.sys"},

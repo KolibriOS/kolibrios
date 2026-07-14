@@ -30,6 +30,7 @@ VID_TERA          = 0x6549
 VID_RDC           = 0x17F3
 VID_VMWARE        = 0x15AD
 VID_CMEDIA        = 0x13F6
+VID_ENSONIQ       = 0x1274
 
 CTRL_ICH          = 0x2415
 CTRL_ICH0         = 0x2425
@@ -62,6 +63,10 @@ CTRL_CMI8338A     = 0x0100
 CTRL_CMI8338B     = 0x0101
 CTRL_CMI8738      = 0x0111
 CTRL_CMI8738B     = 0x0112
+
+CTRL_ES1371       = 0x1371  ; ES1371 / ES1373 / CT2518
+CTRL_ES5880       = 0x5880  ; CT5880
+CTRL_ECTIVA_8938  = 0x8938  ; Ectiva EV1938 (vendor 0x1102)
 
 CTRL_INTEL_SCH2          =  0x080a
 CTRL_INTEL_HPT           =  0x0c0c
@@ -221,6 +226,20 @@ proc detect_controller
 
   .loop:
         mov     ecx, [eax + PCIDEV.vendor_device_id]
+     if DEBUG
+        ; report every audio function, supported or not, so unknown sound
+        ; hardware always shows its PCI ids in the debug board (other 04h
+        ; subclasses - video, telephony - are not ours and stay quiet)
+        mov     ebx, [eax + PCIDEV.class]
+        shr     ebx, 8                  ; class:subclass (kernel packs class:sub:if)
+        cmp     ebx, 0x0401             ; multimedia audio controller
+        je      .prn_ids
+        cmp     ebx, 0x0403             ; audio device (HD Audio)
+        jne     .no_ids
+  .prn_ids:
+        stdcall print_vendev, ecx
+  .no_ids:
+     end if
         mov     edi, devices
   @@:
         mov     ebx, [edi]
@@ -285,6 +304,46 @@ proc detect_controller
 
 endp
 
+if DEBUG
+; prints 'Multimedia audio controller detected with PciId=vvvv:dddd' for the
+; given PCIDEV.vendor_device_id. Table entries pack (device_id shl 16)+
+; vendor_id, so the vendor word must be shifted up for print_hex16 (which
+; prints eax's TOP 16 bits); the device word already sits on top as-is.
+align 4
+proc print_vendev stdcall, vendev:dword
+        pushad
+        mov     esi, msgDetect
+        invoke  SysMsgBoardStr
+        mov     eax, [vendev]
+        shl     eax, 16
+        call    print_hex16
+        mov     esi, msgColon
+        invoke  SysMsgBoardStr
+        mov     eax, [vendev]
+        call    print_hex16
+        mov     esi, msgNewline
+        invoke  SysMsgBoardStr
+        popad
+        ret
+endp
+
+; prints eax's TOP 16 bits as 4 hex chars, no newline; trashes eax/ebx/ecx/esi
+align 4
+print_hex16:
+        mov     esi, hex4_buf
+        mov     ecx, -4
+@@:
+        rol     eax, 4
+        mov     ebx, eax
+        and     ebx, 0x0F
+        mov     bl, [ebx+hexletters]
+        mov     [4+esi+ecx], bl
+        inc     ecx
+        jnz     @B
+        invoke  SysMsgBoardStr
+        ret
+end if
+
 align 4
 devices         dd (CTRL_ICH  shl 16)+VID_INTEL, intelac97
                 dd (CTRL_ICH0 shl 16)+VID_INTEL, intelac97
@@ -311,8 +370,12 @@ devices         dd (CTRL_ICH  shl 16)+VID_INTEL, intelac97
 
                 dd (CTRL_FM801 shl 16)+VID_FM801, fm801
 
-                dd (0x5000 shl 16)+0x1274, ensoniq
-                dd (0x5880 shl 16)+0x1274, ensoniq
+                ; 1274:5000 (ES1370, AK4531 codec) has no driver yet: it needs
+                ; its own backend (no SRC, no AC97), do NOT route it to es1371
+
+                dd (CTRL_ES1371 shl 16)+VID_ENSONIQ, es1371
+                dd (CTRL_ES5880 shl 16)+VID_ENSONIQ, es1371
+                dd (CTRL_ECTIVA_8938 shl 16)+VID_CREATIVE, es1371
 
                 dd (CTRL_CT0200 shl 16)+VID_CREATIVE, emu10k1x
 
@@ -436,16 +499,23 @@ intelac97       db 'AC97', 0
 vt823x          db 'VT823X', 0
 sis             db 'SIS', 0
 fm801           db 'FM801', 0
-ensoniq         db 'ENSONIQ', 0
+es1371          db 'ES1371', 0
 emu10k1x        db 'EMU10K1X', 0
 cmi8738         db 'CMI8738', 0
 intelhda        db 'HDAUDIO', 0
 sb16            db 'SB16', 0
 
 msgInit         db 'Detecting hardware...',13,10,0
-msgFail         db 'No compatible PCI soundcard found!',13,10,0
+msgFail         db 'No compatible soundcard found!',13,10,0
 msgLoading      db 'Loading ',0
 msgNewline      db 13,10,0
+
+if DEBUG
+msgDetect       db 'Multimedia audio controller detected with PciId=', 0
+msgColon        db ':', 0
+hexletters      db '0123456789ABCDEF'
+hex4_buf        db 4 dup(0), 0
+end if
 
 align 4
 data fixups

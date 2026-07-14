@@ -119,6 +119,7 @@ import core,\
               CreateEvent,\
               RaiseEvent,\
               WaitEvent,\
+              WaitEventTimeout,\
               DestroyEvent,\
               ClearEvent,\
 \
