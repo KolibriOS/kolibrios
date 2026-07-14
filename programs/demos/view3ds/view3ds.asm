@@ -67,6 +67,19 @@ START:    ; start of execution
         call    alloc_buffer_mem
         call    read_param
         call    read_from_disk    ; read, if all is ok eax = 0
+        cmp     eax,0
+        jne     .rfd_failed
+        call    is_stl_file
+        cmp     eax,0
+        je      .not_stl
+        call    read_stl
+        cmp     dword[triangles_count_var],0
+        je      .not_stl           ; degenerate/empty stl -> fall back below
+        xor     ax,ax
+        jmp     .opt
+    .not_stl:
+        xor     eax,eax
+    .rfd_failed:
         btr     eax,31            ; mark 1
         cmp     eax,0
         jne     .gen
@@ -905,6 +918,7 @@ include "bump_tex.inc"
 include "grd_tex.inc"
 include "two_tex.inc"
 include "asc.inc"
+include "stl.inc"
 if Ext >= SSE3
 include "3r_phg.inc"
 include '3stencil.inc'
