@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # SPDX-FileCopyrightText: 2026 KolibriOS team
 
-name: 'Update kterm submodule'
+name: 'Update submodules'
 
 on:
   schedule:
@@ -10,11 +10,22 @@ on:
 
 jobs:
   bump:
-    name: 'Bump kterm to upstream'
+    name: 'Bump ${{ matrix.name }} to upstream'
     runs-on: kolibri-toolchain
     permissions:
       contents: write
       pull-requests: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: cmm
+            path: programs/develop/cmm
+          - name: oberon07
+            path: programs/develop/oberon07
+          - name: kterm
+            path: programs/other/kterm
 
     steps:
       - name: Checkout
@@ -22,25 +33,30 @@ jobs:
         with:
           submodules: true
 
-      - name: Bump kterm and open PR
+      - name: Bump ${{ matrix.name }} and open PR
         env:
           TOKEN: ${{ github.token }}
           API: ${{ github.api_url }}
           REPO: ${{ github.repository }}
-          BRANCH: chore/update-kterm
+          NAME: ${{ matrix.name }}
+          PATH_: ${{ matrix.path }}
+          BRANCH: chore/update-${{ matrix.name }}
         run: |
           set -euo pipefail
 
-          git submodule update --remote programs/other/kterm
-          if git diff --quiet; then
-            echo "kterm is already up to date"
+          git submodule update --remote "$PATH_"
+
+          # look only at this submodule: the other jobs in the matrix are
+          # bumping their own, and the rest of the tree is none of our business
+          if git diff --quiet -- "$PATH_"; then
+            echo "$NAME is already up to date"
             exit 0
           fi
 
           git config user.name  "kolibri-bot"
           git config user.email "bot@kolibrios.org"
           git checkout -B "$BRANCH"
-          git commit -am "kterm: bump submodule to upstream"
+          git commit -m "$NAME: bump submodule to upstream" -- "$PATH_"
           git push -f origin "$BRANCH"
 
           # Open a PR via the Gitea API using the built-in token.
@@ -49,7 +65,7 @@ jobs:
           http=$(curl -sS -o /tmp/pr.json -w '%{http_code}' -X POST \
             -H "Authorization: token ${TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"head\":\"${BRANCH}\",\"base\":\"main\",\"title\":\"kterm: bump submodule to upstream\"}" \
+            -d "{\"head\":\"${BRANCH}\",\"base\":\"main\",\"title\":\"${NAME}: bump submodule to upstream\"}" \
             "${API}/repos/${REPO}/pulls")
           echo "PR API HTTP status: $http"
           cat /tmp/pr.json; echo

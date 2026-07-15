@@ -170,8 +170,6 @@ extra_files = {
  {"kolibrios/demos/life2", "common/demos/life2"},
  {"kolibrios/demos/relay.lif", "common/demos/relay.lif"},
  {"kolibrios/demos/rpento.lif", "common/demos/rpento.lif"},
- {"kolibrios/develop/c--/c--.elf", SRC_PROGS .. "/cmm/c--/c--.elf"},
- {"kolibrios/develop/c--/c--.exe", SRC_PROGS .. "/cmm/c--/c--.exe"},
  {"kolibrios/develop/c--/c--.ini", SRC_PROGS .. "/cmm/c--/c--.ini"},
  {"kolibrios/develop/c--/manual_c--.htm", SRC_PROGS .. "/cmm/c--/manual_c--.htm"},
  {"kolibrios/develop/fpc/", "common/develop/fpc/*"},
