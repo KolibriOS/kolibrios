@@ -62,7 +62,9 @@ generation      dd  ?
 ACL             dd  ?
 fileSizeHigh    dd  ?
 obsoFAddr       dd  ?
-reserved2       rb  12
+reserved2       rb  8
+checksumLow     dw  ?
+checksumLowPad  dw  ?
 ; === extra_i_size ===
 extraISize      dw  ?
 checksumHigh    dw  ?
@@ -76,21 +78,48 @@ projectID       dd  ?
 ends
 
 struct BGDESCR  ; block group descriptor
-blockBitmap         dd  ?
-inodeBitmap         dd  ?
-inodeTable          dd  ?
-blocksFree          dw  ?
-inodesFree          dw  ?
-directoriesCount    dw  ?
-reserved            rb  14
+blockBitmap_lo      dd  ?
+inodeBitmap_lo      dd  ?
+inodeTable_lo       dd  ?
+blocksFree_lo       dw  ?
+inodesFree_lo       dw  ?
+directoriesCount_lo dw  ?
+flags               dw  ?
+excludeBitmap_lo    dd  ?
+blockBitmapCsum_lo  dw  ?
+inodeBitmapCsum_lo  dw  ?
+itableUnused_lo     dw  ?
+checksum            dw  ?
+; === 64-bit ===
+blockBitmap_hi      dd  ?
+inodeBitmap_hi      dd  ?
+inodeTable_hi       dd  ?
+blocksFree_hi       dw  ?
+inodesFree_hi       dw  ?
+directoriesCount_hi dw  ?
+itableUnused_hi     dw  ?
+excludeBitmap_hi    dd  ?
+blockBitmapCsum_hi  dw  ?
+inodeBitmapCsum_hi  dw  ?
+reserved            dd  ?
 ends
+
+macro load_bgd_64 dest_hi, dest_lo, base_reg, field {
+    local .done
+    mov     dest_lo, [base_reg + BGDESCR.#field#_lo]
+    xor     dest_hi, dest_hi
+    cmp     [ebp+EXTFS.descShift], 6
+    jc      .done
+    mov     dest_hi, [base_reg + BGDESCR.#field#_hi]
+.done:
+}
 
 struct SUPERBLOCK
 inodesTotal         dd  ?
-blocksTotal         dd  ?
-blocksReserved      dd  ?
-blocksFree          dd  ?
-inodesFree          dd  ?
+blocksTotal_lo      dd  ?
+blocksReserved_lo   dd  ?
+blocksFree_lo       dd  ?
+inodesFree_lo       dd  ?
 firstGroupBlock     dd  ?
 sectorsPerBlockLog  dd  ?   ; shift for 1024
 fragmentSizeLog     dd  ?
@@ -119,6 +148,31 @@ incompatibleFlags   dd  ?
 RO_compatibleFlags  dd  ?
 UUID                rb  16
 volumeLabel         rb  16
+lastMounted         rb  64
+algorithmBitmap     dd  ?
+preallocFields      dd  ?
+journalUUID         rb  16
+journalInode        dd  ?
+journalDevice       dd  ?
+lastOrphan          dd  ?
+hashSeed            rd  4
+hashVersion         db  ?
+journalBackupType   db  ?
+descSize            dw  ?
+defaultMountOpts    dd  ?
+firstMetaBg         dd  ?
+mkfsTime            dd  ?
+journalBlocks       rd  17
+blocksTotal_hi      dd  ?
+blocksReserved_hi   dd  ?
+blocksFree_hi       dd  ?
+minExtraISize       dw  ?
+wantExtraISize      dw  ?
+Flags               dd  ?
+csum_seed_padding   rb  268
+checksumSeed        dd  ?
+checksum_padding    rb  392
+checksum            dd  ?
 ends
 
 ; ext4 extent tree
@@ -162,17 +216,31 @@ EXT2_GOOD_OLD_REV = 0
 EXT2_GOOD_OLD_INODE_SIZE = 128
 EXT2_GOOD_OLD_FIRST_INO = 11
 
-; Feature flags
-EXTENTS_USED = 80000h
-EXT4_IMMUTABLE_FL = 10h
+; Inode Feature Flags
+EXTENTS_USED        = 80000h
+EXT4_IMMUTABLE_FL   = 10h
 EXT4_APPEND_ONLY_FL = 20h
-EXT4_NOATIME_FL   = 80h
+EXT4_NOATIME_FL     = 80h
+; File System Feature Flags
+INCOMPAT_64BIT          = 80h
+INCOMPAT_CSUM_SEED      = 2000h
+RO_COMPAT_METADATA_CSUM = 400h
+RO_COMPAT_GDT_CSUM      = 10h    ; Not supported but need to check it for csum validation on RO.
+CSUM_FLAGS = RO_COMPAT_GDT_CSUM or RO_COMPAT_METADATA_CSUM
+
+EXT_CRC_POLY = 82F63B78h
+
+INODE_CSUM_REQ_SIZE = 160
+EXT2_BGDESCR_SHIFT  = 5
+EXT_CSUM_FAKE_TAIL  = 0DEh
 
 ; Implemented "incompatible" features:
 ; 2 = have file type in directory entry
-; 40h = extents
-; 200h = flexible block groups
-INCOMPATIBLE_SUPPORT = 242h
+;   40h = extents
+;   80h = 64bit
+;  200h = flexible block groups
+; 2000h = metadata_csum_seed
+INCOMPATIBLE_SUPPORT = 22C2h
 ; Read only support for "incompatible" features:
 INCOMPATIBLE_READ_SUPPORT = 240h
 
@@ -185,11 +253,14 @@ MOUNT_POLICY_RELATIME = 2
 ;  1 = sparse superblock
 ;  2 = 64-bit file size
 ; 40 = extra inode size
-READ_ONLY_SUPPORT = 43h
+;400 = metadata checksum
+READ_ONLY_SUPPORT = 443h
 
 struct EXTFS PARTITION
 Lock                MUTEX
 mountType           dd  ?
+descShift           db  ?
+descSize            dd  ?
 bytesPerBlock       dd  ?
 sectorsPerBlock     dd  ?
 dwordsPerBlock      dd  ?
@@ -200,14 +271,18 @@ descriptorTable     dd  ?
 descriptorTableEnd  dd  ?
 align0  rb  200h-EXTFS.align0
 superblock          SUPERBLOCK
-align1  rb  400h-EXTFS.align1
+align1  rb  600h-EXTFS.align1
 rootInodeBuffer     INODE
-align2  rb  600h-EXTFS.align2
+align2  rb  800h-EXTFS.align2
 inodeBuffer         INODE
-align3  rb  800h-EXTFS.align3
-symlink_workspace   rb maxPathLength
+align3  rb  0A00h-EXTFS.align3
+symlink_workspace   rb  maxPathLength
 symlink_depth       dd  ?
 MOUNT_POLICY        dd  ? ; TODO: add proper mount syscall
+c_inode             dd  ?
+c_sz                dd  ?
+c_curino            dd  ?
+csumSeed            dd  ?
 ends
 
 ext_report_unsupported_features:
@@ -352,7 +427,23 @@ ext2_create_partition:
         mov     esi, ebx
         lea     edi, [ebp+EXTFS.superblock]
         mov     ecx, 512/4
-        rep movsd   ; copy superblock
+        rep movsd   ; copy first half of superblock
+
+        push    ebx
+        mov     ebx, edi            ; ebx = destination (ebp + EXTFS.superblock + 512)
+        xchg    ebp, [esp + 12]     ; Swap EBP (EXTFS) with stack (PARTITION pointer)
+        mov     eax, 3              ; Read sector 3
+        call    fs_read32_sys
+        xchg    ebp, [esp + 12]     ; Restore EBP (EXTFS pointer)
+        pop     ebx                 ; Restore scratch buffer pointer
+        test    eax, eax
+        jnz     .error
+
+        push    ebx
+        lea     ebx, [ebp+EXTFS.superblock]
+        call    mount_check_csum
+        pop     ebx
+        jc      .error
         mov     ecx, [ebx+SUPERBLOCK.sectorsPerBlockLog]
         inc     ecx
         mov     eax, 1
@@ -376,17 +467,28 @@ ext2_create_partition:
         mov     [ebp+EXTFS.MOUNT_POLICY], MOUNT_POLICY_NOATIME
         test    [ebx+SUPERBLOCK.RO_compatibleFlags], not READ_ONLY_SUPPORT
         jnz     .read_only
+        cmp     [ebx+SUPERBLOCK.blocksTotal_hi], 0 ; Only support writing for lower fields
+        jnz     .error2
         test    [ebx+SUPERBLOCK.incompatibleFlags], INCOMPATIBLE_READ_SUPPORT
         jz      @f
 .read_only:
         or      [ebp+EXTFS.mountType], READ_ONLY
 @@:
+        movi    eax, 1 shl EXT2_BGDESCR_SHIFT
+        test    [ebx+SUPERBLOCK.incompatibleFlags], INCOMPAT_64BIT
+        jz      @f
+        movzx   eax, [ebx+SUPERBLOCK.descSize]
+@@:
+        mov     [ebp+EXTFS.descSize], eax
+        bsf     eax, eax
+        mov     [ebp+EXTFS.descShift], al
         mov     eax, [ebx+SUPERBLOCK.inodesTotal]
         dec     eax
         xor     edx, edx
         div     [ebx+SUPERBLOCK.inodesPerGroup]
         inc     eax
-        shl     eax, 5
+        movzx   ecx, [ebp+EXTFS.descShift]
+        shl     eax, cl
         push    eax eax
         call    kernel_alloc
         pop     ecx
@@ -427,6 +529,42 @@ ext2_create_partition:
         xor     eax, eax
         ret
 
+mount_check_csum:
+; loads csum seed and checks csum at mount
+; in: ebx -> SUPERBLOCK
+; out: CF set on error
+        push    edx
+        test    [ebx+SUPERBLOCK.RO_compatibleFlags], RO_COMPAT_METADATA_CSUM
+        jz      .success
+
+        ; Verify superblock checksum
+        movi    eax, -1
+        stdcall crc_32, EXT_CRC_POLY, ebx, 1020  ; 1020 = sizeof(SUPERBLOCK) - sizeof(checksum)
+        cmp     eax, [ebx+SUPERBLOCK.checksum]
+        jnz     .fail
+
+        ; Load or compute checksum seed
+        test    [ebx+SUPERBLOCK.incompatibleFlags], INCOMPAT_CSUM_SEED
+        jz      .compute_seed
+
+        mov     eax, [ebx+SUPERBLOCK.checksumSeed]
+        mov     [ebp+EXTFS.csumSeed], eax
+        jmp     .success
+
+.compute_seed:
+        mov     eax, -1
+        lea     edx, [ebx+SUPERBLOCK.UUID]
+        stdcall crc_32, EXT_CRC_POLY, edx, 16
+        mov     [ebp+EXTFS.csumSeed], eax
+
+.success:
+        clc
+.exit:
+        pop     edx
+        ret
+.fail:
+        stc
+        jmp     .exit
 ; unmount EXT partition
 ext_free:
 ; in: eax -> EXTFS structure
@@ -444,9 +582,9 @@ extfsReadBlock:
         push    fs_read64_sys
 @@:
         push    ecx edx
+        mul     [ebp+EXTFS.sectorsPerBlock]
         mov     ecx, [ebp+EXTFS.sectorsPerBlock]
-        mul     ecx
-        call    dword[esp+8]
+        call    dword [esp+8]
         pop     edx ecx
         add     esp, 4
         test    eax, eax
@@ -456,17 +594,76 @@ extfsReadBlock:
 @@:
         ret
 
+calc_block_bitmap_csum:
+; in: ebx = block group descriptor
+        test    [ebp+EXTFS.superblock.RO_compatibleFlags], RO_COMPAT_METADATA_CSUM
+        jz      .ret
+        push    eax ecx edx
+        mov     eax, [ebp+EXTFS.csumSeed]
+        mov     edx, [ebp+EXTFS.tempBlockBuffer]
+        mov     ecx, [ebp+EXTFS.superblock.blocksPerGroup]
+        shr     ecx, 3
+        stdcall crc_32, EXT_CRC_POLY, edx, ecx
+        mov     [ebx+BGDESCR.blockBitmapCsum_lo], ax
+        cmp     [ebp+EXTFS.descSize], 64
+        jb      @f
+        shr     eax, 16
+        mov     [ebx+BGDESCR.blockBitmapCsum_hi], ax
+@@:
+        pop     edx ecx eax
+.ret:
+        ret
+
+calc_inode_bitmap_csum:
+; in: ebx = block group descriptor
+        test    [ebp+EXTFS.superblock.RO_compatibleFlags], RO_COMPAT_METADATA_CSUM
+        jz      .ret
+        push    eax ecx edx
+        mov     eax, [ebp+EXTFS.csumSeed]
+        mov     edx, [ebp+EXTFS.tempBlockBuffer]
+        mov     ecx, [ebp+EXTFS.superblock.inodesPerGroup]
+        shr     ecx, 3
+        stdcall crc_32, EXT_CRC_POLY, edx, ecx
+        mov     [ebx+BGDESCR.inodeBitmapCsum_lo], ax
+        cmp     [ebp+EXTFS.descSize], 64
+        jb      @f
+        shr     eax, 16
+        mov     [ebx+BGDESCR.inodeBitmapCsum_hi], ax
+@@:
+        pop     edx ecx eax
+.ret:
+        ret
+
+
 extfsWriteDescriptor:
 ; in: ebx = block group descriptor
+        test    [ebp+EXTFS.superblock.RO_compatibleFlags], RO_COMPAT_METADATA_CSUM
+        jz      .skip_csum
+        mov     [ebx + BGDESCR.checksum], 0
+        mov     eax, ebx
+        sub     eax, [ebp+EXTFS.descriptorTable]
+        movzx   ecx, [ebp+EXTFS.descShift]
+        shr     eax, cl          ; group index = byte offset >> descShift
+        push    eax
+        mov     eax, [ebp+EXTFS.csumSeed]
+        mov     edx, esp
+        mov     ecx, [ebp+EXTFS.descSize]
+        stdcall crc_32, EXT_CRC_POLY, edx, 4
+        add     esp, 4
+        stdcall crc_32, EXT_CRC_POLY, ebx, ecx
+        mov     [ebx + BGDESCR.checksum], ax
+.skip_csum:
         mov     eax, [ebp+EXTFS.superblock.firstGroupBlock]
         inc     eax
         mul     [ebp+EXTFS.sectorsPerBlock]
         sub     ebx, [ebp+EXTFS.descriptorTable]
         shr     ebx, 9
         add     eax, ebx
+        adc     edx, 0
         shl     ebx, 9
         add     ebx, [ebp+EXTFS.descriptorTable]
-        call    fs_write32_sys
+        movi    ecx, 1
+        call    fs_write64_sys
         ret
 
 extfsExtentFree:
@@ -479,23 +676,25 @@ extfsExtentFree:
         sub     ebx, edx
         sub     ebx, ecx
         jc      .ret
-        push    edx
         mov     ebx, [ebp+EXTFS.descriptorTable]
-        shl     eax, 5
+        push    ecx
+        mov     cl, [ebp+EXTFS.descShift]
+        shl     eax, cl
+        pop     ecx
         add     ebx, eax
+        push    ebx
+        push    edx
         mov     eax, ecx
         mul     [ebp+EXTFS.sectorsPerBlock]
-        add     [ebx+BGDESCR.blocksFree], cx
-        add     [ebp+EXTFS.superblock.blocksFree], ecx
+        add     [ebx+BGDESCR.blocksFree_lo], cx
+        add     [ebp+EXTFS.superblock.blocksFree_lo], ecx
         sub     [ebp+EXTFS.inodeBuffer.sectorsUsed], eax
-        push    [ebx+BGDESCR.blockBitmap]
-        call    extfsWriteDescriptor
-        pop     eax
+        mov     eax, [ebx+BGDESCR.blockBitmap_lo]
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         mov     edx, eax
         call    extfsReadBlock
         pop     eax
-        jc      .ret
+        jc      .error
         push    ebx edx
         mov     edi, eax
         shr     edi, 5
@@ -531,12 +730,20 @@ extfsExtentFree:
         shl     eax, cl
         and     [edi], eax
 @@:
-        pop     eax ebx
+        pop     eax ebx edi
+        push    eax ebx
+        mov     ebx, edi
+        call    calc_block_bitmap_csum
+        call    extfsWriteDescriptor
+        pop     ebx eax
         call    extfsWriteBlock
 .ret:
         pop     edi edx ebx
         xor     eax, eax
         ret
+.error:
+        add     esp, 4
+        jmp     .ret
 
 extfsInodeAlloc:
 ; in: eax = parent inode number
@@ -546,20 +753,19 @@ extfsInodeAlloc:
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
         mov     ebx, [ebp+EXTFS.descriptorTable]
-        shl     eax, 5
+        mov     cl, [ebp+EXTFS.descShift]
+        shl     eax, cl
         add     ebx, eax
         push    ebx
 .test_block_group:
         push    ebx
-        cmp     [ebx+BGDESCR.blocksFree], 0
+        cmp     [ebx+BGDESCR.blocksFree_lo], 0
         jz      .next
-        cmp     [ebx+BGDESCR.inodesFree], 0
+        cmp     [ebx+BGDESCR.inodesFree_lo], 0
         jz      .next
-        dec     [ebx+BGDESCR.inodesFree]
-        dec     [ebp+EXTFS.superblock.inodesFree]
-        push    [ebx+BGDESCR.inodeBitmap]
-        call    extfsWriteDescriptor
-        pop     eax
+        dec     [ebx+BGDESCR.inodesFree_lo]
+        dec     [ebp+EXTFS.superblock.inodesFree_lo]
+        mov     eax, [ebx+BGDESCR.inodeBitmap_lo]
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         mov     edx, eax
         mov     edi, ebx
@@ -579,11 +785,35 @@ extfsInodeAlloc:
         shl     edi, 3
         add     eax, edi
         mov     ecx, eax
+
+        test    [ebp+EXTFS.superblock.RO_compatibleFlags], CSUM_FLAGS
+        jz      .skip_itable_unused
+        push    ebx
+        mov     ebx, [esp+4]
+        mov     eax, [ebp+EXTFS.superblock.inodesPerGroup]
+        dec     eax
+        sub     eax, ecx
+        cmp     [ebx+BGDESCR.itableUnused_lo], ax
+        jbe     @f
+        mov     [ebx+BGDESCR.itableUnused_lo], ax
+@@:
+        pop     ebx
+.skip_itable_unused:
+
+        push    ebx edx ecx
+        mov     ebx, [esp+12]
+        call    calc_inode_bitmap_csum
+        call    extfsWriteDescriptor
+        pop     ecx edx ebx
+
         mov     eax, edx
         call    extfsWriteBlock
         pop     eax
         sub     eax, [ebp+EXTFS.descriptorTable]
-        shr     eax, 5
+        push    ecx
+        mov     cl, [ebp+EXTFS.descShift]
+        shr     eax, cl
+        pop     ecx
         mul     [ebp+EXTFS.superblock.inodesPerGroup]
         lea     ebx, [eax+ecx+1]
         xor     eax, eax
@@ -595,12 +825,12 @@ extfsInodeAlloc:
         pop     ebx
         cmp     ebx, [esp]
         jc      .backward
-        add     ebx, 32
+        add     ebx, [ebp+EXTFS.descSize]
         cmp     ebx, [ebp+EXTFS.descriptorTableEnd]
         jc      .test_block_group
         mov     ebx, [esp]
 .backward:
-        sub     ebx, 32
+        sub     ebx, [ebp+EXTFS.descSize]
         cmp     ebx, [ebp+EXTFS.descriptorTable]
         jnc     .test_block_group
         movi    eax, ERROR_DISK_FULL
@@ -617,14 +847,15 @@ extfsExtentAlloc:
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
         mov     ebx, [ebp+EXTFS.descriptorTable]
-        shl     eax, 5
+        mov     cl, [ebp+EXTFS.descShift]
+        shl     eax, cl
         add     ebx, eax
         push    ebx
 .test_block_group:
         push    ebx
-        cmp     [ebx+BGDESCR.blocksFree], 0
+        cmp     [ebx+BGDESCR.blocksFree_lo], 0
         jz      .next
-        mov     eax, [ebx+BGDESCR.blockBitmap]
+        mov     eax, [ebx+BGDESCR.blockBitmap_lo]
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         mov     edx, eax
         mov     edi, ebx
@@ -723,15 +954,17 @@ extfsExtentAlloc:
         call    extfsWriteBlock
         mov     ebx, [esp]
         mov     ecx, [esp+8]
-        sub     [ebx+BGDESCR.blocksFree], cx
+        sub     [ebx+BGDESCR.blocksFree_lo], cx
         jnc     @f
-        mov     [ebx+BGDESCR.blocksFree], 0
+        mov     [ebx+BGDESCR.blocksFree_lo], 0
 @@:
-        sub     [ebp+EXTFS.superblock.blocksFree], ecx
+        sub     [ebp+EXTFS.superblock.blocksFree_lo], ecx
+        call    calc_block_bitmap_csum
         call    extfsWriteDescriptor
         pop     eax ebx
         sub     eax, [ebp+EXTFS.descriptorTable]
-        shr     eax, 5
+        mov     cl, [ebp+EXTFS.descShift]
+        shr     eax, cl
         mul     [ebp+EXTFS.superblock.blocksPerGroup]
         mov     ebx, eax
         add     ebx, esi
@@ -749,12 +982,12 @@ extfsExtentAlloc:
         pop     ebx
         cmp     ebx, [esp]
         jc      .backward
-        add     ebx, 32
+        add     ebx, [ebp+EXTFS.descSize]
         cmp     ebx, [ebp+EXTFS.descriptorTableEnd]
         jc      .test_block_group
         mov     ebx, [esp]
 .backward:
-        sub     ebx, 32
+        sub     ebx, [ebp+EXTFS.descSize]
         cmp     ebx, [ebp+EXTFS.descriptorTable]
         jnc     .test_block_group
         movi    eax, ERROR_DISK_FULL
@@ -827,7 +1060,7 @@ extfsGetExtent:
         ret
 
 .listTreeSearch:
-        cmp     ecx, 12
+        cmp     ecx, 12         ; number of direct block pointers
         jb      .get_direct_block
         sub     ecx, 12
         cmp     ecx, [ebp+EXTFS.dwordsPerBlock]
@@ -915,20 +1148,27 @@ extfsGetExtent:
 
 getInodeLocation:
 ; in: eax = inode number
-; out: eax = inode sector, edx = offset in sector
+; out: edx:eax = inode sector, ecx = offset in sector
         dec     eax
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
-        shl     eax, 5
+        mov     cl, [ebp+EXTFS.descShift]
+        shl     eax, cl
+        push    edx
         add     eax, [ebp+EXTFS.descriptorTable]
-        mov     ebx, [eax+BGDESCR.inodeTable]
-        imul    ebx, [ebp+EXTFS.sectorsPerBlock]
-        movzx   eax, [ebp+EXTFS.superblock.inodeSize]
-        mul     edx
-        mov     edx, eax
-        shr     eax, 9
-        and     edx, 511
+        mov     ebx, eax
+        load_bgd_64 ecx, eax, ebx, inodeTable
+        imul    ecx, [ebp+EXTFS.sectorsPerBlock]
+        mul     [ebp+EXTFS.sectorsPerBlock]
+        add     edx, ecx
+        pop     ebx
+        movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
+        imul    ebx, ecx
+        mov     ecx, ebx
+        shr     ebx, 9
+        and     ecx, 511
         add     eax, ebx
+        adc     edx, 0
         ret
 
 writeInode_no_cTime:
@@ -956,34 +1196,66 @@ writeInode:
         stdcall ext_write_time, eax, edx
 .ignoreCTime:
         pop     eax
+        test    [ebp+EXTFS.superblock.RO_compatibleFlags], RO_COMPAT_METADATA_CSUM
+        jz      .skip_checksum
+        push    eax                               ; save eax for getInodeLocation
+        movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
+        mov     [edi + INODE.checksumLow], 0
+        cmp     ecx, 128
+        jbe     @f
+        cmp     [edi + INODE.extraISize], 4
+        jb      @f
+        mov     [edi + INODE.checksumHigh], 0
+@@:
+        push    [edi + INODE.generation] eax
+        mov     eax, [ebp+EXTFS.csumSeed]
+        mov     edx, esp
+        stdcall crc_32, EXT_CRC_POLY, edx, 8
+        add     esp, 8
+        stdcall crc_32, EXT_CRC_POLY, edi, ecx
+        mov     [edi + INODE.checksumLow], ax
+        cmp     ecx, 128
+        jbe     @f
+        cmp     [edi + INODE.extraISize], 4
+        jb      @f
+        shr     eax, 16
+        mov     [edi + INODE.checksumHigh], ax
+@@:
+        pop     eax                               ; restore inode number
+.skip_checksum:
         cmp     eax, ROOT_INODE
         jnz     .not_root
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
-        cmp     ecx, 160
+        cmp     ecx, INODE_CSUM_REQ_SIZE
         jbe     @f
-        mov     ecx, 160
+        movi    ecx, INODE_CSUM_REQ_SIZE
 @@:
         mov     esi, edi
         lea     edi, [ebp+EXTFS.rootInodeBuffer]
         rep movsb
 .not_root:
         call    getInodeLocation
+        push    edx eax ecx
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
-        mov     ecx, eax
-        call    fs_read32_sys
+        mov     ecx, 1
+        call    fs_read64_sys
+        pop     edi ; Offset
         test    eax, eax
-        jnz     @f
-        mov     eax, ecx
+        jz      .no_error
+        add     esp, 8
+        jmp     @f
+.no_error:
+        pop     eax edx
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
-        cmp     ecx, 160
+        cmp     ecx, INODE_CSUM_REQ_SIZE
         jbe     .smaller_size
-        mov     ecx, 160
+        movi    ecx, INODE_CSUM_REQ_SIZE
 .smaller_size:
-        mov     edi, edx
         add     edi, ebx
         mov     esi, [esp]
         rep movsb
-        call    fs_write32_sys
+        mov     ecx, 1
+        call    fs_write64_sys
 .ret:
         pop     ebx ecx esi edi edx
         ret
@@ -998,8 +1270,11 @@ readInode:
         push    edx edi esi ecx ebx
         mov     edi, ebx
         call    getInodeLocation
+        push    ecx ; Save the offset
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
-        call    fs_read32_sys
+        mov     ecx, 1
+        call    fs_read64_sys
+        pop     edx ; Restore the offset
         test    eax, eax
         jnz     @b
         mov     ecx, 128
@@ -1576,6 +1851,30 @@ extfsTruncateFile:
 .ret:
         ret
 
+calc_dirblock_csum:
+; in: ecx = inode number
+        test    [ebp+EXTFS.superblock.RO_compatibleFlags], RO_COMPAT_METADATA_CSUM
+        jz      .ret
+        push    eax ebx ecx edx edi
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        mov     eax, [ebp+EXTFS.csumSeed]
+        push    ecx                             ; push inode number for CRC
+        mov     edx, esp
+        stdcall crc_32, EXT_CRC_POLY, edx, 4
+        lea     edx, [ebp+EXTFS.inodeBuffer.generation]
+        stdcall crc_32, EXT_CRC_POLY, edx, 4
+        mov     edx, edi
+        mov     ecx, [ebp+EXTFS.bytesPerBlock]
+        sub     ecx, 12                         ; 12-byte dir entry checksum tail
+        stdcall crc_32, EXT_CRC_POLY, edx, ecx
+        add     esp, 4
+        mov     ecx, [ebp+EXTFS.bytesPerBlock]
+        mov     [edi+ecx-4], eax
+        pop     edi edx ecx ebx eax
+.ret:
+        ret
+
+
 linkInode:
 ;   in:
 ; eax = inode on which to link
@@ -1647,8 +1946,10 @@ linkInode:
         mov     [edi+DIRENTRY.entryLength], ax
         cmp     eax, ecx
         jge     .found
-        mov     [edi+DIRENTRY.inodeNumber], 0
+        movi    [edi+DIRENTRY.inodeNumber], 0
         pop     eax
+        mov     ecx, [esp+24]
+        call    calc_dirblock_csum
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    extfsWriteBlock
         jmp     @b
@@ -1670,6 +1971,13 @@ linkInode:
         push    eax
         mov     edi, [ebp+EXTFS.tempBlockBuffer]
         mov     eax, [ebp+EXTFS.bytesPerBlock]
+        test    [ebp+EXTFS.superblock.RO_compatibleFlags], RO_COMPAT_METADATA_CSUM
+        jz      .no_csum_tail
+        sub     eax, 12  ; 12-byte dir entry checksum tail
+        movi    [edi+eax+DIRENTRY.inodeNumber], 0
+        mov     [edi+eax+DIRENTRY.entryLength], 12
+        mov     word [edi+eax+DIRENTRY.nameLength], EXT_CSUM_FAKE_TAIL shl 8  ; nameLength=0, fileType=EXT_CSUM_FAKE_TAIL
+.no_csum_tail:
         mov     [edi+DIRENTRY.entryLength], ax
 .found:
         pop     edx ecx ecx ecx ebx esi
@@ -1686,6 +1994,8 @@ linkInode:
         add     edi, 8
         rep movsb
         mov     eax, edx
+        mov     ecx, [esp+4]
+        call    calc_dirblock_csum
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    extfsWriteBlock
         lea     ebx, [ebp+EXTFS.inodeBuffer]
@@ -1765,6 +2075,8 @@ unlinkInode:
 .write_block:
         pop     eax
         mov     eax, edi
+        mov     ecx, [esp+4]
+        call    calc_dirblock_csum
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    extfsWriteBlock
         lea     ebx, [ebp+EXTFS.inodeBuffer]
@@ -2062,17 +2374,27 @@ findInode:
         jmp     .error
 
 writeSuperblock:
-        push    ebx
+        push    ebx ecx edx
+        test    [ebp+EXTFS.superblock.RO_compatibleFlags], RO_COMPAT_METADATA_CSUM
+        jz      .skip_csum
+        movi    eax, -1
+        lea     edx, [ebp+EXTFS.superblock]
+        stdcall crc_32, EXT_CRC_POLY, edx, 1020  ; 1020 = sizeof(SUPERBLOCK) - sizeof(checksum)
+        mov     [ebp+EXTFS.superblock.checksum], eax
+.skip_csum:
         mov     eax, 2
+        xor     edx, edx
+        movi    ecx, 2  ; 2 sectors for 1024-byte superblock
         lea     ebx, [ebp+EXTFS.superblock]
-        call    fs_write32_sys
-        pop     ebx
+        call    fs_write64_sys
+        pop     edx ecx ebx
         ret
 
 extfsWritingInit:
         movi    eax, ERROR_UNSUPPORTED_FS
         test    [ebp+EXTFS.mountType], READ_ONLY
         jnz     @f
+        movi    [ebp+EXTFS.c_inode], -1   ; Wipe directory cache so GUI refreshes see new/deleted files
 ext_lock:
         lea     ecx, [ebp+EXTFS.Lock]
         jmp     mutex_lock
@@ -2219,12 +2541,14 @@ ext_ReadFolder:
         jz      .root_folder
         call    findInode
         jc      .error_ret
+        mov     [ebp+EXTFS.c_curino], esi
         lea     esi, [ebp+EXTFS.inodeBuffer]
         test    [esi+INODE.accessMode], FLAG_FILE
         jnz     .error_not_found
         jmp     @f
 
 .root_folder:
+        mov     [ebp+EXTFS.c_curino], ROOT_INODE
         lea     esi, [ebp+EXTFS.rootInodeBuffer]
         lea     edi, [ebp+EXTFS.inodeBuffer]
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
@@ -2257,7 +2581,8 @@ ext_ReadFolder:
         mov     [edi+24], eax
         mov     ecx, [edi+16]
 .find_wanted_start:
-        jecxz   .find_wanted_end
+        test    ecx, ecx
+        jz      .find_wanted_end
 .find_wanted_cycle:
         cmp     [ebx+DIRENTRY.inodeNumber], 0
         jz      @f
@@ -2292,7 +2617,17 @@ ext_ReadFolder:
         ret
 
 .wanted_end:
-        loop    .find_wanted_cycle
+        mov     eax, [ebp+EXTFS.c_curino]
+        cmp     eax, [ebp+EXTFS.c_inode]
+        jne     @f
+        mov     eax, [ebp+EXTFS.c_sz]
+        test    eax, eax
+        jz      @f
+        mov     [edi+4], eax
+        jmp     .end_dir
+@@:
+        dec     ecx
+        jnz     .find_wanted_cycle
 .find_wanted_end:
         mov     ecx, [edi+20]
 .wanted_start:
@@ -2382,6 +2717,10 @@ ext_ReadFolder:
         jmp     @b
 
 .end_dir:
+        mov     eax, [ebp+EXTFS.c_curino]
+        mov     [ebp+EXTFS.c_inode], eax
+        mov     eax, [edi+4]
+        mov     [ebp+EXTFS.c_sz], eax
         call    ext_unlock
         mov     edx, [edi+28]
         mov     ebx, [edi+8]
@@ -2783,30 +3122,37 @@ ext_Delete:
         div     [ebp+EXTFS.superblock.inodesPerGroup]
         push    edx
         mov     ebx, [ebp+EXTFS.descriptorTable]
-        shl     eax, 5
+        mov     cl, [ebp+EXTFS.descShift]
+        shl     eax, cl
         add     ebx, eax
         cmp     edi, DIRECTORY
         jnz     @f
-        dec     [ebx+BGDESCR.directoriesCount]
+        dec     [ebx+BGDESCR.directoriesCount_lo]
 @@:
-        inc     [ebx+BGDESCR.inodesFree]
-        push    [ebx+BGDESCR.inodeBitmap]
-        call    extfsWriteDescriptor
+        inc     [ebx+BGDESCR.inodesFree_lo]
+        push    ebx [ebx+BGDESCR.inodeBitmap_lo]
         pop     eax
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         mov     ecx, eax
         call    extfsReadBlock
-        pop     edx
+        pop     ebx edx
         jc      .error
         mov     eax, edx
         and     edx, 31
         shr     eax, 5
         shl     eax, 2
-        add     eax, ebx
+        add     eax, [ebp+EXTFS.tempBlockBuffer]
         btr     [eax], edx
+
+        push    ecx
+        call    calc_inode_bitmap_csum
+        call    extfsWriteDescriptor
+        pop     ecx
+
         mov     eax, ecx
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    extfsWriteBlock
-        inc     [ebp+EXTFS.superblock.inodesFree]
+        inc     [ebp+EXTFS.superblock.inodesFree_lo]
 .hardlinks:
         mov     eax, esi
         lea     ebx, [ebp+EXTFS.inodeBuffer]
@@ -2926,9 +3272,10 @@ ext_CreateFolder:
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
         mov     ebx, [ebp+EXTFS.descriptorTable]
-        shl     eax, 5
+        mov     cl, [ebp+EXTFS.descShift]
+        shl     eax, cl
         add     ebx, eax
-        inc     [ebx+BGDESCR.directoriesCount]
+        inc     [ebx+BGDESCR.directoriesCount_lo]
         call    extfsWriteDescriptor
 .success:
 .error:
