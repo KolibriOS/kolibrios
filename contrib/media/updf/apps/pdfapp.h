@@ -30,6 +30,7 @@ struct pdfapp_s
 	float resolution;        /* dpi; 72 == 100% */
 	int   rotate;            /* degrees */
 	int   grayscale;
+	int   ss_factor;         /* supersampling factor (1 = off) for sharper text */
 
 	/* scroll offset (managed by the GUI) */
 	int   panx, pany;
@@ -54,6 +55,9 @@ fz_pixmap *pdfapp_renderpage(pdfapp_t *app, int pageno);
 /* input: zoom/rotate/grayscale/navigation, same key codes as before
    ( + - L R c g G [ ] ) */
 void pdfapp_onkey(pdfapp_t *app, int c);
+
+/* snap the current zoom to exactly 100% if it is within ~7% of it */
+void pdfapp_snapzoom(pdfapp_t *app);
 
 /* selection: a/b are in page space; the GUI supplies them from clicks */
 void  pdfapp_invertselection(pdfapp_t *app); /* toggle highlight in image */

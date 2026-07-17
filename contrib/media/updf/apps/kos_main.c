@@ -39,6 +39,7 @@ struct proc_info Form;
 #define SC_G          0x22
 #define SC_L          0x26
 #define SC_W          0x11  // fit page to width
+#define SC_S          0x1F  // toggle supersampling (sharper text)
 #define SC_NUM_MINUS  0x4A  // keypad -
 #define SC_NUM_PLUS   0x4E  // keypad +
 #define SC_HOME       0x47
@@ -79,22 +80,31 @@ short show_area_x;
 char key_mode_enter_page_number;
 int new_page_number;
 
+// zoom entry box between the +/- buttons (mirrors the page-number box)
+#define ZOOM_AREA_W 50
+static short zoom_area_x;
+char key_mode_enter_zoom;
+int new_zoom;
+
 static char fit_pending = 1;    // fit the page to width on the first draw
 
 const char *help[] = {
 	"Keys:",
 	" ",
-	"PageUp     - go to previous page",
-	"PageDown   - go to next page",
-	"Home       - go to first page",
-	"End        - go to last page",
-	"Down arrow - scroll down",
-	"Up arrow   - scroll up",
-	"+/-        - zoom in/out",
-	"w          - fit page to width",
-	"[ or l     - rotate page 90 deg to the left",
-	"] or r     - rotate page 90 deg to the right",
-	"g          - grayscale on/off",
+	"PageUp / PageDown - previous / next page",
+	"Home / End        - first / last page",
+	"Up / Down arrow   - scroll",
+	"+ / -             - zoom in / out",
+	"w                 - fit page to width",
+	"[ or l  /  ] or r - rotate page left / right",
+	"g                 - grayscale on / off",
+	"s                 - supersampling (sharper text) on / off",
+	" ",
+	"Mouse:",
+	"Left drag         - select text (copies to clipboard)",
+	"Right drag        - pan the page",
+	"Wheel             - scroll",
+	"Click page or zoom box - type a value",
 	"  ",
 	"Press Escape to hide help",
 	0
@@ -107,6 +117,10 @@ void winblit(pdfapp_t *app);
 void DrawPagination(void);
 void HandleNewPageNumber(unsigned char key);
 void ApplyNewPageNumber(void);
+void DrawZoom(void);
+void GetNewZoom(void);
+void HandleNewZoom(unsigned char key);
+void ApplyNewZoom(void);
 void DrawMainWindow(void);
 void FlushPageCache(void);
 void SyncCacheParams(void);
@@ -126,6 +140,8 @@ int ClientToPagePoint(int mx, int my, fz_point *pt);
 void CopySelectionToClipboard(void);
 void ProcessPageMouse(void);
 void FitPageWidth(void);
+void ToggleSupersampling(void);
+unsigned CpuBaseMhz(void);
 
 
 // The MuPDF 1.19 glue (pdfapp.c) only calls back into winrepaint().
@@ -288,6 +304,7 @@ void winblit(pdfapp_t *app)
 	if (Form.cwidth == 0) return; // window is not drawn yet
 
 	if (key_mode_enter_page_number==1) HandleNewPageNumber(0); else DrawPagination();
+	if (key_mode_enter_zoom==1) HandleNewZoom(0); else DrawZoom();
 
 	gapp.panx = 0;
 
@@ -645,9 +662,10 @@ void NormalizeScrollPos(void)
 
 void GetNewPageNumber(void)
 {
+	key_mode_enter_zoom = 0;          // the two input boxes are mutually exclusive
 	new_page_number = gapp.pageno;
 	key_mode_enter_page_number = 1;
-	HandleNewPageNumber(0);
+	winblit(&gapp);                  // repaint the page (drop any highlight) + draw the box
 }
 
 void HandleNewPageNumber(unsigned char key)
@@ -697,6 +715,81 @@ void DrawPagination(void)
 	kos_text(show_area_x + show_area_w/2 - strlen(pages_display)*6/2, 14, 0x000000, pages_display, strlen(pages_display));
 }
 
+// current zoom as a percentage (72 dpi == 100%)
+int ZoomPercent(void)
+{
+	return (int)(gapp.resolution / 72.0f * 100.0f + 0.5f);
+}
+
+void DrawZoom(void)
+{
+	char s[12];
+	kol_paint_bar(zoom_area_x, 6, ZOOM_AREA_W, 22, 0xF4F4F4);
+	sprintf(s, "%d%%", ZoomPercent());
+	kos_text(zoom_area_x + ZOOM_AREA_W/2 - strlen(s)*6/2, 14, 0x000000, s, strlen(s));
+}
+
+void GetNewZoom(void)
+{
+	key_mode_enter_page_number = 0;  // the two input boxes are mutually exclusive
+	new_zoom = 0;                    // type the wanted zoom from scratch
+	key_mode_enter_zoom = 1;
+	winblit(&gapp);                  // repaint the page (drop any highlight) + draw the box
+}
+
+void HandleNewZoom(unsigned char key)
+{
+	char lbl[12];
+
+	if (key >= '0' && key <= '9')
+		new_zoom = new_zoom * 10 + key - '0';
+	if (key == ASCII_KEY_BS)
+		new_zoom /= 10;
+	if (key == ASCII_KEY_ENTER)
+	{
+		if (new_zoom == 0)           // nothing typed: cancel, like Esc
+		{
+			key_mode_enter_zoom = 0;
+			DrawMainWindow();
+			return;
+		}
+		ApplyNewZoom();
+		return;
+	}
+	if (key == ASCII_KEY_ESC)
+	{
+		key_mode_enter_zoom = 0;
+		DrawMainWindow();
+		return;
+	}
+
+	itoa(new_zoom, lbl, 10);
+	strcat(lbl, "_");
+	kol_paint_bar(zoom_area_x, 6, ZOOM_AREA_W, 22, 0xFDF88E);
+	kos_text(zoom_area_x + ZOOM_AREA_W/2 - strlen(lbl)*6/2, 14, 0x000000, lbl, strlen(lbl));
+
+	if (new_zoom > 1600) ApplyNewZoom();
+}
+
+void ApplyNewZoom(void)
+{
+	int oldh;
+	key_mode_enter_zoom = 0;
+	if (new_zoom < 10)   new_zoom = 10;
+	if (new_zoom > 1600) new_zoom = 1600;
+	oldh = (gapp.image && gapp.image->h > 0) ? gapp.image->h : 1;
+	gapp.resolution = new_zoom / 100.0f * 72.0f;
+	do_not_blit = 1;
+	pdfapp_showpage(&gapp, 0, 1, 0);           // re-render at the new zoom
+	do_not_blit = 0;
+	if (gapp.image)
+	{
+		gapp.pany = (int)((long long)gapp.pany * gapp.image->h / oldh);
+		NormalizeScrollPos();
+	}
+	DrawMainWindow();
+}
+
 void DrawToolbarButton(int x, char image_id)
 {
 	kol_btn_define(x, 5, 26-1, 24-1, 10 + image_id + BT_HIDE, 0);
@@ -707,18 +800,27 @@ void DrawMainWindow(void)
 {
 	kol_paint_bar(0, 0, Form.cwidth, TOOLBAR_HEIGHT - 1, 0xe1e1e1); // bar on the top (buttons holder)
 	kol_paint_bar(0, TOOLBAR_HEIGHT - 1, Form.cwidth, 1, 0x7F7F7F);
-	DrawToolbarButton(8,0); //open_folder
-	DrawToolbarButton(42,1); //magnify -
-	DrawToolbarButton(67,2);  //magnify +
-	DrawToolbarButton(101,6); //rotate left
-	DrawToolbarButton(126,7); //rotate right
-	DrawToolbarButton(Form.cwidth - 160,3); //show help
-	show_area_x = Form.cwidth - show_area_w - 34;
-	DrawToolbarButton(show_area_x - 26,4); //prev page
-	DrawToolbarButton(show_area_x + show_area_w,5); //nex page
-	kol_btn_define(show_area_x-1,  5, show_area_w+1, 23, 20 + BT_HIDE, 0xA4A4A4);
-	kol_paint_bar(show_area_x,  5, show_area_w, 1, 0xA4A4A4);
+	// left: open folder, info/help, rotate left/right
+	DrawToolbarButton(8, 0);    //open_folder
+	DrawToolbarButton(42, 3);   //info / help
+	DrawToolbarButton(76, 6);   //rotate left
+	DrawToolbarButton(101, 7);  //rotate right
+
+	// center: page navigation  < N/M >
+	show_area_x = (Form.cwidth - (26 + show_area_w + 26)) / 2 + 26;
+	DrawToolbarButton(show_area_x - 26, 4); //prev page (touches box left)
+	kol_btn_define(show_area_x - 1, 5, show_area_w + 1, 23, 20 + BT_HIDE, 0xA4A4A4);
+	kol_paint_bar(show_area_x, 5, show_area_w, 1, 0xA4A4A4);
 	kol_paint_bar(show_area_x, 28, show_area_w, 1, 0xA4A4A4);
+	DrawToolbarButton(show_area_x + show_area_w, 5); //next page (touches box right)
+
+	// right: the zoom block ( - [100%] + ), edge-anchored
+	zoom_area_x = Form.cwidth - 8 - 26 - ZOOM_AREA_W;   // box left; zoom + is rightmost
+	DrawToolbarButton(zoom_area_x - 26, 1);           //magnify - (touches box left)
+	kol_btn_define(zoom_area_x - 1, 5, ZOOM_AREA_W + 1, 23, 21 + BT_HIDE, 0xA4A4A4);
+	kol_paint_bar(zoom_area_x, 5, ZOOM_AREA_W, 1, 0xA4A4A4);
+	kol_paint_bar(zoom_area_x, 28, ZOOM_AREA_W, 1, 0xA4A4A4);
+	DrawToolbarButton(zoom_area_x + ZOOM_AREA_W, 2);  //magnify + (touches box right)
 	if (fit_pending && gapp.image)   // open the document fitted to width
 	{
 		FitPageWidth();
@@ -783,7 +885,30 @@ void FitPageWidth(void)
 	gapp.resolution = gapp.resolution * (float)target / gapp.image->w;
 	if (gapp.resolution < 18)   gapp.resolution = 18;
 	if (gapp.resolution > 1200) gapp.resolution = 1200;
+	pdfapp_snapzoom(&gapp);          // 96%-ish fit -> clean 100%
 	pdfapp_showpage(&gapp, 0, 1, 0); /* re-render current page, no repaint */
+}
+
+// toggle 2x supersampling (sharper text) on/off at runtime; re-renders
+// the current page and drops the cache (neighbours were at the old factor)
+void ToggleSupersampling(void)
+{
+	char msg[96];
+	long px;
+	gapp.ss_factor = (gapp.ss_factor > 1) ? 1 : 2;
+	FlushPageCache();
+	do_not_blit = 1;
+	pdfapp_showpage(&gapp, 0, 1, 0);
+	do_not_blit = 0;
+	NormalizeScrollPos();
+	winblit(&gapp);
+	// diagnostic: gapp.image is the 1x display pixmap; if its area >= the SS
+	// guard (2.5M px) supersampling is skipped even when ss_factor==2
+	px = (long)gapp.image->w * gapp.image->h;
+	sprintf(msg, "uPDF: SS ss_factor=%d, page %dx%d=%ld px %s\n",
+		gapp.ss_factor, gapp.image->w, gapp.image->h, px,
+		(gapp.ss_factor > 1 && px < 2500000) ? "-> SS ACTIVE" : "-> SS skipped");
+	kol_board_puts(msg);
 }
 
 void PageZoomIn(void)
@@ -834,6 +959,24 @@ void PageRotateRight(void)
 	winblit(&gapp);
 }
 
+// CPU base frequency in MHz. sysfn 18.5 returns the clock modulo 2^32 and
+// so misreads CPUs faster than ~4.29 GHz as slow ones. CPUID leaf 16h
+// (Intel Skylake+, i.e. exactly the CPUs that can exceed 4.29 GHz) reports
+// the base frequency in MHz directly, so prefer it; CPUs old enough to
+// lack the leaf cannot wrap 18.5 anyway.
+unsigned CpuBaseMhz(void)
+{
+	unsigned a, b, c, d;
+	asm volatile ("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(0));
+	if (a >= 0x16)
+	{
+		asm volatile ("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(0x16), "c"(0));
+		if (a)
+			return a;
+	}
+	return kol_system_cpufreq() / 1000000;
+}
+
 int main (int argc, char* argv[])
 {
 	char ii, mouse_wheels_state;
@@ -860,6 +1003,20 @@ int main (int argc, char* argv[])
 	gapp.pageno = pageno;
 	pdfapp_open(&gapp, full_argv, 0, 0);
 	wintitle(&gapp, 0, full_argv);
+
+	// Supersampling (2x render for sharper text) is ~4x the work per page.
+	// On a slow CPU (< 1 GHz: PI/PII/PIII era) it would crawl, so switch it
+	// off automatically. A 0/bogus reading leaves the default on (assume a
+	// capable machine).
+	{
+		unsigned mhz = CpuBaseMhz();
+		char msg[64];
+		if (mhz > 0 && mhz < 1000)
+			gapp.ss_factor = 1;
+		sprintf(msg, "uPDF: CPU %u MHz, supersampling %s\n",
+			mhz, gapp.ss_factor > 1 ? "on" : "off");
+		kol_board_puts(msg);
+	}
 	
 	int butt, key, scan, ascii, screen_max_x, screen_max_y;
 	kos_screen_max(&screen_max_x, &screen_max_y);
@@ -873,11 +1030,11 @@ int main (int argc, char* argv[])
 			case evReDraw:
 				// gapp.shrinkwrap = 2;
 				kol_paint_start();
-				kol_wnd_define( 
-					(screen_max_x - (screen_max_y*8/10)) / 2 -15+kos_random(30), 
-					screen_max_y/20+kos_random(20), 
-					screen_max_y*8/10, 
-					screen_max_y*9/10, 
+				kol_wnd_define(
+					(screen_max_x - (screen_max_y*8/10 + 20)) / 2 -15+kos_random(30),
+					screen_max_y/20+kos_random(20),
+					screen_max_y*8/10 + 20,
+					screen_max_y*9/10,
 					0x73000000, 0x800000FF, Title
 				);
 				kol_paint_end();
@@ -898,10 +1055,15 @@ int main (int argc, char* argv[])
 				scan  = (key >> 16) & 0xFF;       // layout-independent scancode
 				ascii = (key >> 8) & 0xFF;        // ASCII, for digit entry only
 
-				// page-number entry still needs literal digits/enter/bs/esc
+				// page-number / zoom entry needs literal digits/enter/bs/esc
 				if (key_mode_enter_page_number)
 				{
 					HandleNewPageNumber(ascii);
+					break;
+				}
+				if (key_mode_enter_zoom)
+				{
+					HandleNewZoom(ascii);
 					break;
 				}
 
@@ -916,6 +1078,7 @@ int main (int argc, char* argv[])
 					case SC_END:    pdfapp_onkey(&gapp, 'G'); break; // last page
 					case SC_G:      pdfapp_onkey(&gapp, 'c'); break; // grayscale on/off
 					case SC_W:      FitPageWidth(); NormalizeScrollPos(); winblit(&gapp); break; // fit width
+					case SC_S:      ToggleSupersampling(); break; // sharper text on/off
 					case SC_L:
 					case SC_LBRACKET: PageRotateLeft(); break;
 					case SC_R:
@@ -939,8 +1102,8 @@ int main (int argc, char* argv[])
 				if(butt==13) //show help
 				{
 					kol_paint_bar(0, TOOLBAR_HEIGHT, Form.cwidth, Form.cheight - TOOLBAR_HEIGHT, 0xF2F2F2);
-					kos_text(20, TOOLBAR_HEIGHT + 20, 0x81000000, "uPDF for KolibriOS v2.0", 0);
-					kos_text(21, TOOLBAR_HEIGHT + 20, 0x81000000, "uPDF for KolibriOS v2.0", 0);
+					kos_text(20, TOOLBAR_HEIGHT + 20, 0x81000000, "uPDF for KolibriOS v2.1", 0);
+					kos_text(21, TOOLBAR_HEIGHT + 20, 0x81000000, "uPDF for KolibriOS v2.1", 0);
 					for (ii=0; help[ii]!=0; ii++) {
 						kos_text(20, TOOLBAR_HEIGHT + 60 + ii * 20, 0x90000000, help[ii], 0);
 					}
@@ -950,6 +1113,7 @@ int main (int argc, char* argv[])
 				if(butt==16) PageRotateLeft();
 				if(butt==17) PageRotateRight();
 				if(butt==20) GetNewPageNumber();
+				if(butt==21) GetNewZoom();
 				break;
 
 			case evMouse:

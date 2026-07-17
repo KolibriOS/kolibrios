@@ -271,7 +271,7 @@ extra_files = {
  {"kolibrios/media/fplay", "common/media/fplay"},
  {"kolibrios/media/fplay_run", "common/media/fplay_run"},
  {"kolibrios/media/minimp3", "common/media/minimp3"},
- {"kolibrios/media/updf", "common/media/updf"},
+ {"kolibrios/media/updf", SRC .. "/contrib/media/updf/build/uPDF"},
  {"kolibrios/media/vttf", "common/media/vttf"},
  {"kolibrios/media/beat/Beat", SRC_PROGS .. "/media/Beat/Beat"},
  {"kolibrios/media/beat/Beep1.raw", SRC_PROGS .. "/media/Beat/Beep1.raw"},

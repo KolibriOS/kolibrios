@@ -1,0 +1,10 @@
+# build artifacts (uPDF / MuPDF 1.19 KolibriOS port)
+# note: build/uPDF (the final binary) is intentionally NOT ignored - it ships
+build/obj/
+build/*.log
+build/updfnew_test
+
+# compiled objects, static libs, linker output anywhere in the tree
+*.o
+*.a
+*.kex

@@ -74,37 +74,110 @@ static void desaturate(fz_pixmap *pix)
 	}
 }
 
+/* Supersampling factor for sharper text: render the page at SS_FACTOR times
+   the display resolution, then average each SS*SS block down. This is far
+   crisper than rendering straight at the low fit-width DPI. The oversized
+   buffer is transient - the cached/displayed pixmap is normal 1x size, so
+   RAM use does not grow. Disabled automatically when the 1x page is already
+   large (high zoom) to avoid running the KolibriOS heap out of memory. */
+#define SS_FACTOR    2
+#define SS_MAX_PIXELS 2500000  /* above this many 1x pixels, skip supersampling */
+
+/* Box-average src (BGRA, n>=4) down by factor f into dst. */
+static void downsample_box(fz_pixmap *dst, fz_pixmap *src, int f)
+{
+	int n = dst->n, dw = dst->w, dh = dst->h, x, y, k, i, j;
+	int area = f * f;
+
+	for (y = 0; y < dh; y++)
+	{
+		unsigned char *drow = dst->samples + (ptrdiff_t)y * dst->stride;
+		for (x = 0; x < dw; x++)
+		{
+			for (k = 0; k < n; k++)
+			{
+				int sum = 0;
+				for (j = 0; j < f; j++)
+				{
+					int sy = y * f + j;
+					unsigned char *srow;
+					if (sy >= src->h) sy = src->h - 1;
+					srow = src->samples + (ptrdiff_t)sy * src->stride;
+					for (i = 0; i < f; i++)
+					{
+						int sx = x * f + i;
+						if (sx >= src->w) sx = src->w - 1;
+						sum += srow[sx * src->n + k];
+					}
+				}
+				drow[x * n + k] = (unsigned char)((sum + area / 2) / area);
+			}
+		}
+	}
+}
+
 /* Render a page into a fresh BGRA pixmap on a WHITE background.
    fz_new_pixmap_from_page(alpha=1) clears to transparent black; since the
    KolibriOS blitter has no alpha it then shows a black page for any PDF that
-   doesn't paint its own background. So we allocate the pixmap ourselves,
-   clear it to opaque white, and run the page over it. Alpha stays (n=4)
-   because the blitter needs 32bpp. */
+   doesn't paint its own background. So we clear to opaque white ourselves.
+   Alpha stays (n=4) because the blitter needs 32bpp. */
 static fz_pixmap *render_bgra_white(pdfapp_t *app, fz_page *page, fz_matrix ctm)
 {
-	fz_irect bbox;
-	fz_pixmap *pix;
+	fz_context *ctx = app->ctx;
+	fz_rect bound = fz_bound_page(ctx, page);
+	fz_irect box1 = fz_round_rect(fz_transform_rect(bound, ctm));
+	long pixels = (long)(box1.x1 - box1.x0) * (box1.y1 - box1.y0);
+	int want = app->ss_factor < 1 ? 1 : app->ss_factor;
+	int ss = (want > 1 && pixels > 0 && pixels < SS_MAX_PIXELS) ? want : 1;
+
+	fz_matrix rctm = (ss > 1) ? fz_pre_scale(ctm, (float)ss, (float)ss) : ctm;
+	fz_irect rbox = (ss > 1) ? fz_round_rect(fz_transform_rect(bound, rctm)) : box1;
+	fz_pixmap *super = NULL, *dst = NULL;
 	fz_device *dev = NULL;
 
-	bbox = fz_round_rect(fz_transform_rect(fz_bound_page(app->ctx, page), ctm));
-	pix = fz_new_pixmap_with_bbox(app->ctx, fz_device_bgr(app->ctx), bbox, NULL, 1);
-
+	fz_var(super);
+	fz_var(dst);
 	fz_var(dev);
-	fz_try(app->ctx)
+	fz_try(ctx)
 	{
-		fz_clear_pixmap_with_value(app->ctx, pix, 0xff); /* opaque white paper */
-		dev = fz_new_draw_device(app->ctx, fz_identity, pix);
-		fz_run_page(app->ctx, page, dev, ctm, NULL);
-		fz_close_device(app->ctx, dev);
+		super = fz_new_pixmap_with_bbox(ctx, fz_device_bgr(ctx), rbox, NULL, 1);
+		fz_clear_pixmap_with_value(ctx, super, 0xff); /* opaque white paper */
+		dev = fz_new_draw_device(ctx, fz_identity, super);
+		fz_run_page(ctx, page, dev, rctm, NULL);
+		fz_close_device(ctx, dev);
+
+		if (ss > 1)
+		{
+			fz_irect dbox;
+			dbox.x0 = rbox.x0 / ss;         dbox.y0 = rbox.y0 / ss;
+			dbox.x1 = dbox.x0 + (rbox.x1 - rbox.x0) / ss;
+			dbox.y1 = dbox.y0 + (rbox.y1 - rbox.y0) / ss;
+			dst = fz_new_pixmap_with_bbox(ctx, fz_device_bgr(ctx), dbox, NULL, 1);
+			downsample_box(dst, super, ss);
+		}
+		else
+		{
+			dst = fz_keep_pixmap(ctx, super);
+		}
 	}
-	fz_always(app->ctx)
-		fz_drop_device(app->ctx, dev);
-	fz_catch(app->ctx)
+	fz_always(ctx)
 	{
-		fz_drop_pixmap(app->ctx, pix);
-		fz_rethrow(app->ctx);
+		fz_drop_device(ctx, dev);
+		fz_drop_pixmap(ctx, super);
 	}
-	return pix;
+	fz_catch(ctx)
+	{
+		fz_drop_pixmap(ctx, dst);
+		if (ss > 1)
+		{
+			/* usually out of memory - the supersampled buffer is ss^2
+			   times the 1x size; retry plain and stop supersampling */
+			app->ss_factor = 1;
+			return render_bgra_white(app, page, ctm);
+		}
+		fz_rethrow(ctx);
+	}
+	return dst;
 }
 
 static void pdfapp_loadpage(pdfapp_t *app)
@@ -131,6 +204,7 @@ void pdfapp_init(pdfapp_t *app)
 	memset(app, 0, sizeof(*app));
 	app->resolution = 72;
 	app->pageno = 1;
+	app->ss_factor = SS_FACTOR; /* the GUI lowers this on a slow CPU */
 	app->ctx = fz_new_context(NULL, NULL, STORE_LIMIT);
 	if (app->ctx)
 		fz_register_document_handlers(app->ctx);
@@ -238,6 +312,16 @@ void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repaint)
 
 /* ---- input ----------------------------------------------------------- */
 
+/* Snap to exactly 100% (72 dpi) when the zoom lands within ~7% of it, so
+   stepping with +/- and fit-to-width give a clean 100% instead of 96%/101%. */
+#define SNAP_BAND 0.07f
+void pdfapp_snapzoom(pdfapp_t *app)
+{
+	if (app->resolution > 72.0f * (1.0f - SNAP_BAND) &&
+	    app->resolution < 72.0f * (1.0f + SNAP_BAND))
+		app->resolution = 72.0f;
+}
+
 void pdfapp_onkey(pdfapp_t *app, int c)
 {
 	switch (c)
@@ -246,11 +330,13 @@ void pdfapp_onkey(pdfapp_t *app, int c)
 	case '=':
 		app->resolution *= ZOOMSTEP;
 		if (app->resolution > MAXDPI) app->resolution = MAXDPI;
+		pdfapp_snapzoom(app);
 		pdfapp_showpage(app, 0, 1, 1);
 		break;
 	case '-':
 		app->resolution /= ZOOMSTEP;
 		if (app->resolution < MINDPI) app->resolution = MINDPI;
+		pdfapp_snapzoom(app);
 		pdfapp_showpage(app, 0, 1, 1);
 		break;
 	case 'L':
