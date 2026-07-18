@@ -15,10 +15,10 @@
 ; минимальные и максимальные значения цвета точек (например от 3 до 252).
 ; Потому цвета граней могут немного отличаться от указанных в программе.
 ;
-; В даной версии алгоритм немного другой. В наиболее вероятных местах появления
-; пикселей не правильного цвета (обычно начало и конец линии) иправляеться
-; цвет испорченных пикселей. Цвет получаеться наиболее близким к указанному
-; пользователем.
+; В даной версии значения цвета ограничиваються (насыщение до [0, 0xffff])
+; прямо в макросе PUT_PIXEL перед записью пикселя в буфер, потому цвета
+; точно соответствуют указанным пользователем и переполнение не искажает
+; соседние каналы.
 
 	pr1 dd ? ;ZBufferPoint*
 	pr2 dd ? ;ZBufferPoint*
@@ -558,34 +558,10 @@ if INTERP_Z eq 1
 end if
 if INTERP_RGB eq 1
 		mov eax,[r1]
-		bt eax,31 ; коректирование испорченных пикселей (в начале линии)
-		jnc @f
-			xor eax,eax
-		@@:
-		bt eax,16
-		jnc @f
-			mov eax,0xff00
-		@@:
 		mov [or1],eax
 		mov eax,[g1]
-		bt eax,31
-		jnc @f
-			xor eax,eax
-		@@:
-		bt eax,16
-		jnc @f
-			mov eax,0xff00
-		@@:
 		mov [og1],eax
 		mov eax,[b1]
-		bt eax,31
-		jnc @f
-			xor eax,eax
-		@@:
-		bt eax,16
-		jnc @f
-			mov eax,0xff00
-		@@:
 		mov [ob1],eax
 end if
 if INTERP_ST eq 1
@@ -603,13 +579,8 @@ end if
 
 align 4
 		.cycle_1: ;while (n>=3)
-if INTERP_RGB eq 1
-		cmp dword[n],5
-		jl .cycle_2
-else
 		cmp dword[n],3
 		jl .cycle_2
-end if
 			PUT_PIXEL 0
 			PUT_PIXEL 1
 			PUT_PIXEL 2
@@ -624,39 +595,6 @@ align 4
 		.cycle_2: ;while (n>=0)
 		cmp dword[n],0
 		jl .cycle_2_end
-if INTERP_RGB eq 1
-		; коректирование испорченных пикселей (в конце линии)
-		bt dword[or1],31
-		jnc @f
-			mov dword[or1],0
-			jmp .end_r
-align 4
-		@@:
-		bt dword[or1],16
-		jnc .end_r
-			mov dword[or1],0xff00
-		.end_r:
-		bt dword[og1],31
-		jnc @f
-			mov dword[og1],0
-			jmp .end_g
-align 4
-		@@:
-		bt dword[og1],16
-		jnc .end_g
-			mov dword[og1],0xff00
-		.end_g:
-		bt dword[ob1],31
-		jnc @f
-			mov dword[ob1],0
-			jmp .end_b
-align 4
-		@@:
-		bt dword[ob1],16
-		jnc .end_b
-			mov dword[ob1],0xff00
-		.end_b:
-end if
 			PUT_PIXEL 0
 if INTERP_Z eq 1
 			add esi,2 ;=sizeof(uint)

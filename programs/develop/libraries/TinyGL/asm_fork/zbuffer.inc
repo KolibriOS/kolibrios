@@ -37,6 +37,7 @@ macro RGB_TO_PIXEL r,g,b
 		or dword[esp],eax
 		mov eax,r
 		shl eax,8
+		and eax,0xff0000
 		or dword[esp],eax
 	pop eax
 }

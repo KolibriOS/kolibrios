@@ -107,10 +107,26 @@ local .end_0
 		;edi = pp
 		mov word[esi+2*_a],ax ;пишем в буфер глубины новое значение
 if TGL_FEATURE_RENDER_BITS eq 24
+		mov eax,[or1]
+		cmp eax,0x10000 ;saturate color to [0, 0xffff]
+		jb @f
+			sar eax,31
+			not eax
+		@@:
+		mov byte[edi+3*_a],ah
 		mov eax,[og1]
-		mov al,byte[or1+1]
-		mov word[edi+3*_a],ax
+		cmp eax,0x10000
+		jb @f
+			sar eax,31
+			not eax
+		@@:
+		mov byte[edi+3*_a +1],ah
 		mov eax,[ob1]
+		cmp eax,0x10000
+		jb @f
+			sar eax,31
+			not eax
+		@@:
 		mov byte[edi+3*_a +2],ah
 end if
 ;if TGL_FEATURE_RENDER_BITS eq 32
