@@ -1162,7 +1162,9 @@ proc draw_view uses ebx esi edi
 @@:
         invoke  img.scale, eax, 0, 0, [eax+Image.Width], [eax+Image.Height], 0, LIBIMG_SCALE_STRETCH, LIBIMG_INTER_DEFAULT, [view.width], [view.height]
         test    eax, eax
-;FIXME
+        jnz     @f
+        mov     eax, [orig_image]       ; scaling failed, keep showing the original
+@@:
         mov     [cur_image], eax
         mov     [cur_frame], eax        ; FIXME index
         jmp     .draw

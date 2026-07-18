@@ -926,18 +926,21 @@ local .l1
 	init_block
 	lea	eax, [edi+eax*4]
 	push	eax
-.rgb2.innloop1:
-	push	edi
-	mov	ecx, ebx
-.rgb2.innloop2:
-	mov	eax, [esi]
+; do not read a whole dword: the last pixel of the unpacked data may end
+; exactly at a page boundary, and the byte after it may be unmapped
+	movzx	eax, word [esi]
 	bswap	eax
+	mov	ah, [esi+2]
 	mov	al, 0xff
 	ror	eax, 8
 	cmp	eax, [.transparent_color]
 	jnz	@f
 	and	eax, 0x00ffffff
 @@:
+.rgb2.innloop1:
+	push	edi
+	mov	ecx, ebx
+.rgb2.innloop2:
 	stosd
 	dec	ecx
 	jnz	.rgb2.innloop2
