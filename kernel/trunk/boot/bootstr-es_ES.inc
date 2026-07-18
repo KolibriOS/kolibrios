@@ -14,7 +14,7 @@
 
 d80x25_bottom:
           cp850    '║ KolibriOS viene ABSOLUTAMENTE SIN GARANTíA. Lee el archivo COPYING por más   ║'
-          cp850    '║ detalles. Por favor, informar de los errores en: http://board.kolibrios.org  ║'
+          cp850    '║ detalles. Por favor, informar de los errores en: http://git.kolibrios.org    ║'
           line_full_bottom
 d80x25_bottom_num = 3
 
@@ -54,23 +54,23 @@ start_msg cp850   "Presiona [abcde] para cambiar la configuración, [Enter] para
 time_msg  cp850   " o espera "
 time_str  cp850   " 5 segundos"
           cp850   " para que inicie automáticamente",13,10,0
-current_cfg_msg cp850 "Configuración actual:",13,10,0
-curvideo_msg cp850 " [a] Modo de video: ",0
+current_cfg_msg    cp850 "Opciones de arranque:",13,10,0
+curvideo_msg       cp850 " [a] Modo de video.................",0
+usebd_msg          cp850 " [b] Discos BIOS..................",0
+debug_mode_msg     cp850 " [c] Depuracion en pantalla.......",0
+launcher_msg       cp850 " [d] Iniciar LAUNCHER.............",0
+preboot_device_msg cp850 " [e] Arrancar desde...............",0
 
 mode0     cp850   "320x200, EGA/CGA 256 colores",13,10,0
 mode9     cp850   "640x480, VGA 16 colores",13,10,0
 
-usebd_msg cp850   " [b] Agregar discos visibles por el BIOS:",0
 on_msg    cp850   " activado",13,10,0
 off_msg   cp850   " desactivado",13,10,0
 
-debug_mode_msg  cp850 " [c] Duplicar depurar salida a la pantalla:",0
 ask_debug       cp850 "¿Duplicar depurar la salida a la pantalla? [1-si, 2-no]: ",0
 
-launcher_msg    cp850 " [d] Iniciar LAUNCHER después de cargar kernel:",0
 ask_launcher    cp850 "¿Inicie la primera aplicación después de cargar el kernel? [1-si, 2-no]: ",0
 
-preboot_device_msg cp850 " [e] Imagen de disquete: ",0
 
 if defined extended_primary_loader
 preboot_device_msgs dw 0,pdm1,pdm2,0
@@ -89,6 +89,7 @@ loading_msg cp850 "Cargando KolibriOS...",0
 if ~ defined extended_primary_loader
 save_quest         cp850  "¿Recordar configuración actual? [s/n]: ",0
 loader_block_error cp850  "Bootloader inválido, no puedo continuar. Detenido.",0
+low_memory_error   cp850  "Memoria RAM insuficiente: KolibriOS necesita al menos 9 MB. Proceso detenido.",0
 write_err_msg      cp850  "La grabación ha fallado. Presione cualquier tecla para continuar...",0
 end if
 

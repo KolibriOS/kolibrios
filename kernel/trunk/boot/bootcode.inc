@@ -1037,6 +1037,38 @@ end if
 ; GET MEMORY MAP
 include '../detect/biosmem.inc'
 
+; SANITY-CHECK THE AMOUNT. The 32-bit kernel's physical layout is fixed:
+; its heap starts at phys 8MB (HEAP_BASE) and the top usable pages are eaten
+; by E820 reservations, so with less RAM the very first kernel allocation
+; (the OS ring0 stack) comes from an empty heap and the boot dies in a
+; silent triple-fault reboot loop long before anything is printed. Refuse
+; HERE, while the text screen can still say why. Machines without E820
+; (memmap_block_cnt = 0, pre-Pentium BIOSes) are not checked - they fall
+; back to mem_test in the 32-bit init.
+        xor     edx, edx                        ; edx = highest usable top
+        movzx   ecx, byte [es:BOOT_LO.memmap_block_cnt]
+        jcxz    mem_floor_ok
+        mov     di, BOOT_LO.memmap_blocks
+mem_floor_next:
+        cmp     byte [es:di + e820entry.type], 1
+        jne     mem_floor_skip
+        cmp     dword [es:di + e820entry.addr.hi], 0
+        jne     mem_floor_skip
+        mov     eax, [es:di + e820entry.addr.lo]
+        add     eax, [es:di + e820entry.size.lo]
+        jc      mem_floor_skip
+        cmp     edx, eax
+        jae     mem_floor_skip
+        mov     edx, eax
+mem_floor_skip:
+        add     di, sizeof.e820entry
+        loop    mem_floor_next
+        cmp     edx, 8*1024*1024
+        jae     mem_floor_ok
+        mov     si, low_memory_error
+        jmp     sayerr
+mem_floor_ok:
+
 ; READ DISKETTE TO MEMORY
 
         cmp     byte [es:BOOT_LO.rd_load_from], RD_LOAD_FROM_FLOPPY

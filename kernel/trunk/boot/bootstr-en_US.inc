@@ -15,7 +15,7 @@
 
 d80x25_bottom:
           db       186,' KolibriOS comes with ABSOLUTELY NO WARRANTY. See file COPYING for details    ',186
-          db       186,' If you find any bugs, please report them at: https://board.kolibrios.org     ',186
+          db       186,' If you find any bugs, please report them at: https://git.kolibrios.org       ',186
           line_full_bottom
 d80x25_bottom_num = 3
 
@@ -29,12 +29,12 @@ gr_mode   db      "Select a videomode: ",13,10,0
 ask_bd    db      "Add disks visible by BIOS emulated in V86-mode? [1-yes, 2-no]: ",0
 
 if defined extended_primary_loader
-bdev      db      "Load ramdisk from [1-floppy; 2-kolibri.img; 3-don't load]: ",0
+bdev      db      "Load system from [1-floppy; 2-kolibri.img; 3-don't load]: ",0
 else
-bdev      db      "Load ramdisk from [1-floppy; 2-C:\kolibri.img (FAT32);"
-          db      13,10,186,"                    "
+bdev      db      "Load system from [1-floppy; 2-C:\kolibri.img (FAT32);"
+          db      13,10,186,"                   "
           db      "3-preloaded ram-image (flash-disk, dualboot, "
-          db      13,10,186,"                    "
+          db      13,10,186,"                   "
           db      "kernel restart, etc.)]: ",0
 end if
 
@@ -55,23 +55,23 @@ start_msg db      "Press [abcde] to change settings, press [Enter] to continue b
 time_msg  db      " or wait "
 time_str  db      " 5 seconds"
           db      " to continue automatically",13,10,0
-current_cfg_msg db "Current settings:",13,10,0
-curvideo_msg db   " [a] Videomode: ",0
+current_cfg_msg db "Boot options:",13,10,0
+curvideo_msg       db " [a] Video mode...............",0
+usebd_msg          db " [b] BIOS disks...............",0
+debug_mode_msg     db " [c] On-screen debug..........",0
+launcher_msg       db " [d] Start LAUNCHER...........",0
+preboot_device_msg db " [e] Boot from................",0
 
 mode0     db      "320x200, EGA/CGA 256 colors",13,10,0
 mode9     db      "640x480, VGA 16 colors",13,10,0
 
-usebd_msg db      " [b] Add disks visible by BIOS:",0
-on_msg    db      " on",13,10,0
-off_msg   db      " off",13,10,0
+on_msg    db      "on",13,10,0
+off_msg   db      "off",13,10,0
 
-debug_mode_msg db " [c] Duplicate debug output to the screen:",0
 ask_debug      db "Duplicate debug output to the screen? [1-yes, 2-no]: ",0
 
-launcher_msg   db " [d] Start LAUNCHER after kernel is loaded:",0
-ask_launcher   db "Start first application (LAUNCHER) after kernel is loaded? [1-yes, 2-no]: ",0
+ask_launcher   db "Autostart applications and services after kernel is loaded? [1-yes, 2-no]: ",0
 
-preboot_device_msg db " [e] Floppy image: ",0
 
 if defined extended_primary_loader
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3,0
@@ -82,7 +82,7 @@ else
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3,pdm4,0
 pdm1      db      "real floppy",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
-pdm3      db      "use already loaded image",13,10,0
+pdm3      db      "preloaded ram-image",13,10,0
 pdm4      db      "create blank image",13,10,0
 end if
 
@@ -93,6 +93,7 @@ save_quest db     "New settings have been applied.",13,10,13,10,186
            db     " Do you want to save them for future boots?",13,10,186
            db     " Answer 'yes' only if your booting device is writable. [y/n]: ",0
 loader_block_error db "Bootloader data invalid. Stopped.",0
+low_memory_error db "Not enough RAM: KolibriOS needs at least 9 MB. Stopped.",0
 write_err_msg db "Recording the configuration has failed. Press any key to resume booting...",0
 end if
 
