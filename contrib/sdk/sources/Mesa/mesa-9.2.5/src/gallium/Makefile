@@ -175,19 +175,23 @@ I965_OBJS =  $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(I965_SRC)))
 all: libgallium.a gbm_gallium_drm.dll
 
 libgallium.a: $(GALLIUM_OBJS) Makefile
-	$(AR) crs $@ $(GALLIUM_OBJS)
+	$(file >gallium.objs.rsp,$(GALLIUM_OBJS))
+	$(AR) crs $@ @gallium.objs.rsp
 	mv -f $@ $(INSTALLDIR)
 
 gbm_gallium_drm.dll: libgallium.a $(GBM_OBJS) Makefile
-	$(LD) $(LDFLAGS) -o $@ $(GBM_OBJS) gbm.def $(LIBS)
+	$(file >gbm.objs.rsp,$(GBM_OBJS))
+	$(LD) $(LDFLAGS) -o $@ @gbm.objs.rsp gbm.def $(LIBS)
 	mv -f $@ $(SDK_DIR)/bin
-  
+
 i965_dri.drv: $(I965_OBJS) $(MESA_OBJS) dri.def Makefile
-	$(LD) $(LDFLAGS) -o $@ $(I965_OBJS) $(MESA_OBJS) dri.def $(LIBS)
+	$(file >i965.objs.rsp,$(I965_OBJS) $(MESA_OBJS))
+	$(LD) $(LDFLAGS) -o $@ @i965.objs.rsp dri.def $(LIBS)
 	mv -f $@ $(SDK_DIR)/bin
 
 osmesa.dll: $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def Makefile
-	$(LD) $(LDFLAGS) --out-implib libosmesa.dll.a -o $@ $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def $(LIBS)
+	$(file >osmesa.objs.rsp,$(MESA_OBJS) $(OSMESA_OBJS))
+	$(LD) $(LDFLAGS) --out-implib libosmesa.dll.a -o $@ @osmesa.objs.rsp osmesa.def $(LIBS)
 	mv -f libosmesa.dll.a $(INSTALLDIR)
 	mv -f $@ $(SDK_DIR)/bin
 

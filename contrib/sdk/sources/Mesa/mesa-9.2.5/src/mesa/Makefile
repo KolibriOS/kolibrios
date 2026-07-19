@@ -424,17 +424,20 @@ I915_OBJS =  $(patsubst %.c, %.o, $(patsubst %.cpp, %.o, $(I915_SRC)))
 all: osmesa.dll i965_dri.drv i915_dri.drv
 
 i965_dri.drv: $(I965_OBJS) $(MESA_OBJS) dri.def Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(I965_OBJS) $(MESA_OBJS) dri.def $(LIBS)
+	$(file >i965.objs.rsp,$(I965_OBJS) $(MESA_OBJS))
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ @i965.objs.rsp dri.def $(LIBS)
 #	$(STRIP) $@
 	mv -f $@ $(SDK_DIR)/bin
 
 i915_dri.drv: $(I915_OBJS) $(MESA_OBJS) dri.def Makefile
-	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ $(I915_OBJS) $(MESA_OBJS) dri.def $(LIBS)
+	$(file >i915.objs.rsp,$(I915_OBJS) $(MESA_OBJS))
+	$(LD) $(LDFLAGS) $(LIBPATH) -o $@ @i915.objs.rsp dri.def $(LIBS)
 #	$(STRIP) $@
 	mv -f $@ $(SDK_DIR)/bin
 
 osmesa.dll: $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def Makefile
-	$(LD) $(LDFLAGS) --out-implib libosmesa.dll.a -o $@ $(MESA_OBJS) $(OSMESA_OBJS) osmesa.def $(LIBS)
+	$(file >osmesa.objs.rsp,$(MESA_OBJS) $(OSMESA_OBJS))
+	$(LD) $(LDFLAGS) --out-implib libosmesa.dll.a -o $@ @osmesa.objs.rsp osmesa.def $(LIBS)
 	mv -f libosmesa.dll.a $(INSTALLDIR)
 	mv -f $@ $(SDK_DIR)/bin
 

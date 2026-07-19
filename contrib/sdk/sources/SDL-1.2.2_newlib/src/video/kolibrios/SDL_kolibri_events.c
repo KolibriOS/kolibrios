@@ -190,16 +190,47 @@ void kos_PumpEvents(_THIS)
                 static uint32_t old_mouse_but = 0;
 
                 mouse_pos = _ksys_get_mouse_pos(KSYS_MOUSE_WINDOW_POS);
+                /* In fullscreen the game is centered, so translate the
+                   window-relative mouse position into game coordinates. */
+                mouse_pos.x -= this->hidden->vx_ofs;
+                mouse_pos.y -= this->hidden->vy_ofs;
                 if (mouse_pos.x >= 0 && mouse_pos.x < this->hidden->win_size_x &&
                     mouse_pos.y >= 0 && mouse_pos.y < this->hidden->win_size_y ||
-                    this->input_grab != SDL_GRAB_OFF) {
+                    this->input_grab == SDL_GRAB_ON) {
      
-                    if (this->input_grab != SDL_GRAB_OFF) {
-                        center_pos.x = mouse_pos.x-this->hidden->win_size_x/2;
-                        center_pos.y = mouse_pos.y-this->hidden->win_size_y/2;
-                        if (center_pos.x || center_pos.y) {
-                            SDL_PrivateMouseMotion(0, 1, center_pos.x, center_pos.y);
+                    if (this->input_grab == SDL_GRAB_ON) {
+                        /* Relative deltas from the PREVIOUS cursor position,
+                           not from the window center: an absolute pointing
+                           device (QEMU usb-tablet, VirtualBox) snaps the
+                           cursor back after every warp, so center-based
+                           deltas grow with the distance and scale with fps.
+                           Re-center only near the border (keeps a real
+                           relative mouse turning); the first event after a
+                           warp only re-seeds prev_pos so the snap-back jump
+                           of a tablet never becomes a delta. */
+                        static ksys_pos_t prev_pos;
+                        static int prev_valid = 0;
+                        if (prev_valid) {
+                            int adx, ady;
+                            center_pos.x = mouse_pos.x - prev_pos.x;
+                            center_pos.y = mouse_pos.y - prev_pos.y;
+                            adx = center_pos.x < 0 ? -center_pos.x : center_pos.x;
+                            ady = center_pos.y < 0 ? -center_pos.y : center_pos.y;
+                            /* teleport-sized jump = warp echo, not motion */
+                            if (adx > this->hidden->win_size_x/2 ||
+                                ady > this->hidden->win_size_y/2)
+                                center_pos.x = center_pos.y = 0;
+                            if (center_pos.x || center_pos.y)
+                                SDL_PrivateMouseMotion(0, 1, center_pos.x, center_pos.y);
+                        }
+                        prev_pos = mouse_pos;
+                        prev_valid = 1;
+                        if (mouse_pos.x <  this->hidden->win_size_x/8 ||
+                            mouse_pos.x >= this->hidden->win_size_x - this->hidden->win_size_x/8 ||
+                            mouse_pos.y <  this->hidden->win_size_y/8 ||
+                            mouse_pos.y >= this->hidden->win_size_y - this->hidden->win_size_y/8) {
                             kos_CheckMouseMode(this);
+                            prev_valid = 0;
                         }
                     } else {
                         SDL_PrivateMouseMotion(0, 0, mouse_pos.x, mouse_pos.y);

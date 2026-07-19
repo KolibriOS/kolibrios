@@ -113,7 +113,8 @@ GLSL_OBJS  =  $(patsubst %.cpp, %.o, $(patsubst %.c, %.o, $(GLSL_SRC)))
 all: libglsl.a
 
 libglsl.a : $(GLSL_OBJS) Makefile
-	$(AR) crs libglsl.a $(GLSL_OBJS)
+	$(file >libglsl.objs.rsp,$(GLSL_OBJS))
+	$(AR) crs libglsl.a @libglsl.objs.rsp
 	mv -f libglsl.a $(INSTALLDIR)
 
 %.o : %.c Makefile

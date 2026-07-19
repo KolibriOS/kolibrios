@@ -277,7 +277,22 @@ int draw_progress(progress_t *prg, int background)
         };
     };
 
-    len = prg->current*prg->ctrl.w/(prg->max - prg->min);
+    /* max<=1 means the duration is unknown: keep the fill bar EMPTY rather
+     * than showing a bogus full bar. Otherwise compute and CLAMP the fill in
+     * float before the int conversion (with an unknown duration the unclamped
+     * product would overflow len and run the fill loop past the pixmap). */
+    if(prg->max <= 1.0f)
+        len = 0;
+    else
+    {
+        float flen = prg->current*prg->ctrl.w/(prg->max - prg->min);
+
+        if(flen < 0.0f)
+            flen = 0.0f;
+        if(flen > prg->ctrl.w)
+            flen = prg->ctrl.w;
+        len = (int)flen;
+    }
 
     src = res_prg_level;
 
@@ -472,6 +487,12 @@ int sld_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
 {
     slider_t *sld = (slider_t*)ctrl;
     int pos;
+
+    /* the window is too narrow for the volume slider - the panel (parent)
+     * spans the window, so its width is the window width; skip drawing AND
+     * interaction (hover would otherwise flip the panel layout) */
+    if(ctrl->parent->w < 320)
+        return 0;
 
     switch( msg )
     {

@@ -305,7 +305,12 @@ int audio_thread(void *param)
                 };
                 active = 1;
                 sync_audio(hBuff, buffsize);
-                sound_state = PLAY;
+                /* Do NOT clobber a stop/pause command that arrived (e.g. a
+                 * seek set PLAY_2_STOP) while we were restarting the buffer -
+                 * only advance the PREPARE/resume path to PLAY. Otherwise the
+                 * decoder's "wait for STOP" seek handshake would wait forever. */
+                if(sound_state == PREPARE || sound_state == PAUSE_2_PLAY)
+                    sound_state = PLAY;
 
                 /* breaktrough */
 

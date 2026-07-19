@@ -107,7 +107,9 @@ void init_winlib(void);
 
 void draw_caption(caption_t *cpt);
 void draw_panel(panel_t *panel);
+void draw_panel_time(panel_t *panel, int elapsed, int total);
 void blit_caption(caption_t *cpt);
+void blit_panel(panel_t *panel);
 int  init_caption(window_t *win);
 int  init_panel(window_t *win);
 

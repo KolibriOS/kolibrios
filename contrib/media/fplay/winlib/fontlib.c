@@ -83,7 +83,11 @@ int draw_text_ext(void *pixmap, uint32_t pitch, FT_Face face, char *text, rect_t
     x = rc->l << 6;
     y = rc->b;
 
-    w = (rc->r - rc->l) << 6;
+    /* right edge in 26.6 fixed point; x is an absolute position, so the
+     * fit check below must compare against the edge, not the width -
+     * otherwise any text placed at a large x (e.g. right-aligned) would
+     * fail the very first check and nothing would be drawn */
+    w = rc->r << 6;
 
     while( ch = *text++ )
     {
@@ -96,12 +100,14 @@ int draw_text_ext(void *pixmap, uint32_t pitch, FT_Face face, char *text, rect_t
             x += delta.x ;
         }
 
-        if( x + face->glyph->advance.x > w)
-            break;
-
+        /* load FIRST, then check the fit with THIS glyph's advance - the old
+         * order tested against the stale advance of the previous glyph */
         err = FT_Load_Glyph( face, glyph_index, FT_LOAD_DEFAULT );
         if ( err )
             continue;
+
+        if( x + face->glyph->advance.x > w)
+            break;
 
         err = FT_Render_Glyph( face->glyph, FT_RENDER_MODE_NORMAL );
         if ( err )
@@ -116,6 +122,37 @@ int draw_text_ext(void *pixmap, uint32_t pitch, FT_Face face, char *text, rect_t
 
     return err;
 };
+
+
+int text_width_ext(FT_Face face, char *text)
+{
+    FT_UInt glyph_index;
+    FT_Bool use_kerning = FT_HAS_KERNING( face );
+    FT_UInt previous = 0;
+    int x = 0;
+    char ch;
+
+    while( ch = *text++ )
+    {
+        glyph_index = FT_Get_Char_Index( face, ansi2utf32(ch) );
+
+        if( use_kerning && previous && glyph_index )
+        {
+            FT_Vector delta;
+            FT_Get_Kerning( face, previous, glyph_index, FT_KERNING_DEFAULT, &delta );
+            x += delta.x;
+        }
+        if( FT_Load_Glyph( face, glyph_index, FT_LOAD_DEFAULT ) )
+            continue;
+
+        x += face->glyph->advance.x;
+        previous = glyph_index;
+    }
+    /* round UP: truncating loses the fractional part, the string then does
+     * not quite fit into the measured width and the renderer's fit check
+     * silently drops the last glyph ("3:20" -> "3:2") */
+    return (x + 63) >> 6;             /* 26.6 fixed point -> pixels */
+}
 
 
 int init_fontlib()

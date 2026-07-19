@@ -57,7 +57,6 @@ err_0:
 static int update_fb(struct render *px, int name, int pitch)
 {
     GLenum      status;
-    EGLImageKHR screen;
 
     EGLint attribs[] = {
         EGL_WIDTH, px->scr_width,
@@ -76,8 +75,6 @@ static int update_fb(struct render *px, int name, int pitch)
     errmsg = "failed to create new screen image\n";
     if(px->screen == EGL_NO_IMAGE_KHR)
         goto err_0;
-
-    px->screen = screen;
 
     glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,
                        GL_TEXTURE_2D, px->texture[TEX_SCREEN],0);

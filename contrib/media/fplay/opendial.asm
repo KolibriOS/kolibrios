@@ -137,9 +137,11 @@ dd filefilter.end - filefilter
     db 'mpg',0
     db 'mpeg',0
     db 'mkv',0
+    db 'mp3',0
     db 'mp4',0
     db 'webm',0
     db 'wmv',0
+    db 'vob',0
 .end:
     db 0
 

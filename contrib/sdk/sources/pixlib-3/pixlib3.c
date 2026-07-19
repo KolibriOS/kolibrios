@@ -213,24 +213,38 @@ static struct pix_driver sw_driver =
 };
 
 
+static struct pix_driver *hw_driver;    /* cached GL/EGL driver          */
+static int hw_state;                    /* 0 = untried, 1 = ok, 2 = failed */
+
 uint32_t pxInit(int hw)
 {
     void *lib;
     struct pix_driver *(*drventry)(uint32_t service);
+    struct pix_driver *drv;
 
     uint32_t api_version;
     ioctl_t io;
 
-    if(driver != NULL)
-        return driver->driver_caps;
-
-    driver = &sw_driver;
-
-    if(hw == 0)
+    if(hw == 0)                     /* caller forces software        */
+    {
+        driver = &sw_driver;
         return 0;
+    }
 
-    if (fd != 0)
-        return driver->driver_caps;
+    if(hw_state == 1)               /* hw already initialized         */
+    {
+        driver = hw_driver;
+        return hw_driver->driver_caps;
+    }
+
+    if(hw_state == 2)               /* hw probed before and failed    */
+    {
+        driver = &sw_driver;
+        return 0;
+    }
+
+    hw_state = 2;                   /* pessimistic until we succeed   */
+    driver = &sw_driver;
 
     fd = get_service("DISPLAY");
     if (fd == 0)
@@ -259,12 +273,13 @@ uint32_t pxInit(int hw)
     if( drventry == NULL)
         goto fail;
 
-    driver = drventry(fd);
-    if(driver == NULL)
-    {
-        driver = &sw_driver;
+    drv = drventry(fd);
+    if(drv == NULL)
         goto fail;
-    };
+
+    hw_driver = drv;
+    hw_state  = 1;
+    driver    = hw_driver;
 
     if (driver->driver_caps)
         printf("2D caps %s%s%s\n",
@@ -283,7 +298,10 @@ fail:
 
 void pxFini()
 {
-    if (driver->fini)
-        driver->fini();
+    if (hw_driver && hw_driver->fini)
+        hw_driver->fini();
+    hw_driver = NULL;
+    hw_state  = 0;
+    driver    = &sw_driver;
 };
 

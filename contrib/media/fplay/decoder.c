@@ -14,6 +14,11 @@
 #include "sound.h"
 #include "fplay.h"
 
+/* 0 = decode everything, 1 = skip non-reference frames. Driven by the A/V
+ * sync loop in video.c (render_time) - the picture falling behind the audio
+ * clock raises it, catching up clears it. */
+volatile int g_skip_level = 0;
+
 static struct decoder ffmpeg_decoder;
 static struct decoder* init_ffmpeg_decoder(vst_t *vst);
 
@@ -107,28 +112,31 @@ static vframe_t *get_input_frame(vst_t *vst)
 
 static void put_output_frame(vst_t *vst, vframe_t *vframe)
 {
-    mutex_lock(&vst->output_lock);
-    if(list_empty(&vst->output_list))
-        list_add_tail(&vframe->list, &vst->output_list);
-    else
-    {
-        vframe_t *cur;
+    vframe_t *cur;
+    int       inserted = 0;
 
-        cur = list_first_entry(&vst->output_list,vframe_t,list);
-        if(vframe->pts < cur->pts)
-            list_add_tail(&vframe->list, &vst->output_list);
-        else
+    mutex_lock(&vst->output_lock);
+
+    /* Keep the list sorted by pts: walk from the tail, insert after the first
+     * frame not newer than ours (>= keeps equal-pts frames in arrival order);
+     * no match = ours is the earliest (or the list is empty) - new head.
+     * The previous version added pre-head frames to the TAIL (unsorted) and,
+     * worse, a frame whose pts equalled every queued one matched nothing and
+     * was added to NO list at all - each such frame leaked one of the 4
+     * decoder vframes for good, and four of them froze the video (happens
+     * with broken/duplicate container timestamps). */
+    list_for_each_entry_reverse(cur, &vst->output_list, list)
+    {
+        if(vframe->pts >= cur->pts)
         {
-            list_for_each_entry_reverse(cur,&vst->output_list,list)
-            {
-                if(vframe->pts > cur->pts)
-                {
-                    list_add(&vframe->list, &cur->list);
-                    break;
-                };
-            };
+            list_add(&vframe->list, &cur->list);
+            inserted = 1;
+            break;
         };
     };
+    if(!inserted)
+        list_add(&vframe->list, &vst->output_list);
+
     vst->frames_count++;
     mutex_unlock(&vst->output_lock);
 };
@@ -149,6 +157,12 @@ int decode_video(vst_t* vst)
 
     if( get_packet(&vst->q_video, &pkt) == 0 )
         return 0;
+
+    /* Adaptive frame skipping: when the picture keeps falling behind the audio
+     * clock (set from render_time in video.c), ask the codec to skip the
+     * non-reference frames so decode gets lighter and the video keeps pace;
+     * back to full quality once it has caught up. */
+    vst->vCtx->skip_frame = g_skip_level ? AVDISCARD_NONREF : AVDISCARD_DEFAULT;
 
     frameFinished = 0;
 

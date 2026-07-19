@@ -13,38 +13,55 @@
 static SDL_VideoDevice * vm_suf=NULL;
 static int was_initialized = 0;
 static int scrn_size_defined = 0;
+static int is_fullscreen = 0;
 
 static int has_null_cursor=0;
 static void* null_cursor;
 
-#define WINDOW_BORDER_H 5
-#define WINDOW_BORDER_W 10
+#define WINDOW_BORDER_H 4
+#define WINDOW_BORDER_W 9
 
 ksys_pos_t screen_size = {0};
 
 void kos_SDL_RepaintWnd(void)
 {
-    int win_pos_x, win_pos_y;
-    int win_size_w = vm_suf->hidden->win_size_x+WINDOW_BORDER_W;
-    int win_size_h = vm_suf->hidden->win_size_y+_ksys_get_skin_height()+WINDOW_BORDER_H;
+    int win_pos_x = 0, win_pos_y = 0;
+    int win_size_w, win_size_h;
 
-    if (!screen_size.val) {
+    if (!screen_size.val)
         screen_size = _ksys_screen_size();
-        win_pos_x = screen_size.x/2-win_size_w/2;
-        win_pos_y = screen_size.y/2-win_size_h/2;
+
+    if (is_fullscreen) {
+        win_pos_x = 0;
+        win_pos_y = 0;
+        win_size_w = screen_size.x + 1;
+        win_size_h = screen_size.y + 1;
+    } else {
+        win_size_w = vm_suf->hidden->win_size_x + WINDOW_BORDER_W;
+        win_size_h = vm_suf->hidden->win_size_y + _ksys_get_skin_height() + WINDOW_BORDER_H;
+        win_pos_x = screen_size.x/2 - win_size_w/2;
+        win_pos_y = screen_size.y/2 - win_size_h/2;
     }
 
     _ksys_start_draw();
-    if (vm_suf->hidden->fullscreen)
-        // borderless window (style Y=1); the surface fills the screen
-        _ksys_create_window(0, 0, vm_suf->hidden->win_size_x, vm_suf->hidden->win_size_y, vm_suf->hidden->__title, 0, 0x31);
-    else
-        // skinned window (Y=4), flag C=1: don't fill the work area
+    if (is_fullscreen) {
+        /* style 0x01: type I window (Y=1) "only define area, draw nothing" -
+           no skin/caption. We paint a black background ourselves and blit
+           the game centered (vx_ofs, vy_ofs). */
+        _ksys_create_window(win_pos_x, win_pos_y, win_size_w, win_size_h, vm_suf->hidden->__title, 0, 0x01);
+        _ksys_draw_bar(0, 0, win_size_w, win_size_h, 0);
+        if (vm_suf && vm_suf->hidden->__video_buffer)
+            _ksys_draw_bitmap(vm_suf->hidden->__video_buffer,
+                              vm_suf->hidden->vx_ofs, vm_suf->hidden->vy_ofs,
+                              vm_suf->hidden->win_size_x, vm_suf->hidden->win_size_y);
+    } else {
+        /* style 0x74: skinned fixed-size window (Y=4) with caption (A) and
+           client-relative coords (B), plus bit C ("don't fill the working
+           area") so the OS does not paint an opaque background. */
         _ksys_create_window(win_pos_x, win_pos_y, win_size_w, win_size_h, vm_suf->hidden->__title, 0, 0x74);
-
-    if (vm_suf && vm_suf->hidden->__video_buffer) {
-        _ksys_draw_bitmap(vm_suf->hidden->__video_buffer, 0, 0,
-                          vm_suf->hidden->win_size_x, vm_suf->hidden->win_size_y);
+        if (vm_suf && vm_suf->hidden->__video_buffer)
+            _ksys_draw_bitmap(vm_suf->hidden->__video_buffer, 0, 0,
+                              vm_suf->hidden->win_size_x, vm_suf->hidden->win_size_y);
     }
     _ksys_end_draw();
 }
@@ -66,8 +83,9 @@ static void kos_UnlockHWSurface(_THIS,SDL_Surface * surface) {/*STUB*/}
 static void kos_DirectUpdate(_THIS,int numrects,SDL_Rect * rects)
 {
     if (numrects) {
-        _ksys_draw_bitmap(this->hidden->__video_buffer, 0,0,
-                          vm_suf->hidden->win_size_x,vm_suf->hidden->win_size_y);
+        _ksys_draw_bitmap(this->hidden->__video_buffer,
+                          this->hidden->vx_ofs, this->hidden->vy_ofs,
+                          this->hidden->win_size_x, this->hidden->win_size_y);
     }
 }
 
@@ -99,14 +117,12 @@ SDL_Surface *kos_SetVideoMode(_THIS, SDL_Surface *current, int width, int height
     if (bpp!=24) return NULL;
  
     current->flags=flags;
-    this->hidden->fullscreen = (flags & SDL_FULLSCREEN) ? 1 : 0;
     current->w=width;
     current->h=height;
     current->pitch=width*(bpp>>3);
  
-    char info[128];
-    sprintf(info, "SetVideoMode %dx%d bpp=%d fullscreen=%d flags=%08x\n",
-            current->w, current->h, bpp, this->hidden->fullscreen, (unsigned)flags);
+    char info[100];
+    sprintf(info, "width = %d, height = %d, pitch = %d, bpp = %d\n", current->w, current->h, current->pitch, bpp);
     _ksys_debug_puts(info);
 
     current->pixels=this->hidden->__video_buffer=realloc(this->hidden->__video_buffer, current->pitch*current->h);
@@ -120,9 +136,21 @@ SDL_Surface *kos_SetVideoMode(_THIS, SDL_Surface *current, int width, int height
     this->hidden->win_size_y=height;
     vm_suf=this;
 
+    is_fullscreen = (flags & SDL_FULLSCREEN) ? 1 : 0;
+    if (!screen_size.val)
+        screen_size = _ksys_screen_size();
+    if (is_fullscreen) {
+        int sw = screen_size.x + 1, sh = screen_size.y + 1;
+        this->hidden->vx_ofs = (sw > width)  ? (sw - width)/2  : 0;
+        this->hidden->vy_ofs = (sh > height) ? (sh - height)/2 : 0;
+    } else {
+        this->hidden->vx_ofs = 0;
+        this->hidden->vy_ofs = 0;
+    }
+
     if (was_initialized) {
-        if (this->hidden->fullscreen) {
-            _ksys_change_window(0, 0, width, height);
+        if (is_fullscreen) {
+            _ksys_change_window(0, 0, screen_size.x + 1, screen_size.y + 1);
         } else {
             unsigned newheight = height+_ksys_get_skin_height()+WINDOW_BORDER_H;
             unsigned newwidth  = width+WINDOW_BORDER_W;
@@ -130,6 +158,7 @@ SDL_Surface *kos_SetVideoMode(_THIS, SDL_Surface *current, int width, int height
             int win_pos_y = screen_size.y/2-newheight/2;
             _ksys_change_window(win_pos_x, win_pos_y, newwidth, newheight);
         }
+        kos_SDL_RepaintWnd();
     } else {
         _ksys_set_event_mask(0x27);
         was_initialized=1;
@@ -173,7 +202,7 @@ static int kos_VideoInit(_THIS,SDL_PixelFormat * vformat)
 
 static int kos_FlipHWSurface(_THIS,SDL_Surface * surface)
 {
-    _ksys_draw_bitmap(surface->pixels, 0, 0, surface->w,surface->h);
+    _ksys_draw_bitmap(surface->pixels, this->hidden->vx_ofs, this->hidden->vy_ofs, surface->w,surface->h);
     return 0;
 }
 
@@ -227,7 +256,11 @@ void kos_FreeWMCursor(_THIS, WMcursor* cursor)
 
 void kos_CheckMouseMode(_THIS)
 {
-    if (this->input_grab == SDL_GRAB_OFF)
+    /* Only recenter the pointer for an EXPLICIT grab (Ctrl+M mouselook).
+       SDL forces input_grab = SDL_GRAB_FULLSCREEN in fullscreen, but ScummVM
+       (and point-and-click games) need an absolute cursor there, so we do not
+       recenter for that case. */
+    if (this->input_grab != SDL_GRAB_ON)
         return;
     ksys_thread_t thread_info;
     int top = _ksys_thread_info(&thread_info, KSYS_THIS_SLOT);

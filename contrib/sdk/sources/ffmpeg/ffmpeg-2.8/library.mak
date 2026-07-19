@@ -57,7 +57,8 @@ $(SUBDIR)$(SLIBNAME): $(SUBDIR)$(SLIBNAME_WITH_MAJOR)
 
 $(SUBDIR)$(SLIBNAME_WITH_MAJOR): $(OBJS) $(SLIBOBJS) $(SUBDIR)lib$(NAME).ver
 	$(SLIB_CREATE_DEF_CMD)
-	$$(LD) $(SHFLAGS) $(LDFLAGS) $(LDLIBFLAGS) $$(LD_O) $$(filter %.o,$$^) $(FFEXTRALIBS)
+	$$(file >$(SUBDIR)link_objs.rsp,$$(filter %.o,$$^))
+	$$(LD) $(SHFLAGS) $(LDFLAGS) $(LDLIBFLAGS) $$(LD_O) @$(SUBDIR)link_objs.rsp $(FFEXTRALIBS)
 	$(SLIB_EXTRA_CMD)
 	$(Q)cd ./$(SUBDIR) && $(LN_S) $(SLIBNAME_WITH_MAJOR) $(SLIBNAME)
 	cd ..

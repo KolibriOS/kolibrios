@@ -637,6 +637,18 @@ void update_rect(ctrl_t *ctrl)
     int ctx_w, ctx_h;
     int src_x, src_y;
 
+    /* In fullscreen the caption and panel are hidden, so no control should
+     * blit itself onto the screen - otherwise e.g. the fullscreen button
+     * repaints over the video after the switch. Walk up to the root window
+     * and bail out while it is fullscreen. */
+    {
+        ctrl_t *root = ctrl;
+        while(root->parent)
+            root = root->parent;
+        if(((window_t*)root)->win_state == FULLSCREEN)
+            return;
+    }
+
     src_x = ctrl->rc.l - ctrl->ctx->offset_x;
     src_y = ctrl->rc.t - ctrl->ctx->offset_y;
 

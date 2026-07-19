@@ -32,6 +32,7 @@ extern int res_stop_btn_pressed[];
 //extern int res_minimize_btn_pressed[];
 
 void update_panel_size(window_t *win);
+static void render_time_text(panel_t *panel);
 
 int panel_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2);
 
@@ -220,6 +221,10 @@ void draw_panel(panel_t *panel)
         send_message(child, MSG_PAINT, 0, 0);
         child = (ctrl_t*)child->link.next;
     };
+
+    /* a full panel repaint just erased the time text in the pixmap; put it
+     * back so it does not blink out until the next second ticks over */
+    render_time_text(panel);
 };
 
 int panel_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
@@ -261,6 +266,12 @@ int panel_proc(ctrl_t *ctrl, uint32_t msg, uint32_t arg1, uint32_t arg2)
             }
             break;
 
+        case MSG_WHEELUP:
+        case MSG_WHEELDOWN:
+            /* let the window handle the wheel (volume) wherever it is over
+             * the panel, not only above a particular child control */
+            return send_message(get_parent_window(ctrl), msg, arg1, arg2);
+
         case MSG_COMMAND:
             switch((short)arg1)
             {
@@ -292,4 +303,107 @@ void blit_panel(panel_t *panel)
          0, 0, panel->ctrl.w, panel->ctrl.h,
          panel->ctrl.w, panel->ctrl.h, ctx->pixmap_pitch);
 };
+
+extern int win_font;
+int draw_text_ext(void *pixmap, uint32_t pitch, int face, char *text, rect_t *rc, int color);
+int text_width_ext(int face, char *text);
+
+/* elapsed / total time, bottom-right of the panel, in the same white as the
+ * window-caption text. Rendered straight into the panel pixmap (like the
+ * caption text) so it blits cleanly with no per-digit artefacts; the
+ * panel-body gradient is restored under it first so old text is erased. */
+#define TIME_COLOR    0xFFFFFF   /* white - same as the caption title text */
+#define TIME_MAXW     120
+#define TIME_Y0       25
+#define TIME_Y1       44
+#define TIME_BASE     40
+
+static void fmt_time(char *buf, int sec)
+{
+    int h, m, s;
+
+    if(sec < 0)                      /* clamp BEFORE splitting into h/m/s */
+        sec = 0;
+
+    h = sec / 3600;
+    m = (sec / 60) % 60;
+    s = sec % 60;
+
+    if(h)
+        sprintf(buf, "%d:%02d:%02d", h, m, s);
+    else
+        sprintf(buf, "%d:%02d", m, s);
+}
+
+/* last shown values, so a full panel repaint can restore the text instead of
+ * leaving a blank until the next second ticks over */
+static int time_elapsed = -1;
+static int time_total   = 0;
+
+/* render the cached time into the panel pixmap (no blit) */
+static void render_time_text(panel_t *panel)
+{
+    ctx_t  *ctx    = &panel->ctx;
+    int    *pixmap = (int*)ctx->pixmap_data;
+    int     pitch4 = ctx->pixmap_pitch / 4;
+    int     panw   = panel->ctrl.w;
+    char    buf[48], es[20], ts[20];
+    rect_t  rc;
+    int     x, y, x0, x1, tw;
+
+    if(time_elapsed < 0)             /* nothing shown yet */
+        return;
+    if(panw < 260)                   /* too narrow: would clash with the left */
+        return;
+
+    fmt_time(es, time_elapsed);
+    if(time_total > 0)
+    {
+        fmt_time(ts, time_total);
+        sprintf(buf, "%s / %s", es, ts);
+    }
+    else
+        strcpy(buf, es);             /* duration unknown: elapsed only */
+
+    x1 = panw - 12;
+    x0 = x1 - TIME_MAXW;
+
+    /* restore the panel-body gradient under the text (one colour per row) */
+    for(y = TIME_Y0; y < TIME_Y1; y++)
+    {
+        int  c   = res_panel_body[y];
+        int *row = pixmap + y*pitch4;
+        for(x = x0; x < x1; x++)
+            row[x] = c;
+    }
+
+    tw = text_width_ext(win_font, buf);   /* right-align to x1 */
+    if(tw > TIME_MAXW)
+        tw = TIME_MAXW;
+
+    rc.l = x1 - tw;
+    rc.t = TIME_Y0;
+    rc.r = x1;
+    rc.b = TIME_BASE;
+    draw_text_ext(ctx->pixmap_data, ctx->pixmap_pitch, win_font, buf, &rc, TIME_COLOR);
+}
+
+void draw_panel_time(panel_t *panel, int elapsed, int total)
+{
+    ctx_t *ctx  = &panel->ctx;
+    int    panw = panel->ctrl.w;
+    int    x0   = panw - 12 - TIME_MAXW;
+
+    time_elapsed = elapsed;
+    time_total   = total;
+
+    render_time_text(panel);
+
+    if(panw < 260)
+        return;
+
+    Blit(ctx->pixmap_data, panel->draw.l + x0, panel->draw.t + TIME_Y0,
+         x0, TIME_Y0, TIME_MAXW, TIME_Y1 - TIME_Y0,
+         panw, PANEL_HEIGHT, ctx->pixmap_pitch);
+}
 

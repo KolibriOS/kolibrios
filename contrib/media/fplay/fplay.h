@@ -49,6 +49,7 @@ struct render
     uint32_t   layout;
     bitmap_t  *bitmap[4];
     bitmap_t  *last_bitmap;
+    vframe_t  *last_frame;      /* last decoded frame, kept for redraw on resize */
 
     uint32_t   ctx_format;
     int        target;
@@ -160,8 +161,11 @@ struct vstate
     struct decoder *decoder;
     int             snd_format;
     volatile int    frames_count;
+    /* written by the reader thread (=1) and the audio thread (=0); keep it in
+     * its own word (not a shared bitfield) so those writes don't race on a
+     * read-modify-write of neighbouring flags */
+    volatile int    audio_timer_valid;
     unsigned int    has_sound:1;
-    unsigned int    audio_timer_valid:1;
     unsigned int    blit_bitmap:1;      /* hardware RGBA blitter    */
     unsigned int    blit_texture:1;     /* hardware RGBA blit and scale */
     unsigned int    blit_planar:1;      /* hardbare YUV blit and scale */
@@ -171,6 +175,7 @@ struct vstate
 #define DECODER_THREAD  1
 #define AUDIO_THREAD    2
 #define VIDEO_THREAD    4
+#define READER_THREAD   8
 
 extern volatile int threads_running;
 extern astream_t astream;
@@ -189,6 +194,7 @@ int audio_thread(void *param);
 void set_audio_volume(int left, int right);
 
 int video_thread(void *param);
+int read_thread(void *param);
 void flush_video(vst_t* vst);
 
 int init_video_decoder(vst_t *vst);

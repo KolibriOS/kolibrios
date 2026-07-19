@@ -24,10 +24,29 @@
 */
 
 
-/* An implementation of mutexes using semaphores */
+/*
+ * KolibriOS mutex implementation.
+ *
+ * SDL here is built with -DDISABLE_THREADS, which would normally turn
+ * SDL semaphores into stubs (returning NULL) and SDL mutexes into no-ops.
+ * However, the KolibriOS audio backend (SDL_kolibri_audio.c) runs the SDL
+ * audio callback in a REAL kernel thread created with _ksys_create_thread.
+ * Applications such as ScummVM use SDL mutexes (via Common::Mutex) to guard
+ * shared state (the audio mixer, software music drivers, ...) against
+ * concurrent access from that audio thread and the main thread. With no-op
+ * mutexes this synchronization silently disappears, leading to races and
+ * crashes (e.g. a function pointer read while being overwritten -> a call
+ * through a near-null pointer).
+ *
+ * So we provide a genuine, recursive mutex here, implemented as a small
+ * spinlock that yields the CPU to other threads while waiting. It does not
+ * rely on SDL semaphores (which stay stubbed out under DISABLE_THREADS).
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <sys/ksys.h>
 
 #include "SDL_error.h"
 #include "SDL_thread.h"
@@ -35,28 +54,23 @@
 
 
 struct SDL_mutex {
-	int recursive;
-	Uint32 owner;
-	SDL_sem *sem;
+	volatile int guard;       /* spinlock guarding the fields below   */
+	volatile uint32_t owner;  /* tid of the owning thread, 0 if free  */
+	volatile int recursive;   /* current lock/recursion depth         */
 };
+
+static uint32_t kos_current_tid(void)
+{
+	ksys_thread_t ti;
+	_ksys_thread_info(&ti, KSYS_THIS_SLOT);
+	return ti.pid;
+}
 
 /* Create a mutex */
 SDL_mutex *SDL_CreateMutex(void)
 {
-	SDL_mutex *mutex;
-
-	/* Allocate mutex memory */
-	mutex = (SDL_mutex *)malloc(sizeof(*mutex));
-	if ( mutex ) {
-		/* Create the mutex semaphore, with initial value 1 */
-		mutex->sem = SDL_CreateSemaphore(1);
-		mutex->recursive = 0;
-		mutex->owner = 0;
-		if ( ! mutex->sem ) {
-			free(mutex);
-			mutex = NULL;
-		}
-	} else {
+	SDL_mutex *mutex = (SDL_mutex *)calloc(1, sizeof(*mutex));
+	if ( ! mutex ) {
 		SDL_OutOfMemory();
 	}
 	return mutex;
@@ -66,71 +80,56 @@ SDL_mutex *SDL_CreateMutex(void)
 void SDL_DestroyMutex(SDL_mutex *mutex)
 {
 	if ( mutex ) {
-		if ( mutex->sem ) {
-			SDL_DestroySemaphore(mutex->sem);
-		}
 		free(mutex);
 	}
 }
 
-/* Lock the semaphore */
+/* Lock the mutex (recursive) */
 int SDL_mutexP(SDL_mutex *mutex)
 {
-#ifdef DISABLE_THREADS
-	return 0;
-#else
-	Uint32 this_thread;
+	uint32_t me;
 
-	if ( mutex == NULL ) {
-		SDL_SetError("Passed a NULL mutex");
-		return -1;
+	/* Some SDL subsystems (e.g. the event queue) never allocate a mutex
+	   under DISABLE_THREADS and pass NULL here. Those are only touched from
+	   the main thread, so treat a NULL mutex as a silent no-op instead of
+	   flooding errors. Real mutexes (the mixer's, ...) are non-NULL and are
+	   genuinely locked below. */
+	if ( mutex == NULL )
+		return 0;
+
+	me = kos_current_tid();
+	for ( ;; ) {
+		/* acquire the short internal guard */
+		while ( __sync_lock_test_and_set(&mutex->guard, 1) )
+			_ksys_thread_yield();
+
+		if ( mutex->owner == 0 || mutex->owner == me ) {
+			mutex->owner = me;
+			++mutex->recursive;
+			__sync_lock_release(&mutex->guard);
+			return 0;
+		}
+
+		/* owned by another thread: drop the guard, yield and retry */
+		__sync_lock_release(&mutex->guard);
+		_ksys_thread_yield();
 	}
-
-	this_thread = SDL_ThreadID();
-	if ( mutex->owner == this_thread ) {
-		++mutex->recursive;
-	} else {
-		/* The order of operations is important.
-		   We set the locking thread id after we obtain the lock
-		   so unlocks from other threads will fail.
-		*/
-		SDL_SemWait(mutex->sem);
-		mutex->owner = this_thread;
-		mutex->recursive = 0;
-	}
-
-	return 0;
-#endif /* DISABLE_THREADS */
 }
 
 /* Unlock the mutex */
 int SDL_mutexV(SDL_mutex *mutex)
 {
-#ifdef DISABLE_THREADS
-	return 0;
-#else
-	if ( mutex == NULL ) {
-		SDL_SetError("Passed a NULL mutex");
-		return -1;
+	if ( mutex == NULL )
+		return 0;	/* no-op for NULL mutexes (see SDL_mutexP) */
+
+	while ( __sync_lock_test_and_set(&mutex->guard, 1) )
+		_ksys_thread_yield();
+
+	if ( mutex->recursive > 0 ) {
+		if ( --mutex->recursive == 0 )
+			mutex->owner = 0;
 	}
 
-	/* If we don't own the mutex, we can't unlock it */
-	if ( SDL_ThreadID() != mutex->owner ) {
-		SDL_SetError("mutex not owned by this thread");
-		return -1;
-	}
-
-	if ( mutex->recursive ) {
-		--mutex->recursive;
-	} else {
-		/* The order of operations is important.
-		   First reset the owner so another thread doesn't lock
-		   the mutex and set the ownership before we reset it,
-		   then release the lock semaphore.
-		 */
-		mutex->owner = 0;
-		SDL_SemPost(mutex->sem);
-	}
+	__sync_lock_release(&mutex->guard);
 	return 0;
-#endif /* DISABLE_THREADS */
 }

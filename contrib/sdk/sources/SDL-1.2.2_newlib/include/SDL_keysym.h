@@ -284,6 +284,7 @@ typedef enum {
 	SDLK_MENU		= 319,
 	SDLK_POWER		= 320,		/* Power Macintosh power key */
 	SDLK_EURO		= 321,		/* Some european keyboards */
+	SDLK_UNDO		= 322,		/* Atari keyboard has Undo */
 
 	/* Add any other keys here */
 

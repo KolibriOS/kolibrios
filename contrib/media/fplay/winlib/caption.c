@@ -99,11 +99,13 @@ void update_caption_size(window_t *win)
     cpt->close_btn->ctrl.rc.r = cpt->close_btn->ctrl.rc.l +
                            cpt->close_btn->ctrl.w;
 
-    cpt->minimize_btn->ctrl.rc.l = win->w - 27 - 18 - 5;
+    /* Order (left -> right): minimize, fullscreen, close.
+     * minimize is the leftmost of the three, fullscreen sits in the middle. */
+    cpt->minimize_btn->ctrl.rc.l = win->w - 27 - 18 - 18 - 5 - 5;
     cpt->minimize_btn->ctrl.rc.r = cpt->minimize_btn->ctrl.rc.l +
                            cpt->minimize_btn->ctrl.w;
 
-    cpt->full_btn->ctrl.rc.l = win->w - 27 - 18 -18 - 5 - 5;
+    cpt->full_btn->ctrl.rc.l = win->w - 27 - 18 - 5;
     cpt->full_btn->ctrl.rc.r = cpt->full_btn->ctrl.rc.l +
                            cpt->full_btn->ctrl.w;
 };

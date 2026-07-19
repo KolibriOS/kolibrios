@@ -55,7 +55,8 @@ EGL_OBJS   =  $(patsubst %.c, %.o, $(EGL_SRC))
 all: libegl.dll
 
 libegl.dll: $(EGL_OBJS) Makefile
-	$(LD) $(LDFLAGS) -o $@ $(MESA_SRC)/../egl.def $(EGL_OBJS) $(LIBS)
+	$(file >egl.objs.rsp,$(EGL_OBJS))
+	$(LD) $(LDFLAGS) -o $@ $(MESA_SRC)/../egl.def @egl.objs.rsp $(LIBS)
 #	$(STRIP) $@
 #	sed -e "s/ @[^ ]*//" egl1.def > egl.def
 	mv -f $@ $(SDK_DIR)/bin
@@ -65,4 +66,4 @@ libegl.dll: $(EGL_OBJS) Makefile
 	$(CC) $(CFLAGS) $(MESA_DEFS) $(EGL_DEFS) $(INC_EGL) -o $@ $<
 
 
- 
+ 
