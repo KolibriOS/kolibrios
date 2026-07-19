@@ -37,6 +37,10 @@ include '../../KOSfuncs.inc'
 include '../../macros.inc'
 include	'../../load_lib.mac'
 ;-----------------------------------------------------------------------------
+DEVICE_LIST_TOP   = 110	; y of the first device row
+DEVICE_ROW_HEIGHT = 10
+MMIO_AREA_HEIGHT  = 7 * 2 * DEVICE_ROW_HEIGHT	; Try_MMIO: 7 BARs, <= 2 lines each
+;-----------------------------------------------------------------------------
 @use_library	; load_lib macro
 ;-----------------------------------------------------------------------------
 START:
@@ -56,6 +60,7 @@ load_libraries l_libs_start,end_l_libs
 	mcall	SF_SYS_MISC,SSF_MEM_ALLOC,4096*4 ; 16 Kb - I hope this will be enough for store of data
 	mov	[store_text_area_start],eax
 ;-----------------------------------------------------------------------------
+	call	calc_window_height	; fit window height to the number of devices
 	call draw_window
 align 4
 still:
@@ -186,6 +191,13 @@ draw_window:
 
 	mov	byte [total], 0
 	mcall	SF_REDRAW, SSF_BEGIN_DRAW
+	; skin can change while running; shift by the delta, keep user's size
+	mcall	SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+	sub	eax, [skin_height]
+	jz	@f
+	add	[skin_height], eax
+	add	[Form + 4], ax
+@@:
 	; DRAW WINDOW
 	mcall	SF_CREATE_WINDOW,dword [Form],dword [Form + 4],0x13ffffff,0x805080d0,title
 
@@ -304,7 +316,7 @@ Get_PCI_Info:
 Pci_Exists:
 	mov	byte [V_Bus], 0 	; reset varibles
 	mov	byte [V_Dev], 0 	;
-	mov	edx,  20 * 65536 + 110	; set start write position
+	mov	     edx, 20 * 65536 + DEVICE_LIST_TOP ; set start write position
 Start_Enum:
 	mov	bl, 6			; get a dword
 	mov	bh, byte [V_Bus]	; bus of pci device
@@ -374,6 +386,23 @@ nextDev:
 	jbe	Start_Enum		; if not jump to keep searching
 	ret
 ;-----------------------------------------------------------------------------
+;* Count devices silently and fit the window height, MMIO area included.
+calc_window_height:
+	mov	byte [total], 0
+	mov	byte [silent], 1	; Print_New_Device only counts, no drawing
+	call	Get_PCI_Info
+	mov	byte [silent], 0
+	movzx	eax, byte [total]	; number of devices
+	imul	eax, DEVICE_ROW_HEIGHT
+	add	eax, DEVICE_LIST_TOP + MMIO_AREA_HEIGHT
+	push	eax
+	mcall	SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+	mov	[skin_height], eax
+	pop	ecx
+	add	eax, ecx
+	mov	[Form + 4], ax
+	ret
+;-----------------------------------------------------------------------------
 no_ummio_allowed:
 	xor 	al,al
 	mov 	[MMIO_allowed],al		; re-enter the subroutine
@@ -381,6 +410,10 @@ no_ummio_allowed:
 ;* Print device info to screen
 
 Print_New_Device:
+	cmp	byte [silent], 0	; counting pass for calc_window_height?
+	je	@f
+	ret				; yes: device already counted, skip drawing
+@@:
 	xor 	esi, esi	    	; default text color
 	mov 	cl, [MMIO_allowed]
 	or	cl,cl
@@ -885,9 +918,11 @@ MMIO_Bus	db 255
 MMIO_Dev	db 255
 MMIO_BAR	db 0
 MMIO_allowed	db 1
+silent		db 0
 MMIO_Map	rd 8
 
 gr_pos		dd ?
+skin_height	dd ?
 
 store_text_area_start	dd ?
 store_text_area_end	dd ?
