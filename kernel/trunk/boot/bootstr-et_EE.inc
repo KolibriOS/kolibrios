@@ -14,7 +14,7 @@
 
 d80x25_bottom:
           latin1   '║ KolibriOS on IGASUGUSE GARANTIITA. Vaata faili COPYING info saamiseks. Kui   ║'
-          latin1   '║ leiate vigu, anna neist palun teada aadressil: http://board.kolibrios.org    ║'
+          latin1   '║ leiate vigu, anna neist palun teada aadressil: https://git.kolibrios.org     ║'
           line_full_bottom
 d80x25_bottom_num = 3
 

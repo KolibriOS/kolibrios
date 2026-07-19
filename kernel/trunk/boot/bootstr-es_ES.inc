@@ -14,7 +14,7 @@
 
 d80x25_bottom:
           cp850    '║ KolibriOS viene ABSOLUTAMENTE SIN GARANTíA. Lee el archivo COPYING por más   ║'
-          cp850    '║ detalles. Por favor, informar de los errores en: http://git.kolibrios.org    ║'
+          cp850    '║ detalles. Por favor, informar de los errores en: https://git.kolibrios.org   ║'
           line_full_bottom
 d80x25_bottom_num = 3
 

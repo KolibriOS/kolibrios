@@ -14,7 +14,7 @@
 
 d80x25_bottom:
            db       186,' KolibriOS wird ohne jegliche Garantie vertrieben. Details stehen in der      ',186
-           db       186,' Datei COPYING. Bitte melden Sie Fehler bei: http://board.kolibrios.org       ',186
+           db       186,' Datei COPYING. Bitte melden Sie Fehler bei: https://git.kolibrios.org        ',186
           line_full_bottom
 d80x25_bottom_num = 3
 

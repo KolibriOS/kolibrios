@@ -29,9 +29,9 @@ gr_mode   db      "Select a videomode: ",13,10,0
 ask_bd    db      "Add disks visible by BIOS emulated in V86-mode? [1-yes, 2-no]: ",0
 
 if defined extended_primary_loader
-bdev      db      "Load system from [1-floppy; 2-kolibri.img; 3-don't load]: ",0
+bdev      db      "Load ramdisk from [1-floppy; 2-kolibri.img; 3-don't load]: ",0
 else
-bdev      db      "Load system from [1-floppy; 2-C:\kolibri.img (FAT32);"
+bdev      db      "Load ramdisk from [1-floppy; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                   "
           db      "3-preloaded ram-image (flash-disk, dualboot, "
           db      13,10,186,"                   "

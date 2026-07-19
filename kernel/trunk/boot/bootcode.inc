@@ -1063,7 +1063,7 @@ mem_floor_next:
 mem_floor_skip:
         add     di, sizeof.e820entry
         loop    mem_floor_next
-        cmp     edx, 8*1024*1024
+        cmp     edx, HEAP_BASE - OS_BASE
         jae     mem_floor_ok
         mov     si, low_memory_error
         jmp     sayerr
