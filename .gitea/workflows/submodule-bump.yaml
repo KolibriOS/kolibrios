@@ -5,7 +5,7 @@ name: 'Update submodules'
 
 on:
   schedule:
-    - cron: '0 8 * * 6'      # Saturdays at 08:00 (UTC)
+    - cron: '0 * * * *'      # hourly
   workflow_dispatch:
 
 jobs:
@@ -32,10 +32,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+          token: ${{ secrets.BOT_TOKEN }}
 
       - name: Bump ${{ matrix.name }} and open PR
         env:
-          TOKEN: ${{ github.token }}
+          TOKEN: ${{ secrets.BOT_TOKEN }}
           API: ${{ github.api_url }}
           REPO: ${{ github.repository }}
           NAME: ${{ matrix.name }}
@@ -53,13 +54,24 @@ jobs:
             exit 0
           fi
 
+          WANT=$(git -C "$PATH_" rev-parse HEAD)
+
+          # skip revisions that already have PR opened
+          if git fetch -q origin "$BRANCH" 2>/dev/null; then
+            HAVE=$(git rev-parse "FETCH_HEAD:$PATH_" 2>/dev/null || echo none)
+            if [ "$HAVE" = "$WANT" ]; then
+              echo "$NAME bump to $WANT is already waiting in $BRANCH"
+              exit 0
+            fi
+          fi
+
           git config user.name  "kolibri-bot"
           git config user.email "bot@kolibrios.org"
           git checkout -B "$BRANCH"
-          git commit -m "$NAME: bump submodule to upstream" -- "$PATH_"
+          git commit -m "$NAME: bump submodule to $WANT" -- "$PATH_"
           git push -f origin "$BRANCH"
 
-          # Open a PR via the Gitea API using the built-in token.
+          # Open a PR via the Gitea API.
           # 201 = created, 409 = a PR for this branch is already open (the
           # force-push above already updated it) - both are fine.
           http=$(curl -sS -o /tmp/pr.json -w '%{http_code}' -X POST \
