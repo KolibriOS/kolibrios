@@ -79,7 +79,7 @@ macro ADD_CLASS drv_name, class, subclass, protocol {
         ..class_code = ..length or (class  shl 8)
 
         if  ..length = 3
-            ..class_code = ..class_code or (protocol  shl 24)
+            ..class_code = ..class_code or (subclass shl 16) or (protocol  shl 24)
         end if
         if  ..length = 2
             ..class_code = ..class_code or (subclass  shl 16)
@@ -172,7 +172,15 @@ macro ADD_IDL drv_name, [vendor_id, device_id] {
 
 INIT_USBDRV_FILE
 
-;ADD_CLASS       'usbcdc-ctrl'   , 0x02, X   , X
+; CDC (Communications Device Class): NCM network + ACM serial
+ADD_CLASS       'usbcdc'        , 0x02, X   , X
+
+; RNDIS network (Remote NDIS): LTE modems in HiLink mode, USB tethering.
+; Two encodings exist: Wireless-Controller/RF/RNDIS and an ACM masquerade
+; (the latter is declined by usbcdc, so the scan falls through to us).
+ADD_CLASS       'usbrndis'      , 0xE0, 0x01, 0x03
+ADD_CLASS       'usbrndis'      , 0x02, 0x02, 0xFF
+
 ;ADD_CLASS       'usbimage'      , 0x06, 1   , 1
 ;ADD_CLASS       'usbcdc-data'   , 0x0A, X   , X
 ;ADD_CLASS       'ccid'          , 0x0B, X   , X

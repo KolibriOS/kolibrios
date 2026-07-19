@@ -722,6 +722,12 @@ endp
 ;   callback inquiry_callback;
 ; * inquiry_callback checks that a logical device is a block device
 ;   and the unit was ready; if so, it notifies the kernel about new disk device.
+; Callback for the mode-switch control request sent below: nothing to
+; do, the device is about to drop off the bus and re-enumerate.
+proc modeswitch_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+        ret
+endp
+
 proc AddDevice
         push    ebx esi
 virtual at esp
@@ -737,6 +743,31 @@ end virtual
 ; bInterfaceProtocol are subsequent in interface_descr, just one
 ; memory reference is used for both.
         mov     esi, [.interface]
+; Some 3G/LTE modems enumerate as a mass-storage-only "Zero-CD" (a
+; virtual CD-ROM with Windows drivers) and must be switched to their
+; real configuration by a standard SET_FEATURE(1) device request (what
+; usb_modeswitch calls HuaweiNewMode). Match by VID:PID, fire the
+; request and do not bind: the device re-enumerates with a new PID.
+        mov     ebx, [.pipe0]
+        invoke  USBGetParam, ebx, 0     ; 0 = get device descriptor
+        test    eax, eax
+        jz      .no_modeswitch
+        mov     ecx, [eax+8]            ; idVendor | idProduct shl 16
+        mov     edx, modeswitch_ids
+.modeswitch_scan:
+        cmp     dword [edx], 0
+        jz      .no_modeswitch
+        cmp     ecx, [edx]
+        jz      .do_modeswitch
+        add     edx, 4
+        jmp     .modeswitch_scan
+.do_modeswitch:
+        mov     esi, switchdevice
+        invoke  SysMsgBoardStr
+        invoke  USBControlTransferAsync, ebx, modeswitch_setup, 0, 0, \
+                modeswitch_callback, 0, 0
+        jmp     .nothing
+.no_modeswitch:
         xor     ebx, ebx
         mov     cx, word [esi+interface_descr.bInterfaceSubClass]
 ; 1b. For Mass-storage SCSI-command-set Bulk-only devices subclass must be 6
@@ -1568,6 +1599,13 @@ inquiry_fail    db      'K : INQUIRY command failed',13,10,0
 ;read_capacity_fail db  'K : READ CAPACITY command failed',13,10,0
 ;read_fail      db      'K : READ command failed',13,10,0
 noindex         db      'K : failed to generate disk name',13,10,0
+switchdevice    db      'K : Zero-CD modem detected, switching mode',13,10,0
+
+; Zero-CD devices switched by SET_FEATURE(1), dd idVendor+(idProduct shl 16)
+align 4
+modeswitch_ids  dd      0x1F0112D1      ; Huawei E3372 and friends
+                dd      0
+modeswitch_setup db     0x00, 0x03, 0x01, 0, 0, 0, 0, 0
 
 align 4
 ; Structure with callback functions.

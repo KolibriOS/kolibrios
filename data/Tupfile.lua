@@ -576,6 +576,8 @@ tup.append_table(img_files, {
  {"DRIVERS/EHCI.SYS", VAR_DRVS .. "/usb/ehci.sys"},
  {"DRIVERS/USBHID.SYS", VAR_DRVS .. "/usb/usbhid/usbhid.sys"},
  {"DRIVERS/USBOTHER.SYS",VAR_DRVS .. "/usb/usbother/usbother.sys"},
+ {"DRIVERS/USBCDC.SYS", VAR_DRVS .. "/usb/usbnet/usbcdc.sys"},
+ {"DRIVERS/USBRNDIS.SYS", VAR_DRVS .. "/usb/usbnet/usbrndis.sys"},
  {"DRIVERS/USBSTOR.SYS", VAR_DRVS .. "/usb/usbstor.sys"},
  {"DRIVERS/RDC.SYS", VAR_DRVS .. "/video/rdc.sys"},
  {"DRIVERS/COMMOUSE.SYS", VAR_DRVS .. "/mouse/commouse.sys"},
