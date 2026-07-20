@@ -89,9 +89,9 @@ loading_msg db    "Lade KolibriOS...",0
 if ~ defined extended_primary_loader
 save_quest         db "Aktuelle Einstellungen speichern? [y/n]: ",0
 loader_block_error db "Bootloader Daten ungueltig, Kann nicht fortfahren. Angehalten.",0
-low_memory_error   db "Nicht genügend Arbeitsspeicher: KolibriOS benötigt mindestens 9 MB. Abgebrochen.",0
 write_err_msg      db "Schreiben fehlgeschlagen. Zum Booten eine beliebige Taste drucken...",0
 end if
+low_memory_error   db "Nicht genügend Arbeitsspeicher: KolibriOS benötigt mindestens 9 MB. Abgebrochen.",0
 
 _st latin1 '║                   ┌───────────────────────────────┬─┐',13,10,0
 _r1 latin1 '║                   │  320x200  EGA/CGA 256 colors  │ │',13,10,0

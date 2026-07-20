@@ -89,9 +89,9 @@ loading_msg cp850 "Cargando KolibriOS...",0
 if ~ defined extended_primary_loader
 save_quest         cp850  "¿Recordar configuración actual? [s/n]: ",0
 loader_block_error cp850  "Bootloader inválido, no puedo continuar. Detenido.",0
-low_memory_error   cp850  "Memoria RAM insuficiente: KolibriOS necesita al menos 9 MB. Proceso detenido.",0
 write_err_msg      cp850  "La grabación ha fallado. Presione cualquier tecla para continuar...",0
 end if
+low_memory_error   cp850  "Memoria RAM insuficiente: KolibriOS necesita al menos 9 MB. Proceso detenido.",0
 
 _st cp850 '║                   ┌───────────────────────────────┬─┐',13,10,0
 _r1 cp850 '║                   │  320x200 EGA/CGA 256 colores  │ │',13,10,0

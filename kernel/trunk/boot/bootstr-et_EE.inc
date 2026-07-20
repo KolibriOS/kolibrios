@@ -89,9 +89,9 @@ loading_msg latin1 "Laadin KolibriOS...",0
 if ~ defined extended_primary_loader
 save_quest         latin1 "Jäta meelde praegused seaded? [y/n]: ",0
 loader_block_error latin1 "Alglaaduri andmed vigased, ei saa jätkata. Peatatud.",0
-low_memory_error   latin1 "Not enough RAM: KolibriOS needs at least 9 MB. Stopped.",0
 write_err_msg      latin1 "Salvestamine ebaõnnestus. Käivitamise jätkamiseks vajutage suvalist klahvi...",0
 end if
+low_memory_error   latin1 "Not enough RAM: KolibriOS needs at least 9 MB. Stopped.",0
 
 _st latin1 '║                   ┌───────────────────────────────┬─┐',13,10,0
 _r1 latin1 '║                   │  320x200  EGA/CGA 256 värvi   │ │',13,10,0

@@ -93,9 +93,9 @@ save_quest db     "New settings have been applied.",13,10,13,10,186
            db     " Do you want to save them for future boots?",13,10,186
            db     " Answer 'yes' only if your booting device is writable. [y/n]: ",0
 loader_block_error db "Bootloader data invalid. Stopped.",0
-low_memory_error db "Not enough RAM: KolibriOS needs at least 9 MB. Stopped.",0
 write_err_msg db "Recording the configuration has failed. Press any key to resume booting...",0
 end if
+low_memory_error db "Not enough RAM: KolibriOS needs at least 9 MB. Stopped.",0
 
 _st latin1 '║                   ┌───────────────────────────────┬─┐',13,10,0
 _r1 latin1 '║                   │  320x200  EGA/CGA 256 colors  │ │',13,10,0
