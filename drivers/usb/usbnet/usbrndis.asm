@@ -38,6 +38,12 @@ DEBUG = 1
 __DEBUG__ = 1
 __DEBUG_LEVEL__ = 2             ; 1 = verbose, 2 = errors/events only
 
+; 1 = print per-second RX/TX rate statistics to the debug board while
+; traffic flows (cb/fr = transfers/frames, B = bytes, tx = frames sent,
+; wnd = advertised TCP window). Costs a few counters per frame and one
+; line of board output per second; invaluable for throughput debugging.
+DEBUG_STATS = 0
+
 include '../../struct.inc'
 
 ; USB descriptor types
@@ -93,8 +99,9 @@ ETH_FRAME_MIN           = 60    ; minimal ethernet frame (without FCS)
 ETH_FRAME_MAX           = 1514  ; maximal ethernet frame (without FCS)
 RNDIS_HDR_SIZE          = 44    ; REMOTE_NDIS_PACKET_MSG header
 RNDIS_RX_BUF            = 8192  ; our max transfer, advertised in INIT
+RNDIS_RX_BUFFERS        = 2     ; ping-pong pair for the bulk IN pipe
 RNDIS_RSP_BUF           = 1024  ; encapsulated response buffer
-RNDIS_TX_MAX_PENDING    = 8    ; max messages in flight on bulk OUT
+RNDIS_TX_MAX_PENDING    = 32    ; max messages in flight on bulk OUT
 RNDIS_GET_RETRIES       = 200   ; response polls per command (see below)
 
 ; USB structures
@@ -178,8 +185,17 @@ struct rndis_dev        ETH_DEVICE
         KaPending       dd      ?       ; a keepalive reply is in flight
         GetRetries      dd      ?       ; polls left for the current command
 
-        RxBuf           dd      ?       ; bulk IN buffer (KernelAlloc)
-        RxSize          dd      ?       ; its size
+        RxBufs          rd      RNDIS_RX_BUFFERS ; bulk IN buffers (KernelAlloc)
+        RxSize          dd      ?       ; size of one buffer
+
+        ; per-second statistics, only maintained when DEBUG_STATS = 1
+        StatTicks       dd      ?       ; last print time, timer ticks
+        StatCb          dd      ?       ; RX callbacks since last print
+        StatFrames      dd      ?       ; RX frames since last print
+        StatBytes       dd      ?       ; RX bytes since last print
+        StatTxPkts      dd      ?       ; packets_tx snapshot at last print
+        StatWnd         dd      ?       ; TCP receive window we advertised
+                                        ; in the last outgoing TCP frame
 
         SetupCmd        rb      8       ; setup packet: SEND_ENCAPSULATED_CMD
         SetupRsp        rb      8       ; setup packet: GET_ENCAPSULATED_RSP
@@ -219,7 +235,7 @@ proc START c, reason:dword, cmdline:dword
         cmp     [reason], DRV_ENTRY
         jne     .nothing
 
-        DEBUGF  2,"loading (RNDIS host network driver)\n"
+        DEBUGF  2,"loading v5 (RNDIS host network driver)\n"
         invoke  RegUSBDriver, my_service, service_proc, usb_functions
 
   .nothing:
@@ -898,24 +914,29 @@ proc rndis_response_callback stdcall uses ebx esi edi, .pipe:dword, .status:dwor
 
 endp
 
-; Init chain complete: allocate the receive buffer, register in the
+; Init chain complete: allocate the receive buffers, register in the
 ; network stack, bring the link up and start receiving.
 ; IN: ebx = device context
 proc rndis_start
 
         mov     [ebx+rndis_dev.InitState], STATE_RUN
+        mov     [ebx+rndis_dev.RxSize], RNDIS_RX_BUF
 
+        xor     edi, edi
+  .alloc_loop:
         invoke  KernelAlloc, RNDIS_RX_BUF
         test    eax, eax
         jz      .fail
-        mov     [ebx+rndis_dev.RxBuf], eax
-        mov     [ebx+rndis_dev.RxSize], RNDIS_RX_BUF
+        mov     [ebx+rndis_dev.RxBufs+edi*4], eax
+        inc     edi
+        cmp     edi, RNDIS_RX_BUFFERS
+        jb      .alloc_loop
 
         push    ebx
         invoke  NetRegDev
         pop     ebx
         cmp     eax, -1
-        je      .fail_freebuf
+        je      .fail
         mov     [ebx+rndis_dev.Registered], 1
         DEBUGF  2,"registered as network device %u\n", eax
 
@@ -929,21 +950,62 @@ proc rndis_start
         invoke  NetLinkChanged
         pop     ebx
 
-        invoke  USBNormalTransferAsync, [ebx+rndis_dev.InPipe], [ebx+rndis_dev.RxBuf], \
-                [ebx+rndis_dev.RxSize], rndis_rx_callback, ebx, 1
+; Arm the first receive. From here on the RX callback ping-pongs between
+; the two buffers: it re-arms the pipe with the other buffer BEFORE
+; parsing the completed one, so the device streams the next frames while
+; the host walks the current buffer. Exactly one transfer is outstanding
+; at any time - queueing several short-packet-terminated bulk IN
+; transfers breaks the EHCI stack (see the note in usbcdc.asm).
+        invoke  USBNormalTransferAsync, [ebx+rndis_dev.InPipe], \
+                [ebx+rndis_dev.RxBufs], [ebx+rndis_dev.RxSize], \
+                rndis_rx_callback, ebx, 1
         test    eax, eax
         jz      .fail
         ret
 
-  .fail_freebuf:
-        invoke  KernelFree, [ebx+rndis_dev.RxBuf]
-        mov     [ebx+rndis_dev.RxBuf], 0
   .fail:
         DEBUGF  2,"starting the device failed\n"
         mov     [ebx+rndis_dev.Dead], 1
         ret
 
 endp
+
+if DEBUG_STATS
+; Print transfer-rate statistics to the debug board about once a second
+; while traffic flows (called from the RX callback). Shows where the
+; bottleneck is: cb/fr = USB transfers and frames per interval (RX),
+; tx = frames sent per interval (the TCP ACK clock on downloads).
+; IN: ebx = device context
+proc rndis_stats
+
+        push    eax ecx edx
+        invoke  GetTimerTicks
+        mov     ecx, [ebx+rndis_dev.StatTicks]
+        test    ecx, ecx
+        jz      .reset
+        mov     edx, eax
+        sub     edx, ecx
+        cmp     edx, 100                        ; print every 100 ticks = 1 s
+        jb      .done
+        mov     ecx, [ebx+rndis_dev.packets_tx]
+        sub     ecx, [ebx+rndis_dev.StatTxPkts]
+        DEBUGF  2,"stat %ut: cb %u fr %u B %u tx %u wnd %u txovr %u rxdrop %u\n", \
+                edx, [ebx+rndis_dev.StatCb], [ebx+rndis_dev.StatFrames], \
+                [ebx+rndis_dev.StatBytes], ecx, [ebx+rndis_dev.StatWnd], \
+                [ebx+rndis_dev.packets_tx_ovr], [ebx+rndis_dev.packets_rx_drop]
+        mov     [ebx+rndis_dev.StatCb], 0
+        mov     [ebx+rndis_dev.StatFrames], 0
+        mov     [ebx+rndis_dev.StatBytes], 0
+        mov     ecx, [ebx+rndis_dev.packets_tx]
+        mov     [ebx+rndis_dev.StatTxPkts], ecx
+  .reset:
+        mov     [ebx+rndis_dev.StatTicks], eax
+  .done:
+        pop     edx ecx eax
+        ret
+
+endp
+end if ; DEBUG_STATS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
@@ -957,6 +1019,7 @@ proc rndis_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .bu
 
 locals
         msg_off         dd      ?       ; offset of the current message
+        rearmed         dd      ?       ; the other buffer is already armed
 endl
 
         mov     ebx, [.calldata]
@@ -969,13 +1032,34 @@ endl
         je      .ret
         cmp     [.status], USB_STATUS_STALL
         je      .stalled
+if DEBUG_STATS
+        inc     [ebx+rndis_dev.StatCb]
+end if
+
+; Re-arm the pipe with the other buffer BEFORE parsing this one: the
+; device streams the next frames while the host walks the current
+; buffer. The completed transfer is already off the queue, so still at
+; most one transfer is outstanding (a hard requirement of the EHCI
+; stack, see the note in usbcdc.asm).
+        mov     [rearmed], 0
+        mov     eax, [ebx+rndis_dev.RxBufs]
+        cmp     eax, [.buffer]
+        jne     @f
+        mov     eax, [ebx+rndis_dev.RxBufs+4]
+  @@:
+        invoke  USBNormalTransferAsync, [ebx+rndis_dev.InPipe], eax, \
+                [ebx+rndis_dev.RxSize], rndis_rx_callback, ebx, 1
+        test    eax, eax
+        jz      @f
+        mov     [rearmed], 1
+  @@:
         cmp     [.status], 0
-        jne     .rearm                          ; transient error: re-arm
+        jne     .rearm                          ; transient error: don't parse
 
         mov     [msg_off], 0
 
   .msg_loop:
-        mov     esi, [ebx+rndis_dev.RxBuf]
+        mov     esi, [.buffer]
         mov     eax, [msg_off]
         lea     edx, [eax+RNDIS_HDR_SIZE]
         cmp     edx, [.length]
@@ -1039,6 +1123,10 @@ endl
         add     dword [ebx+rndis_dev.bytes_rx], ecx
         adc     dword [ebx+rndis_dev.bytes_rx+4], 0
         inc     [ebx+rndis_dev.packets_rx]
+if DEBUG_STATS
+        inc     [ebx+rndis_dev.StatFrames]
+        add     [ebx+rndis_dev.StatBytes], ecx
+end if
         DEBUGF  1,"->host frame %u bytes\n", [edi+NET_BUFF.length]
 
 ; hand the buffer to the network stack. EthInput consumes
@@ -1055,8 +1143,15 @@ endl
         inc     [ebx+rndis_dev.packets_rx_drop]
         jmp     .msg_loop
 
+; End of processing. If arming the other buffer failed at entry, fall
+; back to re-submitting the just-parsed buffer so receive does not stop.
   .rearm:
-        invoke  USBNormalTransferAsync, [ebx+rndis_dev.InPipe], [ebx+rndis_dev.RxBuf], \
+if DEBUG_STATS
+        call    rndis_stats
+end if
+        cmp     [rearmed], 0
+        jne     .ret
+        invoke  USBNormalTransferAsync, [ebx+rndis_dev.InPipe], [.buffer], \
                 [ebx+rndis_dev.RxSize], rndis_rx_callback, ebx, 1
         test    eax, eax
         jnz     .ret
@@ -1192,6 +1287,25 @@ endl
         xor     eax, eax
         rep stosb
 
+if DEBUG_STATS
+; stats: remember the TCP receive window we advertise (rwnd health on
+; downloads; parsed from the outgoing frame: eth+IPv4+TCP)
+        cmp     edx, 54                         ; eth+min IP+min TCP
+        jb      @f
+        mov     eax, [alloc]
+        lea     eax, [eax+4+RNDIS_HDR_SIZE]     ; frame start
+        cmp     word [eax+12], 0x0008           ; EtherType IPv4 (BE 08 00)
+        jne     @f
+        cmp     byte [eax+23], 6                ; IP protocol TCP
+        jne     @f
+        movzx   ecx, byte [eax+14]
+        and     ecx, 15                         ; IHL, dwords
+        movzx   edx, word [eax+ecx*4+14+14]     ; TCP.Window, big-endian
+        xchg    dl, dh
+        mov     [ebx+rndis_dev.StatWnd], edx
+  @@:
+end if
+
 ; submit the transfer: buffer = message, calldata = allocation
         mov     eax, [alloc]
         lea     edx, [eax+4]
@@ -1274,10 +1388,16 @@ proc DeviceDisconnected stdcall uses ebx esi edi, .devdata:dword
         pop     ebx
         mov     [ebx+rndis_dev.Registered], 0
   @@:
-        cmp     [ebx+rndis_dev.RxBuf], 0
-        je      @f
-        invoke  KernelFree, [ebx+rndis_dev.RxBuf]
+        xor     esi, esi
+  .free_loop:
+        mov     eax, [ebx+rndis_dev.RxBufs+esi*4]
+        test    eax, eax
+        jz      @f
+        invoke  KernelFree, eax
   @@:
+        inc     esi
+        cmp     esi, RNDIS_RX_BUFFERS
+        jb      .free_loop
         mov     eax, ebx
         invoke  Kfree
         ret

@@ -34,6 +34,13 @@ DEBUG = 1
 __DEBUG__ = 1
 __DEBUG_LEVEL__ = 2             ; 1 = verbose, 2 = errors/events only
 
+; 1 = print per-second RX/TX rate statistics to the debug board while
+; traffic flows (cb/fr = transfers/frames, B = bytes, tx = frames sent,
+; wnd = advertised TCP window, bad/err = malformed NTBs/transfer errors).
+; Costs a few counters per frame and one line of board output per second;
+; invaluable for throughput debugging.
+DEBUG_STATS = 0
+
 include '../../struct.inc'
 
 ; USB descriptor types
@@ -77,7 +84,12 @@ REQ_GET_NTB_PARAMETERS     = 80h
 ; short-packet-terminated bulk IN transfers break the EHCI stack
 ; (tested on hardware: throughput collapses); NCM and ACM observe
 ; the same rule.
+; To still overlap USB reception with frame processing, the network RX
+; paths ping-pong between two buffers: the callback re-arms the pipe
+; with the other buffer BEFORE parsing the completed one (the completed
+; transfer is already off the queue, so at most one is outstanding).
 ECM_RX_BUF              = 2048
+CDC_RX_BUFFERS          = 2     ; ping-pong pair for the bulk IN pipe
 REQ_SET_NTB_INPUT_SIZE     = 86h
 REQ_SET_NTB_FORMAT         = 84h
 
@@ -101,7 +113,11 @@ NDP16_SIGNATURE_CRC     = 'NCM1'
 ; limits
 ETH_FRAME_MIN           = 60    ; minimal ethernet frame (without FCS)
 ETH_FRAME_MAX           = 1514  ; maximal ethernet frame (without FCS)
-NCM_TX_MAX_PENDING      = 8     ; max NTBs in flight on the bulk OUT pipe
+NCM_TX_MAX_PENDING      = 32    ; max NTBs in flight on the bulk OUT pipe
+                                ; (8 was too few: TX completions are reaped
+                                ; once per USB thread pass, ACK bursts on
+                                ; fast downloads overflowed the limit and
+                                ; dropped ACKs -> sender stalls)
 NCM_NTB_SANE_MAX        = 65536 ; clamp IN NTB size to this ceiling
 NCM_MAX_NDP_PER_NTB     = 16    ; guard against corrupt NDP chains
 NCM_NDP_ALIGN_MIN       = 4     ; wNdpOutAlignment/Divisor floor per NCM spec
@@ -109,6 +125,8 @@ NCM_NOTIF_BUF           = 64    ; notification buffer, holds one interrupt EP
                                 ; max packet (interrupt maxpacket is <= 64 here)
 ETH_HLEN                = 14    ; IEEE 802.3 header length
 ACM_TX_MAX_PENDING      = 16    ; max writes in flight per ACM port
+ACM_RX_MAX_ERRORS       = 8     ; consecutive RX errors before the read
+                                ; is no longer re-armed (anti error storm)
 ACM_TX_MAX_CHUNK        = 1024  ; max bytes per single WRITE ioctl
 ACM_RING_SIZE           = 8192  ; RX ring buffer per ACM port, power of 2
 ACM_RX_CHUNK            = 512   ; single bulk IN transfer size
@@ -212,8 +230,20 @@ struct ncm_dev          ETH_DEVICE
         Dead            dd      ?       ; set on disconnect/fatal error
         Registered      dd      ?       ; set after successful NetRegDev
 
-        RxBuf           dd      ?       ; NTB receive buffer (KernelAlloc)
-        RxSize          dd      ?       ; its size, NtbInMax rounded up to 64
+        RxBufs          rd      CDC_RX_BUFFERS ; NTB receive buffers (KernelAlloc)
+        RxSize          dd      ?       ; size of one buffer
+
+        ; statistics; the counters below the marker are always maintained,
+        ; the per-second ones only when DEBUG_STATS = 1
+        StatTicks       dd      ?       ; last print time, timer ticks
+        StatCb          dd      ?       ; RX callbacks since last print
+        StatFrames      dd      ?       ; RX frames since last print
+        StatBytes       dd      ?       ; RX bytes since last print
+        StatTxPkts      dd      ?       ; packets_tx snapshot at last print
+        StatWnd         dd      ?       ; TCP receive window we advertised
+                                        ; in the last outgoing TCP frame
+        StatBadNtb      dd      ?       ; malformed NTBs dropped (cumulative)
+        StatRxErr       dd      ?       ; bulk IN transfer errors (cumulative)
 
         EcmAlt          dd      ?       ; ECM only: alt setting of the data
                                         ; iface endpoints (0 = Huawei style)
@@ -251,6 +281,7 @@ struct acm_dev
         RxTail          dd      ?       ; read position (consumer = IOCTL)
         RxDrops         dd      ?       ; bytes dropped on ring overflow
         RxArmed         dd      ?       ; a bulk IN read is currently pending
+        RxErrRun        dd      ?       ; consecutive failed RX transfers
 
         RxChunk         rb      ACM_RX_CHUNK    ; bulk IN transfer buffer
 
@@ -290,7 +321,7 @@ proc START c, reason:dword, cmdline:dword
         mov     ecx, ports_mutex
         invoke  MutexInit
 
-        DEBUGF  2,"loading (CDC-NCM network + CDC-ACM serial)\n"
+        DEBUGF  2,"loading v5 (CDC-NCM network + CDC-ACM serial)\n"
         invoke  RegUSBDriver, my_service, service_proc, usb_functions
 
   .nothing:
@@ -990,41 +1021,46 @@ proc ncm_altset_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .
         jz      .fail
         mov     [ebx+ncm_dev.OutPipe], eax
 
-; 2. Allocate the NTB receive buffer (rounded up to whole packets).
+; 2. Allocate the NTB receive buffers (rounded up to whole packets).
+; Two buffers: the RX callback ping-pongs between them, re-arming the
+; pipe before parsing, so reception overlaps processing.
         mov     eax, [ebx+ncm_dev.NtbInMax]
         add     eax, 63
         and     eax, not 63
         mov     [ebx+ncm_dev.RxSize], eax
-        invoke  KernelAlloc, eax
+        xor     edi, edi
+  .alloc_loop:
+        invoke  KernelAlloc, [ebx+ncm_dev.RxSize]
         test    eax, eax
         jz      .fail
-        mov     [ebx+ncm_dev.RxBuf], eax
+        mov     [ebx+ncm_dev.RxBufs+edi*4], eax
+        inc     edi
+        cmp     edi, CDC_RX_BUFFERS
+        jb      .alloc_loop
 
 ; 3. Register in the network stack.
         push    ebx
         invoke  NetRegDev
         pop     ebx
         cmp     eax, -1
-        je      .fail_freebuf
+        je      .fail
         mov     [ebx+ncm_dev.Registered], 1
         DEBUGF  2,"NCM: registered as network device %u\n", eax
 
 ; 4. Arm the notification pipe and the NTB receive pipe.
+; (buffers not armed here are freed in DeviceDisconnected)
         call    ncm_arm_notify
         test    eax, eax
         jnz     @f
         DEBUGF  2,"NCM: failed to arm the notification pipe\n"
   @@:
-        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], [ebx+ncm_dev.RxBuf], \
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], [ebx+ncm_dev.RxBufs], \
                 [ebx+ncm_dev.RxSize], ncm_rx_callback, ebx, 1
         test    eax, eax
         jz      .fail
   .ret:
         ret
 
-  .fail_freebuf:
-        invoke  KernelFree, [ebx+ncm_dev.RxBuf]
-        mov     [ebx+ncm_dev.RxBuf], 0
   .fail:
         DEBUGF  2,"NCM: device init failed\n"
         mov     [ebx+ncm_dev.Dead], 1
@@ -1075,6 +1111,45 @@ proc ncm_notify_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .
 
 endp
 
+if DEBUG_STATS
+; Print transfer-rate statistics to the debug board about once a second
+; while traffic flows (called from the NCM and ECM RX callbacks).
+; cb/fr = USB transfers and frames per interval (RX), tx = frames sent
+; per interval (the TCP ACK clock on downloads), wnd = the TCP receive
+; window advertised in the last outgoing TCP frame (rwnd health).
+; IN: ebx = device context
+proc ncm_stats
+
+        push    eax ecx edx
+        invoke  GetTimerTicks
+        mov     ecx, [ebx+ncm_dev.StatTicks]
+        test    ecx, ecx
+        jz      .reset
+        mov     edx, eax
+        sub     edx, ecx
+        cmp     edx, 100                        ; print every 100 ticks = 1 s
+        jb      .done
+        mov     ecx, [ebx+ncm_dev.packets_tx]
+        sub     ecx, [ebx+ncm_dev.StatTxPkts]
+        DEBUGF  2,"stat %ut: cb %u fr %u B %u tx %u wnd %u txovr %u rxdrop %u bad %u err %u\n", \
+                edx, [ebx+ncm_dev.StatCb], [ebx+ncm_dev.StatFrames], \
+                [ebx+ncm_dev.StatBytes], ecx, [ebx+ncm_dev.StatWnd], \
+                [ebx+ncm_dev.packets_tx_ovr], [ebx+ncm_dev.packets_rx_drop], \
+                [ebx+ncm_dev.StatBadNtb], [ebx+ncm_dev.StatRxErr]
+        mov     [ebx+ncm_dev.StatCb], 0
+        mov     [ebx+ncm_dev.StatFrames], 0
+        mov     [ebx+ncm_dev.StatBytes], 0
+        mov     ecx, [ebx+ncm_dev.packets_tx]
+        mov     [ebx+ncm_dev.StatTxPkts], ecx
+  .reset:
+        mov     [ebx+ncm_dev.StatTicks], eax
+  .done:
+        pop     edx ecx eax
+        ret
+
+endp
+end if ; DEBUG_STATS
+
 ; Bulk IN callback: one NCM Transfer Block received. Unpack all
 ; datagrams, hand them to the network stack, re-arm the transfer.
 proc ncm_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
@@ -1085,6 +1160,7 @@ locals
         entry_ptr       dd      ?       ; pointer to current datagram entry
         entries_left    dd      ?
         ndp_crc         dd      ?       ; 4 if this NDP appends CRC-32, else 0
+        rearmed         dd      ?       ; the other buffer is already armed
 endl
 
         mov     ebx, [.calldata]
@@ -1097,11 +1173,34 @@ endl
         je      .ret
         cmp     [.status], USB_STATUS_STALL
         je      .stalled
+if DEBUG_STATS
+        inc     [ebx+ncm_dev.StatCb]
+end if
+
+; Re-arm the pipe with the other buffer BEFORE parsing this one: the
+; device streams the next NTB while the host walks the current buffer.
+; The completed transfer is already off the queue, so still at most one
+; transfer is outstanding (see the NB at the top of this file).
+        mov     [rearmed], 0
+        mov     eax, [ebx+ncm_dev.RxBufs]
+        cmp     eax, [.buffer]
+        jne     @f
+        mov     eax, [ebx+ncm_dev.RxBufs+4]
+  @@:
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], eax, \
+                [ebx+ncm_dev.RxSize], ncm_rx_callback, ebx, 1
+        test    eax, eax
+        jz      @f
+        mov     [rearmed], 1
+  @@:
         cmp     [.status], 0
-        jne     .rearm                          ; transient error: re-arm
+        je      @f
+        inc     [ebx+ncm_dev.StatRxErr]         ; transient error: don't parse
+        jmp     .rearm
+  @@:
 
 ; Validate the NTH16 header.
-        mov     esi, [ebx+ncm_dev.RxBuf]
+        mov     esi, [.buffer]
         cmp     [.length], 12
         jb      .rearm
         cmp     dword [esi], NTH16_SIGNATURE
@@ -1198,6 +1297,10 @@ endl
         add     dword [ebx+ncm_dev.bytes_rx], ecx
         adc     dword [ebx+ncm_dev.bytes_rx+4], 0
         inc     [ebx+ncm_dev.packets_rx]
+if DEBUG_STATS
+        inc     [ebx+ncm_dev.StatFrames]
+        add     [ebx+ncm_dev.StatBytes], ecx
+end if
         DEBUGF  1,"NCM: ->host datagram %u bytes\n", [edi+NET_BUFF.length]
 
 ; Hand the buffer to the network stack. EthInput consumes
@@ -1216,8 +1319,16 @@ endl
 
   .bad_ntb:
         DEBUGF  1,"NCM: malformed NTB dropped\n"
+        inc     [ebx+ncm_dev.StatBadNtb]
+; End of processing. If arming the other buffer failed at entry, fall
+; back to re-submitting the just-parsed buffer so receive does not stop.
   .rearm:
-        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], [ebx+ncm_dev.RxBuf], \
+if DEBUG_STATS
+        call    ncm_stats
+end if
+        cmp     [rearmed], 0
+        jne     .ret
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], [.buffer], \
                 [ebx+ncm_dev.RxSize], ncm_rx_callback, ebx, 1
         test    eax, eax
         jnz     .ret
@@ -1290,6 +1401,25 @@ endl
         ja      .err
         mov     [frame_len], ecx
         DEBUGF  1,"NCM: host-> frame %u bytes\n", ecx
+
+if DEBUG_STATS
+; stats: remember the TCP receive window we advertise (rwnd health on
+; downloads; parsed from the outgoing frame: eth+IPv4+TCP)
+        cmp     ecx, 54                         ; eth+min IP+min TCP
+        jb      @f
+        mov     eax, [esi+NET_BUFF.offset]
+        lea     eax, [esi+eax]                  ; frame start
+        cmp     word [eax+12], 0x0008           ; EtherType IPv4 (BE 08 00)
+        jne     @f
+        cmp     byte [eax+23], 6                ; IP protocol TCP
+        jne     @f
+        movzx   edx, byte [eax+14]
+        and     edx, 15                         ; IHL, dwords
+        movzx   edx, word [eax+edx*4+14+14]     ; TCP.Window, big-endian
+        xchg    dl, dh
+        mov     [ebx+ncm_dev.StatWnd], edx
+  @@:
+end if
 
 ; Limit the number of NTBs in flight.
         lock inc [ebx+ncm_dev.TxPending]
@@ -1688,17 +1818,24 @@ proc ecm_start
         jz      .fail
         mov     [ebx+ncm_dev.OutPipe], eax
 
+; two buffers: the RX callback ping-pongs between them, re-arming the
+; pipe before parsing, so reception overlaps processing
         mov     [ebx+ncm_dev.RxSize], ECM_RX_BUF
+        xor     edi, edi
+  .alloc_loop:
         invoke  KernelAlloc, ECM_RX_BUF
         test    eax, eax
         jz      .fail
-        mov     [ebx+ncm_dev.RxBuf], eax
+        mov     [ebx+ncm_dev.RxBufs+edi*4], eax
+        inc     edi
+        cmp     edi, CDC_RX_BUFFERS
+        jb      .alloc_loop
 
         push    ebx
         invoke  NetRegDev
         pop     ebx
         cmp     eax, -1
-        je      .fail_freebuf
+        je      .fail
         mov     [ebx+ncm_dev.Registered], 1
         DEBUGF  2,"ECM: registered as network device %u\n", eax
 
@@ -1721,16 +1858,14 @@ proc ecm_start
                 ecm_ctrl_callback, ebx, 0
 
 ; arm the notification pipe and the receive pipe
+; (buffers not armed here are freed in DeviceDisconnected)
         call    ncm_arm_notify
-        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], [ebx+ncm_dev.RxBuf], \
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], [ebx+ncm_dev.RxBufs], \
                 [ebx+ncm_dev.RxSize], ecm_rx_callback, ebx, 1
         test    eax, eax
         jz      .fail
         ret
 
-  .fail_freebuf:
-        invoke  KernelFree, [ebx+ncm_dev.RxBuf]
-        mov     [ebx+ncm_dev.RxBuf], 0
   .fail:
         DEBUGF  2,"ECM: device init failed\n"
         mov     [ebx+ncm_dev.Dead], 1
@@ -1751,6 +1886,10 @@ endp
 ; Bulk IN callback: the whole transfer is one raw ethernet frame.
 proc ecm_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
 
+locals
+        rearmed         dd      ?       ; the other buffer is already armed
+endl
+
         mov     ebx, [.calldata]
         DEBUGF  1,"ECM: RX cb st %u len %u\n", [.status], [.length]
         cmp     [ebx+ncm_dev.Dead], 0
@@ -1761,8 +1900,31 @@ proc ecm_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buff
         je      .ret
         cmp     [.status], USB_STATUS_STALL
         je      .stalled
+if DEBUG_STATS
+        inc     [ebx+ncm_dev.StatCb]
+end if
+
+; Re-arm the pipe with the other buffer BEFORE handing the frame to the
+; network stack: the device sends the next frame while the host is busy.
+; The completed transfer is already off the queue, so still at most one
+; transfer is outstanding (see the NB at the top of this file).
+        mov     [rearmed], 0
+        mov     eax, [ebx+ncm_dev.RxBufs]
+        cmp     eax, [.buffer]
+        jne     @f
+        mov     eax, [ebx+ncm_dev.RxBufs+4]
+  @@:
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], eax, \
+                [ebx+ncm_dev.RxSize], ecm_rx_callback, ebx, 1
+        test    eax, eax
+        jz      @f
+        mov     [rearmed], 1
+  @@:
         cmp     [.status], 0
-        jne     .rearm                          ; transient error: re-arm
+        je      @f
+        inc     [ebx+ncm_dev.StatRxErr]         ; transient error: don't parse
+        jmp     .rearm
+  @@:
 
         mov     ecx, [.length]
         cmp     ecx, 14
@@ -1798,6 +1960,10 @@ proc ecm_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buff
         add     dword [ebx+ncm_dev.bytes_rx], ecx
         adc     dword [ebx+ncm_dev.bytes_rx+4], 0
         inc     [ebx+ncm_dev.packets_rx]
+if DEBUG_STATS
+        inc     [ebx+ncm_dev.StatFrames]
+        add     [ebx+ncm_dev.StatBytes], ecx
+end if
         DEBUGF  1,"ECM: ->host frame %u bytes\n", [edi+NET_BUFF.length]
 
 ; hand the buffer to the network stack. EthInput consumes
@@ -1809,7 +1975,14 @@ proc ecm_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buff
   .eth_done:
         pop     esi ebx ebp
 
+; End of processing. If arming the other buffer failed at entry, fall
+; back to re-submitting the just-parsed buffer so receive does not stop.
   .rearm:
+if DEBUG_STATS
+        call    ncm_stats
+end if
+        cmp     [rearmed], 0
+        jne     .ret
         invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], [.buffer], \
                 [ebx+ncm_dev.RxSize], ecm_rx_callback, ebx, 1
         test    eax, eax
@@ -1857,6 +2030,25 @@ proc ecm_transmit stdcall bufferptr
         cmp     ecx, ETH_FRAME_MAX
         ja      .err
         DEBUGF  1,"ECM: host-> frame %u bytes\n", ecx
+
+if DEBUG_STATS
+; stats: remember the TCP receive window we advertise (rwnd health on
+; downloads; parsed from the outgoing frame: eth+IPv4+TCP)
+        cmp     ecx, 54                         ; eth+min IP+min TCP
+        jb      @f
+        mov     eax, [esi+NET_BUFF.offset]
+        lea     eax, [esi+eax]                  ; frame start
+        cmp     word [eax+12], 0x0008           ; EtherType IPv4 (BE 08 00)
+        jne     @f
+        cmp     byte [eax+23], 6                ; IP protocol TCP
+        jne     @f
+        movzx   edx, byte [eax+14]
+        and     edx, 15                         ; IHL, dwords
+        movzx   edx, word [eax+edx*4+14+14]     ; TCP.Window, big-endian
+        xchg    dl, dh
+        mov     [ebx+ncm_dev.StatWnd], edx
+  @@:
+end if
 
 ; limit the number of frames in flight
         lock inc [ebx+ncm_dev.TxPending]
@@ -2091,7 +2283,8 @@ proc acm_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buff
         cmp     [.status], USB_STATUS_STALL
         je      .dead
         cmp     [.status], 0
-        jne     .rearm
+        jne     .rx_error
+        mov     [ebx+acm_dev.RxErrRun], 0
 
         mov     ecx, [.length]
         test    ecx, ecx
@@ -2130,6 +2323,16 @@ proc acm_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buff
         mov     [ebx+acm_dev.RxArmed], 0        ; this read is done (RxChunk free)
         call    acm_arm_rx
         ret
+
+; A persistently failing pipe must not be re-armed in a tight loop: the
+; HC driver logs every failed TD, flooding the debug board and eating
+; CPU. Stop reading after several consecutive errors; opening the port
+; (PORT_OPEN ioctl) arms the read again, replugging resets everything.
+  .rx_error:
+        inc     [ebx+acm_dev.RxErrRun]
+        cmp     [ebx+acm_dev.RxErrRun], ACM_RX_MAX_ERRORS
+        jb      .rearm
+        DEBUGF  2,"ACM: port %u RX stopped after repeated errors\n", [ebx+acm_dev.PortIdx]
   .dead:
         mov     [ebx+acm_dev.RxArmed], 0
         ret
@@ -2221,10 +2424,16 @@ proc DeviceDisconnected stdcall uses ebx esi edi, .devdata:dword
         pop     ebx
         mov     [ebx+ncm_dev.Registered], 0
   @@:
-        cmp     [ebx+ncm_dev.RxBuf], 0
-        je      @f
-        invoke  KernelFree, [ebx+ncm_dev.RxBuf]
+        xor     esi, esi
+  .free_loop:
+        mov     eax, [ebx+ncm_dev.RxBufs+esi*4]
+        test    eax, eax
+        jz      @f
+        invoke  KernelFree, eax
   @@:
+        inc     esi
+        cmp     esi, CDC_RX_BUFFERS
+        jb      .free_loop
         mov     eax, ebx
         invoke  Kfree
         ret
