@@ -70,7 +70,7 @@ jobs:
           git config user.name  "kolibri-bot"
           git config user.email "bot@kolibrios.org"
           git checkout -B "$BRANCH"
-          git commit -m "$NAME: bump submodule to $WANT" -- "$PATH_"
+          git commit -m "chore/submodules: bump $NAME to $WANT" -- "$PATH_"
           git push -f origin "$BRANCH"
 
           # Open a PR via the Gitea API.
@@ -79,7 +79,7 @@ jobs:
           http=$(curl -sS -o /tmp/pr.json -w '%{http_code}' -X POST \
             -H "Authorization: token ${TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"head\":\"${BRANCH}\",\"base\":\"main\",\"title\":\"${NAME}: bump submodule to upstream\"}" \
+            -d "{\"head\":\"${BRANCH}\",\"base\":\"main\",\"title\":\"chore/submodules: bump ${NAME} to upstream\"}" \
             "${API}/repos/${REPO}/pulls")
           echo "PR API HTTP status: $http"
           cat /tmp/pr.json; echo
