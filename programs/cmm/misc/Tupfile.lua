@@ -1,8 +1,0 @@
-if tup.getconfig("NO_CMM") ~= "" then return end
-if tup.getconfig("LANG") == "ru_RU"
-then C_LANG = "LANG_RUS"
-elseif tup.getconfig("LANG") == "es_ES"
-then C_LANG = "LANG_SPA"
-else C_LANG = "LANG_ENG" -- this includes default case without config
-end
-tup.foreach_rule("*.c", "c-- /D=AUTOBUILD /D=$(C_LANG) /OPATH=%o %f" .. tup.getconfig("KPACK_CMD"), "%B.com")

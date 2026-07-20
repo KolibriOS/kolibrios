@@ -24,6 +24,8 @@ jobs:
             path: programs/develop/cmm
           - name: oberon07
             path: programs/develop/oberon07
+          - name: cmm_apps
+            path: programs/cmm
           - name: kterm
             path: programs/other/kterm
 

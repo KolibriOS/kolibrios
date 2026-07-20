@@ -1,6 +1,0 @@
-notes
-+ lorem ipsum dolor sit amet
-+ sed diam nonummy nibh euismod
-+ consectetuer adipiscing elit
-- Nunc viverra imperdiet
-- Pellentesque habitant morbi tristique
