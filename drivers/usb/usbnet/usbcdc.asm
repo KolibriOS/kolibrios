@@ -69,7 +69,25 @@ CDC_FUNC_NCM            = 1Ah
 
 ; CDC class-specific requests
 REQ_SET_CONTROL_LINE_STATE = 22h
+REQ_SET_ETH_PACKET_FILTER  = 43h
 REQ_GET_NTB_PARAMETERS     = 80h
+
+; CDC-ECM receive buffer: one raw ethernet frame per transfer.
+; NB: exactly ONE receive is armed at a time. Multiple outstanding
+; short-packet-terminated bulk IN transfers break the EHCI stack
+; (tested on hardware: throughput collapses); NCM and ACM observe
+; the same rule.
+ECM_RX_BUF              = 2048
+REQ_SET_NTB_INPUT_SIZE     = 86h
+REQ_SET_NTB_FORMAT         = 84h
+
+; SET_NTB_FORMAT wValue selectors
+NTB16_FORMAT               = 0
+NTB32_FORMAT               = 1
+
+; bmNtbFormatsSupported bits (NTB Parameter Structure offset 2)
+NTB16_SUPPORTED            = 1
+NTB32_SUPPORTED            = 2
 
 ; CDC notifications
 NOTIFY_NETWORK_CONNECTION  = 00h
@@ -84,8 +102,12 @@ NDP16_SIGNATURE_CRC     = 'NCM1'
 ETH_FRAME_MIN           = 60    ; minimal ethernet frame (without FCS)
 ETH_FRAME_MAX           = 1514  ; maximal ethernet frame (without FCS)
 NCM_TX_MAX_PENDING      = 8     ; max NTBs in flight on the bulk OUT pipe
-NCM_NTB_SANE_MAX        = 65536 ; refuse devices asking for larger NTBs
+NCM_NTB_SANE_MAX        = 65536 ; clamp IN NTB size to this ceiling
 NCM_MAX_NDP_PER_NTB     = 16    ; guard against corrupt NDP chains
+NCM_NDP_ALIGN_MIN       = 4     ; wNdpOutAlignment/Divisor floor per NCM spec
+NCM_NOTIF_BUF           = 64    ; notification buffer, holds one interrupt EP
+                                ; max packet (interrupt maxpacket is <= 64 here)
+ETH_HLEN                = 14    ; IEEE 802.3 header length
 ACM_TX_MAX_PENDING      = 16    ; max writes in flight per ACM port
 ACM_TX_MAX_CHUNK        = 1024  ; max bytes per single WRITE ioctl
 ACM_RING_SIZE           = 8192  ; RX ring buffer per ACM port, power of 2
@@ -176,8 +198,13 @@ struct ncm_dev          ETH_DEVICE
 
         iMacString      dd      ?       ; string descriptor index of the MAC
         MaxSegment      dd      ?       ; wMaxSegmentSize from ETH func descr
-        NtbInMax        dd      ?       ; dwNtbInMaxSize from NTB parameters
+        NtbInMax        dd      ?       ; IN NTB size we use (clamped)
         NtbOutMax       dd      ?       ; dwNtbOutMaxSize from NTB parameters
+        NtbInClamped    dd      ?       ; set if dwNtbInMaxSize exceeded our max
+        Ntb32           dd      ?       ; device also supports 32-bit NTBs
+
+        NdpOutOff       dd      ?       ; NDP16 offset in TX NTB (aligned)
+        DgramOutOff     dd      ?       ; datagram offset in TX NTB (aligned)
 
         TxSeq           dd      ?       ; NTH16 wSequence counter
         TxPending       dd      ?       ; NTBs currently in flight
@@ -188,9 +215,12 @@ struct ncm_dev          ETH_DEVICE
         RxBuf           dd      ?       ; NTB receive buffer (KernelAlloc)
         RxSize          dd      ?       ; its size, NtbInMax rounded up to 64
 
+        EcmAlt          dd      ?       ; ECM only: alt setting of the data
+                                        ; iface endpoints (0 = Huawei style)
+
         Setup           rb      8       ; setup packet for init requests
         CtrlBuf         rb      64      ; buffer for control request data
-        NotifBuf        rb      16      ; buffer for interrupt notifications
+        NotifBuf        rb      NCM_NOTIF_BUF   ; interrupt notification buffer
 
 ends
 
@@ -292,6 +322,8 @@ proc AddDevice stdcall uses ebx esi edi, .pipe0:dword, .config:dword, .interface
 
         cmp     [esi+interface_descr.bInterfaceSubClass], CDC_SUBCLASS_NCM
         je      .ncm
+        cmp     [esi+interface_descr.bInterfaceSubClass], CDC_SUBCLASS_ECM
+        je      .ecm
         cmp     [esi+interface_descr.bInterfaceSubClass], CDC_SUBCLASS_ACM
         jne     .decline
 ; RNDIS masquerades as ACM with bInterfaceProtocol = FFh; real ACM uses 0/1/2.
@@ -303,6 +335,10 @@ proc AddDevice stdcall uses ebx esi edi, .pipe0:dword, .config:dword, .interface
 
   .ncm:
         stdcall ncm_add_device, [.pipe0], [.config], esi
+        ret
+
+  .ecm:
+        stdcall ecm_add_device, [.pipe0], [.config], esi
         ret
 
   .decline:
@@ -536,9 +572,18 @@ proc ncm_add_device stdcall uses ebx esi edi, .pipe0:dword, .config:dword, .inte
         mov     eax, [edi+cdc_parse.EpOutSize]
         mov     [ebx+ncm_dev.EpOutSize], eax
 
-; 3. Fill the NET_DEVICE part.
+; 3. Fill the NET_DEVICE part. Cap the MTU at the device's wMaxSegmentSize
+; (NCM 3.6: the host shall not send a frame larger than the device supports).
         mov     [ebx+ncm_dev.type], NET_TYPE_ETH
-        mov     [ebx+ncm_dev.mtu], 1514
+        mov     eax, [ebx+ncm_dev.MaxSegment]
+        test    eax, eax
+        jz      .mtu_default
+        cmp     eax, ETH_FRAME_MAX
+        jb      @f
+  .mtu_default:
+        mov     eax, ETH_FRAME_MAX
+  @@:
+        mov     [ebx+ncm_dev.mtu], eax
         mov     [ebx+ncm_dev.name], netdev_name
         mov     [ebx+ncm_dev.unload], ncm_unload
         mov     [ebx+ncm_dev.reset], ncm_reset
@@ -699,14 +744,21 @@ proc ncm_ntbparams_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword
         jb      .fail
 
         lea     esi, [ebx+ncm_dev.CtrlBuf]
-        test    word [esi+2], 1                 ; bmNtbFormatsSupported: NTB16
+        movzx   eax, word [esi+2]               ; bmNtbFormatsSupported
+        test    eax, NTB16_SUPPORTED            ; NTB16 is mandatory
         jz      .fail
-
+        test    eax, NTB32_SUPPORTED
+        jz      @f
+        mov     [ebx+ncm_dev.Ntb32], 1
+  @@:
         mov     eax, [esi+4]                    ; dwNtbInMaxSize
         cmp     eax, ETH_FRAME_MAX + 28
         jb      .fail
         cmp     eax, NCM_NTB_SANE_MAX
-        ja      .fail
+        jbe     .in_ok
+        mov     eax, NCM_NTB_SANE_MAX           ; clamp oversized request...
+        mov     [ebx+ncm_dev.NtbInClamped], 1   ; ...and inform the device below
+  .in_ok:
         mov     [ebx+ncm_dev.NtbInMax], eax
 
         mov     eax, [esi+16]                   ; dwNtbOutMaxSize
@@ -714,20 +766,36 @@ proc ncm_ntbparams_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword
         jb      .fail
         mov     [ebx+ncm_dev.NtbOutMax], eax
 
-        DEBUGF  2,"NCM: NTB sizes: in %u, out %u\n", [ebx+ncm_dev.NtbInMax], [ebx+ncm_dev.NtbOutMax]
+; Honor the OUT alignment the device advertises (NCM 3.3.4): wNdpOutAlignment
+; (offset 24) for the NDP, wNdpOutDivisor/Remainder (20/22) for the payload.
+        movzx   ecx, word [esi+24]              ; wNdpOutAlignment
+        movzx   edx, word [esi+20]              ; wNdpOutDivisor
+        movzx   eax, word [esi+22]              ; wNdpOutPayloadRemainder
+        stdcall ncm_compute_tx_offsets, ecx, edx, eax
 
-; Init chain step 3: SET_INTERFACE(data interface, alt 1) enables the
-; data endpoints; per the NCM spec alt setting 0 has no endpoints.
+        DEBUGF  2,"NCM: NTB in %u out %u, TX ndp@%u dgram@%u\n",\
+                [ebx+ncm_dev.NtbInMax], [ebx+ncm_dev.NtbOutMax],\
+                [ebx+ncm_dev.NdpOutOff], [ebx+ncm_dev.DgramOutOff]
+
+; Init chain step 3: force NTB-16 format, but only if the device also offers
+; NTB-32 (the spec forbids issuing SET_NTB_FORMAT to NTB16-only functions).
+        cmp     [ebx+ncm_dev.Ntb32], 0
+        je      .no_setfmt
         lea     esi, [ebx+ncm_dev.Setup]
-        mov     byte [esi], 01h                 ; OUT, standard, interface
-        mov     byte [esi+1], 0Bh               ; SET_INTERFACE
-        mov     word [esi+2], 1                 ; wValue = alt setting 1
-        mov     eax, [ebx+ncm_dev.DataItf]
-        mov     word [esi+4], ax                ; wIndex = data interface
+        mov     byte [esi], 21h                 ; OUT, class, interface
+        mov     byte [esi+1], REQ_SET_NTB_FORMAT
+        mov     word [esi+2], NTB16_FORMAT      ; wValue
+        mov     eax, [ebx+ncm_dev.CtrlItf]
+        mov     word [esi+4], ax                ; wIndex = control interface
         mov     word [esi+6], 0                 ; wLength
-
         invoke  USBControlTransferAsync, [ebx+ncm_dev.ConfigPipe], esi, 0, 0, \
-                ncm_altset_callback, ebx, 0
+                ncm_setfmt_callback, ebx, 0
+        test    eax, eax
+        jz      .fail
+        ret
+
+  .no_setfmt:
+        stdcall ncm_after_format, ebx
         test    eax, eax
         jz      .fail
   .ret:
@@ -738,6 +806,159 @@ proc ncm_ntbparams_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword
         mov     [ebx+ncm_dev.Dead], 1
         ret
 
+endp
+
+; SET_NTB_FORMAT completed. A stall is not fatal here (the device keeps its
+; current format, which defaults to NTB-16 after the alt-0 reset); continue.
+proc ncm_setfmt_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+        mov     ebx, [.calldata]
+        cmp     [ebx+ncm_dev.Dead], 0
+        jne     .ret
+        stdcall ncm_after_format, ebx
+        test    eax, eax
+        jnz     .ret
+        DEBUGF  2,"NCM: init step after SET_NTB_FORMAT failed\n"
+        mov     [ebx+ncm_dev.Dead], 1
+  .ret:
+        ret
+endp
+
+; If dwNtbInMaxSize was clamped, tell the device the IN NTB size we accept
+; (SET_NTB_INPUT_SIZE, a mandatory request). Otherwise go straight to
+; SET_INTERFACE. Returns eax = submit result (0 on failure).
+proc ncm_after_format stdcall uses ebx esi edi, .dev:dword
+        mov     ebx, [.dev]
+        cmp     [ebx+ncm_dev.NtbInClamped], 0
+        je      .setiface
+        lea     esi, [ebx+ncm_dev.Setup]
+        mov     byte [esi], 21h                 ; OUT, class, interface
+        mov     byte [esi+1], REQ_SET_NTB_INPUT_SIZE
+        mov     word [esi+2], 0                 ; wValue
+        mov     eax, [ebx+ncm_dev.CtrlItf]
+        mov     word [esi+4], ax                ; wIndex = control interface
+        mov     word [esi+6], 4                 ; wLength = 4 (dwNtbInMaxSize)
+        mov     eax, [ebx+ncm_dev.NtbInMax]
+        lea     edx, [ebx+ncm_dev.CtrlBuf]
+        mov     [edx], eax                      ; data phase = dwNtbInMaxSize
+        invoke  USBControlTransferAsync, [ebx+ncm_dev.ConfigPipe], esi, edx, 4, \
+                ncm_setinput_callback, ebx, 0
+        ret
+  .setiface:
+        stdcall ncm_submit_setiface, ebx
+        ret
+endp
+
+; SET_NTB_INPUT_SIZE completed; proceed to SET_INTERFACE. A benign stall is
+; ignored (our RX buffer is already sized to the clamped value).
+proc ncm_setinput_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+        mov     ebx, [.calldata]
+        cmp     [ebx+ncm_dev.Dead], 0
+        jne     .ret
+        stdcall ncm_submit_setiface, ebx
+        test    eax, eax
+        jnz     .ret
+        DEBUGF  2,"NCM: SET_INTERFACE submit failed\n"
+        mov     [ebx+ncm_dev.Dead], 1
+  .ret:
+        ret
+endp
+
+; Submit SET_INTERFACE(data iface, alt 1); the data endpoints live in alt 1
+; (alt 0 has none). Returns eax = submit result. IN: .dev = ncm_dev.
+proc ncm_submit_setiface stdcall uses ebx esi edi, .dev:dword
+        mov     ebx, [.dev]
+        lea     esi, [ebx+ncm_dev.Setup]
+        mov     byte [esi], 01h                 ; OUT, standard, interface
+        mov     byte [esi+1], 0Bh               ; SET_INTERFACE
+        mov     word [esi+2], 1                 ; wValue = alt setting 1
+        mov     eax, [ebx+ncm_dev.DataItf]
+        mov     word [esi+4], ax                ; wIndex = data interface
+        mov     word [esi+6], 0                 ; wLength
+        invoke  USBControlTransferAsync, [ebx+ncm_dev.ConfigPipe], esi, 0, 0, \
+                ncm_altset_callback, ebx, 0
+        ret
+endp
+
+; Compute the OUT NTB layout satisfying the device's alignment constraints.
+; NDP16 is placed at the first .align-aligned offset >= 12 (sizeof NTH16);
+; the datagram is placed so its payload (after the 14-byte Ethernet header)
+; lands at offset % divisor == remainder. Computed once, reused per transmit.
+; IN: ebx = ncm_dev. args: wNdpOutAlignment, wNdpOutDivisor, remainder.
+proc ncm_compute_tx_offsets stdcall uses esi, .align:dword, .divisor:dword, .remainder:dword
+        mov     eax, [.align]
+        call    ncm_sane_pow2
+        mov     [.align], eax
+        mov     eax, [.divisor]
+        call    ncm_sane_pow2
+        mov     [.divisor], eax
+        mov     eax, [.remainder]               ; remainder must be < divisor
+        cmp     eax, [.divisor]
+        jb      @f
+        xor     eax, eax
+  @@:
+        mov     [.remainder], eax
+
+; NdpOutOff = round_up(12, align)
+        mov     ecx, [.align]
+        dec     ecx                             ; align-1 mask
+        mov     eax, 12
+        add     eax, ecx
+        not     ecx
+        and     eax, ecx
+        mov     [ebx+ncm_dev.NdpOutOff], eax
+
+; base = NdpOutOff + 16 (sizeof NDP16 = one entry + terminator)
+        add     eax, 16
+        mov     esi, eax                        ; esi = base
+; target datagram residue = (remainder - ETH_HLEN) and (divisor-1)
+        mov     ecx, [.divisor]
+        dec     ecx                             ; divisor-1 mask
+        mov     edx, [.remainder]
+        sub     edx, ETH_HLEN
+        and     edx, ecx                        ; edx = wanted residue
+        mov     eax, esi
+        and     eax, ecx                        ; eax = base mod divisor
+        sub     edx, eax
+        and     edx, ecx                        ; edx = padding to insert
+        add     esi, edx
+        mov     [ebx+ncm_dev.DgramOutOff], esi
+        ret
+endp
+
+; Force eax to a power of two that is at least NCM_NDP_ALIGN_MIN. Clobbers edx.
+proc ncm_sane_pow2
+        cmp     eax, NCM_NDP_ALIGN_MIN
+        jb      .default
+        mov     edx, eax                        ; power-of-two test: v and (v-1)
+        dec     edx
+        test    eax, edx
+        jz      .ok
+  .default:
+        mov     eax, NCM_NDP_ALIGN_MIN
+  .ok:
+        ret
+endp
+
+; Arm the interrupt IN pipe for one notification. The transfer length is the
+; endpoint's max packet size (not a fixed 16): on a small interrupt EP an
+; 8-byte notification is a full, non-short packet that would never complete a
+; larger request. IN: ebx = ncm_dev. Returns eax = submit result.
+proc ncm_arm_notify
+        push    ecx edx
+        mov     ecx, [ebx+ncm_dev.EpNotifySize]
+        test    ecx, ecx
+        jnz     @f
+        mov     ecx, 16                         ; defensive default
+  @@:
+        cmp     ecx, NCM_NOTIF_BUF
+        jbe     @f
+        mov     ecx, NCM_NOTIF_BUF
+  @@:
+        lea     edx, [ebx+ncm_dev.NotifBuf]
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.NotifyPipe], edx, ecx, \
+                ncm_notify_callback, ebx, 1
+        pop     edx ecx
+        ret
 endp
 
 ; Init chain step 3 done: data interface switched to alt setting 1.
@@ -789,9 +1010,7 @@ proc ncm_altset_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .
         DEBUGF  2,"NCM: registered as network device %u\n", eax
 
 ; 4. Arm the notification pipe and the NTB receive pipe.
-        lea     edx, [ebx+ncm_dev.NotifBuf]
-        invoke  USBNormalTransferAsync, [ebx+ncm_dev.NotifyPipe], edx, 16, \
-                ncm_notify_callback, ebx, 1
+        call    ncm_arm_notify
         test    eax, eax
         jnz     @f
         DEBUGF  2,"NCM: failed to arm the notification pipe\n"
@@ -850,9 +1069,7 @@ proc ncm_notify_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .
         pop     ebx
 
   .rearm:
-        lea     edx, [ebx+ncm_dev.NotifBuf]
-        invoke  USBNormalTransferAsync, [ebx+ncm_dev.NotifyPipe], edx, 16, \
-                ncm_notify_callback, ebx, 1
+        call    ncm_arm_notify
   .ret:
         ret
 
@@ -867,6 +1084,7 @@ locals
         ndp_count       dd      ?       ; NDPs walked, guards corrupt chains
         entry_ptr       dd      ?       ; pointer to current datagram entry
         entries_left    dd      ?
+        ndp_crc         dd      ?       ; 4 if this NDP appends CRC-32, else 0
 endl
 
         mov     ebx, [.calldata]
@@ -908,10 +1126,12 @@ endl
         lea     edx, [eax+8]
         cmp     edx, [.length]
         ja      .rearm                          ; NDP header out of bounds
+        mov     [ndp_crc], 0
         cmp     dword [esi+eax], NDP16_SIGNATURE_NOCRC
         je      .ndp_ok
         cmp     dword [esi+eax], NDP16_SIGNATURE_CRC
         jne     .rearm
+        mov     [ndp_crc], 4                    ; NCM1: datagrams carry a CRC-32
   .ndp_ok:
         movzx   ecx, word [esi+eax+4]           ; wLength of the NDP
         cmp     ecx, 16
@@ -940,10 +1160,11 @@ endl
         jz      .ndp_loop                       ; terminating entry
         test    ecx, ecx
         jz      .ndp_loop
-; bounds check: the datagram must lie inside the transfer
+; bounds check: the datagram (with its CRC, if any) must lie in the transfer
         lea     edx, [eax+ecx]
         cmp     edx, [.length]
         ja      .entry_loop
+        sub     ecx, [ndp_crc]                  ; drop the trailing CRC-32
         cmp     ecx, 14
         jb      .entry_loop                     ; runt, ignore
         cmp     ecx, ETH_FRAME_MAX + 4
@@ -1048,6 +1269,13 @@ endp
 align 4
 proc ncm_transmit stdcall bufferptr
 
+locals
+        frame_len       dd      ?       ; original ethernet frame length
+        payload_len     dd      ?       ; padded up to ETH_FRAME_MIN
+        block_len       dd      ?       ; total NTB length
+        alloc_ptr       dd      ?       ; Kmalloc result: [ctx dword][NTB]
+endl
+
         push    esi edi
 
         mov     esi, [bufferptr]
@@ -1060,6 +1288,7 @@ proc ncm_transmit stdcall bufferptr
         jb      .err
         cmp     ecx, ETH_FRAME_MAX
         ja      .err
+        mov     [frame_len], ecx
         DEBUGF  1,"NCM: host-> frame %u bytes\n", ecx
 
 ; Limit the number of NTBs in flight.
@@ -1073,25 +1302,44 @@ proc ncm_transmit stdcall bufferptr
         jae     @f
         mov     edx, ETH_FRAME_MIN
   @@:
-; Total block size; avoid multiples of the endpoint packet size so
-; that the transfer ends in a short packet on the device side.
-        lea     eax, [edx+28]
+        mov     [payload_len], edx
+
+; Block size = datagram offset (device-aligned) + padded payload. Avoid an
+; exact multiple of the endpoint packet size so the transfer ends short.
+        mov     eax, [ebx+ncm_dev.DgramOutOff]
+        add     eax, edx
         mov     edi, [ebx+ncm_dev.EpOutSize]
         dec     edi
         test    eax, edi
         jnz     @f
         add     eax, 2
   @@:
-; Allocate [context dword][NTB].
-        push    ecx edx eax                     ; frame len, payload len, block len
+        mov     [block_len], eax
+
+; Never emit an NTB larger than the device's dwNtbOutMaxSize (NCM 3.4).
+        cmp     eax, [ebx+ncm_dev.NtbOutMax]
+        jbe     @f
+        lock dec [ebx+ncm_dev.TxPending]
+        jmp     .err
+  @@:
+; Allocate [context dword][NTB] and zero the NTB (alignment gaps included).
         add     eax, 4
         invoke  Kmalloc
-        pop     edx                             ; edx = block length
         test    eax, eax
         jz      .no_memory
-        mov     edi, eax
-        mov     [edi], ebx                      ; context for the callback
-        add     edi, 4                          ; edi = NTB start
+        mov     [alloc_ptr], eax
+        mov     [eax], ebx                      ; context for the callback
+        lea     edi, [eax+4]                    ; edi = NTB start
+
+        push    edi
+        mov     ecx, [block_len]
+        xor     eax, eax
+        shr     ecx, 2
+        rep stosd
+        mov     ecx, [block_len]
+        and     ecx, 3
+        rep stosb
+        pop     edi
 
 ; Build the NTH16.
         mov     dword [edi], NTH16_SIGNATURE
@@ -1099,42 +1347,43 @@ proc ncm_transmit stdcall bufferptr
         mov     eax, 1
         lock xadd [ebx+ncm_dev.TxSeq], eax
         mov     word [edi+6], ax                ; wSequence
-        mov     word [edi+8], dx                ; wBlockLength
-        mov     word [edi+10], 12               ; wNdpIndex
+        mov     eax, [block_len]
+        mov     word [edi+8], ax                ; wBlockLength
+        mov     eax, [ebx+ncm_dev.NdpOutOff]
+        mov     word [edi+10], ax               ; wNdpIndex
 
-; Build the NDP16 with a single datagram entry.
-        pop     ecx                             ; ecx = padded payload size
-        mov     dword [edi+12], NDP16_SIGNATURE_NOCRC
-        mov     word [edi+16], 16               ; wLength
-        mov     word [edi+18], 0                ; wNextNdpIndex
-        mov     word [edi+20], 28               ; wDatagramIndex
-        mov     word [edi+22], cx               ; wDatagramLength
-        mov     dword [edi+24], 0               ; terminating entry
+; Build the NDP16 (single datagram entry + terminator) at NdpOutOff.
+        mov     esi, edi
+        add     esi, [ebx+ncm_dev.NdpOutOff]
+        mov     dword [esi], NDP16_SIGNATURE_NOCRC
+        mov     word [esi+4], 16                ; wLength
+        mov     word [esi+6], 0                 ; wNextNdpIndex
+        mov     eax, [ebx+ncm_dev.DgramOutOff]
+        mov     word [esi+8], ax                ; wDatagramIndex
+        mov     eax, [payload_len]
+        mov     word [esi+10], ax               ; wDatagramLength
+        mov     dword [esi+12], 0               ; terminating entry
 
-; Copy the frame and zero the padding after it.
-        push    esi edi
-        mov     eax, [esi+NET_BUFF.length]
+; Copy the frame to DgramOutOff (all padding was zeroed above).
+        mov     esi, [bufferptr]
+        mov     ecx, [esi+NET_BUFF.length]
         add     esi, [esi+NET_BUFF.offset]
-        add     edi, 28
-        sub     edx, 28                         ; edx = block len - headers
-        mov     ecx, eax
+        mov     edi, [alloc_ptr]
+        add     edi, 4
+        add     edi, [ebx+ncm_dev.DgramOutOff]
         rep movsb
-        sub     edx, eax                        ; bytes of padding to zero
-        mov     ecx, edx
-        xor     eax, eax
-        rep stosb
-        pop     edi esi
 
 ; Submit the transfer: buffer = NTB, calldata = allocation start.
-        movzx   edx, word [edi+8]               ; wBlockLength
-        lea     eax, [edi-4]
-        invoke  USBNormalTransferAsync, [ebx+ncm_dev.OutPipe], edi, edx, \
-                ncm_tx_callback, eax, 0
+        mov     edi, [alloc_ptr]
+        lea     eax, [edi+4]                    ; NTB start
+        mov     edx, [block_len]
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.OutPipe], eax, edx, \
+                ncm_tx_callback, edi, 0
         test    eax, eax
         jz      .submit_failed
 
 ; Update statistics, free the NET_BUFF, report success.
-        pop     ecx                             ; original frame length
+        mov     ecx, [frame_len]
         add     dword [ebx+ncm_dev.bytes_tx], ecx
         adc     dword [ebx+ncm_dev.bytes_tx+4], 0
         inc     [ebx+ncm_dev.packets_tx]
@@ -1144,14 +1393,12 @@ proc ncm_transmit stdcall bufferptr
         ret
 
   .submit_failed:
-        lea     eax, [edi-4]
+        mov     eax, [alloc_ptr]
         invoke  Kfree
-        pop     ecx
         lock dec [ebx+ncm_dev.TxPending]
         jmp     .err
 
   .no_memory:
-        pop     eax ecx                         ; drop saved payload/frame sizes
         lock dec [ebx+ncm_dev.TxPending]
         jmp     .err
 
@@ -1181,6 +1428,517 @@ align 4
 ncm_reset:
         xor     eax, eax
         ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;;                      CDC-ECM network device                     ;;
+;;                                                                 ;;
+;; The same skeleton as NCM, but frames travel raw on the bulk     ;;
+;; pipes: one transfer = one ethernet frame, no NTB wrapping.      ;;
+;; Per the spec the data endpoints live in alt setting 1, but      ;;
+;; some devices (Huawei HiLink modems) expose them right in the    ;;
+;; default alt setting 0. Reuses the ncm_dev context, the NCM      ;;
+;; notification path and the NCM transmit callback.                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+proc ecm_add_device stdcall uses ebx esi edi, .pipe0:dword, .config:dword, .interface:dword
+
+locals
+        dataalt         dd      ?       ; alt setting the endpoints live in
+endl
+
+; 1. Parse the descriptors: try alt setting 0 first (Huawei style),
+; then the spec-conforming alt setting 1.
+        mov     [dataalt], 0
+        xor     eax, eax
+        call    parse_prepare
+        stdcall parse_cdc_function, [.config], [.interface]
+        test    eax, eax
+        jnz     .parsed
+        mov     [dataalt], 1
+        mov     eax, 1
+        call    parse_prepare
+        stdcall parse_cdc_function, [.config], [.interface]
+        test    eax, eax
+        jz      .no_parse
+  .parsed:
+        cmp     [edi+cdc_parse.iMacString], 0   ; MAC string is mandatory
+        je      .no_parse
+        cmp     [edi+cdc_parse.EpNotify], 0     ; notify EP is mandatory
+        je      .no_parse
+
+; 2. Allocate and clear the device context (shared with NCM).
+        mov     eax, sizeof.ncm_dev
+        invoke  Kmalloc
+        test    eax, eax
+        jz      .no_memory
+        mov     ebx, eax
+
+        push    edi
+        mov     edi, ebx
+        mov     ecx, sizeof.ncm_dev/4
+        xor     eax, eax
+        rep stosd
+        pop     edi
+
+        mov     eax, [.pipe0]
+        mov     [ebx+ncm_dev.ConfigPipe], eax
+        mov     esi, [.interface]
+        movzx   eax, [esi+interface_descr.bInterfaceNumber]
+        mov     [ebx+ncm_dev.CtrlItf], eax
+        mov     eax, [edi+cdc_parse.DataItf]
+        mov     [ebx+ncm_dev.DataItf], eax
+        mov     eax, [edi+cdc_parse.iMacString]
+        mov     [ebx+ncm_dev.iMacString], eax
+        mov     eax, [edi+cdc_parse.MaxSegment]
+        mov     [ebx+ncm_dev.MaxSegment], eax
+        mov     eax, [edi+cdc_parse.EpNotify]
+        mov     [ebx+ncm_dev.EpNotify], eax
+        mov     eax, [edi+cdc_parse.EpNotifySize]
+        mov     [ebx+ncm_dev.EpNotifySize], eax
+        mov     eax, [edi+cdc_parse.EpNotifyIvl]
+        mov     [ebx+ncm_dev.EpNotifyIvl], eax
+        mov     eax, [edi+cdc_parse.EpIn]
+        mov     [ebx+ncm_dev.EpIn], eax
+        mov     eax, [edi+cdc_parse.EpInSize]
+        mov     [ebx+ncm_dev.EpInSize], eax
+        mov     eax, [edi+cdc_parse.EpOut]
+        mov     [ebx+ncm_dev.EpOut], eax
+        mov     eax, [edi+cdc_parse.EpOutSize]
+        mov     [ebx+ncm_dev.EpOutSize], eax
+        mov     eax, [dataalt]
+        mov     [ebx+ncm_dev.EcmAlt], eax
+
+; 3. Fill the NET_DEVICE part (MTU capped at wMaxSegmentSize).
+        mov     [ebx+ncm_dev.type], NET_TYPE_ETH
+        mov     eax, [ebx+ncm_dev.MaxSegment]
+        test    eax, eax
+        jz      .mtu_default
+        cmp     eax, ETH_FRAME_MAX
+        jb      @f
+  .mtu_default:
+        mov     eax, ETH_FRAME_MAX
+  @@:
+        mov     [ebx+ncm_dev.mtu], eax
+        mov     [ebx+ncm_dev.name], ecm_netdev_name
+        mov     [ebx+ncm_dev.unload], ncm_unload
+        mov     [ebx+ncm_dev.reset], ncm_reset
+        mov     [ebx+ncm_dev.transmit], ecm_transmit
+        mov     [ebx+ncm_dev.state], ETH_LINK_DOWN
+
+        DEBUGF  2,"ECM: ctrl itf %u, data itf %u (alt %u), EP in %x out %x notify %x\n",\
+                [ebx+ncm_dev.CtrlItf], [ebx+ncm_dev.DataItf], [ebx+ncm_dev.EcmAlt],\
+                [ebx+ncm_dev.EpIn], [ebx+ncm_dev.EpOut], [ebx+ncm_dev.EpNotify]
+
+; 4. Read the MAC address string descriptor.
+        lea     esi, [ebx+ncm_dev.Setup]
+        mov     byte [esi], 80h                 ; IN, standard, device
+        mov     byte [esi+1], 6                 ; GET_DESCRIPTOR
+        mov     eax, [ebx+ncm_dev.iMacString]
+        mov     byte [esi+2], al                ; wValue low = string index
+        mov     byte [esi+3], STRING_DESCR_TYPE ; wValue high = type
+        mov     word [esi+4], 0x0409            ; wIndex = langid en-US
+        mov     word [esi+6], 64                ; wLength
+
+        lea     edx, [ebx+ncm_dev.CtrlBuf]
+        invoke  USBControlTransferAsync, [ebx+ncm_dev.ConfigPipe], esi, edx, 64, \
+                ecm_mac_callback, ebx, 1
+        test    eax, eax
+        jz      .transfer_failed
+
+; Return the context. Even if the init chain fails later, the context
+; stays alive so that DeviceDisconnected can clean up properly.
+        mov     eax, ebx
+        ret
+
+  .transfer_failed:
+        DEBUGF  2,"ECM: control transfer submission failed\n"
+        mov     eax, ebx
+        invoke  Kfree
+        xor     eax, eax
+        ret
+
+  .no_parse:
+        DEBUGF  2,"ECM: incomplete descriptors, ignoring device\n"
+        xor     eax, eax
+        ret
+
+  .no_memory:
+        DEBUGF  2,"ECM: out of memory\n"
+        xor     eax, eax
+        ret
+
+endp
+
+; The MAC string descriptor has been read; parse it, then either enable
+; the data interface (alt setting 1) or start the device right away.
+proc ecm_mac_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+
+        mov     ebx, [.calldata]
+        cmp     [ebx+ncm_dev.Dead], 0
+        jne     .ret
+        cmp     [.status], 0
+        jne     .fail
+        cmp     [.length], 8 + 2 + 12*2
+        jb      .fail
+
+        lea     esi, [ebx+ncm_dev.CtrlBuf]
+        cmp     byte [esi+1], STRING_DESCR_TYPE
+        jne     .fail
+        movzx   ecx, byte [esi]                 ; bLength
+        cmp     ecx, 2 + 12*2
+        jb      .fail
+
+; Parse 12 hex UTF-16LE characters into 6 MAC bytes.
+        add     esi, 2
+        lea     edi, [ebx+ncm_dev.mac]
+        mov     ecx, 6
+  .mac_loop:
+        mov     ax, word [esi]
+        test    ah, ah
+        jnz     .fail
+        call    hexdigit
+        jc      .fail
+        shl     al, 4
+        mov     dl, al
+        mov     ax, word [esi+2]
+        test    ah, ah
+        jnz     .fail
+        call    hexdigit
+        jc      .fail
+        or      dl, al
+        mov     [edi], dl
+        add     esi, 4
+        inc     edi
+        dec     ecx
+        jnz     .mac_loop
+
+        DEBUGF  2,"ECM: MAC %x-%x-%x-%x-%x-%x\n",\
+                [ebx+ncm_dev.mac+0]:2,[ebx+ncm_dev.mac+1]:2,[ebx+ncm_dev.mac+2]:2,\
+                [ebx+ncm_dev.mac+3]:2,[ebx+ncm_dev.mac+4]:2,[ebx+ncm_dev.mac+5]:2
+
+        cmp     [ebx+ncm_dev.EcmAlt], 0
+        je      .start                          ; endpoints live in alt 0
+
+; standard ECM: select alt setting 1 of the data interface
+        lea     esi, [ebx+ncm_dev.Setup]
+        mov     byte [esi], 01h                 ; OUT, standard, interface
+        mov     byte [esi+1], 0Bh               ; SET_INTERFACE
+        mov     word [esi+2], 1                 ; wValue = alt setting 1
+        mov     eax, [ebx+ncm_dev.DataItf]
+        mov     word [esi+4], ax                ; wIndex = data interface
+        mov     word [esi+6], 0
+        invoke  USBControlTransferAsync, [ebx+ncm_dev.ConfigPipe], esi, 0, 0, \
+                ecm_altset_callback, ebx, 0
+        test    eax, eax
+        jz      .fail
+        ret
+
+  .start:
+        call    ecm_start
+  .ret:
+        ret
+
+  .fail:
+        DEBUGF  2,"ECM: reading MAC address failed\n"
+        mov     [ebx+ncm_dev.Dead], 1
+        ret
+
+endp
+
+; SET_INTERFACE(alt 1) completed: the data endpoints are live now.
+proc ecm_altset_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+
+        mov     ebx, [.calldata]
+        cmp     [ebx+ncm_dev.Dead], 0
+        jne     .ret
+        cmp     [.status], 0
+        jne     .fail
+        call    ecm_start
+  .ret:
+        ret
+
+  .fail:
+        DEBUGF  2,"ECM: SET_INTERFACE failed\n"
+        mov     [ebx+ncm_dev.Dead], 1
+        ret
+
+endp
+
+; Open the pipes, register in the network stack, start receiving.
+; IN: ebx = device context
+proc ecm_start
+
+        invoke  USBOpenPipe, [ebx+ncm_dev.ConfigPipe], [ebx+ncm_dev.EpNotify], \
+                [ebx+ncm_dev.EpNotifySize], INTERRUPT_PIPE, [ebx+ncm_dev.EpNotifyIvl]
+        test    eax, eax
+        jz      .fail
+        mov     [ebx+ncm_dev.NotifyPipe], eax
+
+        invoke  USBOpenPipe, [ebx+ncm_dev.ConfigPipe], [ebx+ncm_dev.EpIn], \
+                [ebx+ncm_dev.EpInSize], BULK_PIPE, 0
+        test    eax, eax
+        jz      .fail
+        mov     [ebx+ncm_dev.InPipe], eax
+
+        invoke  USBOpenPipe, [ebx+ncm_dev.ConfigPipe], [ebx+ncm_dev.EpOut], \
+                [ebx+ncm_dev.EpOutSize], BULK_PIPE, 0
+        test    eax, eax
+        jz      .fail
+        mov     [ebx+ncm_dev.OutPipe], eax
+
+        mov     [ebx+ncm_dev.RxSize], ECM_RX_BUF
+        invoke  KernelAlloc, ECM_RX_BUF
+        test    eax, eax
+        jz      .fail
+        mov     [ebx+ncm_dev.RxBuf], eax
+
+        push    ebx
+        invoke  NetRegDev
+        pop     ebx
+        cmp     eax, -1
+        je      .fail_freebuf
+        mov     [ebx+ncm_dev.Registered], 1
+        DEBUGF  2,"ECM: registered as network device %u\n", eax
+
+; a gadget bridge is up until the device indicates otherwise
+        mov     [ebx+ncm_dev.state], ETH_LINK_SPEED_10M or ETH_LINK_FULL_DUPLEX
+        push    ebx
+        invoke  NetLinkChanged
+        pop     ebx
+
+; ask for the usual packet types; some devices filter everything until
+; SET_ETHERNET_PACKET_FILTER arrives (a failure here is not fatal)
+        lea     esi, [ebx+ncm_dev.Setup]
+        mov     byte [esi], 21h                 ; OUT, class, interface
+        mov     byte [esi+1], REQ_SET_ETH_PACKET_FILTER
+        mov     word [esi+2], 0x0E              ; DIRECTED|BROADCAST|ALL_MCAST
+        mov     eax, [ebx+ncm_dev.CtrlItf]
+        mov     word [esi+4], ax
+        mov     word [esi+6], 0
+        invoke  USBControlTransferAsync, [ebx+ncm_dev.ConfigPipe], esi, 0, 0, \
+                ecm_ctrl_callback, ebx, 0
+
+; arm the notification pipe and the receive pipe
+        call    ncm_arm_notify
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], [ebx+ncm_dev.RxBuf], \
+                [ebx+ncm_dev.RxSize], ecm_rx_callback, ebx, 1
+        test    eax, eax
+        jz      .fail
+        ret
+
+  .fail_freebuf:
+        invoke  KernelFree, [ebx+ncm_dev.RxBuf]
+        mov     [ebx+ncm_dev.RxBuf], 0
+  .fail:
+        DEBUGF  2,"ECM: device init failed\n"
+        mov     [ebx+ncm_dev.Dead], 1
+        ret
+
+endp
+
+; Fire-and-forget control request completed; nothing to do.
+proc ecm_ctrl_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+        ret
+endp
+
+; ZLP terminating an exact-multiple frame completed; nothing to do.
+proc ecm_zlp_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+        ret
+endp
+
+; Bulk IN callback: the whole transfer is one raw ethernet frame.
+proc ecm_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+
+        mov     ebx, [.calldata]
+        DEBUGF  1,"ECM: RX cb st %u len %u\n", [.status], [.length]
+        cmp     [ebx+ncm_dev.Dead], 0
+        jne     .ret
+        cmp     [.status], USB_STATUS_CLOSED
+        je      .ret
+        cmp     [.status], USB_STATUS_CANCELLED
+        je      .ret
+        cmp     [.status], USB_STATUS_STALL
+        je      .stalled
+        cmp     [.status], 0
+        jne     .rearm                          ; transient error: re-arm
+
+        mov     ecx, [.length]
+        cmp     ecx, 14
+        jb      .rearm                          ; runt, ignore
+        cmp     ecx, ETH_FRAME_MAX + 4
+        ja      .rearm                          ; oversized, ignore
+
+; allocate a network buffer and copy the frame into it
+        push    ecx
+        add     ecx, NET_BUFF.data
+        invoke  NetAlloc, ecx
+        pop     ecx
+        test    eax, eax
+        jz      .rx_oom
+        mov     edi, eax
+        mov     [edi+NET_BUFF.device], ebx
+        mov     [edi+NET_BUFF.length], ecx
+        mov     [edi+NET_BUFF.offset], NET_BUFF.data
+
+        push    esi edi
+        mov     esi, [.buffer]                  ; this transfer's ring slot
+        lea     edi, [edi+NET_BUFF.data]
+        mov     edx, ecx
+        shr     ecx, 2
+        rep movsd
+        mov     ecx, edx
+        and     ecx, 3
+        rep movsb
+        pop     edi esi
+
+; update statistics
+        mov     ecx, [edi+NET_BUFF.length]
+        add     dword [ebx+ncm_dev.bytes_rx], ecx
+        adc     dword [ebx+ncm_dev.bytes_rx+4], 0
+        inc     [ebx+ncm_dev.packets_rx]
+        DEBUGF  1,"ECM: ->host frame %u bytes\n", [edi+NET_BUFF.length]
+
+; hand the buffer to the network stack. EthInput consumes
+; [esp] = buffer and returns to the address at [esp+4].
+        push    ebp ebx esi
+        pushd   .eth_done
+        push    edi
+        jmp     [EthInput]
+  .eth_done:
+        pop     esi ebx ebp
+
+  .rearm:
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], [.buffer], \
+                [ebx+ncm_dev.RxSize], ecm_rx_callback, ebx, 1
+        test    eax, eax
+        jnz     .ret
+        DEBUGF  2,"ECM: failed to re-arm RX\n"
+  .ret:
+        ret
+
+  .rx_oom:
+        inc     [ebx+ncm_dev.packets_rx_drop]
+        jmp     .rearm
+
+  .stalled:
+        DEBUGF  2,"ECM: bulk IN stalled, receive stopped\n"
+        ret
+
+endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; ecm_transmit: called by the network stack to send a frame.      ;;
+;;                                                                 ;;
+;; IN: ebx = device context, [bufferptr] = NET_BUFF                ;;
+;; OUT: eax = 0 on success                                         ;;
+;;                                                                 ;;
+;; The frame goes out raw. If its length is an exact multiple of   ;;
+;; the endpoint packet size, the transfer is terminated with a     ;;
+;; zero-length packet (padding is not allowed in ECM).             ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+align 4
+proc ecm_transmit stdcall bufferptr
+
+        push    esi edi
+
+        mov     esi, [bufferptr]
+        cmp     [ebx+ncm_dev.Dead], 0
+        jne     .drop
+        cmp     [ebx+ncm_dev.Registered], 0
+        je      .drop
+        mov     ecx, [esi+NET_BUFF.length]
+        cmp     ecx, 14
+        jb      .err
+        cmp     ecx, ETH_FRAME_MAX
+        ja      .err
+        DEBUGF  1,"ECM: host-> frame %u bytes\n", ecx
+
+; limit the number of frames in flight
+        lock inc [ebx+ncm_dev.TxPending]
+        cmp     [ebx+ncm_dev.TxPending], NCM_TX_MAX_PENDING
+        ja      .overrun
+
+; allocate [context dword][frame]
+        push    ecx
+        lea     eax, [ecx+4]
+        invoke  Kmalloc
+        pop     ecx
+        test    eax, eax
+        jz      .no_memory
+        mov     edi, eax
+        mov     [edi], ebx                      ; context for the callback
+        add     edi, 4
+
+; copy the frame
+        push    esi edi
+        mov     edx, ecx
+        add     esi, [esi+NET_BUFF.offset]
+        shr     ecx, 2
+        rep movsd
+        mov     ecx, edx
+        and     ecx, 3
+        rep movsb
+        pop     edi esi
+        mov     ecx, edx
+
+; submit: buffer = frame, calldata = allocation start
+        push    ecx
+        lea     eax, [edi-4]
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.OutPipe], edi, ecx, \
+                ncm_tx_callback, eax, 0
+        pop     ecx
+        test    eax, eax
+        jz      .submit_failed
+
+; terminate exact-multiple transfers with a ZLP
+        mov     edx, [ebx+ncm_dev.EpOutSize]
+        dec     edx
+        test    ecx, edx
+        jnz     @f
+        push    ecx
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.OutPipe], ecm_zlp_dummy, 0, \
+                ecm_zlp_callback, 0, 0
+        pop     ecx
+  @@:
+; update statistics, free the NET_BUFF, report success
+        add     dword [ebx+ncm_dev.bytes_tx], ecx
+        adc     dword [ebx+ncm_dev.bytes_tx+4], 0
+        inc     [ebx+ncm_dev.packets_tx]
+        invoke  NetFree, [bufferptr]
+        xor     eax, eax
+        pop     edi esi
+        ret
+
+  .submit_failed:
+        lea     eax, [edi-4]
+        invoke  Kfree
+        lock dec [ebx+ncm_dev.TxPending]
+        jmp     .err
+
+  .no_memory:
+        lock dec [ebx+ncm_dev.TxPending]
+        jmp     .err
+
+  .overrun:
+        lock dec [ebx+ncm_dev.TxPending]
+        inc     [ebx+ncm_dev.packets_tx_ovr]
+        jmp     .drop
+
+  .err:
+        inc     [ebx+ncm_dev.packets_tx_err]
+  .drop:
+        DEBUGF  1,"ECM: frame dropped\n"
+        invoke  NetFree, [bufferptr]
+        or      eax, -1
+        pop     edi esi
+        ret
+
+endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
@@ -1710,6 +2468,8 @@ endp
 ; strings and static data
 my_service      db      'usbcdc', 0
 netdev_name     db      'USB CDC-NCM', 0
+ecm_netdev_name db      'USB CDC-ECM', 0
+ecm_zlp_dummy   db      0               ; address for zero-length transfers
 
 align 4
 usb_functions:

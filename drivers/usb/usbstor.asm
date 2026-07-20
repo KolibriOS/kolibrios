@@ -722,9 +722,146 @@ endp
 ;   callback inquiry_callback;
 ; * inquiry_callback checks that a logical device is a block device
 ;   and the unit was ready; if so, it notifies the kernel about new disk device.
-; Callback for the mode-switch control request sent below: nothing to
-; do, the device is about to drop off the bus and re-enumerate.
+; Open the bulk pipes of the Zero-CD device and send the classic
+; Huawei switch message (usb_modeswitch's "HuaweiNewMode"). Used as
+; the fallback when the device has no MS OS 2.0 alternate enumeration.
+proc modeswitch_send_cbw
+        push    ebx
+        mov     ebx, [modeswitch_pipe0]
+        cmp     dword [modeswitch_in_ep], 0
+        jz      @f
+        invoke  USBOpenPipe, ebx, [modeswitch_in_ep], [modeswitch_in_mps], \
+                BULK_PIPE, 0
+        mov     [modeswitch_in_pipe], eax
+@@:
+        invoke  USBOpenPipe, ebx, [modeswitch_out_ep], [modeswitch_out_mps], \
+                BULK_PIPE, 0
+        test    eax, eax
+        jz      .ret
+        invoke  USBNormalTransferAsync, eax, modeswitch_cbw, 31, \
+                modeswitch_callback, 0, 0
+        DEBUGF 1,'K : modeswitch CBW submitted, handle %x\n', eax
+  .ret:
+        pop     ebx
+        ret
+endp
+
+; The BOS descriptor has been read. If the device carries an
+; MS OS 2.0 platform capability with a nonzero bAltEnumCode, switch it
+; the way Windows does: a vendor control request "set alternate
+; enumeration". Otherwise fall back to the bulk switch message.
+proc modeswitch_bos_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+        DEBUGF 1,'K : modeswitch BOS done, status %d len %d\n', [.status], [.length]
+        cmp     [.status], 0
+        jne     .fallback
+        mov     ecx, [.length]
+        sub     ecx, 8                  ; minus the setup packet
+        cmp     ecx, 5
+        jb      .fallback
+        mov     esi, modeswitch_bos_buf
+        cmp     byte [esi+1], 0x0F      ; BOS descriptor type
+        jne     .fallback
+        movzx   edx, word [esi+2]       ; wTotalLength
+        cmp     edx, ecx
+        jbe     @f
+        mov     edx, ecx                ; clamp to what was received
+@@:
+        add     edx, esi                ; edx = end of BOS data
+        add     esi, 5                  ; first device capability
+.cap_loop:
+        lea     eax, [esi+3]
+        cmp     eax, edx
+        ja      .fallback               ; no more capabilities
+        movzx   ecx, byte [esi]         ; bLength
+        test    ecx, ecx
+        jz      .fallback
+        cmp     byte [esi+1], 0x10      ; DEVICE_CAPABILITY
+        jne     .next_cap
+        cmp     byte [esi+2], 0x05      ; PLATFORM capability
+        jne     .next_cap
+        cmp     ecx, 20+8               ; header + GUID + one set info
+        jb      .next_cap
+        lea     eax, [esi+ecx]
+        cmp     eax, edx
+        ja      .fallback               ; capability sticks out of BOS
+; is it the MS OS 2.0 platform GUID?
+        push    esi edi ecx
+        add     esi, 4
+        mov     edi, msos20_guid
+        mov     ecx, 16
+        repe cmpsb
+        pop     ecx edi esi
+        jne     .next_cap
+; walk the descriptor set info structures, take one with bAltEnumCode
+        push    ecx
+        sub     ecx, 20
+        shr     ecx, 3                  ; number of 8-byte set infos
+        lea     eax, [esi+20]
+.set_loop:
+        test    ecx, ecx
+        jz      .no_alt_enum
+        cmp     byte [eax+7], 0         ; bAltEnumCode
+        jne     .set_found
+        add     eax, 8
+        dec     ecx
+        jmp     .set_loop
+.set_found:
+        pop     ecx
+        mov     cl, [eax+6]             ; bMS_VendorCode
+        mov     [modeswitch_alt_setup+1], cl
+        mov     cl, [eax+7]             ; bAltEnumCode -> wValue high byte
+        mov     [modeswitch_alt_setup+3], cl
+        DEBUGF 1,'K : modeswitch: MS OS 2.0 alt enum supported\n'
+        mov     ebx, [.calldata]        ; pipe 0
+        invoke  USBControlTransferAsync, ebx, modeswitch_alt_setup, 0, 0, \
+                modeswitch_alt_callback, ebx, 0
+        DEBUGF 1,'K : modeswitch SET_ALT_ENUMERATION submit %x\n', eax
+        test    eax, eax
+        jz      .fallback
+        ret
+.no_alt_enum:
+        pop     ecx
+        jmp     .fallback
+.next_cap:
+        add     esi, ecx
+        jmp     .cap_loop
+.fallback:
+        DEBUGF 1,'K : modeswitch: no MS OS 2.0, using bulk message\n'
+        call    modeswitch_send_cbw
+        ret
+endp
+
+; SET_ALT_ENUMERATION completed: on success the device re-enumerates
+; by itself; if it stalled the request, try the bulk message instead.
+proc modeswitch_alt_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+        DEBUGF 1,'K : modeswitch SET_ALT_ENUMERATION done, status %d\n', [.status]
+        cmp     [.status], 0
+        je      .ret
+        call    modeswitch_send_cbw
+  .ret:
+        ret
+endp
+
+; The mode-switch CBW has completed. Read the CSW status like
+; usb_modeswitch does: some firmwares only switch after the host has
+; completed the whole Bulk-Only transaction.
 proc modeswitch_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+        DEBUGF 1,'K : modeswitch CBW done, status %d\n', [.status]
+        cmp     [.status], 0
+        jne     .done
+        mov     eax, [modeswitch_in_pipe]
+        test    eax, eax
+        jz      .done
+        invoke  USBNormalTransferAsync, eax, modeswitch_csw, 13, \
+                modeswitch_csw_callback, 0, 1
+  .done:
+        ret
+endp
+
+; The CSW arrived (or errored); nothing more to do, the device should
+; drop off the bus and re-enumerate in its real configuration.
+proc modeswitch_csw_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
+        DEBUGF 1,'K : modeswitch CSW done, status %d len %d\n', [.status], [.length]
         ret
 endp
 
@@ -745,9 +882,11 @@ end virtual
         mov     esi, [.interface]
 ; Some 3G/LTE modems enumerate as a mass-storage-only "Zero-CD" (a
 ; virtual CD-ROM with Windows drivers) and must be switched to their
-; real configuration by a standard SET_FEATURE(1) device request (what
-; usb_modeswitch calls HuaweiNewMode). Match by VID:PID, fire the
-; request and do not bind: the device re-enumerates with a new PID.
+; real configuration by a magic vendor SCSI command sent to the bulk
+; OUT endpoint (usb_modeswitch's "HuaweiNewMode"; a SET_FEATURE(1)
+; only resets these devices back into Zero-CD). Match by VID:PID,
+; fire the command and do not bind: the device drops off the bus and
+; re-enumerates with a new PID.
         mov     ebx, [.pipe0]
         invoke  USBGetParam, ebx, 0     ; 0 = get device descriptor
         test    eax, eax
@@ -762,10 +901,59 @@ end virtual
         add     edx, 4
         jmp     .modeswitch_scan
 .do_modeswitch:
+        push    esi
         mov     esi, switchdevice
         invoke  SysMsgBoardStr
-        invoke  USBControlTransferAsync, ebx, modeswitch_setup, 0, 0, \
-                modeswitch_callback, 0, 0
+        pop     esi
+; collect the bulk IN and bulk OUT endpoints of this interface
+        mov     dword [modeswitch_in_pipe], 0
+        mov     dword [modeswitch_in_ep], 0
+        mov     dword [modeswitch_out_ep], 0
+        mov     edx, [.config]
+        movzx   ecx, [edx+config_descr.wTotalLength]
+        add     edx, ecx                ; edx = end of configuration data
+.modeswitch_ep_scan:
+        movzx   ecx, byte [esi]         ; bLength
+        test    ecx, ecx
+        jz      .modeswitch_send        ; malformed, use what we have
+        add     esi, ecx
+        lea     ecx, [esi+sizeof.endpoint_descr]
+        cmp     ecx, edx
+        ja      .modeswitch_send        ; ran out of descriptors
+        cmp     byte [esi+1], ENDPOINT_DESCR_TYPE
+        jne     .modeswitch_ep_scan
+        mov     cl, [esi+endpoint_descr.bmAttributes]
+        and     cl, 3
+        cmp     cl, BULK_PIPE
+        jne     .modeswitch_ep_scan
+        movzx   ecx, [esi+endpoint_descr.bEndpointAddress]
+        push    edx
+        movzx   edx, [esi+endpoint_descr.wMaxPacketSize]
+        and     edx, 0xFFF
+        test    cl, 80h
+        jz      .modeswitch_ep_out
+        mov     [modeswitch_in_ep], ecx
+        mov     [modeswitch_in_mps], edx
+        pop     edx
+        jmp     .modeswitch_ep_scan
+.modeswitch_ep_out:
+        mov     [modeswitch_out_ep], ecx
+        mov     [modeswitch_out_mps], edx
+        pop     edx
+        jmp     .modeswitch_ep_scan
+.modeswitch_send:
+        cmp     dword [modeswitch_out_ep], 0
+        jz      .nothing                ; no bulk OUT: cannot switch
+        mov     [modeswitch_pipe0], ebx
+; try the Windows mechanism first (MS OS 2.0 alternate enumeration,
+; this is how E3372h switches); its callback falls back to the classic
+; bulk switch message if the device has no such capability
+        invoke  USBControlTransferAsync, ebx, modeswitch_bos_setup, \
+                modeswitch_bos_buf, 256, modeswitch_bos_callback, ebx, 1
+        DEBUGF 1,'K : modeswitch BOS read submit %x\n', eax
+        test    eax, eax
+        jnz     .nothing
+        call    modeswitch_send_cbw     ; could not even ask: fall back
         jmp     .nothing
 .no_modeswitch:
         xor     ebx, ebx
@@ -1601,11 +1789,40 @@ inquiry_fail    db      'K : INQUIRY command failed',13,10,0
 noindex         db      'K : failed to generate disk name',13,10,0
 switchdevice    db      'K : Zero-CD modem detected, switching mode',13,10,0
 
-; Zero-CD devices switched by SET_FEATURE(1), dd idVendor+(idProduct shl 16)
+; Zero-CD devices to switch, dd idVendor+(idProduct shl 16)
 align 4
 modeswitch_ids  dd      0x1F0112D1      ; Huawei E3372 and friends
                 dd      0
-modeswitch_setup db     0x00, 0x03, 0x01, 0, 0, 0, 0, 0
+; usb_modeswitch's message for the 1F01 Zero-CD family: a CBW with the
+; 10-byte vendor command 11 06 20 00 00 00 00 00 01 00 (note the 01 in
+; byte 8; the older 6-byte 11 06 20 00 00 01 variant is ignored by
+; E3372h firmwares) and no data stage
+modeswitch_cbw  db      'USBC'          ; dCBWSignature
+                dd      0x12345678      ; dCBWTag
+                dd      0               ; dCBWDataTransferLength
+                db      0               ; bmCBWFlags
+                db      0               ; bCBWLUN
+                db      10              ; bCBWCBLength
+                db      0x11, 0x06, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00
+                db      0, 0, 0, 0, 0, 0
+; scratch state of the mode-switch transaction
+modeswitch_pipe0        dd      0       ; config pipe of the device
+modeswitch_in_pipe      dd      0       ; bulk IN pipe handle (for the CSW)
+modeswitch_in_ep        dd      0
+modeswitch_in_mps       dd      0
+modeswitch_out_ep       dd      0
+modeswitch_out_mps      dd      0
+; GET_DESCRIPTOR(BOS), up to 256 bytes
+modeswitch_bos_setup    db      0x80, 0x06, 0x00, 0x0F, 0x00, 0x00
+                        dw      256
+; MS OS 2.0 "set alternate enumeration": vendor request to the device,
+; bRequest (+1) and wValue high byte (+3) are patched in at runtime
+modeswitch_alt_setup    db      0x40, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00
+; platform capability GUID of MS OS 2.0: D8DD60DF-4589-4CC7-9CD2-659D9E648A9F
+msos20_guid             db      0xDF, 0x60, 0xDD, 0xD8, 0x89, 0x45, 0xC7, 0x4C
+                        db      0x9C, 0xD2, 0x65, 0x9D, 0x9E, 0x64, 0x8A, 0x9F
+modeswitch_csw          rb      16      ; CSW receive buffer
+modeswitch_bos_buf      rb      256     ; BOS descriptor buffer
 
 align 4
 ; Structure with callback functions.
