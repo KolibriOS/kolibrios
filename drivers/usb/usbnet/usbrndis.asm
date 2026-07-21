@@ -100,6 +100,8 @@ ETH_FRAME_MAX           = 1514  ; maximal ethernet frame (without FCS)
 RNDIS_HDR_SIZE          = 44    ; REMOTE_NDIS_PACKET_MSG header
 RNDIS_RX_BUF            = 8192  ; our max transfer, advertised in INIT
 RNDIS_RX_BUFFERS        = 2     ; ping-pong pair for the bulk IN pipe
+RNDIS_RX_MAX_ERRORS     = 32    ; consecutive RX errors before receive
+                                ; stops (anti retry-storm)
 RNDIS_RSP_BUF           = 1024  ; encapsulated response buffer
 RNDIS_TX_MAX_PENDING    = 32    ; max messages in flight on bulk OUT
 RNDIS_GET_RETRIES       = 200   ; response polls per command (see below)
@@ -187,6 +189,7 @@ struct rndis_dev        ETH_DEVICE
 
         RxBufs          rd      RNDIS_RX_BUFFERS ; bulk IN buffers (KernelAlloc)
         RxSize          dd      ?       ; size of one buffer
+        RxErrRun        dd      ?       ; consecutive failed RX transfers
 
         ; per-second statistics, only maintained when DEBUG_STATS = 1
         StatTicks       dd      ?       ; last print time, timer ticks
@@ -235,7 +238,7 @@ proc START c, reason:dword, cmdline:dword
         cmp     [reason], DRV_ENTRY
         jne     .nothing
 
-        DEBUGF  2,"loading v5 (RNDIS host network driver)\n"
+        DEBUGF  2,"loading (RNDIS host network driver)\n"
         invoke  RegUSBDriver, my_service, service_proc, usb_functions
 
   .nothing:
@@ -1036,6 +1039,21 @@ if DEBUG_STATS
         inc     [ebx+rndis_dev.StatCb]
 end if
 
+; Transfer error: nothing to parse, retry with the same buffer. A run
+; of consecutive failures stops the receive altogether (the HC driver
+; logs every failed TD, so an endless retry storm starves the whole
+; single-core system). Replugging the device recovers.
+        cmp     [.status], 0
+        je      .status_ok
+        inc     [ebx+rndis_dev.RxErrRun]
+        cmp     [ebx+rndis_dev.RxErrRun], RNDIS_RX_MAX_ERRORS
+        jae     .rx_dead
+        invoke  USBNormalTransferAsync, [ebx+rndis_dev.InPipe], [.buffer], \
+                [ebx+rndis_dev.RxSize], rndis_rx_callback, ebx, 1
+        jmp     .ret
+  .status_ok:
+        mov     [ebx+rndis_dev.RxErrRun], 0     ; the error run is broken
+
 ; Re-arm the pipe with the other buffer BEFORE parsing this one: the
 ; device streams the next frames while the host walks the current
 ; buffer. The completed transfer is already off the queue, so still at
@@ -1053,8 +1071,6 @@ end if
         jz      @f
         mov     [rearmed], 1
   @@:
-        cmp     [.status], 0
-        jne     .rearm                          ; transient error: don't parse
 
         mov     [msg_off], 0
 
@@ -1161,6 +1177,14 @@ end if
 
   .stalled:
         DEBUGF  2,"bulk IN stalled, receive stopped\n"
+        ret
+
+  .rx_dead:
+        DEBUGF  2,"RX stopped after repeated transfer errors\n"
+        mov     [ebx+rndis_dev.state], ETH_LINK_DOWN
+        push    ebx
+        invoke  NetLinkChanged
+        pop     ebx
         ret
 
 endp

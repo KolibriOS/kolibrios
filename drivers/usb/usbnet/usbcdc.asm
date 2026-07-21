@@ -11,10 +11,13 @@
 ;;     pico-usb-wifi (Raspberry Pi Pico W driverless USB Wi-Fi     ;;
 ;;     adapter, https://gitlab.com/baiyibai/pico-usb-wifi), works  ;;
 ;;     with any spec-conforming NTB16 CDC-NCM device.              ;;
-;;   * CDC-ACM  (subclass 02h) - USB serial ports, exposed to      ;;
-;;     userspace through the IOCTL interface of service 'usbcdc'   ;;
-;;     (see IOCTL codes below). Used for the pico-usb-wifi         ;;
-;;     management/debug consoles and generic CDC serial adapters.  ;;
+;;   * CDC-ACM  (subclass 02h) - USB serial ports, registered in   ;;
+;;     the system serial port subsystem (serial.sys, see           ;;
+;;     drivers/serial) and accessible with any serial application  ;;
+;;     (kterm etc). Used for the pico-usb-wifi management/debug    ;;
+;;     consoles and generic CDC serial adapters. Without           ;;
+;;     serial.sys the network parts work as usual, the serial      ;;
+;;     ports are simply not registered.                            ;;
 ;;                                                                 ;;
 ;;  The driver is loaded by usbother.sys according to the class    ;;
 ;;  table in /sys/settings/usbdrv.dat (class 02h -> 'usbcdc').     ;;
@@ -75,6 +78,7 @@ CDC_FUNC_ETHERNET       = 0Fh
 CDC_FUNC_NCM            = 1Ah
 
 ; CDC class-specific requests
+REQ_SET_LINE_CODING        = 20h
 REQ_SET_CONTROL_LINE_STATE = 22h
 REQ_SET_ETH_PACKET_FILTER  = 43h
 REQ_GET_NTB_PARAMETERS     = 80h
@@ -124,26 +128,21 @@ NCM_NDP_ALIGN_MIN       = 4     ; wNdpOutAlignment/Divisor floor per NCM spec
 NCM_NOTIF_BUF           = 64    ; notification buffer, holds one interrupt EP
                                 ; max packet (interrupt maxpacket is <= 64 here)
 ETH_HLEN                = 14    ; IEEE 802.3 header length
-ACM_TX_MAX_PENDING      = 16    ; max writes in flight per ACM port
 ACM_RX_MAX_ERRORS       = 8     ; consecutive RX errors before the read
                                 ; is no longer re-armed (anti error storm)
-ACM_TX_MAX_CHUNK        = 1024  ; max bytes per single WRITE ioctl
-ACM_RING_SIZE           = 8192  ; RX ring buffer per ACM port, power of 2
+CDC_RX_MAX_ERRORS       = 32    ; the same for the network RX pipes: a
+                                ; wedged device otherwise keeps the whole
+                                ; system busy with an endless retry storm
 ACM_RX_CHUNK            = 512   ; single bulk IN transfer size
-ACM_MAX_PORTS           = 8     ; max simultaneously connected ACM ports
+ACM_TX_CHUNK            = 512   ; single bulk OUT transfer size
 
 ACM_MAGIC               = 'ACM0'; acm_dev.type tag; distinguishes acm_dev
                                 ; from ncm_dev (whose .type = NET_TYPE_ETH)
 
-; IOCTL codes of the 'usbcdc' service (ACM serial ports):
-; 0 GETVERSION  out: dd API_VERSION
-; 1 PORT_COUNT  out: dd number_of_ports_present
-; 2 PORT_OPEN   in: dd port_index; asserts DTR+RTS, clears the RX ring
-; 3 PORT_CLOSE  in: dd port_index; deasserts DTR+RTS
-; 4 PORT_READ   in: dd port_index; out: dd bytes_returned, then data
-; 5 PORT_WRITE  in: dd port_index, then data
-; 6 PORT_STATUS in: dd port_index; out: dd present, dd rx_bytes_available
-; all return eax = 0 on success, -1 on failure
+; ACM ports are exposed to userspace through the system serial port
+; subsystem: every port is registered in serial.sys (SERIAL_API_SRV_*,
+; see drivers/serial/common.inc) with the SP_DRIVER callbacks below.
+; The only IOCTL of the 'usbcdc' service itself is 0 = GETVERSION.
 
 ; USB structures
 struct usb_descr
@@ -192,6 +191,9 @@ include '../../macros.inc'
 ; NET_DEVICE/ETH_DEVICE/NET_BUFF structures and link state constants.
 ; Note: netdrv.inc prepends 'usbcdc: ' (my_service) to all DEBUGF output.
 include '../../netdrv.inc'
+; serial port subsystem contract: SERIAL_API_*, SP_DRIVER/SP_CONF and
+; the provider-side wrappers (serial_add_port etc.)
+include '../../serial/common.inc'
 
 ; Device context of one CDC-NCM function (network adapter).
 ; Starts with ETH_DEVICE so that the structure can be passed
@@ -271,19 +273,17 @@ struct acm_dev
         EpOut           dd      ?
         EpOutSize       dd      ?
 
-        PortIdx         dd      ?       ; index in the ports table
-        Opened          dd      ?       ; DTR asserted by an application
+        PortIdx         dd      ?       ; sequential number, log output only
+        PortHandle      dd      ?       ; serial.sys port (0 = not registered)
+        PortOpen        dd      ?       ; startup() called, data may flow
         Dead            dd      ?
-        TxPending       dd      ?
 
-        RxRing          dd      ?       ; ring buffer (KernelAlloc)
-        RxHead          dd      ?       ; write position (producer = USB)
-        RxTail          dd      ?       ; read position (consumer = IOCTL)
-        RxDrops         dd      ?       ; bytes dropped on ring overflow
+        TxBusy          dd      ?       ; a bulk OUT transfer is in flight
         RxArmed         dd      ?       ; a bulk IN read is currently pending
         RxErrRun        dd      ?       ; consecutive failed RX transfers
 
         RxChunk         rb      ACM_RX_CHUNK    ; bulk IN transfer buffer
+        TxChunk         rb      ACM_TX_CHUNK    ; bulk OUT transfer buffer
 
 ends
 
@@ -318,10 +318,16 @@ proc START c, reason:dword, cmdline:dword
         cmp     [reason], DRV_ENTRY
         jne     .nothing
 
-        mov     ecx, ports_mutex
-        invoke  MutexInit
+; hook up to the serial port subsystem; GetService loads
+; /sys/drivers/SERIAL.sys on demand if it is present
+        invoke  GetService, serial_drv_name
+        mov     [serial_drv_entry], eax
+        test    eax, eax
+        jnz     @f
+        DEBUGF  2,"serial.sys not found, ACM ports will not be registered\n"
+  @@:
 
-        DEBUGF  2,"loading v5 (CDC-NCM network + CDC-ACM serial)\n"
+        DEBUGF  2,"loading (CDC-NCM network + CDC-ACM serial)\n"
         invoke  RegUSBDriver, my_service, service_proc, usb_functions
 
   .nothing:
@@ -1177,6 +1183,21 @@ if DEBUG_STATS
         inc     [ebx+ncm_dev.StatCb]
 end if
 
+; Transfer error: nothing to parse, retry with the same buffer. A run
+; of consecutive failures stops the receive altogether (the HC driver
+; logs every failed TD, so an endless retry storm starves the whole
+; single-core system). Replugging the device recovers.
+        cmp     [.status], 0
+        je      .status_ok
+        inc     [ebx+ncm_dev.StatRxErr]
+        cmp     [ebx+ncm_dev.StatRxErr], CDC_RX_MAX_ERRORS
+        jae     .rx_dead
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], [.buffer], \
+                [ebx+ncm_dev.RxSize], ncm_rx_callback, ebx, 1
+        jmp     .ret
+  .status_ok:
+        mov     [ebx+ncm_dev.StatRxErr], 0      ; the error run is broken
+
 ; Re-arm the pipe with the other buffer BEFORE parsing this one: the
 ; device streams the next NTB while the host walks the current buffer.
 ; The completed transfer is already off the queue, so still at most one
@@ -1192,11 +1213,6 @@ end if
         test    eax, eax
         jz      @f
         mov     [rearmed], 1
-  @@:
-        cmp     [.status], 0
-        je      @f
-        inc     [ebx+ncm_dev.StatRxErr]         ; transient error: don't parse
-        jmp     .rearm
   @@:
 
 ; Validate the NTH16 header.
@@ -1338,6 +1354,14 @@ end if
 
   .stalled:
         DEBUGF  2,"NCM: bulk IN stalled, receive stopped\n"
+        ret
+
+  .rx_dead:
+        DEBUGF  2,"NCM: RX stopped after repeated transfer errors\n"
+        mov     [ebx+ncm_dev.state], ETH_LINK_DOWN
+        push    ebx
+        invoke  NetLinkChanged
+        pop     ebx
         ret
 
 endp
@@ -1904,6 +1928,20 @@ if DEBUG_STATS
         inc     [ebx+ncm_dev.StatCb]
 end if
 
+; Transfer error: nothing to parse, retry with the same buffer. A run
+; of consecutive failures stops the receive altogether (see the NCM
+; callback for the reasoning). Replugging the device recovers.
+        cmp     [.status], 0
+        je      .status_ok
+        inc     [ebx+ncm_dev.StatRxErr]
+        cmp     [ebx+ncm_dev.StatRxErr], CDC_RX_MAX_ERRORS
+        jae     .rx_dead
+        invoke  USBNormalTransferAsync, [ebx+ncm_dev.InPipe], [.buffer], \
+                [ebx+ncm_dev.RxSize], ecm_rx_callback, ebx, 1
+        jmp     .ret
+  .status_ok:
+        mov     [ebx+ncm_dev.StatRxErr], 0      ; the error run is broken
+
 ; Re-arm the pipe with the other buffer BEFORE handing the frame to the
 ; network stack: the device sends the next frame while the host is busy.
 ; The completed transfer is already off the queue, so still at most one
@@ -1919,11 +1957,6 @@ end if
         test    eax, eax
         jz      @f
         mov     [rearmed], 1
-  @@:
-        cmp     [.status], 0
-        je      @f
-        inc     [ebx+ncm_dev.StatRxErr]         ; transient error: don't parse
-        jmp     .rearm
   @@:
 
         mov     ecx, [.length]
@@ -1997,6 +2030,14 @@ end if
 
   .stalled:
         DEBUGF  2,"ECM: bulk IN stalled, receive stopped\n"
+        ret
+
+  .rx_dead:
+        DEBUGF  2,"ECM: RX stopped after repeated transfer errors\n"
+        mov     [ebx+ncm_dev.state], ETH_LINK_DOWN
+        push    ebx
+        invoke  NetLinkChanged
+        pop     ebx
         ret
 
 endp
@@ -2140,12 +2181,14 @@ endp
 
 ; (Re-)arm the bulk IN read for a port. Idempotent and safe against a
 ; concurrent completion callback: RxArmed is claimed with an atomic xchg,
-; so at most one read is ever pending on RxChunk. Does nothing if the port
-; is dead or a read is already armed.
+; so at most one read is ever pending on RxChunk. Does nothing if the
+; port is dead, closed, or a read is already armed.
 ; IN: ebx = acm context. Clobbers eax, edx.
 proc acm_arm_rx
         cmp     [ebx+acm_dev.Dead], 0
         jne     .no
+        cmp     [ebx+acm_dev.PortOpen], 0
+        je      .no
         mov     eax, 1
         xchg    eax, [ebx+acm_dev.RxArmed]      ; atomic test-and-set
         test    eax, eax
@@ -2200,54 +2243,45 @@ proc acm_add_device stdcall uses ebx esi edi, .pipe0:dword, .config:dword, .inte
         mov     eax, [edi+cdc_parse.EpOutSize]
         mov     [ebx+acm_dev.EpOutSize], eax
 
-; 3. Allocate the RX ring.
-        invoke  KernelAlloc, ACM_RING_SIZE
-        test    eax, eax
-        jz      .free_ctx
-        mov     [ebx+acm_dev.RxRing], eax
-
-; 4. Open the bulk pipes.
+; 3. Open the bulk pipes.
         invoke  USBOpenPipe, [ebx+acm_dev.ConfigPipe], [ebx+acm_dev.EpIn], \
                 [ebx+acm_dev.EpInSize], BULK_PIPE, 0
         test    eax, eax
-        jz      .free_ring
+        jz      .free_ctx
         mov     [ebx+acm_dev.InPipe], eax
 
         invoke  USBOpenPipe, [ebx+acm_dev.ConfigPipe], [ebx+acm_dev.EpOut], \
                 [ebx+acm_dev.EpOutSize], BULK_PIPE, 0
         test    eax, eax
-        jz      .free_ring
+        jz      .free_ctx
         mov     [ebx+acm_dev.OutPipe], eax
 
-; 5. Take a slot in the ports table.
-        mov     ecx, ports_mutex
-        invoke  MutexLock
-        xor     ecx, ecx
-  .find_slot:
-        cmp     [ports+ecx*4], 0
-        je      .slot_found
-        inc     ecx
-        cmp     ecx, ACM_MAX_PORTS
-        jb      .find_slot
-        mov     ecx, ports_mutex
-        invoke  MutexUnlock
-        jmp     .free_ring                      ; no free slots
-  .slot_found:
-        mov     [ports+ecx*4], ebx
-        mov     [ebx+acm_dev.PortIdx], ecx
-        mov     ecx, ports_mutex
-        invoke  MutexUnlock
+; 4. Register the port in the serial port subsystem. RX starts when an
+; application opens the port (the startup callback).
+        mov     eax, [acm_port_seq]
+        mov     [ebx+acm_dev.PortIdx], eax
+        inc     [acm_port_seq]
 
-; 6. Start receiving into the ring (armed for the port's lifetime).
-        call    acm_arm_rx
+        cmp     [serial_drv_entry], 0
+        je      .no_serial
+        stdcall serial_add_port, acm_sp_driver, ebx
+        mov     [ebx+acm_dev.PortHandle], eax
+        test    eax, eax
+        jz      .no_serial
 
-        DEBUGF  2,"ACM: serial port %u ready (ctrl itf %u)\n",\
+        DEBUGF  2,"ACM: port %u registered with serial.sys (ctrl itf %u)\n",\
                 [ebx+acm_dev.PortIdx], [ebx+acm_dev.CtrlItf]
         mov     eax, ebx
         ret
 
-  .free_ring:
-        invoke  KernelFree, [ebx+acm_dev.RxRing]
+; Keep the interface claimed so the device configuration stays intact,
+; the port is just not reachable without serial.sys.
+  .no_serial:
+        DEBUGF  2,"ACM: port %u not registered (no serial.sys), ctrl itf %u\n",\
+                [ebx+acm_dev.PortIdx], [ebx+acm_dev.CtrlItf]
+        mov     eax, ebx
+        ret
+
   .free_ctx:
         mov     eax, ebx
         invoke  Kfree
@@ -2265,15 +2299,15 @@ proc acm_add_device stdcall uses ebx esi edi, .pipe0:dword, .config:dword, .inte
 
 endp
 
-; Bulk IN callback: append the received bytes to the RX ring
-; (single producer; data that does not fit is dropped), re-arm.
+; Bulk IN callback: hand the received bytes to serial.sys (it buffers
+; them in the port's RX ring), re-arm.
 proc acm_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
 
         mov     ebx, [.calldata]
         DEBUGF  1,"ACM: RX cb st %u len %u\n", [.status], [.length]
-; Keep RxArmed = 1 until the RxChunk copy below is finished, so a concurrent
-; PORT_OPEN (which also calls acm_arm_rx) cannot start a second read into
-; RxChunk while this one is still being drained.
+; Keep RxArmed = 1 until RxChunk is fully consumed below, so a concurrent
+; startup callback (which also calls acm_arm_rx) cannot start a second
+; read into RxChunk while this one is still being drained.
         cmp     [ebx+acm_dev.Dead], 0
         jne     .dead
         cmp     [.status], USB_STATUS_CLOSED
@@ -2289,35 +2323,13 @@ proc acm_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buff
         mov     ecx, [.length]
         test    ecx, ecx
         jz      .rearm
-
-; used = (head - tail) and (SIZE-1); free = SIZE - 1 - used
-        mov     eax, [ebx+acm_dev.RxHead]
-        mov     edx, [ebx+acm_dev.RxTail]
-        sub     eax, edx
-        and     eax, ACM_RING_SIZE - 1
-        mov     edx, ACM_RING_SIZE - 1
-        sub     edx, eax                        ; edx = free bytes
-        cmp     ecx, edx
-        jbe     @f
-        sub     ecx, edx
-        add     [ebx+acm_dev.RxDrops], ecx
-        mov     ecx, edx                        ; store only what fits
-  @@:
-        test    ecx, ecx
-        jz      .rearm
-
+; the port's rings exist only while it is open; data that arrives after
+; the close is discarded
+        cmp     [ebx+acm_dev.PortOpen], 0
+        je      .rearm
         lea     esi, [ebx+acm_dev.RxChunk]
-        mov     edi, [ebx+acm_dev.RxHead]
-        mov     edx, [ebx+acm_dev.RxRing]
-  .copy_loop:
-        mov     al, [esi]
-        mov     [edx+edi], al
-        inc     esi
-        inc     edi
-        and     edi, ACM_RING_SIZE - 1
-        dec     ecx
-        jnz     .copy_loop
-        mov     [ebx+acm_dev.RxHead], edi
+        stdcall serial_handle_event, [ebx+acm_dev.PortHandle], \
+                SERIAL_EVT_RXNE, ecx, esi
 
   .rearm:
         mov     [ebx+acm_dev.RxArmed], 0        ; this read is done (RxChunk free)
@@ -2339,15 +2351,18 @@ proc acm_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buff
 
 endp
 
-; Bulk OUT callback: free the write buffer.
-; calldata points to the allocation: [context ptr][data...]
+; Bulk OUT callback: release the pump and send the next chunk, if any.
 proc acm_tx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .buffer:dword, .length:dword, .calldata:dword
 
         DEBUGF  1,"ACM: TX cb st %u len %u\n", [.status], [.length]
-        mov     eax, [.calldata]
-        mov     edx, [eax]
-        lock dec [edx+acm_dev.TxPending]
-        invoke  Kfree
+        mov     ebx, [.calldata]
+        mov     [ebx+acm_dev.TxBusy], 0
+        cmp     [ebx+acm_dev.Dead], 0
+        jne     .ret
+        cmp     [.status], 0
+        jne     .ret
+        stdcall acm_sp_tx, ebx
+  .ret:
         ret
 
 endp
@@ -2397,6 +2412,158 @@ proc acm_set_line_state
 
 endp
 
+; Send SET_LINE_CODING built from an SP_CONF (baudrate, word size, stop
+; bits, parity). The allocation [8-byte setup][7-byte line coding] is
+; freed by the completion callback.
+; IN: stdcall(acm context, SP_CONF ptr)
+proc acm_set_line_coding stdcall uses ebx esi edi, .ctx:dword, .conf:dword
+
+        mov     ebx, [.ctx]
+        mov     esi, [.conf]
+        mov     eax, 16
+        invoke  Kmalloc
+        test    eax, eax
+        jz      .ret
+        mov     edi, eax
+
+        mov     byte [edi], 21h                 ; OUT, class, interface
+        mov     byte [edi+1], REQ_SET_LINE_CODING
+        mov     word [edi+2], 0                 ; wValue
+        mov     eax, [ebx+acm_dev.CtrlItf]
+        mov     word [edi+4], ax                ; wIndex
+        mov     word [edi+6], 7                 ; wLength
+
+        mov     eax, [esi+SP_CONF.baudrate]
+        mov     [edi+8], eax                    ; dwDTERate
+        mov     al, [esi+SP_CONF.stop_bits]
+        mov     [edi+12], al                    ; bCharFormat: 1/1.5/2, same
+                                                ; encoding as SERIAL_CONF_*
+        mov     al, [esi+SP_CONF.parity]
+        test    al, al
+        jz      @f                              ; none: same code
+        cmp     al, SERIAL_CONF_PARITY_ODD
+        ja      @f                              ; mark/space: same codes
+        xor     al, 3                           ; CDC swaps odd and even
+  @@:
+        mov     [edi+13], al                    ; bParityType
+        mov     al, [esi+SP_CONF.word_size]
+        mov     [edi+14], al                    ; bDataBits
+
+        lea     edx, [edi+8]
+        invoke  USBControlTransferAsync, [ebx+acm_dev.ConfigPipe], edi, edx, 7, \
+                acm_ctrl_callback, edi, 0
+        test    eax, eax
+        jnz     .ret
+        mov     eax, edi                        ; submission failed: free now
+        invoke  Kfree
+  .ret:
+        ret
+
+endp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; SP_DRIVER callbacks: the serial.sys side of an ACM port.        ;;
+;; serial.sys calls startup when an application opens the port     ;;
+;; (with the port mutex held), shutdown when it is closed or its   ;;
+;; owner dies, reconf on a configuration change and tx when the    ;;
+;; transmit ring has data. None of them may block.                 ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Port opened: apply the line configuration, raise DTR+RTS (device
+; console output is usually gated on DTR) and start receiving.
+proc acm_sp_startup stdcall uses ebx, .data:dword, .conf:dword
+
+        mov     ebx, [.data]
+        DEBUGF  1,"ACM: startup port %u\n", [ebx+acm_dev.PortIdx]
+        cmp     [ebx+acm_dev.Dead], 0
+        jne     .fail
+        stdcall acm_set_line_coding, ebx, [.conf]
+        mov     eax, 3                          ; DTR + RTS
+        call    acm_set_line_state
+        mov     [ebx+acm_dev.RxErrRun], 0
+        mov     [ebx+acm_dev.PortOpen], 1
+        call    acm_arm_rx
+        xor     eax, eax
+        ret
+  .fail:
+        or      eax, -1
+        ret
+
+endp
+
+; Port closed: stop feeding serial.sys (its rings are being destroyed)
+; and drop the modem lines.
+proc acm_sp_shutdown stdcall uses ebx, .data:dword
+
+        mov     ebx, [.data]
+        DEBUGF  1,"ACM: shutdown port %u\n", [ebx+acm_dev.PortIdx]
+        mov     [ebx+acm_dev.PortOpen], 0
+        cmp     [ebx+acm_dev.Dead], 0
+        jne     @f
+        xor     eax, eax                        ; drop DTR + RTS
+        call    acm_set_line_state
+  @@:
+        xor     eax, eax
+        ret
+
+endp
+
+proc acm_sp_reconf stdcall uses ebx, .data:dword, .conf:dword
+
+        mov     ebx, [.data]
+        cmp     [ebx+acm_dev.Dead], 0
+        jne     .fail
+        stdcall acm_set_line_coding, ebx, [.conf]
+        xor     eax, eax
+        ret
+  .fail:
+        or      eax, -1
+        ret
+
+endp
+
+; serial.sys has queued transmit data: pull a chunk from the port's tx
+; ring into TxChunk and send it. A single transfer is in flight at a
+; time; the completion callback keeps the pump going.
+proc acm_sp_tx stdcall uses ebx esi, .data:dword
+
+        mov     ebx, [.data]
+        cmp     [ebx+acm_dev.Dead], 0
+        jne     .fail
+        cmp     [ebx+acm_dev.PortHandle], 0
+        je      .fail
+        mov     eax, 1
+        xchg    eax, [ebx+acm_dev.TxBusy]       ; atomic test-and-set
+        test    eax, eax
+        jnz     .busy                           ; pump already running
+        lea     esi, [ebx+acm_dev.TxChunk]
+        stdcall serial_handle_event, [ebx+acm_dev.PortHandle], \
+                SERIAL_EVT_TXE, ACM_TX_CHUNK, esi
+        test    eax, eax
+        jz      .idle                           ; the tx ring is empty
+        invoke  USBNormalTransferAsync, [ebx+acm_dev.OutPipe], esi, eax, \
+                acm_tx_callback, ebx, 0
+        test    eax, eax
+        jz      .submit_failed
+  .busy:
+        xor     eax, eax
+        ret
+
+  .idle:
+        mov     [ebx+acm_dev.TxBusy], 0
+        xor     eax, eax
+        ret
+
+  .submit_failed:
+        mov     [ebx+acm_dev.TxBusy], 0
+  .fail:
+        or      eax, -1
+        ret
+
+endp
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
 ;; DeviceDisconnected: called by the USB stack after all transfer  ;;
@@ -2441,17 +2608,14 @@ proc DeviceDisconnected stdcall uses ebx esi edi, .devdata:dword
 ; --- ACM serial port ---
   .acm:
         DEBUGF  2,"ACM: port %u disconnected\n", [ebx+acm_dev.PortIdx]
-        mov     ecx, ports_mutex
-        invoke  MutexLock
         mov     [ebx+acm_dev.Dead], 1
-        mov     ecx, [ebx+acm_dev.PortIdx]
-        cmp     [ports+ecx*4], ebx
-        jne     @f
-        mov     dword [ports+ecx*4], 0
+        mov     [ebx+acm_dev.PortOpen], 0
+; unregister from serial.sys; if the port is open, this also invokes
+; our shutdown callback (which sees Dead and does nothing)
+        cmp     [ebx+acm_dev.PortHandle], 0
+        je      @f
+        stdcall serial_remove_port, [ebx+acm_dev.PortHandle]
   @@:
-        mov     ecx, ports_mutex
-        invoke  MutexUnlock
-        invoke  KernelFree, [ebx+acm_dev.RxRing]
         mov     eax, ebx
         invoke  Kfree
         ret
@@ -2460,7 +2624,8 @@ endp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; service_proc: IOCTL interface for userspace (ACM serial ports). ;;
+;; service_proc: the ACM ports live in serial.sys now, so the only ;;
+;; IOCTL left is GETVERSION.                                       ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2468,204 +2633,15 @@ proc service_proc stdcall uses ebx esi edi, ioctl:dword
 
         mov     esi, [ioctl]
         mov     eax, [esi+IOCTL.io_code]
-
-        cmp     eax, 0                          ; GETVERSION
-        jne     @f
+        test    eax, eax                        ; 0 = GETVERSION
+        jnz     .fail
         cmp     [esi+IOCTL.out_size], 4
         jb      .fail
         mov     eax, [esi+IOCTL.output]
         mov     dword [eax], API_VERSION
-        jmp     .ok
-  @@:
-        cmp     eax, 1                          ; PORT_COUNT
-        jne     @f
-        cmp     [esi+IOCTL.out_size], 4
-        jb      .fail
-        mov     ecx, ports_mutex
-        invoke  MutexLock
-        xor     eax, eax
-        xor     ecx, ecx
-  .count_loop:
-        cmp     [ports+ecx*4], 0
-        je      .count_next
-        inc     eax
-  .count_next:
-        inc     ecx
-        cmp     ecx, ACM_MAX_PORTS
-        jb      .count_loop
-        mov     edx, [esi+IOCTL.output]
-        mov     [edx], eax
-        mov     ecx, ports_mutex
-        invoke  MutexUnlock
-        jmp     .ok
-  @@:
-        cmp     eax, 2                          ; PORT_OPEN
-        je      .open
-        cmp     eax, 3                          ; PORT_CLOSE
-        je      .close
-        cmp     eax, 4                          ; PORT_READ
-        je      .read
-        cmp     eax, 5                          ; PORT_WRITE
-        je      .write
-        cmp     eax, 6                          ; PORT_STATUS
-        je      .status
-        jmp     .fail
-
-;----------------------------------------
-  .open:
-        call    .get_port                       ; -> ebx, ports_mutex held
-        DEBUGF  1,"ACM: PORT_OPEN port %u\n", [ebx+acm_dev.PortIdx]
-; a fresh session starts with an empty ring
-        mov     eax, [ebx+acm_dev.RxHead]
-        mov     [ebx+acm_dev.RxTail], eax
-        mov     [ebx+acm_dev.Opened], 1
-; make sure a bulk IN read is pending (in case the initial one never armed
-; or a stall stopped it), then assert DTR+RTS so the firmware's console
-; output (gated on DTR) is enabled.
-        call    acm_arm_rx
-        mov     eax, 3                          ; DTR + RTS
-        call    acm_set_line_state
-        jmp     .ok_unlock
-
-;----------------------------------------
-  .close:
-        call    .get_port
-        mov     [ebx+acm_dev.Opened], 0
-        xor     eax, eax                        ; drop DTR + RTS
-        call    acm_set_line_state
-        jmp     .ok_unlock
-
-;----------------------------------------
-  .read:
-        call    .get_port
-        cmp     [esi+IOCTL.out_size], 5
-        jb      .fail_unlock
-        mov     edi, [esi+IOCTL.output]
-        mov     ecx, [esi+IOCTL.out_size]
-        sub     ecx, 4                          ; space for the data
-; available = (head - tail) and (SIZE-1)
-        mov     eax, [ebx+acm_dev.RxHead]
-        mov     edx, [ebx+acm_dev.RxTail]
-        sub     eax, edx
-        and     eax, ACM_RING_SIZE - 1
-        cmp     ecx, eax
-        jbe     @f
-        mov     ecx, eax                        ; clamp to available
-  @@:
-        mov     [edi], ecx                      ; bytes returned
-        add     edi, 4
-        test    ecx, ecx
-        jz      .read_done
-        mov     edx, [ebx+acm_dev.RxTail]
-        push    esi
-        mov     esi, [ebx+acm_dev.RxRing]
-  .read_loop:
-        mov     al, [esi+edx]
-        mov     [edi], al
-        inc     edi
-        inc     edx
-        and     edx, ACM_RING_SIZE - 1
-        dec     ecx
-        jnz     .read_loop
-        pop     esi
-        mov     [ebx+acm_dev.RxTail], edx
-  .read_done:
-        jmp     .ok_unlock
-
-;----------------------------------------
-  .write:
-        call    .get_port
-        cmp     [ebx+acm_dev.TxPending], ACM_TX_MAX_PENDING
-        jae     .fail_unlock
-        mov     ecx, [esi+IOCTL.inp_size]
-        sub     ecx, 4                          ; minus the port index dword
-        jbe     .fail_unlock
-        cmp     ecx, ACM_TX_MAX_CHUNK
-        ja      .fail_unlock
-; allocate [context ptr][data]
-        push    ecx
-        lea     eax, [ecx+4]
-        invoke  Kmalloc
-        pop     ecx
-        test    eax, eax
-        jz      .fail_unlock
-        mov     [eax], ebx
-        push    ecx esi
-        lea     edi, [eax+4]
-        mov     edx, [esi+IOCTL.input]
-        lea     esi, [edx+4]
-        push    eax
-        rep movsb
-        pop     eax
-        pop     esi ecx
-        lock inc [ebx+acm_dev.TxPending]
-        lea     edx, [eax+4]
-        push    eax ecx
-        invoke  USBNormalTransferAsync, [ebx+acm_dev.OutPipe], edx, ecx, \
-                acm_tx_callback, eax, 0
-        pop     ecx
-        DEBUGF  1,"ACM: PORT_WRITE %u bytes, submit %x\n", ecx, eax
-        pop     edx
-        test    eax, eax
-        jnz     .ok_unlock
-        lock dec [ebx+acm_dev.TxPending]
-        mov     eax, edx
-        invoke  Kfree
-        jmp     .fail_unlock
-
-;----------------------------------------
-  .status:
-        call    .get_port
-        cmp     [esi+IOCTL.out_size], 8
-        jb      .fail_unlock
-        mov     edi, [esi+IOCTL.output]
-        mov     dword [edi], 1                  ; present
-        mov     eax, [ebx+acm_dev.RxHead]
-        mov     edx, [ebx+acm_dev.RxTail]
-        sub     eax, edx
-        and     eax, ACM_RING_SIZE - 1
-        mov     [edi+4], eax                    ; rx bytes available
-        jmp     .ok_unlock
-
-;----------------------------------------
-; helper: read dd port_index from the input buffer, lock the ports
-; table and return the port context in ebx. On error discards the
-; return address and jumps to the failure path.
-  .get_port:
-        cmp     [esi+IOCTL.inp_size], 4
-        jb      .bad_port_nolock
-        mov     eax, [esi+IOCTL.input]
-        mov     eax, [eax]                      ; port index
-        cmp     eax, ACM_MAX_PORTS
-        jae     .bad_port_nolock
-        push    eax
-        mov     ecx, ports_mutex
-        invoke  MutexLock
-        pop     eax
-        mov     ebx, [ports+eax*4]
-        test    ebx, ebx
-        jz      .bad_port
-        cmp     [ebx+acm_dev.Dead], 0
-        jne     .bad_port
-        retn
-  .bad_port:
-        add     esp, 4                          ; discard the return address
-        jmp     .fail_unlock
-  .bad_port_nolock:
-        add     esp, 4                          ; discard the return address
-        jmp     .fail
-
-;----------------------------------------
-  .ok_unlock:
-        mov     ecx, ports_mutex
-        invoke  MutexUnlock
-  .ok:
         xor     eax, eax
         ret
 
-  .fail_unlock:
-        mov     ecx, ports_mutex
-        invoke  MutexUnlock
   .fail:
         or      eax, -1
         ret
@@ -2687,12 +2663,23 @@ usb_functions:
         dd      DeviceDisconnected
 usb_functions_end:
 
+; serial.sys registration: entry from GetService and the SP_DRIVER
+; callback table passed to SERIAL_API_SRV_ADD_PORT
+serial_drv_entry dd     0
+acm_port_seq    dd      0               ; sequential port number for logs
+
+align 4
+acm_sp_driver:
+        dd      sizeof.SP_DRIVER
+        dd      acm_sp_startup
+        dd      acm_sp_shutdown
+        dd      acm_sp_reconf
+        dd      acm_sp_tx
+
 data fixups
 end data
 
 align 4
-ports_mutex     rd      3
-ports           rd      ACM_MAX_PORTS
 parse_scratch   cdc_parse
 
 include_debug_strings
