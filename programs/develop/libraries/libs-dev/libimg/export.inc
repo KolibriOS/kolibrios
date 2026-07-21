@@ -19,6 +19,7 @@ E_LIB img_destroy_layer
 E_LIB img_count
 E_LIB img_lock_bits
 E_LIB img_unlock_bits
+E_LIB img_crop
 E_LIB img_flip
 E_LIB img_flip_layer
 E_LIB img_rotate

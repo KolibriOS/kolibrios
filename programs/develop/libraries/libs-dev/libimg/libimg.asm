@@ -1031,6 +1031,218 @@ proc img.unlock_bits _img, _lock ;////////////////////////////////////////////;;
 endp
 
 ;;============================================================================;;
+proc img.crop _img, _left, _top, _width, _height
+;;----------------------------------------------------------------------------;;
+;? Crops the image according to the specified coordinates                     ;;
+;;----------------------------------------------------------------------------;;
+;> _img    = pointer to image                                                 ;;
+;> _left   = x-coordinate of the cropping start point                         ;;
+;> _top    = y-coordinate of the cropping start point                         ;;
+;> _width  = new width                                                        ;;
+;> _height = new height                                                       ;;
+;;----------------------------------------------------------------------------;;
+;< eax = 0 (fail) / pointer to the new pixels data                            ;;
+;;============================================================================;;
+locals
+        n_data dd ?
+        n_data_size dd ?
+        b_copy   dd ?
+        b_lost   dd ?
+endl
+        pushad
+        mov     edx, [_img]
+
+        mov     eax, [_left]
+        add     eax, [_width]
+        cmp     eax, [edx+Image.Width]
+        jg      .fail
+        mov     eax, [_top]
+        add     eax, [_height]
+        cmp     eax, [edx+Image.Height]
+        jg      .fail
+        mov     esi, [edx+Image.Data]
+
+        cmp     [edx+Image.Type], Image.bpp8g
+        jnz     .end_b08g
+        mov     ecx, [_width]
+        imul    ecx, [_height]
+        invoke  mem.alloc, ecx
+        test    eax, eax
+        jz      .end
+        mov     edi, eax
+        mov     [n_data], eax
+
+        mov     eax, [_top]
+        imul    eax, [edx+Image.Width]
+        add     eax, [_left]
+        add     esi, eax
+
+        mov     eax, [edx+Image.Width]
+        sub     eax, [_width]
+        mov     [b_lost], eax
+        cmp     [b_lost], 0
+        jnz     @f
+        mov     ecx, [_width]
+        imul    ecx, [_height]
+        rep     movsb
+        jmp     .end_copy
+@@:
+        mov     ebx, [_height]
+@@:
+        mov     ecx, [_width]
+        rep     movsb
+        add     esi, [b_lost]
+        dec     ebx
+        jnz     @b
+        jmp     .end_copy
+.end_b08g:
+
+        cmp     [edx+Image.Type], Image.bpp8i
+        jnz     .end_b08i
+        mov     ecx, [_width]
+        imul    ecx, [_height]
+        mov     [n_data_size], ecx
+        add     ecx, 256*4 ; for palette
+        invoke  mem.alloc, ecx
+        test    eax, eax
+        jz      .end
+        mov     edi, eax
+        mov     [n_data], eax
+
+        mov     eax, [_top]
+        imul    eax, [edx+Image.Width]
+        add     eax, [_left]
+        add     esi, eax
+
+        mov     eax, [edx+Image.Width]
+        sub     eax, [_width]
+        mov     [b_lost], eax
+        cmp     [b_lost], 0
+        jnz     @f
+        mov     ecx, [_width]
+        imul    ecx, [_height]
+        rep     movsb
+        jmp     .copy_palette
+@@:
+        mov     ebx, [_height]
+@@:
+        mov     ecx, [_width]
+        rep     movsb
+        add     esi, [b_lost]
+        dec     ebx
+        jnz     @b
+        jmp     .copy_palette
+.end_b08i:
+
+        cmp     [edx+Image.Type], Image.bpp24
+        jnz     .end_b24
+        mov     ecx, [_width]
+        imul    ecx, [_height]
+        lea     ecx, [ecx+2*ecx]
+        invoke  mem.alloc, ecx
+        test    eax, eax
+        jz      .end
+        mov     edi, eax
+        mov     [n_data], eax
+
+        mov     eax, [_top]
+        imul    eax, [edx+Image.Width]
+        add     eax, [_left]
+        lea     eax, [eax+2*eax]
+        add     esi, eax
+        mov     eax, [_width]
+        lea     eax, [eax+2*eax]
+        mov     [b_copy], eax
+
+        mov     eax, [edx+Image.Width]
+        sub     eax, [_width]
+        lea     eax, [eax+2*eax]
+        mov     [b_lost], eax
+        cmp     [b_lost], 0
+        jnz     @f
+        mov     ecx, [_width]
+        imul    ecx, [_height]
+        lea     ecx, [ecx+2*ecx]
+        rep     movsb
+        jmp     .end_copy
+@@:
+        mov     ebx, [_height]
+@@:
+        mov     ecx, [b_copy]
+        rep     movsb
+        add     esi, [b_lost]
+        dec     ebx
+        jnz     @b
+        jmp     .end_copy
+.end_b24:
+
+        cmp     [edx+Image.Type], Image.bpp32
+        jnz     .end_b32
+        mov     ecx, [_width]
+        imul    ecx, [_height]
+        shl     ecx, 2
+        invoke  mem.alloc, ecx
+        test    eax, eax
+        jz      .end
+        mov     edi, eax
+        mov     [n_data], eax
+
+        mov     eax, [_top]
+        imul    eax, [edx+Image.Width]
+        add     eax, [_left]
+        shl     eax, 2
+        add     esi, eax
+
+        mov     eax, [edx+Image.Width]
+        sub     eax, [_width]
+        shl     eax, 2
+        mov     [b_lost], eax
+        cmp     [b_lost], 0
+        jnz     @f
+        mov     ecx, [_width]
+        imul    ecx, [_height]
+        rep     movsd
+        jmp     .end_copy
+@@:
+        mov     ebx, [_height]
+@@:
+        mov     ecx, [_width]
+        rep     movsd
+        add     esi, [b_lost]
+        dec     ebx
+        jnz     @b
+        jmp     .end_copy
+.end_b32:
+
+        jmp     .fail
+
+.copy_palette:
+        mov     edi, [n_data]
+        add     edi, [n_data_size]
+        mov     [edx+Image.Palette], edi
+        mov     esi, [edx+Image.Width]
+        imul    esi, [edx+Image.Height]
+        add     esi, [edx+Image.Data]
+        mov     ecx, 256
+        rep movsd
+.end_copy:
+        invoke  mem.free, [edx+Image.Data]
+        mov     eax, [_width]
+        mov     [edx+Image.Width], eax
+        mov     eax, [_height]
+        mov     [edx+Image.Height], eax
+        mov     eax, [n_data]
+        mov     [edx+Image.Data], eax
+        jmp     .end
+.fail:
+        xor     eax, eax
+.end:
+        mov     [esp+28], eax
+        popad
+        ret
+endp
+
+;;============================================================================;;
 proc img.flip.layer _img, _flip_kind ;////////////////////////////////////////;;
 ;;----------------------------------------------------------------------------;;
 ;? Flip image layer                                                           ;;
@@ -2865,6 +3077,7 @@ export                                      \
     img.count          , 'img_count'          , \
     img.lock_bits      , 'img_lock_bits'      , \
     img.unlock_bits    , 'img_unlock_bits'    , \
+    img.crop           , 'img_crop'           , \
     img.flip           , 'img_flip'           , \
     img.flip.layer     , 'img_flip_layer'     , \
     img.rotate         , 'img_rotate'         , \

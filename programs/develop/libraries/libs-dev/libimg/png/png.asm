@@ -735,9 +735,9 @@ macro init_block
 	mov	ax, [esi]
 	convert_16_to_8
 	mov	[edi+2], al
-	;mov	ax, [esi+6]
-	;convert_16_to_8
-	;mov	[edi+3], al
+	mov	ax, [esi+6]
+	convert_16_to_8
+	mov	[edi+3], al
 	add	edi, 4
 	dec	ecx
 	jnz	.rgb_alpha2_16bit.innloop2
@@ -969,8 +969,9 @@ local .l1
 	mov	[.i], ecx
 .rgb2_16bit.extloop:
 	init_block
-	lea	eax, [eax*3]
-	add	eax, edi
+; the image was created as Image.bpp32 (see .ihdr), so write 4 bytes per pixel,
+; not 3: with 3-byte stores rows drift and the last quarter of the image stays empty
+	lea	eax, [edi+eax*4]
 	push	eax
 .rgb2_16bit.innloop1:
 	push	edi
@@ -985,7 +986,8 @@ local .l1
 	mov	ax, [esi]
 	convert_16_to_8
 	mov	[edi+2], al
-	add	edi, 3
+	mov	byte [edi+3], 0xff
+	add	edi, 4
 	dec	ecx
 	jnz	.rgb2_16bit.innloop2
 	pop	edi
