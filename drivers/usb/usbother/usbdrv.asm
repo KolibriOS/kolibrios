@@ -176,9 +176,11 @@ INIT_USBDRV_FILE
 ADD_CLASS       'usbcdc'        , 0x02, X   , X
 
 ; RNDIS network (Remote NDIS): LTE modems in HiLink mode, USB tethering.
-; Two encodings exist: Wireless-Controller/RF/RNDIS and an ACM masquerade
-; (the latter is declined by usbcdc, so the scan falls through to us).
+; Three encodings exist: Wireless-Controller/RF/RNDIS, Miscellaneous/
+; RNDIS-over-Ethernet (phone tethering) and an ACM masquerade (the
+; latter is declined by usbcdc, so the scan falls through to us).
 ADD_CLASS       'usbrndis'      , 0xE0, 0x01, 0x03
+ADD_CLASS       'usbrndis'      , 0xEF, 0x04, 0x01
 ADD_CLASS       'usbrndis'      , 0x02, 0x02, 0xFF
 
 ;ADD_CLASS       'usbimage'      , 0x06, 1   , 1

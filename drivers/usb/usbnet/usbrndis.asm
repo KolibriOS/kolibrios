@@ -267,10 +267,19 @@ proc AddDevice stdcall uses ebx esi edi, .pipe0:dword, .config:dword, .interface
 
 ; Accept E0h/01/03 (Wireless Controller / RF / RNDIS) ...
         cmp     [esi+interface_descr.bInterfaceClass], 0xE0
-        jne     .try_acm
+        jne     .try_misc
         cmp     [esi+interface_descr.bInterfaceSubClass], 0x01
         jne     .decline
         cmp     [esi+interface_descr.bInterfaceProtocol], 0x03
+        jne     .decline
+        jmp     .accept
+; ... EFh/04/01 (Miscellaneous / RNDIS over Ethernet: phone tethering) ...
+  .try_misc:
+        cmp     [esi+interface_descr.bInterfaceClass], 0xEF
+        jne     .try_acm
+        cmp     [esi+interface_descr.bInterfaceSubClass], 0x04
+        jne     .decline
+        cmp     [esi+interface_descr.bInterfaceProtocol], 0x01
         jne     .decline
         jmp     .accept
 ; ... and 02h/02/FF (RNDIS masquerading as CDC-ACM).
