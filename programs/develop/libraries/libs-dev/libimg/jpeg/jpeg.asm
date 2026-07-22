@@ -801,8 +801,10 @@ img.decode.jpg:
 	cmp	dword [edx+40], 0
 	jl	@f
 	cmp	dword [edx+28], 0
-	jge	.realdata
-@@:
+	jg	.realdata	; strictly >0: a block starting exactly at x==width (countdown 0)
+@@:				; is pure MCU padding - decode its bits for sync but do NOT store it,
+				; else it lands one block past the row stride, on the next row's
+				; first block, and the image shears (width mod 16 = 8 in 4:2:0)
 	cmp	[ebx+jpeg.work.not_interleaved], 0
 	jnz	.norealdata
 	push	eax edi
