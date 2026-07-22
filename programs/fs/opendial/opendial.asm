@@ -101,7 +101,7 @@ y_minimal_size equ 250
 START:
 	mcall	SF_SYS_MISC,SSF_HEAP_INIT
 	mcall	SF_KEYBOARD,SSF_SET_INPUT_MODE,1
-	mcall	SF_SET_EVENTS_MASK,0x27
+	mcall	SF_SET_EVENTS_MASK, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE
 	call	get_communication_area
 
 	call	get_active_pocess
@@ -136,13 +136,13 @@ red_1:
 ;---------------------------------------------------------------------
 still:
 	mcall	SF_WAIT_EVENT
-	cmp	eax,1
+	cmp	eax, EV_REDRAW
 	je	red
-	cmp	eax,2
+	cmp	eax, EV_KEY
 	je	key
-	cmp	eax,3
+	cmp	eax, EV_BUTTON
 	je	button
-	cmp	eax,6
+	cmp	eax, EV_MOUSE
 	je	mouse
 	jmp	still
 ;---------------------------------------------------------------------
@@ -386,19 +386,18 @@ change_focus_area:
 	and	al,1
 	mov	[focus_pointer],al
 .1:
-	mov	edi,edit1
 	test	al,al
 	jne	@f
 	mov	[file_browser_data_1.select_panel_counter],1
-	and	[edi+44],dword 0xFFFFFFFD	; ed_focus
-	mov	[edi+12],dword 0xffffff ; color white
+	and	[edit1.flags],dword 0xFFFFFFFD	; ed_focus
+	mov	[edit1.color],0xffffff ; white
 	call	draw_draw_file_browser1
 	mcall	SF_KEYBOARD,SSF_SET_INPUT_MODE,1
 	jmp	still
 @@:
 	mov	[file_browser_data_1.select_panel_counter],0
-	or	[edi+44],dword ed_focus
-	mov	[edi+12],dword 0xffffb0 ; color yellow
+	or	[edit1.flags],dword ed_focus
+	mov	[edit1.color],0xffffb0 ; yellow
 	call	draw_draw_file_browser1
 	mcall	SF_KEYBOARD,SSF_SET_INPUT_MODE,0
 	jmp	still
@@ -1042,10 +1041,9 @@ get_communication_area:
 	jne	@f
 	pushad
 	mov	[focus_pointer],bl
-	mov	edi,edit1
 	mov	[file_browser_data_1.select_panel_counter],0
-	or	[edi+44],dword ed_focus
-	mov	[edi+12],dword 0xffffb0 ; color yellow
+	or	[edit1.flags],dword ed_focus
+	mov	[edit1.color],0xffffb0 ; yellow
 	mcall	SF_KEYBOARD,SSF_SET_INPUT_MODE,0
 	popad
 @@:
@@ -1134,10 +1132,9 @@ load_next_dir:
 	mov	ecx,[scroll_bar_data_vertical.y]
 	inc	ecx
 	mcall	SF_DRAW_RECT,,,0xcccccc
-	mov	edi,edit1
 	xor	eax,eax
-	mov	[edi+44],eax
-	mov	[edi+12],dword 0xffffff ; color white
+	mov	[edit1.flags],eax
+	mov	[edit1.color],0xffffff ; white
 	call	draw_draw_file_browser1
 .exit:
 	ret
@@ -1235,7 +1232,9 @@ file_no_folder:
 	cmp	[open_dialog_type],1	;Save file
 	jne	.no_save
 	push	eax ebx ecx esi edi
-	mov	[edit1.color],0xffb0b0
+	mov	[edit1.color],0xffb0b0 ; light red
+	push	edit1
+	call	[edit_box_draw]
 	mov	esi,user_selected_name
 	call	search_expansion
 	test	eax,eax
@@ -1649,9 +1648,8 @@ copy_new_file_name:
 	sub	edi,user_selected_name
 	dec	edi
 
-	mov	esi,edit1
-	mov	[esi+48],edi ;ed_size
-	mov	[esi+52],edi ;ed_pos
+	mov	[edit1.size],edi
+	mov	[edit1.pos],edi
 
 	push	dword name_editboxes
 	call	[edit_box_draw]
@@ -1768,18 +1766,17 @@ draw_file_name:
 	mov	eax,esi
 	dec	eax
 
-	mov	edi,edit1
-	mov	[edi+48],eax ;ed_size
-	mov	[edi+52],eax ;ed_pos
+	mov	[edit1.size],eax
+	mov	[edit1.pos],eax
 ;--------------------------------------
 	mov	eax,[file_browser_data_1.x]
 	mov	ebx,eax
 	shr	ebx,16
 	and	eax,0xffff
 	sub	eax,200
-	mov	[edi],eax
+	mov	[edit1.width],eax
 	add	ebx,70
-	mov	[edi+4],ebx
+	mov	[edit1.left],ebx
 
 	mov	eax,[file_browser_data_1.y]
 	mov	ebx,eax
@@ -1787,7 +1784,7 @@ draw_file_name:
 	and	eax,0xffff
 	add	eax,ebx
 	add	eax,5
-	mov	[edi+8],eax
+	mov	[edit1.top],eax
 
 	push	dword name_editboxes
 	call	[edit_box_draw]
