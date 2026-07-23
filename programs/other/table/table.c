@@ -135,7 +135,7 @@ static void DrawScrolls(void)
 	scroll_h.ypos = grid.y + grid.h;
 	scroll_h.xsize = grid.w + SCROLL_SIZE + 1;
 	scroll_h.all_redraw = 1;
-	scroll_h.max_area = col_count - 2;
+	scroll_h.max_area = col_count - 1;
 	scroll_h.cur_area = nx - grid.firstx - 1;
 	scroll_h.position = grid.firstx - 1;
 	scrollbar_h_draw(&scroll_h);
@@ -145,7 +145,7 @@ static void DrawScrolls(void)
 	scroll_v.ypos = 0;
 	scroll_v.ysize = grid.h + 1;
 	scroll_v.all_redraw = 1;
-	scroll_v.max_area = row_count - 2;
+	scroll_v.max_area = row_count - 1;
 	scroll_v.cur_area = ny - grid.firsty - 1;
 	scroll_v.position = grid.firsty - 1;
 	scrollbar_v_draw(&scroll_v);
@@ -341,6 +341,7 @@ static void draw_grid(void)
 {
 	int i, j;
 	long x0 = 0, y0 = 0, x = 0, y = 0;
+	int right_edge = 0, bottom_edge = 0;
 	uint32_t bg_color;
 	clamp_view();
 	_ksys_draw_bar(0, 0, cell_w[0], cell_h[0], HEADER_CELL_COLOR); // left top cell
@@ -373,6 +374,7 @@ static void draw_grid(void)
 		x += cell_w[i];
 		nx++;
 	}
+	right_edge = x - x0; // right edge of the last visible column
 
 	// row headers + horizontal lines
 	y = cell_h[0];
@@ -393,6 +395,13 @@ static void draw_grid(void)
 		y += cell_h[i];
 		ny++;
 	}
+	bottom_edge = y - y0; // bottom edge of the last visible row
+
+	// blank out any strip past the last column/row so nothing stale shows
+	if (right_edge < grid.w)
+		_ksys_draw_bar(right_edge, 0, grid.w - right_edge, grid.h, CELL_COLOR);
+	if (bottom_edge < grid.h)
+		_ksys_draw_bar(0, bottom_edge, grid.w, grid.h - bottom_edge, CELL_COLOR);
 
 	// cells themselves
 	y = cell_h[0];
