@@ -138,28 +138,18 @@ static void def_button(int x, int y, int w, int h, uint32_t id, uint32_t color)
 	_ksys_define_button(x, y, w, h, id, color);
 }
 
-// text with a KolibriOS fn4 font flag (0x10 small, 0x90 big); ksys.h has no
-// font-flag wrapper, hence the raw syscall
+// text with a KolibriOS fn4 font flag (0x10 small, 0x90 big). The flag lives
+// in the high byte of the color argument (ecx), so just pack and pass it.
 static void draw_text(int x, int y, unsigned font, uint32_t color, const char *s, int len)
 {
-	__asm__ __volatile__(
-		"int $0x40"
-		:
-		: "a"(4), "b"((x << 16) | (y & 0xFFFF)),
-		  "c"((font << 24) | (color & 0xFFFFFF)), "d"(s), "S"(len)
-		: "memory");
+	_ksys_draw_text(s, x, y, len, (font << 24) | (color & 0xFFFFFF));
 }
 
-// line; invert=1 draws an XOR (rubber-band) line (fn38 invert, not in ksys.h)
+// line; invert=1 draws an XOR (rubber-band) line - fn38 reads that from the
+// color (edx), value 0x01000000.
 static void draw_line(int x1, int y1, int x2, int y2, uint32_t color, int invert)
 {
-	uint32_t edx = invert ? 0x01000000 : color;
-	__asm__ __volatile__(
-		"int $0x40"
-		:
-		: "a"(38), "b"((x1 << 16) | (x2 & 0xFFFF)),
-		  "c"((y1 << 16) | (y2 & 0xFFFF)), "d"(edx)
-		: "memory");
+	_ksys_draw_line(x1, y1, x2, y2, invert ? 0x01000000 : color);
 }
 
 // rectangle outline
