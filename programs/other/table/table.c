@@ -305,7 +305,6 @@ static void draw_grid(void)
 	uint32_t bg;
 
 	clamp_view();
-	_ksys_draw_bar(0, 0, W, H, CELL_COLOR); // clean slate
 
 	// screen x/y of every column/row left/top edge (-1 if off-screen).
 	// off_x/off_y shift the first visible cell partly under the headers.
@@ -361,6 +360,17 @@ static void draw_grid(void)
 					draw_region(cx + 1, cy + 1, w - 1, h - 1, 0xff0000);
 			}
 		}
+	}
+
+	// clear the strip past the last cell (only when the table is smaller
+	// than the viewport; otherwise the cells already tile the whole area)
+	{
+		int rx = cell_x[nx - 1] + cell_w[nx - 1];
+		int by = cell_y[ny - 1] + cell_h[ny - 1];
+		if (rx < W)
+			_ksys_draw_bar(rx, ch0, W - rx, H - ch0, CELL_COLOR);
+		if (by < H)
+			_ksys_draw_bar(cw0, by, W - cw0, H - by, CELL_COLOR);
 	}
 
 	// column headers (top band)
