@@ -362,17 +362,6 @@ static void draw_grid(void)
 		}
 	}
 
-	// clear the strip past the last cell (only when the table is smaller
-	// than the viewport; otherwise the cells already tile the whole area)
-	{
-		int rx = cell_x[nx - 1] + cell_w[nx - 1];
-		int by = cell_y[ny - 1] + cell_h[ny - 1];
-		if (rx < W)
-			_ksys_draw_bar(rx, ch0, W - rx, H - ch0, CELL_COLOR);
-		if (by < H)
-			_ksys_draw_bar(cw0, by, W - cw0, H - by, CELL_COLOR);
-	}
-
 	// column headers (top band)
 	_ksys_draw_bar(cw0, 0, W - cw0, ch0, HEADER_CELL_COLOR);
 	for (j = grid.firstx; j < nx; j++) {
