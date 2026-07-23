@@ -1,4 +1,3 @@
-#include "func.h"
 #include "calc.h"
 
 #include <clayer/boxlib.h>
@@ -137,6 +136,51 @@ static void def_button(int x, int y, int w, int h, uint32_t id, uint32_t color)
 {
 	_ksys_delete_button(id);
 	_ksys_define_button(x, y, w, h, id, color);
+}
+
+// text with a KolibriOS fn4 font flag (0x10 small, 0x90 big); ksys.h has no
+// font-flag wrapper, hence the raw syscall
+static void draw_text(int x, int y, unsigned font, uint32_t color, const char *s, int len)
+{
+	__asm__ __volatile__(
+		"int $0x40"
+		:
+		: "a"(4), "b"((x << 16) | (y & 0xFFFF)),
+		  "c"((font << 24) | (color & 0xFFFFFF)), "d"(s), "S"(len)
+		: "memory");
+}
+
+// line; invert=1 draws an XOR (rubber-band) line (fn38 invert, not in ksys.h)
+static void draw_line(int x1, int y1, int x2, int y2, uint32_t color, int invert)
+{
+	uint32_t edx = invert ? 0x01000000 : color;
+	__asm__ __volatile__(
+		"int $0x40"
+		:
+		: "a"(38), "b"((x1 << 16) | (x2 & 0xFFFF)),
+		  "c"((y1 << 16) | (y2 & 0xFFFF)), "d"(edx)
+		: "memory");
+}
+
+// rectangle outline
+static void draw_region(int x, int y, int w, int h, uint32_t color)
+{
+	_ksys_draw_line(x, y, x + w - 2, y, color);
+	_ksys_draw_line(x, y + 1, x, y + h - 1, color);
+	_ksys_draw_line(x + w - 1, y, x + w - 1, y + h - 2, color);
+	_ksys_draw_line(x + 1, y + h - 1, x + w - 1, y + h - 1, color);
+}
+
+// text clipped to area_w pixels (small font)
+static void draw_cut_text(int x, int y, int area_w, uint32_t color, const char *s)
+{
+	int len;
+	if (!s)
+		return;
+	len = strlen(s);
+	if (len * 8 > area_w)
+		len = area_w / 8;
+	draw_text(x, y, 0x10, color, s, len);
 }
 
 static void DrawSelectedFrame(int x, int y, int w, int h, uint32_t col)
@@ -857,7 +901,7 @@ static void process_key(void)
 		}
 }
 
-static void Eventtable_load(void)
+static void EventLoadFile(void)
 {
 	int r;
 	stop_edit();
@@ -906,7 +950,7 @@ static void process_button(void)
 		break;
 
 	case LOAD_BUTTON:
-		Eventtable_load();
+		EventLoadFile();
 		break;
 
 	case SELECT_ALL_BUTTON:
@@ -936,7 +980,7 @@ int main(int argc, char **argv)
 	if (argc > 1) {
 		strcpy(fname, argv[1]);
 		file_box.size = file_box.pos = strlen(fname);
-		Eventtable_load();
+		EventLoadFile();
 	}
 	_ksys_set_event_mask(KSYS_EVM_REDRAW | KSYS_EVM_KEY | KSYS_EVM_BUTTON | KSYS_EVM_MOUSE | KSYS_EVM_MOUSE_FILTER);
 	for (;;) {

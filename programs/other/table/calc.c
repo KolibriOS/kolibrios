@@ -1,7 +1,7 @@
-#include "func.h"
 #include "parser.h"
 #include "calc.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,6 +41,34 @@ static double calc_callback(char *str);
 static double depend_callback(char *str);
 static cell_list *find_depend(char *str);
 static int is_in_list(cell_list *c1, cell_list *c2);
+
+/* ========================= small utilities ======================== */
+
+// double -> freshly malloc'd string ("%f", 6 decimals)
+static char *ftoa(double d)
+{
+	char buffer[256];
+	char *p;
+	sprintf(buffer, "%f", d);
+	p = malloc(strlen(buffer) + 1);
+	if (p)
+		strcpy(p, buffer);
+	return p;
+}
+
+// case-insensitive compare of the first n bytes (ASCII); not in libc
+static int strnicmp(const char *a, const char *b, unsigned n)
+{
+	while (n--) {
+		int ca = tolower((unsigned char)*a++);
+		int cb = tolower((unsigned char)*b++);
+		if (ca != cb)
+			return ca - cb;
+		if (!ca)
+			break;
+	}
+	return 0;
+}
 
 /* ===================== file helpers (syscall 70) ===================== */
 

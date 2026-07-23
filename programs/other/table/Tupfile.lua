@@ -4,4 +4,4 @@ tup.include(HELPERDIR .. "/use_tcc.lua")
 
 LIBS = "-lbox_lib"
 
-link_tcc({"table.c", "calc.c", "parser.c", "func.c"}, "table")
+link_tcc({"table.c", "calc.c", "parser.c"}, "table")

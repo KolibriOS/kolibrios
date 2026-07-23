@@ -9,6 +9,12 @@
 #define ERR_OVERFLOW    -6
 #define ERR_BADPARAM    -7
 
+// number parser, shared with calc.c (accepts '.' or ',' as the decimal point)
+#define ERROR     -1 // convert(): bad character
+#define ERROR_END -2 // convert(): empty / no number
+extern int convert_error;
+double convert(char *s, int *len);
+
 typedef double variable_callback(char *s);
 
 // resolves a variable name to its value; set by the host before get_exp()

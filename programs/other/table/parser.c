@@ -1,9 +1,67 @@
-#include "func.h"
 #include "parser.h"
 
+#include <ctype.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+// set by convert(): 0 ok, ERROR bad char, ERROR_END empty/no number
+int convert_error = 0;
+
+// parse a leading number; accepts '.' or ',' as the decimal point and stores
+// the count of consumed characters in *len when non-NULL
+double convert(char *s, int *len)
+{
+	int i = 0;
+	double sign, res = 0.0, tail, div;
+
+	convert_error = 0;
+
+	while (s[i] && isspace((unsigned char)s[i]))
+		i++;
+	if (len)
+		*len = i;
+	if (s[i] == '\0') {
+		convert_error = ERROR_END;
+		return 0.0;
+	}
+
+	sign = 1.0;
+	if (s[i] == '-') {
+		sign = -1.0;
+		i++;
+	}
+
+	while (s[i] >= '0' && s[i] <= '9') {
+		res = res * 10.0 + (double)(s[i] - '0');
+		i++;
+	}
+	if (len)
+		*len = i;
+	if (!s[i] || isspace((unsigned char)s[i]))
+		return sign * res;
+	if (s[i] != '.' && s[i] != ',') {
+		convert_error = ERROR;
+		return 0;
+	}
+	i++;
+	if (len)
+		*len = i;
+	if (!s[i])
+		return sign * res;
+
+	div = 1.0;
+	tail = 0.0;
+	while (s[i] >= '0' && s[i] <= '9') {
+		tail = tail * 10.0 + (double)(s[i] - '0');
+		div *= 10.0;
+		i++;
+	}
+	res += tail / div;
+	if (len)
+		*len = i;
+	return sign * res;
+}
 
 // token types
 #define DELIMITER 1
