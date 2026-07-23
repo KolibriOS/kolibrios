@@ -161,8 +161,7 @@ proc png_set_gAMA_fixed uses eax edi esi, png_ptr:dword, info_ptr:dword, file_ga
 	or esi,esi
 	jz .end_f ;if (..== 0 || ..== 0) return
 
-	mov eax,esi
-	add eax,png_info_def.colorspace
+	lea eax,[esi+png_info_def.colorspace]
 	stdcall png_colorspace_set_gamma, edi, eax, [file_gamma]
 	stdcall png_colorspace_sync_info, edi, esi
 .end_f:
@@ -593,8 +592,10 @@ endp
 
 ;void (png_structrp png_ptr, png_inforp info_ptr, png_colorp palette, int num_palette)
 align 4
-proc png_set_PLTE uses eax edi esi, png_ptr:dword, info_ptr:dword, palette:dword, num_palette:dword
-;   uint_32 max_palette_length;
+proc png_set_PLTE uses eax ecx edi esi, png_ptr:dword, info_ptr:dword, palette:dword, num_palette:dword
+locals
+	max_palette_length rd 1 ;uint_32
+endl
 
 	png_debug1 1, 'in %s storage function', 'PLTE'
 
@@ -605,31 +606,53 @@ proc png_set_PLTE uses eax edi esi, png_ptr:dword, info_ptr:dword, palette:dword
 	or esi,esi
 	jz .end_f ;if (..==0 || ..==0) return
 
-;   max_palette_length = (info_ptr->color_type == PNG_COLOR_TYPE_PALETTE) ?
-;      (1 << info_ptr->bit_depth) : PNG_MAX_PALETTE_LENGTH;
+	;max_palette_length = (..==..) ? .. : ..
+	cmp byte[esi+png_info_def.color_type],PNG_COLOR_TYPE_PALETTE
+	jne @f
+		xor eax,eax
+		inc eax
+		movzx ecx,byte[esi+png_info_def.bit_depth]
+		shl eax,cl
+		mov [max_palette_length],eax
+		jmp .end0
+	@@:
+		mov [max_palette_length],PNG_MAX_PALETTE_LENGTH
+	.end0:
 
-;   if (num_palette < 0 || num_palette > (int) max_palette_length)
-;   {
-;      if (info_ptr->color_type == PNG_COLOR_TYPE_PALETTE)
-;         png_error(png_ptr, "Invalid palette length");
+	;if (..<0 || ..>..)
+	cmp [num_palette],0
+	jl @f
+	mov eax,[max_palette_length]
+	cmp [num_palette],eax
+	jle .end1
+	@@:
+	cmp byte[edi+png_struct.color_type],PNG_COLOR_TYPE_PALETTE ;if (..==..)
+	jne @f
+		png_error edi, 'Invalid palette length'
+		jmp .end1
+	@@: ;else
+		png_warning edi, 'Invalid palette length'
+		jmp .end_f
+	.end1:
 
-;      else
-;      {
-;         png_warning(png_ptr, "Invalid palette length");
-
-;         return;
-;      }
-;   }
-
-;   if ((num_palette > 0 && palette == NULL) ||
-;      (num_palette == 0
+	cmp [num_palette],0
+	jle @f
+	cmp [palette],0
+	je .end2
+	@@:
+	cmp [num_palette],0
+	jne .end3
+	;if ((..>0 && ..==0) || (..==0
 if PNG_MNG_FEATURES_SUPPORTED eq 1
-;            && (png_ptr->mng_features_permitted & PNG_FLAG_MNG_EMPTY_PLTE) == 0
+	; && (.. & PNG_FLAG_MNG_EMPTY_PLTE) == 0
+	mov eax,[edi+png_struct.mng_features_permitted]
+	and eax,PNG_FLAG_MNG_EMPTY_PLTE
+	jnz .end3
 end if
-;      ))
-;   {
-;      png_error(png_ptr, "Invalid palette");
-;   }
+	;))
+	.end2:
+		png_error edi, 'Invalid palette'
+	.end3:
 
 	; It may not actually be necessary to set png_ptr->palette here;
 	; we do it for backward compatibility with the way the png_handle_tRNS
@@ -644,14 +667,26 @@ end if
 	; of num_palette entries, in case of an invalid PNG file or incorrect
 	; call to png_set_PLTE() with too-large sample values.
 
-;   png_ptr->palette = png_calloc(png_ptr,
-;       PNG_MAX_PALETTE_LENGTH * (sizeof (png_color)));
+	stdcall png_calloc, edi, PNG_MAX_PALETTE_LENGTH*sizeof.png_color
+	mov [edi+png_struct.palette],eax
 
-;   if (num_palette > 0)
-;      memcpy(png_ptr->palette, palette, num_palette * (sizeof (png_color)));
+	;if (..>0)
+	cmp [num_palette],0
+	jle @f
+		push esi edi
+		mov ecx,[num_palette]
+		imul ecx,sizeof.png_color
+		mov esi,[palette]
+		mov edi,eax
+		rep movsb ;memcpy(png_ptr->palette, palette, ...
+		pop edi esi
+	@@:
 	mov eax,[edi+png_struct.palette]
 	mov [esi+png_info_def.palette],eax
-;   info_ptr->num_palette = png_ptr->num_palette = (uint_16)num_palette;
+
+	mov eax,[num_palette]
+	mov [edi+png_struct.num_palette],ax
+	mov [esi+png_info_def.num_palette],ax
 
 	or dword[esi+png_info_def.free_me], PNG_FREE_PLTE
 	or dword[esi+png_info_def.valid], PNG_INFO_PLTE

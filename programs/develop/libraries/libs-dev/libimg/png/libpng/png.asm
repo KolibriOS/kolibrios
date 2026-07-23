@@ -1178,17 +1178,18 @@ proc png_colorspace_set_gamma, png_ptr:dword, colorspace:dword, gAMA:dword
 	; In 1.6.0 this test replaces the ones in pngrutil.c, in the gAMA chunk
 	; handling code, which only required the value to be >0.
 
+	png_debug 1, 'in png_colorspace_set_gamma'
 ;   charp errmsg;
 
 ;   if (gAMA < 16 || gAMA > 625000000)
 ;      errmsg = "gamma value out of range";
 
-;#  ifdef PNG_READ_gAMA_SUPPORTED
+if PNG_READ_gAMA_SUPPORTED eq 1
 	; Allow the application to set the gamma value more than once
 ;   else if ((png_ptr->mode & PNG_IS_READ_STRUCT) != 0 &&
 ;      (colorspace->flags & PNG_COLORSPACE_FROM_gAMA) != 0)
 ;      errmsg = "duplicate";
-;#  endif
+end if
 
 	; Do nothing if the colorspace is already invalid
 ;   else if ((colorspace->flags & PNG_COLORSPACE_INVALID) != 0)
