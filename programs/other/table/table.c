@@ -66,12 +66,8 @@ int buf_old_x, buf_old_y;
 
 // selection
 int sel_x = 1, sel_y = 1;
-int prev_x = 0, prev_y = 0;
-int was_single_selection = 0;
 int sel_end_x = 1, sel_end_y = 1;
-int sel_moved = 0;
-int sel_end_move = 0;
-int nx = 0, ny = 0;
+int nx = 0, ny = 0; // one past the last visible column/row
 
 int display_formulas = 0; // show formulas instead of values
 
@@ -179,10 +175,8 @@ static void start_edit(int x, int y)
 {
 	int sx0 = scroll_x, sy0 = scroll_y;
 	ensure_visible(x, y);
-	if (scroll_x != sx0 || scroll_y != sy0) {
-		sel_moved = 1;
+	if (scroll_x != sx0 || scroll_y != sy0)
 		draw_grid();
-	}
 
 	file_box.flags &= ~ed_focus;
 
@@ -224,20 +218,9 @@ static void cancel_edit(void)
 	draw_grid();
 }
 
-static void check_sel(void)
-{
-	int sx0 = scroll_x, sy0 = scroll_y;
-	ensure_visible(sel_x, sel_y);
-	if (sx0 != scroll_x || sy0 != scroll_y)
-		sel_moved = 0; // scrolled, so redraw everything
-}
-
 static void move_selection(int new_x, int new_y)
 {
-	sel_moved = 1;
 	stop_edit();
-	prev_x = sel_x;
-	prev_y = sel_y;
 	sel_x = new_x;
 	if (sel_x < 1)
 		sel_x = 1;
@@ -250,7 +233,7 @@ static void move_selection(int new_x, int new_y)
 	if (sel_y > row_count - 1)
 		sel_y = row_count - 1;
 	sel_end_y = sel_y;
-	check_sel();
+	ensure_visible(sel_x, sel_y);
 	draw_grid();
 }
 
@@ -498,7 +481,6 @@ static void draw_window(void)
 		return;
 	}
 
-	sel_moved = 0;
 	if (is_edit)
 		stop_edit();
 
@@ -515,10 +497,7 @@ static void draw_window(void)
 	def_button(BTX + 25 + BTW + 5, file_box.top, BTW, 21, LOAD_BUTTON, sc.work_area);
 	draw_text(BTX + 25 + BTW + 5 + (BTW - (int)strlen(sLoad) * 8) / 2, panel_y + 14, 0x90, sc.work_text, sLoad, 0);
 
-	if (sel_end_move)
-		sel_moved = 0;
 	draw_grid();
-	sel_moved = 0;
 
 	if (is_edit)
 		edit_box_draw(&cell_box);
@@ -615,7 +594,6 @@ static void process_mouse(void)
 			}
 		} else if (mouse_x < grid.w && mouse_y < grid.h) { // click on cell
 			int kx = -1, ky = -1;
-			was_single_selection = sel_x == sel_end_x && sel_y == sel_end_y;
 			for (i = grid.firstx; i < nx; i++)
 				if (cell_x[i] >= 0 && mouse_x >= cell_x[i] && mouse_x <= cell_x[i] + cell_w[i]) {
 					kx = i;
@@ -642,8 +620,6 @@ static void process_mouse(void)
 		}
 		return;
 	} else if (!mouse_btn && size_state) {
-		sel_moved = 0; // for a good redraw
-
 		if (size_state == SIZE_DRAG)
 			fill_cells(sel_x, sel_y, sel_end_x, sel_end_y, old_end_x, old_end_y);
 
@@ -706,7 +682,6 @@ static void shift_selection(int dx, int dy, int shift)
 			sel_end_x = 1;
 		else if (sel_end_x >= col_count)
 			sel_end_x = col_count - 1;
-		sel_moved = sel_end_move = 1;
 	}
 	if (dy != 0 && shift) {
 		sel_end_y += dy;
@@ -714,7 +689,6 @@ static void shift_selection(int dx, int dy, int shift)
 			sel_end_y = 1;
 		else if (sel_end_y >= row_count)
 			sel_end_y = row_count - 1;
-		sel_moved = sel_end_move = 1;
 	}
 	if (dx || dy) {
 		if (!shift) {
@@ -725,7 +699,6 @@ static void shift_selection(int dx, int dy, int shift)
 			} else
 				move_selection(sel_x + dx, sel_y + dy);
 		} else {
-			sel_moved = 0;
 			stop_edit();
 			draw_grid();
 		}
@@ -741,8 +714,6 @@ static void process_key(void)
 	ckeys = _ksys_get_control_key_state();
 	shift = ckeys & 0x3;
 	ctrl = ckeys & 0x0c;
-	sel_moved = 0;
-	sel_end_move = 0;
 
 	k = _ksys_get_key();
 	key_ascii = k.code;
@@ -893,7 +864,6 @@ static void EventLoadFile(void)
 	r = LoadFile(fname);
 	if (r > 0) {
 		calculate_values();
-		sel_moved = 0;
 		draw_grid();
 	} else {
 		const char *result = NULL;

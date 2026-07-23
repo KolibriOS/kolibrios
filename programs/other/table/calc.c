@@ -20,7 +20,6 @@ extern int *cell_x, *cell_y;
 extern char ***values;
 extern char ***buffer;
 extern int buf_col, buf_row;
-extern int sel_moved;
 
 extern const char *sFileSign;
 
@@ -976,7 +975,6 @@ void calculate_values(void)
 				if (values[p->x][p->y])
 					free(values[p->x][p->y]);
 				values[p->x][p->y] = new_val;
-				sel_moved = 0;
 			}
 		} else {
 			values[p->x][p->y] = malloc(2);
