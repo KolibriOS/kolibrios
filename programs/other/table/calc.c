@@ -61,6 +61,21 @@ static int file_put(const char *name, uint32_t *off, const void *buf, uint32_t l
 	return 1;
 }
 
+// create/truncate a file (fn70.2). _ksys_file_create() leaves the p20
+// separator byte uninitialized, which corrupts the request - do it right here.
+static int file_create(const char *name)
+{
+	ksys70_t k;
+	k.p00 = 2;
+	k.p04dw = 0;
+	k.p08dw = 0;
+	k.p12 = 0;
+	k.p16 = 0;
+	k.p20 = 0;
+	k.p21 = name;
+	return _ksys70(&k).status;
+}
+
 // read up to len bytes at off; *got = bytes read; returns fs status (0 ok, 6 eof)
 static int file_get(const char *name, uint32_t off, uint32_t len, void *buf, uint32_t *got)
 {
@@ -121,18 +136,23 @@ static char *make_col_cap(int i)
 	return r;
 }
 
-// row caption: numeric
+// row caption: numeric (up to 3 digits, so row 100 renders as "100")
 static char *make_row_cap(int i)
 {
-	char *r = malloc(3);
+	char *r = malloc(4);
 	if (i <= 9) {
 		r[0] = '0' + i;
 		r[1] = '\0';
-		return r;
+	} else if (i <= 99) {
+		r[0] = (i / 10) + '0';
+		r[1] = (i % 10) + '0';
+		r[2] = '\0';
+	} else {
+		r[0] = (i / 100) + '0';
+		r[1] = ((i / 10) % 10) + '0';
+		r[2] = (i % 10) + '0';
+		r[3] = '\0';
 	}
-	r[0] = (i / 10) + '0';
-	r[1] = (i % 10) + '0';
-	r[2] = '\0';
 	return r;
 }
 
@@ -428,7 +448,7 @@ static int SaveCSV(char *fname)
 	uint32_t off = 0;
 
 	_ksys_file_delete(fname);
-	_ksys_file_create(fname);
+	file_create(fname);
 
 	for (i = 1; i < col_count; i++)
 		for (j = 1; j < row_count; j++)
@@ -476,7 +496,7 @@ int SaveFile(char *fname)
 		return SaveCSV(fname);
 
 	_ksys_file_delete(fname);
-	_ksys_file_create(fname);
+	file_create(fname);
 
 	buffer = malloc(BUF_FOR_ALL);
 	if (!buffer)

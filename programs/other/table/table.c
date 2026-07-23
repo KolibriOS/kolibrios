@@ -51,8 +51,9 @@ static ksys_colors_table_t sc;
 // draw-less clickable button (BT_HIDE | BT_NOFRAME)
 #define BT_NODRAW 0x60000000
 
-// the cell model (used by calc.c too)
-int col_count = 100, row_count = 100;
+// the cell model (used by calc.c too). Bounds: columns A..CZ, rows 1..100
+// (index 0 is the header row/column, so counts are one larger).
+int col_count = 105, row_count = 101;
 int *cell_w, *cell_h;
 char ***cells;
 char ***values;
@@ -293,11 +294,55 @@ static void DrawCell(int x, int y, int w, int h, uint32_t id, uint32_t bg_color,
 	}
 }
 
+// clamp the top-left visible cell so the viewport stays inside the real table:
+// never scroll past the last row/column, and never leave a gap after them
+static void clamp_view(void)
+{
+	int avail, sum, f;
+
+	avail = grid.w - cell_w[0];
+	sum = 0;
+	for (f = col_count - 1; f >= 1; f--) {
+		sum += cell_w[f];
+		if (sum > avail) {
+			f++;
+			break;
+		}
+	}
+	if (f < 1)
+		f = 1;
+	if (f > col_count - 1)
+		f = col_count - 1;
+	if (grid.firstx > f)
+		grid.firstx = f;
+	if (grid.firstx < 1)
+		grid.firstx = 1;
+
+	avail = grid.h - cell_h[0];
+	sum = 0;
+	for (f = row_count - 1; f >= 1; f--) {
+		sum += cell_h[f];
+		if (sum > avail) {
+			f++;
+			break;
+		}
+	}
+	if (f < 1)
+		f = 1;
+	if (f > row_count - 1)
+		f = row_count - 1;
+	if (grid.firsty > f)
+		grid.firsty = f;
+	if (grid.firsty < 1)
+		grid.firsty = 1;
+}
+
 static void draw_grid(void)
 {
 	int i, j;
 	long x0 = 0, y0 = 0, x = 0, y = 0;
 	uint32_t bg_color;
+	clamp_view();
 	_ksys_draw_bar(0, 0, cell_w[0], cell_h[0], HEADER_CELL_COLOR); // left top cell
 	def_button(0, 0, cell_w[0] - 4, cell_h[0] - 4, SELECT_ALL_BUTTON + BT_NODRAW, 0);
 
@@ -521,9 +566,7 @@ static void process_mouse(void)
 		grid.firsty += vert;
 		if (grid.firsty < 1)
 			grid.firsty = 1;
-		if (grid.firsty > row_count - 25)
-			grid.firsty = row_count - 25;
-		draw_grid();
+		draw_grid(); // clamp_view() caps the lower edge
 		return;
 	}
 
@@ -553,8 +596,8 @@ static void process_mouse(void)
 
 	mp = _ksys_get_mouse_pos(KSYS_MOUSE_WINDOW_POS);
 	mouse_btn = _ksys_get_mouse_buttons();
-	mouse_x = mp.x - 5;
-	mouse_y = mp.y - _ksys_get_skin_height();
+	mouse_x = mp.x; // fn37.1 is already work-area relative
+	mouse_y = mp.y;
 
 	if (is_edit && mouse_x >= (int)cell_box.left && mouse_x <= (int)cell_box.left + (int)cell_box.width
 	    && mouse_y >= (int)cell_box.top && mouse_y <= (int)cell_box.top + 22)
