@@ -98,9 +98,10 @@ struct GRID {
 	int firstx, firsty; // first (partially) visible cell in the top left corner
 } grid = { 0, 0, 0, 0, 1, 1 };
 
-// sub-cell pixel scroll offset: how many pixels of the first visible
-// column/row are hidden past the left/top edge (0 except at the far end,
-// where it makes the last cell sit flush against the viewport edge)
+// pixel scroll is the primary state; grid.firstx/firsty (first visible cell)
+// and off_x/off_y (pixels of it hidden past the top-left edge) are derived
+// from it in clamp_view()
+static int scroll_x = 0, scroll_y = 0;
 static int off_x = 0, off_y = 0;
 
 // resizing state
@@ -116,6 +117,24 @@ static int old_end_x, old_end_y;
 
 static void draw_grid(void);
 static void EventGridSelectAll(void);
+static int col_left(int j);
+static int row_top(int i);
+
+// scroll the minimum amount so cell (cx,cy) is fully inside the viewport
+static void ensure_visible(int cx, int cy)
+{
+	int aw = grid.w - cell_w[0], ah = grid.h - cell_h[0];
+	int l = col_left(cx), r = l + cell_w[cx];
+	int t = row_top(cy), b = t + cell_h[cy];
+	if (l < scroll_x)
+		scroll_x = l;
+	else if (r > scroll_x + aw)
+		scroll_x = r - aw;
+	if (t < scroll_y)
+		scroll_y = t;
+	else if (b > scroll_y + ah)
+		scroll_y = b - ah;
+}
 
 // button define that first clears the previous one with the same id
 static void def_button(int x, int y, int w, int h, uint32_t id, uint32_t color)
@@ -140,9 +159,9 @@ static void DrawScrolls(void)
 	scroll_h.ypos = grid.y + grid.h;
 	scroll_h.xsize = grid.w + SCROLL_SIZE + 1;
 	scroll_h.all_redraw = 1;
-	scroll_h.max_area = col_count - 1;
-	scroll_h.cur_area = nx - grid.firstx - 1;
-	scroll_h.position = grid.firstx - 1;
+	scroll_h.max_area = col_left(col_count);   // total content width, px
+	scroll_h.cur_area = grid.w - cell_w[0];    // viewport width, px
+	scroll_h.position = scroll_x;
 	scrollbar_h_draw(&scroll_h);
 
 	// vertical
@@ -150,24 +169,17 @@ static void DrawScrolls(void)
 	scroll_v.ypos = 0;
 	scroll_v.ysize = grid.h + 1;
 	scroll_v.all_redraw = 1;
-	scroll_v.max_area = row_count - 1;
-	scroll_v.cur_area = ny - grid.firsty - 1;
-	scroll_v.position = grid.firsty - 1;
+	scroll_v.max_area = row_top(row_count);    // total content height, px
+	scroll_v.cur_area = grid.h - cell_h[0];    // viewport height, px
+	scroll_v.position = scroll_y;
 	scrollbar_v_draw(&scroll_v);
 }
 
 static void start_edit(int x, int y)
 {
-	int ch = 0;
-	if (x < grid.firstx || x > nx - 1) {
-		grid.firstx = x;
-		ch = 1;
-	}
-	if (y < grid.firsty || y > ny - 1) {
-		grid.firsty = y;
-		ch = 1;
-	}
-	if (ch) {
+	int sx0 = scroll_x, sy0 = scroll_y;
+	ensure_visible(x, y);
+	if (scroll_x != sx0 || scroll_y != sy0) {
 		sel_moved = 1;
 		draw_grid();
 	}
@@ -214,20 +226,10 @@ static void cancel_edit(void)
 
 static void check_sel(void)
 {
-	int sx0 = grid.firstx, sy0 = grid.firsty;
-
-	if (sel_x >= nx - 1)
-		grid.firstx++;
-	if (sel_y >= ny - 1)
-		grid.firsty++;
-
-	if (sel_x < grid.firstx)
-		grid.firstx = sel_x;
-	if (sel_y < grid.firsty)
-		grid.firsty = sel_y;
-
-	if (sx0 != grid.firstx || sy0 != grid.firsty)
-		sel_moved = 0; // must redraw everything
+	int sx0 = scroll_x, sy0 = scroll_y;
+	ensure_visible(sel_x, sel_y);
+	if (sx0 != scroll_x || sy0 != scroll_y)
+		sel_moved = 0; // scrolled, so redraw everything
 }
 
 static void move_selection(int new_x, int new_y)
@@ -277,25 +279,25 @@ static void bar_clip(int x, int y, int w, int h, int cx0, int cy0, int cx1, int 
 // (first visible cell, sub-cell offset) so the last cell sits exactly flush
 static void clamp_view(void)
 {
-	int px, max;
+	int max;
 
-	max = col_left(col_count) - (grid.w - cell_w[0]); // total width - viewport
-	px = col_left(grid.firstx) + off_x;
-	if (px > max) px = max;
-	if (px < 0) px = 0;
+	max = col_left(col_count) - (grid.w - cell_w[0]); // content - viewport
+	if (max < 0) max = 0;
+	if (scroll_x > max) scroll_x = max;
+	if (scroll_x < 0) scroll_x = 0;
 	grid.firstx = 1;
-	while (grid.firstx < col_count - 1 && col_left(grid.firstx + 1) <= px)
+	while (grid.firstx < col_count - 1 && col_left(grid.firstx + 1) <= scroll_x)
 		grid.firstx++;
-	off_x = px - col_left(grid.firstx);
+	off_x = scroll_x - col_left(grid.firstx);
 
 	max = row_top(row_count) - (grid.h - cell_h[0]);
-	px = row_top(grid.firsty) + off_y;
-	if (px > max) px = max;
-	if (px < 0) px = 0;
+	if (max < 0) max = 0;
+	if (scroll_y > max) scroll_y = max;
+	if (scroll_y < 0) scroll_y = 0;
 	grid.firsty = 1;
-	while (grid.firsty < row_count - 1 && row_top(grid.firsty + 1) <= px)
+	while (grid.firsty < row_count - 1 && row_top(grid.firsty + 1) <= scroll_y)
 		grid.firsty++;
-	off_y = px - row_top(grid.firsty);
+	off_y = scroll_y - row_top(grid.firsty);
 }
 
 static void draw_grid(void)
@@ -528,27 +530,25 @@ static void process_mouse(void)
 
 	if (vert != 0) {
 		stop_edit();
-		grid.firsty += vert;
-		if (grid.firsty < 1)
-			grid.firsty = 1;
-		draw_grid(); // clamp_view() caps the lower edge
+		scroll_y += vert * 60; // ~3 rows per wheel notch
+		draw_grid();           // clamp_view() clamps scroll_y
 		return;
 	}
 
 	if (!size_state) { // do not handle scrollbars while selecting cells
 		if (!scroll_h.delta2)
 			scrollbar_v_mouse(&scroll_v);
-		if (scroll_v.position != grid.firsty - 1) {
+		if (scroll_v.position != scroll_y) {
 			stop_edit();
-			grid.firsty = scroll_v.position + 1;
+			scroll_y = scroll_v.position;
 			draw_grid();
 		}
 
 		if (!scroll_v.delta2)
 			scrollbar_h_mouse(&scroll_h);
-		if (scroll_h.position != grid.firstx - 1) {
+		if (scroll_h.position != scroll_x) {
 			stop_edit();
-			grid.firstx = scroll_h.position + 1;
+			scroll_x = scroll_h.position;
 			draw_grid();
 		}
 	}
