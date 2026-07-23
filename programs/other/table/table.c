@@ -398,6 +398,10 @@ static void draw_grid(void)
 	_ksys_draw_bar(0, 0, cw0, ch0, HEADER_CELL_COLOR);
 	def_button(0, 0, cw0 - 4, ch0 - 4, SELECT_ALL_BUTTON + BT_NODRAW, 0);
 
+	// fixed dividers between the headers and the table (independent of scroll)
+	_ksys_draw_bar(cw0, 0, 1, H, GRID_COLOR);
+	_ksys_draw_bar(0, ch0, W, 1, GRID_COLOR);
+
 	DrawScrolls();
 }
 
@@ -468,7 +472,7 @@ static void draw_window(void)
 	int panel_y, BTX;
 
 	_ksys_start_draw();
-	_ksys_create_window(110, 40, WND_W, WND_H, "Table v" TABLE_VERSION, 0x40FFFFFF, 0x73);
+	_ksys_create_window(110, 40, WND_W, WND_H, "Table " TABLE_VERSION, 0x40FFFFFF, 0x73);
 	_ksys_end_draw();
 
 	_ksys_get_system_colors(&sc);
@@ -609,16 +613,16 @@ static void process_mouse(void)
 				size_id = ky;
 				size_state = SIZE_Y;
 			}
-		} else if (mouse_x <= cell_x[nx - 1] && mouse_y <= cell_y[ny - 1]) { // click on cell
+		} else if (mouse_x < grid.w && mouse_y < grid.h) { // click on cell
 			int kx = -1, ky = -1;
 			was_single_selection = sel_x == sel_end_x && sel_y == sel_end_y;
-			for (i = 0; i < col_count - 1; i++)
-				if (mouse_x >= cell_x[i] && mouse_x <= cell_x[i] + cell_w[i]) {
+			for (i = grid.firstx; i < nx; i++)
+				if (cell_x[i] >= 0 && mouse_x >= cell_x[i] && mouse_x <= cell_x[i] + cell_w[i]) {
 					kx = i;
 					break;
 				}
-			for (i = 0; i < row_count - 1; i++)
-				if (mouse_y >= cell_y[i] && mouse_y <= cell_y[i] + cell_h[i]) {
+			for (i = grid.firsty; i < ny; i++)
+				if (cell_y[i] >= 0 && mouse_y >= cell_y[i] && mouse_y <= cell_y[i] + cell_h[i]) {
 					ky = i;
 					break;
 				}
@@ -668,13 +672,13 @@ static void process_mouse(void)
 	if ((size_state == SIZE_SELECT || size_state == SIZE_DRAG) && (mouse_x != size_mouse_x || mouse_y != size_mouse_y)) {
 		int kx = -1, ky = -1;
 		draw_drag();
-		for (i = 0; i < col_count - 1; i++)
-			if (mouse_x >= cell_x[i] && mouse_x <= cell_x[i + 1]) {
+		for (i = grid.firstx; i < nx; i++)
+			if (cell_x[i] >= 0 && mouse_x <= cell_x[i] + cell_w[i]) {
 				kx = i;
 				break;
 			}
-		for (i = 0; i < row_count - 1; i++)
-			if (mouse_y >= cell_y[i] && mouse_y <= cell_y[i + 1]) {
+		for (i = grid.firsty; i < ny; i++)
+			if (cell_y[i] >= 0 && mouse_y <= cell_y[i] + cell_h[i]) {
 				ky = i;
 				break;
 			}
@@ -714,9 +718,9 @@ static void shift_selection(int dx, int dy, int shift)
 	}
 	if (dx || dy) {
 		if (!shift) {
-			if ((sel_end_x + dx) >= (col_count - 1)) {
+			if ((sel_end_x + dx) > (col_count - 1)) {
 				dx = 0;
-			} else if ((sel_end_y + dy) >= (row_count - 1)) {
+			} else if ((sel_end_y + dy) > (row_count - 1)) {
 				dy = 0;
 			} else
 				move_selection(sel_x + dx, sel_y + dy);
