@@ -6,29 +6,15 @@
 #include <string.h>
 #include <sys/ksys.h>
 
+/* ============================ constants =========================== */
+
 #define TABLE_VERSION "1.0"
 
-// strings
-static const char sFilename[] = "Filename:";
-static const char sSave[] = "Save";
-static const char sLoad[] = "Load";
-
-static const char er_file_not_found[] = "'Cannot open file' -E";
-static const char er_format[] = "'Error: bad format' -E";
-static const char msg_save[] = "'File saved' -O";
-static const char msg_save_error[] = "'Error saving file' -E";
-
-// shared with calc.c
-const char *sFileSign = "KolibriTable File\n";
-
-// initial window size
+// window
 #define WND_W 718
 #define WND_H 514
-static int cWidth;
-static int cHeight;
-static ksys_colors_table_t sc;
-
 #define MENU_PANEL_HEIGHT 40
+#define SCROLL_SIZE 16
 
 // interface colors
 #define GRID_COLOR 0xa0a0a0
@@ -43,7 +29,6 @@ static ksys_colors_table_t sc;
 #define LOAD_BUTTON 101
 #define NEW_BUTTON 102
 #define SELECT_ALL_BUTTON 103
-
 #define COL_HEAD_BUTTON 0x300
 #define ROW_HEAD_BUTTON 0x400
 #define CELL_BUTTON 0x500
@@ -51,27 +36,68 @@ static ksys_colors_table_t sc;
 // draw-less clickable button (BT_HIDE | BT_NOFRAME)
 #define BT_NODRAW 0x60000000
 
-// the cell model (used by calc.c too). Bounds: columns A..CZ, rows 1..100
-// (index 0 is the header row/column, so counts are one larger).
+// size_state values (cell resize / range select-drag)
+#define SIZE_X 1
+#define SIZE_Y 2
+#define SIZE_SELECT 3
+#define SIZE_DRAG 4
+
+/* ======================= cell model (calc.c) ====================== */
+// Defined here, shared with calc.c via extern. Bounds: columns A..CZ,
+// rows 1..100; index 0 is the header row/column, so counts are one larger.
+
 int col_count = 105, row_count = 101;
-int *cell_w, *cell_h;
-char ***cells;
-char ***values;
-int *cell_x, *cell_y;
+int *cell_w, *cell_h; // column widths / row heights
+int *cell_x, *cell_y; // on-screen x/y of each column/row (set every redraw)
+char ***cells;        // cell source text
+char ***values;       // computed cell values
+const char *sFileSign = "KolibriTable File\n";
 
 // clipboard
 char ***buffer = NULL;
 int buf_col, buf_row;
-int buf_old_x, buf_old_y;
+
+/* ============================= UI state =========================== */
+
+static int buf_old_x, buf_old_y; // origin of the copied block
 
 // selection
-int sel_x = 1, sel_y = 1;
-int sel_end_x = 1, sel_end_y = 1;
-int nx = 0, ny = 0; // one past the last visible column/row
+static int sel_x = 1, sel_y = 1;
+static int sel_end_x = 1, sel_end_y = 1;
+static int nx = 0, ny = 0; // one past the last visible column/row
+static int display_formulas = 0;
 
-int display_formulas = 0; // show formulas instead of values
+// pixel scroll is the primary state; grid.firstx/firsty (first visible cell)
+// and off_x/off_y (pixels of it hidden past the top-left edge) are derived
+// from it in clamp_view()
+static int scroll_x = 0, scroll_y = 0;
+static int off_x = 0, off_y = 0;
 
-// edit boxes
+// window work area + skin colors
+static int cWidth, cHeight;
+static ksys_colors_table_t sc;
+
+// resize / range-drag state
+static int size_mouse_x, size_mouse_y, size_id, size_state = 0;
+static int drag_x, drag_y;
+static int old_end_x, old_end_y;
+
+// grid geometry: pixel rect of the table area + first visible cell
+static struct GRID {
+	int x, y, w, h;
+	int firstx, firsty;
+} grid = { 0, 0, 0, 0, 1, 1 };
+
+// labels
+static const char sFilename[] = "Filename:";
+static const char sSave[] = "Save";
+static const char sLoad[] = "Load";
+static const char er_file_not_found[] = "'Cannot open file' -E";
+static const char er_format[] = "'Error: bad format' -E";
+static const char msg_save[] = "'File saved' -O";
+static const char msg_save_error[] = "'Error saving file' -E";
+
+// box_lib widgets
 static char edit_text[256];
 static edit_box cell_box = { 0, 9 * 8 - 6, WND_H - 16 - 32, 0xffffff, 0x94AECE, 0,
 	0x808080, 0x10000000, sizeof(edit_text) - 1, edit_text, 0, 0 };
@@ -80,36 +106,14 @@ static char fname[256];
 static edit_box file_box = { 160, 9 * 8 + 12, WND_H - 16 - 32, 0xffffff, 0x94AECE,
 	0, 0x808080, 0x10000000, sizeof(fname) - 1, fname, 0, 0 };
 
-#define is_edit (cell_box.flags & ed_focus)
-
-// scrollbars
-#define SCROLL_SIZE 16
 static scrollbar scroll_v = { SCROLL_SIZE, 200, 398, 0, SCROLL_SIZE, 0, 115,
 	15, 0, 0xeeeeee, 0xD2CED0, 0x555555, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1 };
 static scrollbar scroll_h = { 200, 0, SCROLL_SIZE, 0, SCROLL_SIZE, 0, 115,
 	15, 0, 0xeeeeee, 0xD2CED0, 0x555555, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1 };
 
-struct GRID {
-	int x, y, w, h;
-	int firstx, firsty; // first (partially) visible cell in the top left corner
-} grid = { 0, 0, 0, 0, 1, 1 };
+#define is_edit (cell_box.flags & ed_focus)
 
-// pixel scroll is the primary state; grid.firstx/firsty (first visible cell)
-// and off_x/off_y (pixels of it hidden past the top-left edge) are derived
-// from it in clamp_view()
-static int scroll_x = 0, scroll_y = 0;
-static int off_x = 0, off_y = 0;
-
-// resizing state
-#define SIZE_X 1
-#define SIZE_Y 2
-#define SIZE_SELECT 3
-#define SIZE_DRAG 4
-static int size_mouse_x, size_mouse_y, size_id, size_state = 0;
-
-// filling a range by dragging the bottom-right corner
-static int drag_x, drag_y;
-static int old_end_x, old_end_y;
+/* ============================= functions ========================== */
 
 static void draw_grid(void);
 static void EventGridSelectAll(void);
