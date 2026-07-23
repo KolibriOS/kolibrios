@@ -13,14 +13,8 @@
 #define sign(x) ((x) < 0 ? -1 : ((x) == 0 ? 0 : 1))
 
 // the cell model lives in the main module
-extern int col_count, row_count;
-extern char ***cells;
-extern int *cell_w, *cell_h;
-extern int *cell_x, *cell_y;
-extern char ***values;
-extern char ***buffer;
+extern char ***buffer; // clipboard (declared in table.c)
 extern int buf_col, buf_row;
-
 extern const char *sFileSign;
 
 int cf_x0, cf_x1, cf_y0, cf_y1;
@@ -155,57 +149,57 @@ static char *make_row_cap(int i)
 	return r;
 }
 
-void init(void)
+void table_init(void)
 {
 	int i, j;
 
-	cell_w = malloc(col_count * sizeof(int));
-	cell_h = malloc(row_count * sizeof(int));
-	cell_x = malloc(col_count * sizeof(int));
-	cell_y = malloc(row_count * sizeof(int));
+	tbl.w = malloc(tbl.cols * sizeof(int));
+	tbl.h = malloc(tbl.rows * sizeof(int));
+	tbl.x = malloc(tbl.cols * sizeof(int));
+	tbl.y = malloc(tbl.rows * sizeof(int));
 
-	for (i = 0; i < col_count; i++)
-		cell_w[i] = DEFAULT_CELL_W;
-	cell_w[0] = 30; // make row headers smaller
+	for (i = 0; i < tbl.cols; i++)
+		tbl.w[i] = DEFAULT_CELL_W;
+	tbl.w[0] = 30; // make row headers smaller
 
-	for (i = 0; i < row_count; i++)
-		cell_h[i] = DEFAULT_CELL_H;
+	for (i = 0; i < tbl.rows; i++)
+		tbl.h[i] = DEFAULT_CELL_H;
 
-	cells = malloc(col_count * sizeof(char **));
-	values = malloc(col_count * sizeof(char **));
-	for (i = 0; i < col_count; i++) {
-		cells[i] = malloc(row_count * sizeof(char *));
-		values[i] = malloc(row_count * sizeof(char *));
-		for (j = 0; j < row_count; j++) {
-			cells[i][j] = NULL;
-			values[i][j] = NULL;
+	tbl.cells = malloc(tbl.cols * sizeof(char **));
+	tbl.values = malloc(tbl.cols * sizeof(char **));
+	for (i = 0; i < tbl.cols; i++) {
+		tbl.cells[i] = malloc(tbl.rows * sizeof(char *));
+		tbl.values[i] = malloc(tbl.rows * sizeof(char *));
+		for (j = 0; j < tbl.rows; j++) {
+			tbl.cells[i][j] = NULL;
+			tbl.values[i][j] = NULL;
 			if (i == 0 && j)
-				cells[i][j] = make_row_cap(j);
+				tbl.cells[i][j] = make_row_cap(j);
 			else if (j == 0 && i)
-				cells[i][j] = make_col_cap(i);
+				tbl.cells[i][j] = make_col_cap(i);
 		}
 	}
 }
 
-void reinit(void)
+void table_reset(void)
 {
 	int i, j;
 
-	for (i = 0; i < col_count; i++)
-		cell_w[i] = DEFAULT_CELL_W;
-	cell_w[0] = 30;
+	for (i = 0; i < tbl.cols; i++)
+		tbl.w[i] = DEFAULT_CELL_W;
+	tbl.w[0] = 30;
 
-	for (i = 0; i < row_count; i++)
-		cell_h[i] = DEFAULT_CELL_H;
+	for (i = 0; i < tbl.rows; i++)
+		tbl.h[i] = DEFAULT_CELL_H;
 
-	for (i = 1; i < col_count; i++)
-		for (j = 1; j < row_count; j++) {
-			if (cells[i][j])
-				free(cells[i][j]);
-			cells[i][j] = NULL;
-			if (values[i][j])
-				free(values[i][j]);
-			values[i][j] = NULL;
+	for (i = 1; i < tbl.cols; i++)
+		for (j = 1; j < tbl.rows; j++) {
+			if (tbl.cells[i][j])
+				free(tbl.cells[i][j]);
+			tbl.cells[i][j] = NULL;
+			if (tbl.values[i][j])
+				free(tbl.values[i][j]);
+			tbl.values[i][j] = NULL;
 		}
 }
 
@@ -230,16 +224,16 @@ static int parse_cell_name(char *str, int *px, int *py, int *xd, int *yd)
 		return 0;
 
 	x = -1;
-	for (j = 1; j < col_count; j++)
-		if (strncmp(str, cells[j][0], i) == 0) {
+	for (j = 1; j < tbl.cols; j++)
+		if (strncmp(str, tbl.cells[j][0], i) == 0) {
 			x = j;
 			break;
 		}
 	if (str[i] == '$')
 		i++;
 	y = -1;
-	for (j = 1; j < row_count; j++)
-		if (strcmp(str + i, cells[0][j]) == 0) {
+	for (j = 1; j < tbl.rows; j++)
+		if (strcmp(str + i, tbl.cells[0][j]) == 0) {
 			y = j;
 			break;
 		}
@@ -260,7 +254,7 @@ static char *make_cell_name(int x, int y, int xd, int yd)
 	char *col_cap, *row_cap, *res;
 	int i = 0;
 
-	if (x <= 0 || x > col_count || y <= 0 || y > row_count)
+	if (x <= 0 || x > tbl.cols || y <= 0 || y > tbl.rows)
 		return NULL;
 
 	col_cap = make_col_cap(x);
@@ -292,12 +286,12 @@ static char *change_cell_ref(char *name, int sx, int sy)
 	if (x0 >= cf_x0 && x0 <= cf_x1 && y0 >= cf_y0 && y0 <= cf_y1) {
 		if (!xd) {
 			x0 += sx;
-			if (x0 <= 0 || x0 > col_count)
+			if (x0 <= 0 || x0 > tbl.cols)
 				x0 -= sx;
 		}
 		if (!yd) {
 			y0 += sy;
-			if (y0 <= 0 || y0 > row_count)
+			if (y0 <= 0 || y0 > tbl.rows)
 				y0 -= sy;
 		}
 	}
@@ -306,7 +300,7 @@ static char *change_cell_ref(char *name, int sx, int sy)
 }
 
 // rewrite every cell reference in a formula by (sx, sy)
-char *change_formula(char *name, int sx, int sy)
+char *table_shift_formula(char *name, int sx, int sy)
 {
 	int i = 0;
 	int in_name = 0; // 0 nothing, 1 letters part, 2 digits part
@@ -375,14 +369,14 @@ char *change_formula(char *name, int sx, int sy)
 	return res;
 }
 
-void fill_cells(int sel_x, int sel_y, int sel_end_x, int sel_end_y, int old_end_x, int old_end_y)
+void table_fill(int sel_x, int sel_y, int sel_end_x, int sel_end_y, int old_end_x, int old_end_y)
 {
 	int i, start, end, step, gdir = -1;
 	char *source;
 
 	cf_x0 = cf_y0 = 0;
-	cf_x1 = col_count;
-	cf_y1 = row_count;
+	cf_x1 = tbl.cols;
+	cf_y1 = tbl.rows;
 
 	if (sel_end_x == -1)
 		sel_end_x = sel_x;
@@ -402,7 +396,7 @@ void fill_cells(int sel_x, int sel_y, int sel_end_x, int sel_end_y, int old_end_
 		for (; gdir ? (sel_y != old_end_y + gstep) : (sel_x != old_end_x + gstep);
 		     gdir ? (sel_y += gstep) : (sel_x += gstep)) {
 			int dir;
-			source = cells[sel_x][sel_y];
+			source = tbl.cells[sel_x][sel_y];
 			if (gdir == 0) {
 				start = sel_y;
 				end = sel_end_y;
@@ -416,18 +410,18 @@ void fill_cells(int sel_x, int sel_y, int sel_end_x, int sel_end_y, int old_end_
 			}
 
 			for (i = start + step; i != end + step; i += step) {
-				if (cells[dir ? sel_x : i][dir ? i : sel_y])
-					free(cells[dir ? sel_x : i][dir ? i : sel_y]);
+				if (tbl.cells[dir ? sel_x : i][dir ? i : sel_y])
+					free(tbl.cells[dir ? sel_x : i][dir ? i : sel_y]);
 				if (source)
-					cells[dir ? sel_x : i][dir ? i : sel_y] =
-						change_formula(source, dir ? 0 : (i - start), dir ? (i - start) : 0);
+					tbl.cells[dir ? sel_x : i][dir ? i : sel_y] =
+						table_shift_formula(source, dir ? 0 : (i - start), dir ? (i - start) : 0);
 				else
-					cells[dir ? sel_x : i][dir ? i : sel_y] = NULL;
+					tbl.cells[dir ? sel_x : i][dir ? i : sel_y] = NULL;
 			}
 		}
 	}
 
-	calculate_values();
+	table_recalc();
 }
 
 /* ===================== save / load ===================== */
@@ -443,15 +437,15 @@ static int str_is_csv(char *str)
 static int SaveCSV(char *fname)
 {
 	int i, j;
-	int min_col = col_count, min_row = row_count, max_row = -1, max_col = -1;
+	int min_col = tbl.cols, min_row = tbl.rows, max_row = -1, max_col = -1;
 	uint32_t off = 0;
 
 	_ksys_file_delete(fname);
 	file_create(fname);
 
-	for (i = 1; i < col_count; i++)
-		for (j = 1; j < row_count; j++)
-			if (cells[i][j]) {
+	for (i = 1; i < tbl.cols; i++)
+		for (j = 1; j < tbl.rows; j++)
+			if (tbl.cells[i][j]) {
 				min_col = min(min_col, i);
 				min_row = min(min_row, j);
 				max_col = max(max_col, i);
@@ -464,7 +458,7 @@ static int SaveCSV(char *fname)
 		memset(buffer, 0, 1024);
 
 		for (i = min_col; i <= max_col; i++) {
-			char *cur = values[i][j] ? values[i][j] : cells[i][j];
+			char *cur = tbl.values[i][j] ? tbl.values[i][j] : tbl.cells[i][j];
 			if (cur) {
 				int k, n = strlen(cur);
 				buffer[buf_len++] = '\"';
@@ -485,7 +479,7 @@ static int SaveCSV(char *fname)
 }
 
 #define BUF_FOR_ALL 5000
-int SaveFile(char *fname)
+int table_save(char *fname)
 {
 	uint32_t off = 0;
 	int i, j;
@@ -508,9 +502,9 @@ int SaveFile(char *fname)
 
 	// column widths line
 	memset(buffer, 0, BUF_FOR_ALL);
-	for (i = 1; i < col_count; i++) {
+	for (i = 1; i < tbl.cols; i++) {
 		char smalbuf[32];
-		sprintf(smalbuf, "%u,", cell_w[i]);
+		sprintf(smalbuf, "%u,", tbl.w[i]);
 		strcpy(buffer + strlen(buffer), smalbuf);
 	}
 	buffer[strlen(buffer) - 1] = '\n'; // trailing comma -> newline
@@ -521,9 +515,9 @@ int SaveFile(char *fname)
 
 	// row heights line
 	memset(buffer, 0, BUF_FOR_ALL);
-	for (i = 1; i < row_count; i++) {
+	for (i = 1; i < tbl.rows; i++) {
 		char smalbuf[32];
-		sprintf(smalbuf, "%u,", cell_h[i]);
+		sprintf(smalbuf, "%u,", tbl.h[i]);
 		strcpy(buffer + strlen(buffer), smalbuf);
 	}
 	buffer[strlen(buffer) - 1] = '\n';
@@ -533,10 +527,10 @@ int SaveFile(char *fname)
 	}
 
 	// cells as "col row:text"
-	for (i = 1; i < row_count; i++)
-		for (j = 1; j < col_count; j++)
-			if (cells[j][i]) {
-				sprintf(buffer, "%u %u:%s\n", j, i, cells[j][i]);
+	for (i = 1; i < tbl.rows; i++)
+		for (j = 1; j < tbl.cols; j++)
+			if (tbl.cells[j][i]) {
+				sprintf(buffer, "%u %u:%s\n", j, i, tbl.cells[j][i]);
 				if (!file_put(fname, &off, buffer, strlen(buffer))) {
 					free(buffer);
 					return 0;
@@ -568,7 +562,7 @@ static int LoadCSV(char *fname)
 	char separator, *line;
 	int col = 1, row = 1;
 
-	reinit();
+	table_reset();
 	separator = GetCsvSeparator(fname);
 
 	do {
@@ -610,14 +604,14 @@ static int LoadCSV(char *fname)
 					int sz = i - start - tmp * 2;
 					if (sz > 0) {
 						int l, m = 0;
-						cells[col][row] = malloc(sz + 1);
-						memset(cells[col][row], 0, sz + 1);
+						tbl.cells[col][row] = malloc(sz + 1);
+						memset(tbl.cells[col][row], 0, sz + 1);
 						for (l = 0; l < sz; l++) {
 							if (line[start + tmp + l] == '\"') {
-								cells[col][row][m++] = '\"';
+								tbl.cells[col][row][m++] = '\"';
 								l++; // skip the doubled quote
 							} else
-								cells[col][row][m++] = line[start + tmp + l];
+								tbl.cells[col][row][m++] = line[start + tmp + l];
 						}
 					}
 					start = i + 1;
@@ -635,7 +629,7 @@ static int LoadCSV(char *fname)
 	return 1;
 }
 
-int LoadFile(char *fname)
+int table_load(char *fname)
 {
 	char info[560]; // BDFE header + long name
 	uint32_t off = 0, got;
@@ -650,7 +644,7 @@ int LoadFile(char *fname)
 	if (str_is_csv(fname))
 		return LoadCSV(fname);
 
-	reinit();
+	table_reset();
 
 	// verify signature
 	memset(buffer, 0, 512);
@@ -677,8 +671,8 @@ int LoadFile(char *fname)
 				return -2;
 			*d = '\0';
 			i = atoi(buffer);
-			cell_w[items++] = i;
-			if (items == col_count) {
+			tbl.w[items++] = i;
+			if (items == tbl.cols) {
 				step++;
 				items = 1;
 			}
@@ -693,8 +687,8 @@ int LoadFile(char *fname)
 				return -2;
 			*d = '\0';
 			i = atoi(buffer);
-			cell_h[items++] = i;
-			if (items == row_count)
+			tbl.h[items++] = i;
+			if (items == tbl.rows)
 				step++;
 			d += 2;
 			break;
@@ -724,8 +718,8 @@ int LoadFile(char *fname)
 			d--;
 			*d = '\0';
 			d += 2;
-			cells[i][j] = malloc(strlen(k) + 1);
-			strcpy(cells[i][j], k);
+			tbl.cells[i][j] = malloc(strlen(k) + 1);
+			strcpy(tbl.cells[i][j], k);
 		}
 		off += d - buffer - 1;
 	}
@@ -776,16 +770,16 @@ static double calc_callback(char *str)
 		return 0.0;
 	}
 	x = -1;
-	for (j = 1; j < col_count; j++)
-		if (str[0] == cells[j][0][0] && ((i == 1) || (str[1] == cells[j][0][1]))) {
+	for (j = 1; j < tbl.cols; j++)
+		if (str[0] == tbl.cells[j][0][0] && ((i == 1) || (str[1] == tbl.cells[j][0][1]))) {
 			x = j;
 			break;
 		}
 	if (str[i] == '$')
 		i++;
 	y = -1;
-	for (j = 1; j < row_count; j++)
-		if (strcmp(str + i, cells[0][j]) == 0) {
+	for (j = 1; j < tbl.rows; j++)
+		if (strcmp(str + i, tbl.cells[0][j]) == 0) {
 			y = j;
 			break;
 		}
@@ -795,14 +789,14 @@ static double calc_callback(char *str)
 		return 0.0;
 	}
 
-	if (values[x][y]) {
-		if (values[x][y][0] == '#') {
+	if (tbl.values[x][y]) {
+		if (tbl.values[x][y][0] == '#') {
 			serror(ERR_BADVARIABLE);
 			abort_calc = 1;
 		} else
-			hold = convert(values[x][y], NULL);
-	} else if (cells[x][y]) {
-		hold = convert(cells[x][y], NULL);
+			hold = convert(tbl.values[x][y], NULL);
+	} else if (tbl.cells[x][y]) {
+		hold = convert(tbl.cells[x][y], NULL);
 		if (convert_error == ERROR || convert_error == ERROR_END) {
 			serror(ERR_BADVARIABLE);
 			abort_calc = 1;
@@ -836,16 +830,16 @@ static double depend_callback(char *str)
 		return 0.0;
 	}
 	x = -1;
-	for (j = 1; j < col_count; j++)
-		if (str[0] == cells[j][0][0] && ((i == 1) || (str[1] == cells[j][0][1]))) {
+	for (j = 1; j < tbl.cols; j++)
+		if (str[0] == tbl.cells[j][0][0] && ((i == 1) || (str[1] == tbl.cells[j][0][1]))) {
 			x = j;
 			break;
 		}
 	if (str[i] == '$')
 		i++;
 	y = -1;
-	for (j = 1; j < row_count; j++)
-		if (strcmp(str + i, cells[0][j]) == 0) {
+	for (j = 1; j < tbl.rows; j++)
+		if (strcmp(str + i, tbl.cells[0][j]) == 0) {
 			y = j;
 			break;
 		}
@@ -884,7 +878,7 @@ static int is_in_list(cell_list *c1, cell_list *c2)
 	return 0;
 }
 
-void calculate_values(void)
+void table_recalc(void)
 {
 	cell_list ***depend = NULL;
 	cell_list *first = NULL;
@@ -893,21 +887,21 @@ void calculate_values(void)
 	int i, j;
 
 	abort_calc = 0;
-	depend = malloc(col_count * sizeof(void *));
-	for (i = 0; i < col_count; i++) {
-		depend[i] = malloc(row_count * sizeof(void *));
-		for (j = 0; j < row_count; j++) {
-			if (values[i][j])
-				free(values[i][j]);
-			values[i][j] = NULL;
+	depend = malloc(tbl.cols * sizeof(void *));
+	for (i = 0; i < tbl.cols; i++) {
+		depend[i] = malloc(tbl.rows * sizeof(void *));
+		for (j = 0; j < tbl.rows; j++) {
+			if (tbl.values[i][j])
+				free(tbl.values[i][j]);
+			tbl.values[i][j] = NULL;
 
-			if (cells[i][j] && cells[i][j][0] == '=') {
+			if (tbl.cells[i][j] && tbl.cells[i][j][0] == '=') {
 				cell_list *cur;
-				depend[i][j] = find_depend(cells[i][j] + 1); // skip '='
+				depend[i][j] = find_depend(tbl.cells[i][j] + 1); // skip '='
 				if (abort_calc) {
-					values[i][j] = malloc(2);
-					values[i][j][0] = '#';
-					values[i][j][1] = '\0';
+					tbl.values[i][j] = malloc(2);
+					tbl.values[i][j][0] = '#';
+					tbl.values[i][j][1] = '\0';
 					abort_calc = 0;
 					continue;
 				}
@@ -965,21 +959,21 @@ void calculate_values(void)
 	while (p) {
 		double d;
 		abort_calc = 0;
-		set_exp(cells[p->x][p->y] + 1); // skip '='
+		set_exp(tbl.cells[p->x][p->y] + 1); // skip '='
 		find_var = &calc_callback;
 		if (get_exp(&d)) {
 			char *new_val = ftoa(d);
-			if (values[p->x][p->y] && strcmp(values[p->x][p->y], new_val) == 0) {
+			if (tbl.values[p->x][p->y] && strcmp(tbl.values[p->x][p->y], new_val) == 0) {
 				free(new_val);
 			} else {
-				if (values[p->x][p->y])
-					free(values[p->x][p->y]);
-				values[p->x][p->y] = new_val;
+				if (tbl.values[p->x][p->y])
+					free(tbl.values[p->x][p->y]);
+				tbl.values[p->x][p->y] = new_val;
 			}
 		} else {
-			values[p->x][p->y] = malloc(2);
-			values[p->x][p->y][0] = '#';
-			values[p->x][p->y][1] = '\0';
+			tbl.values[p->x][p->y] = malloc(2);
+			tbl.values[p->x][p->y][0] = '#';
+			tbl.values[p->x][p->y][1] = '\0';
 		}
 		p = p->next;
 	}
@@ -998,7 +992,7 @@ free_memory:
 		p = tmp;
 	}
 
-	for (i = 0; i < col_count; i++)
+	for (i = 0; i < tbl.cols; i++)
 		free(depend[i]);
 	free(depend);
 }

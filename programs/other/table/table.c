@@ -46,11 +46,7 @@
 // Defined here, shared with calc.c via extern. Bounds: columns A..CZ,
 // rows 1..100; index 0 is the header row/column, so counts are one larger.
 
-int col_count = 105, row_count = 101;
-int *cell_w, *cell_h; // column widths / row heights
-int *cell_x, *cell_y; // on-screen x/y of each column/row (set every redraw)
-char ***cells;        // cell source text
-char ***values;       // computed cell values
+Table tbl = { 105, 101 }; // columns A..CZ, rows 1..100 (index 0 = headers)
 const char *sFileSign = "KolibriTable File\n";
 
 // clipboard
@@ -123,9 +119,9 @@ static int row_top(int i);
 // scroll the minimum amount so cell (cx,cy) is fully inside the viewport
 static void ensure_visible(int cx, int cy)
 {
-	int aw = grid.w - cell_w[0], ah = grid.h - cell_h[0];
-	int l = col_left(cx), r = l + cell_w[cx];
-	int t = row_top(cy), b = t + cell_h[cy];
+	int aw = grid.w - tbl.w[0], ah = grid.h - tbl.h[0];
+	int l = col_left(cx), r = l + tbl.w[cx];
+	int t = row_top(cy), b = t + tbl.h[cy];
 	if (l < scroll_x)
 		scroll_x = l;
 	else if (r > scroll_x + aw)
@@ -159,8 +155,8 @@ static void DrawScrolls(void)
 	scroll_h.ypos = grid.y + grid.h;
 	scroll_h.xsize = grid.w + SCROLL_SIZE + 1;
 	scroll_h.all_redraw = 1;
-	scroll_h.max_area = col_left(col_count);   // total content width, px
-	scroll_h.cur_area = grid.w - cell_w[0];    // viewport width, px
+	scroll_h.max_area = col_left(tbl.cols);   // total content width, px
+	scroll_h.cur_area = grid.w - tbl.w[0];    // viewport width, px
 	scroll_h.position = scroll_x;
 	scrollbar_h_draw(&scroll_h);
 
@@ -169,8 +165,8 @@ static void DrawScrolls(void)
 	scroll_v.ypos = 0;
 	scroll_v.ysize = grid.h + 1;
 	scroll_v.all_redraw = 1;
-	scroll_v.max_area = row_top(row_count);    // total content height, px
-	scroll_v.cur_area = grid.h - cell_h[0];    // viewport height, px
+	scroll_v.max_area = row_top(tbl.rows);    // total content height, px
+	scroll_v.cur_area = grid.h - tbl.h[0];    // viewport height, px
 	scroll_v.position = scroll_y;
 	scrollbar_v_draw(&scroll_v);
 }
@@ -185,12 +181,12 @@ static void start_edit(int x, int y)
 	file_box.flags &= ~ed_focus;
 
 	cell_box.flags = ed_focus;
-	cell_box.left = cell_x[x] + 1;
-	cell_box.top = cell_y[y];
-	cell_box.width = cell_w[x] - 2;
+	cell_box.left = tbl.x[x] + 1;
+	cell_box.top = tbl.y[y];
+	cell_box.width = tbl.w[x] - 2;
 	memset(edit_text, 0, sizeof(edit_text));
-	if (cells[x][y])
-		strcpy(edit_text, cells[x][y]);
+	if (tbl.cells[x][y])
+		strcpy(edit_text, tbl.cells[x][y]);
 	cell_box.offset = cell_box.shift = cell_box.shift_old = 0;
 	cell_box.pos = cell_box.size = strlen(edit_text);
 
@@ -202,14 +198,14 @@ static void stop_edit(void)
 {
 	if (is_edit) {
 		cell_box.flags &= ~ed_focus;
-		if (cells[sel_x][sel_y])
-			free(cells[sel_x][sel_y]);
+		if (tbl.cells[sel_x][sel_y])
+			free(tbl.cells[sel_x][sel_y]);
 		if (strlen(edit_text) > 0) {
-			cells[sel_x][sel_y] = malloc(strlen(edit_text) + 1);
-			strcpy(cells[sel_x][sel_y], edit_text);
+			tbl.cells[sel_x][sel_y] = malloc(strlen(edit_text) + 1);
+			strcpy(tbl.cells[sel_x][sel_y], edit_text);
 		} else
-			cells[sel_x][sel_y] = NULL;
-		calculate_values();
+			tbl.cells[sel_x][sel_y] = NULL;
+		table_recalc();
 	}
 }
 
@@ -228,14 +224,14 @@ static void move_selection(int new_x, int new_y)
 	sel_x = new_x;
 	if (sel_x < 1)
 		sel_x = 1;
-	if (sel_x > col_count - 1)
-		sel_x = col_count - 1;
+	if (sel_x > tbl.cols - 1)
+		sel_x = tbl.cols - 1;
 	sel_end_x = sel_x;
 	sel_y = new_y;
 	if (sel_y < 1)
 		sel_y = 1;
-	if (sel_y > row_count - 1)
-		sel_y = row_count - 1;
+	if (sel_y > tbl.rows - 1)
+		sel_y = tbl.rows - 1;
 	sel_end_y = sel_y;
 	ensure_visible(sel_x, sel_y);
 	draw_grid();
@@ -248,8 +244,8 @@ static int is_between(int x, int low, int high)
 }
 
 // pixel offset of data column j / row i from the start of the data area
-static int col_left(int j) { int i, s = 0; for (i = 1; i < j; i++) s += cell_w[i]; return s; }
-static int row_top(int i)  { int k, s = 0; for (k = 1; k < i; k++) s += cell_h[k]; return s; }
+static int col_left(int j) { int i, s = 0; for (i = 1; i < j; i++) s += tbl.w[i]; return s; }
+static int row_top(int i)  { int k, s = 0; for (k = 1; k < i; k++) s += tbl.h[k]; return s; }
 
 // fill a bar, clipped to the rectangle [cx0,cx1) x [cy0,cy1)
 static void bar_clip(int x, int y, int w, int h, int cx0, int cy0, int cx1, int cy1, uint32_t c)
@@ -268,21 +264,21 @@ static void clamp_view(void)
 {
 	int max;
 
-	max = col_left(col_count) - (grid.w - cell_w[0]); // content - viewport
+	max = col_left(tbl.cols) - (grid.w - tbl.w[0]); // content - viewport
 	if (max < 0) max = 0;
 	if (scroll_x > max) scroll_x = max;
 	if (scroll_x < 0) scroll_x = 0;
 	grid.firstx = 1;
-	while (grid.firstx < col_count - 1 && col_left(grid.firstx + 1) <= scroll_x)
+	while (grid.firstx < tbl.cols - 1 && col_left(grid.firstx + 1) <= scroll_x)
 		grid.firstx++;
 	off_x = scroll_x - col_left(grid.firstx);
 
-	max = row_top(row_count) - (grid.h - cell_h[0]);
+	max = row_top(tbl.rows) - (grid.h - tbl.h[0]);
 	if (max < 0) max = 0;
 	if (scroll_y > max) scroll_y = max;
 	if (scroll_y < 0) scroll_y = 0;
 	grid.firsty = 1;
-	while (grid.firsty < row_count - 1 && row_top(grid.firsty + 1) <= scroll_y)
+	while (grid.firsty < tbl.rows - 1 && row_top(grid.firsty + 1) <= scroll_y)
 		grid.firsty++;
 	off_y = scroll_y - row_top(grid.firsty);
 }
@@ -290,7 +286,7 @@ static void clamp_view(void)
 static void draw_grid(void)
 {
 	int i, j, sx, sy;
-	int W = grid.w, H = grid.h, cw0 = cell_w[0], ch0 = cell_h[0];
+	int W = grid.w, H = grid.h, cw0 = tbl.w[0], ch0 = tbl.h[0];
 	uint32_t bg;
 
 	clamp_view();
@@ -299,33 +295,33 @@ static void draw_grid(void)
 	// off_x/off_y shift the first visible cell partly under the headers.
 	sx = cw0 - off_x;
 	nx = 1;
-	cell_x[0] = 0;
-	for (j = 1; j < col_count; j++) {
-		cell_x[j] = (j >= grid.firstx && sx < W) ? sx : -1;
-		if (cell_x[j] >= 0)
+	tbl.x[0] = 0;
+	for (j = 1; j < tbl.cols; j++) {
+		tbl.x[j] = (j >= grid.firstx && sx < W) ? sx : -1;
+		if (tbl.x[j] >= 0)
 			nx = j + 1;
 		if (j >= grid.firstx)
-			sx += cell_w[j];
+			sx += tbl.w[j];
 	}
 	sy = ch0 - off_y;
 	ny = 1;
-	cell_y[0] = 0;
-	for (i = 1; i < row_count; i++) {
-		cell_y[i] = (i >= grid.firsty && sy < H) ? sy : -1;
-		if (cell_y[i] >= 0)
+	tbl.y[0] = 0;
+	for (i = 1; i < tbl.rows; i++) {
+		tbl.y[i] = (i >= grid.firsty && sy < H) ? sy : -1;
+		if (tbl.y[i] >= 0)
 			ny = i + 1;
 		if (i >= grid.firsty)
-			sy += cell_h[i];
+			sy += tbl.h[i];
 	}
 
 	// cells (bars clipped to the data area; a half-scrolled first row/column
 	// spills under the headers, which are painted on top afterwards)
 	for (i = grid.firsty; i < ny; i++) {
-		int cy = cell_y[i], h = cell_h[i];
+		int cy = tbl.y[i], h = tbl.h[i];
 		if (cy < 0)
 			continue;
 		for (j = grid.firstx; j < nx; j++) {
-			int cx = cell_x[j], w = cell_w[j];
+			int cx = tbl.x[j], w = tbl.w[j];
 			char *text;
 			if (cx < 0)
 				continue;
@@ -337,15 +333,15 @@ static void draw_grid(void)
 				} else
 					bg = CELL_COLOR_ACTIVE;
 			}
-			text = (values[j][i] && values[j][i][0] == '#') ? cells[j][i]
-			     : (values[j][i] && !display_formulas ? values[j][i] : cells[j][i]);
+			text = (tbl.values[j][i] && tbl.values[j][i][0] == '#') ? tbl.cells[j][i]
+			     : (tbl.values[j][i] && !display_formulas ? tbl.values[j][i] : tbl.cells[j][i]);
 			bar_clip(cx + 1, cy + 1, w - 1, h - 1, cw0, ch0, W, H, bg);
 			if (cx >= cw0 && cy >= ch0) {
 				if (text)
 					draw_cut_text(cx + 3, cy + h / 2 - 7, w - 7, TEXT_COLOR, text);
 				if (i == sel_y && j == sel_x)
 					DrawSelectedFrame(cx + 1, cy, w - 1, h + 1, TEXT_COLOR);
-				else if (values[j][i] && values[j][i][0] == '#')
+				else if (tbl.values[j][i] && tbl.values[j][i][0] == '#')
 					draw_region(cx + 1, cy + 1, w - 1, h - 1, 0xff0000);
 			}
 		}
@@ -354,7 +350,7 @@ static void draw_grid(void)
 	// column headers (top band)
 	_ksys_draw_bar(cw0, 0, W - cw0, ch0, HEADER_CELL_COLOR);
 	for (j = grid.firstx; j < nx; j++) {
-		int cx = cell_x[j], w = cell_w[j];
+		int cx = tbl.x[j], w = tbl.w[j];
 		if (cx < 0)
 			continue;
 		bg = is_between(j, sel_x, sel_end_x) ? HEADER_CELL_COLOR_ACTIVE : HEADER_CELL_COLOR;
@@ -362,14 +358,14 @@ static void draw_grid(void)
 		if (cx >= cw0)
 			_ksys_draw_bar(cx, 0, 1, H, GRID_COLOR); // full-height column line
 		def_button(cx + 5, 0, w - 10, ch0 - 1, j + COL_HEAD_BUTTON + BT_NODRAW, 0);
-		if (cells[j][0] && cx + w / 2 - (int)strlen(cells[j][0]) * 4 >= cw0)
-			draw_text(cx + w / 2 - strlen(cells[j][0]) * 4, ch0 / 2 - 7, 0x90, TEXT_COLOR, cells[j][0], 0);
+		if (tbl.cells[j][0] && cx + w / 2 - (int)strlen(tbl.cells[j][0]) * 4 >= cw0)
+			draw_text(cx + w / 2 - strlen(tbl.cells[j][0]) * 4, ch0 / 2 - 7, 0x90, TEXT_COLOR, tbl.cells[j][0], 0);
 	}
 
 	// row headers (left band)
 	_ksys_draw_bar(0, ch0, cw0, H - ch0, HEADER_CELL_COLOR);
 	for (i = grid.firsty; i < ny; i++) {
-		int cy = cell_y[i], h = cell_h[i];
+		int cy = tbl.y[i], h = tbl.h[i];
 		if (cy < 0)
 			continue;
 		bg = is_between(i, sel_y, sel_end_y) ? HEADER_CELL_COLOR_ACTIVE : HEADER_CELL_COLOR;
@@ -377,8 +373,8 @@ static void draw_grid(void)
 		if (cy >= ch0)
 			_ksys_draw_bar(0, cy, W, 1, GRID_COLOR); // full-width row line
 		def_button(5, cy, cw0 - 10, h - 1, i + ROW_HEAD_BUTTON + BT_NODRAW, 0);
-		if (cells[0][i] && cy + h / 2 - 7 >= ch0)
-			draw_text(cw0 / 2 - (int)strlen(cells[0][i]) * 4, cy + h / 2 - 7, 0x90, TEXT_COLOR, cells[0][i], 0);
+		if (tbl.cells[0][i] && cy + h / 2 - 7 >= ch0)
+			draw_text(cw0 / 2 - (int)strlen(tbl.cells[0][i]) * 4, cy + h / 2 - 7, 0x90, TEXT_COLOR, tbl.cells[0][i], 0);
 	}
 
 	// corner
@@ -397,28 +393,28 @@ static void draw_size_grid(void)
 {
 	if (size_state == SIZE_X) {
 		int x, x0, i;
-		x = cell_w[0];
+		x = tbl.w[0];
 		x0 = 0;
-		for (i = 1; i < col_count && x - x0 + cell_w[i] < grid.w - 10; i++) {
+		for (i = 1; i < tbl.cols && x - x0 + tbl.w[i] < grid.w - 10; i++) {
 			if (i >= grid.firstx) {
 				if (i >= size_id)
 					draw_line(x - x0, 0, x - x0, grid.h, 0, 1);
 			} else
-				x0 += cell_w[i];
-			x += cell_w[i];
+				x0 += tbl.w[i];
+			x += tbl.w[i];
 		}
 		draw_line(x - x0, 0, x - x0, grid.h, 0, 1);
 	} else {
 		int y, y0, i;
-		y = cell_h[0];
+		y = tbl.h[0];
 		y0 = 0;
-		for (i = 1; i < col_count && y - y0 + cell_h[i] < grid.h - 10; i++) {
+		for (i = 1; i < tbl.cols && y - y0 + tbl.h[i] < grid.h - 10; i++) {
 			if (i >= grid.firsty) {
 				if (i >= size_id)
 					draw_line(0, y - y0, grid.w, y - y0, 0, 1);
 			} else
-				y0 += cell_h[i];
-			y += cell_h[i];
+				y0 += tbl.h[i];
+			y += tbl.h[i];
 		}
 		draw_line(0, y - y0, grid.w, y - y0, 0, 1);
 	}
@@ -434,10 +430,10 @@ static void draw_drag(void)
 	int n0 = min(sel_y, sel_end_y);
 	int n1 = max(sel_y, sel_end_y);
 
-	int x0 = cell_x[k0] - 1;
-	int x1 = cell_x[k1] + cell_w[k1] + 1;
-	int y0 = cell_y[n0] - 1;
-	int y1 = cell_y[n1] + cell_h[n1] + 1;
+	int x0 = tbl.x[k0] - 1;
+	int x1 = tbl.x[k1] + tbl.w[k1] + 1;
+	int y0 = tbl.y[n0] - 1;
+	int y1 = tbl.y[n1] + tbl.h[n1] + 1;
 	if (x0 > grid.w - 1)
 		x0 = grid.w - 1;
 	if (x1 > grid.w - 1)
@@ -574,10 +570,10 @@ static void process_mouse(void)
 			size_state = SIZE_DRAG;
 			old_end_x = sel_end_x;
 			old_end_y = sel_end_y;
-		} else if (mouse_y <= cell_h[0]) {
+		} else if (mouse_y <= tbl.h[0]) {
 			int kx = -1;
-			for (i = 0; i < col_count - 1; i++)
-				if (mouse_x >= cell_x[i] + cell_w[i] - 5 && mouse_x <= cell_x[i + 1] + 5) {
+			for (i = 0; i < tbl.cols - 1; i++)
+				if (mouse_x >= tbl.x[i] + tbl.w[i] - 5 && mouse_x <= tbl.x[i + 1] + 5) {
 					kx = i;
 					break;
 				}
@@ -585,10 +581,10 @@ static void process_mouse(void)
 				size_id = kx;
 				size_state = SIZE_X;
 			}
-		} else if (mouse_x <= cell_w[0]) {
+		} else if (mouse_x <= tbl.w[0]) {
 			int ky = -1;
-			for (i = 0; i < row_count - 1; i++)
-				if (mouse_y >= cell_y[i] + cell_h[i] - 5 && mouse_y <= cell_y[i + 1] + 5) {
+			for (i = 0; i < tbl.rows - 1; i++)
+				if (mouse_y >= tbl.y[i] + tbl.h[i] - 5 && mouse_y <= tbl.y[i + 1] + 5) {
 					ky = i;
 					break;
 				}
@@ -599,12 +595,12 @@ static void process_mouse(void)
 		} else if (mouse_x < grid.w && mouse_y < grid.h) { // click on cell
 			int kx = -1, ky = -1;
 			for (i = grid.firstx; i < nx; i++)
-				if (cell_x[i] >= 0 && mouse_x >= cell_x[i] && mouse_x <= cell_x[i] + cell_w[i]) {
+				if (tbl.x[i] >= 0 && mouse_x >= tbl.x[i] && mouse_x <= tbl.x[i] + tbl.w[i]) {
 					kx = i;
 					break;
 				}
 			for (i = grid.firsty; i < ny; i++)
-				if (cell_y[i] >= 0 && mouse_y >= cell_y[i] && mouse_y <= cell_y[i] + cell_h[i]) {
+				if (tbl.y[i] >= 0 && mouse_y >= tbl.y[i] && mouse_y <= tbl.y[i] + tbl.h[i]) {
 					ky = i;
 					break;
 				}
@@ -625,7 +621,7 @@ static void process_mouse(void)
 		return;
 	} else if (!mouse_btn && size_state) {
 		if (size_state == SIZE_DRAG)
-			fill_cells(sel_x, sel_y, sel_end_x, sel_end_y, old_end_x, old_end_y);
+			table_fill(sel_x, sel_y, sel_end_x, sel_end_y, old_end_x, old_end_y);
 
 		size_state = 0;
 		draw_grid(); // everything shifted - refresh
@@ -633,32 +629,32 @@ static void process_mouse(void)
 	}
 	if (size_state == SIZE_X && mouse_x != size_mouse_x) {
 		draw_size_grid();
-		cell_w[size_id] += mouse_x - size_mouse_x;
-		if (cell_w[size_id] < 15)
-			cell_w[size_id] = 15;
-		else if (cell_w[size_id] > grid.w / 2)
-			cell_w[size_id] = grid.w / 2;
+		tbl.w[size_id] += mouse_x - size_mouse_x;
+		if (tbl.w[size_id] < 15)
+			tbl.w[size_id] = 15;
+		else if (tbl.w[size_id] > grid.w / 2)
+			tbl.w[size_id] = grid.w / 2;
 		draw_size_grid();
 	}
 	if (size_state == SIZE_Y && mouse_y != size_mouse_y) {
 		draw_size_grid();
-		cell_h[size_id] += mouse_y - size_mouse_y;
-		if (cell_h[size_id] < 15)
-			cell_h[size_id] = 15;
-		else if (cell_h[size_id] > grid.h / 2)
-			cell_h[size_id] = grid.h / 2;
+		tbl.h[size_id] += mouse_y - size_mouse_y;
+		if (tbl.h[size_id] < 15)
+			tbl.h[size_id] = 15;
+		else if (tbl.h[size_id] > grid.h / 2)
+			tbl.h[size_id] = grid.h / 2;
 		draw_size_grid();
 	}
 	if ((size_state == SIZE_SELECT || size_state == SIZE_DRAG) && (mouse_x != size_mouse_x || mouse_y != size_mouse_y)) {
 		int kx = -1, ky = -1;
 		draw_drag();
 		for (i = grid.firstx; i < nx; i++)
-			if (cell_x[i] >= 0 && mouse_x <= cell_x[i] + cell_w[i]) {
+			if (tbl.x[i] >= 0 && mouse_x <= tbl.x[i] + tbl.w[i]) {
 				kx = i;
 				break;
 			}
 		for (i = grid.firsty; i < ny; i++)
-			if (cell_y[i] >= 0 && mouse_y <= cell_y[i] + cell_h[i]) {
+			if (tbl.y[i] >= 0 && mouse_y <= tbl.y[i] + tbl.h[i]) {
 				ky = i;
 				break;
 			}
@@ -684,21 +680,21 @@ static void shift_selection(int dx, int dy, int shift)
 		sel_end_x += dx;
 		if (sel_end_x <= 1)
 			sel_end_x = 1;
-		else if (sel_end_x >= col_count)
-			sel_end_x = col_count - 1;
+		else if (sel_end_x >= tbl.cols)
+			sel_end_x = tbl.cols - 1;
 	}
 	if (dy != 0 && shift) {
 		sel_end_y += dy;
 		if (sel_end_y <= 1)
 			sel_end_y = 1;
-		else if (sel_end_y >= row_count)
-			sel_end_y = row_count - 1;
+		else if (sel_end_y >= tbl.rows)
+			sel_end_y = tbl.rows - 1;
 	}
 	if (dx || dy) {
 		if (!shift) {
-			if ((sel_end_x + dx) > (col_count - 1)) {
+			if ((sel_end_x + dx) > (tbl.cols - 1)) {
 				dx = 0;
-			} else if ((sel_end_y + dy) > (row_count - 1)) {
+			} else if ((sel_end_y + dy) > (tbl.rows - 1)) {
 				dy = 0;
 			} else
 				move_selection(sel_x + dx, sel_y + dy);
@@ -748,21 +744,21 @@ static void process_key(void)
 
 			for (i = 0; i < buf_col; i++)
 				for (j = 0; j < buf_row; j++) {
-					if (i + x0 >= col_count || j + y0 >= row_count)
+					if (i + x0 >= tbl.cols || j + y0 >= tbl.rows)
 						continue;
-					if (cells[i + x0][j + y0])
-						free(cells[i + x0][j + y0]);
+					if (tbl.cells[i + x0][j + y0])
+						free(tbl.cells[i + x0][j + y0]);
 					if (buffer[i][j]) {
 						cf_x0 = buf_old_x;
 						cf_y0 = buf_old_y;
 						cf_x1 = buf_old_x + buf_col;
 						cf_y1 = buf_old_y + buf_row;
-						cells[i + x0][j + y0] = change_formula(buffer[i][j], delta_x, delta_y);
+						tbl.cells[i + x0][j + y0] = table_shift_formula(buffer[i][j], delta_x, delta_y);
 					} else
-						cells[i + x0][j + y0] = NULL;
+						tbl.cells[i + x0][j + y0] = NULL;
 				}
 
-			calculate_values();
+			table_recalc();
 			draw_grid();
 			break;
 		}
@@ -783,20 +779,20 @@ static void process_key(void)
 			for (i = 0; i < buf_col; i++) {
 				buffer[i] = malloc(buf_row * sizeof(char *));
 				for (j = 0; j < buf_row; j++) {
-					if (cells[i + x0][j + y0]) {
+					if (tbl.cells[i + x0][j + y0]) {
 						if (KSYS_SCANCODE_C == key_scancode) {
-							buffer[i][j] = malloc(strlen(cells[i + x0][j + y0]) + 1);
-							strcpy(buffer[i][j], cells[i + x0][j + y0]);
+							buffer[i][j] = malloc(strlen(tbl.cells[i + x0][j + y0]) + 1);
+							strcpy(buffer[i][j], tbl.cells[i + x0][j + y0]);
 						} else {
-							buffer[i][j] = cells[i + x0][j + y0];
-							cells[i + x0][j + y0] = NULL;
+							buffer[i][j] = tbl.cells[i + x0][j + y0];
+							tbl.cells[i + x0][j + y0] = NULL;
 						}
 					} else
 						buffer[i][j] = NULL;
 				}
 			}
 			if (key_ascii == 24)
-				calculate_values();
+				table_recalc();
 			draw_grid();
 			break;
 		}
@@ -829,7 +825,7 @@ static void process_key(void)
 			shift_selection(-sel_x + 1, 0, shift);
 			break;
 		case KSYS_SCANCODE_EXT_END:
-			shift_selection(col_count - (nx - grid.firstx) - 1 - sel_x, 0, shift);
+			shift_selection(tbl.cols - (nx - grid.firstx) - 1 - sel_x, 0, shift);
 			break;
 		case KSYS_SCANCODE_EXT_DELETE: {
 			int i, j;
@@ -840,11 +836,11 @@ static void process_key(void)
 
 			for (i = n0; i <= n1; i++)
 				for (j = k0; j <= k1; j++)
-					if (cells[i][j]) {
-						free(cells[i][j]);
-						cells[i][j] = NULL;
+					if (tbl.cells[i][j]) {
+						free(tbl.cells[i][j]);
+						tbl.cells[i][j] = NULL;
 					}
-			calculate_values();
+			table_recalc();
 			draw_grid();
 			break;
 		}
@@ -861,13 +857,13 @@ static void process_key(void)
 		}
 }
 
-static void EventLoadFile(void)
+static void Eventtable_load(void)
 {
 	int r;
 	stop_edit();
-	r = LoadFile(fname);
+	r = table_load(fname);
 	if (r > 0) {
-		calculate_values();
+		table_recalc();
 		draw_grid();
 	} else {
 		const char *result = NULL;
@@ -883,8 +879,8 @@ static void EventGridSelectAll(void)
 {
 	sel_y = 1;
 	sel_x = 1;
-	sel_end_x = col_count - 1;
-	sel_end_y = row_count - 1;
+	sel_end_x = tbl.cols - 1;
+	sel_end_y = tbl.rows - 1;
 	stop_edit();
 	draw_grid();
 }
@@ -897,20 +893,20 @@ static void process_button(void)
 		_ksys_exit();
 
 	case NEW_BUTTON:
-		reinit();
+		table_reset();
 		draw_grid();
 		break;
 
 	case SAVE_BUTTON:
 		stop_edit();
-		if (SaveFile(fname))
+		if (table_save(fname))
 			_ksys_exec("/sys/@notify", (char *)msg_save);
 		else
 			_ksys_exec("/sys/@notify", (char *)msg_save_error);
 		break;
 
 	case LOAD_BUTTON:
-		EventLoadFile();
+		Eventtable_load();
 		break;
 
 	case SELECT_ALL_BUTTON:
@@ -920,14 +916,14 @@ static void process_button(void)
 	if (button >= COL_HEAD_BUTTON && button < ROW_HEAD_BUTTON) {
 		sel_end_x = sel_x = button - COL_HEAD_BUTTON;
 		sel_y = 1;
-		sel_end_y = row_count - 1;
+		sel_end_y = tbl.rows - 1;
 		stop_edit();
 		draw_grid();
 		return;
 	} else if (button >= ROW_HEAD_BUTTON && button < CELL_BUTTON) {
 		sel_end_y = sel_y = button - ROW_HEAD_BUTTON;
 		sel_x = 1;
-		sel_end_x = col_count - 1;
+		sel_end_x = tbl.cols - 1;
 		stop_edit();
 		draw_grid();
 		return;
@@ -936,11 +932,11 @@ static void process_button(void)
 
 int main(int argc, char **argv)
 {
-	init();
+	table_init();
 	if (argc > 1) {
 		strcpy(fname, argv[1]);
 		file_box.size = file_box.pos = strlen(fname);
-		EventLoadFile();
+		Eventtable_load();
 	}
 	_ksys_set_event_mask(KSYS_EVM_REDRAW | KSYS_EVM_KEY | KSYS_EVM_BUTTON | KSYS_EVM_MOUSE | KSYS_EVM_MOUSE_FILTER);
 	for (;;) {
