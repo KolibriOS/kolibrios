@@ -95,8 +95,13 @@ static scrollbar scroll_h = { 200, 0, SCROLL_SIZE, 0, SCROLL_SIZE, 0, 115,
 
 struct GRID {
 	int x, y, w, h;
-	int firstx, firsty; // cell x:y in the top left corner
+	int firstx, firsty; // first (partially) visible cell in the top left corner
 } grid = { 0, 0, 0, 0, 1, 1 };
+
+// sub-cell pixel scroll offset: how many pixels of the first visible
+// column/row are hidden past the left/top edge (0 except at the far end,
+// where it makes the last cell sit flush against the viewport edge)
+static int off_x = 0, off_y = 0;
 
 // resizing state
 #define SIZE_X 1
@@ -253,193 +258,145 @@ static int is_between(int x, int low, int high)
 	return ((low < high) ? (x >= low && x <= high) : (x >= high && x <= low));
 }
 
-static void clear_cell_slow(int px, int py)
+// pixel offset of data column j / row i from the start of the data area
+static int col_left(int j) { int i, s = 0; for (i = 1; i < j; i++) s += cell_w[i]; return s; }
+static int row_top(int i)  { int k, s = 0; for (k = 1; k < i; k++) s += cell_h[k]; return s; }
+
+// fill a bar, clipped to the rectangle [cx0,cx1) x [cy0,cy1)
+static void bar_clip(int x, int y, int w, int h, int cx0, int cy0, int cx1, int cy1, uint32_t c)
 {
-	int i;
-	int x0 = cell_w[0];
-	for (i = grid.firstx; i < px; i++)
-		x0 += cell_w[i];
-	int x1 = x0 + cell_w[px];
-	int y0 = cell_h[0];
-	for (i = grid.firsty; i < py; i++)
-		y0 += cell_h[i];
-	int y1 = y0 + cell_h[py];
-	_ksys_draw_bar(x0 + 1, y0 + 1, x1 - x0 - 1, y1 - y0 - 1, 0xffffff);
+	if (x < cx0) { w -= cx0 - x; x = cx0; }
+	if (y < cy0) { h -= cy0 - y; y = cy0; }
+	if (x + w > cx1) w = cx1 - x;
+	if (y + h > cy1) h = cy1 - y;
+	if (w > 0 && h > 0)
+		_ksys_draw_bar(x, y, w, h, c);
 }
 
-#define is_x_changed(v) ((v) == sel_x || (v) == prev_x)
-#define is_y_changed(v) ((v) == sel_y || (v) == prev_y)
-
-static void DrawCell(int x, int y, int w, int h, uint32_t id, uint32_t bg_color, char *text, int header)
-{
-	int small = 0;
-	if (x > grid.x + grid.w || w > grid.w || w <= 0)
-		return;
-	if (x + w > grid.x + grid.w) {
-		w = grid.x + grid.w - x;
-		small = 1;
-	}
-	if (y + h > grid.y + grid.h) {
-		h = grid.y + grid.h - y;
-		small = 1;
-	}
-	_ksys_draw_bar(x, y, w, h, bg_color);
-	if (!small) {
-		if (id)
-			def_button(x + 5, y, w - 10, h - 1, id + BT_NODRAW, 0);
-		if (header)
-			draw_text(x + w / 2 - strlen(text) * 4, h / 2 - 7 + y, 0x90, TEXT_COLOR, text, 0);
-		else
-			draw_cut_text(x + 3, h / 2 - 7 + y, w - 7, TEXT_COLOR, text);
-	}
-}
-
-// clamp the top-left visible cell so the viewport stays inside the real table:
-// never scroll past the last row/column, and never leave a gap after them
+// clamp scrolling to the real table bounds in pixels, then split back into
+// (first visible cell, sub-cell offset) so the last cell sits exactly flush
 static void clamp_view(void)
 {
-	int avail, sum, f;
+	int px, max;
 
-	avail = grid.w - cell_w[0];
-	sum = 0;
-	for (f = col_count - 1; f >= 1; f--) {
-		sum += cell_w[f];
-		if (sum > avail) {
-			f++;
-			break;
-		}
-	}
-	if (f < 1)
-		f = 1;
-	if (f > col_count - 1)
-		f = col_count - 1;
-	if (grid.firstx > f)
-		grid.firstx = f;
-	if (grid.firstx < 1)
-		grid.firstx = 1;
+	max = col_left(col_count) - (grid.w - cell_w[0]); // total width - viewport
+	px = col_left(grid.firstx) + off_x;
+	if (px > max) px = max;
+	if (px < 0) px = 0;
+	grid.firstx = 1;
+	while (grid.firstx < col_count - 1 && col_left(grid.firstx + 1) <= px)
+		grid.firstx++;
+	off_x = px - col_left(grid.firstx);
 
-	avail = grid.h - cell_h[0];
-	sum = 0;
-	for (f = row_count - 1; f >= 1; f--) {
-		sum += cell_h[f];
-		if (sum > avail) {
-			f++;
-			break;
-		}
-	}
-	if (f < 1)
-		f = 1;
-	if (f > row_count - 1)
-		f = row_count - 1;
-	if (grid.firsty > f)
-		grid.firsty = f;
-	if (grid.firsty < 1)
-		grid.firsty = 1;
+	max = row_top(row_count) - (grid.h - cell_h[0]);
+	px = row_top(grid.firsty) + off_y;
+	if (px > max) px = max;
+	if (px < 0) px = 0;
+	grid.firsty = 1;
+	while (grid.firsty < row_count - 1 && row_top(grid.firsty + 1) <= px)
+		grid.firsty++;
+	off_y = px - row_top(grid.firsty);
 }
 
 static void draw_grid(void)
 {
-	int i, j;
-	long x0 = 0, y0 = 0, x = 0, y = 0;
-	int right_edge = 0, bottom_edge = 0;
-	uint32_t bg_color;
+	int i, j, sx, sy;
+	int W = grid.w, H = grid.h, cw0 = cell_w[0], ch0 = cell_h[0];
+	uint32_t bg;
+
 	clamp_view();
-	_ksys_draw_bar(0, 0, cell_w[0], cell_h[0], HEADER_CELL_COLOR); // left top cell
-	def_button(0, 0, cell_w[0] - 4, cell_h[0] - 4, SELECT_ALL_BUTTON + BT_NODRAW, 0);
+	_ksys_draw_bar(0, 0, W, H, CELL_COLOR); // clean slate
 
-	nx = ny = 0;
-
-	// clear the area around the selected cell
-	if (sel_moved) {
-		clear_cell_slow(sel_x, sel_y);
-		clear_cell_slow(prev_x, prev_y);
-	}
-
-	// column headers + vertical lines
-	cell_x[0] = 0;
-	x = cell_w[0];
+	// screen x/y of every column/row left/top edge (-1 if off-screen).
+	// off_x/off_y shift the first visible cell partly under the headers.
+	sx = cw0 - off_x;
 	nx = 1;
-	for (i = 1; i < col_count && x - x0 < grid.w; i++) {
-		cell_x[i] = -1;
-		if (i >= grid.firstx) {
-			if (is_between(i, sel_x, sel_end_x))
-				bg_color = HEADER_CELL_COLOR_ACTIVE;
-			else
-				bg_color = HEADER_CELL_COLOR;
-			_ksys_draw_bar(x - x0, 0, 1, grid.h, GRID_COLOR);
-			DrawCell(x - x0 + 1, 0, cell_w[i] - 1, cell_h[0], i + COL_HEAD_BUTTON, bg_color, cells[i][0], 1);
-			cell_x[i] = x - x0;
-		} else
-			x0 += cell_w[i];
-		x += cell_w[i];
-		nx++;
+	cell_x[0] = 0;
+	for (j = 1; j < col_count; j++) {
+		cell_x[j] = (j >= grid.firstx && sx < W) ? sx : -1;
+		if (cell_x[j] >= 0)
+			nx = j + 1;
+		if (j >= grid.firstx)
+			sx += cell_w[j];
 	}
-	right_edge = x - x0; // right edge of the last visible column
-
-	// row headers + horizontal lines
-	y = cell_h[0];
+	sy = ch0 - off_y;
 	ny = 1;
 	cell_y[0] = 0;
-	for (i = 1; i < row_count && y - y0 < grid.h; i++) {
-		cell_y[i] = -1;
-		if (i >= grid.firsty) {
-			if (is_between(i, sel_y, sel_end_y))
-				bg_color = HEADER_CELL_COLOR_ACTIVE;
-			else
-				bg_color = HEADER_CELL_COLOR;
-			_ksys_draw_bar(0, y - y0, grid.w, 1, GRID_COLOR);
-			DrawCell(0, y - y0 + 1, cell_w[0], cell_h[i] - 1, i + ROW_HEAD_BUTTON, bg_color, cells[0][i], 1);
-			cell_y[i] = y - y0;
-		} else
-			y0 += cell_h[i];
-		y += cell_h[i];
-		ny++;
+	for (i = 1; i < row_count; i++) {
+		cell_y[i] = (i >= grid.firsty && sy < H) ? sy : -1;
+		if (cell_y[i] >= 0)
+			ny = i + 1;
+		if (i >= grid.firsty)
+			sy += cell_h[i];
 	}
-	bottom_edge = y - y0; // bottom edge of the last visible row
 
-	// blank out any strip past the last column/row so nothing stale shows
-	if (right_edge < grid.w)
-		_ksys_draw_bar(right_edge, 0, grid.w - right_edge, grid.h, CELL_COLOR);
-	if (bottom_edge < grid.h)
-		_ksys_draw_bar(0, bottom_edge, grid.w, grid.h - bottom_edge, CELL_COLOR);
-
-	// cells themselves
-	y = cell_h[0];
+	// cells (bars clipped to the data area; a half-scrolled first row/column
+	// spills under the headers, which are painted on top afterwards)
 	for (i = grid.firsty; i < ny; i++) {
-		x = cell_w[0];
+		int cy = cell_y[i], h = cell_h[i];
+		if (cy < 0)
+			continue;
 		for (j = grid.firstx; j < nx; j++) {
-			if (i && j) { // headers already drawn
-				int draw_frame_selection = 0;
-				int error = 0;
-				char *text;
-				bg_color = CELL_COLOR;
-
-				if (is_between(j, sel_x, sel_end_x) && is_between(i, sel_y, sel_end_y)
-				    && ((!sel_moved) || (is_x_changed(j) && is_y_changed(i)))) {
-					if (i == sel_y && j == sel_x) {
-						draw_frame_selection = 1;
-						drag_x = x + cell_w[j] - 4;
-						drag_y = y + cell_h[i] - 4;
-					} else
-						bg_color = CELL_COLOR_ACTIVE; // selected but not main
-				}
-
-				if (values[j][i] && values[j][i][0] == '#') {
-					text = cells[j][i];
-					error = 1;
+			int cx = cell_x[j], w = cell_w[j];
+			char *text;
+			if (cx < 0)
+				continue;
+			bg = CELL_COLOR;
+			if (is_between(j, sel_x, sel_end_x) && is_between(i, sel_y, sel_end_y)) {
+				if (i == sel_y && j == sel_x) {
+					drag_x = cx + w - 4;
+					drag_y = cy + h - 4;
 				} else
-					text = (values[j][i] && !display_formulas ? values[j][i] : cells[j][i]);
-
-				DrawCell(x + 1, y + 1, cell_w[j] - 1, cell_h[i] - 1, 0, bg_color, text, 0);
-				if (draw_frame_selection && j < nx - 1 && i < ny - 1)
-					DrawSelectedFrame(x + 1, y, cell_w[j] - 1, cell_h[i] + 1, TEXT_COLOR);
-				else if (error)
-					draw_region(x + 1, y + 1, cell_w[j] - 1, cell_h[i] - 1, 0xff0000);
+					bg = CELL_COLOR_ACTIVE;
 			}
-			x += cell_w[j];
+			text = (values[j][i] && values[j][i][0] == '#') ? cells[j][i]
+			     : (values[j][i] && !display_formulas ? values[j][i] : cells[j][i]);
+			bar_clip(cx + 1, cy + 1, w - 1, h - 1, cw0, ch0, W, H, bg);
+			if (cx >= cw0 && cy >= ch0) {
+				if (text)
+					draw_cut_text(cx + 3, cy + h / 2 - 7, w - 7, TEXT_COLOR, text);
+				if (i == sel_y && j == sel_x)
+					DrawSelectedFrame(cx + 1, cy, w - 1, h + 1, TEXT_COLOR);
+				else if (values[j][i] && values[j][i][0] == '#')
+					draw_region(cx + 1, cy + 1, w - 1, h - 1, 0xff0000);
+			}
 		}
-		y += cell_h[i];
 	}
+
+	// column headers (top band)
+	_ksys_draw_bar(cw0, 0, W - cw0, ch0, HEADER_CELL_COLOR);
+	for (j = grid.firstx; j < nx; j++) {
+		int cx = cell_x[j], w = cell_w[j];
+		if (cx < 0)
+			continue;
+		bg = is_between(j, sel_x, sel_end_x) ? HEADER_CELL_COLOR_ACTIVE : HEADER_CELL_COLOR;
+		bar_clip(cx, 0, w, ch0, cw0, 0, W, ch0, bg);
+		if (cx >= cw0)
+			_ksys_draw_bar(cx, 0, 1, H, GRID_COLOR); // full-height column line
+		def_button(cx + 5, 0, w - 10, ch0 - 1, j + COL_HEAD_BUTTON + BT_NODRAW, 0);
+		if (cells[j][0] && cx + w / 2 - (int)strlen(cells[j][0]) * 4 >= cw0)
+			draw_text(cx + w / 2 - strlen(cells[j][0]) * 4, ch0 / 2 - 7, 0x90, TEXT_COLOR, cells[j][0], 0);
+	}
+
+	// row headers (left band)
+	_ksys_draw_bar(0, ch0, cw0, H - ch0, HEADER_CELL_COLOR);
+	for (i = grid.firsty; i < ny; i++) {
+		int cy = cell_y[i], h = cell_h[i];
+		if (cy < 0)
+			continue;
+		bg = is_between(i, sel_y, sel_end_y) ? HEADER_CELL_COLOR_ACTIVE : HEADER_CELL_COLOR;
+		bar_clip(0, cy, cw0, h, 0, ch0, cw0, H, bg);
+		if (cy >= ch0)
+			_ksys_draw_bar(0, cy, W, 1, GRID_COLOR); // full-width row line
+		def_button(5, cy, cw0 - 10, h - 1, i + ROW_HEAD_BUTTON + BT_NODRAW, 0);
+		if (cells[0][i] && cy + h / 2 - 7 >= ch0)
+			draw_text(cw0 / 2 - (int)strlen(cells[0][i]) * 4, cy + h / 2 - 7, 0x90, TEXT_COLOR, cells[0][i], 0);
+	}
+
+	// corner
+	_ksys_draw_bar(0, 0, cw0, ch0, HEADER_CELL_COLOR);
+	def_button(0, 0, cw0 - 4, ch0 - 4, SELECT_ALL_BUTTON + BT_NODRAW, 0);
+
 	DrawScrolls();
 }
 
