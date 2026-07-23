@@ -70,7 +70,24 @@ AHCI_HBA_PxSSTS_DET_PRESENT = 3
 AHCI_MAX_PORTS = 32        ;
 ;HBA_MEMORY_SIZE = 0x1100
 
-AHCI_PORT_TIMEOUT = 1000000
+AHCI_PORT_TIMEOUT = 100      ; in timer ticks (1 tick = 10 ms): 1 s to wait for BSY/DRQ clear
+AHCI_CMD_TIMEOUT  = 500      ; in timer ticks: 5 s for a command to complete
+AHCI_IRQ_MISS_LIMIT = 4      ; after that many completions without an interrupt fall back to polling
+
+; Base busy-poll length. Short and medium commands (a typical SSD request is
+; ~100-200 us, HDD random access is hundreds of us) are caught by polling the
+; completion register - that costs neither the interrupt processing nor the
+; interrupt-delivery latency. Only ports working on genuinely long commands
+; (several multi-ms ones in a row) switch to interrupts and sleeping.
+; The threshold is measured in TSC ticks computed from cpu_freq; until the
+; frequency is measured (early boot) a conservative default is used.
+AHCI_SPIN_US          = 200      ; base busy-poll length, in microseconds
+AHCI_SPIN_TSC_DEFAULT = 400000   ; fallback threshold in TSC ticks (~200 us at 2 GHz)
+
+; PxIS/PxIE bits: D2H register FIS, PIO setup FIS, DMA setup FIS, set device bits FIS
+; + overflow, interface fatal, host bus data/fatal, task file error
+AHCI_PORT_INTR_ERR_MASK = 0x79000000 ; TFES | HBFS | HBDS | IFS | OFS
+AHCI_PORT_INTR_MASK     = AHCI_PORT_INTR_ERR_MASK or 0x0000000F
 
 ; Frame Information Structure Types
 FIS_TYPE_REG_H2D    = 0x27 ; Register FIS - host to device
@@ -165,6 +182,18 @@ struct PORT_DATA
     drive_type    db ? ; drive type
     sector_count  dq ? ; number of sectors
     ctr_ptr       dd ? ; pointer to controller to which port belongs
+    intr_status   dd ? ; PxIS bits accumulated by the irq handler
+    event_ptr     dd ? ; EVENT of the thread waiting for command completion, 0 = nobody waits
+    event_uid     dd ? ; uid of that event
+    avg_cmd_tsc   dd ? ; smoothed command duration in TSC ticks, for the adaptive busy-poll
+    ie_mode       dd ? ; current PxIE state: 1 = interrupts enabled on this port
+    wake_slow     dd ? ; 1 = interrupt wakeups on this port are late/missing, do not sleep
+    slow_streak   dd ? ; sleeps in a row that ended late (by timeout or a tick-late interrupt)
+    fast_streak   dd ? ; sleeps in a row that were ended by the interrupt in time
+    next_probe    dd ? ; timer tick after which to re-probe sleeping while wake_slow = 1
+    long_run      dd ? ; consecutive commands longer than the sleep threshold
+    short_run     dd ? ; consecutive commands shorter than the sleep threshold
+    mutex         MUTEX ; serializes commands on this port
 ends
 
 ; Register FIS - Host to Device
@@ -317,7 +346,13 @@ struct AHCI_CTR
         abar             dd ?    ; pointer to HBA Memory (BAR5) mapped to virtual kernelspace memory
         pcidev           dd ?    ; pointer to corresponding PCIDEV structure
         port_data_arr    rb (sizeof.PORT_DATA*AHCI_MAX_PORTS)
-        mutex            MUTEX
+        irq_line         dd ?    ; PCI interrupt line, -1 if none
+        polling_mode     dd ?    ; 1 = wait for commands by polling, do not rely on interrupts
+        irq_miss_count   dd ?    ; commands completed without an interrupt (in a row)
+        intr_count       dd ?    ; total interrupts received, diagnostics
+        cmds_total       dd ?    ; commands completed, diagnostics
+        sleeps_total     dd ?    ; times a thread went to sleep waiting, diagnostics
+        miss_total       dd ?    ; wakeups by timeout with the command already done, diagnostics
 ends
 
 ctr1_data AHCI_CTR
@@ -330,6 +365,7 @@ ctr7_data AHCI_CTR
 ctr8_data AHCI_CTR
 
 ctr_ptr dd ?
+ahci_spin_tsc dd ? ; busy-poll threshold in TSC ticks, 0 = not computed yet
 endg
 
 iglobal
@@ -374,10 +410,6 @@ ahci_init:
 
 .ahci_ctr_found:
         push    esi
-
-        mov     ecx, [ctr_ptr]
-        add     ecx, AHCI_CTR.mutex
-        call    mutex_init
 
         mov     ecx, [ctr_ptr]
         mov     [ecx + AHCI_CTR.pcidev], esi
@@ -426,6 +458,33 @@ ahci_init:
         DEBUGF  1, "K: AHCI: pci_status_command = %x\n", eax
         stdcall pci_write32, ebx, ebp, PCI_REG_STATUS_COMMAND, eax
 
+        ; Get the PCI interrupt line and install the interrupt handler.
+        ; If that fails, fall back to completion by polling.
+        mov     ecx, [ctr_ptr]
+        mov     [ecx + AHCI_CTR.polling_mode], 0
+        mov     [ecx + AHCI_CTR.irq_miss_count], 0
+        stdcall pci_read8, ebx, ebp, 0x3C ; PCI interrupt line register
+        and     eax, 0xFF
+        mov     [ecx + AHCI_CTR.irq_line], eax
+        cmp     eax, 0
+        je      .no_irq
+        cmp     eax, 0xFF
+        je      .no_irq
+        cmp     eax, IRQ_RESERVED
+        jae     .no_irq
+        stdcall attach_int_handler, eax, ahci_irq_handler, ecx
+        mov     ecx, [ctr_ptr] ; attach_int_handler clobbers ecx
+        test    eax, eax
+        jnz     .irq_ok
+.no_irq:
+        DEBUGF  1, "K: AHCI: no usable IRQ (line = %d), working in polling mode\n", [ecx + AHCI_CTR.irq_line]
+        mov     [ecx + AHCI_CTR.polling_mode], 1
+        or      [ecx + AHCI_CTR.irq_line], -1
+        jmp     @f
+.irq_ok:
+        DEBUGF  1, "K: AHCI: using IRQ %d\n", [ecx + AHCI_CTR.irq_line]
+@@:
+
         mov     esi, [ctr_ptr]
         mov     esi, [esi + AHCI_CTR.abar]
 
@@ -441,10 +500,16 @@ ahci_init:
         DEBUGF  1, "K: AHCI: requesting AHCI ownership change...\n"
         bts     [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_OOS
 
+        mov     ecx, 200 ; wait up to 2 s for BIOS to release the controller
 .wait_not_bos:
         bt      [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_BOS
-        jc      .wait_not_bos
-
+        jnc     @f
+        mov     ebx, 1
+        call    delay_hs
+        dec     ecx
+        jnz     .wait_not_bos
+        DEBUGF  1, "K: AHCI: BIOS did not release ownership, taking over anyway\n"
+@@:
         mov     ebx, 3
         call    delay_hs
 
@@ -464,24 +529,27 @@ ahci_init:
         bts     [esi + HBA_MEM.ghc], bit_AHCI_HBA_GHC_AHCI_ENABLE
         bts     [esi + HBA_MEM.ghc], bit_AHCI_HBA_GHC_RESET
 
-        ; wait for reset to complete
+        ; wait for reset to complete, up to 1 s by spec
+        mov     ecx, 100
 .wait_reset:
         bt      [esi + HBA_MEM.ghc], bit_AHCI_HBA_GHC_RESET
-        jc      .wait_reset
+        jnc     @f
+        mov     ebx, 1
+        call    delay_hs
+        dec     ecx
+        jnz     .wait_reset
+        DEBUGF  1, "K: AHCI: controller reset failed, skipping it\n"
+        jmp     .end_detect_drives
+@@:
 
         ; enable the AHCI and interrupts
         bts     [esi + HBA_MEM.ghc], bit_AHCI_HBA_GHC_AHCI_ENABLE
+        mov     [esi + HBA_MEM.is], 0xFFFFFFFF ; clear stale interrupt status
         bts     [esi + HBA_MEM.ghc], bit_AHCI_HBA_GHC_INTERRUPT_ENABLE
         mov     ebx, 2
         call    delay_hs
 
         DEBUGF  1, "K: AHCI: caps: %x %x, ver: %x, ghc: %x, pi: %x\n", [esi + HBA_MEM.cap], [esi + HBA_MEM.cap2], [esi + HBA_MEM.version], [esi + HBA_MEM.ghc], [esi + HBA_MEM.pi]
-
-        ; TODO:
-        ; calculate irq line
-        ; ahciHBA->ghc |= AHCI_GHC_IE;
-        ; IDT::RegisterInterruptHandler(irq, InterruptHandler);
-        ; ahciHBA->is = 0xffffffff;
 
         xor     ebx, ebx
 .detect_drives:
@@ -540,19 +608,22 @@ ahci_init:
         mov     [edi + HBA_PORT.interrupt_status], 0xFFFFFFFF
 
         ; ------------------------------------------
+        ; Check whether anything can be attached to this port:
+        ; DET = 3 - device present and phy communication established;
+        ; DET = 1 - device present but no communication yet (will do COMRESET);
+        ; IPM != 0 (partial/slumber/devsleep) - link is powered down, DET may
+        ; read 0 in that state, so the device has to be woken up by COMRESET.
+        ; Only DET = 0/4 with IPM = 0 reliably means "nothing here".
 
         mov     ecx, [edi + HBA_PORT.sata_status]
-        shr     ecx, 8
-        and     ecx, 0x0F
-        cmp     ecx, AHCI_HBA_PORT_IPM_ACTIVE
-        jne     .continue_detect_drives
-
-        mov     ecx, [edi + HBA_PORT.sata_status]
+        test    ecx, 0xF00 ; IPM
+        jnz     .try_port
         and     ecx, AHCI_HBA_PxSSTS_DET
         cmp     ecx, AHCI_HBA_PxSSTS_DET_PRESENT
+        je      .try_port
+        cmp     ecx, 1 ; presence detected, no communication
         jne     .continue_detect_drives
-
-        ; DEBUGF  1, "K: AHCI: found drive at port %d, cmd = 0x%x, ssts = 0x%x, signature = 0x%x\n", ebx, [edi + HBA_PORT.command], [edi + HBA_PORT.sata_status], [edi + HBA_PORT.signature]
+.try_port:
 
         mov     ecx, ebx
         imul    ecx, sizeof.PORT_DATA
@@ -560,7 +631,15 @@ ahci_init:
         add     ecx, [ctr_ptr]
         mov     eax, [ctr_ptr]
         mov     [ecx + PORT_DATA.ctr_ptr], eax ; to which controller the port belongs
+
+        push    ecx
+        add     ecx, PORT_DATA.mutex
+        call    mutex_init
+        pop     ecx
+
         stdcall ahci_port_rebase, edi, ebx, ecx
+        test    eax, eax
+        jnz     .continue_detect_drives ; no device answered on this port
 
         ; DEBUGF  1, "K: AHCI: After REBASING, signature = 0x%x\n", [edi + HBA_PORT.signature]
 
@@ -582,14 +661,20 @@ ahci_init:
         mov     eax, AHCI_DEV_PM
         jz      .end_switch_sig
 
-        DEBUGF  1, "Unknown device signature\n"
-        mov     eax, AHCI_DEV_NULL
+        ; The link is up but the signature is not any known one. Most likely
+        ; the device signature FIS was simply lost (e.g. BIOS left the port
+        ; uninitialized), so try to treat it as a plain SATA disk and let
+        ; IDENTIFY decide whether a disk is really there.
+        DEBUGF  1, "K: AHCI: unknown device signature %x, assuming SATA\n", [edi + HBA_PORT.signature]
+        mov     eax, AHCI_DEV_SATA
 .end_switch_sig:
         mov     [ecx + PORT_DATA.drive_type], al
 
         DEBUGF  1, "K: AHCI: found drive on port %u: TYPE = %u\n", ebx, [ecx + PORT_DATA.drive_type]
 
         stdcall ahci_port_identify, ecx
+        test    eax, eax
+        jnz     .continue_detect_drives ; identification failed - no disk to add
 
         cmp     [ecx + PORT_DATA.drive_type], AHCI_DEV_SATA
         jne     .after_add_disk ; skip adding disk code
@@ -650,8 +735,9 @@ ahci_init:
 ; -------------------------------------------------
 
 modelstr  rb 42
-; Identify drive on port ; TODO check
+; Identify drive on port
 ; in: pdata - address of PORT_DATA structure
+; out: eax = 0 on success, 1 on error
 proc ahci_port_identify stdcall, pdata: dword
         locals
             cmdslot dd ?
@@ -659,9 +745,12 @@ proc ahci_port_identify stdcall, pdata: dword
             cmdtable  dd ?
             buf_phys  dd ?
             buf_virt  dd ?
+            result    dd ?
         endl
 
         pushad
+
+        mov     [result], 1
 
         mov     esi, [pdata] ; esi - address of PORT_DATA struct of port
         stdcall ahci_find_cmdslot, esi
@@ -686,9 +775,13 @@ proc ahci_port_identify stdcall, pdata: dword
         stdcall _memset, eax, 0, sizeof.HBA_CMD_TBL
 
         call    alloc_page
+        test    eax, eax
+        jz      .ret
         mov     [buf_phys], eax
 
         stdcall map_io_mem, eax, 4096, PG_NOCACHE + PG_SWR  ; map to virt memory so we can work with it
+        test    eax, eax
+        jz      .free_phys
         mov     [buf_virt], eax
 
         mov     eax, [cmdtable]
@@ -727,16 +820,21 @@ proc ahci_port_identify stdcall, pdata: dword
 
         ; Wait on previous command to complete, before issuing new command.
         stdcall ahci_port_wait, edi, AHCI_PORT_TIMEOUT
-        ; DEBUGF  1, "eax = %x\n", eax
-        ; TODO check eax error value
+        test    eax, eax
+        jnz     .fail
 
+        stdcall ahci_port_update_ie, esi
+        ; drop the PxIS bits accumulated by previous commands (with PxIE off
+        ; nobody clears them), so that a stale error bit does not fail us
+        mov     [edi + HBA_PORT.interrupt_status], 0xFFFFFFFF
+        mov     [esi + PORT_DATA.intr_status], 0
         mov     eax, [cmdslot]
         bts     [edi + HBA_PORT.command_issue], eax ; Issue the command
 
         ; Wait for command completion
-        stdcall ahci_port_cmd_wait, edi, eax;, AHCI_PORT_CMD_TIMEOUT
-        ; DEBUGF  1, " eax = %x\n", eax
-        ; TODO check eax error value
+        stdcall ahci_port_cmd_wait, esi, eax
+        test    eax, eax
+        jnz     .fail
 
         ; DEBUGF  1, "sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
 
@@ -760,13 +858,35 @@ proc ahci_port_identify stdcall, pdata: dword
         mov     dword [ebx + PORT_DATA.sector_count], eax
         mov     dword [ebx + PORT_DATA.sector_count + 4], edx
 
+        ; a SATA disk with zero capacity did not really answer IDENTIFY
+        cmp     [ebx + PORT_DATA.drive_type], AHCI_DEV_SATA
+        jne     @f
+        or      eax, edx
+        jz      .fail
+        mov     eax, dword [ebx + PORT_DATA.sector_count]
+        mov     edx, dword [ebx + PORT_DATA.sector_count + 4]
+@@:
+        mov     [result], 0
+
         shrd    eax, edx, 11 ; i.e *512 / 1024 / 1024, 512 - sector size
         DEBUGF  1, "disk capacity = %u MiB ", eax
         shrd    eax, edx, 10 ; / 1024
         DEBUGF  1, "= %u GiB\n", eax
+.free_buf:
+        stdcall free_kernel_space, [buf_virt]
+.free_phys:
+        mov     eax, [buf_phys]
+        call    free_page
 .ret:
         popad
+        mov     eax, [result]
         ret
+
+.fail:
+        mov     esi, [pdata]
+        DEBUGF  1, "K: AHCI: IDENTIFY failed on port %u\n", [esi + PORT_DATA.portno]
+        stdcall ahci_port_error_recovery, esi
+        jmp     .free_buf
 endp
 
 proc ahci_querymedia stdcall, pdata, mediainfo
@@ -808,6 +928,11 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
 
         DEBUGF  AHCI_DBGLVL, "    ahci_rw_sectors: buffer = 0x%x, startsector = 0x%x:%x, numsectors = %u, is_write = %u\n", [vbuf], [startsector], [startsector + 4], [numsectors], [is_write]:1
 
+        ; the count field of the command FIS is 16 bit wide (0 means 65536)
+        cmp     [numsectors], 65536
+        jbe     @f
+        mov     [numsectors], 65536
+@@:
         mov     esi, [pdata] ; esi - address of PORT_DATA struct of port
         stdcall ahci_find_cmdslot, esi
         cmp     eax, -1
@@ -1001,14 +1126,21 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
 
         ; Wait on previous command to complete, before issuing new command.
         stdcall ahci_port_wait, edi, AHCI_PORT_TIMEOUT
+        test    eax, eax
+        jnz     .fail_recover
 
+        stdcall ahci_port_update_ie, esi
+        ; drop the PxIS bits accumulated by previous commands (with PxIE off
+        ; nobody clears them), so that a stale error bit does not fail us
+        mov     [edi + HBA_PORT.interrupt_status], 0xFFFFFFFF
+        mov     [esi + PORT_DATA.intr_status], 0
         mov     eax, [cmdslot]
         bts     [edi + HBA_PORT.command_issue], eax ; Issue the command
 
         ; Wait for command completion
-        stdcall ahci_port_cmd_wait, edi, eax;, AHCI_PORT_CMD_TIMEOUT
-
-        DEBUGF  AHCI_DBGLVL, "sata_error register = 0x%x\n", [edi + HBA_PORT.sata_error]
+        stdcall ahci_port_cmd_wait, esi, eax
+        test    eax, eax
+        jnz     .fail_recover
 
         DEBUGF  AHCI_DBGLVL, "R/W completed\n"
 
@@ -1035,6 +1167,9 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
         shl     eax, 9 ; *= 512
         ret
 
+.fail_recover:
+        DEBUGF  1, "K: AHCI: command failed on port %u, tfd = %x, serr = %x\n", [esi + PORT_DATA.portno], [edi + HBA_PORT.task_file_data], [edi + HBA_PORT.sata_error]
+        stdcall ahci_port_error_recovery, esi
 .fail:
         popad
         xor     eax, eax
@@ -1047,13 +1182,15 @@ tmpstr    rb 16
 proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsectors_ptr:dword
         locals
                 numsectors dd ?
+                errcode    dd ?
         endl
 
         pushad
 
+        mov     [errcode], DISK_STATUS_OK
+
         mov     ecx, [pdata]
-        mov     ecx, [ecx + PORT_DATA.ctr_ptr]
-        mov     ecx, [ecx + AHCI_CTR.mutex]
+        lea     ecx, [ecx + PORT_DATA.mutex]
         call    mutex_lock
 
         mov     eax, [numsectors_ptr]
@@ -1066,19 +1203,11 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
         cmp     ecx, [numsectors]
         jae     .read_loop_end
 
-        ; mov     eax, [buffer]
-        ; call    get_pg_addr
-        ; DEBUGF  1, "buf phys = 0x%x\n", eax
-        ; mov     eax, [buffer]
-        ; add     eax, 4096
-        ; call    get_pg_addr
-        ; DEBUGF  1, "buf + 4096 phys = 0x%x\n", eax
-
         mov     ebx, [numsectors]
         sub     ebx, ecx
-        ; DEBUGF  1, "buffer = 0x%x\n", [buffer]
         stdcall ahci_rw_sectors, [pdata], [buffer], dword [startsector], dword [startsector + 4], ebx, 0
-        ;; TODO check if eax == 0 ?
+        test    eax, eax
+        jz      .read_fail
 
         DEBUGF  AHCI_DBGLVL, "    EAX = 0x%x\n", eax
 
@@ -1089,15 +1218,18 @@ proc ahci_read stdcall pdata: dword, buffer: dword, startsector: qword, numsecto
         adc     dword [startsector + 4], 0
 
         jmp     .read_loop
+.read_fail:
+        mov     [errcode], DISK_STATUS_GENERAL_ERROR
 .read_loop_end:
+        mov     eax, [numsectors_ptr]
+        mov     [eax], ecx ; number of sectors actually read
 
         mov     ecx, [pdata]
-        mov     ecx, [ecx + PORT_DATA.ctr_ptr]
-        mov     ecx, [ecx + AHCI_CTR.mutex]
+        lea     ecx, [ecx + PORT_DATA.mutex]
         call    mutex_unlock
 
         popad
-        xor     eax, eax
+        mov     eax, [errcode]
         ret
 endp
 
@@ -1106,13 +1238,15 @@ endp
 proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsectors_ptr:dword
         locals
                 numsectors dd ?
+                errcode    dd ?
         endl
 
         pushad
 
+        mov     [errcode], DISK_STATUS_OK
+
         mov     ecx, [pdata]
-        mov     ecx, [ecx + PORT_DATA.ctr_ptr]
-        mov     ecx, [ecx + AHCI_CTR.mutex]
+        lea     ecx, [ecx + PORT_DATA.mutex]
         call    mutex_lock
 
         mov     eax, [numsectors_ptr]
@@ -1120,7 +1254,7 @@ proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsect
         mov     [numsectors], eax
         DEBUGF  AHCI_DBGLVL, "  ahci_write: buffer = 0x%x, startsector = 0x%x:%x, numsectors = %u\n", [buffer], [startsector], [startsector + 4], eax
 
-        xor     ecx, ecx ; how many sectors have been read
+        xor     ecx, ecx ; how many sectors have been written
 .write_loop:
         cmp     ecx, [numsectors]
         jae     .write_loop_end
@@ -1128,7 +1262,8 @@ proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsect
         mov     ebx, [numsectors]
         sub     ebx, ecx
         stdcall ahci_rw_sectors, [pdata], [buffer], dword [startsector], dword [startsector + 4], ebx, 1
-        ;; TODO check if eax == 0 ?
+        test    eax, eax
+        jz      .write_fail
 
         DEBUGF  AHCI_DBGLVL, "    EAX = 0x%x\n", eax
 
@@ -1139,99 +1274,607 @@ proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsect
         adc     dword [startsector + 4], 0
 
         jmp     .write_loop
+.write_fail:
+        mov     [errcode], DISK_STATUS_GENERAL_ERROR
 .write_loop_end:
+        mov     eax, [numsectors_ptr]
+        mov     [eax], ecx ; number of sectors actually written
 
         mov     ecx, [pdata]
-        mov     ecx, [ecx + PORT_DATA.ctr_ptr]
-        mov     ecx, [ecx + AHCI_CTR.mutex]
+        lea     ecx, [ecx + PORT_DATA.mutex]
         call    mutex_unlock
 
         popad
-        xor     eax, eax
+        mov     eax, [errcode]
         ret
 endp
 
 ; Start command engine
 ; in: eax - address of HBA_PORT structure
 ahci_start_cmd:
+        push    edx
+        mov     edx, [timer_ticks]
+        add     edx, 100 ; wait up to 1 s
 .wait_cr: ; Wait until CR (bit15) is cleared
         bt      [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_CR
-        jc      .wait_cr
-
+        jnc     @f
+        cmp     [timer_ticks], edx
+        jb      .wait_cr
+        DEBUGF  1, "K: AHCI: CR did not clear before engine start\n"
+@@:
         ; Set FRE (bit4) and ST (bit0)
         bts     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FRE
         bts     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_ST
-        ; maybe here call ahci flush cmd ? TODO (see seakernel)
+        pop     edx
         ret
 
 ; Stop command engine
 ; in: eax - address of HBA_PORT structure
 ahci_stop_cmd:
+        push    edx
         btr     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_ST ; Clear ST (bit0)
-        btr     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FRE ; Clear FRE (bit4)
-.wait_fr_cr: ; Wait until FR (bit14), CR (bit15) are cleared
-        bt      [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FR
-        jc      .wait_fr_cr
+        mov     edx, [timer_ticks]
+        add     edx, 100 ; the spec gives the HBA 500 ms to stop, wait up to 1 s
+.wait_cr: ; Wait until CR (bit15) is cleared
         bt      [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_CR
-        jc      .wait_fr_cr
-
+        jnc     @f
+        cmp     [timer_ticks], edx
+        jb      .wait_cr
+        DEBUGF  1, "K: AHCI: CR stuck while stopping the port\n"
+@@:
+        btr     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FRE ; Clear FRE (bit4)
+        mov     edx, [timer_ticks]
+        add     edx, 100
+.wait_fr: ; Wait until FR (bit14) is cleared
+        bt      [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FR
+        jnc     @f
+        cmp     [timer_ticks], edx
+        jb      .wait_fr
+        DEBUGF  1, "K: AHCI: FR stuck while stopping the port\n"
+@@:
+        pop     edx
         ret
 
 ; waits until the port is no longer busy before issuing a new command
 ; in: [port] - address of HBA_PORT structure
-; [timeout] - timeout (in iterations)
+; [timeout] - timeout in timer ticks
 ; out: eax = 0 if success, 1 if timeout expired
 proc ahci_port_wait stdcall, port: dword, timeout: dword
         push    ebx ecx
         mov     ebx, [port]
-        xor     ecx, ecx
+        mov     ecx, [timer_ticks]
+        add     ecx, [timeout]
 .wait:
-        cmp     ecx, [timeout]
-        jae     .wait_end
         mov     eax, [ebx + HBA_PORT.task_file_data]
         and     eax, ATA_DEV_BUSY or ATA_DEV_DRQ
-        test    eax, eax
-        jz      .wait_end
-        inc     ecx
-        jmp     .wait
-.wait_end:
+        jz      .done
+        cmp     [timer_ticks], ecx
+        jb      .wait
+        DEBUGF  1, "K: AHCI: port is stuck busy, tfd = %x\n", [ebx + HBA_PORT.task_file_data]
+        mov     eax, 1
+        pop     ecx ebx
+        ret
+.done:
         xor     eax, eax
-        DEBUGF  AHCI_DBGLVL, "port wait counter = %u\n", ecx
-        cmp     ecx, [timeout] ; if they equal it means port is hung
-        setz    al
         pop     ecx ebx
         ret
 endp
 
 
-; Wait for command completion
-; in: [port] - address of HBA_PORT structure
+; Wait for command completion.
+; Ports working on short/medium commands (ie_mode = 0) are busy-polled: the
+; completion is caught by register at the exact moment it happens, like the
+; old driver did. Ports working on genuinely long commands (ie_mode = 1, set
+; by ahci_port_update_ie after several multi-ms commands in a row) release
+; the CPU: the thread sleeps and is woken up by the port interrupt, with
+; several self-defense fallbacks for broken/late interrupt delivery.
+; in: [pdata] - address of PORT_DATA structure
 ;     [cmdslot] - number of command slot
-; out: eax = 0 if success, 1 if error
-proc ahci_port_cmd_wait stdcall, port: dword, cmdslot: dword ;, timeout: dword
-        push    ebx ecx edx
-        mov     ebx, [port]
-        mov     edx, [cmdslot]
-        xor     eax, eax
+; out: eax = 0 if success, 1 if device error, 2 if timeout
+proc ahci_port_cmd_wait stdcall, pdata: dword, cmdslot: dword
+        locals
+            deadline    dd ?
+            ev_ptr      dd ?
+            ev_uid      dd ?
+            spin_start  dd ?
+            cmd_start   dd ?
+            sleep_start dd ?
+        endl
+        push    ebx ecx edx esi edi
+        mov     esi, [pdata]
+        mov     edi, [esi + PORT_DATA.port]
+        mov     eax, [timer_ticks]
+        add     eax, AHCI_CMD_TIMEOUT
+        mov     [deadline], eax
+        rdtsc
+        mov     [cmd_start], eax
+.check:
+        ; busy-poll first: fast completions cost neither an interrupt
+        ; latency nor a reschedule
+        mov     ecx, [ahci_spin_tsc]
+        test    ecx, ecx
+        jnz     .have_limit
+        mov     eax, dword [cpu_freq]
+        mov     edx, dword [cpu_freq + 4]
+        mov     ecx, eax
+        or      ecx, edx
+        jz      .default_limit ; frequency is not measured yet (early boot)
+        mov     ecx, 1000000
+        div     ecx ; eax = frequency in MHz, always fits
+        imul    eax, AHCI_SPIN_US
+        mov     [ahci_spin_tsc], eax
+        mov     ecx, eax
+        jmp     .have_limit
+.default_limit:
+        mov     ecx, AHCI_SPIN_TSC_DEFAULT
+.have_limit:
+        ; In the interrupt/sleep mode (ie_mode=1, used for genuinely long
+        ; commands) keep the pre-sleep poll short: the command is expected
+        ; to take milliseconds, so busy-waiting for it would just burn CPU.
+        ; In the poll mode (ie_mode=0) extend the poll up to twice the
+        ; typical command duration (capped at 25x base, ~5 ms) so that all
+        ; short and medium commands complete inside the poll without paying
+        ; the interrupt-delivery latency, which on some boards is high and
+        ; unstable between boots.
+        cmp     [esi + PORT_DATA.ie_mode], 0
+        jnz     .limit_done
+        mov     eax, [esi + PORT_DATA.avg_cmd_tsc]
+        add     eax, eax
+        cmp     eax, ecx
+        jbe     .limit_done
+        lea     edx, [ecx*4 + ecx]
+        lea     edx, [edx*4 + edx] ; edx = base * 25
+        cmp     eax, edx
+        jbe     @f
+        mov     eax, edx
+@@:
+        mov     ecx, eax
+.limit_done:
+        rdtsc
+        mov     [spin_start], eax ; low dword is enough for sub-second intervals
+        mov     ebx, [cmdslot]
+.spin:
+        bt      [edi + HBA_PORT.command_issue], ebx
+        jnc     .completed
+        test    [esi + PORT_DATA.intr_status], AHCI_PORT_INTR_ERR_MASK
+        jnz     .error
+        test    [edi + HBA_PORT.interrupt_status], AHCI_PORT_INTR_ERR_MASK
+        jnz     .error
+        rdtsc
+        sub     eax, [spin_start]
+        cmp     eax, ecx
+        jb      .spin
+
+        mov     eax, [timer_ticks]
+        cmp     eax, [deadline]
+        jae     .timeout
+
+        mov     eax, [esi + PORT_DATA.ctr_ptr]
+        cmp     [eax + AHCI_CTR.polling_mode], 0
+        jnz     .yield
+        ; with the port interrupts off (short/medium commands) there is
+        ; nothing to wake us up: keep busy-polling the completion by register,
+        ; exactly like the old driver. This catches the completion at the
+        ; moment it happens, with none of the interrupt-delivery latency that
+        ; on this board is high and unstable between boots and wrecked the
+        ; random tests. The deadline check above bounds a truly hung command.
+        cmp     [esi + PORT_DATA.ie_mode], 0
+        jz      .check
+        ; if interrupt wakeups on this port have proven to be late or
+        ; missing, don't sleep: poll politely instead (old-driver speed);
+        ; every couple of seconds probe the interrupt path again
+        cmp     [esi + PORT_DATA.wake_slow], 0
+        jz      .can_sleep
+        mov     eax, [timer_ticks]
+        cmp     eax, [esi + PORT_DATA.next_probe]
+        jb      .yield
+        add     eax, 200
+        mov     [esi + PORT_DATA.next_probe], eax
+.can_sleep:
+
+        ; sleep until the interrupt handler wakes us up
+        push    esi edi
         xor     ecx, ecx
-.wait:
-        bt      [ebx + HBA_PORT.command_issue], edx
-        jnc     .wait_end
-        bt      [ebx + HBA_PORT.interrupt_status], bit_AHCI_HBA_PxIS_TFES ; check for Task File Error
-        jc      .error
-        inc     ecx
-        jmp     .wait
-.wait_end:
-        DEBUGF  AHCI_DBGLVL, "port cmd wait counter = %u\n", ecx
-        bt      [ebx + HBA_PORT.interrupt_status], bit_AHCI_HBA_PxIS_TFES ; check for Task File Error
-        jc      .error
+        xor     esi, esi
+        call    create_event ; -> eax = event, edx = uid
+        pop     edi esi
+        test    eax, eax
+        jz      .yield ; no free events - poll
+        mov     [ev_ptr], eax
+        mov     [ev_uid], edx
+        mov     [esi + PORT_DATA.event_uid], edx
+        mov     [esi + PORT_DATA.event_ptr], eax
+
+        ; the command may have completed while the event was being prepared;
+        ; re-check to avoid sleeping through an already-delivered interrupt
+        mov     edx, [cmdslot]
+        bt      [edi + HBA_PORT.command_issue], edx
+        jnc     .cancel_wait
+
+        ; Sleep in 1-tick quanta: if the interrupt gets lost or is delivered
+        ; on a wrong IRQ line (weird routing - has been seen in the wild),
+        ; the completed command is still picked up on the next tick, and such
+        ; completions are counted below to switch the controller to polling.
+        mov     ecx, [esi + PORT_DATA.ctr_ptr]
+        inc     [ecx + AHCI_CTR.sleeps_total]
+        rdtsc
+        mov     [sleep_start], eax
+        mov     eax, [ev_ptr]
+        mov     ebx, [ev_uid]
+        mov     ecx, 1
+        call    wait_event_timeout
+        mov     esi, [pdata]
+        mov     edi, [esi + PORT_DATA.port]
+        mov     [esi + PORT_DATA.event_ptr], 0
+        test    eax, eax
+        jz      .wait_expired
+        ; the interrupt has woken us up; the event is already destroyed.
+        ; A sleep much longer than the typical command on this port means
+        ; the completion interrupt was delivered late (e.g. piggybacked on
+        ; the timer tick by the wrong-IRQ recovery path) - treat it the
+        ; same as a missing interrupt.
+        rdtsc
+        sub     eax, [sleep_start]
+        mov     ecx, [esi + PORT_DATA.avg_cmd_tsc]
+        mov     edx, [ahci_spin_tsc]
+        test    edx, edx
+        jnz     @f
+        mov     edx, AHCI_SPIN_TSC_DEFAULT
+@@:
+        imul    edx, edx, 35 ; ~0.7 of a scheduler tick, in TSC ticks
+        add     ecx, edx ; sleeping longer than the typical command plus a
+                         ; good part of a tick = the wakeup came a tick late
+        cmp     eax, ecx
+        jbe     .wake_was_fast
+        call    .note_slow_wakeup
+        jmp     .after_streaks
+.wake_was_fast:
+        mov     [esi + PORT_DATA.slow_streak], 0
+        inc     [esi + PORT_DATA.fast_streak]
+        cmp     [esi + PORT_DATA.fast_streak], 4
+        jne     .after_streaks
+        cmp     [esi + PORT_DATA.wake_slow], 0
+        jz      .after_streaks
+        mov     [esi + PORT_DATA.wake_slow], 0
+        DEBUGF  1, "K: AHCI: port %u: interrupt wakeups are fine again\n", [esi + PORT_DATA.portno]
+.after_streaks:
+        mov     eax, [esi + PORT_DATA.ctr_ptr]
+        mov     [eax + AHCI_CTR.irq_miss_count], 0
+        jmp     .check
+
+.wait_expired:
+        ; the event was not raised, destroy it manually
+        mov     eax, [ev_ptr]
+        mov     ebx, [ev_uid]
+        call    destroy_event
+        ; if the command has actually completed, its interrupt got lost;
+        ; count such completions and switch the controller to polling mode
+        ; when it becomes clear that interrupts do not work
+        mov     edx, [cmdslot]
+        bt      [edi + HBA_PORT.command_issue], edx
+        jc      .check
+        cmp     [esi + PORT_DATA.ie_mode], 0
+        jz      .check ; interrupts were legitimately off - not a miss
+        ; the command was done, yet no interrupt woke us up
+        call    .note_slow_wakeup
+        mov     eax, [esi + PORT_DATA.ctr_ptr]
+        inc     [eax + AHCI_CTR.miss_total]
+        inc     [eax + AHCI_CTR.irq_miss_count]
+        cmp     [eax + AHCI_CTR.irq_miss_count], AHCI_IRQ_MISS_LIMIT
+        jb      .check
+        cmp     [eax + AHCI_CTR.polling_mode], 0
+        jnz     .check
+        mov     [eax + AHCI_CTR.polling_mode], 1
+        ; silence the controller so that a possibly shared and unhandled
+        ; INTx line is not held active by accumulating PxIS bits
+        mov     eax, [eax + AHCI_CTR.abar]
+        btr     [eax + HBA_MEM.ghc], bit_AHCI_HBA_GHC_INTERRUPT_ENABLE
+        mov     [edi + HBA_PORT.interrupt_enable], 0
+        mov     [esi + PORT_DATA.ie_mode], 0
+        DEBUGF  1, "K: AHCI: interrupts are not arriving, falling back to polling\n"
+        jmp     .check
+
+.cancel_wait:
+        ; completion raced with event setup - drop the event and re-check
+        mov     [esi + PORT_DATA.event_ptr], 0
+        mov     eax, [ev_ptr]
+        mov     ebx, [ev_uid]
+        call    destroy_event
+        jmp     .check
+
+.yield:
+        call    change_task
+        mov     esi, [pdata]
+        mov     edi, [esi + PORT_DATA.port]
+        jmp     .check
+
+; local helper: a sleep ended without a timely interrupt; after a couple of
+; those in a row stop sleeping on this port and poll politely instead
+.note_slow_wakeup:
+        mov     [esi + PORT_DATA.fast_streak], 0
+        inc     [esi + PORT_DATA.slow_streak]
+        cmp     [esi + PORT_DATA.slow_streak], 2
+        jb      .nsw_ret
+        cmp     [esi + PORT_DATA.wake_slow], 0
+        jnz     .nsw_ret
+        mov     [esi + PORT_DATA.wake_slow], 1
+        mov     eax, [timer_ticks]
+        add     eax, 200
+        mov     [esi + PORT_DATA.next_probe], eax
+        DEBUGF  1, "K: AHCI: port %u: interrupt wakeups are late, polling instead of sleeping\n", [esi + PORT_DATA.portno]
+.nsw_ret:
+        retn
+
+.completed:
+        rdtsc
+        sub     eax, [cmd_start] ; eax = command duration in TSC ticks
+        ; classify the command as long or short relative to the sleep
+        ; threshold (10x base poll, ~2 ms) and keep run lengths. The sleep
+        ; decision is made from these runs, not from the smoothed average:
+        ; a single huge outlier (disk spin-up, sector remap - seen at 150 ms)
+        ; would poison an EWMA and wrongly flip the whole port into sleep
+        ; mode, where the random workload then eats the interrupt-delivery
+        ; latency. Requiring several long commands in a row ignores outliers.
+        mov     ecx, [ahci_spin_tsc]
+        test    ecx, ecx
+        jnz     @f
+        mov     ecx, AHCI_SPIN_TSC_DEFAULT
+@@:
+        imul    ecx, ecx, 10
+        cmp     eax, ecx
+        jb      .cmd_short
+        inc     [esi + PORT_DATA.long_run]
+        mov     [esi + PORT_DATA.short_run], 0
+        jmp     .upd_avg
+.cmd_short:
+        inc     [esi + PORT_DATA.short_run]
+        mov     [esi + PORT_DATA.long_run], 0
+.upd_avg:
+        ; smoothed duration for the busy-poll length: avg = avg*3/4 + dur/4,
+        ; with the sample clipped to the threshold so one outlier cannot blow
+        ; the poll budget up either
+        cmp     eax, ecx
+        jb      @f
+        mov     eax, ecx
+@@:
+        mov     ecx, [esi + PORT_DATA.avg_cmd_tsc]
+        mov     edx, ecx
+        shr     edx, 2
+        sub     ecx, edx
+        mov     edx, eax
+        shr     edx, 2
+        add     ecx, edx
+        mov     [esi + PORT_DATA.avg_cmd_tsc], ecx
+        ; diagnostics: report the counters to the debug board once in a while
+        mov     ecx, [esi + PORT_DATA.ctr_ptr]
+        inc     [ecx + AHCI_CTR.cmds_total]
+        test    byte [ecx + AHCI_CTR.cmds_total], 0xFF
+        jnz     @f
+        DEBUGF  1, "K: AHCI stats: cmds=%u sleeps=%u misses=%u irqs=%u avg_tsc=%u ie=%u slow=%u\n", [ecx + AHCI_CTR.cmds_total], [ecx + AHCI_CTR.sleeps_total], [ecx + AHCI_CTR.miss_total], [ecx + AHCI_CTR.intr_count], [esi + PORT_DATA.avg_cmd_tsc], [esi + PORT_DATA.ie_mode], [esi + PORT_DATA.wake_slow]
+@@:
+        test    [esi + PORT_DATA.intr_status], AHCI_PORT_INTR_ERR_MASK
+        jnz     .error
+        test    [edi + HBA_PORT.interrupt_status], AHCI_PORT_INTR_ERR_MASK
+        jnz     .error
+        xor     eax, eax
         jmp     .ret
 .error:
         mov     eax, 1
+        jmp     .ret
+.timeout:
+        DEBUGF  1, "K: AHCI: command timeout on port %u, ci = %x, tfd = %x\n", [esi + PORT_DATA.portno], [edi + HBA_PORT.command_issue], [edi + HBA_PORT.task_file_data]
+        mov     eax, 2
+.ret:
+        pop     edi esi edx ecx ebx
+        ret
+endp
+
+
+; Decide whether the port should have its interrupts enabled before a
+; command is issued. Ports with typically long commands (mechanical seeks)
+; sleep and need the interrupt to be woken up; ports with fast commands are
+; caught by the busy-poll, and processing an interrupt for every command
+; would only slow them down. Hysteresis keeps the switching rare.
+; Note: the switch must happen before the command is issued - at least some
+; chipsets do not generate an interrupt when PxIE gets enabled while the
+; command is already in flight (seen on real hardware).
+; in: [pdata] - address of PORT_DATA structure
+proc ahci_port_update_ie stdcall, pdata: dword
+        push    eax edx
+        mov     edx, [pdata]
+        cmp     [edx + PORT_DATA.ie_mode], 0
+        jnz     .currently_on
+        ; interrupts are off: enable them (and start sleeping) only after
+        ; several genuinely long commands in a row (real seeks / sequential
+        ; transfers). Short and medium commands - all of HDD random access,
+        ; hundreds of us - are kept in the busy-poll, which catches the
+        ; completion at the exact moment it happens, without the interrupt-
+        ; delivery latency that on this board varies a lot between boots and
+        ; wrecked the random tests. Using a run length (not an average)
+        ; makes a rare huge outlier unable to flip the port into sleep mode.
+        mov     eax, [edx + PORT_DATA.ctr_ptr]
+        cmp     [eax + AHCI_CTR.polling_mode], 0
+        jnz     .done
+        cmp     [edx + PORT_DATA.long_run], 3
+        jb      .done
+        mov     eax, [edx + PORT_DATA.port]
+        mov     [eax + HBA_PORT.interrupt_status], 0xFFFFFFFF ; drop stale bits first
+        mov     [eax + HBA_PORT.interrupt_enable], AHCI_PORT_INTR_MASK
+        mov     [edx + PORT_DATA.ie_mode], 1
+        jmp     .done
+.currently_on:
+        ; interrupts are on: disable them after several short commands in a
+        ; row (the long burst is over, back to random/idle access)
+        cmp     [edx + PORT_DATA.short_run], 3
+        jb      .done
+        mov     eax, [edx + PORT_DATA.port]
+        mov     [eax + HBA_PORT.interrupt_enable], 0
+        mov     [edx + PORT_DATA.ie_mode], 0
+.done:
+        pop     edx eax
+        ret
+endp
+
+
+; AHCI interrupt handler
+; in: [esp+4] - AHCI_CTR structure of the controller (arg of attach_int_handler)
+; out: eax = 1 if the interrupt came from this controller, 0 otherwise
+align 4
+ahci_irq_handler:
+        mov     esi, [esp + 4]
+        test    esi, esi
+        jz      .not_our
+        mov     edx, [esi + AHCI_CTR.abar]
+        test    edx, edx
+        jz      .not_our
+        mov     eax, [edx + HBA_MEM.is]
+        test    eax, eax
+        jz      .not_our
+        inc     [esi + AHCI_CTR.intr_count]
+        cmp     [esi + AHCI_CTR.intr_count], 1
+        jne     @f
+        DEBUGF  1, "K: AHCI: first interrupt received\n"
+@@:
+        push    8 ; bound for the handle-ack-recheck loop, just in case
+.handle_loop:
+        push    eax ; snapshot of HBA_MEM.is
+        xor     ecx, ecx
+.port_loop:
+        bt      eax, ecx
+        jnc     .next_port
+
+        mov     edi, ecx
+        imul    edi, sizeof.HBA_PORT
+        lea     edi, [edx + HBA_MEM.ports + edi]
+        mov     ebx, [edi + HBA_PORT.interrupt_status]
+        mov     [edi + HBA_PORT.interrupt_status], ebx ; clear what has been seen (RWC)
+
+        ; accumulate the status for the waiting thread and wake it up
+        push    eax edx
+        mov     eax, ecx
+        imul    eax, sizeof.PORT_DATA
+        lea     eax, [esi + AHCI_CTR.port_data_arr + eax]
+        or      [eax + PORT_DATA.intr_status], ebx
+        mov     edx, [eax + PORT_DATA.event_ptr]
+        test    edx, edx
+        jz      .no_waiter
+        pushad
+        mov     ebx, [eax + PORT_DATA.event_uid]
+        mov     eax, edx
+        xor     edx, edx
+        xor     esi, esi
+        call    raise_event
+        popad
+.no_waiter:
+        pop     edx eax
+.next_port:
+        inc     ecx
+        cmp     ecx, AHCI_MAX_PORTS
+        jb      .port_loop
+
+        ; acknowledge IS after the PxIS bits are cleared - acknowledging
+        ; before that makes the controller re-latch IS from the still-set
+        ; PxIS and fire a second, spurious interrupt (seen on ICH);
+        ; then re-check IS to not lose an event that arrived meanwhile
+        pop     eax
+        mov     [edx + HBA_MEM.is], eax
+        mov     eax, [edx + HBA_MEM.is]
+        test    eax, eax
+        jz      @f
+        dec     dword [esp]
+        jnz     .handle_loop
+@@:
+        pop     eax
+        mov     eax, 1
+        ret
+.not_our:
+        xor     eax, eax
+        ret
+
+
+; Issue COMRESET on the port link and wait for a device to be detected.
+; The port command engine must be stopped; FRE should be enabled so that the
+; signature FIS sent by the device after the reset is received.
+; in: [port] - address of HBA_PORT structure
+; out: eax = 0 - device detected, 1 - no device
+proc ahci_port_comreset stdcall, port: dword
+        push    ebx ecx edx
+        mov     edx, [port]
+        mov     eax, [edx + HBA_PORT.sata_control]
+        and     eax, not 0xFFF
+        or      eax, 0x301 ; DET = 1 (start COMRESET), IPM = 3 (disable partial/slumber)
+        mov     [edx + HBA_PORT.sata_control], eax
+        mov     ebx, 2 ; keep the reset active for 20 ms (spec minimum is 1 ms)
+        call    delay_hs
+        mov     eax, [edx + HBA_PORT.sata_control]
+        and     eax, not 0xF ; DET = 0, resume communication
+        mov     [edx + HBA_PORT.sata_control], eax
+
+        mov     ecx, 30 ; wait up to 300 ms for the phy to come up
+.wait_det:
+        mov     eax, [edx + HBA_PORT.sata_status]
+        and     eax, AHCI_HBA_PxSSTS_DET
+        cmp     eax, AHCI_HBA_PxSSTS_DET_PRESENT
+        je      .present
+        mov     ebx, 1
+        call    delay_hs
+        dec     ecx
+        jnz     .wait_det
+        mov     [edx + HBA_PORT.sata_error], 0xFFFFFFFF
+        mov     eax, 1
+        jmp     .ret
+.present:
+        mov     [edx + HBA_PORT.sata_error], 0xFFFFFFFF ; clear diagnostic bits set by the reset
+        xor     eax, eax
 .ret:
         pop     edx ecx ebx
         ret
 endp
+
+
+; Try to bring the port back to a working state after a command error/timeout
+; (AHCI spec 6.2.2.1)
+; in: [pdata] - address of PORT_DATA structure
+proc ahci_port_error_recovery stdcall, pdata: dword
+        push    eax esi edi
+        mov     esi, [pdata]
+        mov     edi, [esi + PORT_DATA.port]
+        DEBUGF  1, "K: AHCI: recovering port %u\n", [esi + PORT_DATA.portno]
+        mov     eax, edi
+        call    ahci_stop_cmd
+        mov     [edi + HBA_PORT.sata_error], 0xFFFFFFFF
+        mov     [edi + HBA_PORT.interrupt_status], 0xFFFFFFFF
+        mov     [edi + HBA_PORT.interrupt_enable], 0
+        mov     [esi + PORT_DATA.intr_status], 0
+        mov     [esi + PORT_DATA.ie_mode], 0
+        ; if the device is stuck in busy state, reset the link
+        mov     eax, [edi + HBA_PORT.task_file_data]
+        test    eax, ATA_DEV_BUSY or ATA_DEV_DRQ
+        jz      @f
+        ; FRE must be on for the comreset, ahci_stop_cmd has cleared it
+        bts     [edi + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FRE
+        stdcall ahci_port_comreset, edi
+@@:
+        mov     eax, edi
+        call    ahci_start_cmd
+        pop     edi esi eax
+        ret
+endp
+
+
+; Check whether the port signature belongs to a known device type
+; in: eax - PxSIG value
+; out: ZF set if the signature is a known one
+ahci_is_sig_known:
+        cmp     eax, SATA_SIG_ATA
+        je      .known
+        cmp     eax, SATA_SIG_ATAPI
+        je      .known
+        cmp     eax, SATA_SIG_SEMB
+        je      .known
+        cmp     eax, SATA_SIG_PM
+.known:
+        ret
 
 ; ; The commands may not take effect until the command
 ; ; register is read again by software, because reasons.
@@ -1269,11 +1912,14 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
             phys_page23 dd ?
             virt_page23 dd ?
             tmp         dd ?
+            result      dd ?
         endl
 
         pushad
 
         DEBUGF  1, "Rebasing port %u\n", [portno]
+
+        mov     [result], 1
 
         mov     eax, [port]
         call    ahci_stop_cmd
@@ -1313,6 +1959,11 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
         add     eax, 1024
         mov     [edi + PORT_DATA.fb], eax ; set pdata->fb
         stdcall _memset, eax, 0, 256 ; zero out
+
+        ; The FIS base is set up now, enable FIS receive so that the device
+        ; signature FIS is accepted (also needed for COMRESET detection below)
+        mov     eax, [port]
+        bts     [eax + HBA_PORT.command], bit_AHCI_HBA_PxCMD_FRE
 
         stdcall alloc_pages, 32*(64 + 16 + 48 + PRDT_MAX_ENTRIES*16)/4096
         mov     [phys_page23], eax
@@ -1361,12 +2012,70 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
         jmp     .for1
 .for1_end:
 
+        ; If the link is not established or the port reports a bogus device
+        ; signature (both happen when BIOS leaves the port uninitialized),
+        ; reset the link: the device will resend its signature FIS.
+        mov     esi, [port]
+        mov     eax, [esi + HBA_PORT.sata_status]
+        and     eax, AHCI_HBA_PxSSTS_DET
+        cmp     eax, AHCI_HBA_PxSSTS_DET_PRESENT
+        jne     .link_reset
+        mov     eax, [esi + HBA_PORT.signature]
+        call    ahci_is_sig_known
+        jz      .link_ok
+.link_reset:
+        DEBUGF  1, "K: AHCI: port %u: link not ready (ssts = %x, sig = %x), doing COMRESET\n", [portno], [esi + HBA_PORT.sata_status], [esi + HBA_PORT.signature]
+        stdcall ahci_port_comreset, esi
+        test    eax, eax
+        jnz     .no_device
+.link_ok:
+        ; wait for the device to become ready and send its signature
+        mov     edx, [timer_ticks]
+        add     edx, 100 ; up to 1 s (the drive may be spinning up)
+.wait_ready:
+        mov     eax, [esi + HBA_PORT.task_file_data]
+        test    eax, ATA_DEV_BUSY or ATA_DEV_DRQ
+        jnz     .not_ready_yet
+        mov     eax, [esi + HBA_PORT.signature]
+        call    ahci_is_sig_known
+        jz      .dev_ready
+.not_ready_yet:
+        cmp     [timer_ticks], edx
+        jae     .ready_timeout
+        mov     ebx, 1
+        call    delay_hs
+        jmp     .wait_ready
+.ready_timeout:
+        DEBUGF  1, "K: AHCI: port %u: device not ready, tfd = %x, sig = %x\n", [portno], [esi + HBA_PORT.task_file_data], [esi + HBA_PORT.signature]
+        ; proceed anyway if the link is up: IDENTIFY will be the final judge
+        mov     eax, [esi + HBA_PORT.sata_status]
+        and     eax, AHCI_HBA_PxSSTS_DET
+        cmp     eax, AHCI_HBA_PxSSTS_DET_PRESENT
+        jne     .no_device
+.dev_ready:
+        ; clear everything accumulated during the bring-up; per-port
+        ; interrupts start disabled - ahci_port_update_ie enables them
+        ; later, only when the port works on genuinely long commands,
+        ; so fast commands do not pay for interrupt processing at all
+        mov     [esi + HBA_PORT.sata_error], 0xFFFFFFFF
+        mov     [esi + HBA_PORT.interrupt_status], 0xFFFFFFFF
+        mov     [esi + HBA_PORT.interrupt_enable], 0
+        mov     eax, [pdata]
+        mov     [eax + PORT_DATA.intr_status], 0
+        mov     [eax + PORT_DATA.ie_mode], 0
+
         mov     eax, [port]
         call    ahci_start_cmd
 
+        mov     [result], 0
         DEBUGF  1, "End rebasing port %u\n", [portno]
+.ret:
         popad
+        mov     eax, [result]
         ret
+.no_device:
+        DEBUGF  1, "K: AHCI: port %u: no device detected\n", [portno]
+        jmp     .ret
 endp
 
 ; ----------------------------------------------------------- ; TODO check
