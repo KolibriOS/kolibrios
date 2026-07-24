@@ -1231,6 +1231,10 @@ error_handler:
 file_no_folder:
 	cmp	[open_dialog_type],1	;Save file
 	jne	.no_save
+	mov	edi,[communication_area]
+	add	edi,4096
+	cmp	dword[edi],0 ;empty filter?
+	je	.no_save
 	push	eax ebx ecx esi edi
 	mov	[edit1.color],0xffb0b0 ; light red
 	push	edit1
