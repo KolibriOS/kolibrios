@@ -3545,6 +3545,7 @@ ext_SetFileEnd:
         call    extfsTruncateFile
         pop     eax
 .done:
+        lea     ebx, [ebp+EXTFS.inodeBuffer]
         lea     eax, [ebx+INODE.mTime]
         mov     edx, -1
         cmp     [ebx+INODE.extraISize], 12
