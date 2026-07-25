@@ -59,6 +59,12 @@ Co-authored-by: ANOTHER-NAME <ANOTHER-NAME@EXAMPLE.COM>
 
 to the end commit message body on a new line.
 
+If you used AI tools while preparing the commit, you are encouraged to include an Assisted-by tag:
+
+```
+Assisted-by: AGENT_NAME:MODEL_VERSION
+```
+
 ### Merge commits
 
 > [!WARNING]
