@@ -64,7 +64,7 @@ jobs:
           make -f Makefile.lin32
           chmod +x c--
           mv c-- /home/autobuild/tools/win32/bin/c--
-          cp ${{ gitea.workspace }}/programs/cmm/c--/c--.ini /home/autobuild/tools/win32/bin/c--.ini
+          cp ${{ gitea.workspace }}/programs/develop/cmm/c--.ini /home/autobuild/tools/win32/bin/c--.ini
           make -f Makefile.lin32 clean
 
       - name: Install TCC

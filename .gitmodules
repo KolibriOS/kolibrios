@@ -6,6 +6,10 @@
 	path = programs/develop/oberon07
 	url = https://github.com/AntKrotov/oberon-07-compiler.git
 	branch = master
+[submodule "programs/cmm"]
+	path = programs/cmm
+	url = https://git.kolibrios.org/KolibriOS/cmm_apps.git
+	branch = main
 [submodule "programs/other/kterm"]
 	path = programs/other/kterm
 	url = https://git.kolibrios.org/b00bl1k/kterm.git
