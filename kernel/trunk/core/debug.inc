@@ -37,7 +37,7 @@ debug_set_event_data:
 get_debuggee_slot:
 ; in: ecx=PID
 ; out: CF=1 if error
-;      CF=0 and eax=slot*0x20 if ok
+;      CF=0 and eax=slot*sizeof.APPDATA if ok
 ; out: interrupts disabled
         cli
         mov     eax, ecx
@@ -163,18 +163,14 @@ debug_getcontext:
         call    get_debuggee_slot
         jc      .ret
 
-        shr     eax, BSF sizeof.APPDATA
-        ;movzx   ebp, ah
+        add     eax, SLOT_BASE
 
         cmp     eax, [fpu_owner]
-        ;cmp     ebp, [fpu_owner]
         jne     @f
         inc     bh                ; set swap context flag
 @@:
-        shl     eax, BSF sizeof.APPDATA
         mov     edi, esi
-        mov     eax, [SLOT_BASE + eax + APPDATA.pl0_stack]
-        ;mov     eax, [eax + APPDATA.pl0_stack]
+        mov     eax, [eax + APPDATA.pl0_stack]
         lea     esi, [eax + RING0_STACK_SIZE]
 
 .ring0:

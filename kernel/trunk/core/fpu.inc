@@ -166,7 +166,7 @@ fpu_save:
         mov     edi, eax
 
         mov     ecx, [fpu_owner]
-        mov     esi, [current_slot_idx]
+        mov     esi, [current_slot]
         cmp     ecx, esi
         jne     .save
 
@@ -175,14 +175,11 @@ fpu_save:
 .save:
         mov     [fpu_owner], esi
 
-        shl     ecx, BSF sizeof.APPDATA
-        mov     eax, [SLOT_BASE + ecx + APPDATA.fpu_state]
-
+        mov     eax, [ecx + APPDATA.fpu_state]
         call    save_context
 
 ; first 512 bytes of XSAVE area have the same format as FXSAVE
-        shl     esi, BSF sizeof.APPDATA
-        mov     esi, [SLOT_BASE + esi + APPDATA.fpu_state]
+        mov     esi, [esi + APPDATA.fpu_state]
         mov     ecx, 512/4
         cld
         rep movsd
@@ -214,7 +211,7 @@ avx_save:
         mov     edi, eax
 
         mov     ecx, [fpu_owner]
-        mov     esi, [current_slot_idx]
+        mov     esi, [current_slot]
         cmp     ecx, esi
         jne     .save
 
@@ -223,13 +220,10 @@ avx_save:
 .save:
         mov     [fpu_owner], esi
 
-        shl     ecx, BSF sizeof.APPDATA
-        mov     eax, [SLOT_BASE + ecx + APPDATA.fpu_state]
-
+        mov     eax, [ecx + APPDATA.fpu_state]
         call    save_context
 
-        shl     esi, BSF sizeof.APPDATA
-        mov     esi, [SLOT_BASE + esi + APPDATA.fpu_state]
+        mov     esi, [esi + APPDATA.fpu_state]
         mov     ecx, [xsave_area_size]
         add     ecx, 3
         shr     ecx, 2
@@ -274,7 +268,7 @@ fpu_restore:
         cli
 
         mov     ecx, [fpu_owner]
-        mov     eax, [current_slot_idx]
+        mov     eax, [current_slot]
         cmp     ecx, eax
         jne     .copy
 
@@ -295,8 +289,7 @@ fpu_restore:
         pop     ecx
         ret
 .copy:
-        shl     eax, BSF sizeof.APPDATA
-        mov     edi, [SLOT_BASE + eax + APPDATA.fpu_state]
+        mov     edi, [eax + APPDATA.fpu_state]
         mov     ecx, 512/4
         cld
         rep movsd
@@ -316,7 +309,7 @@ avx_restore:
         cli
 
         mov     ecx, [fpu_owner]
-        mov     eax, [current_slot_idx]
+        mov     eax, [current_slot]
         cmp     ecx, eax
         jne     .copy
 
@@ -349,8 +342,7 @@ avx_restore:
         pop     ecx
         ret
 .copy:
-        shl     eax, BSF sizeof.APPDATA
-        mov     edi, [SLOT_BASE + eax + APPDATA.fpu_state]
+        mov     edi, [eax + APPDATA.fpu_state]
         mov     ecx, [xsave_area_size]
         add     ecx, 3
         shr     ecx, 2
@@ -370,21 +362,19 @@ except_7:                  ;#NM exception handler
         mov     es, ax
 
         mov     ebx, [fpu_owner]
-        cmp     ebx, [current_slot_idx]
+        cmp     ebx, [current_slot]
         je      .exit
 
-        shl     ebx, BSF sizeof.APPDATA
-        mov     eax, [SLOT_BASE + ebx + APPDATA.fpu_state]
+        mov     eax, [ebx + APPDATA.fpu_state]
         bt      [cpu_caps + (CAPS_OSXSAVE/32)*4], CAPS_OSXSAVE mod 32
         jnc     .no_xsave
         mov     ecx, eax
         mov     eax, [xsave_eax]
         mov     edx, [xsave_edx]
         xsave   [ecx]
-        mov     ebx, [current_slot_idx]
+        mov     ebx, [current_slot]
         mov     [fpu_owner], ebx
-        shl     ebx, BSF sizeof.APPDATA
-        mov     ecx, [SLOT_BASE + ebx + APPDATA.fpu_state]
+        mov     ecx, [ebx + APPDATA.fpu_state]
         xrstor  [ecx]
 .exit:
         restore_ring3_context
@@ -394,24 +384,22 @@ except_7:                  ;#NM exception handler
         jnc     .no_SSE
 
         fxsave  [eax]
-        mov     ebx, [current_slot_idx]
+        mov     ebx, [current_slot]
         mov     [fpu_owner], ebx
-        shl     ebx, BSF sizeof.APPDATA
-        mov     eax, [SLOT_BASE + ebx + APPDATA.fpu_state]
+        mov     eax, [ebx + APPDATA.fpu_state]
         fxrstor [eax]
         restore_ring3_context
         iret
 
 .no_SSE:
         fnsave  [eax]
-        mov     ebx, [current_slot_idx]
+        mov     ebx, [current_slot]
         mov     [fpu_owner], ebx
-        shl     ebx, BSF sizeof.APPDATA
-        mov     eax, [SLOT_BASE + ebx + APPDATA.fpu_state]
+        mov     eax, [ebx + APPDATA.fpu_state]
         frstor  [eax]
         restore_ring3_context
         iret
 
 iglobal
-  fpu_owner dd 2
+  fpu_owner dd APPDATA_OS_THREAD
 endg
