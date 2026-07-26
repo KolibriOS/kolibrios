@@ -139,14 +139,13 @@ do_change_task:
         mov     eax, [xsave_eax]
         mov     edx, [xsave_edx]
         xsave   [ecx]
-        mov     ecx, [current_slot_idx]
-        mov     [fpu_owner], ecx
         mov     ecx, [current_slot]
+        mov     [fpu_owner], ecx
         mov     ecx, [ecx + APPDATA.fpu_state]
         xrstor  [ecx]
   .no_xsave:
       ; set CR0.TS
-        cmp     bh, byte[fpu_owner] ;bh == incoming task (new)
+        cmp     ebx, [fpu_owner]    ;ebx == incoming task (new)
         clts                        ;clear a task switch flag
         je      @f
         mov     eax, cr0            ;and set it again if the owner

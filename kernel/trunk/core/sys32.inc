@@ -514,28 +514,30 @@ destroy_thread:
 @@:
         mov     eax, [esi + APPOBJ.fd]
         test    eax, eax
-        jz      @F
+        jz      @f
 
         cmp     eax, esi
-        je      @F
+        je      @f
 
         push    esi
         call    [eax + APPOBJ.destroy]
            DEBUGF 1,"%s",msg_obj_destroy
         pop     esi
-        jmp     @B
+        jmp     @b
 @@:
         mov     esi, [.slot]
+        shl     esi, BSF sizeof.APPDATA
+        add     esi, SLOT_BASE
         cmp     [fpu_owner], esi ; if user fpu last -> fpu user = 2
-        jne     @F
+        jne     @f
 
-        mov     [fpu_owner], 2
-        mov     eax, [SLOT_BASE + sizeof.APPDATA*2 + APPDATA.fpu_state]
+        mov     [fpu_owner], APPDATA_OS_THREAD
+        mov     eax, [APPDATA_OS_THREAD + APPDATA.fpu_state]
         clts
         bt      [cpu_caps], CAPS_SSE
         jnc     .no_SSE
         fxrstor [eax]
-        jmp     @F
+        jmp     @f
 .no_SSE:
         fnclex
         frstor  [eax]
@@ -544,8 +546,8 @@ destroy_thread:
         mov     [KEY_COUNT], byte 0    ; empty keyboard buffer
         mov     [BTN_COUNT], byte 0    ; empty button buffer
 
-
 ; remove defined hotkeys
+        mov     esi, [.slot]
         mov     eax, hotkey_list
 .loop:
         cmp     [eax+8], esi

@@ -290,6 +290,9 @@ sys_proc            = OS_BASE + 0x008E000
 
 SLOT_BASE           = OS_BASE + 0x0090000
 
+APPDATA_IDLE_THREAD = SLOT_BASE + sizeof.APPDATA*1 ; poiner to IDLE thread
+APPDATA_OS_THREAD   = SLOT_BASE + sizeof.APPDATA*2 ; poiner to OS thread
+
 VGABasePtr          = OS_BASE + 0x00A0000
 
 virtual at            OS_BASE + 0x05FFF80

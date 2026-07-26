@@ -535,7 +535,7 @@ high_code:
         dec     ecx
         jns     @b
 
-        mov     edx, SLOT_BASE + sizeof.APPDATA*1
+        mov     edx, APPDATA_IDLE_THREAD
         mov     ebx, [os_stack_seg]
         add     ebx, RING0_STACK_SIZE
         add     ebx, [xsave_area_size]
@@ -547,7 +547,7 @@ high_code:
         mov     ecx, IDLE_PRIORITY
         call    scheduler_add_thread
 
-        mov     edx, SLOT_BASE + sizeof.APPDATA*2
+        mov     edx, APPDATA_OS_THREAD
         mov     ebx, [os_stack_seg]
         call    setup_os_slot
         mov     dword [edx], 'OS'
@@ -556,7 +556,7 @@ high_code:
 
         mov     [current_slot_idx], 2
         mov     [thread_count], 2
-        mov     [current_slot], SLOT_BASE + sizeof.APPDATA*2
+        mov     [current_slot], APPDATA_OS_THREAD
 
 ; Move other CPUs to deep sleep, if it is useful
 uglobal
