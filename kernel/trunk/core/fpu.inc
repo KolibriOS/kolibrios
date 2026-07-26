@@ -150,10 +150,10 @@ init_avx512:
 
         ret
 
-; param
-;  eax= 512 bytes memory area aligned on a 16-byte boundary
-
 align 4
+; @brief Export function - Save FPU context in buffer
+; @param eax - 512 bytes memory area aligned on a 16-byte boundary
+; @return  not return
 fpu_save:
         push    ecx
         push    esi
@@ -191,14 +191,16 @@ fpu_save:
         pop     ecx
         ret
 
+; @brief Export function - Get size from AVX context
+; @return  size of buffer
 avx_save_size:
         mov     eax, [xsave_area_size]
         ret
 
-; param
-;  eax= avx_save_size() bytes memory area aligned on a 64-byte boundary
-
 align 4
+; @brief Export function - Save AVX context in buffer
+; @param eax - avx_save_size() bytes memory area aligned on a 64-byte boundary
+; @return  not return
 avx_save:
         push    ecx
         push    esi
@@ -258,9 +260,13 @@ save_fpu_context:
 
 
 align 4
+; @brief Export function - Restore FPU context
+; @param eax - 512 bytes memory area aligned on a 16-byte boundary
+; @return  not return
 fpu_restore:
         push    ecx
         push    esi
+        push    edi
 
         mov     esi, eax
 
@@ -278,6 +284,8 @@ fpu_restore:
 
         fxrstor [esi]
         popfd
+
+        pop     edi
         pop     esi
         pop     ecx
         ret
@@ -285,6 +293,8 @@ fpu_restore:
         fnclex                  ;fix possible problems
         frstor  [esi]
         popfd
+
+        pop     edi
         pop     esi
         pop     ecx
         ret
@@ -294,14 +304,20 @@ fpu_restore:
         cld
         rep movsd
         popfd
+
+        pop     edi
         pop     esi
         pop     ecx
         ret
 
 align 4
+; @brief Export function - Restore AVX context
+; @param eax - avx_save_size() bytes memory area aligned on a 64-byte boundary
+; @return  not return
 avx_restore:
         push    ecx
         push    esi
+        push    edi
 
         mov     esi, eax
 
@@ -322,6 +338,8 @@ avx_restore:
         xrstor  [esi]
         pop     edx
         popfd
+
+        pop     edi
         pop     esi
         pop     ecx
         ret
@@ -331,6 +349,8 @@ avx_restore:
 
         fxrstor [esi]
         popfd
+
+        pop     edi
         pop     esi
         pop     ecx
         ret
@@ -338,6 +358,8 @@ avx_restore:
         fnclex                  ;fix possible problems
         frstor  [esi]
         popfd
+
+        pop     edi
         pop     esi
         pop     ecx
         ret
@@ -349,6 +371,8 @@ avx_restore:
         cld
         rep movsd
         popfd
+
+        pop     edi
         pop     esi
         pop     ecx
         ret
