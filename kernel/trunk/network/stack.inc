@@ -118,7 +118,11 @@ SS_MORETOCOME           = 0x4000
 SS_BLOCKED              = 0x8000
 
 
-SOCKET_BUFFER_SIZE      = 4096*8        ; must be 4096*(power of 2) where 'power of 2' is at least 8
+SOCKET_BUFFER_SIZE      = 4096*32       ; must be 4096*(power of 2) where 'power of 2' is at least 8
+                                        ; 128k: with TCP window scaling this
+                                        ; allows ~4 MB/s per connection at
+                                        ; 32 ms RTT (was 4096*8 = 32k, which
+                                        ; capped a download at ~1 MB/s)
 MAX_backlog             = 20            ; maximum backlog for stream sockets
 
 ; Error Codes
