@@ -320,12 +320,12 @@ tcp_respond:
         stosb
         mov     eax, SOCKET_BUFFER_SIZE
         sub     eax, [esi + STREAM_SOCKET.rcv.size]
-        cmp     eax, TCP_max_win
+        mov     cl, [esi + TCP_SOCKET.RCV_SCALE]
+        shr     eax, cl                 ; scale first, then clamp to the
+        cmp     eax, TCP_max_win        ; 16-bit field maximum
         jbe     .lessthanmax
         mov     eax, TCP_max_win
   .lessthanmax:
-        mov     cl, [esi + TCP_SOCKET.RCV_SCALE]
-        shr     eax, cl
 
         xchg    al, ah
         stosw                   ; window
