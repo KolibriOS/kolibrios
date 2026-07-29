@@ -99,6 +99,18 @@ TCP_QUEUE_SIZE          = 50
 
 TCP_ISSINCR             = 128000
 
+; A node of the out-of-order reassembly queue (TCP_SOCKET.seg_next).
+; Allocated with malloc, segment data follows the header.
+struct  tcp_reasm_seg
+
+        NextPtr         dd ?    ; next node, 0 = end of queue
+        Seq             dd ?    ; sequence number of the first data byte
+        Length          dd ?    ; number of data bytes
+
+ends
+
+TCP_reasm_maxsegs       = 64    ; max queued segments per socket (~96k)
+
 struct  TCP_header
 
         SourcePort              dw ?

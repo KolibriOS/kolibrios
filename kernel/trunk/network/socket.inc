@@ -142,6 +142,7 @@ struct  TCP_SOCKET              IP_SOCKET
         ts_val                  dd ?
 
         seg_next                dd ?    ; re-assembly queue
+        seg_count               dd ?    ; number of segments queued in it
 
 ends
 
@@ -2132,6 +2133,18 @@ socket_free:
         je      @f
         stdcall free_kernel_space, [ebx + STREAM_SOCKET.snd.start_ptr]
   @@:
+; free the TCP out-of-order reassembly queue, if any
+  .free_reasm:
+        mov     eax, [ebx + TCP_SOCKET.seg_next]
+        test    eax, eax
+        jz      .reasm_done
+        push    dword [eax + tcp_reasm_seg.NextPtr]
+        push    ebx
+        call    free
+        pop     ebx
+        pop     dword [ebx + TCP_SOCKET.seg_next]
+        jmp     .free_reasm
+  .reasm_done:
         mov     eax, ebx
   .no_stream:
 

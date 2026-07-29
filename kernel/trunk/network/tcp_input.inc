@@ -927,7 +927,7 @@ endl
         pop     word[ebx + TCP_SOCKET.SND_SCALE]
        @@:
 
-        call    tcp_reassemble
+        call    tcp_reassemble_drain
 
         mov     eax, [edx + TCP_header.SequenceNumber]
         dec     eax
@@ -1691,16 +1691,22 @@ endl
         DEBUGF  DEBUG_NETWORK_VERBOSE,  "TCP data is out of order!\nSequencenumber is %u, we expected %u.\n", \
         [edx + TCP_header.SequenceNumber], [ebx + TCP_SOCKET.RCV_NXT]
 
-; Uh-oh, some data is out of order, let's call TCP reassemble for help
+; Queue the segment for reassembly. If it (plus what was queued before)
+; fills the hole at RCV_NXT, the data is delivered to the socket buffer.
 
-        call    tcp_reassemble          ;;; TODO!
+        mov     esi, [dataoffset]
+        add     esi, edx
+        call    tcp_reassemble
 
-; Generate ACK immediately, to let the other end know that a segment was received out of order,
-; and to tell it what sequence number is expected. This aids the fast-retransmit algorithm.
+; Generate ACK immediately: either a duplicate ACK announcing the hole
+; (aids the peer's fast-retransmit), or the ACK for just-delivered data.
 
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
 
-        jmp     .final_processing       ;;; HACK because of unimplemented reassembly queue!
+; Note: a FIN on an out-of-order segment is deliberately not processed;
+; the peer retransmits it and it is handled once it arrives in order.
+
+        jmp     .final_processing
   .data_done:
 
 ;-----------------------------------------------------------------------------------
