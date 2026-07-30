@@ -208,28 +208,35 @@ end if
     add     eax, [param_s]
     cmpe    [eax - 1], byte '/', open
 
- ;; if dialog
+ ;; if dialog (~ forces 'open with' chooser)
     mov     eax, [param_s]
     mov     [is_openas + 8], eax
+    mov     [dialog_mode], 0
     cmpne   [eax], byte '~', @f
     inc     [param_s]
+    inc     [param_lwr]
     mov     eax, [param_s]
     mov     [is_openas + 8], eax
-    jmp     start_dialog
+    mov     [dialog_mode], 1
   @@:
 
- ;; if without '.' - execute
+ ;; extension -> param_e (assoc.ini key); shared by both modes
     stdcall string.last_index_of, [param_s], '.', 1
-    cmpe    eax, -1, execute
- ;; if '.' is part of path - execute
+    cmpe    eax, -1, .no_ext
+ ;; if '.' is part of path - no real extension
     mov     esi, eax
     stdcall string.last_index_of, [param_s], '/', 1
-    cmpg    eax, esi, execute
-
- ;; if ext == "kex" - execute
+    cmpg    eax, esi, .no_ext
     add     esi, [param_lwr]
     mov     [param_e], esi
+    cmpe    [dialog_mode], 1, start_dialog
+ ;; if ext == "kex" - execute
     cmpe    [esi], dword "kex", execute
+    jmp     open_as
+
+ .no_ext:
+    cmpe    [dialog_mode], 1, start_dialog
+    jmp     execute
 
  open_as:
     invoke  libini.get_str, assoc_ini, assoc_ini.sec, esi, buffer8, 2048, undefined
@@ -585,6 +592,8 @@ end if
     mov     eax, [cb_always.flags]
     and     eax, ch_flag_en
     cmpe    eax, 0, exit
+ ;; never write an association without a valid extension key
+    cmpe    [param_e], 0, exit
 
     cmpe    edi, 0, @f
     stdcall string.copy, app_link, buffer
@@ -1057,6 +1066,7 @@ end if
  param_e rd 1
  param_a rd 1
  param_s rd 1
+ dialog_mode rd 1
  undefined rb 1
  buffer  rb 2048
  buffer2 rb 2048 ;OD
