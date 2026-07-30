@@ -112,9 +112,6 @@ load_libraries	l_libs_start,end_l_libs
 ; initialize sort
 	push	dword 1
 	call	dword [sort_init]
-; unpack deflate
-	mov	eax,[unpack_DeflateUnpack2]
-	mov	[deflate_unpack],eax
 
 	mov	esi,start_pach
 	mov	edi,previous_dir_path
@@ -124,7 +121,6 @@ load_libraries	l_libs_start,end_l_libs
 	call	load_start_directory
 	call	sort_directory
 	call	load_icons
-	call	convert_icons
 	call	load_ini
 	call	calc_ini
 	jmp	red_1
@@ -714,18 +710,10 @@ thread_start:
 	jmp	.red
 @@:
 	cmp	al,5
-	jne	@f
+	jne	.button
 	mov	[N_error],load_directory_error_type
 	mov	[error_path],dir_path
-	jmp	.error_type
-@@:
-	cmp	al,6
-	jne	.button
-	mov	[N_error],convert_icons_error_type
-	mov	[error_path],file_name
-	xor	eax,eax
-	mov	[error_type],eax
-	jmp	.red
+	;jmp	.error_type
 .error_type:
 	mov	eax,[error_type]
 	shl	eax,2
@@ -1232,8 +1220,7 @@ file_no_folder:
 	cmp	[open_dialog_type],1	;Save file
 	jne	.no_save
 	mov	edi,[communication_area]
-	add	edi,4096
-	cmp	dword[edi],0 ;empty filter?
+	cmp	dword[edi+4096],0 ;empty filter?
 	je	.no_save
 	push	eax ebx ecx esi edi
 	mov	[edit1.color],0xffb0b0 ; light red
@@ -1947,56 +1934,15 @@ get_window_param:
 	mov	[window_status],eax
 	ret
 ;---------------------------------------------------------------------
-convert_icons:
-	xor	eax,eax
-	mov	[return_code],eax
-;	mov	eax,image_file
-	push	image_file
-	call	[cnv_png_import.Start]
-
-	mcall	SF_SYS_MISC,SSF_MEM_FREE,[image_file]
-	test	eax,eax
-	jz	memory_free_error
-
-	cmp	[return_code],dword 0
-	je	@f
-	mov	[N_error],6
-	jmp	button.exit
-@@:
-
-	mov	ebx,[raw_pointer]
-	mov	eax,[ebx+4]
-; set of icon size x
-	mov	[file_browser_data_1.icon_size_x],ax
-; mov eax,[ebx+8]
-; set of icon size y
-	mov	[file_browser_data_1.icon_size_y],ax
-	inc	ax
-	mov	[file_browser_data_1.line_size_y],ax
-	mov	eax,[ebx+12]
-; set of RAW resolution to pixel
-	mov	[file_browser_data_1.resolution_raw],eax
-
-	mov	eax,[ebx+20]
-	add	eax,ebx
-; set RAW palette,use else resolution 8bit or less
-	mov	[file_browser_data_1.palette_raw],eax
-
-	mov	eax,[ebx+28]
-	add	eax,ebx
-; set RAW area for icon
-	mov	[file_browser_data_1.icon_raw_area],eax
-	ret
-;---------------------------------------------------------------------
 calc_ini:
 ; Convert the new "ID=ext,ext,..." icons18 layout from the loaded ini file into
 ; the "ext=ID" CR/LF text that box_lib's FileBrowser expects, storing the result
 ; in converted_ini_buffer. Every scan is bounded by ini_src_end, so a truncated
 ; or malformed file can never read past the loaded buffer (it has no 0 terminator).
 	pusha
-	mov	esi, [image_file]
+	mov	esi, [ini_file]
 	mov	eax, esi
-	add	eax, [img_size]
+	add	eax, [ini_size]
 	mov	[ini_src_end], eax
 	mov	edi, converted_ini_buffer
 	mov	[file_browser_data_1.ini_file_start], edi
@@ -2102,14 +2048,14 @@ load_ini:
 
 	mov	ecx,[file_info+32]
 	mov	[fileinfo.size],ecx
-	mov	[img_size],ecx
+	mov	[ini_size],ecx
 
 	mcall	SF_SYS_MISC,SSF_MEM_ALLOC
 	test	eax,eax
 	jz	memory_get_error
 
 	mov	[fileinfo.return],eax
-	mov	[image_file],eax
+	mov	[ini_file],eax
 
 	mcall	SF_FILE,fileinfo
 	test	eax,eax
@@ -2121,44 +2067,16 @@ load_ini:
 	jmp	button.exit
 ;---------------------------------------------------------------------
 load_icons:
-	mov	ebx,icons_file_name_2
-	mov	esi,path
-	mov	edi,file_name
-	call	copy_file_path
+	mcall	SF_SYS_MISC,SSF_MEM_OPEN,str_icon_18,,0
+	or	eax,eax
+	jz	.error
 
-	mov	[fileinfo.subfunction],dword 5
-	mov	[fileinfo.size],dword 0
-	mov	[fileinfo.return],dword file_info
-	mcall	SF_FILE,fileinfo
-	test	eax,eax
-	jz	@f
-
-	mov	edi,icons_path
-
-	mov	[fileinfo.name],edi
-	mov	[fileinfo.subfunction],dword 5
-	mov	[fileinfo.size],dword 0
-	mov	[fileinfo.return],dword file_info
-	mcall	SF_FILE,fileinfo
-	test	eax,eax
-	jnz	.error
-@@:
-	mov	[fileinfo.subfunction],dword 0
-
-	mov	ecx,[file_info+32]
-	mov	[fileinfo.size],ecx
-	mov	[img_size],ecx
-
-	mcall	SF_SYS_MISC,SSF_MEM_ALLOC
-	test	eax,eax
-	jz	memory_get_error
-
-	mov	[fileinfo.return],eax
-	mov	[image_file],eax
-
-	mcall	SF_FILE,fileinfo
-	test	eax,eax
-	jnz	.error
+; set of RAW resolution to pixel
+	mov	[file_browser_data_1.resolution_raw],32
+; set RAW palette,use else resolution 8bit or less
+	mov	[file_browser_data_1.palette_raw],0
+; set RAW area for icon
+	mov	[file_browser_data_1.icon_raw_area],eax
 	ret
 .error:
 	mov	[N_error],2
@@ -2554,32 +2472,6 @@ char_todown:
 	add	al,0x20
 	ret
 ;---------------------------------------------------------------------
-copy_file_path:
-	xor	eax,eax
-	cld
-@@:
-	lodsb
-	stosb
-	test	eax,eax
-	jnz	@b
-	mov	esi,edi
-	dec	esi
-	std
-@@:
-	lodsb
-	cmp	al,'/'
-	jnz	@b
-	mov	edi,esi
-	add	edi,2
-	mov	esi,ebx
-	cld
-@@:
-	lodsb
-	stosb
-	test	eax,eax
-	jnz	@b
-	ret
-;---------------------------------------------------------------------
 ; in:
 ;   ebx - file name
 ;   esi - directory path
@@ -2659,70 +2551,24 @@ copy_dir_name:
 .exit:
 	ret
 ;---------------------------------------------------------------------
-;---------------------------------------------------------------------
 
 ;plugins_directory	db 'plugins/',0
 plugins_directory	db 0
 
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
-system_dir_CnvPNG	db '/sys/lib/cnv_png.obj',0
 system_dir_Sort 	db '/sys/lib/sort.obj',0
-system_dir_UNPACK	db '/sys/lib/archiver.obj',0
 
 align	4
 l_libs_start:
 library01	l_libs	system_dir_Boxlib+9,file_name,system_dir_Boxlib,\
 import_box_lib,plugins_directory
 
-library02	l_libs	system_dir_CnvPNG+9,file_name,system_dir_CnvPNG,\
-cnv_png_import,plugins_directory
-
-library03	l_libs	system_dir_Sort+9,file_name,system_dir_Sort,\
+library02	l_libs	system_dir_Sort+9,file_name,system_dir_Sort,\
 Sort_import,plugins_directory
-
-library04	l_libs	system_dir_UNPACK+9,file_name,system_dir_UNPACK,\
-UNPACK_import,plugins_directory
 
 end_l_libs:
 
-;---------------------------------------------------------------------
-align	4
-UNPACK_import:
-;unpack_Version 		dd aUnpack_Version
-;unpack_PluginLoad		dd aUnpack_PluginLoad
-;unpack_OpenFilePlugin		dd aUnpack_OpenFilePlugin
-;unpack_ClosePlugin		dd aUnpack_ClosePlugin
-;unpack_ReadFolder		dd aUnpack_ReadFolder
-;unpack_SetFolder		dd aUnpack_SetFolder
-;unpack_GetFiles		dd aUnpack_GetFiles
-;unpack_GetOpenPluginInfo	dd aUnpack_GetOpenPluginInfo
-;unpack_Getattr 		dd aUnpack_Getattr
-;unpack_Open			dd aUnpack_Open
-;unpack_Read			dd aUnpack_Read
-;unpack_Setpos			dd aUnpack_Setpos
-;unpack_Close			dd aUnpack_Close
-;unpack_DeflateUnpack		dd aUnpack_DeflateUnpack
-unpack_DeflateUnpack2		dd aUnpack_DeflateUnpack2
-	dd 0
-	dd 0
 
-;aUnpack_Version		db 'version',0
-;aUnpack_PluginLoad		db 'plugin_load',0
-;aUnpack_OpenFilePlugin 	db 'OpenFilePlugin',0
-;aUnpack_ClosePlugin		db 'ClosePlugin',0
-;aUnpack_ReadFolder		db 'ReadFolder',0
-;aUnpack_SetFolder		db 'SetFolder',0
-;aUnpack_GetFiles		db 'GetFiles',0
-;aUnpack_GetOpenPluginInfo	db 'GetOpenPluginInfo',0
-;aUnpack_Getattr		db 'getattr',0
-;aUnpack_Open			db 'open',0
-;aUnpack_Read			db 'read',0
-;aUnpack_Setpos 		db 'setpos',0
-;aUnpack_Close			db 'close',0
-;aUnpack_DeflateUnpack		db 'deflate_unpack',0
-aUnpack_DeflateUnpack2		db 'deflate_unpack2',0
-
-;---------------------------------------------------------------------
 ;---------------------------------------------------------------------
 align	4
 Sort_import:
@@ -2738,19 +2584,6 @@ aSort_version	db 'version',0
 aSort_SortDir	db 'SortDir',0
 aSort_strcmpi	db 'strcmpi',0
 
-;---------------------------------------------------------------------
-align	4
-cnv_png_import:
-.Start		dd aCP_Start
-.Version	dd aCP_Version
-.Check		dd aCP_Check
-.Assoc		dd aCP_Assoc
-	dd 0
-	dd 0
-aCP_Start	db 'START',0
-aCP_Version	db 'version',0
-aCP_Check	db 'Check_Header',0
-aCP_Assoc	db 'Associations',0
 ;---------------------------------------------------------------------
 include '../../develop/libraries/box_lib/import.inc'
 
@@ -2800,19 +2633,6 @@ mouse_position:
 .y	dw 0
 .x	dw 0
 ;---------------------------------------------------------------------
-; not	change	this	section!!!
-; start section
-;---------------------------------------------------------------------
-align	4
-image_file	dd 0
-raw_pointer	dd 0
-return_code	dd 0
-img_size	dd 0
-deflate_unpack	dd 0
-raw_pointer_2	dd 0	;+20
-;---------------------------------------------------------------------
-; end	section
-;---------------------------------------------------------------------
 align	4
 fileinfo:
 .subfunction	dd 5
@@ -2855,8 +2675,6 @@ memory_get_error_type:
 load_directory_error_type:
 	db 'Error loading directory',0
 
-convert_icons_error_type:
-	db 'Unsupported or corrupt data for icons file',0
 ;---------------------------------------------------------------------
 error_help_text:
 	db 'For continue press <Esc> key or <Cancel>',0
@@ -2912,8 +2730,11 @@ root_pach:
 	db '/',0
 
 icons_file_name_2 db 'buttons/'
-icons_path        db '/sys/icons18.png',0
+str_icon_18       db 'ICONS18',0
 ini_file_name     db '/sys/File managers/icon2ext.ini',0
+align	4
+ini_file	dd 0
+ini_size	dd 0
 ;---------------------------------------------------------------------
 
 message:
@@ -3133,10 +2954,10 @@ file_browser_data_1:
 .y:
 .size_y 			dw 550 ;+8
 .start_y			dw 45 ;+10
-.icon_size_y			dw 16 ; +12
-.icon_size_x			dw 16 ; +14
+.icon_size_y			dw 18 ; +12
+.icon_size_x			dw 18 ; +14
 .line_size_x			dw 0 ; +16
-.line_size_y			dw 18 ; +18
+.line_size_y			dw 18+1 ; +18
 .type_size_x			dw 0 ; +20
 .size_size_x			dw 0 ; +22
 .date_size_x			dw 0 ; +24
