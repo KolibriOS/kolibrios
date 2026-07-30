@@ -279,8 +279,10 @@ sys_socket:
         dd      socket_get_opt          ; 9
         dd      socket_pair             ; 10
 
-        ;dd      socket_sendto           ; 11
-        ;dd      socket_recvfrom         ; 12
+        dd      socket_getpeername      ; 11
+        dd      socket_getsockname      ; 12
+        ;dd      socket_sendto           ; 13
+        ;dd      socket_recvfrom         ; 14
   .number = ($ - .table) / 4 - 1
 
   .error:
@@ -1395,6 +1397,139 @@ socket_pair:
         ret
 
 
+
+;-----------------------------------------------------------------;
+;                                                                 ;
+; socket_getpeername: Get name of connected peer socket.          ;
+;                                                                 ;
+;   IN: ecx = socket number                                       ;
+;       edx = pointer to sockaddr struct                          ;
+;       esi = length of sockaddr struct                           ;
+;                                                                 ;
+;  OUT: eax = length of sockaddr struct                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+align 4
+socket_getpeername:
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_getpeername: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
+
+        call    socket_num_to_ptr
+        test    eax, eax
+        jz      .notsock
+
+        stdcall is_region_userspace, edx, esi
+        jnz     .efault
+
+        cmp     [eax + SOCKET.Domain], AF_INET4
+        jne     .invalid
+
+        cmp     esi, 8  ; domain + port + ipv4_addr
+        jb      .errlen
+
+        mov     word[edx], AF_INET4
+        mov     esi, edx
+
+        xor     edx, edx
+        cmp     [eax + SOCKET.Type], SOCK_RAW
+        je      .raw_protocol
+
+        mov     dx, [eax + TCP_SOCKET.RemotePort]
+.raw_protocol:
+        cmp     [eax + SOCKET.state], SS_ISCONNECTED
+        jne     .notconn
+
+        mov     [esi + sockaddr.port], dx
+
+        mov     edx, [eax + IP_SOCKET.RemoteIP]
+        mov     [esi + sockaddr.ip], edx
+
+        mov     dword[esp + SYSCALL_STACK.eax], 8
+        ret
+
+  .efault:
+        mov     dword[esp + SYSCALL_STACK.eax], -1
+        mov     dword[esp + SYSCALL_STACK.ebx], EFAULT
+        ret
+
+  .notconn:
+        mov     dword[esp + SYSCALL_STACK.ebx], ENOTCONN
+        mov     dword[esp + SYSCALL_STACK.eax], -1
+        ret
+  .no_inet4:
+  .errlen:
+  .invalid:
+        mov     dword[esp + SYSCALL_STACK.ebx], EINVAL
+        mov     dword[esp + SYSCALL_STACK.eax], -1
+        ret
+  .notsock:
+        mov     dword[esp + SYSCALL_STACK.ebx], ENOTSOCK
+        mov     dword[esp + SYSCALL_STACK.eax], -1
+        ret
+;-----------------------------------------------------------------;
+;                                                                 ;
+; socket_getsockname: Get socket name.                            ;
+;                                                                 ;
+;   IN: ecx = socket number                                       ;
+;       edx = pointer to sockaddr struct                          ;
+;       esi = length of sockaddr struct                           ;
+;                                                                 ;
+;  OUT: eax = length of sockaddr struct                                        ;
+;       eax = -1 on error                                         ;
+;       ebx = errorcode on error                                  ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+align 4
+socket_getsockname:
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_getsockname: socknum=%u sockaddr=%x length=%u\n", ecx, edx, esi
+
+        call    socket_num_to_ptr
+        test    eax, eax
+        jz      .notsock
+
+        stdcall is_region_userspace, edx, esi
+        jnz     .efault
+
+        cmp     [eax + SOCKET.Domain], AF_INET4
+        jne     .invalid
+
+        cmp     esi, 8  ; domain + port + ipv4_addr
+        jb      .errlen
+
+        mov     word[edx], AF_INET4
+        mov     esi, edx
+
+        xor     edx, edx
+        cmp     [eax + SOCKET.Type], SOCK_RAW
+        je      .raw_protocol
+
+        mov     dx, [eax + TCP_SOCKET.RemotePort]
+.raw_protocol:
+        mov     [esi + sockaddr.port], dx
+
+        mov     edx, [eax + IP_SOCKET.RemoteIP]
+        mov     [esi + sockaddr.ip], edx
+
+        mov     dword[esp + SYSCALL_STACK.eax], 8
+        ret
+
+  .efault:
+        mov     dword[esp + SYSCALL_STACK.eax], -1
+        mov     dword[esp + SYSCALL_STACK.ebx], EFAULT
+        ret
+
+  .errlen:
+  .invalid:
+        mov     dword[esp + SYSCALL_STACK.ebx], EINVAL
+        mov     dword[esp + SYSCALL_STACK.eax], -1
+        ret
+  .notsock:
+        mov     dword[esp + SYSCALL_STACK.ebx], ENOTSOCK
+        mov     dword[esp + SYSCALL_STACK.eax], -1
+        ret
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;

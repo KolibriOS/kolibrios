@@ -139,6 +139,9 @@ EISCONN                 = 56
 ETIMEDOUT               = 60
 ECONNREFUSED            = 61
 
+EFAULT                  = 14  ; copy, defined in posix/posix.inc ; Bad address
+ENOTSOCK                = 38  ; FreeBSD error code,  Socket operation on non-socket
+
 ; Api protocol numbers
 API_ETH                 = 0
 API_IPv4                = 1
