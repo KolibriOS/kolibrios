@@ -726,8 +726,20 @@ endl
         test    ecx, ecx
         jz      .not_terminated
 
+; tcp_close ends in socket_free, which locks the socket's own mutex (held here
+; since .found_socket) and socket_mutex: release ours first or deadlock. Same
+; shape as .unlock_and_close. The reset reply below only needs the segment
+; header, so edx is preserved across the call and the socket is never touched
+; again.
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+
         mov     eax, ebx
+        push    edx
         call    tcp_close
+        pop     edx
         inc     [TCPS_rcvafterclose]
         jmp     .respond_seg_reset
   .not_terminated:
@@ -761,8 +773,20 @@ endl
 ;        mov     edx, [ebx + TCP_SOCKET.RCV_NXT]
 ;        cmp     edx, [edx + TCP_header.SequenceNumber]
 ;        add     edx, 64000      ; TCP_ISSINCR   FIXME
+; tcp_close ends in socket_free, which locks the socket's own mutex (held here
+; since .found_socket) and socket_mutex: release ours first or deadlock. The
+; segment header (edx) and data count (ecx) survive the call because .findpcb
+; and everything after it still need them; the freed socket is off the list by
+; the time the walk restarts.
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+
         mov     eax, ebx
+        push    ecx edx
         call    tcp_close
+        pop     edx ecx
         jmp     .findpcb        ; FIXME: skip code for unscaling window, ...
   .no_new_request:
 
@@ -881,10 +905,22 @@ endl
         test    [edx + TCP_header.Flags], TH_SYN
         jz      .not_syn_full
 
+; tcp_drop ends in tcp_close -> socket_free, which locks the socket's own mutex
+; (held here since .found_socket) and socket_mutex: release ours first or
+; deadlock. Same shape as the refused-connection path in .state_syn_sent.
+; Exiting through .drop_with_reset afterwards would unlock the freed mutex and
+; build the reply from the freed socket; it is also redundant -- the connection
+; is synchronized here, so tcp_drop itself sends the RST via tcp_output
+; (tcp_outflags for TCPS_CLOSED is RST+ACK). Leave through .drop_no_socket.
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+
         mov     eax, ebx
         mov     ebx, ECONNRESET
         call    tcp_drop
-        jmp     .drop_with_reset
+        jmp     .drop_no_socket
   .not_syn_full:
 
 ; If ACK bit is off, we drop the segment and return
