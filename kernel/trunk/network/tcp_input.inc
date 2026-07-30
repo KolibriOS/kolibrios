@@ -355,9 +355,14 @@ endl
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Got window scale option\n"
         or      [ebx + TCP_SOCKET.t_flags], TF_RCVD_SCALE
 
+; remember the peer's scale factor; it is applied to SND_SCALE when the
+; connection is established (together with our RCV_SCALE)
         lodsb
-        mov     [ebx + TCP_SOCKET.SND_SCALE], al
-        ;;;;; TODO
+        cmp     al, TCP_max_winshift
+        jbe     .wscale_capped
+        mov     al, TCP_max_winshift
+  .wscale_capped:
+        mov     [ebx + TCP_SOCKET.requested_s_scale], al
 
        @@:
         jmp     .opt_loop
