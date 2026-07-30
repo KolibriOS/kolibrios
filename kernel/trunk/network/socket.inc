@@ -2098,7 +2098,7 @@ socket_alloc:
 ;-----------------------------------------------------------------;
 ;                                                                 ;
 ; socket_free: Free socket data memory and remove socket from     ;
-; the list. Caller should lock and unlock socket_mutex.           ;
+; the list. Takes socket_mutex itself; callers must not hold it.  ;
 ;                                                                 ;
 ;  IN:  eax = socket ptr                                          ;
 ;                                                                 ;
@@ -2109,6 +2109,22 @@ align 4
 socket_free:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: %x\n", eax
+
+; Unlinking below writes NextPtr/PrevPtr of the neighbours, so it has to be
+; serialized against every walk of net_sockets -- tcp_process_input.findpcb
+; above all, which walks the list under socket_mutex and dereferences whatever
+; NextPtr it reads. Nothing used to hold the mutex here, so a socket freed by
+; the TCP timers could rewrite the list from under that walk.
+;
+; The mutex is taken here, at the very top, and not merely around the unlink:
+; socket_alloc locks socket_mutex and then the neighbour's SOCKET.mutex, so
+; taking them in the opposite order -- SOCKET.mutex first, as the code below
+; does -- would be an ABBA deadlock against it. Locking here also covers the
+; socket_check walk, which reads net_sockets too.
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_lock
+        popa
 
         call    socket_check
         jz      .error
@@ -2157,7 +2173,13 @@ socket_free:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_free: success!\n"
 
+; Both exits converge here: the success path falls through, and a failed
+; socket_check jumps in.
   .error:
+        pusha
+        mov     ecx, socket_mutex
+        call    mutex_unlock
+        popa
         ret
 
   .error1:
@@ -2381,6 +2403,12 @@ socket_process_end:
 
         ret     ; FIXME
 
+; NOTE: the body below is disabled by the ret above, and cannot be re-enabled
+; as it stands: it holds socket_mutex across tcp_disconnect and socket_free,
+; and socket_free now takes that mutex itself. Whoever revives this has to drop
+; the lock around those calls (or hand the work to another thread, as the TODO
+; below suggests), not put the lock back into socket_free -- the ordering there
+; is what keeps it from deadlocking against socket_alloc.
         cmp     [net_sockets + SOCKET.NextPtr], 0       ; Are there any active sockets at all?
         je      .quickret                               ; nope, exit immediately
 
