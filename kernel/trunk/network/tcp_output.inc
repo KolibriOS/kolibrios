@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2026. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -554,6 +554,14 @@ endl
 
         mov     ecx, esi
         mov     ebx, [eax + IP_SOCKET.device]
+        test    ebx, ebx
+        jz      @f
+
+; Check if the output path is blocked, dont generate output frames if so.
+        test    [ebx + NET_DEVICE.link_state], NET_TX_BLOCKED
+        jnz     .output_blocked
+  @@:
+
         mov     edx, [eax + IP_SOCKET.LocalIP]  ; source ip
         mov     edi, [eax + IP_SOCKET.RemoteIP] ; dest ip
         mov     al, [eax + IP_SOCKET.ttl]
@@ -736,6 +744,23 @@ endl
         or      eax, -1
         ret
 
+  .output_blocked:
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_send: output path blocked, aborting\n"
+
+        pop     ecx
+        add     esp, ecx
+        add     esp, 4
+        pop     eax
+
+        mov     [eax + TCP_SOCKET.timer_retransmission], TCP_time_re_min
+        or      [eax + TCP_SOCKET.timer_flags], timer_flag_retransmission
+
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+
+        or      eax, -1
+        ret
+
 
   .send_error:
         add     esp, 4
@@ -746,8 +771,8 @@ endl
 
         DEBUGF  DEBUG_NETWORK_ERROR, "TCP_send: sending failed\n"
 
-        or      eax, -2
+        or      eax, -1
+        dec     eax
         ret
-
 
 endp

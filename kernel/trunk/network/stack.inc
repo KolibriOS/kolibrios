@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2026. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  STACK.INC                                                      ;;
@@ -167,6 +167,9 @@ NET_HWACC_TCP_IPv4_OUT  = 1 shl 1
 ; Network frame types
 NET_BUFF_LOOPBACK       = 0
 NET_BUFF_ETH            = 1
+
+; Hardware state (inside link_state)
+NET_TX_BLOCKED          = 1 shl 31      ; Transmit queue is full, if you call transmit again, driver might drop your frame
 
 struct  NET_DEVICE
 

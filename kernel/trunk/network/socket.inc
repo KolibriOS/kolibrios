@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2026. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  Part of the TCP/IP network stack for KolibriOS                 ;;
@@ -1034,6 +1034,9 @@ socket_send:
         test    eax, eax
         jz      .invalid
 
+        test    esi, esi
+        jz      .zero_length
+
         stdcall is_region_userspace, edx, esi
         jnz     .invalid
 
@@ -1047,6 +1050,10 @@ socket_send:
         mov     dword[esp + SYSCALL_STACK.eax], -1
         ret
 
+  .zero_length:
+        DEBUGF  DEBUG_NETWORK_ERROR, "SOCKET_send: data length = 0\n"
+        mov     dword[esp + SYSCALL_STACK.eax], 0
+        ret
 
 align 4
 socket_send_udp:
@@ -1070,10 +1077,14 @@ socket_send_tcp:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: TCP\n"
 
+  .loop:
         push    eax
         add     eax, STREAM_SOCKET.snd
         call    socket_ring_write
         pop     eax
+
+        test    ecx, ecx
+        jz      .block
 
         mov     [esp + SYSCALL_STACK.eax], ecx
         mov     [eax + SOCKET.errorcode], 0
@@ -1082,6 +1093,22 @@ socket_send_tcp:
         pop     eax
         mov     eax, [eax + SOCKET.errorcode]
         mov     [esp + SYSCALL_STACK.ebx], eax
+        ret
+
+  .block:
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: TCP is blocked\n"		
+        test    [eax + SOCKET.options], SO_NONBLOCK
+        jnz     .wouldblock
+
+        call    socket_block
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: TCP is unblocked\n"		
+        mov     ecx, dword[esp + SYSCALL_STACK.esi]
+        jmp     .loop
+
+  .wouldblock:
+        mov     dword[esp + SYSCALL_STACK.ebx], EWOULDBLOCK
+        mov     dword[esp + SYSCALL_STACK.eax], -1
+        pop     esi edx
         ret
 
 

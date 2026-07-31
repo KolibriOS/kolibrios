@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                  ;;
-;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.     ;;
+;; Copyright (C) KolibriOS team 2004-2026. All rights reserved.     ;;
 ;; Distributed under terms of the GNU General Public License        ;;
 ;;                                                                  ;;
 ;;  AMD PCnet driver for KolibriOS                                  ;;
@@ -30,6 +30,11 @@ entry START
 
         TX_RING_SIZE            = 32    ; Number of packets in send ring buffer
         RX_RING_SIZE            = 32    ; Number of packets in receive ring buffer
+
+        ; pending transmit queue, used when frames arrive while hardware is busy
+        PENDING_TX_MAX          = 8     ; Maximum number of frames in the queue
+        PENDING_TX_LOWAT        = 0     ; Low-water mark for the number of frames in the queue, before resetting the NET_TX_BLOCKED flag
+
 
 ; end configureable area
 
@@ -315,6 +320,11 @@ struct  device          ETH_DEVICE
         cur_rx          dd ?
         cur_tx          dd ?
         last_tx         dd ?
+
+        ; pending transmit queue: linked list of frames that arrived while the hardware was busy
+        pend_tx_head    dd ?            ; pointer to oldest queued NET_BUFF, 0 if empty
+        pend_tx_tail    dd ?            ; pointer to newest queued NET_BUFF, 0 if empty
+        pend_tx_count   dd ?            ; 0..PENDING_TX_MAX
 
         options         dd ?
         full_duplex     db ?
@@ -1000,6 +1010,21 @@ init_ring:
         mov     [ebx + device.last_tx], 0
         mov     [ebx + device.cur_rx], 0
 
+        mov     esi, [ebx + device.pend_tx_head]
+  .drain_pending:
+        test    esi, esi
+        jz      .pending_drained
+        mov     eax, [esi + NET_BUFF.NextPtr]
+        push    eax
+        invoke  NetFree, esi
+        pop     eax
+        mov     esi, eax
+        jmp     .drain_pending
+  .pending_drained:
+        mov     dword [ebx + device.pend_tx_head], 0
+        mov     dword [ebx + device.pend_tx_tail], 0
+        mov     dword [ebx + device.pend_tx_count], 0
+
         xor     eax, eax
         ret
 
@@ -1045,6 +1070,9 @@ proc transmit stdcall bufferptr
 
         test    [edi + descriptor.status], TXCTL_OWN
         jnz     .overrun
+        cmp     [edi + descriptor.virtual], 0           ; Make sure int handler has performed cleanup already
+        jne     .desc_busy
+  .desc_free:
 ; descriptor is free, use it
         mov     [edi + descriptor.virtual], esi
         mov     eax, esi
@@ -1058,6 +1086,12 @@ proc transmit stdcall bufferptr
 ; put to transfer queue
         mov     [edi + descriptor.status], TXCTL_OWN + TXCTL_STP + TXCTL_ENP
 
+; Update stats
+        inc     [ebx + device.packets_tx]
+        mov     eax, [esi + NET_BUFF.length]
+        add     dword[ebx + device.bytes_tx], eax
+        adc     dword[ebx + device.bytes_tx + 4], 0
+
 ; trigger an immediate send
         mov     edx, [ebx + device.io_addr]
         xor     ecx, ecx                        ; CSR0
@@ -1069,15 +1103,15 @@ proc transmit stdcall bufferptr
         inc     [ebx + device.cur_tx]
         and     [ebx + device.cur_tx], TX_RING_SIZE - 1
 
-; Update stats
-        inc     [ebx + device.packets_tx]
-        mov     eax, [esi + NET_BUFF.length]
-        add     dword[ebx + device.bytes_tx], eax
-        adc     dword[ebx + device.bytes_tx + 4], 0
-
         spin_unlock_irqrestore
         xor     eax, eax
         ret
+
+  .desc_busy:
+        pusha   ; TODO CHECKME
+        invoke  NetFree, [edi + descriptor.virtual]
+        popa
+        jmp     .desc_free
 
   .error:
         DEBUGF  2, "TX packet error\n"
@@ -1089,12 +1123,40 @@ proc transmit stdcall bufferptr
         ret
 
   .overrun:
+; Hardware ring is full.
+        DEBUGF  1, "High water\n"
+        or      [ebx + device.state], NET_TX_BLOCKED
+
+; Try the pending tx queue as a last resort
+        cmp     [ebx + device.pend_tx_count], PENDING_TX_MAX
+        jae     .queue_full
+
+        mov     dword [esi + NET_BUFF.NextPtr], 0
+        mov     dword [esi + NET_BUFF.PrevPtr], 0
+        mov     eax, [ebx + device.pend_tx_tail]
+        mov     [ebx + device.pend_tx_tail], esi
+        test    eax, eax
+        jz      @f
+        mov     [eax + NET_BUFF.NextPtr], esi
+        jmp     .list_linked
+  @@:
+        mov     [ebx + device.pend_tx_head], esi
+  .list_linked:
+        inc     [ebx + device.pend_tx_count]
+        DEBUGF  1, "Pending TX: %u\n", [ebx + device.pend_tx_count]
+
+        spin_unlock_irqrestore
+        xor     eax, eax
+        ret
+
+  .queue_full:
         DEBUGF  2, "TX overrun\n"
         inc     [ebx + device.packets_tx_ovr]
         invoke  NetFree, [bufferptr]
 
         spin_unlock_irqrestore
         or      eax, -1
+        dec     eax
         ret
 
 endp
@@ -1225,20 +1287,20 @@ int_handler:
         jz      .not_transmit
 
   .tx_loop:
-        lea     edi, [ebx + device.tx_ring]
         mov     eax, [ebx + device.last_tx]
+
+        lea     edi, [ebx + device.tx_ring]
         shl     eax, 4
         add     edi, eax
 
         test    [edi + descriptor.status], TXCTL_OWN
-        jnz     .not_transmit
+        jnz     .tx_done                  ; still busy
 
         mov     eax, [edi + descriptor.virtual]
         test    eax, eax
-        jz      .not_transmit
+        jz      .tx_done                  ; never filled, or already reclaimed 
 
         mov     [edi + descriptor.virtual], 0
-
         DEBUGF  1,"Removing packet %x from memory\n", eax
 
         invoke  NetFree, eax
@@ -1247,6 +1309,10 @@ int_handler:
         and     [ebx + device.last_tx], TX_RING_SIZE - 1
         jmp     .tx_loop
 
+  .tx_done:
+        cmp     [ebx + device.pend_tx_count], 0
+        jne     .refill_loop
+
   .not_transmit:
         pop     edi esi ebx
         xor     eax, eax
@@ -1254,6 +1320,70 @@ int_handler:
 
         ret
 
+  .refill_loop:
+        mov     ecx, [ebx + device.cur_tx]
+        shl     ecx, 4
+        lea     edi, [ebx + device.tx_ring]
+        add     edi, ecx
+
+        test    [edi + descriptor.status], TXCTL_OWN
+        jnz     .refill_done            ; not actually free after all - stop
+
+        cmp     [edi + descriptor.virtual], 0
+        je      @f
+        pusha
+        invoke  NetFree, [edi + descriptor.virtual]
+        popa
+  @@:
+
+        mov     esi, [ebx + device.pend_tx_head]
+        mov     eax, [esi + NET_BUFF.NextPtr]
+        mov     [ebx + device.pend_tx_head], eax
+
+        mov     [edi + descriptor.virtual], esi
+        mov     eax, esi
+        add     eax, [eax + NET_BUFF.offset]
+        invoke  GetPhysAddr
+        mov     [edi + descriptor.base], eax
+
+        mov     eax, [esi + NET_BUFF.length]
+        neg     eax
+        mov     [edi + descriptor.length], ax
+
+        mov     [edi + descriptor.status], TXCTL_OWN + TXCTL_STP + TXCTL_ENP
+
+        inc     [ebx + device.packets_tx]
+        mov     eax, [esi + NET_BUFF.length]
+        add     dword[ebx + device.bytes_tx], eax
+        adc     dword[ebx + device.bytes_tx + 4], 0
+
+        inc     [ebx + device.cur_tx]
+        and     [ebx + device.cur_tx], TX_RING_SIZE - 1
+
+        dec     [ebx + device.pend_tx_count]
+        jnz     .refill_loop
+
+        mov     dword [ebx + device.pend_tx_tail], 0
+
+  .refill_done:
+        DEBUGF  1, "Pending TX: %u\n", [ebx + device.pend_tx_count]
+
+        mov     edx, [ebx + device.io_addr]
+        xor     ecx, ecx                        ; CSR0
+        call    [ebx + device.read_csr]
+        or      eax, CSR_TX
+        call    [ebx + device.write_csr]
+
+        cmp     [ebx + device.pend_tx_count], PENDING_TX_LOWAT
+        ja      @f
+        and     [ebx + device.state], not NET_TX_BLOCKED
+        DEBUGF  1, "Low water\n"
+  @@:
+        pop     edi esi ebx
+        xor     eax, eax
+        inc     eax
+
+        ret
 
 
 
@@ -1595,7 +1725,7 @@ proc check_media_mii stdcall dev:dword
         mov     ecx, eax
         and     eax, BMSR_LSTATUS
         shr     eax, 2
-        cmp     eax, [ebx + device.state]
+        cmp     ax, word[ebx + device.state]    ; lazy masking of NET_TX_BLOCKED
         jne     .changed
 
         spin_unlock_irqrestore
@@ -1643,7 +1773,7 @@ proc check_media_mii stdcall dev:dword
         mov     eax, ETH_LINK_UNKNOWN
 
   .update:
-        mov     [ebx + device.state], eax
+        mov     word[ebx + device.state], ax    ; lazy masking of NET_TX_BLOCKED
         invoke  NetLinkChanged
 
 

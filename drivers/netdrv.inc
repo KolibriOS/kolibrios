@@ -34,7 +34,7 @@ include 'mii.inc'
 ; Link state
 
         ETH_LINK_DOWN           = 0             ; Link is down
-        ETH_LINK_UNKNOWN        = 1b            ; There could be an active link
+        ETH_LINK_UNKNOWN        = 1b            ; Link is up, but speed might be unknown
         ETH_LINK_FULL_DUPLEX    = 10b           ; full duplex flag
 
         ETH_LINK_SPEED_10M      = 100b          ; 10 Mbit
@@ -42,6 +42,10 @@ include 'mii.inc'
         ETH_LINK_SPEED_1G       = 1100b         ; Gigabit
 
         ETH_LINK_SPEED_MASK     = 1100b
+
+; Hardware state
+
+        NET_TX_BLOCKED          = 1 shl 31      ; Transmit queue is full, if you call transmit again, driver might drop your frame
 
 ; Macro to easily set i/o addresses to access device.
 ; In the beginning of a procedure (or ofter edx may have been destroyed),
