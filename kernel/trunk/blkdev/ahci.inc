@@ -1721,7 +1721,8 @@ endp
 ; out: eax = 1 if the interrupt came from this controller, 0 otherwise
 align 4
 ahci_irq_handler:
-        mov     esi, [esp + 4]
+        push    ebx esi edi
+        mov     esi, [esp + 12 + 4]
         test    esi, esi
         jz      .not_our
         mov     edx, [esi + AHCI_CTR.abar]
@@ -1786,9 +1787,11 @@ ahci_irq_handler:
 @@:
         pop     eax
         mov     eax, 1
+        pop     edi esi ebx
         ret
 .not_our:
         xor     eax, eax
+        pop     edi esi ebx
         ret
 
 
