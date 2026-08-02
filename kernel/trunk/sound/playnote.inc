@@ -148,9 +148,10 @@ ReadNoteByte:
         push    esi
 
         mov     eax, [pidProcessNote]
-        call    pid_to_slot
+        call    pid_to_thread
         test    eax, eax
         jz      .failed
+
         lea     ecx, [esp+12]
         mov     edx, 1
         mov     esi, [memAdrNote]

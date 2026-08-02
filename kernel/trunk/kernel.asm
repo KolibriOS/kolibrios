@@ -389,7 +389,7 @@ high_code:
         mov     edi, tss._io_map_0
         xor     eax, eax
         not     eax
-        mov     ecx, 8192/4
+        mov     ecx, IO_MAP_SIZE/4
         rep stosd                    ; access to 4096*8=65536 ports
 
         mov     ax, tss0
@@ -410,7 +410,7 @@ high_code:
         stdcall alloc_kernel_space, 0x50000         ; FIXME check size
         mov     [default_io_map], eax
 
-        add     eax, 0x2000
+        add     eax, IO_MAP_SIZE
         mov     [ipc_tmp], eax
         mov     ebx, 0x1000
 
@@ -848,15 +848,15 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
         call    reserve_irqs_ports
 
         mov     [SLOT_BASE + APPDATA.window], window_data
-        mov     [SLOT_BASE + sizeof.APPDATA + APPDATA.window], window_data + sizeof.WDATA
-        mov     [SLOT_BASE + sizeof.APPDATA*2 + APPDATA.window], window_data + sizeof.WDATA*2
+        mov     [APPDATA_IDLE_THREAD + APPDATA.window], background_window
+        mov     [APPDATA_OS_THREAD + APPDATA.window], window_data + sizeof.WDATA*2
         mov     [window_data + WDATA.thread], SLOT_BASE
-        mov     [window_data + sizeof.WDATA + WDATA.thread], SLOT_BASE + sizeof.APPDATA
-        mov     [window_data + sizeof.WDATA*2 + WDATA.thread], SLOT_BASE + sizeof.APPDATA*2
+        mov     [background_window + WDATA.thread], APPDATA_IDLE_THREAD
+        mov     [window_data + sizeof.WDATA*2 + WDATA.thread], APPDATA_OS_THREAD
 
         call    init_display
         mov     eax, [def_cursor]
-        mov     [window_data + sizeof.WDATA + WDATA.cursor], eax
+        mov     [background_window + WDATA.cursor], eax
         mov     [window_data + sizeof.WDATA*2 + WDATA.cursor], eax
 
 ; PRINT CPU FREQUENCY
@@ -953,14 +953,14 @@ include "detect/vortex86.inc"                     ; Vortex86 SoC detection code
 ; Protect I/O permission map
 
         mov     esi, [default_io_map]
-        stdcall map_page, esi, [SLOT_BASE + sizeof.APPDATA + APPDATA.io_map], PG_READ
+        stdcall map_page, esi, [APPDATA_IDLE_THREAD + APPDATA.io_map], PG_READ
         add     esi, 0x1000
-        stdcall map_page, esi, [SLOT_BASE + sizeof.APPDATA + APPDATA.io_map + 4], PG_READ
+        stdcall map_page, esi, [APPDATA_IDLE_THREAD + APPDATA.io_map + 4], PG_READ
 
         stdcall map_page, tss._io_map_0, \
-                [SLOT_BASE + sizeof.APPDATA + APPDATA.io_map], PG_READ
+                [APPDATA_IDLE_THREAD + APPDATA.io_map], PG_READ
         stdcall map_page, tss._io_map_1, \
-                [SLOT_BASE + sizeof.APPDATA + APPDATA.io_map + 4], PG_READ
+                [APPDATA_IDLE_THREAD + APPDATA.io_map + 4], PG_READ
 
 ; SET KEYBOARD PARAMETERS
         mov     al, 0xf6       ; reset keyboard, scan enabled
@@ -1865,7 +1865,7 @@ sysfn_shutdown:          ; 18.9 = system shutdown
 ; out: Z/z -- is/not kernel thread
 is_kernel_thread:
         mov     eax, [eax + APPDATA.process]
-        cmp     eax, [SLOT_BASE + 2*sizeof.APPDATA + APPDATA.process]       ; OS
+        cmp     eax, [APPDATA_OS_THREAD + APPDATA.process]       ; OS
         ret
 ;------------------------------------------------------------------------------
 sysfn_terminate:        ; 18.2 = TERMINATE
@@ -2065,7 +2065,7 @@ sysfn_zmodif:
 
 ;------------------------------------------------------------------------------
 sysfn_getidletime:              ; 18.4 = GET IDLETIME
-        mov     eax, [SLOT_BASE + sizeof.APPDATA + APPDATA.cpu_usage]
+        mov     eax, [APPDATA_IDLE_THREAD + APPDATA.cpu_usage]
         mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;------------------------------------------------------------------------------
@@ -2825,7 +2825,7 @@ no_mark_system_shutdown:
 align 4
 noshutdown:
         mov     eax, [thread_count]           ; termination
-        mov     ebx, SLOT_BASE + sizeof.APPDATA + APPDATA.state
+        mov     ebx, APPDATA_IDLE_THREAD + APPDATA.state
         mov     esi, 1
 ;--------------------------------------
 align 4

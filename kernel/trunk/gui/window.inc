@@ -1997,6 +1997,8 @@ align 4
         ; esi - slot
         push    eax ecx edx esi
         xchg    eax, esi
+        shl     eax, BSF sizeof.APPDATA
+        add     eax, SLOT_BASE
         lea     ecx, [esp + 12]
         mov     edx, 1
         call    read_process_memory

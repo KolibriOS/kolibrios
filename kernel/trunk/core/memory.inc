@@ -605,7 +605,7 @@ proc page_fault_handler
 
         mov     edi, [.err_addr]
         and     edi, -PAGE_SIZE
-        mov     ecx, 1024
+        mov     ecx, PAGE_SIZE/4
         xor     eax, eax
        ;cld     ;caller is duty for this
         rep stosd
@@ -664,7 +664,7 @@ proc page_fault_handler
         cmp     ebx, tss._io_map_0
         jb      .fail
 
-        cmp     ebx, tss._io_map_0+8192
+        cmp     ebx, tss._io_map_0 + IO_MAP_SIZE
         jae     .fail
 
 ; io permission map
@@ -695,7 +695,7 @@ proc page_fault_handler
 endp
 
 ; returns number of mapped bytes
-proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
+proc map_mem_ipc stdcall, lin_addr:dword,thread:dword,\
                       ofs:dword,buf_size:dword,req_access:dword
         locals
              count   dd ?
@@ -706,9 +706,8 @@ proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
         cmp     [buf_size], 0
         jz      .exit
 
-        mov     eax, [slot]
-        shl     eax, BSF sizeof.APPDATA
-        mov     eax, [SLOT_BASE + eax + APPDATA.process]
+        mov     eax, [thread]
+        mov     eax, [eax + APPDATA.process]
         test    eax, eax
         jz      .exit
 
@@ -732,7 +731,7 @@ proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
         shr     edx, 12
         and     edx, 0x3FF
 .map:
-        stdcall safe_map_page, [slot], [req_access], [ofs]
+        stdcall safe_map_page, [process], [req_access], [ofs]
         jnc     .exit
         add     [count], PAGE_SIZE
         add     [ofs], PAGE_SIZE
@@ -758,7 +757,7 @@ proc map_mem_ipc stdcall, lin_addr:dword,slot:dword,\
         ret
 endp
 
-proc map_memEx stdcall, lin_addr:dword,slot:dword,\
+proc map_memEx stdcall, lin_addr:dword,thread:dword,\
                         ofs:dword,buf_size:dword,req_access:dword
         locals
              count   dd ?
@@ -769,9 +768,8 @@ proc map_memEx stdcall, lin_addr:dword,slot:dword,\
         cmp     [buf_size], 0
         jz      .exit
 
-        mov     eax, [slot]
-        shl     eax, BSF sizeof.APPDATA
-        mov     eax, [SLOT_BASE + eax + APPDATA.process]
+        mov     eax, [thread]
+        mov     eax, [eax + APPDATA.process]
         test    eax, eax
         jz      .exit
 
@@ -795,7 +793,7 @@ proc map_memEx stdcall, lin_addr:dword,slot:dword,\
         shr     edx, 12
         and     edx, 0x3FF
 .map:
-        stdcall safe_map_page, [slot], [req_access], [ofs]
+        stdcall safe_map_page, [process], [req_access], [ofs]
         jnc     .exit
         add     [count], PAGE_SIZE
         add     [ofs], PAGE_SIZE
@@ -826,7 +824,7 @@ endp
 ; in: edi = linear address to map
 ; out: CF cleared <=> failed
 ; destroys: only eax
-proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
+proc safe_map_page stdcall, process:dword, req_access:dword, ofs:dword
         mov     eax, [esi + edx*4]
         test    al, PG_READ
         jz      .not_present
@@ -861,9 +859,7 @@ proc safe_map_page stdcall, slot:dword, req_access:dword, ofs:dword
         cli
         cld
         push    ebx ecx
-        mov     eax, [slot]
-        shl     eax, BSF sizeof.APPDATA
-        mov     eax, [SLOT_BASE + eax + APPDATA.process]
+        mov     eax, [process]
         mov     eax, [eax + PROC.dlls_list_ptr]
         test    eax, eax
         jz      .no_hdll
@@ -953,7 +949,7 @@ sys_IPC:
 
 proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            locals
-             dst_slot   dd ?
+             dst_thread dd ?
              dst_offset dd ?
              buf_size   dd ?
              used_buf   dd ?
@@ -963,13 +959,12 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         cli
 
         mov     eax, [PID]
-        call    pid_to_slot
+        call    pid_to_thread
         test    eax, eax
         jz      .no_pid
 
-        mov     [dst_slot], eax
-        shl     eax, BSF sizeof.APPDATA
-        mov     edi, [SLOT_BASE + eax + APPDATA.ipc_start] ;is ipc area defined?
+        mov     [dst_thread], eax
+        mov     edi, [eax + APPDATA.ipc_start] ;is ipc area defined?
         test    edi, edi
         jz      .no_ipc_area
 
@@ -977,7 +972,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         and     ebx, 0xFFF
         mov     [dst_offset], ebx
 
-        mov     esi, [SLOT_BASE + eax + APPDATA.ipc_size]
+        mov     esi, [eax + APPDATA.ipc_size]
         mov     [buf_size], esi
 
         mov     ecx, [ipc_tmp]
@@ -990,7 +985,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         pop     edi esi
 @@:
         mov     [used_buf], ecx
-        stdcall map_mem_ipc, ecx, [dst_slot], \
+        stdcall map_mem_ipc, ecx, [dst_thread], \
                 edi, esi, PG_SWR
 
         mov     edi, [dst_offset]
@@ -1039,9 +1034,8 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
         mov     [page_tabs + ebx*4], eax
         invlpg  [edx]
 
-        mov     eax, [dst_slot]
-        shl     eax, BSF sizeof.APPDATA
-        or      [SLOT_BASE + eax + APPDATA.occurred_events], EVENT_IPC
+        mov     eax, [dst_thread]
+        or      [eax + APPDATA.occurred_events], EVENT_IPC
         push    0
         jmp     .ret
 .no_pid:
