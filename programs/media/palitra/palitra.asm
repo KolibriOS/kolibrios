@@ -126,28 +126,117 @@ key:                                      ; нажата клавиша на к�
 ;end_key
 
 mouse:
-    mcall   SF_MOUSE_GET,SSF_BUTTON
+    mcall   SF_MOUSE_GET,SSF_BUTTON_EXT
     cmp     [renmode],MODE_PIPET
     jne     left
     push    eax
     call    draw_pipet_preview
     pop     eax
-    cmp     al,0
-    je      still
+    or      eax,eax
+    jz      still
     mov     [color],edx
     mov     [renmode],MODE_PALITRA        ; MODE_PIPET => MODE_PALITRA
     jmp     red
   left:
-    cmp     al,1b
-    jne     right
+    test    eax,10000000100000001b
+    jz      right
     mov     [mouse_f],1
+    bt      eax,8
+    jnc     @f
+    call    set_mode_drag_slid
+@@:
+    call    color_slid_redraw
+    bt      eax,16
+    jnc     @f
+    mov     [drag_slid],0
+@@:
     jmp     still
   right:
-    cmp     al,10b
-    jne     still
+    test    eax,100000001000000010b
+    jz      still
     mov     [mouse_f],2
+    bt      eax,9
+    jnc     @f
+    call    set_mode_drag_slid
+@@:
+    call    color_slid_redraw
+    bt      eax,17
+    jnc     @f
+    mov     [drag_slid],0
+@@:
     jmp     still
 ;end_mouse
+
+align 4
+proc set_mode_drag_slid uses eax ebx edx
+    mov     [drag_slid],0
+    call    mouse_local                   ; получаем координаты мыши относительно окна
+    cmp     [mouse_x],14
+    jl      .end
+    mov     eax,[mouse_y]
+    cmp     eax,47
+    jl      .end
+    cmp     eax,47+150
+    jg      .end
+
+    mov     eax,[mouse_x]
+    sub     eax,14
+    xor     edx,edx
+    mov     ebx,25
+    div     ebx
+    cmp     edx,22                        ; нажали между ползунками?
+    jg      .end
+    inc     eax
+    cmp     eax,4
+    jg      .end
+
+    mov     [drag_slid],eax
+.end:
+    ret
+endp
+
+align 4
+proc color_slid_redraw uses eax ecx
+    cmp     [drag_slid],0
+    je      .no_drag
+    cmp     [drag_slid],4
+    jg      .no_drag
+
+    ; РАСЧЁТ координат для ползунков RGBA
+    call    mouse_local                   ; получаем локальные координаты
+    mov     ecx,[mouse_y]                 ; заносим в есх значение курсора по У
+    sub     ecx, SLIDER_Y                 ; находим разность (т.е. куда смещается ползунок)
+
+    ; Защита от выхода за границы (0 <= ecx)
+    xor     eax, eax
+    cmp     ecx, eax
+    jge     @f
+    mov     ecx, eax
+@@:
+
+    ; 2. Превращаем пиксели в значение цвета (0-255)
+    ; Если ползунок 128 пикселей, а диапазон 256 (0-255), то нужно умножить на 2
+    shl     ecx, 1
+
+    ; Переворачиваем число
+    neg     ecx
+    add     ecx, 255
+
+    ; Защита от отрицательного значения (исправляет прыжок в 255)
+    cmp     ecx, 0
+    jge     @f
+    xor     ecx, ecx                      ; Если ушло в минус, принудительно делаем чистый 0
+@@:
+
+    mov     eax,[drag_slid]
+    dec     eax
+    cmp     [cred+eax],cl
+    je      .no_drag
+    mov     [cred+eax],cl                 ; присваиваем значение, выбраному цвету спектра
+    call    set_spectr                    ; устанавливаем спектр
+.no_drag:
+    ret
+endp
 
 button:
     mcall   SF_GET_BUTTON         ; 17 - получить идентификатор нажатой кнопки
@@ -233,29 +322,6 @@ button:
     xor     ecx, ecx                      ; Если ушло в минус, принудительно делаем чистый 0
 @@:
     pop     eax   
-  red_button:                             ; Красный Трекбар                                              :
-    cmp     ah, 8                         ; ID=8                                                         :
-    jne     green_button                  ; если нет, то проверяем зелёный трекбар                       :
-    mov     [cred],cl                     ; иначе присваиваем значение, красному цвету спектра    <------+
-    call    set_spectr                    ; устанавливаем спектр
-    jmp     still                         ; Уходим на ожидание другого события
-  green_button:
-    cmp     ah, 9
-    jne     blue_button
-    mov     [cgreen],cl
-    call    set_spectr
-    jmp     still                         ; Уходим на ожидание другого события
-  blue_button:
-    cmp     ah, 10
-    jne     alpha_button
-    mov     [cblue],cl
-    call    set_spectr
-    jmp     still                         ; Уходим на ожидание другого события
-  alpha_button:
-    cmp     ah, 11
-    jne     still
-    mov     [calpha],cl
-    call    set_spectr
     jmp     still                         ; Уходим на ожидание другого события
   bexit:
     mcall SF_TERMINATE_PROCESS ; иначе конец программы
@@ -298,18 +364,6 @@ draw_main:
     call    draw_result                   ; РИСУЕМ РЕЗУЛЬТАТ
 
     mcall   SF_DEFINE_BUTTON, <PALITRA_X,PALITRA_W*2+3>, <DRAWY,PALITRA_W*2+3>, BTN_PALITRA+BT_HIDE+BT_NOFRAME
-
-    inc     edx
-    mcall   , <14,22>, <47,150>           ; Рисуем невидимую кнопку под слайдером red
-    add     ebx,25*65536                  ; Добавляем
-    inc     edx                           ; ID = 9
-    int     0x40                          ; Рисуем невидимую кнопку под слайдером green
-    add     ebx,25*65536                  ; Добавляем
-    inc     edx                           ; ID = 10
-    int     0x40                          ; Рисуем невидимую кнопку под слайдером blue
-    add     ebx,25*65536                  ; Добавляем
-    inc     edx                           ; ID = 11
-    int     0x40                          ; Рисуем невидимую кнопку под слайдером alpha
 
     ; Функция 8 - определить/удалить кнопку (СМЕНА ЦВЕТА)
     mcall   , <14,22>, <16,20>, BTN_COL_SWAP+BT_HIDE
@@ -459,7 +513,7 @@ mouse_get:
       inc     [mouse_y]                   ; КОСТЫЛЬ: смещаем по диагонали сначала по х
       inc     [mouse_x]                   ; КОСТЫЛЬ: смещаем по диагонали потом по у
       dec     esi                         ; КОСТЫЛЬ: Уменьшаем флаг
-      cmp     esi,0                       ; КОСТЫЛЬ: Сравниваем с нулем
+      ;cmp     esi,0
     jz        mouse_exit                  ; КОСТЫЛЬ: Если ноль то сделали всё что могли
     jmp    re_mouse_loop                  ; КОСТЫЛЬ: Если не ноль то попробуем взять соседний пиксель
     mouse_set:                            ; Иначе запоминаем новый цвет
@@ -783,6 +837,7 @@ I_END:
     params_c    rb 9                      ; приёмник для цвета
     bgimg_buf   rd 1                      ; buffer for a generated image
     icons18bg   dd ?                      ; pointer to a shared memory of icons18.png with filled bg
+    drag_slid   rd 1
 
         rd 1024
 stacktop:
