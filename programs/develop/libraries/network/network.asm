@@ -9,6 +9,8 @@ purge section,mov,add,sub
 
 include '../../../network.inc'
 
+NET_DEVICES_MAX = 16    ; TODO: improve network API so we dont need this constant here
+
 section '.flat' code readable align 16
 
 ;;===========================================================================;;
@@ -675,9 +677,20 @@ lock    xadd    [DNSrequestID], eax     ; atomically increment ID, get old value
         mov     eax, 0x01000100
         stosd
 ; 7. Get DNS server address.
-        mcall   76, API_IPv4 + (1 shl 8) + 4 ; protocol IP=0, device number=0, function=get DNS address
+        mov     ebx, API_IPv4 + (1 shl 8) + 4 ; protocol IP=0, device number=0, function=get DNS address
+.find_dns_addr:
+        mcall   76
         cmp     eax, -1
-        je      .ret.dnserr
+        je      .next_dns_addr
+        cmp     eax, 0
+        jne     .have_dns_addr
+.next_dns_addr:
+; try next device
+        inc     bh
+        cmp     bh, NET_DEVICES_MAX
+        jbe     .find_dns_addr
+        jmp     .ret.dnserr
+.have_dns_addr:
         push    eax             ; save server address to the stack
 ; 8. Open UDP socket to DNS server, port 53.
 ; 8a. Create new socket.

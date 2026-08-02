@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2024. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2026. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IPv4.INC                                                       ;;
@@ -765,9 +765,9 @@ ipv4_output_raw:
         push    ebx                     ; push the mac
         push    ax
 
-        inc     [IPv4_packets_tx + 4*edi]
+        inc     [IPv4_packets_tx + edi]
         mov     ax, ETHER_PROTO_IPv4
-        mov     ebx, [net_device_list + 4*edi]
+        mov     ebx, [net_device_list + edi]
         mov     ecx, [esp + 6 + 4]
         add     ecx, sizeof.IPv4_header
         mov     edx, esp
@@ -951,7 +951,7 @@ endp
 ;       edi = device number*4                                     ;
 ;                                                                 ;
 ; DESTROYED:                                                      ;
-;       ecx                                                       ;
+;       ebx, ecx                                                  ;
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
@@ -964,6 +964,7 @@ ipv4_route:
         cmp     eax, 0xffffffff
         je      .broadcast
 
+; Check for on-link
         xor     edi, edi
   .loop:
         mov     ebx, [IPv4_address + edi]
@@ -978,9 +979,55 @@ ipv4_route:
         cmp     edi, 4*NET_DEVICES_MAX
         jb      .loop
 
-        mov     eax, [IPv4_gateway + 4]         ; TODO: let user (or a user space daemon) configure default route
+; no on-link match, find first device with a gateway
+        mov     edi, 4                  ; skip loopback device
+  .loop_gw:
+        cmp     [IPv4_gateway + edi], 0
+        jne     .found_gw
+        add     edi, 4
+        cmp     edi, 4*NET_DEVICES_MAX
+        jb      .loop_gw
+        jmp     .loopback               ; no gateway found, fall-back to loopback device
+
+  .found_gw:
+        mov     eax, [IPv4_gateway + edi]
+        jmp     .got_it
+
   .broadcast:
-        mov     edi, 4                          ; TODO: same as above
+; broadcast: we will do our best without full routing..
+
+; find the first non loopback device which has an active link without IP address
+        mov     edi, 4                  ; skip loopback device
+  .bc_loop1:
+        mov     ebx, [net_device_list + edi]
+        test    ebx, ebx
+        jz      @f
+        cmp     [ebx + NET_DEVICE.link_state], 0
+        je      @f
+        cmp     [IPv4_address + edi], 0
+        je      .got_it
+  @@:
+        add     edi, 4
+        cmp     edi, 4*NET_DEVICES_MAX
+        jb      .bc_loop1
+
+; If there is no such device, try the one with active link and IP address
+        mov     edi, 4                  ; skip loopback device
+  .bc_loop2:
+        mov     ebx, [net_device_list + edi]
+        test    ebx, ebx
+        jz      @f
+        cmp     [ebx + NET_DEVICE.link_state], 0
+        jne     .got_it
+  @@:
+        add     edi, 4
+        cmp     edi, 4*NET_DEVICES_MAX
+        jb      .bc_loop2
+;        jmp     .loopback               ; no gateway found, fall-back to loopback device
+
+  .loopback:
+        xor     edi, edi                ; nowhere to go for now.. route it to the loopback device
+
   .got_it:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_route: %u\n", edi
         test    edx, edx
