@@ -183,6 +183,8 @@ EFLAGS_ID      =    0x200000  ; id flag
 IRQ_PIC        =    0
 IRQ_APIC       =    1
 
+IO_MAP_SIZE    =    65536/8 ; 8192 or 2 PAGE_SIZE
+
 struct  TSS
         _back       rw 2
         _esp0       rd 1
@@ -573,7 +575,7 @@ struct  APPDATA
         ipc_start       dd ?            ;+160
         ipc_size        dd ?            ;+164
         occurred_events dd ?            ;+168  ; mask which accumulates occurred events
-        debugger_slot   dd ?            ;+172  ; index in SLOT_BASE array
+        debugger_thread dd ?            ;+172  ; pointer to APPDATA or 0
         terminate_protection dd ?       ;+176
         keyboard_mode   db ?            ;+180
                         rb 3

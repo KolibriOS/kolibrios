@@ -537,21 +537,21 @@ pid_to_slot:
 align 4
 proc read_process_memory
 ;Input:
-;  eax - process slot
+;  eax - process thread
 ;  ecx - buffer address
 ;  edx - buffer size
 ;  esi - start address in other process
 ;Output:
 ;  eax - number of bytes read.
        locals
-         slot   dd ?
+         thread dd ?
          buff   dd ?
          r_count    dd ?
          offset dd ?
          tmp_r_cnt  dd ?
        endl
 
-        mov     [slot], eax
+        mov     [thread], eax
         mov     [buff], ecx
         and     [r_count], 0
         mov     [tmp_r_cnt], edx
@@ -577,7 +577,7 @@ proc read_process_memory
 
         push    ecx
         stdcall map_memEx, [proc_mem_map], \
-                [slot], ebx, ecx, PG_READ
+                [thread], ebx, ecx, PG_READ
         pop     ecx
 
         mov     esi, [offset]
@@ -607,7 +607,7 @@ endp
 align 4
 proc write_process_memory
 ;Input:
-;  eax - process slot
+;  eax - process thread
 ;  ecx - buffer address
 ;  edx - buffer size
 ;  esi - start address in other process
@@ -615,14 +615,14 @@ proc write_process_memory
 ;  eax - number of bytes written
 
        locals
-         slot   dd ?
+         thread dd ?
          buff   dd ?
          w_count    dd ?
          offset dd ?
          tmp_w_cnt  dd ?
        endl
 
-        mov     [slot], eax
+        mov     [thread], eax
         mov     [buff], ecx
         and     [w_count], 0
         mov     [tmp_w_cnt], edx
@@ -647,7 +647,7 @@ proc write_process_memory
         mov     ebx, [offset]
         push    ecx
         stdcall map_memEx, [proc_mem_map], \
-                [slot], ebx, ecx, PG_SWR
+                [thread], ebx, ecx, PG_SWR
         pop     ecx
 
         mov     edi, [offset]
@@ -906,7 +906,7 @@ common_app_entry:
         stdcall free_kernel_space, [ebp+APP_HDR.img_base]
         stdcall kernel_free, ebp
         mov     ebx, [current_slot]
-        cmp     [ebx + APPDATA.debugger_slot], 0
+        cmp     [ebx + APPDATA.debugger_thread], 0
         je      .exit
         mov     [ebx + APPDATA.state], TSTATE_RUN_SUSPENDED
         mov     [ebx + APPDATA.state], TSTATE_RUN_SUSPENDED
@@ -1054,8 +1054,8 @@ proc set_app_params stdcall,slot:dword, params:dword, flags:dword
 ; set if debuggee
         test    byte [flags], 1
         jz      .no_debug
-        mov     eax, [current_slot_idx]
-        mov     [SLOT_BASE + ebx + APPDATA.debugger_slot], eax
+        mov     eax, [current_slot]
+        mov     [SLOT_BASE + ebx + APPDATA.debugger_thread], eax
 .no_debug:
         mov     [SLOT_BASE + ebx + APPDATA.state], dl
         lea     edx, [SLOT_BASE + ebx]
@@ -1074,27 +1074,24 @@ get_curr_slot:
         mov     eax, [current_slot]
         ret
 
-pid_to_appdata:
-;Input:
-;  eax - pid of process
-;Output:
-;  eax - 0 - not found or pointer on APPDATA
+; @brief  Get pointer to APPDATA by PID
+; @param eax - TID of thread
+; @return  eax - 0 - not found or pointer on APPDATA
+pid_to_thread:
         push    ebx
         push    ecx
         mov     ebx, [thread_count]
-        shl     ebx, BSF sizeof.APPDATA ; multiply by size
         ; skip first process in the task table
-        mov     ecx, SLOT_BASE
-        add     ebx, ecx
+        mov     ecx, APPDATA_IDLE_THREAD
 .loop:
-        add     ecx, sizeof.APPDATA
         cmp     [ecx + APPDATA.state], TSTATE_FREE
         jz      @f  ;skip empty slots
         cmp     [ecx + APPDATA.tid], eax
         jz      .pid_found
 @@:
-        cmp     ecx, ebx
-        jb      .loop
+        add     ecx, sizeof.APPDATA
+        dec     ebx
+        jnz     .loop
 
         pop     ecx
         pop     ebx

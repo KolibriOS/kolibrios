@@ -165,7 +165,7 @@ exc_c:                            ; exceptions (all but 7th - #NM)
         jnz     IRetToUserHook
   @@:
         cli
-        mov     eax, [esi + APPDATA.debugger_slot]
+        mov     eax, [esi + APPDATA.debugger_thread]
         test    eax, eax
         jnz     .debug
 ; not debuggee => say error and terminate
@@ -640,7 +640,7 @@ destroy_thread:
         pushad
         mov     edi, esi
         shl     edi, BSF sizeof.APPDATA
-        mov     eax, [SLOT_BASE + edi + APPDATA.debugger_slot]
+        mov     eax, [SLOT_BASE + edi + APPDATA.debugger_thread]
         test    eax, eax
         jz      .nodebug
         movi    ecx, 8
@@ -668,12 +668,12 @@ destroy_thread:
         add     edi, SLOT_BASE
 
         mov     eax, [edi + APPDATA.io_map]
-        cmp     eax, [SLOT_BASE + sizeof.APPDATA+APPDATA.io_map]
+        cmp     eax, [APPDATA_IDLE_THREAD + APPDATA.io_map]
         je      @F
         call    free_page
 @@:
         mov     eax, [edi+APPDATA.io_map+4]
-        cmp     eax, [SLOT_BASE+sizeof.APPDATA+APPDATA.io_map+4]
+        cmp     eax, [APPDATA_IDLE_THREAD + APPDATA.io_map+4]
         je      @F
         call    free_page
 @@:
@@ -780,14 +780,15 @@ destroy_thread:
 
         mov     edi, esi ; do not run this process slot
         shl     edi, BSF sizeof.APPDATA
-        mov     [SLOT_BASE + edi + APPDATA.state], TSTATE_FREE
+        add     edi, SLOT_BASE
+        mov     [edi + APPDATA.state], TSTATE_FREE
 ; debugger test - terminate all debuggees
         mov     eax, 2
-        mov     ecx, SLOT_BASE + 2*sizeof.APPDATA + APPDATA.debugger_slot
+        mov     ecx, APPDATA_OS_THREAD + APPDATA.debugger_thread
 .xd0:
         cmp     eax, [thread_count]
         ja      .xd1
-        cmp     dword [ecx], esi
+        cmp     dword [ecx], edi
         jnz     @f
         and     dword [ecx], 0
         pushad
