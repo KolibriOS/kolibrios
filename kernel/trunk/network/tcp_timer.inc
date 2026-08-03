@@ -111,13 +111,13 @@ proc tcp_timer_640ms
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: Keepalive expired\n", eax
 
-        cmp     [eax + TCP_SOCKET.state], TCPS_ESTABLISHED
-        ja      .dont_kill
+        cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
+        jae     .dont_kill
 
-        push    eax
+        push    [eax + SOCKET.NextPtr]
         call    tcp_disconnect
         pop     eax
-        jmp     .loop
+        jmp     .check_only
 
   .dont_kill:
         test    [eax + SOCKET.options], SO_KEEPALIVE
