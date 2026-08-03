@@ -780,8 +780,6 @@ socket_close:
 
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
         jne     .free
-        test    [eax + SOCKET.state], SS_ISCONNECTED
-        jz      @f
         test    [eax + SOCKET.state], SS_ISDISCONNECTING
         jnz     @f
         call    tcp_disconnect
