@@ -141,22 +141,18 @@
 #include "../../lib/libshell/shell_puts.c"
 #include "../../lib/libshell/shell_write_string.c"
 
-
 #include "sys/mutex.h"
 
 void __libc_init_all_mutexes(void)
 {
     size_t count = __stop_mutex_init_array - __start_mutex_init_array;
 
-    if(count == 0)
-    {
+    if (count == 0) {
         _ksys_debug_puts("no mutexs to init");
         _ksys_exit();
     }
 
-
     for (size_t i = 0; i < count; i++) {
-        _ksys_debug_puts("init mutex\n");
         __libc_mutex_t* mutex = (__libc_mutex_t*)__start_mutex_init_array[i];
 
         __libc_mutex_init(mutex);
@@ -169,11 +165,8 @@ int lib_init()
     return 0;
 }
 
-
 ksys_dll_t EXPORTS[] = {
-    
     { "lib_init", &lib_init },
-
     { "clearerr", &clearerr },
     { "debug_printf", &debug_printf },
     { "fclose", &fclose },
@@ -226,7 +219,7 @@ ksys_dll_t EXPORTS[] = {
     { "exit", &exit },
     { "_exit", &_exit },
     { "atexit", &atexit },
-    { "abort", &abort},
+    { "abort", &abort },
     { "free", &free },
     { "itoa", &itoa },
     { "labs", &labs },
@@ -241,7 +234,7 @@ ksys_dll_t EXPORTS[] = {
     { "strtof", &strtof },
     { "strtold", &strtold },
     { "__assert_fail", &__assert_fail },
-    { "memccpy", &memccpy},
+    { "memccpy", &memccpy },
     { "memchr", &memchr },
     { "memcmp", &memcmp },
     { "memcpy", &memcpy },
