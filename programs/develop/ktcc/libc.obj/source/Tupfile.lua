@@ -36,12 +36,20 @@ GAS_SRC = {
     "string/memmove.s"
 }
 
-OBJS = { "libc.c" }
+OBJS = { 
+    "libc.c"
+ }
 
 tup.append_table(OBJS, tup.foreach_rule(GAS_SRC, "as --32 %f -o %o", "%B.o"))
 
-tup.rule(OBJS, "kos32-tcc" .. CFLAGS .. INCLUDES .. " %f -o %o " .. " && strip %o --strip-unneeded ", "libc.o")
-tup.rule("libc.o", "objconv -fcoff32 %f %o " .. tup.getconfig("KPACK_CMD"), "%B.obj")
+    tup.rule(OBJS, "kos32-tcc" .. CFLAGS .. INCLUDES .. " %f -o %o ", "libc.o_elf")
+    tup.rule("libc.o_elf", "objconv -fcoff32 %f %o", "libc.o")
+
+    tup.rule(
+        { "libc.o", extra_inputs = { "libc.lds" } },
+        "kos32-ld -r -Tlibc.lds %f -o %o" .. tup.getconfig("KPACK_CMD"),
+        "%B.obj"
+    )
 
 end
 

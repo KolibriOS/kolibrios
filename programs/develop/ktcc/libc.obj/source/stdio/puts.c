@@ -2,13 +2,12 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "conio.h"
-#include "sys/ksys.h"
+#include "../sys/_conio.h"
+#include <sys/ksys.h>
 
 int puts(const char *str)
 {
-    con_init();
-    con_write_asciiz(str);
-    con_write_asciiz("\n");
-    return strlen(str);
+    size_t len = strlen(str);
+    console_write(str, len);
+    return len;
 }

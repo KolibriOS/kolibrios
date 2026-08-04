@@ -4,11 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//#include "format_print.h"
+// #include "format_print.h"
 
-int printf(const char *format, ...)
+int printf(const char* format, ...)
 {
-  va_list arg;
-  va_start(arg, format);
-  return vprintf(format, arg);
+    va_list arg;
+    va_start(arg, format);
+    int ret = vprintf(format, arg);
+    va_end(arg);
+    return ret;
 }

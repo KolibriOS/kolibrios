@@ -72,4 +72,3 @@ int con_init(void)
 {
     return con_init_opt(-1, -1, -1, -1, __con_caption); 
 }
-

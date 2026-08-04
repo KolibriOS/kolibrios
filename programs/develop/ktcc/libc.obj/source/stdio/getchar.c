@@ -1,10 +1,10 @@
 #include <stdio.h>
-#include <conio.h>
+#include "../sys/_conio.h"
 
 int getchar(void) {
-	con_init();
+
 	char c = 0;
-	con_gets(&c, 2);
+	console_gets(&c, 2);
 	if (c == 0) {
 		c = EOF;
 	}

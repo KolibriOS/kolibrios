@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <errno.h>
-#include "conio.h"
+#include "../sys/_conio.h"
 #include "sys/ksys.h"
 
 size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict stream) {
@@ -19,8 +19,7 @@ size_t fread(void *restrict ptr, size_t size, size_t nmemb, FILE *restrict strea
 	}
 	
 	if(stream==stdin){
-		con_init();
-		con_gets((char*)ptr, bytes_count+1);
+		console_gets((char*)ptr, bytes_count+1);
 		return nmemb;
 	}
 

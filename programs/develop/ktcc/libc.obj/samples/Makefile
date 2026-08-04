@@ -30,7 +30,8 @@ BIN = \
 	futex.kex \
 	atexit_test.kex \
 	abort_test.kex \
-	strftime_test.kex
+	strftime_test.kex \
+	multithread_io.kex
 
 all: $(BIN)
 

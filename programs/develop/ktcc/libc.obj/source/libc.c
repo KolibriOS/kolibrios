@@ -13,6 +13,7 @@
 #include "sys/seekdir.c"
 #include "sys/socket.c"
 #include "sys/telldir.c"
+#include "sys/conio.c"
 
 #include "stdio/clearerr.c"
 #include "stdio/conio.c"
@@ -128,7 +129,51 @@
 #include "misc/basename.c"
 #include "misc/dirname.c"
 
+#include "../../lib/libshell/shell_cls.c"
+#include "../../lib/libshell/shell_exit.c"
+#include "../../lib/libshell/shell_get_pid.c"
+#include "../../lib/libshell/shell_getc.c"
+#include "../../lib/libshell/shell_gets.c"
+#include "../../lib/libshell/shell_init.c"
+#include "../../lib/libshell/shell_ping.c"
+#include "../../lib/libshell/shell_printf.c"
+#include "../../lib/libshell/shell_putc.c"
+#include "../../lib/libshell/shell_puts.c"
+#include "../../lib/libshell/shell_write_string.c"
+
+
+#include "sys/mutex.h"
+
+void __libc_init_all_mutexes(void)
+{
+    size_t count = __stop_mutex_init_array - __start_mutex_init_array;
+
+    if(count == 0)
+    {
+        _ksys_debug_puts("no mutexs to init");
+        _ksys_exit();
+    }
+
+
+    for (size_t i = 0; i < count; i++) {
+        _ksys_debug_puts("init mutex\n");
+        __libc_mutex_t* mutex = (__libc_mutex_t*)__start_mutex_init_array[i];
+
+        __libc_mutex_init(mutex);
+    }
+}
+
+int lib_init()
+{
+    __libc_init_all_mutexes();
+    return 0;
+}
+
+
 ksys_dll_t EXPORTS[] = {
+    
+    { "lib_init", &lib_init },
+
     { "clearerr", &clearerr },
     { "debug_printf", &debug_printf },
     { "fclose", &fclose },

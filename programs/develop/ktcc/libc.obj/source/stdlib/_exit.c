@@ -1,11 +1,9 @@
-#include <conio.h>
 #include <sys/ksys.h>
+#include "../sys/_conio.h"
 
 void _exit(int status)
 {
-    if (__con_is_load) {
-        con_exit(0);
-    }
+    console_exit();
 
     _ksys_exit();
 }
