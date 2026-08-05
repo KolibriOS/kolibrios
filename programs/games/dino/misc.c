@@ -14,7 +14,11 @@ void intToStr(int num, int ndigits, char* result) {
 }
 
 int getTimeStamp() { // in ms
-	uint64_t x = 0;
-	x = _ksys_get_ns_count();
-	return (x/1000000);
+	uint64_t ns = _ksys_get_ns_count();
+	unsigned lo = (unsigned)ns;
+	unsigned rem = (unsigned)(ns >> 32) % 1000000;
+	// exact low 32 bits of ns/1000000, without libtcc1's 64-bit divide:
+	// quotient of (hi%d):lo by d always fits in 32 bits
+	asm_inline("divl %2" : "+a"(lo), "+d"(rem) : "r"(1000000u));
+	return lo;
 }
