@@ -1,7 +1,6 @@
 #ifndef HORIZON_H
 #define HORIZON_H
 
-#include <math.h>
 #include <stdbool.h>
 #include "obstacle.h"
 #include "cloud.h"

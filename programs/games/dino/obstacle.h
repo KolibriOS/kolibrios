@@ -24,22 +24,23 @@ typedef enum {
     PTERODACTYL = 2
 } ObstacleType;
 
-extern int obstacleSpritePosX[3];
-extern int obstacleSpritePosY[3];
+extern short obstacleSpritePosX[3];
+extern short obstacleSpritePosY[3];
 
+// Every value fits in a short (the largest is 999)
 typedef struct {
-    ObstacleType type;
-    int width;
-    int height;
-    int yPos;
-    int yPosArrSize;
-    int yPosArr[3]; // used if yPos is -1
-    int multipleSpeed;
-    int minGap;
+    short type; // ObstacleType
+    short width;
+    short height;
+    short yPos;
+    short yPosArrSize;
+    short yPosArr[3]; // used if yPos is -1
+    short multipleSpeed;
+    short minGap;
     float minSpeed; // 8.5 for the pterodactyl: exact in float, must not truncate
-    int collisionBoxesCount;
+    short collisionBoxesCount;
     CollisionBox collisionBoxes[5];
-    int numFrames;
+    short numFrames;
     float frameRate;
     double speedOffset;
 } ObstacleTypeConfig;

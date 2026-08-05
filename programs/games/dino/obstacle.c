@@ -59,8 +59,8 @@ ObstacleTypeConfig obstacleTypeConfigs[3] = {
 		}
 };
 
-int obstacleSpritePosX[3] = { ATLAS_CACTUS_SMALL_X, ATLAS_CACTUS_LARGE_X, ATLAS_PTERODACTYL_X};
-int obstacleSpritePosY[3] = { ATLAS_CACTUS_SMALL_Y, ATLAS_CACTUS_LARGE_Y, ATLAS_PTERODACTYL_Y};
+short obstacleSpritePosX[3] = { ATLAS_CACTUS_SMALL_X, ATLAS_CACTUS_LARGE_X, ATLAS_PTERODACTYL_X};
+short obstacleSpritePosY[3] = { ATLAS_CACTUS_SMALL_Y, ATLAS_CACTUS_LARGE_Y, ATLAS_PTERODACTYL_Y};
 
 
 void obstacleInit(Obstacle* ob, const ObstacleTypeConfig *otc, double speed, int opt_xOffset) {

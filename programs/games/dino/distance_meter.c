@@ -3,16 +3,12 @@
 DistanceMeter distanceMeter;
 
 void distanceMeterInit() {
+	// distanceMeter is in BSS: fields not set here start at zero
 	distanceMeter.maxScore = 99999; // 10^DM_MAX_DISTANCE_UNITS - 1
-	distanceMeter.achievement = false;
-	distanceMeter.flashTimer = 0;
-	distanceMeter.flashIterations = 0;
 	distanceMeter.maxScoreUnits = DM_MAX_DISTANCE_UNITS;
 	for (int i = 0; i < distanceMeter.maxScoreUnits; i++) {
 		distanceMeterDraw(i, 0, false);
 	}
-	distanceMeter.digits[0] = '\0';
-	distanceMeter.highScore[0] = '\0';
 }
 
 void distanceMeterDraw(int digitPos, int value, bool opt_highscore) {

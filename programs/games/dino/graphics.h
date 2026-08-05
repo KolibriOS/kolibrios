@@ -1,8 +1,6 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
-#include <stdbool.h>
-
 #include <sys/ksys.h>
 
 #include "config.h"

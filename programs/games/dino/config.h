@@ -12,8 +12,9 @@
 // #define DBG
 
 #ifdef DBG
+#include <stdio.h>
 #define dbg_printf(...) debug_printf(__VA_ARGS__)
-#else 
+#else
 #define dbg_printf(...)
 #endif
 

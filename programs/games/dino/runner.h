@@ -2,6 +2,7 @@
 #define RUNNER_H
 
 #include <stdbool.h>
+#include <math.h>
 #include "config.h"
 #include "graphics.h"
 #include "horizon.h"

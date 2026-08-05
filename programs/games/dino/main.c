@@ -1,5 +1,4 @@
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #include <sys/ksys.h>
@@ -23,8 +22,6 @@ int main(int argc, char* args[]) {
 	win_pos.x -= DEFAULT_WIDTH/2;
 	win_pos.y /= 2;
 	win_pos.y -= DEFAULT_HEIGHT/2;
-	ksys_colors_table_t sys_color_table;
-    _ksys_get_system_colors(&sys_color_table);
 	_ksys_set_event_mask(0xC0000027); // !
 	_ksys_set_key_input_mode(KSYS_KEY_INPUT_MODE_SCANC);
 	_ksys_keyboard_layout(KSYS_KEYBOARD_LAYOUT_NORMAL, keyboard_layout);
@@ -80,7 +77,7 @@ int main(int argc, char* args[]) {
 			break;
 		case KSYS_EVENT_REDRAW:
 			_ksys_start_draw();
-    		_ksys_create_window(win_pos.x, win_pos.y, DEFAULT_WIDTH + 10, DEFAULT_HEIGHT + 29, WINDOW_TITLE, sys_color_table.work_area, 0x54); // 0x54. note: C = 1 !!
+    		_ksys_create_window(win_pos.x, win_pos.y, DEFAULT_WIDTH + 10, DEFAULT_HEIGHT + 29, WINDOW_TITLE, BACKGROUND_COLOR, 0x54); // 0x54. note: C = 1 !!
 			graphicsRender();
 			_ksys_end_draw();
 			break;

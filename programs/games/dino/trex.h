@@ -2,7 +2,6 @@
 #define TREX_H
 
 #include <stdbool.h>
-#include <stdlib.h>
 #include <math.h>
 #include "collisionbox.h"
 #include "runner.h"
@@ -34,8 +33,8 @@ typedef enum {
 } TrexStatus;
 
 typedef struct {
-	int frameCount;
-	int frames[2];
+	short frameCount;
+	short frames[2];
 	double msPerFrame;
 } TrexAnimFramesEntry;
 

@@ -3,10 +3,7 @@
 Horizon horizon;
 
 void horizonInit() {
-	horizon.obstacleCount = 0;
-	horizon.obstacleHistoryCount = 0;
-	horizon.cloudCount = 0;
-
+	// horizon is in BSS: the counts start at zero
 	horizonAddCloud();
 
     horizonLineInit();

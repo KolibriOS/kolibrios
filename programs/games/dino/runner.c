@@ -3,20 +3,8 @@
 Runner runner;
 
 void runnerInit() {
-	runner.distanceRan = 0;
-	runner.highestScore = 0;
-	runner.time = 0;
+	// runner is in BSS: fields not set here start at zero
 	runner.currentSpeed = RUNNER_SPEED;
-	runner.activated = false;
-	runner.playing = false;
-	runner.crashed = false;
-	runner.timeAfterCrashedMs = 0;
-	runner.paused = false;
-	runner.playingIntro = false;
-	runner.isRunning = false; // is running or game stopped
-	runner.playCount = 0;
-	runner.nextUpdateScheduled = false;
-	runner.skipUpdateNow = false;
 	// TODO sound
 	graphicsFillBackground();
 
