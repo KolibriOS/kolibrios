@@ -6,7 +6,6 @@
 #include <stdlib.h>
 
 #include <sys/ksys.h>
-#include <clayer/libimg.h>
 
 #include "config.h"
 
@@ -30,8 +29,6 @@
 #define ATLAS_TREX_Y 2
 #define ATLAS_STAR_X 645
 #define ATLAS_STAR_Y 2
-
-extern Image* screenImage;
 
 void graphicsInit();
 void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w, int h, bool center);

@@ -20,6 +20,4 @@ SRCS = {
     "ulist.c"
 }
 
-LIBS = " -limg"
-
 link_tcc(SRCS, "dino");

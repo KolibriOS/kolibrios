@@ -93,7 +93,7 @@ int main(int argc, char* args[]) {
 		case KSYS_EVENT_REDRAW:
 			//dbg_printf("KSYS_EVENT_REDRAW\n");
 			_ksys_start_draw();
-    		_ksys_create_window(win_pos.x, win_pos.y, screenImage->Width + 10, screenImage->Height + 29, WINDOW_TITLE, sys_color_table.work_area, 0x54); // 0x54. note: C = 1 !!
+    		_ksys_create_window(win_pos.x, win_pos.y, DEFAULT_WIDTH + 10, DEFAULT_HEIGHT + 29, WINDOW_TITLE, sys_color_table.work_area, 0x54); // 0x54. note: C = 1 !!
 			graphicsRender();
 			_ksys_end_draw();
 			break; 
