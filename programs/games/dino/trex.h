@@ -15,13 +15,11 @@
 #define TREX_DROP_VELOCITY -5
 #define TREX_GRAVITY 0.6
 #define TREX_HEIGHT 47
-#define TREX_HEIGHT_DUCK 25
 #define TREX_INITIAL_JUMP_VELOCITY -10
 #define TREX_INTRO_DURATION 750
 #define TREX_MAX_JUMP_HEIGHT 30
 #define TREX_MIN_JUMP_HEIGHT 30
 #define TREX_SPEED_DROP_COEFFICIENT 3
-#define TREX_SPRITE_WIDTH 262
 #define TREX_START_X_POS 25
 #define TREX_WIDTH 44
 #define TREX_WIDTH_DUCK 59
@@ -59,7 +57,6 @@ typedef struct {
 	bool reachedMinHeight;
 	bool speedDrop;
 	int jumpCount;
-	int jumpspotX;
 	int minJumpHeight;
 	bool playingIntro;
 } Trex;

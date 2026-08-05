@@ -1,11 +1,9 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include "ulist.h"
 
 Ulist* ulist_create() {
     Ulist* list = (Ulist*)malloc(sizeof(Ulist));
     if (list == NULL) {
-        // abort();
         exit(-1);
     }
     list->head = NULL;
@@ -30,7 +28,6 @@ void ulist_destroy(Ulist* list) {
 void ulist_push_front(Ulist* list, void* data) {
     Node* new_node = (Node*)malloc(sizeof(Node));
     if (new_node == NULL) {
-        // abort();
         exit(-1);
     }
     new_node->data = data;
@@ -53,7 +50,6 @@ void ulist_push_front(Ulist* list, void* data) {
 void ulist_push_back(Ulist* list, void* data) {
     Node* new_node = (Node*)malloc(sizeof(Node));
     if (new_node == NULL) {
-        // abort();
         exit(-1);
     }
     new_node->data = data;
@@ -147,95 +143,6 @@ void ulist_remove_back(Ulist* list) {
     list->size--;
 }
 
-int ulist_search(Ulist* list, void* data) {
-    Node* current = list->head;
-    int index = 0;
-
-    while (current != NULL) {
-        if (current->data == data) {
-            return index;
-        }
-
-        current = current->next;
-        index++;
-    }
-
-    return -1;
-}
-
-void* ulist_get_front(Ulist* list) {
-    if (list->head == NULL) {
-        return NULL;
-    }
-
-    return list->head->data;
-}
-
-void* ulist_get_back(Ulist* list) {
-    if (list->tail == NULL) {
-        return NULL;
-    }
-
-    return list->tail->data;
-}
-
 int ulist_size(Ulist* list) {
     return list->size;
-}
-
-void ulist_print(Ulist* list) {
-    Node* current = list->head;
-
-    while (current != NULL) {
-        printf("%p ", current->data);
-        current = current->next;
-    }
-
-    printf("\n");
-}
-
-void ulist_test() {
-    // Create a new Ulist
-    Ulist* list = ulist_create();
-
-    // Test insertFront
-    int data1 = 10;
-    ulist_push_front(list, &data1);
-    printf("List after inserting 10 at the front: ");
-    ulist_print(list); // Expected output: 10
-
-    // Test insertBack
-    int data2 = 20;
-    ulist_push_back(list, &data2);
-    printf("List after inserting 20 at the back: ");
-    ulist_print(list); // Expected output: 10 20
-
-    // Test removeFront
-    ulist_remove_front(list);
-    printf("List after removing front element: ");
-    ulist_print(list); // Expected output: 20
-
-    // Test removeBack
-    ulist_remove_back(list);
-    printf("List after removing back element: ");
-    ulist_print(list); // Expected output: 
-
-    // Test search
-    int data3 = 30;
-    ulist_push_front(list, &data3);
-    printf("Index of 30 in the list: %d\n", ulist_search(list, &data3)); // Expected output: 0
-
-    // Test getFront
-    int* front = (int*)ulist_get_front(list);
-    printf("Front element of the list: %d\n", *front); // Expected output: 30
-
-    // Test getBack
-    int* back = (int*)ulist_get_back(list);
-    printf("Back element of the list: %d\n", *back); // Expected output: 30
-
-    // Test getSize
-    printf("Size of the list: %d\n", ulist_size(list)); // Expected output: 1
-
-    // Destroy the list
-    ulist_destroy(list);
 }

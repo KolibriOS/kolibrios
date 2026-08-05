@@ -26,7 +26,6 @@ TrexAnimFramesEntry trexAnimFrames[5] = {
 void trexInit() {
 	trex.xPos = 0;
 	trex.currentFrame = 0;
-	//this.currentAnimFrames = [];
 	trex.blinkDelay = 0;
 	trex.blinkCount = 0;
 	trex.animStartTime = 0;
@@ -40,7 +39,6 @@ void trexInit() {
 	trex.reachedMinHeight = false;
 	trex.speedDrop = false;
 	trex.jumpCount = 0;
-	trex.jumpspotX = 0;
 
 	trex.groundYPos = RUNNER_DEFAULT_HEIGHT - TREX_HEIGHT - RUNNER_BOTTOM_PAD;
 	trex.yPos = trex.groundYPos;
@@ -53,7 +51,6 @@ void trexInit() {
 
 // Set the animation status
 void trexUpdate(int deltaTime, int opt_status) {
-	//printf("trex.status = %d\n", trex.status);
 	trex.timer += deltaTime;
 	// Update the status
 	if (opt_status != -1) {
@@ -69,7 +66,6 @@ void trexUpdate(int deltaTime, int opt_status) {
 	// Game intro animation, T-rex moves in from the left.
 	if (trex.playingIntro) {
 		if (trex.xPos < TREX_START_X_POS) {
-			//printf("trex.xPos = %d\n", trex.xPos);
 			trex.xPos += max((int)round(((double)TREX_START_X_POS / TREX_INTRO_DURATION) * deltaTime), 1);
 		}
 		else {
@@ -81,7 +77,6 @@ void trexUpdate(int deltaTime, int opt_status) {
 		trexBlink(getTimeStamp());
 	}
 	else {
-		// printf("trex.status = %d\n", trex.status);
 		trexDraw(trex.currentAnimFrames.frames[trex.currentFrame], 0);
 	}
 
@@ -99,7 +94,6 @@ void trexUpdate(int deltaTime, int opt_status) {
 }
 
 void trexDraw(int x, int y) {
-	//printf("trexDraw();\n");
 	int sourceWidth = trex.ducking && trex.status != TREX_STATUS_CRASHED ? TREX_WIDTH_DUCK : TREX_WIDTH;
 	int sourceHeight = TREX_HEIGHT;
 	// Adjustments for sprite sheet position.
@@ -108,7 +102,7 @@ void trexDraw(int x, int y) {
 
 	// Ducking.
 	if (trex.ducking && trex.status != TREX_STATUS_CRASHED) {
-		graphicsBlitAtlasImage(sourceX, sourceY, trex.xPos, trex.yPos, sourceWidth, sourceHeight, false);
+		graphicsBlitAtlasImage(sourceX, sourceY, trex.xPos, trex.yPos, sourceWidth, sourceHeight);
 	}
 	else {
 		// Crashed whilst ducking. Trex is standing up so needs adjustment.
@@ -116,7 +110,7 @@ void trexDraw(int x, int y) {
 			trex.xPos++;
 		}
 		// Standing / running
-		graphicsBlitAtlasImage(sourceX, sourceY, trex.xPos, trex.yPos, sourceWidth, sourceHeight, false);
+		graphicsBlitAtlasImage(sourceX, sourceY, trex.xPos, trex.yPos, sourceWidth, sourceHeight);
 	}
 }
 
@@ -125,7 +119,6 @@ void trexSetBlinkDelay() {
 }
 
 void trexBlink(int time) {
-	//printf("trexBlink(%d)\n", time);
 	int deltaTime = time - trex.animStartTime;
 	if (deltaTime < 0) {
 		deltaTime = DELTA_MS_DEFAULT;
@@ -213,7 +206,6 @@ void trexReset() {
 	trex.jumping = false;
 	trex.ducking = false;
 	trexUpdate(0, TREX_STATUS_RUNNING);
-	//trex.midair = false; TODO: WTF is midair
 	trex.speedDrop = false;
 	trex.jumpCount = 0;
 }

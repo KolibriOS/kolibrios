@@ -1,9 +1,7 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
-#include <stdio.h>
 #include <stdbool.h>
-#include <stdlib.h>
 
 #include <sys/ksys.h>
 
@@ -17,8 +15,6 @@
 #define ATLAS_CLOUD_Y 2
 #define ATLAS_HORIZON_X 2
 #define ATLAS_HORIZON_Y 54
-#define ATLAS_MOON_X 484
-#define ATLAS_MOON_Y 2
 #define ATLAS_PTERODACTYL_X 134
 #define ATLAS_PTERODACTYL_Y 2
 #define ATLAS_RESTART_X 2
@@ -27,14 +23,10 @@
 #define ATLAS_TEXT_SPRITE_Y 2
 #define ATLAS_TREX_X 848
 #define ATLAS_TREX_Y 2
-#define ATLAS_STAR_X 645
-#define ATLAS_STAR_Y 2
 
-void graphicsInit();
-void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w, int h, bool center);
+void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w, int h);
 void graphicsFillBackground(unsigned r, unsigned g, unsigned b);
 void graphicsRender();
 void graphicsDelay(int ms);
-void graphicsDestroy();
 
 #endif

@@ -5,10 +5,7 @@
 static unsigned screenImage[DEFAULT_WIDTH * DEFAULT_HEIGHT];
 
 
-void graphicsInit() {
-}
-
-void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w, int h, bool center) {
+void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w, int h) {
     if (destX >= DEFAULT_WIDTH) {
         return;
     }
@@ -64,10 +61,5 @@ void graphicsRender() {
 }
 
 void graphicsDelay(int ms) {
-    // dbg_printf("ms = %d\n", ms);
     _ksys_delay(ms/10 ? ms/10 : 2);
-}
-
-
-void graphicsDestroy() {
 }

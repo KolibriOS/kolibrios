@@ -1,8 +1,6 @@
 #include "runner.h"
 
-int aaaaaaa[10000];
 Runner runner;
-int bbbbbb[10000];
 
 void runnerInit() {
 	runner.distanceRan = 0;
@@ -15,49 +13,39 @@ void runnerInit() {
 	runner.crashed = false;
 	runner.timeAfterCrashedMs = 0;
 	runner.paused = false;
-	runner.inverted = false;
 	runner.playingIntro = false;
 	runner.isRunning = false; // is running or game stopped
-	runner.invertTimer = 0;
 	runner.playCount = 0;
 	runner.nextUpdateScheduled = false;
 	runner.skipUpdateNow = false;
 	// TODO sound
-	// runnerLoadImages();
 	runnerAdjustDimensions();
-	// setSpeed
 	graphicsFillBackground(0xF7, 0xF7, 0xF7);
 
 	gameOverPanelInit(runner.width, runner.height);
-	
+
 	horizonInit(runner.width, RUNNER_GAP_COEFFICIENT);
 	distanceMeterInit(runner.width);
 	trexInit();
 
-	// this.startListening();
 	runnerUpdate();
-	//window.addEventListener(Runner.events.RESIZE, this.debounceResize.bind(this));
 }
 
 void runnerAdjustDimensions() {
 	runner.width = DEFAULT_WIDTH;
 	runner.height = RUNNER_DEFAULT_HEIGHT;
-	// distance meter ...
 }
 
 void runnerOnKeyDown(int key) {
 	if (!runner.crashed && (key == RUNNER_KEYCODE_JUMP_1 || key == RUNNER_KEYCODE_JUMP_2)) {
 		if (!runner.playing) {
-			// this.loadSounds(); // TODO
 			runner.playing = true;
-			//printf("first jump! %u\n", getTimeStamp());
 			runnerUpdate();
 			runner.nextUpdateScheduled = false;
 			runner.skipUpdateNow = true;
 		}
-		//  Play sound effect and jump on starting the game for the first time.
+		// Jump on starting the game for the first time.
 		if (!trex.jumping && !trex.ducking) {
-			// this.playSound(this.soundFx.BUTTON_PRESS); // TODO
 			trexStartJump(runner.currentSpeed);
 		}
 	}
@@ -66,7 +54,6 @@ void runnerOnKeyDown(int key) {
 			// Speed drop, activated only when jump key is not pressed.
 			trexSetSpeedDrop();
 		}
-		//else if (!trex.jumping &&!trex.ducking) {
 		else if (!trex.ducking) {
 			// Duck
 			trexSetDuck(true);
@@ -84,17 +71,7 @@ void runnerOnKeyUp(int key) {
 	}
 	else if (runner.crashed) {
 		// Check that enough time has elapsed before allowing jump key to restart.
-
-		int now = getTimeStamp();
-		int deltaTime = now - runner.time;
-		// if (deltaTime < 0) {
-		// 	deltaTime = DELTA_MS_DEFAULT;
-		// 	runner.time = 0;
-		// }
-
-		// dbg_printf(".now = %d .deltaTime = %d runner.time = %d\n", now, deltaTime, runner.time);
 		if (key == RUNNER_KEYCODE_RESTART || (runner.timeAfterCrashedMs >= RUNNER_GAMEOVER_CLEAR_TIME && (key == RUNNER_KEYCODE_JUMP_1 || key == RUNNER_KEYCODE_JUMP_2))) {
-			//dbg_printf("timeAfterCrashedMs = %d\n", runner.timeAfterCrashedMs);
 			runnerRestart();
 		}
 	}
@@ -106,22 +83,16 @@ void runnerOnKeyUp(int key) {
 
 void runnerClearCanvas() {
 	graphicsFillBackground(0xF7, 0xF7, 0xF7);
-	//graphicsRender();
 }
 
 void runnerUpdate() {
-	//dbg_printf("runnerUpdate() runner.playing = %d\n", runner.playing);
-	//runner.updatePending = false;
 	int now = getTimeStamp();
-	//printf("now = %d\n", now);
 	int deltaTime = now - (runner.time ? runner.time : 0);
 	if (deltaTime < 0) {
 		deltaTime = DELTA_MS_DEFAULT;
 	}
-	// dbg_printf("runnerUpdate() deltaTime = %d\n", deltaTime);
 	runner.time = now;
 	if (runner.playing) {
-		//printf("runnerUpdate() %d\n", getTimeStamp());
 		runnerClearCanvas();
 
 		if (trex.jumping) {
@@ -133,17 +104,16 @@ void runnerUpdate() {
 
 		// First jump triggers the intro.
 		if (trex.jumpCount == 1 && !runner.playingIntro) {
-			//printf("trex.jumpCount = %d\n", trex.jumpCount);
 			runnerPlayIntro();
 		}
 
 		// The horizon doesn't move until the intro is over.
 		if (runner.playingIntro) {
-			horizonUpdate(0, runner.currentSpeed, hasObstacles, false);
+			horizonUpdate(0, runner.currentSpeed, hasObstacles);
 		}
 		else {
 			deltaTime = !runner.activated ? 0 : deltaTime;
-			horizonUpdate(deltaTime, runner.currentSpeed, hasObstacles, runner.inverted);
+			horizonUpdate(deltaTime, runner.currentSpeed, hasObstacles);
 		}
 
 		// Check for collisions.
@@ -160,49 +130,21 @@ void runnerUpdate() {
 			runnerGameOver();
 		}
 
-		bool playAchievementSound = distanceMeterUpdate(deltaTime, (int)ceil(runner.distanceRan));
-
-		if (playAchievementSound) {
-			//this.playSound(this.soundFx.SCORE); // TODO
-		}
-
-		/*// Night mode.
-		if (this.invertTimer > this.config.INVERT_FADE_DURATION) {
-			this.invertTimer = 0;
-			this.invertTrigger = false;
-			this.invert();
-		}
-		else if (this.invertTimer) {
-			this.invertTimer += deltaTime;
-		}
-		else {
-			var actualDistance =
-				this.distanceMeter.getActualDistance(Math.ceil(this.distanceRan));
-
-			if (actualDistance > 0) {
-				this.invertTrigger = !(actualDistance %
-					this.config.INVERT_DISTANCE);
-
-				if (this.invertTrigger&& this.invertTimer == = 0) {
-					this.invertTimer += deltaTime;
-					this.invert();
-				}
-			}
-		}*/
+		// TODO sound: returns true when the achievement sound should play
+		distanceMeterUpdate(deltaTime, (int)ceil(runner.distanceRan));
 	}
 
-	runner.nextUpdateScheduled = false;//
+	runner.nextUpdateScheduled = false;
 	if (runner.playing || (!runner.activated && trex.blinkCount < RUNNER_MAX_BLINK_COUNT)) {
 		trexUpdate(deltaTime, -1);
 		runner.nextUpdateScheduled = true;
 	}
-	
+
 	graphicsRender(); // blit all drawn to the screen
-	//printf("runner update end\n\n");
 }
 
 void runnerGameOver() {
-	// this.playSound(this.soundFx.HIT); // TODO
+	// TODO sound
 	runnerStop();
 	runner.crashed = true;
 	distanceMeter.achievement = false;
@@ -246,18 +188,15 @@ void runnerRestart() {
 		runner.currentSpeed = RUNNER_SPEED;
 		runner.time = getTimeStamp();
 		runnerClearCanvas();
-		distanceMeterReset(runner.highestScore);
+		distanceMeterReset();
 		horizonReset();
 		trexReset();
-		//this.playSound(this.soundFx.BUTTON_PRESS);
-		//this.invert(true);
 		runner.isRunning = true;
 		runnerUpdate();
 	}
 }
 
 void runnerPlayIntro() {
-	//printf("runnerPlayIntro()\n");
 	if (!runner.activated && !runner.crashed) {
 		runner.playingIntro = true;
 		trex.playingIntro = true;
@@ -292,7 +231,7 @@ bool boxCompare(CollisionBox tRexBox, CollisionBox obstacleBox) {
 
 bool runnerCheckForCollision(const Obstacle* obstacle) {
 	// Adjustments are made to the bounding box as there is a 1 pixel white
-		// border around the t-rex and obstacles.
+	// border around the t-rex and obstacles.
 	CollisionBox tRexBox = {
 		.x = trex.xPos + 1,
 		.y = trex.yPos + 1,
@@ -320,14 +259,12 @@ bool runnerCheckForCollision(const Obstacle* obstacle) {
 				// Adjust the box to actual positions.
 				CollisionBox adjTrexBox = createAdjustedCollisionBox(tRexCollisionBoxes[t], tRexBox);
 				CollisionBox adjObstacleBox = createAdjustedCollisionBox(obstacle->typeConfig.collisionBoxes[i], obstacleBox);
-				
+
 				if (boxCompare(adjTrexBox, adjObstacleBox)) {
-					return true;// [adjTrexBox, adjObstacleBox] ;
+					return true;
 				}
 			}
 		}
 	}
 	return false;
 }
-
-

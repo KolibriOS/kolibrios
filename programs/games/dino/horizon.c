@@ -14,13 +14,8 @@ void horizonInit(int dim_width, double gapCoefficient) {
     horizonLineInit();
 }
 
-void horizonUpdate(int deltaTime, double currentSpeed, bool updateObstacles, bool showNightMode) {
-	//horizon.runningTime += deltaTime;
+void horizonUpdate(int deltaTime, double currentSpeed, bool updateObstacles) {
 	horizonLineUpdate(deltaTime, currentSpeed);
-    // if (currentSpeed != currentSpeed) {
-    //     currentSpeed = 6.0;
-    // }
-	// horizon.nightMode.update(showNightMode);
 	horizonUpdateClouds(deltaTime, currentSpeed);
 	if (updateObstacles) {
 		horizonUpdateObstacles(deltaTime, currentSpeed);
@@ -28,10 +23,8 @@ void horizonUpdate(int deltaTime, double currentSpeed, bool updateObstacles, boo
 }
 
 void horizonUpdateClouds(int deltaTime, double speed) {
-    //printf("horizonUpdateClouds()\n");
     double cloudSpeed = HORIZON_BG_CLOUD_SPEED / 1000 * deltaTime * speed;
     int numClouds = ulist_size(horizon.clouds);
-    //printf("horizonUpdateClouds() %d\n", numClouds);
 
     if (numClouds) {
         Node *cloudNode = horizon.clouds->tail;
@@ -61,7 +54,6 @@ void horizonUpdateClouds(int deltaTime, double speed) {
 }
 
 void horizonUpdateObstacles(int deltaTime, double currentSpeed) {
-    //printf("horizonUpdateObstacles()\n");
     // Obstacles, move to Horizon layer
     Node* obNode = horizon.obstacles->head;
     while (obNode != NULL) {
@@ -70,11 +62,7 @@ void horizonUpdateObstacles(int deltaTime, double currentSpeed) {
         obstacleUpdate(ob, deltaTime, currentSpeed);
         // Clean up existing obstacles
         if (ob->remove) {
-            //ulist_remove(horizon.obstacles, obNode);
-            //ulist_print(horizon.obstacles);
             ulist_remove_front(horizon.obstacles);
-            //ulist_print(horizon.obstacles);
-            //puts("");
         }
         obNode = obNodeNext;
     }
@@ -114,34 +102,23 @@ void horizonAddNewObstacle(double currentSpeed) {
 }
 
 bool horizonDuplicateObstacleCheck(ObstacleType nextObstacleType) {
-    //printf("horizonDuplicateObstacleCheck(%d)\n", nextObstacleType);
     int duplicateCount = 0;
     Node* ohNode = horizon.obstacleHistory->head;
     while (ohNode != NULL) {
-        //printf("%d\n", *(int*)ohNode->data);
         duplicateCount = *(int*)ohNode->data == nextObstacleType ? duplicateCount + 1 : 0;
         ohNode = ohNode->next;
     }
-    //printf("duplicateCount = %d\n\n", duplicateCount);
     return duplicateCount >= RUNNER_MAX_OBSTACLE_DUPLICATION;
 }
 
 void horizonReset() {
-    // printf("horizonReset() !!\n");
     ulist_destroy(horizon.obstacles);
     horizon.obstacles = ulist_create();
     horizonLineReset();
 }
 
-//void horizonResize(int width, int height) {
-//    
-//}
-
 void horizonAddCloud() {
     Cloud* c = malloc(sizeof(Cloud));
     cloudInit(c, horizon.dim_width);
-    //printf("horizonAddCloud() %d -> ", ulist_size(horizon.obstacles));
     ulist_push_back(horizon.clouds, c);
-    //printf("%d\n", ulist_size(horizon.obstacles));
 }
-

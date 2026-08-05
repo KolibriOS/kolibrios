@@ -50,7 +50,6 @@ typedef struct {
     int yPos;
     int width;
     int gap;
-    // double speedOffset;
     int currentFrame;
     int timer;
     bool followingObstacleCreated;

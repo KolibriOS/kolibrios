@@ -119,15 +119,13 @@ void obstacleDraw(const Obstacle *ob) {
 	if (ob->currentFrame > 0) {
 		sourceX += sourceWidth*ob->currentFrame;
 	}
-	//dbg_printf("od ax=%u, ay=%u, dx=%u, dy=%u, w=%u, h=%u\n", sourceX, obstacleSpritePosY[ob->typeConfig.type], ob->xPos, ob->yPos, sourceWidth*ob->size, sourceHeight);
-	graphicsBlitAtlasImage(sourceX, obstacleSpritePosY[ob->typeConfig.type], ob->xPos, ob->yPos, sourceWidth*ob->size, sourceHeight, false);
+	graphicsBlitAtlasImage(sourceX, obstacleSpritePosY[ob->typeConfig.type], ob->xPos, ob->yPos, sourceWidth*ob->size, sourceHeight);
 }
 
 void obstacleUpdate(Obstacle *ob, int deltaTime, double speed) {
 	if (!ob->remove) {
 		double dx = floor(((speed + ob->typeConfig.speedOffset)*FPS/1000.)*deltaTime);
-		//dbg_printf("sp = %lf, ots = %lf, dx = %d, xpos = %d\n", speed, ob->typeConfig.speedOffset, (int)dx, ob->xPos - dx);
-		ob->xPos -= dx;//floor(((speed + ob->typeConfig.speedOffset)*FPS/1000.)*deltaTime);
+		ob->xPos -= dx;
 	}
 	// Update frames
 	if (ob->typeConfig.numFrames > 1) {

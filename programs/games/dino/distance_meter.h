@@ -19,14 +19,12 @@
 typedef struct {
 	int x;
 	int y;
-	int currentDistance;
 	int maxScore;
 	char digits[16];
 	char highScore[16];
 	bool achievement;
 	int flashTimer;
 	int flashIterations;
-	bool invertTrigger;
 	int maxScoreUnits;
 } DistanceMeter;
 

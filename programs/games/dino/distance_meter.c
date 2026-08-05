@@ -5,12 +5,10 @@ DistanceMeter distanceMeter;
 void distanceMeterInit(int w) {
 	distanceMeter.x = 0;
 	distanceMeter.y = 5;
-	distanceMeter.currentDistance = 0;
 	distanceMeter.maxScore = 0;
 	distanceMeter.achievement = false;
 	distanceMeter.flashTimer = 0;
 	distanceMeter.flashIterations = 0;
-	distanceMeter.invertTrigger = false;
 	distanceMeter.maxScoreUnits = DM_MAX_DISTANCE_UNITS;
 	distanceMeterCalcXPos(w);
 	for (int i = 0; i < distanceMeter.maxScoreUnits; i++) {
@@ -36,20 +34,17 @@ void distanceMeterDraw(int digitPos, int value, bool opt_highscore) {
 		dx = distanceMeter.x;
 		dy = distanceMeter.y;
 	}
-	//printf("%d %d %d  %d %d    %d\n", digitPos, value, opt_highscore, dx, dy, DM_WIDTH * value + ATLAS_TEXT_SPRITE_X);
 	graphicsBlitAtlasImage(
 		DM_WIDTH * value + ATLAS_TEXT_SPRITE_X,
 		0 + ATLAS_TEXT_SPRITE_Y,
 		digitPos * DM_DEST_WIDTH + dx,
 		distanceMeter.y + dy,
 		DM_WIDTH,
-		DM_HEIGHT,
-		false
+		DM_HEIGHT
 	);
 }
 
 void distanceMeterDrawHighScore() {
-	// TODO canvasCtx.globalAlpha = .8;
 	for (int i = (int)strlen(distanceMeter.highScore) - 1; i >= 0; i--) {
 		distanceMeterDraw(i, distanceMeter.highScore[i] > 12 ? distanceMeter.highScore[i] - '0' : distanceMeter.highScore[i], true);
 	}
@@ -83,9 +78,6 @@ bool distanceMeterUpdate(int deltaTime, int _distance) {
 			distanceMeter.maxScoreUnits++;
 			distanceMeter.maxScore = distanceMeter.maxScore * 10 + 9;
 		}
-		// else {
-			// NOTE this.distance was in original but i didsnt see any usage of this field
-		// }
 
 		if (distance > 0) {
 			// Acheivement unlocked

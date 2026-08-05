@@ -15,8 +15,8 @@ void gameOverPanelDraw() {
     int restartTargetY = gameOverPanel.height / 2;
     // Game over text from sprite
     graphicsBlitAtlasImage(GOP_TEXT_X + ATLAS_TEXT_SPRITE_X, GOP_TEXT_Y + ATLAS_TEXT_SPRITE_Y,
-        textTargetX, textTargetY, GOP_TEXT_WIDTH, GOP_TEXT_HEIGHT, false);
+        textTargetX, textTargetY, GOP_TEXT_WIDTH, GOP_TEXT_HEIGHT);
     // Restart button
     graphicsBlitAtlasImage(ATLAS_RESTART_X, ATLAS_RESTART_Y,
-        restartTargetX, restartTargetY, GOP_RESTART_WIDTH, GOP_RESTART_HEIGHT, false);
+        restartTargetX, restartTargetY, GOP_RESTART_WIDTH, GOP_RESTART_HEIGHT);
 }

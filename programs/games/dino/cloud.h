@@ -14,7 +14,6 @@
 #define CLOUD_MIN_SKY_LEVEL 71
 
 typedef struct {
-	int width;
 	int xPos;
 	int yPos;
 	bool remove;
