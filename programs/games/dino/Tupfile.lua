@@ -3,8 +3,10 @@ HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../.." or tup.getconfig("HEL
 tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
 
--- The floppy image carries no libc.dll, so link newlib statically
-LDFLAGS = LDFLAGS:gsub("app%-dynamic%.lds", "app.lds") .. " -L" .. TOOLCHAIN_LIBPATH .. " --subsystem native"
+-- The floppy image carries no libc.dll, so link newlib statically:
+-- rebuild LDFLAGS from scratch with app.lds instead of use_newlib's app-dynamic.lds
+LDFLAGS = "-static -nostdlib -n --file-alignment=16 --section-alignment=16 -L" .. tup.getvariantdir()
+LDFLAGS = LDFLAGS .. " -T" .. NEWLIB_BASE .. "/app.lds --image-base 0 --subsystem native -L" .. TOOLCHAIN_LIBPATH
 LIBS = "-lc -lm -lgcc"
 LIBDEPS = {}
 
