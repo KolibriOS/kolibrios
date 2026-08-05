@@ -38,7 +38,8 @@ void horizonLineUpdateXPos(int pos, int increment) {
 }
 
 void horizonLineUpdate(int deltaTime, double speed) {
-	int increment = floor(speed * (FPS / 1000.0) * deltaTime);
+	// value is always positive, so truncation == floor
+	int increment = speed * (FPS / 1000.0) * deltaTime;
 	if (horizonLine.xPos[0] <= 0) {
 		horizonLineUpdateXPos(0, increment);
 	}

@@ -68,7 +68,8 @@ void distanceMeterReset() {
 }
 
 int distanceMeterGetActualDistance(int distance) {
-	return distance ? (int)round(distance * DM_COEFFICIENT) : 0;
+	// round(distance * 0.025); 0.025 == 1/40
+	return (distance + 20) / 40;
 }
 
 bool distanceMeterUpdate(int deltaTime, int _distance) {

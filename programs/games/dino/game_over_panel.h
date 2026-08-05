@@ -1,7 +1,6 @@
 #ifndef GAME_OVER_PANEL_H
 #define GAME_OVER_PANEL_H
 
-#include <math.h>
 #include "graphics.h"
 
 #define GOP_TEXT_X 0

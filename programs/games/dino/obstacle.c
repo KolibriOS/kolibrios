@@ -116,7 +116,6 @@ void obstacleInit(Obstacle* ob, const ObstacleTypeConfig *otc, int dim_width, do
 void obstacleDraw(const Obstacle *ob) {
 	int sourceWidth = ob->typeConfig.width;
 	int sourceHeight = ob->typeConfig.height;
-	// w*size*(size-1)/2 == (w*size) * 0.5*(size-1) exactly, for size 1..3
 	int sourceX = sourceWidth * ob->size * (ob->size - 1) / 2 + obstacleSpritePosX[ob->typeConfig.type];
 	if (ob->currentFrame > 0) {
 		sourceX += sourceWidth*ob->currentFrame;
@@ -126,8 +125,8 @@ void obstacleDraw(const Obstacle *ob) {
 
 void obstacleUpdate(Obstacle *ob, int deltaTime, double speed) {
 	if (!ob->remove) {
-		double dx = floor(((speed + ob->typeConfig.speedOffset)*FPS/1000.)*deltaTime);
-		ob->xPos -= dx;
+		// value is always positive, so truncation == floor
+		ob->xPos -= (int)(((speed + ob->typeConfig.speedOffset)*FPS/1000.)*deltaTime);
 	}
 	// Update frames
 	if (ob->typeConfig.numFrames > 1) {

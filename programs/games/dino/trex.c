@@ -108,7 +108,7 @@ void trexDraw(int x, int y) {
 }
 
 void trexSetBlinkDelay() {
-	trex.blinkDelay = (int)ceil(((double)rand()/RAND_MAX)*TREX_BLINK_TIMING);
+	trex.blinkDelay = getRandomNumber(1, TREX_BLINK_TIMING);
 }
 
 void trexBlink(int time) {

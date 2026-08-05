@@ -26,7 +26,7 @@ void horizonUpdateClouds(int deltaTime, double speed) {
     double cloudSpeed = HORIZON_BG_CLOUD_SPEED / 1000 * deltaTime * speed;
 
     if (horizon.cloudCount) {
-        // Newest last in the array; update (and draw) newest first, as before
+        // Update (and draw) the newest cloud first
         for (int i = horizon.cloudCount - 1; i >= 0; i--) {
             cloudUpdate(&horizon.clouds[i], cloudSpeed);
         }
