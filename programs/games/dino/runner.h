@@ -35,8 +35,6 @@ typedef struct {
 	bool activated;
 	bool playing;
 	bool crashed;
-	int timeAfterCrashedMs;
-	bool paused;
 	bool playingIntro;
 	bool isRunning;
 	bool nextUpdateScheduled;
@@ -56,7 +54,6 @@ void runnerOnKeyDown(int key);
 void runnerOnKeyUp(int key);
 void runnerGameOver();
 void runnerStop();
-void runnerPlay();
 void runnerRestart();
 
 bool runnerCheckForCollision(const Obstacle *obstacle);

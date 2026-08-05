@@ -53,14 +53,12 @@ void runnerOnKeyUp(int key) {
 		trexSetDuck(false);
 	}
 	else if (runner.crashed) {
-		// Check that enough time has elapsed before allowing jump key to restart.
-		if (key == RUNNER_KEYCODE_RESTART || (runner.timeAfterCrashedMs >= RUNNER_GAMEOVER_CLEAR_TIME && isJumpKey(key))) {
+		// Check that enough time has elapsed before allowing jump key to
+		// restart; runner.time froze at game over since updates stopped.
+		int deltaTime = getTimeStamp() - runner.time;
+		if (key == RUNNER_KEYCODE_RESTART || (deltaTime >= RUNNER_GAMEOVER_CLEAR_TIME && isJumpKey(key))) {
 			runnerRestart();
 		}
-	}
-	else if (runner.paused && isJumpKey(key)) {
-		trexReset();
-		runnerPlay();
 	}
 }
 
@@ -146,18 +144,7 @@ void runnerGameOver() {
 
 void runnerStop() {
 	runner.playing = false;
-	runner.paused = true;
 	runner.isRunning = false;
-}
-
-void runnerPlay() {
-	if (!runner.crashed) {
-		runner.playing = true;
-		runner.paused = false;
-		trexUpdate(0, TREX_STATUS_RUNNING);
-		runner.time = getTimeStamp();
-		runnerUpdate();
-	}
 }
 
 void runnerRestart() {
@@ -165,7 +152,6 @@ void runnerRestart() {
 		runner.runningTime = 0;
 		runner.playing = true;
 		runner.crashed = false;
-		runner.timeAfterCrashedMs = 0;
 		runner.distanceRan = 0;
 		runner.currentSpeed = RUNNER_SPEED;
 		runner.time = getTimeStamp();

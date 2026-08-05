@@ -101,9 +101,6 @@ int main(int argc, char* args[]) {
 		}
 #define FRAME_TIME 20
 		if (frameTime < FRAME_TIME) {
-			if (runner.crashed) {
-				runner.timeAfterCrashedMs += FRAME_TIME - frameTime;
-			}
 			graphicsDelay(FRAME_TIME - frameTime);
 		}
 	}
