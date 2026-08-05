@@ -49,7 +49,7 @@ void trexUpdate(int deltaTime, int opt_status) {
 	// Game intro animation, T-rex moves in from the left.
 	if (trex.playingIntro) {
 		if (trex.xPos < TREX_START_X_POS) {
-			trex.xPos += max(iround(((double)TREX_START_X_POS / TREX_INTRO_DURATION) * deltaTime), 1);
+			trex.xPos += max((int)round(((double)TREX_START_X_POS / TREX_INTRO_DURATION) * deltaTime), 1);
 		}
 		else {
 			runnerStartGame();
@@ -136,10 +136,10 @@ void trexUpdateJump(int deltaTime) {
 
 	// Speed drop makes Trex fall faster.
 	if (trex.speedDrop) {
-		trex.yPos += iround(trex.jumpVelocity * TREX_SPEED_DROP_COEFFICIENT * framesElapsed);
+		trex.yPos += (int)round(trex.jumpVelocity * TREX_SPEED_DROP_COEFFICIENT * framesElapsed);
 	}
 	else {
-		trex.yPos += iround(trex.jumpVelocity * framesElapsed);
+		trex.yPos += (int)round(trex.jumpVelocity * framesElapsed);
 	}
 	trex.jumpVelocity += TREX_GRAVITY * framesElapsed;
 	// Minimum height has been reached.

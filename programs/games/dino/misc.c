@@ -1,30 +1,5 @@
 #include "misc.h"
 
-// Own rand/srand (xorshift32) resolve the libc imports away.
-// Must match ktcc's RAND_MAX of 65535.
-static unsigned rand_state = 1;
-
-void srand(unsigned int seed) {
-	rand_state = seed | 1; // xorshift state must never be zero
-}
-
-int rand(void) {
-	unsigned x = rand_state;
-	x ^= x << 13;
-	x ^= x >> 17;
-	x ^= x << 5;
-	rand_state = x;
-	return x & 0xFFFF;
-}
-
-// Exact C round() for |v| < 2^31, comparing the fraction instead of
-// adding 0.5 (which would misround values one ulp below a half)
-int iround(double v) {
-	int i = (int)v;
-	double f = v - i;
-	return i + (f >= 0.5) - (f <= -0.5);
-}
-
 int getRandomNumber(int _min, int _max) {
 	return rand() % (_max - _min + 1) + _min;
 }
