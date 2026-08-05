@@ -39,9 +39,8 @@ def main():
         f.write("#pragma once\n\n")
         f.write("#define ATLAS_WIDTH  %d\n" % w)
         f.write("#define ATLAS_HEIGHT %d\n\n" % h)
-        f.write("// Index 0 is transparent. 256 entries so that sysfn 65 can\n")
-        f.write("// safely read a full 8bpp palette; the rest stay zero.\n")
-        f.write("static const unsigned DINO_PALETTE[256] = {\n    0x00000000,")
+        f.write("// Index 0 is transparent; sysfn 65 reads entries per pixel index only\n")
+        f.write("static const unsigned DINO_PALETTE[%d] = {\n    0x00000000," % (len(colors) + 1))
         for r, g, b in colors:
             f.write(" 0x00%02X%02X%02X," % (r, g, b))
         f.write("\n};\n\n")
