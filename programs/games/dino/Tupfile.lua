@@ -1,11 +1,14 @@
-if tup.getconfig("NO_TCC") ~= "" or tup.getconfig("NO_FASM") ~= "" then return end
-if tup.getconfig("HELPERDIR") == ""
-then
-  HELPERDIR = "../../../programs"
-end
-tup.include(HELPERDIR .. "/use_tcc.lua")
+if tup.getconfig("NO_GCC") ~= "" then return end
+HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../.." or tup.getconfig("HELPERDIR")
+tup.include(HELPERDIR .. "/use_gcc.lua")
+tup.include(HELPERDIR .. "/use_newlib.lua")
 
-SRCS = {
+-- The floppy image carries no libc.dll, so link newlib statically
+LDFLAGS = LDFLAGS:gsub("app%-dynamic%.lds", "app.lds") .. " -L" .. TOOLCHAIN_LIBPATH .. " --subsystem native"
+LIBS = "-lc -lm -lgcc"
+LIBDEPS = {}
+
+compile_gcc{
     "cloud.c",
     "game_over_panel.c",
     "horizon.c",
@@ -19,4 +22,4 @@ SRCS = {
     "runner.c"
 }
 
-link_tcc(SRCS, "dino");
+link_gcc("dino")
