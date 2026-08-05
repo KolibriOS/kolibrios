@@ -39,7 +39,6 @@ typedef struct {
 	bool paused;
 	bool playingIntro;
 	bool isRunning;
-	int playCount;
 	bool nextUpdateScheduled;
 	bool skipUpdateNow;
 } Runner;

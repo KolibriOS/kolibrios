@@ -162,7 +162,6 @@ void runnerPlay() {
 
 void runnerRestart() {
 	if (!runner.isRunning) {
-		runner.playCount++;
 		runner.runningTime = 0;
 		runner.playing = true;
 		runner.crashed = false;
@@ -195,7 +194,6 @@ void runnerStartGame() {
 	runner.runningTime = 0;
 	runner.playingIntro = false;
 	trex.playingIntro = false;
-	runner.playCount++;
 	runner.isRunning = true;
 }
 
