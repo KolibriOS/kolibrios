@@ -1,16 +1,11 @@
-if tup.getconfig("NO_GCC") ~= "" then return end
-HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../.." or tup.getconfig("HELPERDIR")
-tup.include(HELPERDIR .. "/use_gcc.lua")
-tup.include(HELPERDIR .. "/use_newlib.lua")
+if tup.getconfig("NO_TCC") ~= "" or tup.getconfig("NO_FASM") ~= "" then return end
+if tup.getconfig("HELPERDIR") == ""
+then
+  HELPERDIR = "../../../programs"
+end
+tup.include(HELPERDIR .. "/use_tcc.lua")
 
--- The floppy image carries no libc.dll, so link newlib statically:
--- rebuild LDFLAGS from scratch with app.lds instead of use_newlib's app-dynamic.lds
-LDFLAGS = "-static -nostdlib -n --file-alignment=16 --section-alignment=16 -L" .. tup.getvariantdir()
-LDFLAGS = LDFLAGS .. " -T" .. NEWLIB_BASE .. "/app.lds --image-base 0 --subsystem native -L" .. TOOLCHAIN_LIBPATH .. " -L" .. TOOLCHAIN_LIBPATH .. "/../../lib"
-LIBS = "-lc -lm -lgcc"
-LIBDEPS = {}
-
-compile_gcc{
+SRCS = {
     "cloud.c",
     "game_over_panel.c",
     "horizon.c",
@@ -24,4 +19,4 @@ compile_gcc{
     "runner.c"
 }
 
-link_gcc("dino")
+link_tcc(SRCS, "dino");
