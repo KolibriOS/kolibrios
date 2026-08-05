@@ -36,11 +36,11 @@ typedef struct {
     int yPosArr[3]; // used if yPos is -1
     int multipleSpeed;
     int minGap;
-    double minSpeed; // 8.5 for the pterodactyl, must not truncate
+    float minSpeed; // 8.5 for the pterodactyl: exact in float, must not truncate
     int collisionBoxesCount;
     CollisionBox collisionBoxes[5];
     int numFrames;
-    double frameRate;
+    float frameRate;
     double speedOffset;
 } ObstacleTypeConfig;
 

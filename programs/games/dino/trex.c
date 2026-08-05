@@ -30,7 +30,6 @@ void trexInit() {
 	trex.blinkCount = 0;
 	trex.animStartTime = 0;
 	trex.timer = 0;
-	trex.msPerFrame = 1000. / FPS;
 	trex.status = TREX_STATUS_WAITING;
 
 	trex.jumping = false;
@@ -56,7 +55,6 @@ void trexUpdate(int deltaTime, int opt_status) {
 	if (opt_status != -1) {
 		trex.status = opt_status;
 		trex.currentFrame = 0;
-		trex.msPerFrame = trexAnimFrames[opt_status].msPerFrame;
 		trex.currentAnimFrames = &trexAnimFrames[opt_status];
 		if (opt_status == TREX_STATUS_WAITING) {
 			trex.animStartTime = getTimeStamp();
@@ -81,7 +79,7 @@ void trexUpdate(int deltaTime, int opt_status) {
 	}
 
 	// Update the frame position.
-	if (trex.timer >= trex.msPerFrame) {
+	if (trex.timer >= trex.currentAnimFrames->msPerFrame) {
 		trex.currentFrame = trex.currentFrame == trex.currentAnimFrames->frameCount - 1 ? 0 : trex.currentFrame + 1;
 		trex.timer = 0;
 	}

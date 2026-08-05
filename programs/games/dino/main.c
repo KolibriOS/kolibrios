@@ -1,8 +1,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <time.h>
 
 #include <sys/ksys.h>
 
@@ -18,7 +16,7 @@
 static uint8_t keyboard_layout[128];
 
 int main(int argc, char* args[]) {
-	srand((unsigned int)time(NULL)); // Seed the random number generator
+	srand((unsigned int)_ksys_get_ns_count()); // Seed the random number generator
 
 	ksys_pos_t win_pos = _ksys_screen_size();
 	win_pos.x /= 2;

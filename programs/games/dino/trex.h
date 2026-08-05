@@ -49,7 +49,6 @@ typedef struct {
 	int blinkCount;
 	int animStartTime;
 	int timer;
-	double msPerFrame;
 	TrexStatus status;
 	bool jumping;
 	bool ducking;

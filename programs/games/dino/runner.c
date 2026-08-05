@@ -27,8 +27,12 @@ void runnerInit() {
 	runnerUpdate();
 }
 
+static bool isJumpKey(int key) {
+	return key == RUNNER_KEYCODE_JUMP_1 || key == RUNNER_KEYCODE_JUMP_2;
+}
+
 void runnerOnKeyDown(int key) {
-	if (!runner.crashed && (key == RUNNER_KEYCODE_JUMP_1 || key == RUNNER_KEYCODE_JUMP_2)) {
+	if (!runner.crashed && isJumpKey(key)) {
 		if (!runner.playing) {
 			runner.playing = true;
 			runnerUpdate();
@@ -53,7 +57,7 @@ void runnerOnKeyDown(int key) {
 }
 
 void runnerOnKeyUp(int key) {
-	if (runner.isRunning && (key == RUNNER_KEYCODE_JUMP_1 || key == RUNNER_KEYCODE_JUMP_2)) {
+	if (runner.isRunning && isJumpKey(key)) {
 		trexEndJump();
 	}
 	else if (key == RUNNER_KEYCODE_DUCK) {
@@ -62,11 +66,11 @@ void runnerOnKeyUp(int key) {
 	}
 	else if (runner.crashed) {
 		// Check that enough time has elapsed before allowing jump key to restart.
-		if (key == RUNNER_KEYCODE_RESTART || (runner.timeAfterCrashedMs >= RUNNER_GAMEOVER_CLEAR_TIME && (key == RUNNER_KEYCODE_JUMP_1 || key == RUNNER_KEYCODE_JUMP_2))) {
+		if (key == RUNNER_KEYCODE_RESTART || (runner.timeAfterCrashedMs >= RUNNER_GAMEOVER_CLEAR_TIME && isJumpKey(key))) {
 			runnerRestart();
 		}
 	}
-	else if (runner.paused && (key == RUNNER_KEYCODE_JUMP_1 || key == RUNNER_KEYCODE_JUMP_2)) {
+	else if (runner.paused && isJumpKey(key)) {
 		trexReset();
 		runnerPlay();
 	}
@@ -207,51 +211,37 @@ void runnerStartGame() {
 	runner.isRunning = true;
 }
 
-CollisionBox createAdjustedCollisionBox(CollisionBox box, CollisionBox adjustment) {
-	return (CollisionBox){ .x = box.x + adjustment.x, .y = box.y + adjustment.y, .width = box.width, .height = box.height };
-}
-
-// Returns whether boxes intersected
-bool boxCompare(CollisionBox tRexBox, CollisionBox obstacleBox) {
-	// Axis-Aligned Bounding Box method.
-	return (tRexBox.x < obstacleBox.x + obstacleBox.width &&
-		tRexBox.x + tRexBox.width > obstacleBox.x &&
-		tRexBox.y < obstacleBox.y + obstacleBox.height &&
-		tRexBox.height + tRexBox.y > obstacleBox.y);
+// Axis-Aligned Bounding Box method.
+static bool boxesIntersect(int ax, int ay, int aw, int ah, int bx, int by, int bw, int bh) {
+	return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 }
 
 bool runnerCheckForCollision(const Obstacle* obstacle) {
 	// Adjustments are made to the bounding box as there is a 1 pixel white
 	// border around the t-rex and obstacles.
-	CollisionBox tRexBox = {
-		.x = trex.xPos + 1,
-		.y = trex.yPos + 1,
-		.width = TREX_WIDTH - 2,
-		.height = TREX_HEIGHT - 2 };
-
-	CollisionBox obstacleBox = {
-		.x = obstacle->xPos + 1,
-		.y = obstacle->yPos + 1,
-		.width = obstacle->typeConfig.width * obstacle->size - 2,
-		.height = obstacle->typeConfig.height - 2 };
+	int tx = trex.xPos + 1;
+	int ty = trex.yPos + 1;
+	int ox = obstacle->xPos + 1;
+	int oy = obstacle->yPos + 1;
+	int ow = obstacle->typeConfig.width * obstacle->size - 2;
+	int oh = obstacle->typeConfig.height - 2;
 
 	// Simple outer bounds check.
-	if (boxCompare(tRexBox, obstacleBox)) {
-		CollisionBox* tRexCollisionBoxes = &trexDuckingCollisionBox;
+	if (boxesIntersect(tx, ty, TREX_WIDTH - 2, TREX_HEIGHT - 2, ox, oy, ow, oh)) {
+		const CollisionBox* tRexCollisionBoxes = &trexDuckingCollisionBox;
 		int tRexCollisionBoxesCount = 1;
 		if (!trex.ducking) {
 			tRexCollisionBoxes = trexRunningCollisionBox;
 			tRexCollisionBoxesCount = 6;
 		}
 
-		// Detailed axis aligned box check.
+		// Detailed axis aligned box check with boxes adjusted to actual positions.
 		for (int t = 0; t < tRexCollisionBoxesCount; t++) {
+			const CollisionBox* tb = &tRexCollisionBoxes[t];
 			for (int i = 0; i < obstacle->typeConfig.collisionBoxesCount; i++) {
-				// Adjust the box to actual positions.
-				CollisionBox adjTrexBox = createAdjustedCollisionBox(tRexCollisionBoxes[t], tRexBox);
-				CollisionBox adjObstacleBox = createAdjustedCollisionBox(obstacle->typeConfig.collisionBoxes[i], obstacleBox);
-
-				if (boxCompare(adjTrexBox, adjObstacleBox)) {
+				const CollisionBox* cb = &obstacle->typeConfig.collisionBoxes[i];
+				if (boxesIntersect(tb->x + tx, tb->y + ty, tb->width, tb->height,
+				                   cb->x + ox, cb->y + oy, cb->width, cb->height)) {
 					return true;
 				}
 			}
