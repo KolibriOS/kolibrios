@@ -21,10 +21,11 @@
 #define RUNNER_MAX_SPEED 13.0
 #define RUNNER_SPEED 6.0
 
-#define RUNNER_KEYCODE_JUMP_1 82
-#define RUNNER_KEYCODE_JUMP_2 32
-#define RUNNER_KEYCODE_DUCK 81
-#define RUNNER_KEYCODE_RESTART 13
+// Scancodes; 0x100 marks the E0 extended prefix
+#define RUNNER_KEYCODE_JUMP_1 0x148  // up arrow
+#define RUNNER_KEYCODE_JUMP_2 0x39   // space
+#define RUNNER_KEYCODE_DUCK 0x150    // down arrow
+#define RUNNER_KEYCODE_RESTART 0x1C  // enter
 
 typedef struct {
 	double distanceRan;
@@ -37,7 +38,6 @@ typedef struct {
 	bool crashed;
 	bool playingIntro;
 	bool nextUpdateScheduled;
-	bool skipUpdateNow;
 } Runner;
 
 extern Runner runner;

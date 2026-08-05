@@ -12,8 +12,6 @@
 #include "trex.h"
 #include "runner.h"
 
-static uint8_t keyboard_layout[128];
-
 int main(int argc, char* args[]) {
 	srand((unsigned int)_ksys_get_ns_count()); // Seed the random number generator
 
@@ -24,7 +22,6 @@ int main(int argc, char* args[]) {
 	win_pos.y -= DEFAULT_HEIGHT/2;
 	_ksys_set_event_mask(0xC0000027); // !
 	_ksys_set_key_input_mode(KSYS_KEY_INPUT_MODE_SCANC);
-	_ksys_keyboard_layout(KSYS_KEYBOARD_LAYOUT_NORMAL, keyboard_layout);
 
 	runnerInit();
 
@@ -61,11 +58,8 @@ int main(int argc, char* args[]) {
                     ext_code = 0;
                     break;
                 }
-                uint8_t code = keyboard_layout[scancode & 0x7F];
-
-                if (ext_code == 0xE0) {
-					code -= 96;
-				}
+                // Compare raw scancodes; bit 0x100 marks the E0 extended prefix
+                int code = (scancode & 0x7F) | (ext_code == 0xE0 ? 0x100 : 0);
                 ext_code = 0;
 
 				if (scancode < 128) { // KEYDOWN
@@ -87,12 +81,6 @@ int main(int argc, char* args[]) {
 
 		if (runner.nextUpdateScheduled) {
 			runnerUpdate();
-		}
-		else {
-			if (runner.skipUpdateNow) {
-				runner.nextUpdateScheduled = true;
-				runner.skipUpdateNow = false;
-			}
 		}
 
 		int frameTime = getTimeStamp() - frameStartTime;

@@ -24,8 +24,6 @@ void runnerOnKeyDown(int key) {
 		if (!runner.playing) {
 			runner.playing = true;
 			runnerUpdate();
-			runner.nextUpdateScheduled = false;
-			runner.skipUpdateNow = true;
 		}
 		// Jump on starting the game for the first time.
 		if (!trex.jumping && !trex.ducking) {
