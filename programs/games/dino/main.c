@@ -29,37 +29,22 @@ int main(int argc, char* args[]) {
 
 	int ext_code = 0;
 
-	bool quit = false;
-	while (quit == false) {
+	for (;;) {
 		int frameStartTime = getTimeStamp();
-        uint32_t kos_event = _ksys_check_event();
-        switch (kos_event) {
+        switch (_ksys_check_event()) {
 		case KSYS_EVENT_BUTTON:
-			switch (_ksys_get_button()){
-			case 1:
-				quit = true;
-				break;
-			default:
-				break;
-			}
-			break;
+			_ksys_get_button();
+			_ksys_exit(); // the close button is the only one
 		case KSYS_EVENT_KEY:
 			{
 				ksys_oskey_t key = _ksys_get_key();
 				uint8_t scancode = key.code;
-				if (scancode == 0xE0 || scancode == 0xE1) {
-                    ext_code = scancode;
-                    break;
-                }
-                if (ext_code == 0xE1 && (scancode & 0x7F) == 0x1D) {
-                    break;
-                }
-                if (ext_code == 0xE1 && scancode == 0xC5) {
-                    ext_code = 0;
+				if (scancode == 0xE0) {
+                    ext_code = 0x100;
                     break;
                 }
                 // Compare raw scancodes; bit 0x100 marks the E0 extended prefix
-                int code = (scancode & 0x7F) | (ext_code == 0xE0 ? 0x100 : 0);
+                int code = (scancode & 0x7F) | ext_code;
                 ext_code = 0;
 
 				if (scancode < 128) { // KEYDOWN
