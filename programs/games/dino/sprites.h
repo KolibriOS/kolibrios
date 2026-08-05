@@ -4,8 +4,9 @@
 #define ATLAS_WIDTH  1233
 #define ATLAS_HEIGHT 68
 
-// Index 0 is transparent
-static const unsigned DINO_PALETTE[7] = {
+// Index 0 is transparent. 256 entries so that sysfn 65 can
+// safely read a full 8bpp palette; the rest stay zero.
+static const unsigned DINO_PALETTE[256] = {
     0x00000000, 0x00535353, 0x00F7F7F7, 0x00DADADA, 0x00FFFFFF, 0x00BABABA, 0x00B9B9B9,
 };
 
