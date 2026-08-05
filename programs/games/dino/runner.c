@@ -114,7 +114,8 @@ void runnerUpdate() {
 		}
 
 		// TODO sound: returns true when the achievement sound should play
-		distanceMeterUpdate(deltaTime, (int)ceil(runner.distanceRan));
+		int dist = (int)runner.distanceRan; // never negative: trunc + fraction test == ceil
+		distanceMeterUpdate(deltaTime, dist + (runner.distanceRan > dist));
 	}
 
 	runner.nextUpdateScheduled = false;
@@ -137,7 +138,8 @@ void runnerGameOver() {
 	gameOverPanelDraw();
 	// Update the high score
 	if (runner.distanceRan > runner.highestScore) {
-		runner.highestScore = (int)ceil(runner.distanceRan);
+		int d = (int)runner.distanceRan; // never negative: trunc + fraction test == ceil
+		runner.highestScore = d + (runner.distanceRan > d);
 		distanceMeterSetHighScore(runner.highestScore);
 	}
 	// Reset the time clock

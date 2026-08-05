@@ -15,7 +15,8 @@ void cloudDraw(const Cloud* cloud) {
 
 void cloudUpdate(Cloud* cloud, double speed) {
 	if (!cloud->remove) {
-		cloud->xPos -= (int)ceil(speed);
+		int s = (int)speed; // speed is never negative: trunc + fraction test == ceil
+		cloud->xPos -= s + (speed > s);
 		cloudDraw(cloud);
 
 		// Mark as removeable if no longer in the canvas.

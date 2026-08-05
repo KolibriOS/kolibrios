@@ -142,8 +142,8 @@ void obstacleUpdate(Obstacle *ob, int deltaTime, double speed) {
 }
 
 int obstacleGetGap(const Obstacle *ob, double speed) {
-	int minGap = round(ob->width * speed + ob->typeConfig.minGap * OBSTACLE_GAP_COEFFICIENT);
-	int maxGap = round(minGap * OBSTACLE_MAX_GAP_COEFFICIENT);
+	int minGap = iround(ob->width * speed + ob->typeConfig.minGap * OBSTACLE_GAP_COEFFICIENT);
+	int maxGap = iround(minGap * OBSTACLE_MAX_GAP_COEFFICIENT);
 	return getRandomNumber(minGap, maxGap);
 }
 
