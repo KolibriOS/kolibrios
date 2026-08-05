@@ -54,7 +54,7 @@ ObstacleTypeConfig obstacleTypeConfigs[3] = {
 				{.x = 10, .y = 8, .width = 6, .height = 9}
 			},
 			.numFrames = 2,
-			.frameRate = 1000 / 6,
+			.frameRate = 1000 / 6.,
 			.speedOffset = 0.8
 		}
 };
@@ -83,7 +83,8 @@ void obstacleInit(Obstacle* ob, const ObstacleTypeConfig *otc, int dim_width, do
 	ob->width = ob->typeConfig.width * ob->size;
 
 	if (ob->typeConfig.yPos == -1) {
-		ob->yPos = ob->typeConfig.yPosArr[getRandomNumber(0, ob->typeConfig.yPosArrSize)];
+		// getRandomNumber is inclusive on both ends
+		ob->yPos = ob->typeConfig.yPosArr[getRandomNumber(0, ob->typeConfig.yPosArrSize - 1)];
 	}
 	else {
 		ob->yPos = ob->typeConfig.yPos;

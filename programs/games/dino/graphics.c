@@ -61,5 +61,6 @@ void graphicsRender() {
 }
 
 void graphicsDelay(int ms) {
-    _ksys_delay(ms/10 ? ms/10 : 2);
+    // sysfn 5 sleeps in hundredths of a second; round up, never oversleep by 20 ms
+    _ksys_delay((ms + 9) / 10);
 }
