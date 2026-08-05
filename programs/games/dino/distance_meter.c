@@ -14,7 +14,11 @@ void distanceMeterInit(int w) {
 	for (int i = 0; i < distanceMeter.maxScoreUnits; i++) {
 		distanceMeterDraw(i, 0, false);
 	}
-	distanceMeter.maxScore = (int)pow(10, distanceMeter.maxScoreUnits) - 1;
+	distanceMeter.maxScore = 1;
+	for (int i = 0; i < distanceMeter.maxScoreUnits; i++) {
+		distanceMeter.maxScore *= 10;
+	}
+	distanceMeter.maxScore--;
 	distanceMeter.digits[0] = '\0';
 	distanceMeter.highScore[0] = '\0';
 }

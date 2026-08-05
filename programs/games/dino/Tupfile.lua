@@ -16,8 +16,7 @@ SRCS = {
     "graphics.c",
     "horizon_line.c",
     "misc.c",
-    "runner.c",
-    "ulist.c"
+    "runner.c"
 }
 
 link_tcc(SRCS, "dino");

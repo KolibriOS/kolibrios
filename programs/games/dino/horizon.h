@@ -8,18 +8,25 @@
 #include "horizon_line.h"
 #include "runner.h"
 #include "graphics.h"
-#include "ulist.h"
 
 #define HORIZON_BG_CLOUD_SPEED 0.2
 #define HORIZON_CLOUD_FREQUENCY 0.5
 #define HORIZON_MAX_CLOUDS 6
 
+// Worst-case on-screen obstacles: gaps never drop below ~190px over a
+// ~700px span, so 5 is the practical ceiling; 8 leaves margin.
+#define HORIZON_MAX_OBSTACLES 8
+#define HORIZON_MAX_OBSTACLE_DUPLICATION 2
+
 typedef struct {
 	int dim_width;
 	double gapCoefficient;
-	Ulist* obstacles;
-	Ulist* obstacleHistory;
-	Ulist* clouds;
+	Obstacle obstacles[HORIZON_MAX_OBSTACLES];
+	int obstacleCount;
+	ObstacleType obstacleHistory[HORIZON_MAX_OBSTACLE_DUPLICATION];
+	int obstacleHistoryCount;
+	Cloud clouds[HORIZON_MAX_CLOUDS];
+	int cloudCount;
 } Horizon;
 
 extern Horizon horizon;

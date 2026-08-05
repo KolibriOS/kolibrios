@@ -5,9 +5,9 @@ Horizon horizon;
 void horizonInit(int dim_width, double gapCoefficient) {
 	horizon.dim_width = dim_width;
 	horizon.gapCoefficient = gapCoefficient;
-	horizon.obstacles = ulist_create();
-	horizon.obstacleHistory = ulist_create();
-	horizon.clouds = ulist_create();
+	horizon.obstacleCount = 0;
+	horizon.obstacleHistoryCount = 0;
+	horizon.cloudCount = 0;
 
 	horizonAddCloud();
 
@@ -24,29 +24,28 @@ void horizonUpdate(int deltaTime, double currentSpeed, bool updateObstacles) {
 
 void horizonUpdateClouds(int deltaTime, double speed) {
     double cloudSpeed = HORIZON_BG_CLOUD_SPEED / 1000 * deltaTime * speed;
-    int numClouds = ulist_size(horizon.clouds);
 
-    if (numClouds) {
-        Node *cloudNode = horizon.clouds->tail;
-        while (cloudNode != NULL) {
-            cloudUpdate(cloudNode->data, cloudSpeed);
-            cloudNode = cloudNode->prev;
+    if (horizon.cloudCount) {
+        // Newest last in the array; update (and draw) newest first, as before
+        for (int i = horizon.cloudCount - 1; i >= 0; i--) {
+            cloudUpdate(&horizon.clouds[i], cloudSpeed);
         }
-        Cloud *lastCloud = horizon.clouds->tail->data;
+        Cloud *lastCloud = &horizon.clouds[horizon.cloudCount - 1];
         // Check for adding a new cloud
-        if (numClouds < HORIZON_MAX_CLOUDS && (horizon.dim_width - lastCloud->xPos) > lastCloud->cloudGap && HORIZON_CLOUD_FREQUENCY > (double)rand()/RAND_MAX) {
+        if (horizon.cloudCount < HORIZON_MAX_CLOUDS && (horizon.dim_width - lastCloud->xPos) > lastCloud->cloudGap && HORIZON_CLOUD_FREQUENCY > (double)rand()/RAND_MAX) {
             horizonAddCloud();
         }
         // Remove expired clouds
-        cloudNode = horizon.clouds->head;
-        while (cloudNode != NULL) {
-            Node* cloudNodeNext = cloudNode->next;
-            Cloud* c = cloudNode->data;
-            if (c->remove) {
-                ulist_remove(horizon.clouds, cloudNode);
+        int kept = 0;
+        for (int i = 0; i < horizon.cloudCount; i++) {
+            if (!horizon.clouds[i].remove) {
+                if (kept != i) {
+                    horizon.clouds[kept] = horizon.clouds[i];
+                }
+                kept++;
             }
-            cloudNode = cloudNodeNext;
         }
+        horizon.cloudCount = kept;
     }
     else {
         horizonAddCloud();
@@ -54,23 +53,25 @@ void horizonUpdateClouds(int deltaTime, double speed) {
 }
 
 void horizonUpdateObstacles(int deltaTime, double currentSpeed) {
-    // Obstacles, move to Horizon layer
-    Node* obNode = horizon.obstacles->head;
-    while (obNode != NULL) {
-        Node* obNodeNext = obNode->next;
-        Obstacle* ob = obNode->data;
-        obstacleUpdate(ob, deltaTime, currentSpeed);
-        // Clean up existing obstacles
-        if (ob->remove) {
-            ulist_remove_front(horizon.obstacles);
-        }
-        obNode = obNodeNext;
+    for (int i = 0; i < horizon.obstacleCount; i++) {
+        obstacleUpdate(&horizon.obstacles[i], deltaTime, currentSpeed);
     }
+    // Clean up removed obstacles
+    int kept = 0;
+    for (int i = 0; i < horizon.obstacleCount; i++) {
+        if (!horizon.obstacles[i].remove) {
+            if (kept != i) {
+                horizon.obstacles[kept] = horizon.obstacles[i];
+            }
+            kept++;
+        }
+    }
+    horizon.obstacleCount = kept;
 
-    if (ulist_size(horizon.obstacles) > 0) {
-        Obstacle *lastObstacle = horizon.obstacles->tail->data;
+    if (horizon.obstacleCount > 0) {
+        Obstacle *lastObstacle = &horizon.obstacles[horizon.obstacleCount - 1];
 
-        if (lastObstacle && !lastObstacle->followingObstacleCreated && obstacleIsVisible(lastObstacle) && (lastObstacle->xPos + lastObstacle->width + lastObstacle->gap) < horizon.dim_width) {
+        if (!lastObstacle->followingObstacleCreated && obstacleIsVisible(lastObstacle) && (lastObstacle->xPos + lastObstacle->width + lastObstacle->gap) < horizon.dim_width) {
             horizonAddNewObstacle(currentSpeed);
             lastObstacle->followingObstacleCreated = true;
         }
@@ -82,6 +83,9 @@ void horizonUpdateObstacles(int deltaTime, double currentSpeed) {
 }
 
 void horizonAddNewObstacle(double currentSpeed) {
+    if (horizon.obstacleCount >= HORIZON_MAX_OBSTACLES) {
+        return; // no room; retried on a later frame
+    }
     int obstacleTypeIndex = getRandomNumber(0, sizeof(obstacleTypeConfigs)/sizeof(ObstacleTypeConfig) - 1);
     ObstacleTypeConfig *otc = &obstacleTypeConfigs[obstacleTypeIndex];
 
@@ -91,34 +95,36 @@ void horizonAddNewObstacle(double currentSpeed) {
         horizonAddNewObstacle(currentSpeed);
     }
     else {
-        Obstacle* ob = malloc(sizeof(Obstacle));
-        obstacleInit(ob, otc, horizon.dim_width, horizon.gapCoefficient, currentSpeed, otc->width);
-        ulist_push_back(horizon.obstacles, ob);
-        ulist_push_front(horizon.obstacleHistory, &(otc->type));
-        if (ulist_size(horizon.obstacleHistory) > 1) {
-            ulist_splice(horizon.obstacleHistory, RUNNER_MAX_OBSTACLE_DUPLICATION);
+        obstacleInit(&horizon.obstacles[horizon.obstacleCount], otc, horizon.dim_width, horizon.gapCoefficient, currentSpeed, otc->width);
+        horizon.obstacleCount++;
+        // Record the type, newest first, keeping the last few entries
+        for (int i = HORIZON_MAX_OBSTACLE_DUPLICATION - 1; i > 0; i--) {
+            horizon.obstacleHistory[i] = horizon.obstacleHistory[i - 1];
+        }
+        horizon.obstacleHistory[0] = otc->type;
+        if (horizon.obstacleHistoryCount < HORIZON_MAX_OBSTACLE_DUPLICATION) {
+            horizon.obstacleHistoryCount++;
         }
     }
 }
 
 bool horizonDuplicateObstacleCheck(ObstacleType nextObstacleType) {
     int duplicateCount = 0;
-    Node* ohNode = horizon.obstacleHistory->head;
-    while (ohNode != NULL) {
-        duplicateCount = *(int*)ohNode->data == nextObstacleType ? duplicateCount + 1 : 0;
-        ohNode = ohNode->next;
+    for (int i = 0; i < horizon.obstacleHistoryCount; i++) {
+        duplicateCount = horizon.obstacleHistory[i] == nextObstacleType ? duplicateCount + 1 : 0;
     }
-    return duplicateCount >= RUNNER_MAX_OBSTACLE_DUPLICATION;
+    return duplicateCount >= HORIZON_MAX_OBSTACLE_DUPLICATION;
 }
 
 void horizonReset() {
-    ulist_destroy(horizon.obstacles);
-    horizon.obstacles = ulist_create();
+    horizon.obstacleCount = 0;
     horizonLineReset();
 }
 
 void horizonAddCloud() {
-    Cloud* c = malloc(sizeof(Cloud));
-    cloudInit(c, horizon.dim_width);
-    ulist_push_back(horizon.clouds, c);
+    if (horizon.cloudCount >= HORIZON_MAX_CLOUDS) {
+        return;
+    }
+    cloudInit(&horizon.clouds[horizon.cloudCount], horizon.dim_width);
+    horizon.cloudCount++;
 }

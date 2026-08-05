@@ -117,7 +117,7 @@ void runnerUpdate() {
 		}
 
 		// Check for collisions.
-		bool collision = hasObstacles && runnerCheckForCollision(horizon.obstacles->head->data);
+		bool collision = hasObstacles && horizon.obstacleCount > 0 && runnerCheckForCollision(&horizon.obstacles[0]);
 
 		if (!collision) {
 			runner.distanceRan += runner.currentSpeed * deltaTime / runner.msPerFrame;
