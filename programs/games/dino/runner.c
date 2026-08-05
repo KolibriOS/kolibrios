@@ -45,7 +45,7 @@ void runnerOnKeyDown(int key) {
 }
 
 void runnerOnKeyUp(int key) {
-	if (runner.isRunning && isJumpKey(key)) {
+	if (runner.playing && isJumpKey(key)) {
 		trexEndJump();
 	}
 	else if (key == RUNNER_KEYCODE_DUCK) {
@@ -144,24 +144,20 @@ void runnerGameOver() {
 
 void runnerStop() {
 	runner.playing = false;
-	runner.isRunning = false;
 }
 
 void runnerRestart() {
-	if (!runner.isRunning) {
-		runner.runningTime = 0;
-		runner.playing = true;
-		runner.crashed = false;
-		runner.distanceRan = 0;
-		runner.currentSpeed = RUNNER_SPEED;
-		runner.time = getTimeStamp();
-		runnerClearCanvas();
-		distanceMeterReset();
-		horizonReset();
-		trexReset();
-		runner.isRunning = true;
-		runnerUpdate();
-	}
+	runner.runningTime = 0;
+	runner.playing = true;
+	runner.crashed = false;
+	runner.distanceRan = 0;
+	runner.currentSpeed = RUNNER_SPEED;
+	runner.time = getTimeStamp();
+	runnerClearCanvas();
+	distanceMeterReset();
+	horizonReset();
+	trexReset();
+	runnerUpdate();
 }
 
 void runnerPlayIntro() {
@@ -180,7 +176,6 @@ void runnerStartGame() {
 	runner.runningTime = 0;
 	runner.playingIntro = false;
 	trex.playingIntro = false;
-	runner.isRunning = true;
 }
 
 // Axis-Aligned Bounding Box method.

@@ -36,7 +36,6 @@ typedef struct {
 	bool playing;
 	bool crashed;
 	bool playingIntro;
-	bool isRunning;
 	bool nextUpdateScheduled;
 	bool skipUpdateNow;
 } Runner;
