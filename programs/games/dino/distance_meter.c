@@ -27,7 +27,7 @@ void distanceMeterDraw(int digitPos, int value, bool opt_highscore) {
 }
 
 void distanceMeterDrawHighScore() {
-	for (int i = (int)strlen(distanceMeter.highScore) - 1; i >= 0; i--) {
+	for (int i = distanceMeter.highScoreLen - 1; i >= 0; i--) {
 		distanceMeterDraw(i, distanceMeter.highScore[i] > 12 ? distanceMeter.highScore[i] - '0' : distanceMeter.highScore[i], true);
 	}
 }
@@ -38,6 +38,7 @@ void distanceMeterSetHighScore(int _distance) {
 	distanceMeter.highScore[1] = 11;
 	distanceMeter.highScore[2] = 12;
 	intToStr(distance, distanceMeter.maxScoreUnits, distanceMeter.highScore + 3);
+	distanceMeter.highScoreLen = 3 + distanceMeter.maxScoreUnits;
 }
 
 void distanceMeterReset() {

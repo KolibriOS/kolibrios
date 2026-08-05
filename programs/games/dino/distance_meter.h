@@ -2,7 +2,6 @@
 #define DISTANCE_METER_H
 
 #include <stdbool.h>
-#include <string.h>
 #include "graphics.h"
 #include "misc.h"
 
@@ -20,6 +19,7 @@ typedef struct {
 	int maxScore;
 	char digits[16];
 	char highScore[16];
+	int highScoreLen; // written length; strlen would drag in a libc import
 	bool achievement;
 	int flashTimer;
 	int flashIterations;
