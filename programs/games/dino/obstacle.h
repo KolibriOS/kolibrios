@@ -12,6 +12,9 @@
 // Coefficient for calculating the maximum gap
 #define OBSTACLE_MAX_GAP_COEFFICIENT 1.5
 
+// Coefficient for calculating the minimum gap
+#define OBSTACLE_GAP_COEFFICIENT 0.6
+
 // Maximum obstacle grouping count
 #define OBSTACLE_MAX_OBSTACLE_LENGTH 3
 
@@ -43,7 +46,6 @@ typedef struct {
 
 typedef struct {
     ObstacleTypeConfig typeConfig;
-    double gapCoefficient;
     int size;
     bool remove;
     int xPos;
@@ -57,10 +59,10 @@ typedef struct {
 
 extern ObstacleTypeConfig obstacleTypeConfigs[3];
 
-void obstacleInit(Obstacle *ob, const ObstacleTypeConfig *otc, int dim_width, double gapCoefficient, double speed, int opt_xOffset);
+void obstacleInit(Obstacle *ob, const ObstacleTypeConfig *otc, double speed, int opt_xOffset);
 void obstacleDraw(const Obstacle* ob);
 void obstacleUpdate(Obstacle* ob, int deltaTime, double speed);
-int obstacleGetGap(const Obstacle* ob, double gapCoefficient, double speed);
+int obstacleGetGap(const Obstacle* ob, double speed);
 bool obstacleIsVisible(const Obstacle* ob);
 
 #endif

@@ -10,7 +10,6 @@
 #include "graphics.h"
 
 #define HORIZON_BG_CLOUD_SPEED 0.2
-#define HORIZON_CLOUD_FREQUENCY 0.5
 #define HORIZON_MAX_CLOUDS 6
 
 // Worst-case on-screen obstacles: gaps never drop below ~190px over a
@@ -19,8 +18,6 @@
 #define HORIZON_MAX_OBSTACLE_DUPLICATION 2
 
 typedef struct {
-	int dim_width;
-	double gapCoefficient;
 	Obstacle obstacles[HORIZON_MAX_OBSTACLES];
 	int obstacleCount;
 	ObstacleType obstacleHistory[HORIZON_MAX_OBSTACLE_DUPLICATION];
@@ -31,7 +28,7 @@ typedef struct {
 
 extern Horizon horizon;
 
-void horizonInit(int dim_width, double gapCoefficient);
+void horizonInit();
 void horizonUpdate(int deltaTime, double currentSpeed, bool updateObstacles);
 void horizonUpdateClouds(int deltaTime, double speed);
 void horizonUpdateObstacles(int deltaTime, double currentSpeed);

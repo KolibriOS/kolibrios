@@ -6,7 +6,6 @@ void runnerInit() {
 	runner.distanceRan = 0;
 	runner.highestScore = 0;
 	runner.time = 0;
-	runner.msPerFrame = 1000.0 / FPS;
 	runner.currentSpeed = RUNNER_SPEED;
 	runner.activated = false;
 	runner.playing = false;
@@ -21,8 +20,8 @@ void runnerInit() {
 	// TODO sound
 	graphicsFillBackground();
 
-	horizonInit(DEFAULT_WIDTH, RUNNER_GAP_COEFFICIENT);
-	distanceMeterInit(DEFAULT_WIDTH);
+	horizonInit();
+	distanceMeterInit();
 	trexInit();
 
 	runnerUpdate();
@@ -79,7 +78,7 @@ void runnerClearCanvas() {
 
 void runnerUpdate() {
 	int now = getTimeStamp();
-	int deltaTime = now - (runner.time ? runner.time : 0);
+	int deltaTime = now - runner.time;
 	if (deltaTime < 0) {
 		deltaTime = DELTA_MS_DEFAULT;
 	}
@@ -112,7 +111,7 @@ void runnerUpdate() {
 		bool collision = hasObstacles && horizon.obstacleCount > 0 && runnerCheckForCollision(&horizon.obstacles[0]);
 
 		if (!collision) {
-			runner.distanceRan += runner.currentSpeed * deltaTime / runner.msPerFrame;
+			runner.distanceRan += runner.currentSpeed * deltaTime / RUNNER_MS_PER_FRAME;
 
 			if (runner.currentSpeed < RUNNER_MAX_SPEED) {
 				runner.currentSpeed += RUNNER_ACCELERATION;

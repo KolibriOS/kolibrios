@@ -45,7 +45,7 @@ void trexInit() {
 	trex.minJumpHeight = trex.groundYPos - TREX_MIN_JUMP_HEIGHT;
 	trex.playingIntro = false;
 
-	trexDraw(0, 0);
+	trexDraw(0);
 	trexUpdate(0, TREX_STATUS_WAITING);
 }
 
@@ -57,7 +57,7 @@ void trexUpdate(int deltaTime, int opt_status) {
 		trex.status = opt_status;
 		trex.currentFrame = 0;
 		trex.msPerFrame = trexAnimFrames[opt_status].msPerFrame;
-		trex.currentAnimFrames = trexAnimFrames[opt_status];
+		trex.currentAnimFrames = &trexAnimFrames[opt_status];
 		if (opt_status == TREX_STATUS_WAITING) {
 			trex.animStartTime = getTimeStamp();
 			trexSetBlinkDelay();
@@ -77,12 +77,12 @@ void trexUpdate(int deltaTime, int opt_status) {
 		trexBlink(getTimeStamp());
 	}
 	else {
-		trexDraw(trex.currentAnimFrames.frames[trex.currentFrame], 0);
+		trexDraw(trex.currentAnimFrames->frames[trex.currentFrame]);
 	}
 
 	// Update the frame position.
 	if (trex.timer >= trex.msPerFrame) {
-		trex.currentFrame = trex.currentFrame == trex.currentAnimFrames.frameCount - 1 ? 0 : trex.currentFrame + 1;
+		trex.currentFrame = trex.currentFrame == trex.currentAnimFrames->frameCount - 1 ? 0 : trex.currentFrame + 1;
 		trex.timer = 0;
 	}
 
@@ -93,12 +93,12 @@ void trexUpdate(int deltaTime, int opt_status) {
 	}
 }
 
-void trexDraw(int x, int y) {
+void trexDraw(int x) {
 	int sourceWidth = trex.ducking && trex.status != TREX_STATUS_CRASHED ? TREX_WIDTH_DUCK : TREX_WIDTH;
 	int sourceHeight = TREX_HEIGHT;
 	// Adjustments for sprite sheet position.
 	int sourceX = x + ATLAS_TREX_X;
-	int sourceY = y + ATLAS_TREX_Y;
+	int sourceY = ATLAS_TREX_Y;
 
 	// Crashed whilst ducking. Trex is standing up so needs adjustment.
 	if (trex.ducking && trex.status == TREX_STATUS_CRASHED) {
@@ -117,7 +117,7 @@ void trexBlink(int time) {
 		deltaTime = DELTA_MS_DEFAULT;
 	}
 	if (deltaTime >= trex.blinkDelay) {
-		trexDraw(trex.currentAnimFrames.frames[trex.currentFrame], 0);
+		trexDraw(trex.currentAnimFrames->frames[trex.currentFrame]);
 		if (trex.currentFrame == 1) {
 			// Set new random delay to blink.
 			trexSetBlinkDelay();

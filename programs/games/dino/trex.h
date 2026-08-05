@@ -44,7 +44,7 @@ typedef struct {
 	int yPos;
 	int groundYPos;
 	int currentFrame;
-	TrexAnimFramesEntry currentAnimFrames;
+	const TrexAnimFramesEntry* currentAnimFrames;
 	int blinkDelay;
 	int blinkCount;
 	int animStartTime;
@@ -67,7 +67,7 @@ extern Trex trex;
 
 void trexInit();
 void trexUpdate(int deltaTime, int opt_status);
-void trexDraw(int x, int y);
+void trexDraw(int x);
 void trexSetBlinkDelay();
 void trexBlink(int time);
 void trexStartJump(double speed);

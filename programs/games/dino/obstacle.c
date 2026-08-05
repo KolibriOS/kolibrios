@@ -63,12 +63,11 @@ int obstacleSpritePosX[3] = { ATLAS_CACTUS_SMALL_X, ATLAS_CACTUS_LARGE_X, ATLAS_
 int obstacleSpritePosY[3] = { ATLAS_CACTUS_SMALL_Y, ATLAS_CACTUS_LARGE_Y, ATLAS_PTERODACTYL_Y};
 
 
-void obstacleInit(Obstacle* ob, const ObstacleTypeConfig *otc, int dim_width, double gapCoefficient, double speed, int opt_xOffset) {
+void obstacleInit(Obstacle* ob, const ObstacleTypeConfig *otc, double speed, int opt_xOffset) {
 	ob->typeConfig = *otc;
-	ob->gapCoefficient = gapCoefficient;
 	ob->size = getRandomNumber(1, OBSTACLE_MAX_OBSTACLE_LENGTH);
 	ob->remove = false;
-	ob->xPos = dim_width + opt_xOffset;
+	ob->xPos = DEFAULT_WIDTH + opt_xOffset;
 	ob->yPos = 0;
 
 	// For animated obstacles
@@ -108,9 +107,9 @@ void obstacleInit(Obstacle* ob, const ObstacleTypeConfig *otc, int dim_width, do
 
 	// For obstacles that go at a different speed from the horizon
 	if (ob->typeConfig.speedOffset) {
-		ob->typeConfig.speedOffset = (double)rand() / RAND_MAX > 0.5 ? ob->typeConfig.speedOffset : -ob->typeConfig.speedOffset;
+		ob->typeConfig.speedOffset = rand() > RAND_MAX / 2 ? ob->typeConfig.speedOffset : -ob->typeConfig.speedOffset;
 	}
-	ob->gap = obstacleGetGap(ob, ob->gapCoefficient, speed);
+	ob->gap = obstacleGetGap(ob, speed);
 }
 
 void obstacleDraw(const Obstacle *ob) {
@@ -142,8 +141,8 @@ void obstacleUpdate(Obstacle *ob, int deltaTime, double speed) {
 	}
 }
 
-int obstacleGetGap(const Obstacle *ob, double gapCoefficient, double speed) {
-	int minGap = round(ob->width * speed + ob->typeConfig.minGap * gapCoefficient);
+int obstacleGetGap(const Obstacle *ob, double speed) {
+	int minGap = round(ob->width * speed + ob->typeConfig.minGap * OBSTACLE_GAP_COEFFICIENT);
 	int maxGap = round(minGap * OBSTACLE_MAX_GAP_COEFFICIENT);
 	return getRandomNumber(minGap, maxGap);
 }

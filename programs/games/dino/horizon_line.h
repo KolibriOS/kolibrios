@@ -13,12 +13,8 @@
 #define HORIZON_LINE_YPOS 127
 
 typedef struct {
-	int width;
-	int height;
 	int sourceXPos[2];
 	int xPos[2];
-	int yPos;
-	double bumpThreshold;
 } HorizonLine;
 
 extern HorizonLine horizonLine;

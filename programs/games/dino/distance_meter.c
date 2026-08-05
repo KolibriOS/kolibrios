@@ -2,47 +2,29 @@
 
 DistanceMeter distanceMeter;
 
-void distanceMeterInit(int w) {
-	distanceMeter.x = 0;
-	distanceMeter.y = 5;
-	distanceMeter.maxScore = 0;
+void distanceMeterInit() {
+	distanceMeter.maxScore = 99999; // 10^DM_MAX_DISTANCE_UNITS - 1
 	distanceMeter.achievement = false;
 	distanceMeter.flashTimer = 0;
 	distanceMeter.flashIterations = 0;
 	distanceMeter.maxScoreUnits = DM_MAX_DISTANCE_UNITS;
-	distanceMeterCalcXPos(w);
 	for (int i = 0; i < distanceMeter.maxScoreUnits; i++) {
 		distanceMeterDraw(i, 0, false);
 	}
-	distanceMeter.maxScore = 1;
-	for (int i = 0; i < distanceMeter.maxScoreUnits; i++) {
-		distanceMeter.maxScore *= 10;
-	}
-	distanceMeter.maxScore--;
 	distanceMeter.digits[0] = '\0';
 	distanceMeter.highScore[0] = '\0';
 }
 
-void distanceMeterCalcXPos(int w) {
-	distanceMeter.x = w - (DM_DEST_WIDTH * (distanceMeter.maxScoreUnits + 1));
-}
-
 void distanceMeterDraw(int digitPos, int value, bool opt_highscore) {
-
-	int dx, dy;
+	int dx = DM_X;
 	if (opt_highscore) {
-		dx = distanceMeter.x - (distanceMeter.maxScoreUnits * 2) * DM_WIDTH;
-		dy = distanceMeter.y;
-	}
-	else {
-		dx = distanceMeter.x;
-		dy = distanceMeter.y;
+		dx -= (distanceMeter.maxScoreUnits * 2) * DM_WIDTH;
 	}
 	graphicsBlitAtlasImage(
 		DM_WIDTH * value + ATLAS_TEXT_SPRITE_X,
 		0 + ATLAS_TEXT_SPRITE_Y,
 		digitPos * DM_DEST_WIDTH + dx,
-		distanceMeter.y + dy,
+		DM_Y * 2, // chrome translates by y and then draws at targetY == y
 		DM_WIDTH,
 		DM_HEIGHT
 	);

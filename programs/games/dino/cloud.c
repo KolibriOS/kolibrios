@@ -1,7 +1,7 @@
 #include "cloud.h"
 
-void cloudInit(Cloud* cloud, int w) {
-	cloud->xPos = w;
+void cloudInit(Cloud* cloud) {
+	cloud->xPos = DEFAULT_WIDTH;
 	cloud->remove = false;
 	cloud->cloudGap = getRandomNumber(CLOUD_MIN_GAP, CLOUD_MAX_GAP);
 
@@ -28,4 +28,3 @@ void cloudUpdate(Cloud* cloud, double speed) {
 bool cloudIsVisible(const Cloud* cloud) {
 	return cloud->xPos + CLOUD_WIDTH > 0;
 }
-

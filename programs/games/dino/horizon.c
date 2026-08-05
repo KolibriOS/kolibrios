@@ -2,9 +2,7 @@
 
 Horizon horizon;
 
-void horizonInit(int dim_width, double gapCoefficient) {
-	horizon.dim_width = dim_width;
-	horizon.gapCoefficient = gapCoefficient;
+void horizonInit() {
 	horizon.obstacleCount = 0;
 	horizon.obstacleHistoryCount = 0;
 	horizon.cloudCount = 0;
@@ -31,8 +29,8 @@ void horizonUpdateClouds(int deltaTime, double speed) {
             cloudUpdate(&horizon.clouds[i], cloudSpeed);
         }
         Cloud *lastCloud = &horizon.clouds[horizon.cloudCount - 1];
-        // Check for adding a new cloud
-        if (horizon.cloudCount < HORIZON_MAX_CLOUDS && (horizon.dim_width - lastCloud->xPos) > lastCloud->cloudGap && HORIZON_CLOUD_FREQUENCY > (double)rand()/RAND_MAX) {
+        // Check for adding a new cloud (frequency 0.5)
+        if (horizon.cloudCount < HORIZON_MAX_CLOUDS && (DEFAULT_WIDTH - lastCloud->xPos) > lastCloud->cloudGap && rand() <= RAND_MAX / 2) {
             horizonAddCloud();
         }
         // Remove expired clouds
@@ -71,7 +69,7 @@ void horizonUpdateObstacles(int deltaTime, double currentSpeed) {
     if (horizon.obstacleCount > 0) {
         Obstacle *lastObstacle = &horizon.obstacles[horizon.obstacleCount - 1];
 
-        if (!lastObstacle->followingObstacleCreated && obstacleIsVisible(lastObstacle) && (lastObstacle->xPos + lastObstacle->width + lastObstacle->gap) < horizon.dim_width) {
+        if (!lastObstacle->followingObstacleCreated && obstacleIsVisible(lastObstacle) && (lastObstacle->xPos + lastObstacle->width + lastObstacle->gap) < DEFAULT_WIDTH) {
             horizonAddNewObstacle(currentSpeed);
             lastObstacle->followingObstacleCreated = true;
         }
@@ -95,7 +93,7 @@ void horizonAddNewObstacle(double currentSpeed) {
         horizonAddNewObstacle(currentSpeed);
     }
     else {
-        obstacleInit(&horizon.obstacles[horizon.obstacleCount], otc, horizon.dim_width, horizon.gapCoefficient, currentSpeed, otc->width);
+        obstacleInit(&horizon.obstacles[horizon.obstacleCount], otc, currentSpeed, otc->width);
         horizon.obstacleCount++;
         // Record the type, newest first, keeping the last few entries
         for (int i = HORIZON_MAX_OBSTACLE_DUPLICATION - 1; i > 0; i--) {
@@ -125,6 +123,6 @@ void horizonAddCloud() {
     if (horizon.cloudCount >= HORIZON_MAX_CLOUDS) {
         return;
     }
-    cloudInit(&horizon.clouds[horizon.cloudCount], horizon.dim_width);
+    cloudInit(&horizon.clouds[horizon.cloudCount]);
     horizon.cloudCount++;
 }
