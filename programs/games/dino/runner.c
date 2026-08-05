@@ -19,21 +19,13 @@ void runnerInit() {
 	runner.nextUpdateScheduled = false;
 	runner.skipUpdateNow = false;
 	// TODO sound
-	runnerAdjustDimensions();
-	graphicsFillBackground(0xF7, 0xF7, 0xF7);
+	graphicsFillBackground();
 
-	gameOverPanelInit(runner.width, runner.height);
-
-	horizonInit(runner.width, RUNNER_GAP_COEFFICIENT);
-	distanceMeterInit(runner.width);
+	horizonInit(DEFAULT_WIDTH, RUNNER_GAP_COEFFICIENT);
+	distanceMeterInit(DEFAULT_WIDTH);
 	trexInit();
 
 	runnerUpdate();
-}
-
-void runnerAdjustDimensions() {
-	runner.width = DEFAULT_WIDTH;
-	runner.height = RUNNER_DEFAULT_HEIGHT;
 }
 
 void runnerOnKeyDown(int key) {
@@ -82,7 +74,7 @@ void runnerOnKeyUp(int key) {
 }
 
 void runnerClearCanvas() {
-	graphicsFillBackground(0xF7, 0xF7, 0xF7);
+	graphicsFillBackground();
 }
 
 void runnerUpdate() {

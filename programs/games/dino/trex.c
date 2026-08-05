@@ -100,18 +100,11 @@ void trexDraw(int x, int y) {
 	int sourceX = x + ATLAS_TREX_X;
 	int sourceY = y + ATLAS_TREX_Y;
 
-	// Ducking.
-	if (trex.ducking && trex.status != TREX_STATUS_CRASHED) {
-		graphicsBlitAtlasImage(sourceX, sourceY, trex.xPos, trex.yPos, sourceWidth, sourceHeight);
+	// Crashed whilst ducking. Trex is standing up so needs adjustment.
+	if (trex.ducking && trex.status == TREX_STATUS_CRASHED) {
+		trex.xPos++;
 	}
-	else {
-		// Crashed whilst ducking. Trex is standing up so needs adjustment.
-		if (trex.ducking && trex.status == TREX_STATUS_CRASHED) {
-			trex.xPos++;
-		}
-		// Standing / running
-		graphicsBlitAtlasImage(sourceX, sourceY, trex.xPos, trex.yPos, sourceWidth, sourceHeight);
-	}
+	graphicsBlitAtlasImage(sourceX, sourceY, trex.xPos, trex.yPos, sourceWidth, sourceHeight);
 }
 
 void trexSetBlinkDelay() {

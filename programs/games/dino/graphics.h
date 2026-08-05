@@ -24,8 +24,10 @@
 #define ATLAS_TREX_X 848
 #define ATLAS_TREX_Y 2
 
+#define BACKGROUND_COLOR 0xF7F7F7
+
 void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w, int h);
-void graphicsFillBackground(unsigned r, unsigned g, unsigned b);
+void graphicsFillBackground(void);
 void graphicsRender();
 void graphicsDelay(int ms);
 

@@ -26,8 +26,6 @@
 #define RUNNER_KEYCODE_RESTART 13
 
 typedef struct {
-	int width;
-	int height;
 	double distanceRan;
 	int highestScore;
 	int time;
@@ -49,7 +47,6 @@ typedef struct {
 extern Runner runner;
 
 void runnerInit();
-void runnerAdjustDimensions();
 
 void runnerClearCanvas();
 

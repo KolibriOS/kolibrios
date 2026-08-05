@@ -48,11 +48,10 @@ void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w,
     }
 }
 
-void graphicsFillBackground(unsigned r, unsigned g, unsigned b) {
-    unsigned color = (r << 16) | (g << 8) | b;
+void graphicsFillBackground(void) {
     unsigned* p = screenImage;
     for (int i = DEFAULT_WIDTH * DEFAULT_HEIGHT; i; --i)
-        *p++ = color;
+        *p++ = BACKGROUND_COLOR;
 }
 
 void graphicsRender() {
