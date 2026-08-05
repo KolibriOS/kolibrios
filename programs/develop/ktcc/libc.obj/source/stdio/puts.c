@@ -9,6 +9,6 @@ int puts(const char *str)
 {
     size_t len = strlen(str);
     console_write(str, len);
-    console_write("\n", sizeof("\n")-1);
+    console_write("\n", 1);
     return len;
 }
