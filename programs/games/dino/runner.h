@@ -10,8 +10,6 @@
 #include "game_over_panel.h"
 #include "trex.h"
 
-#define RUNNER_DEFAULT_HEIGHT 150
-
 #define RUNNER_ACCELERATION 0.001
 #define RUNNER_BOTTOM_PAD 10
 #define RUNNER_CLEAR_TIME 3000

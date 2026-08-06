@@ -22,6 +22,7 @@
 #define ATLAS_TREX_X 848
 #define ATLAS_TREX_Y 2
 
+#define WINDOW_BORDER 5           // window skin border
 #define BACKGROUND_COLOR 0xF7F7F7 // window frame color
 #define BACKGROUND_INDEX 2        // the same color as a DINO_PALETTE index
 

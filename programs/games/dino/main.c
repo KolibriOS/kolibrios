@@ -56,7 +56,11 @@ int main(int argc, char* args[]) {
 			break;
 		case KSYS_EVENT_REDRAW:
 			_ksys_start_draw();
-    		_ksys_create_window(win_pos.x, win_pos.y, DEFAULT_WIDTH + 10, DEFAULT_HEIGHT + 29, WINDOW_TITLE, BACKGROUND_COLOR, 0x54); // 0x54. note: C = 1 !!
+			_ksys_create_window(
+				win_pos.x, win_pos.y,
+				DEFAULT_WIDTH + 2*WINDOW_BORDER,
+				DEFAULT_HEIGHT + _ksys_get_skin_height() + WINDOW_BORDER,
+				WINDOW_TITLE, BACKGROUND_COLOR, 0x74);
 			graphicsRender();
 			_ksys_end_draw();
 			break;

@@ -7,6 +7,8 @@ static unsigned char screenImage[DEFAULT_WIDTH * DEFAULT_HEIGHT];
 
 
 void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w, int h) {
+    destY += GAME_Y_OFFSET; // playfield coordinates -> buffer coordinates
+
     if (destX >= DEFAULT_WIDTH) {
         return;
     }
@@ -57,7 +59,7 @@ void graphicsFillBackground(void) {
 
 void graphicsRender() {
     // don't redraw window on each frame. redraw window only when redraw event (called when widow moved e.g.)
-    ksys_draw_bitmap_palette(screenImage, 5, 24, DEFAULT_WIDTH, DEFAULT_HEIGHT, 8, (void*)DINO_PALETTE, 0);
+    ksys_draw_bitmap_palette(screenImage, 0, 0, DEFAULT_WIDTH, DEFAULT_HEIGHT, 8, (void*)DINO_PALETTE, 0);
 }
 
 void graphicsDelay(int ms) {

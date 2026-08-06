@@ -3,6 +3,10 @@
 
 #define DEFAULT_WIDTH 600
 #define DEFAULT_HEIGHT 200
+
+#define GAME_HEIGHT 150
+#define GAME_Y_OFFSET ((DEFAULT_HEIGHT - GAME_HEIGHT) / 2)
+
 #define FPS 60
 
 #define DELTA_MS_DEFAULT 20
