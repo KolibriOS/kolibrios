@@ -11,7 +11,14 @@
 
 #define DELTA_MS_DEFAULT 20
 
-#define WINDOW_TITLE "DINO. Jump: UP/SPACE  Duck: DOWN  Restart: jump or ENTER"
+// The leading \3 tells the kernel the caption is UTF-8 (see gui/window.inc)
+#ifdef LANG_RUS
+#define WINDOW_TITLE "\3DINO [ПРЫЖОК - ВВЕРХ/ПРОБЕЛ | ПРИСЕСТЬ - ВНИЗ | РЕСТАРТ - ПРЫЖОК/ENTER]"
+#elif defined LANG_SPA
+#define WINDOW_TITLE "DINO [SALTAR - ARRIBA/ESPACIO | AGACHARSE - ABAJO | REINICIAR - SALTAR/ENTER]"
+#else
+#define WINDOW_TITLE "DINO [JUMP - UP/SPACE | DUCK - DOWN | RESTART - JUMP/ENTER]"
+#endif
 
 // #define DBG
 
