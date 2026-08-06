@@ -13,7 +13,7 @@
 
 // The leading \3 tells the kernel the caption is UTF-8 (see gui/window.inc)
 #ifdef LANG_RUS
-#define WINDOW_TITLE "\3DINO [ПРЫЖОК - UP/SPACE | ПРИСЕД - DOWN | РЕСТАРТ - ПРЫЖОК/ENTER]"
+#define WINDOW_TITLE "\3DINO [ПРЫЖОК - ВВЕРХ/ПРОБЕЛ | ПРИСЕД - ВНИЗ | РЕСТАРТ - ПРЫЖОК/ВВОД]"
 #elif defined LANG_SPA
 #define WINDOW_TITLE "\3DINO [SALTAR - ARRIBA/ESPACIO | AGACHARSE - ABAJO | REINICIAR - SALTAR/ENTER]"
 #else
