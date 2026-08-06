@@ -204,6 +204,7 @@ ksys_dll_t EXPORTS[] = {
     { "tmpfile", &tmpfile },
     { "tmpnam", &tmpnam },
     { "vfscanf", &vfscanf },
+    { "vfprintf", &vfprintf },
     { "vprintf", &vprintf },
     { "vfscanf", &vfscanf },
     { "vsprintf", &vsprintf },
