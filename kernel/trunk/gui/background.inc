@@ -193,7 +193,8 @@ align 4
 ;--------------------------------------
 align 4
 @@:
-        mov     eax, [current_slot_idx]
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.tid]
         mov     [bgrlockpid], eax
         cmp     [img_background], static_background_data
         jz      .nomem
@@ -241,7 +242,8 @@ nosb6:
         jnz     nosb7
         cmp     [bgrlock], 0
         jz      .err
-        mov     eax, [current_slot_idx]
+        mov     eax, [current_slot]
+        mov     eax, [eax + APPDATA.tid]
         cmp     [bgrlockpid], eax
         jnz     .err
         mov     eax, ecx

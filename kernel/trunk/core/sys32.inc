@@ -714,12 +714,12 @@ destroy_thread:
         call    free_cd_channel
         and     [cd_status], 0
 @@:
-        pop     esi
         cmp     [bgrlockpid], esi
         jnz     @f
         and     [bgrlockpid], 0
         and     [bgrlock], 0
 @@:
+        pop     esi
 
         pusha                 ; remove all port reservations
         mov     edx, esi
