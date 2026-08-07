@@ -55,7 +55,6 @@ launcher_start db 1
 endg
 
 max_processes  =  255
-tss_step       =  128 + 8192 ; tss & i/o - 65535 ports, * 256=557056*4
 
 os_stack       =  os_data_l - gdts    ; GDTs
 os_code        =  os_code_l - gdts
