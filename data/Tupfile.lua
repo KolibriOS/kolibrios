@@ -74,7 +74,6 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
  {"WELCOME.HTM", VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
  {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/rus/example.asm"},
  {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy_ru"},
- {"GAMES/BASEKURS.KLA", build_type .. "/games/basekurs.kla"},
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
  {"GAMES/DESCENT", build_type .. "/games/descent"},
  {"SETTINGS/.shell", SRC_PROGS .. "/system/shell/bin/rus/.shell"},
@@ -649,7 +648,6 @@ tup.append_table(extra_files, {
 })
 -- For russian build, add russian-only programs.
 if build_type == "ru_RU" then tup.append_table(img_files, {
- {"GAMES/KLAVISHA", VAR_PROGS .. "/games/klavisha/klavisha"},
  {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
 }) else tup.append_table(img_files, {
  {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
@@ -658,6 +656,8 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
 if build_type == "ru_RU" then tup.append_table(extra_files, {
  {"kolibrios/utils/period", VAR_PROGS .. "/other/period/period"},
  {"kolibrios/games/Dungeons/Dungeons", VAR_PROGS .. "/games/Dungeons/Dungeons"},
+ {"kolibrios/games/klavisha/klavisha", VAR_PROGS .. "/games/klavisha/klavisha"},
+ {"kolibrios/games/klavisha/basekurs.kla", "ru_RU/games/basekurs.kla"},
 }) end
 
 end -- tup.getconfig('NO_FASM') ~= 'full'
