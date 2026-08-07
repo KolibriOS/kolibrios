@@ -47,8 +47,9 @@ TYPE
 
 VAR
 
-    IniFileName: RW.tFileName;
+    IniFileName*: RW.tFileName;
     sections*: List.tList;
+    langSections*: List.tList;
 
     curSection*: tASCIISectionName;
     curSectionNum*: INTEGER;
@@ -89,22 +90,27 @@ VAR
     name: tSectionName;
     i: INTEGER;
 BEGIN
-    IF sections.count < MAX_SECTIONS THEN
-        i := 0;
-        WHILE (i < MAX_LEN - 1) & (sectionName[i] # 0X) DO
-            name[i] := WCHR(ORD(sectionName[i]));
-            INC(i)
-        END;
-        name[i] := 0X
+    i := 0;
+    WHILE (i < MAX_LEN - 1) & (sectionName[i] # 0X) DO
+        name[i] := WCHR(ORD(sectionName[i]));
+        INC(i)
     END;
+    name[i] := 0X;
+
     IF Utils.streq(SYSTEM.ADR(name[0]), SYSTEM.WSADR("color_"), 6) THEN
-        Utils.reverse(name);
-        name[LENGTH(name) - 6] := 0X;
-        Utils.reverse(name);
+        IF sections.count < MAX_SECTIONS THEN
+            Utils.reverse(name);
+            name[LENGTH(name) - 6] := 0X;
+            Utils.reverse(name);
+            NEW(section);
+            section.name := name;
+            List.append(sections, section)
+        END
+    ELSIF Utils.streq(SYSTEM.ADR(name[0]), SYSTEM.WSADR("lang_"), 5) THEN
         NEW(section);
         section.name := name;
-        List.append(sections, section)
-    END
+        List.append(langSections, section)
+    END;
     RETURN 1
 END section_callback;
 
@@ -188,6 +194,7 @@ END getSettings;
 PROCEDURE load* (path: RW.tFileName);
 BEGIN
     sections := List.create(NIL);
+    langSections := List.create(NIL);
 
     Utils.getPath(path, IniFileName);
     Utils.append8(IniFileName, Utils.SLASH);

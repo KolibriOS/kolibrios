@@ -1,4 +1,4 @@
-﻿(*
+(*
     Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
@@ -67,7 +67,7 @@ TYPE
         CurX: INTEGER;
         smallChange: INTEGER;
         modified*, smallMove,
-        comments, guard, fasm*,
+        comments, guard,
         search, cs, whole, wordSel: BOOLEAN;
         edition*: tGuard;
         curLine: tLine;
@@ -104,12 +104,9 @@ VAR
 
 PROCEDURE setLang* (text: tText; lang: INTEGER);
 BEGIN
-	IF text.lang # lang THEN
-		text.fasm := lang = Lang.langFasm;
-		text.lang := lang
-	END;
+    text.lang := lang;
     text.comments := TRUE;
-    Lang.setCurLang(text.lang)
+    Lang.setCurLang(lang)
 END setLang;
 
 
@@ -228,12 +225,9 @@ END SetColor;
 
 
 PROCEDURE ProcessComments (line: tLine; VAR depth, pos: INTEGER; minDepth, n: INTEGER; lang: INTEGER);
-VAR
-    cond: INTEGER;
 BEGIN
-    cond := 0;
     WHILE (pos <= n) & (depth > minDepth) DO
-        Lang.comments(line, depth, cond, pos, n, lang);
+        Lang.comments(line, depth, pos, n, lang);
         INC(pos)
     END;
     DEC(pos)
@@ -316,10 +310,8 @@ PROCEDURE parse (text: tText; line: tLine; y: INTEGER; backColor: INTEGER; lang:
 VAR
     c: WCHAR;
     i, n, k: INTEGER;
-    cond, depth: INTEGER;
-    color: INTEGER;
-    hex: BOOLEAN;
-    isDgt: PROCEDURE (c: WCHAR): BOOLEAN;
+    depth: INTEGER;
+    len: INTEGER;
 
 
     PROCEDURE PrintLex (text: tText; line: tLine; lexStart, lexEnd: INTEGER; y: INTEGER; color, backColor: INTEGER);
@@ -332,24 +324,35 @@ VAR
     END PrintLex;
 
 
-    PROCEDURE PrintComment (text: tText; line: tLine; VAR depth, i: INTEGER; w, y: INTEGER; backColor: INTEGER);
+    PROCEDURE PrintSpan (text: tText; line: tLine; VAR depth, i: INTEGER; w, y, color, backColor: INTEGER);
     VAR
         lexStart: INTEGER;
-        color: INTEGER;
     BEGIN
-        IF (text.lang = Lang.langLua) & ~ODD(depth) THEN
-            color := colors.string
-        ELSIF (text.lang = Lang.langIni) & (depth = 1) THEN
-            color := colors.key2
-        ELSIF (text.lang = Lang.langPascal) & (depth = 3) THEN
-            color := colors.key3
-        ELSE
-            color := colors.comment
-        END;
         lexStart := MAX(i - w, 0);
         ProcessComments(line, depth, i, 0, line.length - 1, text.lang);
         PrintLex(text, line, lexStart, i, y, color, backColor)
-    END PrintComment;
+    END PrintSpan;
+
+
+    (* colour a block span is painted with, chosen per marker pair in the ini *)
+    PROCEDURE lexColor (lang, depth: INTEGER): INTEGER;
+    VAR
+        id, res: INTEGER;
+    BEGIN
+        id := Lang.spanColorId(lang, depth);
+        IF id = Lang.clString THEN
+            res := colors.string
+        ELSIF id = Lang.clKey1 THEN
+            res := colors.key1
+        ELSIF id = Lang.clKey2 THEN
+            res := colors.key2
+        ELSIF id = Lang.clKey3 THEN
+            res := colors.key3
+        ELSE
+            res := colors.comment
+        END
+        RETURN res
+    END lexColor;
 
 
     PROCEDURE upper (c: WCHAR): WCHAR;
@@ -409,7 +412,7 @@ VAR
         k := i;
         Lang.SkipString(line, i, line.length - 1, text.lang);
         PrintLex(text, line, k, i, y, colors.string, backColor);
-        IF text.lang IN Lang.escLang THEN
+        IF Lang.cfg[text.lang].esc THEN
 	        Start := k + 1;
 	        End := i - 1;
 	        k := Start;
@@ -426,432 +429,119 @@ VAR
     END String;
 
 
+    (* number scanner: decimal, float/exponent, 0x-hex, prefixed hex ($FF),
+       trailing-h hex, trailing-b binary; enabled by Lang.cfg[lang].numOn *)
+    PROCEDURE Number (text: tText; line: tLine; VAR i: INTEGER; y, backColor, lang: INTEGER);
+    VAR
+        k2, p: INTEGER;
+        c2: WCHAR;
+    BEGIN
+        k2 := i;
+        IF Lines.getChar(line, i) = Lang.cfg[lang].hexPrefix THEN
+            INC(i);                                        (* prefixed hex, $FF *)
+            WHILE U.isHex(upper(Lines.getChar(line, i))) DO INC(i) END
+        ELSIF (Lines.getChar(line, i) = "0") & (upper(Lines.getChar(line, i + 1)) = "X") THEN
+            INC(i, 2);                                     (* 0x hex *)
+            WHILE U.isHex(upper(Lines.getChar(line, i))) DO INC(i) END;
+            IF UL(Lines.getChar(line, i)) THEN INC(i) END
+        ELSE
+            (* scan a maximal hex run first to spot an h (hex) or
+               b (binary) suffix, e.g. 0FFh, 1010b *)
+            p := i;
+            WHILE U.isHex(upper(Lines.getChar(line, p))) DO INC(p) END;
+            IF upper(Lines.getChar(line, p)) = "H" THEN
+                i := p;  INC(i)
+            ELSIF (p > i) & (upper(Lines.getChar(line, p - 1)) = "B") THEN
+                i := p
+            ELSE                                           (* decimal / float *)
+                WHILE U.isDigit(Lines.getChar(line, i)) DO INC(i) END;
+                c2 := Lines.getChar(line, i);
+                IF (c2 = ".") & (Lines.getChar(line, i + 1) # ".") THEN
+                    INC(i);
+                    WHILE U.isDigit(Lines.getChar(line, i)) DO INC(i) END;
+                    IF upper(Lines.getChar(line, i)) = "E" THEN
+                        INC(i);
+                        c2 := Lines.getChar(line, i);
+                        IF (c2 = "+") OR (c2 = "-") THEN INC(i) END;
+                        WHILE U.isDigit(Lines.getChar(line, i)) DO INC(i) END
+                    END;
+                    IF FL(Lines.getChar(line, i)) THEN INC(i) END
+                ELSIF UL(c2) THEN
+                    INC(i)
+                END
+            END
+        END;
+        DEC(i);
+        PrintLex(text, line, k2, i, y, colors.num, backColor)
+    END Number;
+
+
+    (* colour a key that is immediately followed by ':' (json), kStart..i *)
+    PROCEDURE KeyColon (text: tText; line: tLine; VAR i: INTEGER; kStart, y, backColor, lang: INTEGER);
+    BEGIN
+        IF Lang.cfg[lang].keyColon THEN
+            WHILE Lines.isSpace(Lines.getChar(line, i + 1)) DO INC(i) END;
+            IF Lines.getChar(line, i + 1) = ":" THEN
+                PrintLex(text, line, kStart, i, y, colors.key1, backColor)
+            END
+        END
+    END KeyColon;
+
+
 BEGIN
     depth := line.cin;
     n := line.length - 1;
     i := 0;
     IF (depth > 0) & (n >= 0) THEN
-        PrintComment(text, line, depth, i, 2, y, backColor)
+        (* the line starts inside a span: paint it out, then step past it the
+           way the loop below does for a span it opens itself, or its closing
+           marker's last character would be scanned a second time as code *)
+        PrintSpan(text, line, depth, i, 0, y, lexColor(lang, depth), backColor);
+        INC(i)
     END;
-    cond := 0;
     WHILE i <= n DO
         c := Lines.getChar(line, i);
 
-        IF lang = Lang.langFasm THEN
-
-            IF c = ";" THEN
-                PrintLex(text, line, i, n, y, colors.comment, backColor);
-                i := n
-            ELSIF (c = "'") OR (c = '"') THEN
-                String(text, line, i, y, backColor)
-            ELSIF (U.isLetter(c) OR (c = "_")) THEN
-                ident(text, i, i, y, line, backColor, Lang.isCS(lang))
-            ELSIF U.isDigit(c) THEN
-                hex := FALSE;
-                k := i;
-                INC(i);
-                c := Lines.getChar(line, i);
-                IF (upper(c) = "X") & (Lines.getChar(line, i - 1) = "0") THEN
+        IF depth = 0 THEN
+            (* a block start may extend a line comment prefix (lua "--[[");
+               try it first, else the line comment would swallow the line *)
+            len := Lang.MatchSpanStart(line, i, n, lang, k);
+            IF len > 0 THEN
+                depth := k + 1;
+                (* resume past the whole start marker, exactly where the state
+                   machine in Lang.comments resumes. Otherwise a stop marker
+                   that overlaps the start one - a slash-star-slash in C, a
+                   paren-star-paren in Oberon - would close the span for the
+                   painter while the state machine kept it open *)
+                INC(i, len);
+                PrintSpan(text, line, depth, i, len, y, lexColor(lang, k + 1), backColor)
+            ELSE
+                len := Lang.MatchLineComment(line, i, n, lang);
+                IF len > 0 THEN
+                    PrintLex(text, line, i, n, y, colors.comment, backColor);
+                    i := n
+                ELSIF Lang.isQuote(c, lang) THEN
+                    k := i;
+                    String(text, line, i, y, backColor);
+                    KeyColon(text, line, i, k, y, backColor, lang)
+                ELSIF (c = Lang.cfg[lang].charPrefix)
+                      & U.isDigit(Lines.getChar(line, i + 1)) THEN
+                    (* char code, pascal #13; painted as a string literal *)
+                    k := i;
                     INC(i);
-                    hex := TRUE
-                END;
-
-                WHILE U.isHex(upper(Lines.getChar(line, i))) DO
-                    INC(i)
-                END;
-
-                IF (upper(Lines.getChar(line, i)) = "H") & ~hex THEN
-                    INC(i)
-                END;
-
-                DEC(i);
-                PrintLex(text, line, k, i, y, colors.num, backColor)
+                    WHILE U.isDigit(Lines.getChar(line, i)) DO INC(i) END;
+                    DEC(i);
+                    PrintLex(text, line, k, i, y, colors.string, backColor)
+                ELSIF Lang.cfg[lang].numOn
+                      & (U.isDigit(c) OR (c = Lang.cfg[lang].hexPrefix)) THEN
+                    Number(text, line, i, y, backColor, lang)
+                ELSIF (U.isLetter(c) OR (c = "_")) THEN
+                    k := i;
+                    (* include a leading '#' so keywords like #define match *)
+                    ident(text, i, i - ORD((i > 0) & (Lines.getChar(line, i - 1) = "#")), y, line, backColor, Lang.isCS(lang));
+                    KeyColon(text, line, i, k, y, backColor, lang)
+                END
             END
-
-        ELSIF (lang = Lang.langC) OR (lang = Lang.langJSON) THEN
-
-	        IF depth = 0 THEN
-	            IF c = "/" THEN
-	                IF cond = 0 THEN
-	                    cond := 1
-	                ELSE
-	                    PrintLex(text, line, i - 1, n, y, colors.comment, backColor);
-	                    cond := 0;
-	                    i := n
-	                END
-	            ELSIF (c = "*") & (cond = 1) THEN
-	                depth := 1;
-	                INC(i);
-	                PrintComment(text, line, depth, i, 2, y, backColor);
-	                cond := 0
-	            ELSIF U.isLetter(c) OR (c = "_") OR (c = "'") OR (c = '"') THEN
-	            	k := i;
-	            	IF (c = "'") OR (c = '"') THEN
-	            		String(text, line, i, y, backColor);
-	            	ELSE
-	            		ident(text, i, i - ORD((lang = Lang.langC) & (i > 0) & (Lines.getChar(line, i - 1) = "#")), y, line, backColor, Lang.isCS(lang))
-	            	END;
-	                IF lang = Lang.langJSON THEN
-		                WHILE Lines.isSpace(Lines.getChar(line, i + 1)) DO
-		                	INC(i)
-		                END;
-		                IF Lines.getChar(line, i + 1) = ":" THEN
-		                	PrintLex(text, line, k, i, y, colors.key1, backColor)
-		                END
-	                END;
-	                cond := 0
-	            ELSIF U.isDigit(c) THEN
-	                k := i;
-	                INC(i);
-	                c := Lines.getChar(line, i);
-	                IF c = "." THEN
-	                    DEC(i);
-	                    c := Lines.getChar(line, i)
-	                END;
-	                IF (upper(c) = "X") & (Lines.getChar(line, i - 1) = "0") THEN
-	                    REPEAT
-	                        INC(i);
-	                        c := Lines.getChar(line, i)
-	                    UNTIL ~U.isHex(upper(c));
-	                    IF UL(c) THEN
-	                        INC(i)
-	                    END
-	                ELSIF UL(c) THEN
-	                    INC(i)
-	                ELSIF U.isDigit(c) THEN
-	                    REPEAT
-	                        INC(i)
-	                    UNTIL ~U.isDigit(Lines.getChar(line, i));
-	                    c := Lines.getChar(line, i);
-	                    IF UL(c) THEN
-	                        INC(i)
-	                    ELSIF c = "." THEN
-	                        INC(i);
-	                        WHILE U.isDigit(Lines.getChar(line, i)) DO
-	                            INC(i)
-	                        END;
-	                        c := Lines.getChar(line, i);
-	                        IF upper(c) = "E" THEN
-	                            INC(i);
-	                            c := Lines.getChar(line, i);
-	                            IF (c = "+") OR (c = "-") THEN
-	                                INC(i)
-	                            END;
-	                            IF U.isDigit(Lines.getChar(line, i)) THEN
-	                                WHILE U.isDigit(Lines.getChar(line, i)) DO
-	                                    INC(i)
-	                                END;
-	                                c := Lines.getChar(line, i);
-	                                IF FL(c) THEN
-	                                    INC(i)
-	                                END
-	                            END
-	                        ELSIF FL(c) THEN
-	                            INC(i)
-	                        END
-	                    END
-	                END;
-	                DEC(i);
-	                PrintLex(text, line, k, i, y, colors.num, backColor);
-	                cond := 0
-	            ELSE
-	                cond := 0
-	            END
-	        ELSIF depth = 1 THEN
-	            IF c = "*" THEN
-	                cond := 1
-	            ELSIF (c = "/") & (cond = 1) THEN
-	                cond := 0;
-	                depth := 0
-	            ELSE
-	                cond := 0
-	            END
-	        END
-
-        ELSIF lang = Lang.langOberon THEN
-
-	        IF (depth = 0) & (c = "/") THEN
-	            IF cond = 3 THEN
-	                PrintLex(text, line, i - 1, n, y, colors.comment, backColor);
-	                cond := 0;
-	                i := n
-	            ELSE
-	                cond := 3
-	            END
-	        ELSIF (depth = 0) & ((c = "'") OR (c = '"')) THEN
-	            String(text, line, i, y, backColor);
-	            cond := 0
-	        ELSIF (depth = 0) & U.isDigit(c) THEN
-	            color := colors.num;
-	            k := i;
-	            INC(i);
-	            WHILE U.isHex(Lines.getChar(line, i)) DO
-	                INC(i)
-	            END;
-	            IF i <= n THEN
-	                IF Lines.getChar(line, i) = "." THEN
-	                    INC(i);
-	                    IF Lines.getChar(line, i) = "." THEN
-	                        DEC(i)
-	                    END;
-	                    WHILE U.isDigit(Lines.getChar(line, i)) DO
-	                        INC(i)
-	                    END;
-	                    IF upper(Lines.getChar(line, i)) = "E" THEN
-	                        INC(i);
-	                        IF (Lines.getChar(line, i) = "+") OR (Lines.getChar(line, i) = "-") THEN
-	                            INC(i)
-	                        END;
-	                        WHILE U.isDigit(Lines.getChar(line, i)) DO
-	                            INC(i)
-	                        END
-	                    END
-	                ELSIF upper(Lines.getChar(line, i)) = "H" THEN
-	                    INC(i)
-	                ELSIF upper(Lines.getChar(line, i)) = "X" THEN
-	                    color := colors.string;
-	                    INC(i)
-	                END
-	            END;
-	            DEC(i);
-	            PrintLex(text, line, k, i, y, color, backColor);
-	            cond := 0
-	        ELSIF (depth = 0) & (U.isLetter(c) OR (c = "_")) THEN
-	            ident(text, i, i, y, line, backColor, Lang.isCS(lang));
-	            cond := 0
-	        ELSIF c = "(" THEN
-	            cond := 1
-	        ELSIF c = "*" THEN
-	            IF cond = 1 THEN
-	                INC(depth);
-	                INC(i);
-	                PrintComment(text, line, depth, i, 2, y, backColor);
-	                cond := 0
-	            ELSE
-	                cond := 2
-	            END
-	        ELSIF c = ")" THEN
-	            IF cond = 2 THEN
-	                IF depth > 0 THEN
-	                    DEC(depth)
-	                END
-	            END;
-	            cond := 0
-	        ELSE
-	            cond := 0
-	        END
-
-        ELSIF lang = Lang.langLua THEN
-
-	        IF depth = 0 THEN
-	            IF c = "-" THEN
-	                IF cond = 1 THEN
-	                    IF Lang.LuaLong(line, i + 1) >= 0 THEN
-	                        depth := Lang.LuaLong(line, i + 1)*2 + 1;
-	                        INC(i);
-	                        PrintComment(text, line, depth, i, 2, y, backColor)
-	                    ELSE
-	                        PrintLex(text, line, i - 1, n, y, colors.comment, backColor);
-	                        i := n
-	                    END;
-	                    cond := 0
-	                ELSE
-	                    cond := 1
-	                END
-	            ELSIF c = "[" THEN
-	                cond := 0;
-	                k := Lang.LuaLong(line, i);
-	                IF k >= 0 THEN
-	                    depth := (k + 1)*2;
-	                    INC(i, 2);
-	                    PrintComment(text, line, depth, i, 2, y, backColor);
-	                    cond := 0
-	                END
-	            ELSIF (c = "'") OR (c = '"') THEN
-	                String(text, line, i, y, backColor);
-	                cond := 0
-	            ELSIF U.isDigit(c) THEN
-	                k := i;
-	                IF (c = "0") & (upper(Lines.getChar(line, i + 1)) = "X") THEN
-	                    isDgt := U.isHex;
-	                    hex := TRUE;
-	                    INC(i, 2)
-	                ELSE
-	                    isDgt := U.isDigit;
-	                    hex := FALSE
-	                END;
-	                WHILE isDgt(upper(Lines.getChar(line, i))) DO
-	                    INC(i)
-	                END;
-	                IF Lines.getChar(line, i) = "." THEN
-	                    INC(i);
-	                    IF Lines.getChar(line, i) = "." THEN
-	                        DEC(i)
-	                    END;
-	                    WHILE isDgt(upper(Lines.getChar(line, i))) DO
-	                        INC(i)
-	                    END
-	                END;
-	                IF (upper(Lines.getChar(line, i)) = "E") OR hex & (upper(Lines.getChar(line, i)) = "P") THEN
-	                    INC(i);
-	                    IF (Lines.getChar(line, i) = "-") OR (Lines.getChar(line, i) = "+") THEN
-	                        INC(i)
-	                    END;
-	                    WHILE isDgt(upper(Lines.getChar(line, i))) DO
-	                        INC(i)
-	                    END
-	                END;
-	                DEC(i);
-	                PrintLex(text, line, k, i, y, colors.num, backColor);
-	                cond := 0
-	            ELSIF U.isLetter(c) OR (c = "_") THEN
-	                ident(text, i, i, y, line, backColor, Lang.isCS(lang));
-	                cond := 0
-	            ELSE
-	                cond := 0
-	            END
-
-	        ELSIF depth > 0 THEN
-	            IF (cond = 0) & (c = "]") THEN
-	                cond := 1
-	            ELSIF (cond >= 1) & (c = "=") THEN
-	                INC(cond)
-	            ELSIF (cond >= 1) & (c = "]") & (cond * 2 - depth MOD 2 = depth) THEN
-	                depth := 0;
-	                cond := 0
-	            ELSE
-	                cond := 0
-	            END
-	        END
-
-        ELSIF lang = Lang.langPascal THEN
-
-	        IF depth = 0 THEN
-	            IF c = "(" THEN
-	                cond := 1
-	            ELSIF (c = "*") & (cond = 1) THEN
-	                depth := 2;
-	                INC(i);
-	                PrintComment(text, line, depth, i, 2, y, backColor);
-	                cond := 0
-	            ELSIF c = "/" THEN
-	                IF cond = 2 THEN
-	                    PrintLex(text, line, i - 1, n, y, colors.comment, backColor);
-	                    cond := 0;
-	                    i := n
-	                ELSE
-	                    cond := 2
-	                END
-	            ELSIF c = "'" THEN
-	                String(text, line, i, y, backColor);
-	                cond := 0
-	            ELSIF c = "{" THEN
-	                IF Lines.getChar(line, i + 1) = "$" THEN
-	                    depth := 3
-	                ELSE
-	                    depth := 1
-	                END;
-	                INC(i);
-	                PrintComment(text, line, depth, i, 1, y, backColor);
-	                cond := 0
-	            ELSIF c = "#" THEN
-	                k := i;
-	                INC(i);
-	                WHILE U.isDigit(Lines.getChar(line, i)) DO
-	                    INC(i)
-	                END;
-	                DEC(i);
-	                PrintLex(text, line, k, i, y, colors.string, backColor);
-	                cond := 0
-	            ELSIF c = "$" THEN
-	                IF (i > 0 ) & (Lines.getChar(line, i - 1) = "#") THEN
-	                    color := colors.string
-	                ELSE
-	                    color := colors.num
-	                END;
-	                k := i;
-	                INC(i);
-	                WHILE U.isHex(upper(Lines.getChar(line, i))) DO
-	                    INC(i)
-	                END;
-	                DEC(i);
-	                PrintLex(text, line, k, i, y, color, backColor);
-	                cond := 0
-	            ELSIF U.isDigit(c) THEN
-	                k := i;
-	                WHILE U.isDigit(Lines.getChar(line, i)) DO
-	                    INC(i)
-	                END;
-	                IF Lines.getChar(line, i) = "." THEN
-	                    INC(i);
-	                    IF Lines.getChar(line, i) = "." THEN
-	                        DEC(i)
-	                    END;
-	                    WHILE U.isDigit(Lines.getChar(line, i)) DO
-	                        INC(i)
-	                    END;
-	                    IF upper(Lines.getChar(line, i)) = "E" THEN
-	                        INC(i);
-	                        IF (Lines.getChar(line, i) = "-") OR (Lines.getChar(line, i) = "+") THEN
-	                            INC(i)
-	                        END;
-	                        WHILE U.isDigit(Lines.getChar(line, i)) DO
-	                            INC(i)
-	                        END
-	                    END
-	                END;
-	                DEC(i);
-	                PrintLex(text, line, k, i, y, colors.num, backColor);
-	                cond := 0
-	            ELSIF (U.isLetter(c) OR (c = "_")) THEN
-	                ident(text, i, i, y, line, backColor, Lang.isCS(lang));
-	                cond := 0
-	            ELSE
-	                cond := 0
-	            END
-	        ELSIF depth IN {1, 3} THEN
-	            IF c = "}" THEN
-	                depth := 0
-	            END
-	        ELSIF depth = 2 THEN
-	            IF c = "*" THEN
-	                cond := 1
-	            ELSIF (c = ")") & (cond = 1) THEN
-	                depth := 0;
-	                cond := 0
-	            ELSE
-	                cond := 0
-	            END
-	        END
-
-        ELSIF lang = Lang.langIni THEN
-
-	        IF depth = 0 THEN
-	            IF ((c = ";") OR (c = "#")) & (leadingSpaces(line) = i) THEN
-	                PrintLex(text, line, i, n, y, colors.comment, backColor);
-	                i := n
-	            ELSIF c = '"' THEN
-	                String(text, line, i, y, backColor)
-	            ELSIF c = "[" THEN
-	                depth := 1;
-	                INC(i);
-	                PrintComment(text, line, depth, i, 1, y, backColor)
-	            ELSIF U.isDigit(c) THEN
-	                k := i;
-	                WHILE U.isDigit(Lines.getChar(line, i)) DO
-	                    INC(i)
-	                END;
-	                DEC(i);
-	                PrintLex(text, line, k, i, y, colors.num, backColor)
-	            ELSIF (U.isLetter(c) OR (c = "_")) THEN
-	                ident(text, i, i, y, line, backColor, Lang.isCS(lang))
-	            END
-	        ELSIF depth = 1 THEN
-	            IF c = "]" THEN
-	                depth := 0
-	            END
-	        END
-
         END;
         INC(i)
     END
@@ -981,140 +671,6 @@ BEGIN
 	ClearSearch(text)
 	RETURN _search(text, s, cs, whole, textStart, textEnd)
 END search;
-
-
-PROCEDURE fasm_anon (text: tText);
-VAR
-	textStart, textEnd: tPoint;
-	res, frw, back, label, anon_label: BOOLEAN;
-	Y1, Y2, i, k, j: INTEGER;
-	line, Label: tLine;
-	str: ARRAY 8 OF WCHAR;
-
-
-	PROCEDURE anon (line: tLine): BOOLEAN;
-	VAR
-		i: INTEGER;
-	BEGIN
-		i := leadingSpaces(line)
-		RETURN (Lines.getChar(line, i) = "@") &
-				(Lines.getChar(line, i + 1) = "@") &
-				(Lines.getChar(line, i + 2) = ":")
-	END anon;
-
-
-BEGIN
-	frw := FALSE;
-	back := FALSE;
-	label := FALSE;
-	line := text.curLine;
-
-	i := text.cursor.X;
-	j := 0;
-	FOR k := i - 3 TO i + 2 DO
-		str[j] := U.lcase(Lines.getChar(line, k));
-		INC(j)
-	END;
-	j := 3;
-
-	anon_label := anon(line);
-
-	IF str[j] = "@" THEN
-		IF str[j + 1] = "f" THEN
-			frw := TRUE
-		ELSIF (str[j + 1] = "b") OR (str[j + 1] = "r") THEN
-			back := TRUE
-		ELSIF anon_label & (((str[j + 1] = "@") & (str[j + 2] = ":")) OR
-				((str[j - 1] = "@") & (str[j + 1] = ":"))) THEN
-			label := TRUE
-		END
-	ELSIF str[j - 1] = "@" THEN
-		IF str[j] = "f" THEN
-			frw := TRUE
-		ELSIF (str[j] = "b") OR (str[j] = "r") THEN
-			back := TRUE
-		ELSIF anon_label & (str[j] = ":") & (str[j - 2] = "@") THEN
-			label := TRUE
-		END
-	ELSIF anon_label & (str[j] = ":") & (str[j - 1] = "@") & (str[j - 2] = "@") THEN
-		label := TRUE
-	ELSIF (str[j - 1] = "f") & (str[j - 2] = "@") THEN
-		frw := TRUE
-	ELSIF ((str[j - 1] = "b") OR (str[j - 1] = "r")) & (str[j - 2] = "@") THEN
-		back := TRUE
-	ELSIF anon_label & (str[j - 1] = ":") & (str[j - 2] = "@") & (str[j - 3] = "@") THEN
-		label := TRUE
-	END;
-
-	IF back OR frw OR label THEN
-		Y1 := text.cursor.Y;
-		Y2 := Y1;
-
-		IF label THEN
-			Label := line;
-			DEC(Y1)
-		ELSE
-			Label := NIL
-		END;
-
-		line := getLine2(text, Y1);
-		WHILE (Y1 > 0) & ~anon(line) DO
-			PrevLine(line);
-			DEC(Y1)
-		END;
-
-		line := getLine2(text, Y2);
-		IF anon(line) THEN
-			NextLine(line);
-			INC(Y2)
-		END;
-
-		WHILE (Y2 < text.count) & ~anon(line) DO
-			NextLine(line);
-			INC(Y2)
-		END;
-
-		IF Y1 < 0 THEN
-			Y1 := 0
-		ELSIF back THEN
-			Label := getLine2(text, Y1)
-		END;
-		textStart.Y := Y1; textStart.X := 0;
-		IF Y2 = text.count THEN
-			DEC(Y2);
-			textEnd.X := text.last(tLine).length
-		ELSIF frw THEN
-			Label := getLine2(text, Y2);
-			textEnd.X := 0
-		END;
-		textEnd.Y := Y2;
-		ClearSearch(text);
-		text.smallMove := FALSE;
-		IF (Label # NIL) & ~anon(Label) THEN
-			Label := NIL
-		END
-	END;
-
-	IF frw THEN
-		res := _search(text, "@f", FALSE, FALSE, textStart, textEnd);
-		IF Label # NIL THEN
-			Search.add(text.foundList, Label.pos + leadingSpaces(Label))
-		END
-	ELSIF back THEN
-		IF Label # NIL THEN
-			Search.add(text.foundList, Label.pos + leadingSpaces(Label))
-		END;
-		res := _search(text, "@b", FALSE, FALSE, textStart, textEnd);
-		res := _search(text, "@r", FALSE, FALSE, textStart, textEnd)
-	ELSIF label THEN
-		res := _search(text, "@f", FALSE, FALSE, textStart, text.cursor^);
-		IF Label # NIL THEN
-			Search.add(text.foundList, Label.pos + leadingSpaces(Label))
-		END;
-		res := _search(text, "@b", FALSE, FALSE, text.cursor^, textEnd);
-		res := _search(text, "@r", FALSE, FALSE, text.cursor^, textEnd)
-	END
-END fasm_anon;
 
 
 PROCEDURE modify (text: tText);
@@ -2163,10 +1719,7 @@ BEGIN
 	    END;
 	    IF search(text, str, Lang.isCS(text.lang), TRUE) THEN END;
 	    text.wordSel := FALSE
-    END;
-    (*IF (text.lang = Lang.langFasm) & ~selected(text) THEN
-    	fasm_anon(text)
-    END*)
+    END
 END wordSel;
 
 

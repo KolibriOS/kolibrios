@@ -29,11 +29,9 @@ IMPORT
 
 CONST
     APPNAME = "CEdit";
-    VERSION = "1.0";
+    VERSION = "1.1";
     HEADER = APPNAME + " " + VERSION;
-
     ShellFilter = "";
-    EditFilter = "sh|inc|txt|asm|ob07|c|cpp|h|pas|pp|lua|ini|json";
 
     fontWidth = K.fontWidth;
     fontHeight = K.fontHeight;
@@ -107,15 +105,12 @@ CONST
     menuDecLS = menuIncLS + 1;
     menuColors = 1000;
     menuMaxColors = menuColors + Ini.MAX_SECTIONS - 1;
-
     menuText = 30;
-    menuC = 31;
-    menuFasm = 32;
-    menuIni = 33;
-    menuJSON = 34;
-    menuLua = 35;
-    menuOberon = 36;
-    menuPascal = 37;
+    menuEditIni = 34;
+    menuLangBase = 200;
+    menuLangMax = menuLangBase + Languages.maxLangs - 1;
+    maxLangName = 32;   (* also holds an ini section name, which Ini caps at 32 *)
+    maxCmd = 256;       (* a build/run/debug template, before %-expansion *)
 
     menuBuild = 50;
     menuBuildScript = 51;
@@ -123,7 +118,6 @@ CONST
     menuRunScript = 53;
     menuDebug = 54;
     menuDebugScript = 55;
-    menuFASM = 56;
 
     menuUTF8BOM = 60;
     menuUTF8 = 61;
@@ -219,6 +213,17 @@ VAR
     timerEnabled: BOOLEAN;
 
     IPC: ARRAY 64 OF INTEGER; mainTID: INTEGER;
+
+    (* "ext1|ext2|..." for the open dialog: at most 7 chars plus a separator
+       for every extension the language table can hold *)
+    EditFilter: ARRAY 8 * Languages.maxExts OF CHAR;
+    (* the Language menu, one entry per [lang_*] section of the ini *)
+    langCount: INTEGER;
+    langs: ARRAY Languages.maxLangs OF RECORD
+        name: ARRAY maxLangName OF WCHAR;
+        id: INTEGER;
+        cmd: ARRAY 3, maxCmd OF CHAR    (* 0 build, 1 run, 2 debug *)
+    END;
 
 
 PROCEDURE EditBox_Focus (edit: EB.tEditBox): BOOLEAN;
@@ -387,6 +392,34 @@ BEGIN
 END drawText;
 
 
+(* index in langs of a Languages id, -1 if the language has no menu entry *)
+PROCEDURE GetLangIdx (langID: INTEGER): INTEGER;
+VAR
+    i: INTEGER;
+BEGIN
+    i := 0;
+    WHILE (i < langCount) & (langs[i].id # langID) DO
+        INC(i)
+    END;
+    IF i >= langCount THEN
+        i := -1
+    END
+    RETURN i
+END GetLangIdx;
+
+
+(* does the current file's language define a build/run/debug command? *)
+PROCEDURE langHasCmd (kind: INTEGER): BOOLEAN;
+VAR
+    idx: INTEGER;
+    res: BOOLEAN;
+BEGIN
+    idx := GetLangIdx(text.lang);
+    res := (idx >= 0) & (langs[idx].cmd[kind] # "")
+    RETURN res
+END langHasCmd;
+
+
 PROCEDURE repaint;
 VAR
     width, height, scrollX, scrollY: INTEGER;
@@ -431,8 +464,8 @@ BEGIN
         Toolbar.enable(toolbar, btnRedo,  ~ChangeLog.isLastGuard(text.edition));
         Toolbar.enable(toolbar, btnUpper, T.selected(text));
         Toolbar.enable(toolbar, btnLower, T.selected(text));
-        Toolbar.enable(toolbar, btnBuild, (buildScript # "") OR text.fasm);
-        Toolbar.enable(toolbar, btnRun,   (runScript # "") OR text.fasm);
+        Toolbar.enable(toolbar, btnBuild, (buildScript # "") OR langHasCmd(0));
+        Toolbar.enable(toolbar, btnRun,   (runScript # "") OR langHasCmd(1));
         Toolbar.drawIcons(toolbar)
     END
 END repaint;
@@ -1083,22 +1116,14 @@ BEGIN
             Menu.option(menu, menuColors + i, Ini.curSectionNum = i)
         END
     ELSIF menu = menuLanguage THEN
-        Menu.option(menu, menuText,   text.lang = Languages.langText);
-        Menu.option(menu, menuC,      text.lang = Languages.langC);
-        Menu.option(menu, menuFasm,   text.lang = Languages.langFasm);
-        Menu.option(menu, menuIni,    text.lang = Languages.langIni);
-        Menu.option(menu, menuJSON,   text.lang = Languages.langJSON);
-        Menu.option(menu, menuLua,    text.lang = Languages.langLua);
-        Menu.option(menu, menuOberon, text.lang = Languages.langOberon);
-        Menu.option(menu, menuPascal, text.lang = Languages.langPascal);
+        Menu.option(menu, menuText, text.lang = Languages.langText);
+        FOR i := 0 TO langCount - 1 DO
+            Menu.option(menu, menuLangBase + i, text.lang = langs[i].id)
+        END
     ELSIF menu = menuProgram THEN
-        Menu.setEnabled(menu, menuBuild, (buildScript # "") OR text.fasm);
-        Menu.setEnabled(menu, menuDebug, (debugScript # "") OR text.fasm);
-        Menu.setEnabled(menu, menuRun,   (runScript # "") OR text.fasm);
-        Menu.setEnabled(menu, menuBuildScript, ~text.fasm);
-        Menu.setEnabled(menu, menuDebugScript, ~text.fasm);
-        Menu.setEnabled(menu, menuRunScript,   ~text.fasm);
-        Menu.check(menu, menuFASM, text.fasm)
+        Menu.setEnabled(menu, menuBuild, (buildScript # "") OR langHasCmd(0));
+        Menu.setEnabled(menu, menuDebug, (debugScript # "") OR langHasCmd(2));
+        Menu.setEnabled(menu, menuRun,   (runScript # "") OR langHasCmd(1))
     ELSIF menu = menuOptions THEN
     	Menu.check(menu, menuLineNumbers,  T.lineNumbers);
     	Menu.check(menu, menuAutoIndents,  T.autoIndents);
@@ -1142,64 +1167,138 @@ BEGIN
 END setScript;
 
 
-PROCEDURE FasmCompile (run, debug: BOOLEAN);
+(* one Language menu entry per [lang_*] ini section that names itself *)
+PROCEDURE LoadLangMenu;
 VAR
-	curFileName, ext, outfile, path, param: RW.tFileName;
+    sec: Ini.tSection;
+    name, secName: ARRAY maxLangName OF CHAR;
+    i, j, newLangID: INTEGER;
 BEGIN
-	curFileName := texts[curText].fileName;
-	U.getFileName(curFileName, param, U.SLASH);
-	U.getFileName(curFileName, ext, ".");
-	U.getPath(curFileName, path);
-	outfile := param;
-	IF (ext # "") & ((LENGTH(ext) + 1) < LENGTH(outfile)) THEN
-		outfile[LENGTH(outfile) - LENGTH(ext) - 1] := 0X
-	ELSE
-		U.append8(outfile, ".kex")
-	END;
-	U.append8(param, ",");
-	U.append8(param, outfile);
-	U.append8(param, ",");
-	U.append8(param, path);
-	U.append8(param, U.SLASH);
-	IF run THEN
-		U.append8(param, ",run")
-	ELSIF debug THEN
-		U.append8(param, ",dbg")
-	END;
-	K.Run("/sys/develop/fasm", param)
-END FasmCompile;
+    langCount := 0;
+    sec := Ini.langSections.first(Ini.tSection);
+    WHILE (sec # NIL) & (langCount < LEN(langs)) DO
+        i := 0;
+        WHILE (i < LEN(secName) - 1) & (sec.name[i] # 0X) DO
+            secName[i] := CHR(ORD(sec.name[i]));
+            INC(i)
+        END;
+        secName[i] := 0X;
 
-
-PROCEDURE ProgramBuild;
-BEGIN
-	IF ~text.fasm THEN
-    	Script(buildScript)
-    ELSE
-    	FasmCompile(FALSE, FALSE)
+        Ini.getStr(secName, "NAME", name);
+        IF name # "" THEN
+            Languages.loadNewLang(secName, newLangID);
+            IF newLangID # -1 THEN
+                j := 0;
+                WHILE (j < maxLangName - 1) & (name[j] # 0X) DO
+                    langs[langCount].name[j] := WCHR(ORD(name[j]));
+                    INC(j)
+                END;
+                langs[langCount].name[j] := 0X;
+                langs[langCount].id := newLangID;
+                Ini.getStr(secName, "BUILD", langs[langCount].cmd[0]);
+                Ini.getStr(secName, "RUN",   langs[langCount].cmd[1]);
+                Ini.getStr(secName, "DEBUG", langs[langCount].cmd[2]);
+                INC(langCount)
+            END
+        END;
+        sec := sec.next(Ini.tSection)
     END
-END ProgramBuild;
+END LoadLangMenu;
 
 
-PROCEDURE ProgramRun;
+PROCEDURE RunLangCmd(idx, kind: INTEGER);
+VAR
+    i, j, k: INTEGER;
+    matched: BOOLEAN;
+    cmd, res: ARRAY 512 OF CHAR;
+    full, base, name, dir, ext, sub: RW.tFileName;
 BEGIN
-	IF ~text.fasm THEN
-    	Script(runScript)
-    ELSE
-    	FasmCompile(TRUE, FALSE)
+    IF (idx >= 0) & (idx < langCount) THEN
+        COPY(langs[idx].cmd[kind], cmd);
+        IF cmd # "" THEN
+            (* placeholders: %f full path, %e file name, %n name without
+               extension, %d directory (no trailing slash) *)
+            full := text.fileName;
+            U.getFileName(full, base, U.SLASH);
+            U.getPath(full, dir);
+            name := base;
+            U.getFileName(base, ext, ".");
+            IF (ext # "") & ((LENGTH(ext) + 1) < LENGTH(name)) THEN
+                name[LENGTH(name) - LENGTH(ext) - 1] := 0X
+            END;
+            i := 0;
+            j := 0;
+            WHILE (cmd[i] # 0X) & (j < LEN(res) - 2) DO
+                matched := cmd[i] = "%";
+                IF matched THEN
+                    IF    cmd[i + 1] = "f" THEN COPY(full, sub)
+                    ELSIF cmd[i + 1] = "e" THEN COPY(base, sub)
+                    ELSIF cmd[i + 1] = "n" THEN COPY(name, sub)
+                    ELSIF cmd[i + 1] = "d" THEN COPY(dir,  sub)
+                    ELSE  matched := FALSE
+                    END
+                END;
+                IF matched THEN
+                    k := 0;
+                    WHILE (sub[k] # 0X) & (j < LEN(res) - 2) DO
+                        res[j] := sub[k];
+                        INC(j);
+                        INC(k)
+                    END;
+                    INC(i, 2)
+                ELSE
+                    res[j] := cmd[i];
+                    INC(j);
+                    INC(i)
+                END
+            END;
+            res[j] := 0X;
+            IF text.fileName # "" THEN
+                U.getPath(text.fileName, CurFolder);
+                K.SetCurFolder(CurFolder)
+            END;
+            (* a bare path is opened via file associations (@open), so build
+               scripts keep working; "program arguments" is run directly,
+               otherwise @open would treat the whole string as one path *)
+            i := 0;
+            WHILE (res[i] # 0X) & (res[i] # " ") DO
+                INC(i)
+            END;
+            IF res[i] = 0X THEN
+                K.Run("/sys/@open", res)
+            ELSE
+                res[i] := 0X;
+                j := i + 1;
+                WHILE res[j] = " " DO
+                    INC(j)
+                END;
+                k := 0;
+                WHILE res[j] # 0X DO
+                    cmd[k] := res[j];
+                    INC(k);
+                    INC(j)
+                END;
+                cmd[k] := 0X;
+                K.Run(res, cmd)
+            END
+        END
     END
-END ProgramRun;
+END RunLangCmd;
 
 
-PROCEDURE ProgramDebug;
+(* run the language's preset command (kind: 0 build, 1 run, 2 debug),
+   or fall back to the matching global script *)
+PROCEDURE Program (kind: INTEGER; script: ARRAY OF CHAR);
 BEGIN
-	IF ~text.fasm THEN
-    	Script(debugScript)
+    IF langHasCmd(kind) THEN
+        RunLangCmd(GetLangIdx(text.lang), kind)
     ELSE
-    	FasmCompile(FALSE, TRUE)
+        Script(script)
     END
-END ProgramDebug;
-
-
+END Program;
+PROCEDURE ProgramBuild; BEGIN Program(0, buildScript) END ProgramBuild;
+PROCEDURE ProgramRun;   BEGIN Program(1, runScript)   END ProgramRun;
+PROCEDURE ProgramDebug; BEGIN Program(2, debugScript) END ProgramDebug;
 PROCEDURE ClickMenu;
 VAR
 	item: List.tItem;
@@ -1269,20 +1368,12 @@ BEGIN
     	Ini.setInt("settings", "line_spacing", T.LineSpacing)
     |menuText:
         T.setLang(text, Languages.langText)
-    |menuC:
-        T.setLang(text, Languages.langC)
-    |menuFasm:
-        T.setLang(text, Languages.langFasm)
-    |menuIni:
-        T.setLang(text, Languages.langIni)
-    |menuJSON:
-        T.setLang(text, Languages.langJSON)
-    |menuLua:
-        T.setLang(text, Languages.langLua)
-    |menuOberon:
-        T.setLang(text, Languages.langOberon)
-    |menuPascal:
-        T.setLang(text, Languages.langPascal)
+    |menuLangBase..menuLangMax:
+        IF Menu.MenuItem - menuLangBase < langCount THEN
+            T.setLang(text, langs[Menu.MenuItem - menuLangBase].id)
+        END
+    |menuEditIni:
+        IF open(Ini.IniFileName) THEN END
     |menuBuild:
     	ProgramBuild
     |menuBuildScript:
@@ -1295,8 +1386,6 @@ BEGIN
     	ProgramDebug
     |menuDebugScript:
     	setScript(debugScript)
-    |menuFASM:
-    	text.fasm := ~text.fasm
     |menuUTF8BOM:
     	T.setEnc(text, E.UTF8BOM)
     |menuUTF8:
@@ -1498,17 +1587,18 @@ END CreateMenuView;
 PROCEDURE CreateMenuLanguage (): Menu.tMenu;
 VAR
     menu: List.tList;
+    i: INTEGER;
 BEGIN
     menu := List.create(NIL);
-    Menu.AddMenuItem(menu, menuC,      "C");
-    Menu.AddMenuItem(menu, menuFasm,   "Fasm");
-    Menu.AddMenuItem(menu, menuIni,    "Ini");
-    Menu.AddMenuItem(menu, menuJSON,   "JSON");
-    Menu.AddMenuItem(menu, menuLua,    "Lua");
-    Menu.AddMenuItem(menu, menuOberon, "Oberon");
-    Menu.AddMenuItem(menu, menuPascal, "Pascal");
+    Menu.AddMenuItem(menu, menuText, "Text");
+    IF langCount > 0 THEN
+        Menu.delimiter(menu);
+        FOR i := 0 TO langCount - 1 DO
+            Menu.AddMenuItem(menu, menuLangBase + i, langs[i].name)
+        END
+    END;
     Menu.delimiter(menu);
-    Menu.AddMenuItem(menu, menuText,   "Text");
+    Menu.AddMenuItem(menu, menuEditIni, "edit...");
     RETURN Menu.create(menu, mainTID)
 END CreateMenuLanguage;
 
@@ -1526,8 +1616,6 @@ BEGIN
     Menu.delimiter(menu);
     Menu.AddMenuItem(menu, menuDebug,       "debug    ctrl-F8");
     Menu.AddMenuItem(menu, menuDebugScript, "script");
-    Menu.delimiter(menu);
-    Menu.AddMenuItem(menu, menuFASM, "Fasm");
     RETURN Menu.create(menu, mainTID)
 END CreateMenuProgram;
 
@@ -2161,6 +2249,8 @@ BEGIN
 	Args.GetArg(0, AppPath);
 	Ini.load(AppPath);
 	Ini.getSettings;
+    LoadLangMenu;
+    Languages.getFilter(EditFilter);
 	runScript := Ini.runScript;
 	buildScript := Ini.buildScript;
 	debugScript := Ini.debugScript;

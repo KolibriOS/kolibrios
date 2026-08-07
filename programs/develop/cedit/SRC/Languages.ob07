@@ -1,4 +1,4 @@
-﻿(*
+(*
     Copyright 2021-2023 Anton Krotov
 
     This file is part of CEdit.
@@ -18,43 +18,87 @@
 *)
 
 MODULE Languages;
-
 IMPORT Lines, Utils;
 
 
 CONST
+    maxLangs* = 32;
+    maxExts* = 64;
 
-    langText* = 0; langC* = 1; langOberon* = 2; langPascal* = 3;
-    langFasm* = 4; langLua* = 5; langIni* = 6; langJSON* = 7;
+    maxMarkers* = 8;
+    maxMarkerLen* = 12;  (* a marker is at most maxMarkerLen - 1 characters;
+                            longer ones are truncated, so keep room for the
+                            deepest long bracket anyone would write *)
 
-    csLang = {langC, langOberon, langLua, langIni, langJSON};
-    escLang* = {langC, langLua, langJSON};
+    (* keywords come from the ini, so both limits are enforced, not assumed.
+       The table is held for every language, so maxKW dominates the static
+       footprint: the longest real list is Pascal's 43 words *)
+    maxKW = 64;
+    maxKWLen = 32;
+
+    langText* = 0;  (* reserved default: plain text, always present *)
+
+    (* a span runs from a start marker to its paired end marker and may cross
+       lines; its state is packed into one INTEGER (it travels between lines in
+       line.cin): depth = (pairIdx + 1) + nesting*nestStep. Most spans are block
+       comments, but a span is not a comment as such: SPAN_COLOR also makes them
+       serve ini sections, pascal directives and lua long strings *)
+    nestStep = 16;     (* must stay > maxMarkers, or the pair index would
+                          wrap into the nesting level and back *)
+    maxDepth = 1000;   (* nesting cap *)
+
+    (* colour of a block span, set per marker pair by SPAN_COLOR;
+       one mechanism thus serves comments, ini sections, pascal {$directives}
+       and lua [[long strings]] alike *)
+    clComment* = 0; clKey1* = 1; clKey2* = 2; clKey3* = 3; clString* = 4;
 
 TYPE
 
     tLine = Lines.tLine;
 
     tKeyWords = RECORD
-        words: ARRAY 200, 32 OF WCHAR; cnt: INTEGER
+        words: ARRAY maxKW, maxKWLen OF WCHAR; cnt: INTEGER
     END;
 
     tDelimiters = ARRAY 256 OF BOOLEAN;
+    tMarkers = ARRAY maxMarkers OF ARRAY maxMarkerLen OF WCHAR;
+
+    (* per-language syntax options, all driven from the ini section *)
+    tLangCfg* = RECORD
+        strSingle*, strDouble*: BOOLEAN;    (* which quote chars start a string *)
+        esc*: BOOLEAN;                      (* backslash escapes inside strings *)
+        numOn*: BOOLEAN;                    (* highlight numbers (dec/float/0x-hex/h-hex/b-bin) *)
+        keyColon*: BOOLEAN;                 (* colour ident/string before ':' (json) *)
+        hexPrefix*: WCHAR;                  (* starts a hex number, e.g. pascal $FF; 0X if none *)
+        charPrefix*: WCHAR;                 (* prefixes a char code, e.g. pascal #13; 0X if none *)
+        nest*: BOOLEAN                      (* spans nest, an inner start needs its own end (oberon) *)
+    END;
 
     procGetStr = PROCEDURE (secName, keyName: ARRAY OF CHAR; VAR s: ARRAY OF CHAR);
-
-
 VAR
 
-	KW: ARRAY 8 OF ARRAY 3 OF tKeyWords;
-	Delim: ARRAY 8 OF tDelimiters;
+    KW: ARRAY maxLangs OF ARRAY 3 OF tKeyWords;
+    Delim: ARRAY maxLangs OF tDelimiters;
+    LineCommentPrefixes: ARRAY maxLangs OF tMarkers;
+    LineCommentCount: ARRAY maxLangs OF INTEGER;
+    SpanStarts: ARRAY maxLangs OF tMarkers;
+    SpanStops: ARRAY maxLangs OF tMarkers;
+    SpanColor: ARRAY maxLangs OF ARRAY maxMarkers OF INTEGER;
+    SpanCount: ARRAY maxLangs OF INTEGER;
+    cfg*: ARRAY maxLangs OF tLangCfg;
 
     currentLang: INTEGER;
+    csLangs: SET;
 
-    fileExt: ARRAY 11 OF RECORD ext: ARRAY 8 OF CHAR; lang: INTEGER END;
+    langCount*: INTEGER;
+    savedGetStr: procGetStr;
+    (* one entry per extension, not per language: a language may claim several *)
+    fileExt: ARRAY maxExts OF RECORD ext: ARRAY 8 OF CHAR; lang: INTEGER END;
+    fileExtCount: INTEGER;
 
 
 PROCEDURE isCS* (lang: INTEGER): BOOLEAN;
-    RETURN lang IN csLang
+    RETURN lang IN csLangs
 END isCS;
 
 
@@ -97,7 +141,7 @@ BEGIN
     prev := 0X;
     INC(pos);
     WHILE pos <= n DO
-    	IF lang IN escLang THEN
+    	IF cfg[lang].esc THEN
     		prev := cur
     	END;
     	cur := Lines.getChar(line, pos);
@@ -110,300 +154,203 @@ BEGIN
     	INC(pos)
     END
 END SkipString;
-
-
 PROCEDURE SkipEsc* (line: tLine; VAR pos: INTEGER; n: INTEGER; lang: INTEGER);
 VAR
-	c, c1: WCHAR;
+	c: WCHAR;
 	k: INTEGER;
 BEGIN
-	IF pos < n THEN
+	IF (pos < n) & cfg[lang].esc THEN
 		c := Lines.getChar(line, pos + 1);
-		CASE lang OF
-		|langC:
-			IF Utils.inString(c, "abfnrtv\'?" + '"') THEN
-				INC(pos)
-			ELSIF Utils.isOct(c) THEN
-				k := 0;
-				REPEAT
-					INC(pos);
-					IF Utils.isOct(Lines.getChar(line, pos)) THEN
-						INC(k)
-					ELSE
-						k := 0
-					END
-				UNTIL (k = 0) OR (k = 4);
-				DEC(pos)
-			ELSIF (c = "x") OR (c = "u") OR (c = "U") THEN
-				c1 := c;
-				k := 0;
+		IF Utils.inString(c, 'bfnrtv\/' + "'" + '"') THEN
+			INC(pos)
+		ELSIF c = "u" THEN
+			k := 0;
+			INC(pos);
+			REPEAT
 				INC(pos);
-				REPEAT
-					INC(pos);
-					c := Lines.getChar(line, pos);
-					IF Utils.upper(c) THEN END;
-					IF Utils.isHex(c) THEN
-						INC(k)
-					ELSE
-						k := 0
-					END;
-					IF (c1 = "u") & (k = 5) OR (c1 = "U") & (k = 9) THEN
-						k := 0
-					END
-				UNTIL k = 0;
-				DEC(pos)
-			END
-		|langLua:
-			IF Utils.inString(c, "abfnrtv\'[]" + '"') THEN
-				INC(pos)
-			END
-		|langJSON:
-			IF Utils.inString(c, 'bfnrt\/"') THEN
-				INC(pos)
-			ELSIF c = "u" THEN
-				k := 0;
-				INC(pos);
-				REPEAT
-					INC(pos);
-					c := Lines.getChar(line, pos);
-					IF Utils.upper(c) THEN END;
-					IF Utils.isHex(c) THEN
-						INC(k)
-					ELSE
-						k := 0
-					END
-				UNTIL (k = 0) OR (k = 5);
-				DEC(pos)
-			END
+				c := Lines.getChar(line, pos);
+				IF Utils.upper(c) THEN END;
+				IF Utils.isHex(c) THEN
+					INC(k)
+				ELSE
+					k := 0
+				END
+			UNTIL (k = 0) OR (k = 5);
+			DEC(pos)
 		END
 	END
 END SkipEsc;
 
 
-PROCEDURE C (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER);
+PROCEDURE isQuote* (c: WCHAR; lang: INTEGER): BOOLEAN;
+    RETURN ((c = "'") & cfg[lang].strSingle) OR ((c = '"') & cfg[lang].strDouble)
+END isQuote;
+
+
+PROCEDURE ParsePrefixes(s: ARRAY OF CHAR; VAR prefixes: tMarkers; VAR count: INTEGER);
 VAR
-    c: WCHAR;
+    i, j: INTEGER;
 BEGIN
-    c := Lines.getChar(line, pos);
-    IF depth = 0 THEN
-        IF c = "/" THEN
-            IF cond = 0 THEN
-                cond := 1
+    count := 0;
+    i := 0;
+    WHILE (s[i] # 0X) & (count < maxMarkers) DO
+        WHILE (s[i] = " ") OR (s[i] = 9X) DO INC(i) END;
+        j := 0;
+        WHILE (s[i] # 0X) & (s[i] # ",") & (j < maxMarkerLen - 1) DO
+            prefixes[count][j] := WCHR(ORD(s[i]));
+            INC(i); INC(j)
+        END;
+        (* a marker too long to fit is truncated, not split: without this its
+           tail would be read as another marker of its own *)
+        WHILE (s[i] # 0X) & (s[i] # ",") DO INC(i) END;
+        WHILE (j > 0) & ((prefixes[count][j-1] = WCHR(32)) OR (prefixes[count][j-1] = WCHR(9))) DO DEC(j) END;
+        prefixes[count][j] := 0X;
+        IF j > 0 THEN INC(count) END;
+        IF s[i] = "," THEN INC(i) END
+    END
+END ParsePrefixes;
+(* one colour name per marker pair, in the same order: "comment" (default),
+   "string", "key1".."key3" *)
+PROCEDURE ParseColors (s: ARRAY OF CHAR; VAR col: ARRAY OF INTEGER);
+VAR
+    names: tMarkers;
+    i, cnt: INTEGER;
+BEGIN
+    FOR i := 0 TO maxMarkers - 1 DO
+        col[i] := clComment
+    END;
+    ParsePrefixes(s, names, cnt);
+    FOR i := 0 TO cnt - 1 DO
+        IF names[i][0] = "s" THEN
+            col[i] := clString
+        ELSIF names[i][0] = "k" THEN
+            IF names[i][3] = "2" THEN
+                col[i] := clKey2
+            ELSIF names[i][3] = "3" THEN
+                col[i] := clKey3
             ELSE
-                cond := 0;
-                pos := n
+                col[i] := clKey1
             END
-        ELSIF (c = "*") & (cond = 1) THEN
-            depth := 1;
-            cond := 0
-        ELSIF (c = "'") OR (c = '"') THEN
-            SkipString(line, pos, n, langC);
-            cond := 0
-        ELSE
-            cond := 0
-        END
-    ELSIF depth = 1 THEN
-        IF c = "*" THEN
-            cond := 1
-        ELSIF (c = "/") & (cond = 1) THEN
-            cond := 0;
-            depth := 0
-        ELSE
-            cond := 0
         END
     END
-END C;
+END ParseColors;
 
 
-PROCEDURE LuaLong* (line: tLine; pos: INTEGER): INTEGER;
+(* length of prefix if it matches the line at pos (0X-terminated), else 0 *)
+PROCEDURE matchAt (line: tLine; pos, n: INTEGER; VAR prefix: ARRAY OF WCHAR): INTEGER;
+VAR
+    j, len, res: INTEGER;
+BEGIN
+    res := 0;
+    len := 0;
+    WHILE (len < maxMarkerLen) & (prefix[len] # 0X) DO INC(len) END;
+    IF (len > 0) & (pos + len - 1 <= n) THEN
+        j := 0;
+        WHILE (j < len) & (Lines.getChar(line, pos + j) = prefix[j]) DO INC(j) END;
+        IF j = len THEN res := len END
+    END
+    RETURN res
+END matchAt;
+
+
+(* length of the first marker matching at pos, 0 if none; idx gets its index *)
+PROCEDURE MatchPrefix(line: tLine; pos, n: INTEGER; VAR prefixes: tMarkers; count: INTEGER; VAR idx: INTEGER): INTEGER;
+VAR
+    i, res: INTEGER;
+BEGIN
+    res := 0;
+    idx := -1;
+    i := 0;
+    WHILE (i < count) & (res = 0) DO
+        res := matchAt(line, pos, n, prefixes[i]);
+        IF res > 0 THEN idx := i END;
+        INC(i)
+    END
+    RETURN res
+END MatchPrefix;
+
+
+PROCEDURE MatchLineComment*(line: tLine; pos, n, lang: INTEGER): INTEGER;
+VAR
+    idx, res: INTEGER;
+BEGIN
+    res := MatchPrefix(line, pos, n, LineCommentPrefixes[lang], LineCommentCount[lang], idx)
+    RETURN res
+END MatchLineComment;
+
+
+PROCEDURE MatchSpanStart*(line: tLine; pos, n, lang: INTEGER; VAR pairIdx: INTEGER): INTEGER;
 VAR
     res: INTEGER;
 BEGIN
-    res := -1;
-    IF Lines.getChar(line, pos) = "[" THEN
-        INC(pos);
-        WHILE Lines.getChar(line, pos) = "=" DO
-            INC(res);
-            INC(pos)
-        END;
-        IF Lines.getChar(line, pos) = "[" THEN
-            INC(res)
-        ELSE
-            res := -1
-        END
+    res := MatchPrefix(line, pos, n, SpanStarts[lang], SpanCount[lang], pairIdx)
+    RETURN res
+END MatchSpanStart;
+
+
+PROCEDURE MatchSpanStop*(line: tLine; pos, n, lang, pairIdx: INTEGER): INTEGER;
+VAR
+    res: INTEGER;
+BEGIN
+    res := 0;
+    IF (0 <= pairIdx) & (pairIdx < SpanCount[lang]) THEN
+        res := matchAt(line, pos, n, SpanStops[lang][pairIdx])
     END
     RETURN res
-END LuaLong;
+END MatchSpanStop;
 
 
-PROCEDURE Lua (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER);
+(* colour id of the block span the given depth is inside of *)
+PROCEDURE spanColorId* (lang, depth: INTEGER): INTEGER;
+    RETURN SpanColor[lang][(depth - 1) MOD nestStep]
+END spanColorId;
+
+
+PROCEDURE comments* (line: tLine; VAR depth, pos: INTEGER; n: INTEGER; lang: INTEGER);
 VAR
-    c: WCHAR;
-    k: INTEGER;
-BEGIN
-    c := Lines.getChar(line, pos);
-    IF depth = 0 THEN
-        IF c = "-" THEN
-            IF cond = 0 THEN
-                cond := 1
-            ELSE
-                cond := 0;
-                k := LuaLong(line, pos + 1);
-                IF k >= 0 THEN
-                    depth := k*2 + 1
-                ELSE
-                    pos := n
-                END
-            END
-        ELSIF c = "[" THEN
-            cond := 0;
-            k := LuaLong(line, pos);
-            IF k >= 0 THEN
-                depth := (k + 1)*2
-            END
-        ELSIF (c = "'") OR (c = '"') THEN
-            SkipString(line, pos, n, langLua);
-            cond := 0
-        ELSE
-            cond := 0
-        END
-    ELSIF depth > 0 THEN
-        IF (cond = 0) & (c = "]") THEN
-            cond := 1
-        ELSIF (cond >= 1) & (c = "=") THEN
-            INC(cond)
-        ELSIF (cond >= 1) & (c = "]") & (cond*2 - depth MOD 2 = depth) THEN
-            depth := 0;
-            cond := 0
-        ELSE
-            cond := 0
-        END
-    END
-END Lua;
-
-
-PROCEDURE Pascal (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER);
-VAR
+    pairIdx, len: INTEGER;
     c: WCHAR;
 BEGIN
     c := Lines.getChar(line, pos);
     IF depth = 0 THEN
-        IF c = "(" THEN
-            cond := 1
-        ELSIF c = "/" THEN
-            IF cond = 2 THEN
-                cond := 0;
-                pos := n
-            ELSE
-                cond := 2
-            END
-        ELSIF (c = "*") & (cond = 1) THEN
-            depth := 2;
-            cond := 0
-        ELSIF c = "'" THEN
-            SkipString(line, pos, n, langPascal);
-            cond := 0
-        ELSIF c = "{" THEN
-            IF Lines.getChar(line, pos + 1) = "$" THEN
-                depth := 3
-            ELSE
-                depth := 1
-            END;
-            cond := 0
-        ELSE
-            cond := 0
-        END
-    ELSIF depth IN {1, 3} THEN
-        IF c = "}" THEN
-            depth := 0
-        END
-    ELSIF depth = 2 THEN
-        IF c = "*" THEN
-            cond := 1
-        ELSIF (c = ")") & (cond = 1) THEN
-            depth := 0;
-            cond := 0
-        ELSE
-            cond := 0
-        END
-    END
-END Pascal;
-
-
-PROCEDURE Oberon (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER);
-VAR
-    c: WCHAR;
-BEGIN
-    c := Lines.getChar(line, pos);
-    IF (depth = 0) & (c = "/") THEN
-        IF cond = 3 THEN
-            cond := 0;
+        (* a block start may extend a line comment prefix (lua "--[[");
+           try it first, else the line comment would swallow the line *)
+        len := MatchSpanStart(line, pos, n, lang, pairIdx);
+        IF len > 0 THEN
+            depth := pairIdx + 1;
+            pos := pos + len - 1
+        ELSIF MatchLineComment(line, pos, n, lang) > 0 THEN
             pos := n
-        ELSE
-            cond := 3
+        ELSIF isQuote(c, lang) THEN
+            (* comment markers inside string literals must not
+               change the comment state *)
+            SkipString(line, pos, n, lang)
         END
-    ELSIF (depth = 0) & ((c = "'") OR (c = '"')) THEN
-        SkipString(line, pos, n, langOberon);
-        cond := 0
-    ELSIF c = "(" THEN
-        cond := 1
-    ELSIF c = "*" THEN
-        IF cond = 1 THEN
-            INC(depth);
-            cond := 0
-        ELSE
-            cond := 2
-        END
-    ELSIF c = ")" THEN
-        IF cond = 2 THEN
-            IF depth > 0 THEN
-                DEC(depth)
-            END
-        END;
-        cond := 0
     ELSE
-        cond := 0
-    END;
-END Oberon;
-
-
-PROCEDURE Ini (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER);
-VAR
-    c: WCHAR;
-BEGIN
-    cond := 0;
-    c := Lines.getChar(line, pos);
-    IF depth = 0 THEN
-        IF c = ";" THEN
-            pos := n
-        ELSIF c = '"' THEN
-            SkipString(line, pos, n, langIni)
-        ELSIF c = "[" THEN
-            depth := 1
+        (* inside a block span: depth = (pairIdx + 1) + nesting*nestStep *)
+        pairIdx := (depth - 1) MOD nestStep;
+        len := 0;
+        IF cfg[lang].nest THEN
+            len := matchAt(line, pos, n, SpanStarts[lang][pairIdx])
+        END;
+        IF len > 0 THEN                       (* the same pair opened again *)
+            IF depth + nestStep < maxDepth THEN
+                INC(depth, nestStep)
+            END;
+            pos := pos + len - 1
+        ELSE
+            len := MatchSpanStop(line, pos, n, lang, pairIdx);
+            IF len > 0 THEN
+                IF depth > nestStep THEN
+                    DEC(depth, nestStep)
+                ELSE
+                    depth := 0
+                END;
+                pos := pos + len - 1
+            END
         END
-    ELSIF depth = 1 THEN
-        IF c = "]" THEN
-            depth := 0
-        END
-    END
-END Ini;
-
-
-PROCEDURE comments* (line: tLine; VAR depth, cond, pos: INTEGER; n: INTEGER; lang: INTEGER);
-BEGIN
-    CASE lang OF
-    |langText:
-    |langFasm:
-    |langC,
-     langJSON:    C(line, depth, cond, pos, n)
-    |langOberon:  Oberon(line, depth, cond, pos, n)
-    |langPascal:  Pascal(line, depth, cond, pos, n)
-    |langLua:     Lua(line, depth, cond, pos, n)
-    |langIni:     Ini(line, depth, cond, pos, n)
     END
 END comments;
-
-
 PROCEDURE EnterKW (s: ARRAY OF CHAR; VAR KW: tKeyWords);
 CONST
     SPACE = 20X; CR = 0DX; LF = 0AX; TAB = 9X; COMMA = ",";
@@ -417,19 +364,25 @@ VAR
 BEGIN
     k := KW.cnt;
     i := 0;
-    REPEAT
+    WHILE (s[i] # 0X) & (k < maxKW) DO
         j := 0;
         WHILE (s[i] # 0X) & ~delim(s[i]) DO
-            KW.words[k, j] := WCHR(ORD(s[i]));
-            INC(i);
-            INC(j)
+            IF j < maxKWLen - 1 THEN            (* a longer keyword is truncated,
+                                                   never spilled into the next *)
+                KW.words[k, j] := WCHR(ORD(s[i]));
+                INC(j)
+            END;
+            INC(i)
         END;
         KW.words[k, j] := 0X;
-        INC(k);
+        IF j > 0 THEN                           (* skip the empty word a leading
+                                                   or doubled delimiter makes *)
+            INC(k)
+        END;
         WHILE delim(s[i]) DO
             INC(i)
         END
-    UNTIL s[i] = 0X;
+    END;
     KW.cnt := k
 END EnterKW;
 
@@ -439,8 +392,7 @@ PROCEDURE loadKW (lang: INTEGER; VAR KW: ARRAY OF tKeyWords; VAR delim: tDelimit
 VAR
     s: ARRAY 16*1024 OF CHAR;
     key: ARRAY 4 OF CHAR;
-    i, j, k: INTEGER;
-    w: WCHAR;
+    i: INTEGER;
 BEGIN
 	FOR i := 0 TO LEN(delim) - 1 DO
 		delim[i] := FALSE
@@ -456,86 +408,170 @@ BEGIN
         KW[i].cnt := 0;
         key[2] := CHR(ORD("1") + i);
         getStr(lang_name, key, s);
-        IF ~(lang IN csLang) THEN
+        IF ~(lang IN csLangs) THEN
         	Utils.lowcase8(s)
-        END;
-        IF lang = langOberon THEN
-	        k := LENGTH(s);
-    	    s[k] := ",";
-	        FOR j := 0 TO k - 1 DO
-		        s[j + k + 1] := s[j];
-		        w := WCHR(ORD(s[j]));
-		        IF Utils.lower(w) THEN
-		        	s[j + k + 1] := CHR(ORD(w) MOD 256)
-		        END
-    	    END;
-    	    k := 2*k + 1;
-    	    s[k] := 0X
         END;
         EnterKW(s, KW[i])
     END
 END loadKW;
 
 
+PROCEDURE hasCh (s: ARRAY OF CHAR; c: CHAR): BOOLEAN;
+VAR
+    i: INTEGER;
+    found: BOOLEAN;
+BEGIN
+    found := FALSE;
+    i := 0;
+    WHILE (s[i] # 0X) & ~found DO
+        IF s[i] = c THEN found := TRUE END;
+        INC(i)
+    END
+    RETURN found
+END hasCh;
+
+
+(* read one language's full syntax definition from its ini section;
+   used for both the built-in languages and the user-defined ones *)
+PROCEDURE loadCfg (langID: INTEGER; secName: ARRAY OF CHAR);
+VAR
+    s: ARRAY 256 OF CHAR;
+    n: INTEGER;
+BEGIN
+    savedGetStr(secName, "CASE_SENSITIVE", s);
+    IF s[0] = "1" THEN INCL(csLangs, langID) ELSE EXCL(csLangs, langID) END;
+    loadKW(langID, KW[langID], Delim[langID], savedGetStr, secName);
+
+    savedGetStr(secName, "COMMENT", s);
+    ParsePrefixes(s, LineCommentPrefixes[langID], LineCommentCount[langID]);
+    savedGetStr(secName, "SPAN_START", s);
+    ParsePrefixes(s, SpanStarts[langID], SpanCount[langID]);
+    savedGetStr(secName, "SPAN_END", s);
+    ParsePrefixes(s, SpanStops[langID], n);
+    (* starts and stops pair by index: unpaired trailing markers are ignored *)
+    SpanCount[langID] := MIN(SpanCount[langID], n);
+    savedGetStr(secName, "SPAN_COLOR", s);
+    ParseColors(s, SpanColor[langID]);
+
+    savedGetStr(secName, "STRINGS", s);           (* quote chars: ' and/or " *)
+    cfg[langID].strSingle := hasCh(s, "'");
+    cfg[langID].strDouble := hasCh(s, '"');
+    savedGetStr(secName, "ESCAPE", s);
+    cfg[langID].esc := s[0] = "1";
+    savedGetStr(secName, "NUMBERS", s);           (* 1 = highlight numeric literals *)
+    cfg[langID].numOn := s[0] # 0X;
+    savedGetStr(secName, "HEX_PREFIX", s);        (* one char, e.g. pascal $FF *)
+    cfg[langID].hexPrefix := WCHR(ORD(s[0]));
+    savedGetStr(secName, "CHAR_PREFIX", s);       (* one char, e.g. pascal #13 *)
+    cfg[langID].charPrefix := WCHR(ORD(s[0]));
+    savedGetStr(secName, "KEY_COLON", s);
+    cfg[langID].keyColon := s[0] = "1";
+    savedGetStr(secName, "NEST", s);
+    cfg[langID].nest := s[0] = "1"
+END loadCfg;
+
+
 PROCEDURE setCurLang* (lang: INTEGER);
 BEGIN
 	currentLang := lang
 END setCurLang;
-
-
 PROCEDURE getLang* (ext: ARRAY OF CHAR): INTEGER;
 VAR
-	i: INTEGER;
+    i: INTEGER;
 BEGIN
-	i := 0;
-	WHILE (i < LEN(fileExt)) & (fileExt[i].ext # ext) DO
-		INC(i)
-	END;
-	IF i < LEN(fileExt) THEN
-		i := fileExt[i].lang
-	ELSE
-		i := langText
-	END
-	RETURN i
+    i := 0;
+    WHILE (i < fileExtCount) & (fileExt[i].ext # ext) DO
+        INC(i)
+    END;
+    IF i < fileExtCount THEN
+        i := fileExt[i].lang
+    ELSE
+        i := langText
+    END
+    RETURN i
 END getLang;
-
-
 PROCEDURE getExt* (lang: INTEGER; VAR ext: ARRAY OF CHAR);
 VAR
-	i: INTEGER;
+    i: INTEGER;
 BEGIN
-	i := 0;
-	WHILE fileExt[i].lang # lang DO
-		INC(i)
-	END;
-	COPY(fileExt[i].ext, ext)
+    i := 0;
+    WHILE (i < fileExtCount) & (fileExt[i].lang # lang) DO
+        INC(i)
+    END;
+    IF i < fileExtCount THEN
+        COPY(fileExt[i].ext, ext)
+    ELSE
+        ext[0] := 0X
+    END
 END getExt;
-
-
 PROCEDURE init* (getStr: procGetStr);
 BEGIN
+    savedGetStr := getStr;
 	currentLang := langText;
-	loadKW(langText,   KW[langText],   Delim[langText],   getStr, "lang_Text");
-    loadKW(langOberon, KW[langOberon], Delim[langOberon], getStr, "lang_Oberon");
-    loadKW(langC,      KW[langC],      Delim[langC],      getStr, "lang_C");
-    loadKW(langPascal, KW[langPascal], Delim[langPascal], getStr, "lang_Pascal");
-    loadKW(langLua,    KW[langLua],    Delim[langLua],    getStr, "lang_Lua");
-    loadKW(langIni,    KW[langIni],    Delim[langIni],    getStr, "lang_Ini");
-    loadKW(langFasm,   KW[langFasm],   Delim[langFasm],   getStr, "lang_Fasm");
-    loadKW(langJSON,   KW[langJSON],   Delim[langJSON],   getStr, "lang_JSON");
+    csLangs := {};
+    (* langText (0) is the reserved default; every other language, including
+       Fasm/Ini/JSON, is loaded from its ini section by loadNewLang *)
+    langCount := 1;
+    loadCfg(langText, "lang_Text");
 
-    fileExt[ 0].ext := "ob07"; fileExt[ 0].lang := langOberon;
-    fileExt[ 1].ext := "c";    fileExt[ 1].lang := langC;
-    fileExt[ 2].ext := "h";    fileExt[ 2].lang := langC;
-    fileExt[ 3].ext := "cpp";  fileExt[ 3].lang := langC;
-    fileExt[ 4].ext := "pas";  fileExt[ 4].lang := langPascal;
-    fileExt[ 5].ext := "pp";   fileExt[ 5].lang := langPascal;
-    fileExt[ 6].ext := "asm";  fileExt[ 6].lang := langFasm;
-    fileExt[ 7].ext := "lua";  fileExt[ 7].lang := langLua;
-    fileExt[ 8].ext := "ini";  fileExt[ 8].lang := langIni;
-    fileExt[ 9].ext := "json"; fileExt[ 9].lang := langJSON;
-    fileExt[10].ext := "txt";  fileExt[10].lang := langText;
+    fileExt[ 0].ext := "txt";  fileExt[ 0].lang := langText;
+    fileExt[ 1].ext := "sh";   fileExt[ 1].lang := langText;
+    fileExtCount := 2;
 END init;
 
 
+(* "ext1|ext2|..." for the open dialog, built from the extension table *)
+PROCEDURE getFilter* (VAR s: ARRAY OF CHAR);
+VAR
+    i, j, k: INTEGER;
+BEGIN
+    j := 0;
+    FOR i := 0 TO fileExtCount - 1 DO
+        IF (i > 0) & (j < LEN(s) - 1) THEN
+            s[j] := "|";
+            INC(j)
+        END;
+        k := 0;
+        WHILE (fileExt[i].ext[k] # 0X) & (j < LEN(s) - 1) DO
+            s[j] := fileExt[i].ext[k];
+            INC(j);
+            INC(k)
+        END
+    END;
+    s[j] := 0X
+END getFilter;
+PROCEDURE loadNewLang*(secName: ARRAY OF CHAR; VAR langID: INTEGER);
+VAR
+    ext: ARRAY 8 OF CHAR;
+    s: ARRAY 64 OF CHAR;
+    i, j: INTEGER;
+BEGIN
+    IF langCount < maxLangs THEN
+        langID := langCount;
+        loadCfg(langID, secName);
+
+        (* EXT is a comma/space separated list: EXT = c,h,cpp *)
+        savedGetStr(secName, "EXT", s);
+        Utils.lowcase8(s);
+        i := 0;
+        WHILE (s[i] # 0X) & (fileExtCount < LEN(fileExt)) DO
+            WHILE (s[i] = " ") OR (s[i] = ",") DO INC(i) END;
+            j := 0;
+            WHILE (s[i] # 0X) & (s[i] # ",") & (s[i] # " ") & (j < LEN(ext) - 1) DO
+                ext[j] := s[i];
+                INC(i); INC(j)
+            END;
+            WHILE (s[i] # 0X) & (s[i] # ",") & (s[i] # " ") DO INC(i) END;
+            ext[j] := 0X;
+            IF ext # "" THEN
+                COPY(ext, fileExt[fileExtCount].ext);
+                fileExt[fileExtCount].lang := langID;
+                INC(fileExtCount)
+            END
+        END;
+        INC(langCount)
+    ELSE
+        langID := -1
+    END
+END loadNewLang;
 END Languages.
