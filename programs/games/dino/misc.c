@@ -14,13 +14,11 @@ void intToStr(int num, int ndigits, char* result) {
 }
 
 int getTimeStamp() { // in ms
-	// No 64-bit C arithmetic here: any long long op would reference
-	// libtcc1.o, and that links the whole 3.5K library into the binary.
+	// Any long long here would link all of libtcc1
 	unsigned lo, hi;
 	// sysfn 26.10: nanosecond counter in edx:eax
 	asm_inline("int $0x40" : "=a"(lo), "=d"(hi) : "a"(26), "b"(10));
-	// exact low 32 bits of ns/1000000: the quotient of (hi%d):lo by d
-	// always fits in 32 bits
+	// low 32 bits of ns/1000000: (hi%d):lo divided by d always fits
 	hi %= 1000000;
 	asm_inline("divl %2" : "+a"(lo), "+d"(hi) : "r"(1000000u));
 	return lo;

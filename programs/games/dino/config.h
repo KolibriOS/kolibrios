@@ -5,9 +5,12 @@
 #define DEFAULT_HEIGHT 200
 
 #define GAME_HEIGHT 150
+#define GAME_BOTTOM_PAD 10
 #define GAME_Y_OFFSET ((DEFAULT_HEIGHT - GAME_HEIGHT) / 2)
+#define BUFFER_HEIGHT (GAME_Y_OFFSET + GAME_HEIGHT - GAME_BOTTOM_PAD)
 
 #define FPS 60
+#define FRAME_TIME 30 // sysfn 5 sleeps in 10 ms steps
 
 #define DELTA_MS_DEFAULT 20
 

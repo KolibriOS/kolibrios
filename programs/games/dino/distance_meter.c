@@ -3,7 +3,7 @@
 DistanceMeter distanceMeter;
 
 void distanceMeterInit() {
-	// distanceMeter is in BSS: fields not set here start at zero
+	// in BSS: everything not set here starts at zero
 	distanceMeter.maxScore = 99999; // 10^DM_MAX_DISTANCE_UNITS - 1
 	distanceMeter.maxScoreUnits = DM_MAX_DISTANCE_UNITS;
 	for (int i = 0; i < distanceMeter.maxScoreUnits; i++) {

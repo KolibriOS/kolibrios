@@ -24,8 +24,8 @@ TrexAnimFramesEntry trexAnimFrames[5] = {
 // T - rex player initaliser
 // Sets the t - rex to blink at random intervals
 void trexInit() {
-	// trex is in BSS: fields not set here start at zero
-	trex.groundYPos = GAME_HEIGHT - TREX_HEIGHT - RUNNER_BOTTOM_PAD;
+	// in BSS: everything not set here starts at zero
+	trex.groundYPos = GAME_HEIGHT - TREX_HEIGHT - GAME_BOTTOM_PAD;
 	trex.yPos = trex.groundYPos;
 	trex.minJumpHeight = trex.groundYPos - TREX_MIN_JUMP_HEIGHT;
 

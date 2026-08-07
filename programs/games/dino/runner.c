@@ -3,7 +3,7 @@
 Runner runner;
 
 void runnerInit() {
-	// runner is in BSS: fields not set here start at zero
+	// in BSS: everything not set here starts at zero
 	runner.currentSpeed = RUNNER_SPEED;
 	// TODO sound
 	graphicsFillBackground();
@@ -51,8 +51,7 @@ void runnerOnKeyUp(int key) {
 		trexSetDuck(false);
 	}
 	else if (runner.crashed) {
-		// Check that enough time has elapsed before allowing jump key to
-		// restart; runner.time froze at game over since updates stopped.
+		// Enough time since the crash? runner.time froze there, updates stopped
 		int deltaTime = getTimeStamp() - runner.time;
 		if (key == RUNNER_KEYCODE_RESTART || (deltaTime >= RUNNER_GAMEOVER_CLEAR_TIME && isJumpKey(key))) {
 			runnerRestart();

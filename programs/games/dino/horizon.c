@@ -3,7 +3,7 @@
 Horizon horizon;
 
 void horizonInit() {
-	// horizon is in BSS: the counts start at zero
+	// in BSS: the counts start at zero
 	horizonAddCloud();
 
     horizonLineInit();

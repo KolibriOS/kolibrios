@@ -38,12 +38,11 @@ int main(int argc, char* args[]) {
 		case KSYS_EVENT_KEY:
 			{
 				ksys_oskey_t key = _ksys_get_key();
-				uint8_t scancode = key.code;
+				unsigned char scancode = key.code;
 				if (scancode == 0xE0) {
                     ext_code = 0x100;
                     break;
                 }
-                // Compare raw scancodes; bit 0x100 marks the E0 extended prefix
                 int code = (scancode & 0x7F) | ext_code;
                 ext_code = 0;
 
@@ -76,7 +75,6 @@ int main(int argc, char* args[]) {
 		if (frameTime < 0) {
 			frameTime = DELTA_MS_DEFAULT;
 		}
-#define FRAME_TIME 20
 		if (frameTime < FRAME_TIME) {
 			graphicsDelay(FRAME_TIME - frameTime);
 		}

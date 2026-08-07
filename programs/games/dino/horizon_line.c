@@ -3,7 +3,7 @@
 HorizonLine horizonLine;
 
 void horizonLineInit() {
-	// horizonLine is in BSS: xPos[0] starts at zero
+	// in BSS: xPos[0] starts at zero
 	horizonLine.sourceXPos[0] = ATLAS_HORIZON_X;
 	horizonLine.sourceXPos[1] = ATLAS_HORIZON_X + HORIZON_LINE_WIDTH;
 	horizonLine.xPos[1] = HORIZON_LINE_WIDTH;
