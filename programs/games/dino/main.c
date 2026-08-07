@@ -59,7 +59,7 @@ int main(int argc, char* args[]) {
 				win_pos.x, win_pos.y,
 				DEFAULT_WIDTH + 2*WINDOW_BORDER,
 				DEFAULT_HEIGHT + _ksys_get_skin_height() + WINDOW_BORDER,
-				WINDOW_TITLE, BACKGROUND_COLOR, 0x74);
+				WINDOW_TITLE, BACKGROUND_COLOR, 0x34);
 			graphicsRender();
 			_ksys_end_draw();
 			break;
