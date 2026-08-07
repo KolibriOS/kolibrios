@@ -169,6 +169,7 @@ proc uart_probe stdcall uses ebx esi edi, io_addr:dword, irqn:dword
         ; register port
         lea     ecx, [uart_drv]
         mov     edx, edi
+        lea     ebx, [uart_port_info]
         call    add_port
         test    eax, eax
         jz      .free_desc   ; TODO detach_int_handler?
@@ -406,3 +407,11 @@ uart_drv:
         dd      uart_reconf
         dd      uart_tx
 uart_drv_end:
+
+align 4
+uart_port_info:
+        dd      uart_port_end - uart_port_info
+        dd      uart_port_name
+        dd      0
+uart_port_end:
+uart_port_name db 'uart16550', 0

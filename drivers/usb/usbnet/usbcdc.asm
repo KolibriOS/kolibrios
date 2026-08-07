@@ -2204,6 +2204,9 @@ proc acm_arm_rx
 endp
 
 proc acm_add_device stdcall uses ebx esi edi, .pipe0:dword, .config:dword, .interface:dword
+locals
+        .pinfo rb sizeof.SP_PORT_INFO
+endl
 
 ; 1. Parse the descriptors (the ACM data interface is alt setting 0).
         xor     eax, eax
@@ -2264,7 +2267,12 @@ proc acm_add_device stdcall uses ebx esi edi, .pipe0:dword, .config:dword, .inte
 
         cmp     [serial_drv_entry], 0
         je      .no_serial
-        stdcall serial_add_port, acm_sp_driver, ebx
+        mov     dword [.pinfo+SP_PORT_INFO.size], sizeof.SP_PORT_INFO
+        mov     dword [.pinfo+SP_PORT_INFO.driver], acm_port_name
+; TODO obtain iManufacturer, iProduct and iSerial strings
+        mov     dword [.pinfo+SP_PORT_INFO.descr], 0
+        lea     ecx, [.pinfo]
+        stdcall serial_add_port, acm_sp_driver, ebx, ecx
         mov     [ebx+acm_dev.PortHandle], eax
         test    eax, eax
         jz      .no_serial
@@ -2652,6 +2660,7 @@ endp
 
 ; strings and static data
 my_service      db      'usbcdc', 0
+acm_port_name   db      'cdc-acm', 0
 netdev_name     db      'USB CDC-NCM', 0
 ecm_netdev_name db      'USB CDC-ECM', 0
 ecm_zlp_dummy   db      0               ; address for zero-length transfers

@@ -1,4 +1,4 @@
-SERIAL_COMPATIBLE_API_VER = 0 ; increments in case of breaking changes
+SERIAL_COMPATIBLE_API_VER = 1 ; increments in case of breaking changes
 
 SERIAL_API_GET_VERSION = 0
 SERIAL_API_SRV_ADD_PORT = 1
@@ -9,6 +9,7 @@ SERIAL_API_CLOSE_PORT = 5
 SERIAL_API_SETUP_PORT = 6
 SERIAL_API_READ = 7
 SERIAL_API_WRITE = 8
+SERIAL_API_ENUM_PORTS = 9
 
 SERIAL_API_ERR_PORT_INVALID = 1
 SERIAL_API_ERR_PORT_BUSY = 2
@@ -29,6 +30,9 @@ SERIAL_CONF_STOP_BITS_2 = 2
 
 SERIAL_CONF_FLOW_CTRL_NONE = 0
 
+SERIAL_INFO_DRIVER_LEN = 16
+SERIAL_INFO_DESCR_LEN = 64
+
 struct  SP_DRIVER
         size            dd ? ; size of this struct
         startup         dd ? ; int __stdcall (*startup)(void *drv_data, const struct serial_conf *conf);
@@ -46,7 +50,20 @@ struct  SP_CONF
         flow_ctrl       db ?
 ends
 
-proc serial_add_port stdcall, drv:dword, drv_data:dword
+struct  SP_PORT_INFO
+        size            dd ? ; size of this struct
+        driver          dd ? ; ASCIIZ driver name, e.g. "uart16550", "usb-cdc"
+        descr           dd ? ; ASCIIZ description, may be NULL
+ends
+
+struct  SP_PORT_ENUM_ENTRY
+        id              dd ? ; unique port number (SERIAL_PORT.id)
+        busy            dd ? ; 0 = free, non-zero = port is opened
+        driver          rb SERIAL_INFO_DRIVER_LEN
+        descr           rb SERIAL_INFO_DESCR_LEN
+ends
+
+proc serial_add_port stdcall, drv:dword, drv_data:dword, info:dword
 locals
         handler    dd ?
         io_code    dd ?
@@ -60,7 +77,7 @@ endl
         mov     [io_code], SERIAL_API_SRV_ADD_PORT
         lea     eax, [drv]
         mov     [input], eax
-        mov     [inp_size], 8
+        mov     [inp_size], 12
         xor     eax, eax
         mov     [output], eax
         mov     [out_size], eax
@@ -129,7 +146,7 @@ proc serial_port_init
         ret
 endp
 
-proc serial_port_get_version stdcall, version:dword
+proc serial_port_get_version stdcall uses ebx, version:dword
 locals
         .handler    dd ?
         .io_code    dd ?
@@ -149,7 +166,7 @@ endl
 
         lea     ecx, [.handler]
         mcall   SF_SYS_MISC, SSF_CONTROL_DRIVER
-        
+
         ret
 endp
 
@@ -294,6 +311,43 @@ endl
         mov     edx, [count_ptr]
         mov     [edx], ecx
         add     esp, 12
+        ret
+endp
+
+proc serial_port_enum stdcall uses ebx, buf:dword, buf_size:dword, \
+                      total:dword, filled:dword
+locals
+        .handler    dd ?
+        .io_code    dd ?
+        .input      dd ?
+        .inp_size   dd ?
+        .output     dd ?
+        .out_size   dd ?
+endl
+        push    [buf_size]
+        push    [buf]
+        mov     eax, [serial_drv_handle]
+        mov     [.handler], eax
+        mov     dword [.io_code], SERIAL_API_ENUM_PORTS
+        mov     [.input], esp
+        mov     dword [.inp_size], 8
+        sub     esp, 8
+        mov     [.output], esp
+        mov     dword [.out_size], 8
+
+        lea     ecx, [.handler]
+        mcall   SF_SYS_MISC, SSF_CONTROL_DRIVER
+
+        pop     ebx edx
+        cmp     eax, -1
+        je      .err
+        mov     ecx, [total]
+        mov     [ecx], ebx
+        mov     ecx, [filled]
+        mov     [ecx], edx
+    .err:
+
+        add     esp, 8
         ret
 endp
 

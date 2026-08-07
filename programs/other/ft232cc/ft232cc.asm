@@ -436,7 +436,7 @@ btn_io	    db ?
 dev		dd ?
 pid		dd ?
 flags	    dd ?
-drv_name    db 'usbother', 0
+drv_name    db 'usbftdi', 0
 noftdi_msg  db 'No FTDI connected', 0
 devrdy_msg  db 'First FTDI is ready', 0
 devlkd_msg  db 'First FTDI is locked', 0

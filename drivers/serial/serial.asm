@@ -44,6 +44,8 @@ struct  SERIAL_PORT
         rx_buf          RING_BUF
         tx_buf          RING_BUF
         conf            SP_CONF
+        driver          rb SERIAL_INFO_DRIVER_LEN ; ASCIIZ, copied from SP_PORT_INFO.driver in add_port
+        descr           rb SERIAL_INFO_DESCR_LEN  ; ASCIIZ, copied from SP_PORT_INFO.descr in add_port (may be empty)
 ends
 
 proc START c, reason:dword, cmdline:dword
@@ -57,7 +59,7 @@ proc START c, reason:dword, cmdline:dword
         stdcall uart_probe, 0x2f8, 3
         stdcall uart_probe, 0x3e8, 4
         stdcall uart_probe, 0x2e8, 3
-        invoke  RegService, drv_name, service_proc
+        invoke  RegService, serial_drv_name, service_proc
         ret
 
   .fail:
@@ -75,7 +77,7 @@ srv_calls:
         dd      service_proc.setup
         dd      service_proc.read
         dd      service_proc.write
-        ; TODO enumeration
+        dd      service_proc.enum_ports
 srv_calls_end:
 
 proc service_proc stdcall uses ebx esi edi, ioctl:dword
@@ -97,11 +99,13 @@ proc service_proc stdcall uses ebx esi edi, ioctl:dword
         ; in:
         ;  +0: driver
         ;  +4: driver data
-        cmp     [edx + IOCTL.inp_size], 8
+        ;  +8: port info (SP_PORT_INFO*)
+        cmp     [edx + IOCTL.inp_size], 12
         jb      .err
         mov     ebx, [edx + IOCTL.input]
         mov     ecx, [ebx]
         mov     edx, [ebx + 4]
+        mov     ebx, [ebx + 8]
         call    add_port
         ret
 
@@ -137,6 +141,7 @@ proc service_proc stdcall uses ebx esi edi, ioctl:dword
         ;  +4 addr to SERIAL_CONF
         ; out:
         ;  +0 port handle if success
+        ; eax = 0 if success, otherwise an error code SERIAL_API_ERR_*
         cmp     [edx + IOCTL.inp_size], 8
         jb      .err
         cmp     [edx + IOCTL.out_size], 4
@@ -220,25 +225,60 @@ proc service_proc stdcall uses ebx esi edi, ioctl:dword
         mov     [ebx], ecx
         ret
 
+  .enum_ports:
+        ; in:
+        ;  +0 output buffer (array of SP_PORT_ENUM_ENTRY), may be NULL
+        ;  +4 output buffer size in bytes
+        ; out:
+        ;  +0 total number of ports in the system
+        ;  +4 number of entries actually filled into the buffer
+        ; eax = 0 if success, -1 otherwise
+        cmp     [edx + IOCTL.inp_size], 8
+        jb      .err
+        cmp     [edx + IOCTL.out_size], 8
+        jb      .err
+        mov     ebx, [edx + IOCTL.input]
+        push    edx
+        mov     eax, [ebx]
+        mov     edx, [ebx + 4]
+        call    sp_enum
+        pop     edx
+        mov     ebx, [edx + IOCTL.output]
+        mov     [ebx], eax
+        mov     [ebx + 4], ecx
+        xor     eax, eax
+        ret
+
   .err:
         or      eax, -1
         ret
 endp
 
-; struct SERIAL_PORT __fastcall *add_port(const struct SP_DRIVER *drv, const void *drv_data);
 align 4
+; @param ecx pointer to SP_DRIVER
+; @param edx driver-specific argument
+; @param ebx pointer to SP_PORT_INFO
+; @return SERIAL_PORT descriptor
 proc add_port uses edi
-        DEBUGF  L_DBG, "serial.sys: add port drv=%x drv_data=%x\n", ecx, edx
+        DEBUGF  L_DBG, "serial.sys: add port drv=%x drv_data=%x info=%x\n", ecx, edx, ebx
 
         mov     eax, [ecx + SP_DRIVER.size]
         cmp     eax, sizeof.SP_DRIVER
         jne     .fail
 
+        test    ebx, ebx
+        jz      .fail
+        mov     eax, [ebx + SP_PORT_INFO.size]
+        cmp     eax, sizeof.SP_PORT_INFO
+        jne     .fail
+
         ; alloc memory for serial port descriptor
         push    ecx
         push    edx
+        push    ebx
         movi    eax, sizeof.SERIAL_PORT
         invoke  Kmalloc
+        pop     ebx
         pop     edx
         pop     ecx
         test    eax, eax
@@ -251,6 +291,17 @@ proc add_port uses edi
         lea     ecx, [edi + SERIAL_PORT.mtx]
         invoke  MutexInit
         and     [edi + SERIAL_PORT.con], 0
+
+        ; copy port info strings
+        mov     eax, [ebx + SP_PORT_INFO.driver]
+        lea     edx, [edi + SERIAL_PORT.driver]
+        mov     ecx, SERIAL_INFO_DRIVER_LEN
+        call    copy_bounded_str
+
+        mov     eax, [ebx + SP_PORT_INFO.descr]
+        lea     edx, [edi + SERIAL_PORT.descr]
+        mov     ecx, SERIAL_INFO_DESCR_LEN
+        call    copy_bounded_str
 
         mov     ecx, port_list_mutex
         invoke  MutexLock
@@ -282,7 +333,35 @@ proc add_port uses edi
 endp
 
 align 4
-; u32 __fastcall *remove_port(struct SERIAL_PORT *port);
+; copies an ASCIIZ string into a fixed-size buffer: copies up to (size - 1)
+; bytes or until the NUL, then zero-pads the rest of the buffer
+; @param eax source ASCIIZ ptr, may be NULL
+; @param edx dest buffer ptr
+; @param ecx dest buffer size in bytes, must be >= 1
+proc copy_bounded_str uses esi edi
+        mov     esi, eax
+        mov     edi, edx
+        dec     ecx ; reserve the last byte for the NUL terminator
+  .copy:
+        test    ecx, ecx
+        jz      .pad
+        test    esi, esi
+        jz      .pad
+        lodsb
+        test    al, al
+        jz      .pad
+        stosb
+        dec     ecx
+        jmp     .copy
+  .pad:
+        inc     ecx ; account for the reserved NUL byte
+        xor     al, al
+        rep     stosb
+        ret
+endp
+
+align 4
+; @param ecx serial port descriptor
 proc remove_port uses esi
         mov     esi, ecx
         mov     ecx, port_list_mutex
@@ -657,7 +736,69 @@ proc sp_write
         ret
 endp
 
-drv_name    db 'SERIAL', 0
+align 4
+; @param eax buf
+; @param edx buf_size (bytes)
+; @return eax total port count in the system
+;         ecx entries filled into buf
+proc sp_enum uses ebx esi edi
+        mov     ecx, eax
+        mov     eax, edx
+        xor     edx, edx
+        mov     ebx, sizeof.SP_PORT_ENUM_ENTRY
+        div     ebx
+        ; eax max entries count
+
+        mov     edi, ecx
+        imul    eax, sizeof.SP_PORT_ENUM_ENTRY
+        add     eax, ecx
+        mov     edx, eax ; end-of-buffer boundary
+
+        xor     ebx, ebx ; total port count
+        xor     ecx, ecx ; filled count
+
+        push    ecx edx
+        mov     ecx, port_list_mutex
+        invoke  MutexLock
+        pop     edx ecx
+
+        mov     esi, port_list
+  .next:
+        mov     esi, [esi + SERIAL_PORT.fd]
+        cmp     esi, port_list
+        jz      .done
+        inc     ebx
+        cmp     edi, edx
+        jae     .next
+
+        mov     eax, [esi + SERIAL_PORT.id]
+        mov     [edi + SP_PORT_ENUM_ENTRY.id], eax
+        xor     eax, eax
+        cmp     dword [esi + SERIAL_PORT.con], 0
+        setnz   al
+        mov     [edi + SP_PORT_ENUM_ENTRY.busy], eax
+
+        push    ecx esi edi
+        lea     esi, [esi + SERIAL_PORT.driver]
+        lea     edi, [edi + SP_PORT_ENUM_ENTRY.driver]
+        mov     ecx, (SERIAL_INFO_DRIVER_LEN + SERIAL_INFO_DESCR_LEN) / 4
+        rep     movsd
+        pop     edi esi ecx
+
+        add     edi, sizeof.SP_PORT_ENUM_ENTRY
+        inc     ecx
+        jmp     .next
+
+  .done:
+        push    ecx
+        mov     ecx, port_list_mutex
+        invoke  MutexUnlock
+        pop     ecx
+
+        mov     eax, ebx
+        ret
+endp
+
 include_debug_strings
 
 align 4
