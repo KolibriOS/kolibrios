@@ -253,9 +253,10 @@ UTF16to8_string:
 
 UTF16to8:
 ;   in:
-; eax = UTF-16 char
+; ax = UTF-16 char
 ; edi -> buffer for UTF-8 char (increasing)
 ; ecx = byte counter (decreasing)
+        movzx   eax, ax
         dec     ecx
         js      .ret
         cmp     eax, 80h
