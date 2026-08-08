@@ -654,7 +654,15 @@ end if
 	stdcall hda_codec_setup_stream, eax, SDO_TAG, 0, 0x11	; Left & Right channels (Back panel)
 ;Asper+ ]
 
-	invoke	TimerHS, 1, 0, snd_hda_automute, 0
+if USE_UNSOL_EV = 0
+	invoke	TimerHS, 1, 0, snd_hda_automute, 1
+else
+	; Keep the unsolicited-event mode on the event-driven path. Running
+	; snd_hda_automute at startup can issue codec commands before the new
+	; unsolicited-response flow is ready, which hangs some systems.
+	invoke	TimerHS, 1, 0, process_unsol_events, 0
+end if
+
 if USE_SINGLE_MODE
 	mov	esi, msgSingleMode
 	invoke	SysMsgBoardStr
@@ -2635,7 +2643,7 @@ proc  snd_hda_automute stdcall, data:dword
 	test	eax, eax
 	jz	.out
 
-	stdcall snd_hda_read_pin_sense, edx, 1
+	stdcall snd_hda_read_pin_sense, edx, [data]
 	test	eax, AC_PINSENSE_PRESENCE
 	jnz	@f
 	xchg	ecx, esi
@@ -2664,24 +2672,64 @@ proc  snd_hda_automute stdcall, data:dword
 endp
 
 
-;Asper remember to add this functions:
-proc  snd_hda_queue_unsol_event stdcall, par1:dword, par2:dword
-;if DEBUG
-;        push    esi
-;        mov     esi, msgUnsolEvent
-;        invoke  SysMsgBoardStr
-;        pop     esi
-;end if
-if USE_UNSOL_EV = 1
-	;Test. Do not make queue, process immediately!
-	;stdcall here snd_hda_read_pin_sense stdcall, nid:dword, trigger_sense:dword
-	;and then mute/unmute pin based on the results
-	invoke	TimerHS, 1, 0, snd_hda_automute, 0
-end if
-	ret
-endp
-;...
+; ;Asper remember to add this functions:
+; proc  snd_hda_queue_unsol_event stdcall, par1:dword, par2:dword
+; ;if DEBUG
+; ;        push    esi
+; ;        mov     esi, msgUnsolEvent
+; ;        invoke  SysMsgBoardStr
+; ;        pop     esi
+; ;end if
+; if USE_UNSOL_EV = 1
+; 	;Test. Do not make queue, process immediately!
+; 	;stdcall here snd_hda_read_pin_sense stdcall, nid:dword, trigger_sense:dword
+; 	;and then mute/unmute pin based on the results
+; 	invoke	TimerHS, 1, 0, snd_hda_automute, 0
+; end if
+; 	ret
+; endp
+; ;...
 
+align 4
+proc snd_hda_queue_unsol_event stdcall, res:dword, res_ex:dword
+    ; Single-producer (HDA IRQ) lock-free enqueue. The caller azx_update_rirb
+    ; only carries EBX across iterations and reloads the rest, and TimerHS
+    ; preserves EBX too - so by using scratch regs only we need no saves.
+    mov     eax, [unsol_events.wp]
+    lea     edx, [eax+1]
+    and     edx, HDA_UNSOL_QUEUE_SIZE - 1     ; next write pos (size must be 2^n)
+    cmp     edx, [unsol_events.rp]
+    je      .full                             ; ring full -> drop, keep 1 slot free
+
+    mov     ecx, [res]
+    mov     [unsol_events.queue + eax*8], ecx
+    mov     ecx, [res_ex]
+    mov     [unsol_events.queue + eax*8 + 4], ecx
+    mov     [unsol_events.wp], edx            ; publish only after data is stored
+
+    invoke  TimerHS, 1, 0, process_unsol_events, 0
+.full:
+    ret
+endp
+
+align 4
+proc process_unsol_events stdcall, data:dword
+    ; Runs from TimerHS (single consumer). Uses only EAX (scratch) and calls
+    ; snd_hda_automute, which preserves every register, so nothing is saved.
+.loop:
+    mov     eax, [unsol_events.rp]
+    cmp     eax, [unsol_events.wp]
+    je      .done
+    ; The event payload is at [unsol_events.queue + eax*8] (res) and +4 (res_ex).
+    ; Per-pin tag parsing is not implemented yet, so just re-evaluate jack state.
+    inc     eax
+    and     eax, HDA_UNSOL_QUEUE_SIZE - 1
+    mov     [unsol_events.rp], eax
+    stdcall snd_hda_automute, 0
+    jmp     .loop
+.done:
+    ret
+endp
 
 align 4
 proc  fdword2str stdcall, flags:dword	; bit 0 - skipLeadZeroes; bit 1 - newLine; other bits undefined
@@ -3057,6 +3105,7 @@ aspinlock	 dd SPINLOCK_FREE
 
 codec CODEC
 ctrl AC_CNTRL
+unsol_events HDA_BUS_UNSOLICITED
 
 ;Asper: BDL must be aligned to 128 according to HDA specification.
 pcmout_bdl	 rd 1

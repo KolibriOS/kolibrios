@@ -515,20 +515,18 @@ HDA_AMP_VOLMASK    equ 0x7F
 
 
 ; unsolicited event handler
-HDA_UNSOL_QUEUE_SIZE	equ 64
+HDA_UNSOL_QUEUE_SIZE	equ 64	; must stay a power of 2 (used as a bitmask for wrap)
 
-;struc  HDA_BUS_UNSOLICITED
-;{
-;        ; ring buffer
-;        .queue:
-;            times HDA_UNSOL_QUEUE_SIZE*2 dd ?
-;        .rp                              dd ?
-;        .wp                              dd ?
-;
-;        ; workqueue
-;        .work                            dd ?;struct work_struct work;
-;        .bus                             dd ?  ;struct hda_bus ;bus
-;};
+struc HDA_BUS_UNSOLICITED
+{
+    ; ring buffer
+    .queue  rd HDA_UNSOL_QUEUE_SIZE * 2 ; 2 dword for each event (res and res_ex)
+    .rp     dd ?                        ; Read pointer
+    .wp     dd ?                        ; Write pointer
+;   ; workqueue
+;   .work   dd ?                        ;struct work_struct work;
+;   .bus    dd ?                        ;struct hda_bus ;bus
+}
 
 ; Helper for automatic ping configuration
 AUTO_PIN_MIC		 equ 0
