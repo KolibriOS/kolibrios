@@ -1730,7 +1730,7 @@ create_help_window:
         ret
 ;---------------------------------------------------------------------
 @@:
-	mcall	SF_CREATE_THREAD,1,.thread,(.threat_stack+16*4)
+	mcall	SF_THREAD_CONTROL,1,.thread,(.threat_stack+16*4)
         mov     [help_is_open_already], 1
         mov     [help_window_pid], eax
 	popad

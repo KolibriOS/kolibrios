@@ -506,7 +506,7 @@ event_mouse:
 
     mov     edx, esp
     add     edx, 512
-    mcall   SF_CREATE_THREAD, 1, n_main
+    mcall   SF_THREAD_CONTROL, 1, n_main
 
     mcall   SF_SYSTEM, SSF_GET_ACTIVE_WINDOW
     mov     [win.psid], eax

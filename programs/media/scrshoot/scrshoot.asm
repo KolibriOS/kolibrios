@@ -409,7 +409,7 @@ pusha
 	jnc	@f
 	xor	ebx,ebx
 	inc	ebx
-	mcall SF_CREATE_THREAD,, scr_window, i_end_tread-512
+	mcall SF_THREAD_CONTROL,, scr_window, i_end_tread-512
 @@:
 popa
 ret
@@ -444,7 +444,7 @@ start_autoshoot:
 	jc	@f
 	xor	ebx,ebx
 	inc	ebx
-	mcall SF_CREATE_THREAD,, autoshoot, i_end_tread
+	mcall SF_THREAD_CONTROL,, autoshoot, i_end_tread
 @@:
 ret
 
@@ -529,7 +529,7 @@ save_shoot:
 
 	xor	ebx,ebx
 	inc	ebx
-	mcall SF_CREATE_THREAD
+	mcall SF_THREAD_CONTROL
 .running:
 ret
 
@@ -567,7 +567,7 @@ show_set_rect_window:
 	jc	@f
 	xor	ebx,ebx
 	inc	ebx
-	mcall SF_CREATE_THREAD,, set_rect_window, set_rect_window_esp
+	mcall SF_THREAD_CONTROL,, set_rect_window, set_rect_window_esp
 
 	mov	[set_rect_window_pid],eax
 ret

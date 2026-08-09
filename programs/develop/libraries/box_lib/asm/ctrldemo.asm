@@ -285,7 +285,7 @@ analyse_out_menu_2:
 	jmp	still
 ;---------------------------------------------------------------------
 	about:
-	mcall	SF_CREATE_THREAD,1,thread3,thread
+	mcall	SF_THREAD_CONTROL,1,thread3,thread
 	jmp	still
 ;---------------------------------------------------------------------
 OpenDialog_start_0:

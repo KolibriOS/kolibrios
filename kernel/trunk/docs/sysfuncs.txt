@@ -2492,7 +2492,7 @@ Returned value:
   * otherwise eax = TID - thread identifier
 
 ---------------------- Constants for registers: ----------------------
-  eax - SF_CREATE_THREAD (51)
+  eax - SF_THREAD_CONTROL (51)
   ebx - SSF_CREATE_THREAD (1), SSF_GET_CURR_THREAD_SLOT (2),
         SSF_GET_THREAD_PRIORITY (3), SSF_SET_THREAD_PRIORITY (4)
 ======================================================================
@@ -5273,8 +5273,8 @@ Returned value:
   * eax = futex handle, 0 on error
 
 ---------------------- Constants for registers: ----------------------
-  eax - SF_FUTEX (77)
-  ebx - SSF_CREATE (0)
+  eax - SF_POSIX (77)
+  ebx - SSF_FUTEX_CREATE (0)
 ======================================================================
 ========= Function 77, Subfunction 1, Destroy futex object ===========
 ======================================================================
@@ -5289,8 +5289,8 @@ Remarks:
     terminates.
 
 ---------------------- Constants for registers: ----------------------
-  eax - SF_FUTEX (77)
-  ebx - SSF_DESTROY (1)
+  eax - SF_POSIX (77)
+  ebx - SSF_FUTEX_DESTROY (1)
 ======================================================================
 =============== Function 77, Subfunction 2, Futex wait ===============
 ======================================================================
@@ -5306,8 +5306,8 @@ Returned value:
          -2 - futex control value doesn't match
 
 ---------------------- Constants for registers: ----------------------
-  eax - SF_FUTEX (77)
-  ebx - SSF_WAIT (2)
+  eax - SF_POSIX (77)
+  ebx - SSF_FUTEX_WAIT (2)
 ======================================================================
 =============== Function 77, Subfunction 3, Futex wake ===============
 ======================================================================
@@ -5320,8 +5320,8 @@ Returned value:
   * eax = number of waiters that were woken up
 
 ---------------------- Constants for registers: ----------------------
-  eax - SF_FUTEX (77)
-  ebx - SSF_WAKE (3)
+  eax - SF_POSIX (77)
+  ebx - SSF_FUTEX_WAKE (3)
 ======================================================================
 Remarks:
   * Subfunctions 4-7 are reserved and currently return -1.
@@ -5343,8 +5343,8 @@ Remarks:
   * Only pipe descriptors are supported.
 
 ---------------------- Constants for registers: ----------------------
-  eax - SF_FUTEX (77)
-  ebx - SSF_FILE_READ (10)
+  eax - SF_POSIX (77)
+  ebx - SSF_FD_READ (10)
 ======================================================================
 =========== Function 77, Subfunction 11, Write to file. =============
 ======================================================================
@@ -5362,8 +5362,8 @@ Remarks:
   * Only pipe descriptors are supported.
 
 ---------------------- Constants for registers: ----------------------
-  eax - SF_FUTEX (77)
-  ebx - SSF_FILE_WRITE (11)
+  eax - SF_POSIX (77)
+  ebx - SSF_FD_WRITE (11)
 ======================================================================
 ========== Function 77, Subfunction 13, Create pipe. ================
 ======================================================================
@@ -5381,8 +5381,8 @@ Remarks:
     write handle.
 
 ---------------------- Constants for registers: ----------------------
-  eax - SF_FUTEX (77)
-  ebx - SSF_PIPE_CREATE (13)
+  eax - SF_POSIX (77)
+  ebx - SSF_FD_PIPE2 (13)
 ======================================================================
 === Function 80 - file system interface with parameter of encoding ===
 ======================================================================

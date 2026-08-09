@@ -1111,7 +1111,7 @@ end if
   mov  dword [edx+8],ebx
   mov  dword [edx+4],ecx
   mov  dword [edx],Kolibri_ThreadFinish
-  mov  eax,SF_CREATE_THREAD
+  mov  eax,SF_THREAD_CONTROL
   mov  ebx,1
   mov  ecx,@Kolibri@ThreadMain$qpvt1
   int  0x40

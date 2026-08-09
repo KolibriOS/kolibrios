@@ -749,7 +749,7 @@ but_find_key_w:
 	cmp dword[wnd_k_words_run],0
 	jne @f
 		pushad
-		mcall SF_CREATE_THREAD,1,prop_start,thread_coords
+		mcall SF_THREAD_CONTROL,1,prop_start,thread_coords
 		mov [wnd_k_words_run],eax
 		popad
 	@@:

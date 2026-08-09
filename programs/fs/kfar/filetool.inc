@@ -1372,7 +1372,7 @@ filesearch_OnKey:
         stosb
         test    al, al
         jnz     @b
-        push    SF_CREATE_THREAD
+        push    SF_THREAD_CONTROL
         pop     eax
         push    1
         pop     ebx

@@ -40,7 +40,7 @@ START:
 
         invoke OpenDialog_Init, OpenDialog_data
         ; init futex
-        mcall   SF_FUTEX, SSF_CREATE, futex_cmd
+        mcall   SF_POSIX, SSF_FUTEX_CREATE, futex_cmd
         mov     [futex_handle], eax
 
         ; parse cmd_line
@@ -65,7 +65,7 @@ main:
         cmp     dword[save_ptr], 0
         jz      still
 
-        mcall   SF_CREATE_THREAD, 1, thread_auto_save, thread_auto_save.stack
+        mcall   SF_THREAD_CONTROL, 1, thread_auto_save, thread_auto_save.stack
         cmp     eax, -1
         jz      still
 
@@ -121,13 +121,13 @@ button:
         movsw
         movsb
 @@:
-        mcall   SF_CREATE_THREAD, 1, thread_timer, thread_timer.stack
+        mcall   SF_THREAD_CONTROL, 1, thread_timer, thread_timer.stack
         mov     dword[text_log_butt], _stop_log
         jmp     still
 .log_stop:
         ; waking up the flow through the futex
         mov     byte[futex_cmd], 1  ; stop thread
-        mcall   SF_FUTEX, SSF_WAKE, [futex_handle], 1
+        mcall   SF_POSIX, SSF_FUTEX_WAKE, [futex_handle], 1
         mcall   SF_SYS_MISC, SSF_SWITCH_TASK ; in order for the message to arrive to the thread with a timer
 
         ; switch text for button
@@ -161,15 +161,15 @@ button:
 
         ; waking up the flow through the futex
         mov     byte[futex_cmd], 2  ; save_log
-        mcall   SF_FUTEX, SSF_WAKE, [futex_handle], 1
+        mcall   SF_POSIX, SSF_FUTEX_WAKE, [futex_handle], 1
         test    eax, eax
         jnz     still
 
-        mcall   SF_CREATE_THREAD, 1, thread_timer, thread_timer.stack
+        mcall   SF_THREAD_CONTROL, 1, thread_timer, thread_timer.stack
         mcall   SF_SYS_MISC, SSF_SWITCH_TASK ; in order for the message to arrive to the thread with a timer
 @@:
         mov     byte[futex_cmd], 3  ; save_log  & exit
-        mcall   SF_FUTEX, SSF_WAKE, [futex_handle], 1
+        mcall   SF_POSIX, SSF_FUTEX_WAKE, [futex_handle], 1
         test    eax, eax
         jz      @b
         mcall   SF_SYS_MISC, SSF_SWITCH_TASK ; in order for the message to arrive to the thread with a timer
@@ -550,10 +550,10 @@ error_drv:
        send_notify Error_text
 exit:
         mov     byte[futex_cmd], 2
-        mcall   SF_FUTEX, SSF_WAKE, [futex_handle], 1
+        mcall   SF_POSIX, SSF_FUTEX_WAKE, [futex_handle], 1
         mcall   SF_SYS_MISC, SSF_SWITCH_TASK ; in order for the message to arrive to the thread with a timer
         ; destroy futex
-        mcall   SF_FUTEX, SSF_DESTROY, [futex_handle]
+        mcall   SF_POSIX, SSF_FUTEX_DESTROY, [futex_handle]
         mcall   SF_SYS_MISC, SSF_MEM_FREE, [log_ptr]
 
         mcall   18, 18, dword[PID_AUTO_SAVE]
@@ -613,7 +613,7 @@ thread_timer:
         mcall   SF_SET_EVENTS_MASK, 0x00 ; clear event mask
 @@:
         mov     byte[futex_cmd], 0x00
-        mcall   SF_FUTEX, SSF_WAIT, [futex_handle],[futex_cmd], 100*60 ; 1 min
+        mcall   SF_POSIX, SSF_FUTEX_WAIT, [futex_handle],[futex_cmd], 100*60 ; 1 min
         test    eax, eax
         jz      .check_cmd
         cmp     eax, -2

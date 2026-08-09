@@ -96,7 +96,7 @@ key:
                 mov      ax, dx
                 mov     [mw_pos], eax
 
-                mcall   SF_CREATE_THREAD, 1, help_thread, help_stack_top
+                mcall   SF_THREAD_CONTROL, 1, help_thread, help_stack_top
                 cmp     eax, -1
                 je      still
 

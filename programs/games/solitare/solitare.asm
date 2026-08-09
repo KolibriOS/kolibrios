@@ -155,7 +155,7 @@ draw_main_window:
     ret
 
 create_win_thread:
-    mcall SF_CREATE_THREAD, SSF_CREATE_THREAD, win_thread_entry, win_stack_top
+    mcall SF_THREAD_CONTROL, SSF_CREATE_THREAD, win_thread_entry, win_stack_top
     ret
 
 win_thread_entry:

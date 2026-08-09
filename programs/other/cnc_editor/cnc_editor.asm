@@ -691,7 +691,7 @@ but_new_file:
 	cmp byte[wnd_n_file],0
 	jne .end_f
 pushad
-	mcall SF_CREATE_THREAD,1,start_n_file,thread_n_file
+	mcall SF_THREAD_CONTROL,1,start_n_file,thread_n_file
 popad
 	.end_f:
 	ret
@@ -1948,7 +1948,7 @@ pushad
 		mov eax,[edx+Figure.PoiCount]
 	.end1:
 		mov [wnd_PoiN],eax
-		mcall SF_CREATE_THREAD,1,start_prop,thread_coords
+		mcall SF_THREAD_CONTROL,1,start_prop,thread_coords
 		jmp .end0
 	.end_fblo:
 		notify_window_run txt_err_no_1_point_sel
@@ -1965,7 +1965,7 @@ but_dlg_opt_scale:
 	cmp byte[wnd_run_scale],0
 	jne .end_f
 pushad
-	mcall SF_CREATE_THREAD,1,start_scale,thread_scale
+	mcall SF_THREAD_CONTROL,1,start_scale,thread_scale
 popad
 	.end_f:
 	ret

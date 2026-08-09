@@ -85,7 +85,6 @@ wo<'SF_CD'>,,3,,5
 wo<'SF_CHANGE_WINDOW'>,f1.74-f1,3,,5
 wo<'SF_CHECK_EVENT'>,f1.75-f1,3,,5
 wo<'SF_CLIPBOARD'>,,3,,5
-wo<'SF_CREATE_THREAD'>,f1.77-f1,3,,5
 wo<'SF_CREATE_WINDOW'>,f1.78-f1,3,,5
 wo<'SF_CURRENT_FOLDER'>,,3,,5
 wo<'SF_DEBUG'>,,3,,5
@@ -135,6 +134,7 @@ wo<'SF_SYSTEM'>,,3,,5
 wo<'SF_SYSTEM_GET'>,,3,,5
 wo<'SF_SYSTEM_SET'>,,3,,5
 wo<'SF_TERMINATE_PROCESS'>,f1.126-f1,3,,5
+wo<'SF_THREAD_CONTROL'>,f1.77-f1,3,,5
 wo<'SF_THREAD_INFO'>,f1.127-f1,3,,5
 wo<'SF_WAIT_EVENT'>,f1.128-f1,3,,5
 wo<'SF_WAIT_EVENT_TIMEOUT'>,f1.129-f1,3,,5
@@ -759,7 +759,7 @@ f1: db 0
 .72:db 'работа с доской отладки (сист. функция из KOSfuncs.inc)',0
 .74:db 'изменить положение/размеры окна (сист. функция из KOSfuncs.inc)',0
 .75:db 'проверить, есть ли событие, без ожидания (сист. функция из KOSfuncs.inc)',0
-.77:db 'создать поток (сист. функция из KOSfuncs.inc)',0
+.77:db 'управление потоками (сист. функция из KOSfuncs.inc)',0
 .78:db 'определить и нарисовать окно (сист. функция из KOSfuncs.inc)',0
 .81:db 'определить/удалить кнопку (сист. функция из KOSfuncs.inc)',0
 .82:db 'нарисовать отрезок (сист. функция из KOSfuncs.inc)',0
