@@ -469,7 +469,7 @@ macro format spec& {
                   if defined __is_KX_format
                      if __is_format.flag_import = 0
                         store dword $% at meos_header.kx.import_ptr
-                        store dword 0x200 at meos_header.kx.flags
+                        store dword (1 shl 6) at meos_header.kx.flags
                         __is_format.flag_import = 1
                         __is_KX_format.flag_import_end = 1
                         __data_macro_good = 1
