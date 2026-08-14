@@ -2,55 +2,32 @@
 
 DistanceMeter distanceMeter;
 
-void distanceMeterInit(int w) {
-	distanceMeter.x = 0;
-	distanceMeter.y = 5;
-	distanceMeter.currentDistance = 0;
-	distanceMeter.maxScore = 0;
-	distanceMeter.achievement = false;
-	distanceMeter.flashTimer = 0;
-	distanceMeter.flashIterations = 0;
-	distanceMeter.invertTrigger = false;
+void distanceMeterInit() {
+	// in BSS: everything not set here starts at zero
+	distanceMeter.maxScore = 99999; // 10^DM_MAX_DISTANCE_UNITS - 1
 	distanceMeter.maxScoreUnits = DM_MAX_DISTANCE_UNITS;
-	distanceMeterCalcXPos(w);
 	for (int i = 0; i < distanceMeter.maxScoreUnits; i++) {
 		distanceMeterDraw(i, 0, false);
 	}
-	distanceMeter.maxScore = (int)pow(10, distanceMeter.maxScoreUnits) - 1;
-	distanceMeter.digits[0] = '\0';
-	distanceMeter.highScore[0] = '\0';
-}
-
-void distanceMeterCalcXPos(int w) {
-	distanceMeter.x = w - (DM_DEST_WIDTH * (distanceMeter.maxScoreUnits + 1));
 }
 
 void distanceMeterDraw(int digitPos, int value, bool opt_highscore) {
-
-	int dx, dy;
+	int dx = DM_X;
 	if (opt_highscore) {
-		dx = distanceMeter.x - (distanceMeter.maxScoreUnits * 2) * DM_WIDTH;
-		dy = distanceMeter.y;
+		dx -= (distanceMeter.maxScoreUnits * 2) * DM_WIDTH;
 	}
-	else {
-		dx = distanceMeter.x;
-		dy = distanceMeter.y;
-	}
-	//printf("%d %d %d  %d %d    %d\n", digitPos, value, opt_highscore, dx, dy, DM_WIDTH * value + ATLAS_TEXT_SPRITE_X);
 	graphicsBlitAtlasImage(
 		DM_WIDTH * value + ATLAS_TEXT_SPRITE_X,
 		0 + ATLAS_TEXT_SPRITE_Y,
 		digitPos * DM_DEST_WIDTH + dx,
-		distanceMeter.y + dy,
+		DM_Y * 2, // chrome translates by y and then draws at targetY == y
 		DM_WIDTH,
-		DM_HEIGHT,
-		false
+		DM_HEIGHT
 	);
 }
 
 void distanceMeterDrawHighScore() {
-	// TODO canvasCtx.globalAlpha = .8;
-	for (int i = (int)strlen(distanceMeter.highScore) - 1; i >= 0; i--) {
+	for (int i = distanceMeter.highScoreLen - 1; i >= 0; i--) {
 		distanceMeterDraw(i, distanceMeter.highScore[i] > 12 ? distanceMeter.highScore[i] - '0' : distanceMeter.highScore[i], true);
 	}
 }
@@ -61,6 +38,7 @@ void distanceMeterSetHighScore(int _distance) {
 	distanceMeter.highScore[1] = 11;
 	distanceMeter.highScore[2] = 12;
 	intToStr(distance, distanceMeter.maxScoreUnits, distanceMeter.highScore + 3);
+	distanceMeter.highScoreLen = 3 + distanceMeter.maxScoreUnits;
 }
 
 void distanceMeterReset() {
@@ -69,7 +47,8 @@ void distanceMeterReset() {
 }
 
 int distanceMeterGetActualDistance(int distance) {
-	return distance ? (int)round(distance * DM_COEFFICIENT) : 0;
+	// round(distance * 0.025); 0.025 == 1/40
+	return (distance + 20) / 40;
 }
 
 bool distanceMeterUpdate(int deltaTime, int _distance) {
@@ -83,9 +62,6 @@ bool distanceMeterUpdate(int deltaTime, int _distance) {
 			distanceMeter.maxScoreUnits++;
 			distanceMeter.maxScore = distanceMeter.maxScore * 10 + 9;
 		}
-		// else {
-			// NOTE this.distance was in original but i didsnt see any usage of this field
-		// }
 
 		if (distance > 0) {
 			// Acheivement unlocked

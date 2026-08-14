@@ -1,39 +1,18 @@
 #include "graphics.h"
 #include "sprites.h"
-#include <assert.h>
 
 
-Image* screenImage;
-static Image* spriteAtlas;
+// 32bpp: sysfn 65 copies it as is, indices would cost a kernel lookup per pixel
+static unsigned screenImage[DEFAULT_WIDTH * BUFFER_HEIGHT];
 
 
-void graphicsInit() {
-    spriteAtlas = img_decode((void*)sprites100, sizeof(sprites100), 0);
-    *((uint8_t*)spriteAtlas->Palette + 3) = 0; // set black as transparent
-    // for (int i = 0; i < 16; i++) {
-    //     dbg_printf("%x\n", *((uint8_t*)spriteAtlas->Palette + i));
-    // }
-    if (spriteAtlas->Type != IMAGE_BPP32) {
-        spriteAtlas = img_convert(spriteAtlas, NULL, IMAGE_BPP32, 0, 0);
-        if (!spriteAtlas) {
-            dbg_printf("spriteAtlas convert error\n");
-            exit(-1);
-        }
-    }
-    dbg_printf("spriteAtlas->Type = %d\n", spriteAtlas->Type);
-    screenImage = img_create(DEFAULT_WIDTH, DEFAULT_HEIGHT, IMAGE_BPP32);
-}
+void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w, int h) {
+    destY += GAME_Y_OFFSET; // playfield coordinates -> buffer coordinates
 
-void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w, int h, bool center) {
-    // dbg_printf("start graphicsBlitAtlasImage ax = %d ay = %d dx = %d dy = %d w = %d h = %d %x %x\n", atlasX, atlasY, destX, destY, w, h, screenImage, spriteAtlas);
-
-    int screen_width = (int)screenImage->Width;
-    int screen_height = (int)screenImage->Height;
-    
-    if (destX >= screen_width) {
+    if (destX >= DEFAULT_WIDTH) {
         return;
     }
-     if (destY >= screen_height) {
+    if (destY >= BUFFER_HEIGHT) {
         return;
     }
 
@@ -42,8 +21,8 @@ void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w,
         w = destX + w;
         destX = 0;
     }
-    if (destX + w > screen_width) {
-        w = screen_width - destX;
+    if (destX + w > DEFAULT_WIDTH) {
+        w = DEFAULT_WIDTH - destX;
     }
 
     if (destY < 0) {
@@ -51,37 +30,38 @@ void graphicsBlitAtlasImage(int atlasX, int atlasY, int destX, int destY, int w,
         h = destY + h;
         destY = 0;
     }
-    if (destY + h > screen_height) {
-        h = screen_height - destY;
+    if (destY + h > BUFFER_HEIGHT) {
+        h = BUFFER_HEIGHT - destY;
     }
 
     if (w <= 0 || h <= 0) {
         return;
     }
 
-    //printf("start graphicsBlitAtlasImage ax = %d ay = %d dx = %d dy = %d w = %d h = %d %x %x\n\n", atlasX, atlasY, destX, destY, w, h, screenImage, spriteAtlas);
-
-    img_blend(screenImage, spriteAtlas, destX, destY, atlasX, atlasY, w, h);
-
-    // dbg_printf("end graphicsBlitAtlasImage\n\n");
+    const unsigned char* src = SPRITE_ATLAS + atlasY * ATLAS_WIDTH + atlasX;
+    unsigned* dst = screenImage + destY * DEFAULT_WIDTH + destX;
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            unsigned char idx = src[x];
+            if (idx)
+                dst[x] = DINO_PALETTE[idx];
+        }
+        src += ATLAS_WIDTH;
+        dst += DEFAULT_WIDTH;
+    }
 }
 
-void graphicsFillBackground(unsigned r, unsigned g, unsigned b) {
-    img_fill_color(screenImage, screenImage->Width, screenImage->Height, (0xFF << 24) | (r << 16) | (g << 8) | b);
+void graphicsFillBackground(void) {
+    unsigned* p = screenImage;
+    for (int i = DEFAULT_WIDTH * BUFFER_HEIGHT; i; --i)
+        *p++ = BACKGROUND_COLOR;
 }
 
 void graphicsRender() {
     // don't redraw window on each frame. redraw window only when redraw event (called when widow moved e.g.)
-    img_draw(screenImage, 5, 24, screenImage->Width, screenImage->Height, 0, 0);
+    ksys_draw_bitmap_palette(screenImage, 0, 0, DEFAULT_WIDTH, BUFFER_HEIGHT, 32, 0, 0);
 }
 
 void graphicsDelay(int ms) {
-    // dbg_printf("ms = %d\n", ms);
-    _ksys_delay(ms/10 ? ms/10 : 2);
-}
-
-
-void graphicsDestroy() {
-    img_destroy(screenImage);
-    img_destroy(spriteAtlas);
+    _ksys_delay((ms + 9) / 10);
 }

@@ -1,10 +1,7 @@
 #ifndef HORIZON_LINE_H
 #define HORIZON_LINE_H
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <math.h>
 #include "config.h"
 #include "graphics.h"
 
@@ -13,12 +10,8 @@
 #define HORIZON_LINE_YPOS 127
 
 typedef struct {
-	int width;
-	int height;
 	int sourceXPos[2];
 	int xPos[2];
-	int yPos;
-	double bumpThreshold;
 } HorizonLine;
 
 extern HorizonLine horizonLine;

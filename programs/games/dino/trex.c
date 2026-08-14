@@ -24,43 +24,23 @@ TrexAnimFramesEntry trexAnimFrames[5] = {
 // T - rex player initaliser
 // Sets the t - rex to blink at random intervals
 void trexInit() {
-	trex.xPos = 0;
-	trex.currentFrame = 0;
-	//this.currentAnimFrames = [];
-	trex.blinkDelay = 0;
-	trex.blinkCount = 0;
-	trex.animStartTime = 0;
-	trex.timer = 0;
-	trex.msPerFrame = 1000. / FPS;
-	trex.status = TREX_STATUS_WAITING;
-
-	trex.jumping = false;
-	trex.ducking = false;
-	trex.jumpVelocity = 0;
-	trex.reachedMinHeight = false;
-	trex.speedDrop = false;
-	trex.jumpCount = 0;
-	trex.jumpspotX = 0;
-
-	trex.groundYPos = RUNNER_DEFAULT_HEIGHT - TREX_HEIGHT - RUNNER_BOTTOM_PAD;
+	// in BSS: everything not set here starts at zero
+	trex.groundYPos = GAME_HEIGHT - TREX_HEIGHT - GAME_BOTTOM_PAD;
 	trex.yPos = trex.groundYPos;
 	trex.minJumpHeight = trex.groundYPos - TREX_MIN_JUMP_HEIGHT;
-	trex.playingIntro = false;
 
-	trexDraw(0, 0);
+	trexDraw(0);
 	trexUpdate(0, TREX_STATUS_WAITING);
 }
 
 // Set the animation status
 void trexUpdate(int deltaTime, int opt_status) {
-	//printf("trex.status = %d\n", trex.status);
 	trex.timer += deltaTime;
 	// Update the status
 	if (opt_status != -1) {
 		trex.status = opt_status;
 		trex.currentFrame = 0;
-		trex.msPerFrame = trexAnimFrames[opt_status].msPerFrame;
-		trex.currentAnimFrames = trexAnimFrames[opt_status];
+		trex.currentAnimFrames = &trexAnimFrames[opt_status];
 		if (opt_status == TREX_STATUS_WAITING) {
 			trex.animStartTime = getTimeStamp();
 			trexSetBlinkDelay();
@@ -69,7 +49,6 @@ void trexUpdate(int deltaTime, int opt_status) {
 	// Game intro animation, T-rex moves in from the left.
 	if (trex.playingIntro) {
 		if (trex.xPos < TREX_START_X_POS) {
-			//printf("trex.xPos = %d\n", trex.xPos);
 			trex.xPos += max((int)round(((double)TREX_START_X_POS / TREX_INTRO_DURATION) * deltaTime), 1);
 		}
 		else {
@@ -81,13 +60,12 @@ void trexUpdate(int deltaTime, int opt_status) {
 		trexBlink(getTimeStamp());
 	}
 	else {
-		// printf("trex.status = %d\n", trex.status);
-		trexDraw(trex.currentAnimFrames.frames[trex.currentFrame], 0);
+		trexDraw(trex.currentAnimFrames->frames[trex.currentFrame]);
 	}
 
 	// Update the frame position.
-	if (trex.timer >= trex.msPerFrame) {
-		trex.currentFrame = trex.currentFrame == trex.currentAnimFrames.frameCount - 1 ? 0 : trex.currentFrame + 1;
+	if (trex.timer >= trex.currentAnimFrames->msPerFrame) {
+		trex.currentFrame = trex.currentFrame == trex.currentAnimFrames->frameCount - 1 ? 0 : trex.currentFrame + 1;
 		trex.timer = 0;
 	}
 
@@ -98,40 +76,31 @@ void trexUpdate(int deltaTime, int opt_status) {
 	}
 }
 
-void trexDraw(int x, int y) {
-	//printf("trexDraw();\n");
+void trexDraw(int x) {
 	int sourceWidth = trex.ducking && trex.status != TREX_STATUS_CRASHED ? TREX_WIDTH_DUCK : TREX_WIDTH;
 	int sourceHeight = TREX_HEIGHT;
 	// Adjustments for sprite sheet position.
 	int sourceX = x + ATLAS_TREX_X;
-	int sourceY = y + ATLAS_TREX_Y;
+	int sourceY = ATLAS_TREX_Y;
 
-	// Ducking.
-	if (trex.ducking && trex.status != TREX_STATUS_CRASHED) {
-		graphicsBlitAtlasImage(sourceX, sourceY, trex.xPos, trex.yPos, sourceWidth, sourceHeight, false);
+	// Crashed whilst ducking. Trex is standing up so needs adjustment.
+	if (trex.ducking && trex.status == TREX_STATUS_CRASHED) {
+		trex.xPos++;
 	}
-	else {
-		// Crashed whilst ducking. Trex is standing up so needs adjustment.
-		if (trex.ducking && trex.status == TREX_STATUS_CRASHED) {
-			trex.xPos++;
-		}
-		// Standing / running
-		graphicsBlitAtlasImage(sourceX, sourceY, trex.xPos, trex.yPos, sourceWidth, sourceHeight, false);
-	}
+	graphicsBlitAtlasImage(sourceX, sourceY, trex.xPos, trex.yPos, sourceWidth, sourceHeight);
 }
 
 void trexSetBlinkDelay() {
-	trex.blinkDelay = (int)ceil(((double)rand()/RAND_MAX)*TREX_BLINK_TIMING);
+	trex.blinkDelay = getRandomNumber(1, TREX_BLINK_TIMING);
 }
 
 void trexBlink(int time) {
-	//printf("trexBlink(%d)\n", time);
 	int deltaTime = time - trex.animStartTime;
 	if (deltaTime < 0) {
 		deltaTime = DELTA_MS_DEFAULT;
 	}
 	if (deltaTime >= trex.blinkDelay) {
-		trexDraw(trex.currentAnimFrames.frames[trex.currentFrame], 0);
+		trexDraw(trex.currentAnimFrames->frames[trex.currentFrame]);
 		if (trex.currentFrame == 1) {
 			// Set new random delay to blink.
 			trexSetBlinkDelay();
@@ -213,7 +182,6 @@ void trexReset() {
 	trex.jumping = false;
 	trex.ducking = false;
 	trexUpdate(0, TREX_STATUS_RUNNING);
-	//trex.midair = false; TODO: WTF is midair
 	trex.speedDrop = false;
 	trex.jumpCount = 0;
 }

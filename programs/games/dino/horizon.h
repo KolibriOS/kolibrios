@@ -1,41 +1,37 @@
 #ifndef HORIZON_H
 #define HORIZON_H
 
-#include <math.h>
 #include <stdbool.h>
 #include "obstacle.h"
 #include "cloud.h"
 #include "horizon_line.h"
 #include "runner.h"
 #include "graphics.h"
-#include "ulist.h"
 
 #define HORIZON_BG_CLOUD_SPEED 0.2
-#define HORIZON_BUMPY_THRESHOLD 0.3
-#define HORIZON_CLOUD_FREQUENCY 0.5
-#define HORIZON_HORIZON_HEIGHT 16
 #define HORIZON_MAX_CLOUDS 6
 
+#define HORIZON_MAX_OBSTACLES 8 // ~5 fit on screen at the smallest gaps
+#define HORIZON_MAX_OBSTACLE_DUPLICATION 2
+
 typedef struct {
-	int dim_width;
-	double gapCoefficient;
-	Ulist* obstacles;
-	Ulist* obstacleHistory;
-	// nightMode
-	Ulist* clouds;
+	Obstacle obstacles[HORIZON_MAX_OBSTACLES];
+	int obstacleCount;
+	ObstacleType obstacleHistory[HORIZON_MAX_OBSTACLE_DUPLICATION];
+	int obstacleHistoryCount;
+	Cloud clouds[HORIZON_MAX_CLOUDS];
+	int cloudCount;
 } Horizon;
 
 extern Horizon horizon;
 
-void horizonInit(int dim_width, double gapCoefficient);
-void horizonUpdate(int deltaTime, double currentSpeed, bool updateObstacles, bool showNightMode);
+void horizonInit();
+void horizonUpdate(int deltaTime, double currentSpeed, bool updateObstacles);
 void horizonUpdateClouds(int deltaTime, double speed);
 void horizonUpdateObstacles(int deltaTime, double currentSpeed);
-//void horizonRemoveFirstObstacle();
 void horizonAddNewObstacle(double currentSpeed);
 bool horizonDuplicateObstacleCheck(ObstacleType nextObstacleType);
 void horizonReset();
-//void horizonResize(int width, int height);
 void horizonAddCloud();
 
 #endif

@@ -54,21 +54,20 @@ ObstacleTypeConfig obstacleTypeConfigs[3] = {
 				{.x = 10, .y = 8, .width = 6, .height = 9}
 			},
 			.numFrames = 2,
-			.frameRate = 1000 / 6,
+			.frameRate = 1000 / 6.,
 			.speedOffset = 0.8
 		}
 };
 
-int obstacleSpritePosX[3] = { ATLAS_CACTUS_SMALL_X, ATLAS_CACTUS_LARGE_X, ATLAS_PTERODACTYL_X};
-int obstacleSpritePosY[3] = { ATLAS_CACTUS_SMALL_Y, ATLAS_CACTUS_LARGE_Y, ATLAS_PTERODACTYL_Y};
+short obstacleSpritePosX[3] = { ATLAS_CACTUS_SMALL_X, ATLAS_CACTUS_LARGE_X, ATLAS_PTERODACTYL_X};
+short obstacleSpritePosY[3] = { ATLAS_CACTUS_SMALL_Y, ATLAS_CACTUS_LARGE_Y, ATLAS_PTERODACTYL_Y};
 
 
-void obstacleInit(Obstacle* ob, const ObstacleTypeConfig *otc, int dim_width, double gapCoefficient, double speed, int opt_xOffset) {
+void obstacleInit(Obstacle* ob, const ObstacleTypeConfig *otc, double speed, int opt_xOffset) {
 	ob->typeConfig = *otc;
-	ob->gapCoefficient = gapCoefficient;
 	ob->size = getRandomNumber(1, OBSTACLE_MAX_OBSTACLE_LENGTH);
 	ob->remove = false;
-	ob->xPos = dim_width + opt_xOffset;
+	ob->xPos = DEFAULT_WIDTH + opt_xOffset;
 	ob->yPos = 0;
 
 	// For animated obstacles
@@ -83,7 +82,8 @@ void obstacleInit(Obstacle* ob, const ObstacleTypeConfig *otc, int dim_width, do
 	ob->width = ob->typeConfig.width * ob->size;
 
 	if (ob->typeConfig.yPos == -1) {
-		ob->yPos = ob->typeConfig.yPosArr[getRandomNumber(0, ob->typeConfig.yPosArrSize)];
+		// getRandomNumber is inclusive on both ends
+		ob->yPos = ob->typeConfig.yPosArr[getRandomNumber(0, ob->typeConfig.yPosArrSize - 1)];
 	}
 	else {
 		ob->yPos = ob->typeConfig.yPos;
@@ -107,27 +107,25 @@ void obstacleInit(Obstacle* ob, const ObstacleTypeConfig *otc, int dim_width, do
 
 	// For obstacles that go at a different speed from the horizon
 	if (ob->typeConfig.speedOffset) {
-		ob->typeConfig.speedOffset = (double)rand() / RAND_MAX > 0.5 ? ob->typeConfig.speedOffset : -ob->typeConfig.speedOffset;
+		ob->typeConfig.speedOffset = rand() > RAND_MAX / 2 ? ob->typeConfig.speedOffset : -ob->typeConfig.speedOffset;
 	}
-	ob->gap = obstacleGetGap(ob, ob->gapCoefficient, speed);
+	ob->gap = obstacleGetGap(ob, speed);
 }
 
 void obstacleDraw(const Obstacle *ob) {
 	int sourceWidth = ob->typeConfig.width;
 	int sourceHeight = ob->typeConfig.height;
-	int sourceX = (sourceWidth * ob->size) * (0.5 * ((double)ob->size - 1)) + obstacleSpritePosX[ob->typeConfig.type];
+	int sourceX = sourceWidth * ob->size * (ob->size - 1) / 2 + obstacleSpritePosX[ob->typeConfig.type];
 	if (ob->currentFrame > 0) {
 		sourceX += sourceWidth*ob->currentFrame;
 	}
-	//dbg_printf("od ax=%u, ay=%u, dx=%u, dy=%u, w=%u, h=%u\n", sourceX, obstacleSpritePosY[ob->typeConfig.type], ob->xPos, ob->yPos, sourceWidth*ob->size, sourceHeight);
-	graphicsBlitAtlasImage(sourceX, obstacleSpritePosY[ob->typeConfig.type], ob->xPos, ob->yPos, sourceWidth*ob->size, sourceHeight, false);
+	graphicsBlitAtlasImage(sourceX, obstacleSpritePosY[ob->typeConfig.type], ob->xPos, ob->yPos, sourceWidth*ob->size, sourceHeight);
 }
 
 void obstacleUpdate(Obstacle *ob, int deltaTime, double speed) {
 	if (!ob->remove) {
-		double dx = floor(((speed + ob->typeConfig.speedOffset)*FPS/1000.)*deltaTime);
-		//dbg_printf("sp = %lf, ots = %lf, dx = %d, xpos = %d\n", speed, ob->typeConfig.speedOffset, (int)dx, ob->xPos - dx);
-		ob->xPos -= dx;//floor(((speed + ob->typeConfig.speedOffset)*FPS/1000.)*deltaTime);
+		// value is always positive, so truncation == floor
+		ob->xPos -= (int)(((speed + ob->typeConfig.speedOffset)*FPS/1000.)*deltaTime);
 	}
 	// Update frames
 	if (ob->typeConfig.numFrames > 1) {
@@ -143,8 +141,8 @@ void obstacleUpdate(Obstacle *ob, int deltaTime, double speed) {
 	}
 }
 
-int obstacleGetGap(const Obstacle *ob, double gapCoefficient, double speed) {
-	int minGap = round(ob->width * speed + ob->typeConfig.minGap * gapCoefficient);
+int obstacleGetGap(const Obstacle *ob, double speed) {
+	int minGap = round(ob->width * speed + ob->typeConfig.minGap * OBSTACLE_GAP_COEFFICIENT);
 	int maxGap = round(minGap * OBSTACLE_MAX_GAP_COEFFICIENT);
 	return getRandomNumber(minGap, maxGap);
 }

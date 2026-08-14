@@ -8,10 +8,9 @@ KPACK = kpack
 
 SRC = $(wildcard *.c)
 FLAGS= -B$(KTCC_DIR)/bin -I $(KLIBC)/include -Wall# -stack=20480
-LIBS = -limg
 
 all: $(SRC)
-	$(KTCC) $(FLAGS) $(SRC) $(LIBS) -o $(NAME)
+	$(KTCC) $(FLAGS) $(SRC) -o $(NAME)
 # $(KPACK) $(NAME)
 
 clean:
