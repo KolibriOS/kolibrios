@@ -657,7 +657,34 @@ align 4
 ;---------------------------------------------------------------------
 align 4
 fb_draw_icon:
-	pusha
+	pushad
+	cmp	fb_icon_raw_area,0
+	jne	.not_draw_null
+	mov	bx,[esp+18] ;coord x
+	sub	bx,2
+	sub	bx,fb_icon_size_x
+	shl	ebx,16
+	mov	bx,fb_icon_size_x
+	mov	cx,[esp+16] ;coord y
+	shl	ecx,16
+	mov	cx,fb_icon_size_y
+	test	[edx-40],byte 0x10
+	jz	@f
+	mov	edx,fb_select_color
+	jmp	.draw_r
+@@:
+	mov	edx,fb_background_color
+.draw_r:
+	mcall	SF_DRAW_RECT
+	shr ebx,16
+	shr ecx,16
+	movzx	eax,fb_icon_size_x
+	movzx	edx,fb_icon_size_y
+	stdcall	draw_edge, ebx, ecx, eax, edx,\
+		fb_background_color, fb_select_color, fb_text_color
+	popad
+	ret
+.not_draw_null:
 	xor	eax,eax
 	mov	ax,fb_icon_size_y
 	mov	ebx,fb_resolution_raw
@@ -698,11 +725,9 @@ fb_draw_icon:
 	add	dx,ax
 	mov	esi,fb_resolution_raw
 	xor	ebp,ebp
-	push	edi
 	mov	edi,fb_palette_raw
 	mcall	SF_PUT_IMAGE_EXT
-	pop	edi
-	popa
+	popad
 	ret
 ;---------------------------------------------------------------------
 ; Convert of a binary number in decimal string form
