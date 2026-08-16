@@ -2069,8 +2069,10 @@ load_ini:
 load_icons:
 	mcall	SF_SYS_MISC,SSF_MEM_OPEN,str_icon_18,,0
 	or	eax,eax
-	jz	.error
-
+	jnz	@f
+	mov	[N_error],2
+	mov	[error_type],eax
+@@:
 ; set of RAW resolution to pixel
 	mov	[file_browser_data_1.resolution_raw],32
 ; set RAW palette,use else resolution 8bit or less
@@ -2078,10 +2080,6 @@ load_icons:
 ; set RAW area for icon
 	mov	[file_browser_data_1.icon_raw_area],eax
 	ret
-.error:
-	mov	[N_error],2
-	mov	[error_type],eax
-	jmp	button.exit
 ;---------------------------------------------------------------------
 sort_directory:
 	mov	eax,[file_browser_data_1.folder_data]
