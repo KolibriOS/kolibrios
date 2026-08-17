@@ -9,19 +9,28 @@
 
 #define READDIR_ENCODING KSYS_FILE_UTF8
 
-#define READDIR_BUF_LEN ((READDIR_ENCODING == KSYS_FILE_CP866) ? 264 : 520)
+#define READDIR_BUF_LEN ((READDIR_ENCODING == KSYS_FILE_CP866) ? 520 : 264)
+
+#define __CHECK_DIR_ERR(status, err, data, ...)                                                       \
+    {                                                                                                 \
+        if (status) {                                                                                 \
+            void* _CHECK_DIR_ERR_ARGS[] = { data, __VA_ARGS__ };                                      \
+            for (size_t i = 0; i < sizeof(_CHECK_DIR_ERR_ARGS) / sizeof(*_CHECK_DIR_ERR_ARGS); ++i) { \
+                if (_CHECK_DIR_ERR_ARGS[i]) {                                                         \
+                    free(_CHECK_DIR_ERR_ARGS[i]);                                                     \
+                }                                                                                     \
+            }                                                                                         \
+            errno = err;                                                                              \
+            return NULL;                                                                              \
+        }                                                                                             \
+    }
 
 #define CHECK_DIR_ERR(path, n, data, ...)                                                         \
-    data = malloc(sizeof(ksys_readdir_buff_t) + (sizeof(ksys_bdfe_t) + READDIR_BUF_LEN) * n);     \
-    if (!data || _ksys_read_dir(path, n, READDIR_ENCODING, data).status) {                         \
-        void* _CHECK_DIR_ERR_ARGS[] = { data, __VA_ARGS__ };                                      \
-        for (size_t i = 0; i < sizeof(_CHECK_DIR_ERR_ARGS) / sizeof(*_CHECK_DIR_ERR_ARGS); ++i) { \
-            if (_CHECK_DIR_ERR_ARGS[i]) {                                                         \
-                free(_CHECK_DIR_ERR_ARGS[i]);                                                     \
-            }                                                                                     \
-        }                                                                                         \
-        errno = ENOTDIR;                                                                          \
-        return NULL;                                                                              \
+    {                                                                                             \
+        data = malloc(sizeof(ksys_readdir_buff_t) + (sizeof(ksys_bdfe_t) + READDIR_BUF_LEN) * n); \
+        __CHECK_DIR_ERR(!data, ENOMEM, data, __VA_ARGS__);                                        \
+        int status = _ksys_read_dir(path, n, READDIR_ENCODING, data).status;                      \
+        __CHECK_DIR_ERR((status && status != KSYS_FS_ERR_EOF), status, data, __VA_ARGS__);        \
     }
 
 DIR* opendir(const char* path)
@@ -43,14 +52,20 @@ DIR* opendir(const char* path)
     free(data);
 
     list->objs = (struct dirent*)malloc(num_of_file * sizeof(struct dirent));
+    if (list->objs == NULL) {
+        errno = ENOMEM;
+        return NULL;
+    }
 
     CHECK_DIR_ERR(path, num_of_file, data, list->objs, list);
+
+    num_of_file = data->blocks;
 
     for (int i = 0; i < num_of_file; i++) {
         ksys_bdfe_t* d = (ksys_bdfe_t*)((char*)(&data->files) + ((sizeof(ksys_bdfe_t) + READDIR_BUF_LEN) * i));
         list->objs[i].d_ino = i;
         list->objs[i].d_type = d->attributes;
-        strcpy(list->objs[i].d_name, d->name);
+        strncpy(list->objs[i].d_name, &d->name, min(READDIR_BUF_LEN, sizeof(list->objs[i].d_name) / sizeof(*list->objs[i].d_name)));
     }
     free(data);
 
