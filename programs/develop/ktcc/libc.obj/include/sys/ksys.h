@@ -1844,11 +1844,12 @@ KOSAPI ksys70_status_t _ksys_file_read(const char* name, uint64_t offset, uint32
 
 /*====== Function 70, subfunction 1 -  read dir ======*/
 
-KOSAPI ksys70_status_t _ksys_read_dir(const char* path, unsigned n, unsigned encoding, ksys_readdir_buff_t* buf)
+KOSAPI ksys70_status_t _ksys_read_dir(const char* path, unsigned start_block, unsigned encoding, unsigned n, ksys_readdir_buff_t* buf)
 {
     ksys70_t k;
     k.p00 = 1;
-    k.p04 = encoding;
+    k.p04dw = start_block;
+    k.p08dw = encoding;
     k.p12 = n;
     k.p16 = buf;
     k.p20 = 0;

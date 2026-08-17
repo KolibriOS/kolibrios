@@ -9,7 +9,7 @@
 
 #define READDIR_ENCODING KSYS_FILE_UTF8
 
-#define READDIR_BUF_LEN ((READDIR_ENCODING == KSYS_FILE_CP866) ? 520 : 264)
+#define READDIR_BUF_LEN ((READDIR_ENCODING == KSYS_FILE_CP866) ? 264 : 520)
 
 #define __CHECK_DIR_ERR(status, err, data, ...)                                                       \
     {                                                                                                 \
@@ -29,7 +29,7 @@
     {                                                                                             \
         data = malloc(sizeof(ksys_readdir_buff_t) + (sizeof(ksys_bdfe_t) + READDIR_BUF_LEN) * n); \
         __CHECK_DIR_ERR(!data, ENOMEM, data, __VA_ARGS__);                                        \
-        int status = _ksys_read_dir(path, n, READDIR_ENCODING, data).status;                      \
+        int status = _ksys_read_dir(path, 0, READDIR_ENCODING, n, data).status;                   \
         __CHECK_DIR_ERR((status && status != KSYS_FS_ERR_EOF), status, data, __VA_ARGS__);        \
     }
 
