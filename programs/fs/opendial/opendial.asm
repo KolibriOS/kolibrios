@@ -768,7 +768,7 @@ start_error_window_thread:
 	add	eax,[ebx+34]
 	sub	eax,125
 	mov	[error_window_x+2],ax
-	mcall	SF_CREATE_THREAD,SSF_CREATE_THREAD,thread_start,thread_stack
+	mcall	SF_THREAD_CONTROL,SSF_CREATE_THREAD,thread_start,thread_stack
 	ret
 ;---------------------------------------------------------------------
 mouse:

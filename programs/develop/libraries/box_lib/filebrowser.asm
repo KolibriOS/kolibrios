@@ -676,8 +676,8 @@ fb_draw_icon:
 	mov	edx,fb_background_color
 .draw_r:
 	mcall	SF_DRAW_RECT
-	shr ebx,16
-	shr ecx,16
+	shr	ebx,16
+	shr	ecx,16
 	movzx	eax,fb_icon_size_x
 	movzx	edx,fb_icon_size_y
 	stdcall	draw_edge, ebx, ecx, eax, edx,\
