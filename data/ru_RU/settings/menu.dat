@@ -115,6 +115,7 @@
 33 HTTPGet              |network/httpget
 33 Загрузчик            |network/dl
 12 Браузер WebView      |network/webview
+12 Браузер NetSurf      |network/netsurf
 #14 **** Разное
 00 Эмуляторы*         > |@6
 45 Создание скриншотов  |scrshoot

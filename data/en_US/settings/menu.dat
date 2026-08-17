@@ -116,6 +116,7 @@
 33 HTTPGet              |network/httpget
 33 Downloader           |network/dl
 12 WebView Browser      |network/webview
+12 NetSurf              |network/netsurf
 #13 **** SERVERS
 24 FTP                  |network/ftpd
 #14 **** OTHER

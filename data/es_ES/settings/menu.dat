@@ -121,6 +121,7 @@
 16 HTTPGet               |network/httpget
 16 Descargas             |network/dl
 16 Navegador WebView     |network/webview
+12 NetSurf               |network/netsurf
 #15    **** OTROS
 16 Reloj anal¢gico       |demos/aclock
 16 Reloj binario         |demos/bcdclk

@@ -542,7 +542,7 @@ tup.append_table(img_files, {
  {"NETWORK/PING", VAR_PROGS .. "/network/ping/ping"},
  {"NETWORK/NETCFG", VAR_PROGS .. "/network/netcfg/netcfg"},
  {"NETWORK/NETSTAT", VAR_PROGS .. "/network/netstat/netstat"},
- {"NETWORK/NSINST", VAR_PROGS .. "/network/netsurf/nsinstall"},
+ {"NETWORK/NETSURF", VAR_PROGS .. "/network/netsurf/netsurf"},
  {"NETWORK/NSLOOKUP", VAR_PROGS .. "/network/nslookup/nslookup"},
  {"NETWORK/PASTA", VAR_PROGS .. "/network/pasta/pasta"},
  {"NETWORK/SYNERGYC", VAR_PROGS .. "/network/synergyc/synergyc"},
