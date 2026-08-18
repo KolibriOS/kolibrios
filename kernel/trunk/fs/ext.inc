@@ -169,7 +169,9 @@ blocksFree_hi       dd  ?
 minExtraISize       dw  ?
 wantExtraISize      dw  ?
 Flags               dd  ?
-csum_seed_padding   rb  268
+logGroupsPerFlex_padding rb 16
+logGroupsPerFlex    db  ?
+csum_seed_padding   rb  251
 checksumSeed        dd  ?
 checksum_padding    rb  392
 checksum            dd  ?
@@ -222,10 +224,13 @@ EXT4_IMMUTABLE_FL   = 10h
 EXT4_APPEND_ONLY_FL = 20h
 EXT4_NOATIME_FL     = 80h
 ; File System Feature Flags
-INCOMPAT_64BIT          = 80h
-INCOMPAT_CSUM_SEED      = 2000h
-RO_COMPAT_METADATA_CSUM = 400h
-RO_COMPAT_GDT_CSUM      = 10h    ; Not supported but need to check it for csum validation on RO.
+INCOMPAT_FILETYPE           = 2h
+INCOMPAT_EXTENTS            = 40h
+INCOMPAT_64BIT              = 80h
+INCOMPAT_FLEX_BG            = 200h
+INCOMPAT_CSUM_SEED          = 2000h
+RO_COMPAT_METADATA_CSUM     = 400h
+RO_COMPAT_GDT_CSUM          = 10h    ; Not supported but need to check it for csum validation on RO.
 CSUM_FLAGS = RO_COMPAT_GDT_CSUM or RO_COMPAT_METADATA_CSUM
 
 EXT_CRC_POLY = 82F63B78h
@@ -240,9 +245,9 @@ EXT_CSUM_FAKE_TAIL  = 0DEh
 ;   80h = 64bit
 ;  200h = flexible block groups
 ; 2000h = metadata_csum_seed
-INCOMPATIBLE_SUPPORT = 22C2h
+INCOMPATIBLE_SUPPORT = INCOMPAT_FILETYPE or INCOMPAT_EXTENTS or INCOMPAT_64BIT or INCOMPAT_FLEX_BG or INCOMPAT_CSUM_SEED
 ; Read only support for "incompatible" features:
-INCOMPATIBLE_READ_SUPPORT = 240h
+INCOMPATIBLE_READ_SUPPORT = INCOMPAT_EXTENTS
 
 ; Mount policies
 MOUNT_POLICY_NOATIME = 0
@@ -261,6 +266,7 @@ Lock                MUTEX
 mountType           dd  ?
 descShift           db  ?
 descSize            dd  ?
+flexGroupSize       dd  ?
 bytesPerBlock       dd  ?
 sectorsPerBlock     dd  ?
 dwordsPerBlock      dd  ?
@@ -482,6 +488,19 @@ ext2_create_partition:
         mov     [ebp+EXTFS.descSize], eax
         bsf     eax, eax
         mov     [ebp+EXTFS.descShift], al
+
+        mov     eax, 1
+        test    [ebx+SUPERBLOCK.incompatibleFlags], INCOMPAT_FLEX_BG
+        jz      .no_flex_bg
+        movzx   ecx, [ebx+SUPERBLOCK.logGroupsPerFlex]
+        cmp     ecx, 31
+        jbe     @f
+        xor     ecx, ecx
+@@:
+        shl     eax, cl
+.no_flex_bg:
+        mov     [ebp+EXTFS.flexGroupSize], eax
+
         mov     eax, [ebx+SUPERBLOCK.inodesTotal]
         dec     eax
         xor     edx, edx
@@ -759,8 +778,11 @@ extfsInodeAlloc:
         push    ebx
 .test_block_group:
         push    ebx
+        cmp     [ebp+EXTFS.flexGroupSize], 1
+        ja      @f
         cmp     [ebx+BGDESCR.blocksFree_lo], 0
         jz      .next
+@@:
         cmp     [ebx+BGDESCR.inodesFree_lo], 0
         jz      .next
         dec     [ebx+BGDESCR.inodesFree_lo]
@@ -840,16 +862,30 @@ extfsInodeAlloc:
         jmp     .ret
 
 extfsExtentAlloc:
-; in: eax = parent inode number, ecx = blocks max
+; in: edi = goal block (0 = use inode, clobbered), eax = parent inode number, ecx = blocks max
 ; out: ebx = first block number, ecx = blocks allocated
-        push    edx esi edi ecx
+; On error, ecx is undefined, no longer guaranteed to be 0.
+        push    edx esi ecx
+        test    edi, edi
+        jnz     .use_goal
         dec     eax
         xor     edx, edx
         div     [ebp+EXTFS.superblock.inodesPerGroup]
+        jmp     .calc_group
+.use_goal:
+        mov     eax, edi
+        sub     eax, [ebp+EXTFS.superblock.firstGroupBlock]
+        xor     edx, edx
+        div     [ebp+EXTFS.superblock.blocksPerGroup]
+.calc_group:
         mov     ebx, [ebp+EXTFS.descriptorTable]
         mov     cl, [ebp+EXTFS.descShift]
         shl     eax, cl
         add     ebx, eax
+        cmp     ebx, [ebp+EXTFS.descriptorTable]
+        jb      .oob
+        cmp     ebx, [ebp+EXTFS.descriptorTableEnd]
+        jae     .oob
         push    ebx
 .test_block_group:
         push    ebx
@@ -860,7 +896,7 @@ extfsExtentAlloc:
         mov     edx, eax
         mov     edi, ebx
         call    extfsReadBlock
-        jc      .fail
+        jc      .fail5
         mov     ecx, [ebp+EXTFS.superblock.blocksPerGroup]
         shr     ecx, 5
         or      eax, -1
@@ -975,8 +1011,12 @@ extfsExtentAlloc:
         add     [ebp+EXTFS.inodeBuffer.sectorsUsed], eax
         xor     eax, eax
 .ret:
-        pop     edi esi edx
+        pop     esi edx
         ret
+
+.oob:
+        movi    eax, ERROR_FS_FAIL
+        jmp     .fail3
 
 .next:      ; search forward, then backward
         pop     ebx
@@ -992,9 +1032,10 @@ extfsExtentAlloc:
         jnc     .test_block_group
         movi    eax, ERROR_DISK_FULL
         push    eax
-.fail:
-        add     esp, 12
-        xor     ecx, ecx
+.fail5:
+        pop     ecx ecx
+.fail3:
+        pop     ecx
         stc
         jmp     .ret
 
@@ -1451,7 +1492,10 @@ doublyIndirectBlockAlloc:
         xor     eax, eax
         jecxz   .end
         mov     eax, [esp+16]
+        push    edi
+        lea     edi, [ebx-1]
         call    extfsExtentAlloc
+        pop     edi
         jc      .end
         sub     [esp+12], ecx
         jmp     @b
@@ -1492,6 +1536,18 @@ extfsExtendFile:
         mov     eax, [esp+4]
         test    ecx, ecx
         jz      .done
+
+        xor     edi, edi
+        test    edx, edx
+        jz      .call_alloc
+        push    ecx
+        lea     ecx, [edx-1]
+        call    extfsGetExtent
+        pop     ecx
+        jc      .call_alloc
+        mov     edi, eax
+.call_alloc:
+        mov     eax, [esp+4]
         call    extfsExtentAlloc
         jc      .errDone
         sub     [esp], ecx
@@ -1617,7 +1673,10 @@ extfsExtendFile:
         mov     ecx, [esp]
         mov     eax, [esp+4]
         jecxz   @f
+        push    edi
+        lea     edi, [ebx-1]
         call    extfsExtentAlloc
+        pop     edi
         jc      .errSave
         sub     [esp], ecx
         jmp     @b
