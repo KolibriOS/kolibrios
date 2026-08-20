@@ -1235,6 +1235,9 @@ file_no_folder:
 	call	compare_expansion
 	test	eax,eax
 @@:
+	jz	@f
+	call	show_help_message
+@@:
 	pop	edi esi ecx ebx eax
 	jnz	still
 .no_save:
@@ -1284,6 +1287,40 @@ file_no_folder:
 	mov	eax,[communication_area]
 	mov	[eax],word 1
 	jmp	button.exit
+;---------------------------------------------------------------------
+show_help_message:
+	pushf
+	mov	esi,[communication_area]
+	add	esi,4104
+	mov	word[msgbox_1],0 ;clear button
+	mov	edi,msgbox_1.filter
+	mov	ecx,msgbox_1.end-8
+.cycle:
+	lodsb
+	or	al,al
+	jnz	@f
+	mov	ax,', '
+	stosw
+	lodsb
+	or	al,al
+	jz	.cycle_end
+@@:
+	stosb
+	cmp	edi,ecx
+	jl	.cycle
+.cycle_end:
+	sub	edi,2
+	mov	ax,'.'
+	stosw
+	mov	eax,' Ok '
+	stosd
+	xor	al,al
+	stosb
+	push	mb_thread
+	push	msgbox_1
+	call	[mb_create]
+	popf
+	ret
 ;---------------------------------------------------------------------
 load_root_directory:
 	mov	[dirinfo.name],dword dir_path_temp
@@ -2555,6 +2592,7 @@ plugins_directory	db 0
 
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_Sort 	db '/sys/lib/sort.obj',0
+system_dir_MsgBox 	db '/sys/lib/msgbox.obj',0
 
 align	4
 l_libs_start:
@@ -2563,6 +2601,9 @@ import_box_lib,plugins_directory
 
 library02	l_libs	system_dir_Sort+9,file_name,system_dir_Sort,\
 Sort_import,plugins_directory
+
+library03	l_libs	system_dir_MsgBox+9,file_name,system_dir_MsgBox,\
+import_msgbox_lib,plugins_directory
 
 end_l_libs:
 
@@ -2585,6 +2626,11 @@ aSort_strcmpi	db 'strcmpi',0
 ;---------------------------------------------------------------------
 include '../../develop/libraries/box_lib/import.inc'
 
+align 4
+import_msgbox_lib:
+	mb_create dd amb_create
+dd 0,0
+	amb_create db 'mb_create',0
 ;---------------------------------------------------------------------
 align	4
 window_high			dd 0
@@ -3053,6 +3099,13 @@ features_table:
 example_name_temp:
 	db 'temp1.asm',0
 ;---------------------------------------------------------------------
+msgbox_1:
+	dw 0
+	db 'Warning',0
+	db 'Error saving file! File extension not supported.',13,\
+		'Use one of these extensions:',13,'  '
+.filter: rb 4096
+.end:
 IM_END:
 ;---------------------------------------------------------------------
 do_not_draw_open_button_label	rb 1
@@ -3129,4 +3182,6 @@ procinfo process_information
 ;----------------------
 file_info:
 	rb 40
+	rb 1024
+mb_thread:
 I_END:
