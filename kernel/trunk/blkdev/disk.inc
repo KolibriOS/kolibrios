@@ -1489,19 +1489,31 @@ dyndisk_handler:
 ; 12. The fs operation has specified some partition.
         push    edx ecx
         xor     eax, eax
+        mov     ecx, eax
         lodsb
+@@:
+        lea     ecx, [ecx*4 + ecx]
+        shl     ecx, 1
+
         sub     eax, '0'
-        jz      .dyndisk_cleanup
+        jb      .dyndisk_cleanup
         cmp     eax, 10
         jnc     .dyndisk_cleanup
-        mov     ecx, eax
+
+        add     ecx, eax
+        cmp     ecx, MAX_NUM_PARTITIONS
+        ja      .dyndisk_cleanup
+
         lodsb
         cmp     eax, '/'
         jz      @f
         test    eax, eax
-        jnz     .dyndisk_cleanup
+        jnz     @b
         dec     esi
 @@:
+        test    ecx, ecx
+        jz      .dyndisk_cleanup
+
         cmp     byte [esi], 0
         jnz     @f
         ;  partition  info
