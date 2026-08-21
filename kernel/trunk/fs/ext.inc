@@ -30,6 +30,8 @@ ext_user_functions:
         dd      ext_Delete
         dd      ext_CreateFolder
         dd      ext_Rename
+        dd      ext_CreateSymlink
+        dd      ext_ReadSymlink
 ext_user_functions_end:
 endg
 
@@ -283,7 +285,8 @@ align2  rb  800h-EXTFS.align2
 inodeBuffer         INODE
 align3  rb  0A00h-EXTFS.align3
 symlink_workspace   rb  maxPathLength
-symlink_depth       dd  ?
+symlink_depth       dw  ?
+symlink_no_follow   dw  ?
 MOUNT_POLICY        dd  ? ; TODO: add proper mount syscall
 c_inode             dd  ?
 c_sz                dd  ?
@@ -2155,6 +2158,11 @@ unlinkInode:
         pop     eax
         ret
 
+reachSymlink:
+        ; Set symlink_depth = SYMLINK_MAX_DEPTH and symlink_no_follow = 1
+        mov     dword [ebp+EXTFS.symlink_depth], SYMLINK_MAX_DEPTH + 10000h
+        jmp     @f
+
 findInode:
 ; in: esi -> path string in UTF-8
 ;   out:
@@ -2163,7 +2171,8 @@ findInode:
 ; [ebp+EXTFS.inodeBuffer] = last inode
 ; ecx = parent inode number
 ; CF=1 -> file not found, edi=0 -> error
-        mov     [ebp+EXTFS.symlink_depth], SYMLINK_MAX_DEPTH
+        mov     dword [ebp+EXTFS.symlink_depth], SYMLINK_MAX_DEPTH
+@@:
         push    esi
         lea     esi, [ebp+EXTFS.rootInodeBuffer]
         lea     edi, [ebp+EXTFS.inodeBuffer]
@@ -2260,7 +2269,13 @@ findInode:
         and     eax, TYPE_MASK
 ; check if symlink
         cmp     eax, FLAG_SYMLINK
-        jz      .resolve_symlink
+        jne     @f
+        cmp     byte [esi], 0
+        jnz     .resolve_symlink
+        cmp     [ebp+EXTFS.symlink_no_follow], 0
+        jnz     .ret
+        jmp     .resolve_symlink
+@@:
 
         cmp     byte [esi], 0
         je      .ret
@@ -2298,14 +2313,12 @@ findInode:
 ; Symlink path is in symlink_workspace. esi points to the remaining path (tail).
 ; Shift tail by symlink size to prevent overwriting during insertion.
         push    edi ecx eax
-
         ; Find tail length
         mov     edi, esi
         mov     ecx, -1
         xor     al, al
         repnz scasb
         not     ecx                     ; ecx = tail length including null
-
         ; Boundary overflow check
         mov     eax, [ebx+INODE.fileSize]
         lea     edi, [esi + eax]
@@ -2313,13 +2326,11 @@ findInode:
         lea     eax, [ebp+EXTFS.symlink_workspace + maxPathLength]
         cmp     edi, eax
         ja      .error_nested
-
         ; Shift
         mov     eax, [ebx+INODE.fileSize]
         lea     edi, [esi + ecx - 1]
         add     edi, eax
         lea     esi, [esi + ecx - 1]
-
         std
         rep movsb
         cld
@@ -2340,23 +2351,21 @@ findInode:
         mov     edx, [ebx+INODE.fileSize]
         cmp     edx, maxPathLength
         jae     .error_slow
+        cmp     edx, [ebp+EXTFS.bytesPerBlock]
+        ja      .error_slow
 
         push    ecx edx edi
-
         call    extfsGetExtent
         jc      .error_slow
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         call    extfsReadBlock
         jc      .error_slow
-
         pop     edi edx ecx
-
         push    esi
         mov     esi, [ebp+EXTFS.tempBlockBuffer]
         mov     ecx, edx
         rep movsb
         pop     esi
-
         jmp     .symlink_merge
 
 ; The target path is short enough, it's stored in the inode's block numbers.
@@ -2367,7 +2376,6 @@ findInode:
 
 .symlink_merge:
         pop     esi                  ; Restore the remaining path
-
         cmp     byte [esi], 0
         jne     .symlink_copy_remaining
         mov     byte [edi], 0
@@ -2381,10 +2389,19 @@ findInode:
         mov     byte [edi], '/'
         inc     edi
 @@:
-        lodsb
-        stosb
-        test    al, al
-        jnz     @b
+        push    edi
+        mov     edi, esi
+        xor     ecx, ecx
+        dec     ecx
+        xor     eax, eax
+        repnz   scasb
+        not     ecx
+        lea     eax, [ebp+EXTFS.symlink_workspace + maxPathLength]
+        sub     eax, [esp]
+        cmp     ecx, eax
+        pop     edi
+        ja      .error
+        rep     movsb
 
 .symlink_check_type:
         lea     esi, [ebp+EXTFS.symlink_workspace]
@@ -2395,16 +2412,13 @@ findInode:
         inc     esi
         mov     dword [esp], ROOT_INODE
         mov     dword [esp+4], ROOT_INODE
-
         push    esi
         lea     esi, [ebp+EXTFS.rootInodeBuffer]
         lea     edi, [ebp+EXTFS.inodeBuffer]
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
         rep movsb
         pop     esi
-
         lea     edx, [ebp+EXTFS.inodeBuffer]
-
         cmp     byte [esi], 0
         jz      .ret
         jmp     .next_path_part
@@ -3698,6 +3712,201 @@ ext_Rename:
         mov     eax, ERROR_ACCESS_DENIED
 .error:
         push    eax
+        call    ext_unlock
+        pop     eax ebx
+        ret
+
+ext_CreateSymlink:
+        ; Copy target path into workspace and find its length
+        push    esi
+        mov     edi, [ebx+16]
+        mov     esi, edi
+        call    strlen
+        inc     ecx
+        cmp     ecx, maxPathLength
+        jae     .path_too_long
+        cmp     ecx, [ebp+EXTFS.bytesPerBlock]
+        ja      .path_too_long
+        lea     edi, [ebp+EXTFS.symlink_workspace]
+        rep movsb
+        pop     esi
+
+        call    extfsWritingInit
+        call    reachSymlink
+        mov     [ebp+EXTFS.symlink_no_follow], 0
+        jnc     .exist
+        test    edi, edi
+        jz      .error
+
+        mov     eax, esi
+        call    extfsInodeAlloc        ; ebx = allocated inode number
+        jc      .error
+
+        push    ebx esi edi
+        lea     edi, [ebp+EXTFS.inodeBuffer]
+        movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
+        xor     eax, eax
+        rep stosb
+        lea     ebx, [ebp+EXTFS.inodeBuffer]
+        call    initializeTimeFields
+        pop     edi esi edx             ; edx = inode number
+
+        mov     [ebx+INODE.accessMode], FLAG_SYMLINK or 110110110b
+        mov     byte [ebx+INODE.linksCount], 1
+
+        push    esi edi
+        lea     edi, [ebp+EXTFS.symlink_workspace]
+        mov     esi, edi
+        call    strlen
+        mov     [ebx+INODE.fileSize], ecx
+        pop     edi esi
+
+        ; Choose fast symlink (<=60 bytes) or slow symlink (>60 bytes)
+        cmp     ecx, FAST_SYMLINK_MAX_SIZE
+        ja      .slow_symlink
+
+        push    esi edi
+        lea     esi, [ebp+EXTFS.symlink_workspace]
+        lea     edi, [ebx+INODE.blockNumbers]
+        inc     ecx
+        rep movsb
+        pop     edi esi
+        jmp     .write_inode
+
+.slow_symlink:
+        ; Allocate a data block and write the path to it
+        push    ebx
+        mov     eax, edx
+        mov     ecx, 1
+        push    edi
+        xor     edi, edi
+        call    extfsExtentAlloc        ; ebx = allocated block number
+        pop     edi
+        jc      .error_alloc
+
+        push    esi edi ebx
+        lea     esi, [ebp+EXTFS.symlink_workspace]
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        push    edi
+        mov     eax, esi
+        call    strlen
+        inc     ecx
+        rep movsb
+        pop     ebx
+        mov     eax, [esp]
+
+        call    extfsWriteBlock
+        jc      .error_write
+
+        pop     eax edi esi ebx
+        mov     [ebx+INODE.blockNumbers], eax
+        jmp     .write_inode
+
+.write_inode:
+        ; Write constructed inode to disk and link to parent
+        mov     eax, edx
+        call    writeInode
+        jc      .error
+
+        mov     eax, esi
+        mov     ebx, edx
+        mov     esi, edi
+        mov     dl, DIR_SYMLINK
+        call    linkInode
+        jc      .error
+
+        xor     eax, eax
+        jmp     .error
+
+.exist:
+        movi    eax, ERROR_ACCESS_DENIED
+        jmp     .error
+.error_write:
+        pop     edx edi esi
+.error_alloc:
+        pop     ebx
+.error:
+        push    eax
+        call    ext_unlock
+        pop     eax
+        ret
+.path_too_long:
+        pop     esi
+        movi    eax, ERROR_FS_FAIL
+        ret
+
+;----------------------------------------------------------------
+ext_ReadSymlink:
+        call    ext_lock
+        call    reachSymlink
+        mov     [ebp+EXTFS.symlink_no_follow], 0
+        pushd   0 eax
+        jc      .ret
+
+        lea     esi, [ebp+EXTFS.inodeBuffer]
+        mov     dword [esp], ERROR_ACCESS_DENIED
+        movzx   eax, [esi+INODE.accessMode]
+        and     eax, TYPE_MASK
+        cmp     eax, FLAG_SYMLINK
+        jne     .ret
+
+        mov     dword [esp], ERROR_END_OF_FILE
+        mov     eax, [esi+INODE.fileSize]
+        cmp     eax, [ebp+EXTFS.bytesPerBlock]
+        jbe     @f
+        mov     eax, [ebp+EXTFS.bytesPerBlock]
+@@:
+        mov     ecx, [ebx+12]
+        test    ecx, ecx
+        jz      .done_copy
+        dec     ecx
+        cmp     ecx, eax
+        jb      @f
+        mov     ecx, eax
+@@:
+        mov     [esp+4], ecx
+        mov     edi, [ebx+16]
+        test    ecx, ecx
+        jz      .write_nul
+
+        cmp     [esi+INODE.fileSize], FAST_SYMLINK_MAX_SIZE
+        jbe     .fast_symlink
+
+.slow_symlink:
+        push    ecx edi
+        xor     ecx, ecx
+        call    extfsGetExtent
+        jc      .errorGet
+        mov     ebx, [ebp+EXTFS.mainBlockBuffer]
+        call    extfsReadBlock
+        jc      .errorGet
+        pop     edi ecx
+
+        push    esi
+        mov     esi, [ebp+EXTFS.mainBlockBuffer]
+        rep movsb
+        pop     esi
+        jmp     .write_nul
+
+.errorGet:
+        pop     edi ecx
+        mov     dword [esp], ERROR_DEVICE
+        jmp     .ret
+
+.fast_symlink:
+        push    esi
+        lea     esi, [esi+INODE.blockNumbers]
+        rep movsb
+        pop     esi
+
+.write_nul:
+        mov     byte [edi], 0
+        inc     dword [esp+4]
+
+.done_copy:
+        mov     dword [esp], 0
+
+.ret:
         call    ext_unlock
         pop     eax ebx
         ret

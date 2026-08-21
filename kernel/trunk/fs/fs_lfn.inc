@@ -182,8 +182,20 @@ proc file_system_is_operation_safe stdcall, inf_struct_ptr: dword
 
 .case6:
         cmp     dword [ebx], 6
-        jnz     .switch_none
+        jnz     .case11
         mov     ecx, 32
+        jmp     .end_switch
+
+.case11:
+        cmp     dword [ebx], 11
+        jnz     .case12
+        stdcall is_string_userspace, edx
+        jmp     .ret
+
+.case12:
+        cmp     dword [ebx], 12
+        jnz     .switch_none
+        mov     ecx, dword [ebx + 12]
         jmp     .end_switch
 
 .switch_none:

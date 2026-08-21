@@ -4060,6 +4060,9 @@ Available subfunctions:
   * subfunction 7 - start application
   * subfunction 8 - delete file/folder
   * subfunction 9 - create folder
+  * subfunction 10 - rename/move
+  * subfunction 11 - create symlink
+  * subfunction 12 - read symlink
 For CD-drives due to hardware limitations only subfunctions
 0,1,5 and 7 are available, other subfunctions return error
 with code 2.
@@ -4073,7 +4076,8 @@ is called for corresponding device.
  [ebx] - SSF_READ_FILE (0), SSF_READ_FOLDER (1), SSF_CREATE_FILE (2),
     SSF_WRITE_FILE (3), SSF_SET_END (4), SSF_GET_INFO (5),
     SSF_SET_INFO (6), SSF_START_APP (7), SSF_DELETE (8),
-    SSF_CREATE_FOLDER (9)
+    SSF_CREATE_FOLDER (9), SSF_RENAME (10), SSF_CREATE_SYMLINK (11),
+    SSF_READ_SYMLINK (12)
 ======================================================================
 === Function 70, subfunction 0 - read file with long names support. ==
 ======================================================================
@@ -4423,6 +4427,60 @@ Remarks:
   * New path forming differs from general rules:
     relative path relates to the target's parent folder,
     absolute path relates to the partition's root folder.
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_RENAME (10)
+======================================================================
+=========== Function 70, subfunction 11 - create symlink. ============
+======================================================================
+Parameters:
+  * eax = 70 - function number
+  * ebx = pointer to the information structure
+Format of the information structure:
+  * +0: dword: 11 = subfunction number
+  * +4: dword: 0 (reserved)
+  * +8: dword: 0 (reserved)
+  * +12 = +0xC: dword: 0 (reserved)
+  * +16 = +0x10: dword: pointer to the target path string
+  * +20 = +0x14: path, general rules of names forming (link path)
+Returned value:
+  * eax = 0 - success, otherwise file system error code
+  * ebx destroyed
+Remarks:
+  * The parent folder must already exist.
+  * The function is not supported for CD (returns error code 2).
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_CREATE_SYMLINK (11)
+======================================================================
+============ Function 70, subfunction 12 - read symlink. =============
+======================================================================
+Parameters:
+  * eax = 70 - function number
+  * ebx = pointer to the information structure
+Format of the information structure:
+  * +0: dword: 12 = subfunction number
+  * +4: dword: 0 (reserved)
+  * +8: dword: 0 (reserved)
+  * +12 = +0xC: dword: buffer size in bytes
+  * +16 = +0x10: dword: pointer to buffer for target path
+  * +20 = +0x14: path, general rules of names forming (link path)
+Returned value:
+  * eax = 0 - success, otherwise file system error code
+  * ebx = number of bytes written to the buffer
+Remarks:
+  * The function does not follow the symlink; it reads the target path
+    that the symlink points to.
+  * The target path is always terminated with 0, even when truncated;
+    at most (buffer size - 1) path bytes are written.
+  * The value returned in ebx includes the terminating 0, as in
+    subfunction 2 of function 30.
+
+---------------------- Constants for registers: ----------------------
+  eax - SF_FILE (70)
+ [ebx] - SSF_READ_SYMLINK (12)
 ======================================================================
 ================== Function 71 - set window caption ==================
 ======================================================================
