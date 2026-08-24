@@ -427,7 +427,7 @@ tup.append_table(img_files, {
  {"DOCPACK", VAR_PROGS .. "/system/docpack/docpack"},
  {"DEFAULT.SKN", VAR_SKINS .. "/../skins/Leency/Shkvorka/Shkvorka.skn"},
  {"DISPTEST", VAR_PROGS .. "/testing/disptest/disptest"},
- {"END", VAR_PROGS .. "/system/end/light/end"},
+ {"END", VAR_PROGS .. "/system/end/end"},
  {"ESKIN", VAR_PROGS .. "/system/eskin/eskin"},
  {"GMON", VAR_PROGS .. "/system/gmon/gmon"},
  {"HDD_INFO", VAR_PROGS .. "/system/hdd_info/hdd_info"},
