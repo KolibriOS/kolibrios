@@ -92,6 +92,7 @@ include '../../develop/libraries/box_lib/box_lib.mac'
 ;include 'macros.inc'
 ;include 'load_lib.mac'
 ;include 'box_lib.mac'
+include 'lang.inc'
 @use_library
 
 x_minimal_size equ 350
@@ -1292,7 +1293,6 @@ show_help_message:
 	pushf
 	mov	esi,[communication_area]
 	add	esi,4104
-	mov	word[msgbox_1],0 ;clear button
 	mov	edi,msgbox_1.filter
 	mov	ecx,msgbox_1.end-8
 .cycle:
@@ -1310,15 +1310,10 @@ show_help_message:
 	jl	.cycle
 .cycle_end:
 	sub	edi,2
-	mov	ax,'.'
-	stosw
-	mov	eax,' Ok '
-	stosd
-	xor	al,al
-	stosb
-	push	mb_thread
-	push	msgbox_1
-	call	[mb_create]
+	mov	esi,msgbox_1.end
+	movsd
+	movsd
+	notify_window_run msgbox_1
 	popf
 	ret
 ;---------------------------------------------------------------------
@@ -2592,7 +2587,6 @@ plugins_directory	db 0
 
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_Sort 	db '/sys/lib/sort.obj',0
-system_dir_MsgBox 	db '/sys/lib/msgbox.obj',0
 
 align	4
 l_libs_start:
@@ -2601,9 +2595,6 @@ import_box_lib,plugins_directory
 
 library02	l_libs	system_dir_Sort+9,file_name,system_dir_Sort,\
 Sort_import,plugins_directory
-
-library03	l_libs	system_dir_MsgBox+9,file_name,system_dir_MsgBox,\
-import_msgbox_lib,plugins_directory
 
 end_l_libs:
 
@@ -2625,12 +2616,6 @@ aSort_strcmpi	db 'strcmpi',0
 
 ;---------------------------------------------------------------------
 include '../../develop/libraries/box_lib/import.inc'
-
-align 4
-import_msgbox_lib:
-	mb_create dd amb_create
-dd 0,0
-	amb_create db 'mb_create',0
 ;---------------------------------------------------------------------
 align	4
 window_high			dd 0
@@ -2704,11 +2689,31 @@ dir_header:
 .totl_blocks	dd 0	;+8
 .other	rb	20
 ;---------------------------------------------------------------------
+if lang eq ru_RU
+load_ini_error_type:
+	db 'Ошибка загрузки INI-файла',0
+
+load_icons_error_type:
+	db 'Ошибка загрузки иконок',0
+
+memory_free_error_type:
+	db 'Ошибка освобождения памяти',0
+
+memory_get_error_type:
+	db 'Ошибка выделения памяти',0
+
+load_directory_error_type:
+	db 'Ошибка загрузки каталога',0
+
+error_help_text:
+	db 'Для продолжения нажмите клавишу <Esc> или <Cancel>.',0
+;---------------------------------------------------------------------
+else ;en_US
 load_ini_error_type:
 	db 'Error loading INI file',0
 
 load_icons_error_type:
-	db 'Error loading of icons file',0
+	db 'Error loading icons',0
 
 memory_free_error_type:
 	db 'Error of free memory',0
@@ -2719,9 +2724,9 @@ memory_get_error_type:
 load_directory_error_type:
 	db 'Error loading directory',0
 
-;---------------------------------------------------------------------
 error_help_text:
 	db 'For continue press <Esc> key or <Cancel>',0
+end if
 ;---------------------------------------------------------------------
 align	4
 error_fs_text_pointers:
@@ -2738,6 +2743,20 @@ error_fs_text_pointers:
 	dd error_fs_text_10
 	dd error_fs_text_11
 
+if lang eq ru_RU
+error_fs_text_0:	db '0 - Успешно',0
+error_fs_text_1:	db '1 - Базовый раздел и/или раздел жесткого диска не определен',0
+error_fs_text_2:	db '2 - Функция не поддерживается для данной файловой системы',0
+error_fs_text_3:	db '3 - Неизвестная файловая система',0
+error_fs_text_4:	db '4 - Reserved, is never returned in the current implementation',0
+error_fs_text_5:	db '5 - Файл не найден',0
+error_fs_text_6:	db '6 - Конец файла, EOF',0
+error_fs_text_7:	db '7 - Указатель выходит за пределы памяти приложения',0
+error_fs_text_8:	db '8 - Диск переполнен',0
+error_fs_text_9:	db '9 - Таблица FAT повреждена',0
+error_fs_text_10:	db '10 - Доступ запрещен',0
+error_fs_text_11:	db '11 - Ошибка устройства',0
+else ;en_US
 error_fs_text_0:	db '0 - Success full',0
 error_fs_text_1:	db '1 - Base and/or partition of a hard disk is not defined',0
 error_fs_text_2:	db '2 - Function is not supported for the given file system',0
@@ -2750,6 +2769,7 @@ error_fs_text_8:	db '8 - Disk is full',0
 error_fs_text_9:	db '9 - FAT table is destroyed',0
 error_fs_text_10:	db '10 - Access denied',0
 error_fs_text_11:	db '11 - Device error',0
+end if
 ;---------------------------------------------------------------------
 
 extended_key	db 0
@@ -2780,7 +2800,37 @@ align	4
 ini_file	dd 0
 ini_size	dd 0
 ;---------------------------------------------------------------------
+if lang eq ru_RU
+message:
+	db 'Нажмите любую клавишу...',0
 
+message_cancel_button:
+	db 'Отмена',0
+
+message_ReloadDir_button:
+	db 'Обнов.',0
+
+message_ExitDir_button:
+	db '^',0
+
+message_file_name:
+	db 'Имя файла:',0
+
+message_0:
+	db ' Откр.',0
+message_1:
+	db ' Сохр.',0
+message_2:
+	db 'Выбор',0
+
+title_0:
+	db 'Открыть Файл',0
+title_1:
+	db 'Сохранить Файл',0
+title_2:
+	db 'Выбрать Директорию',0
+
+else ;en_US
 message:
 	db 'Press any key...',0
 
@@ -2809,6 +2859,8 @@ title_1:
 	db 'Save Dialog',0
 title_2:
 	db 'Select Dir',0
+
+end if
 ;---------------------------------------------------------------------
 align 4
 menu_data_1:
@@ -2852,13 +2904,22 @@ menu_data_1:
 .get_mouse_flag dd 0 ;+116
 ;---------------------------------------------------------------------
 menu_text_area_1:
+if lang eq ru_RU
+db 'Выбор Диска',0
+else ;en_US
 db 'Select Disk',0
+end if
 ;---------------------------------------------------------------------
 align 4
 menu_data_2:
 .type:		dd 0   ;+0
 .x:
-.size_x 	dw 30  ;+4
+.size_x:
+if lang eq ru_RU
+	dw 66
+else ;en_US
+	dw 30
+end if
 .start_x	dw 95	;+6
 .y:
 .size_y 	dw 15	;+8
@@ -2869,7 +2930,12 @@ menu_data_2:
 .ret_key	dd 0  ;+24
 .mouse_keys	dd 0  ;+28
 .x1:
-.size_x1	dw 30  ;+32
+.size_x1:
+if lang eq ru_RU
+	dw 66
+else ;en_US
+	dw 30
+end if
 .start_x1	dw 95	;+34
 .y1:
 .size_y1	dw 100	 ;+36
@@ -2896,12 +2962,21 @@ menu_data_2:
 .get_mouse_flag dd 0 ;+116
 ;---------------------------------------------------------------------
 menu_text_area_2:
+if lang eq ru_RU
+db 'Сортировка',0
+.1:
+db 'Имя',0
+db 'Тип',0
+db 'Дата',0
+db 'Размер',0
+else ;en_US
 db 'Sort',0
 .1:
 db 'Name',0
 db 'Type',0
 db 'Date',0
 db 'Size',0
+end if
 .end:
 db 0
 ;---------------------------------------------------------------------
@@ -2910,7 +2985,12 @@ menu_data_3:
 .type:		dd 0   ;+0
 .x:
 .size_x 	dw 45  ;+4
-.start_x	dw 130	 ;+6
+.start_x:
+if lang eq ru_RU
+	dw 166
+else ;en_US
+	dw 130
+end if
 .y:
 .size_y 	dw 15	;+8
 .start_y	dw 26  ;+10
@@ -2920,8 +3000,18 @@ menu_data_3:
 .ret_key	dd 0  ;+24
 .mouse_keys	dd 0  ;+28
 .x1:
-.size_x1	dw 95  ;+32
-.start_x1	dw 130	 ;+34
+.size_x1:
+if lang eq ru_RU
+	dw 137
+else ;en_US
+	dw 95
+end if
+.start_x1:
+if lang eq ru_RU
+	dw 166
+else ;en_US
+	dw 130
+end if
 .y1:
 .size_y1	dw 100	 ;+36
 .start_y1	dw 41  ;+38
@@ -2947,10 +3037,17 @@ menu_data_3:
 .get_mouse_flag dd 0 ;+116
 ;---------------------------------------------------------------------
 menu_text_area_3:
+if lang eq ru_RU
+db 'Фильтр',0
+.1:
+db '*.* - показать все',0
+db 'Только поддерживаемые',0
+else ;en_US
 db 'Filter',0
 .1:
 db '*.* - show all',0
 db 'Only supported',0
+end if
 .end:
 db 0
 ;---------------------------------------------------------------------
@@ -3100,12 +3197,18 @@ example_name_temp:
 	db 'temp1.asm',0
 ;---------------------------------------------------------------------
 msgbox_1:
-	dw 0
-	db 'Warning',0
-	db 'Error saving file! File extension not supported.',13,\
-		'Use one of these extensions:',13,'  '
+if lang eq ru_RU
+	db '"Ошибка при сохранении файла!',13,10,\
+		'Выбранное расширение не поддерживается.',13,10,\
+		'Используйте одно из этих расширений:',13,10
+else ;en_US
+	db '"Error saving file!',13,10,\
+		'File extension not supported.',13,10,\
+		'Use one of these extensions:',13,10
+end if
 .filter: rb 4096
 .end:
+	db '." -tdW',0
 IM_END:
 ;---------------------------------------------------------------------
 do_not_draw_open_button_label	rb 1
@@ -3182,6 +3285,4 @@ procinfo process_information
 ;----------------------
 file_info:
 	rb 40
-	rb 1024
-mb_thread:
 I_END:
