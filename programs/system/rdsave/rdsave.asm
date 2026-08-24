@@ -1,707 +1,573 @@
 ; SPDX-License-Identifier: NOASSERTION
 ;
+; RDsave - save the RAM-disk back to a real medium
+;
+; Modes:
+;   /sys/rdsave          window
+;   /sys/rdsave -h       silent: save to the path from the ini,
+;                        report via /sys/@notify ("h" also accepted
+;                        for compatibility with 1.x callers)
+;   /sys/rdsave <path>   silent: save to <path>, report via /sys/@notify
+;
+; The default target is the boot medium (SF 18.6 with ecx = 0) when
+; the system was booted from a floppy or a hard disk; a file picked in
+; the dialog overrides it. In the path form, "/fd/1" or "/fd/2"
+; address the floppy device (SF 16), anything else is a file (SF 18.6).
+;
+; Authors: Mario79, Heavyiron, Lrz, Burer
 
-; Text encoded with Code Page 866 - Cyrillic
-
-
-;   RDsave §´Ô Kolibri (0.6.5.0 ® ·‚†‡Ë•)
-;   Save RAM-disk to hard or floppy drive
-;---------------------------------------------------------------------
-;   Mario79 2005
-;   Heavyiron 12.02.2007
-;   <Lrz>     11.05.2009 - §´Ô ‡†°Æ‚Î ≠„¶≠† ·®·‚•¨≠†Ô °®°´®Æ‚•™† box_lib.obj
-;   Mario79   08.09.2010 - select path with OpenDialog,keys 1,2,3,4 for select options
-;   Heavyiron 01.12.2013 - new logic
-;---------------------------------------------------------------------
 appname equ 'RDsave '
-version equ '1.44'
-debug	equ no
+version equ '2.0'
 
-use32	     ; ¢™´ÓÁ®‚Ï 32-°®‚≠Î© ‡•¶®¨ †··•¨°´•‡†
-org 0x0      ; †§‡•·†Ê®Ô · ≠„´Ô
+use32
+org 0
 
-db 'MENUET01'	 ; 8-°†©‚≠Î© ®§•≠‚®‰®™†‚Æ‡ MenuetOS
-dd 0x01 	 ; ¢•‡·®Ô ß†£Æ´Æ¢™† (¢·•£§† 1)
-dd START	 ; †§‡•· Ø•‡¢Æ© ™Æ¨†≠§Î
-dd IM_END	 ; ‡†ß¨•‡ Ø‡Æ£‡†¨¨Î
-dd I_END	 ; ™Æ´®Á•·‚¢Æ Ø†¨Ô‚®
-dd stacktop	 ; †§‡•· ¢•‡Ë®≠Î ·‚•™†
-dd PARAMS	 ; †§‡•· °„‰•‡† §´Ô Ø†‡†¨•‚‡Æ¢
+db 'MENUET01'
+dd 1
+dd START
+dd IM_END
+dd I_END
+dd stacktop
+dd PARAMS
 dd cur_dir_path
 
-
-include 'lang.inc' ; Language support for locales: ru_RU (CP866), et_EE, it_IT, en_US.
 include '../../macros.inc'
-if debug eq yes
-include '../../debug.inc'
-end if
 include '../../proc32.inc'
 include '../../dll.inc'
 include '../../KOSfuncs.inc'
-include '../../load_lib.mac'
-include '../../develop/libraries/box_lib/box_lib.mac'
-include 'str.inc'
+include '../../encoding.inc'
+include '../../string.inc'
 
-	@use_library
+; do_save result codes; 1..11 match the file system error codes
+SAVE_OK          = 0
+SAVE_ERR_DEV     = 11   ; floppy device write failed
+SAVE_ERR_NOPATH  = 12   ; no target path selected
+SAVE_ERR_ITSELF  = 13   ; target is on the RAM-disk
+SAVE_ERR_UNKNOWN = 14
+
+BTN_SAVE   = 2
+BTN_SELECT = 3
+
+TEXT_CP866 = 0x90000000 ; fn 4: zero-terminated, 8x16 font, CP866
+
+WIN_W    = 420
+WIN_CH   = 116  ; client area height
+LABEL_X  = 10
+VALUE_X  = 160
+BTN_Y    = 52
+STATUS_Y = 90
+
 ;---------------------------------------------------------------------
-;---  çÄóÄãé èêéÉêÄååõ  ----------------------------------------------
-;---------------------------------------------------------------------
-align 4
+
 START:
+        mcall   SF_SYS_MISC, SSF_HEAP_INIT
+        stdcall dll.Load, importLib
+        test    eax, eax
+        jnz     exit
+
+        mcall   SF_SYSTEM_GET, SSF_RD_BOOT_SOURCE
+        mov     [boot_src], eax
+
+        invoke  ini_get_int, ini_file, ini_sec, key_autoclose, 1
+        mov     [autoclose], eax
+        invoke  ini_get_str, ini_file, ini_sec, key_path, fname_buf, 4096, path_default
+
+        mov     esi, PARAMS
+        mov     al, [esi]
+        test    al, al
+        jz      gui_mode
+        cmp     al, '/'
+        je      path_mode
+        cmp     word [esi], 'h'         ; bare "h": 1.x compatibility
+        je      silent_save
+        cmp     word [esi], 'H'
+        je      silent_save
+        cmp     al, '-'
+        jne     gui_mode
+        cmp     byte [esi+2], 0
+        jne     gui_mode
+        mov     al, [esi+1]
+        or      al, 0x20
+        cmp     al, 'h'
+        je      silent_save
+        jmp     gui_mode
+
 ;---------------------------------------------------------------------
-	mcall  68,11
 
-load_libraries l_libs_start,end_l_libs
-	inc	eax
-	test	eax,eax
-	jz	close
+; ZF set when fname_buf addresses the floppy device ("/fd/...")
+check_floppy_prefix:
+        mov     eax, dword [fname_buf]
+        or      eax, 0x00202000         ; the path is matched case-insensitively
+        cmp     eax, '/fd/'
+        ret
 
-	stdcall dll.Init,[init_lib]
+; save the RAM-disk to the boot medium or to the path in fname_buf
+; out: eax = SAVE_* code
+do_save:
+        cmp     [use_boot], 0
+        je      .by_path
+        mcall   SF_SYSTEM, SSF_RD_TO_HDD, 0
+        jmp     .clamp
 
-	invoke	ini_get_int,ini_file,ini_section,aautoclose,0
-	mov	[autoclose],eax
-	invoke	ini_get_str,ini_file,ini_section,apath,fname_buf,4096,path
-	stdcall _lstrcpy,ini_path,fname_buf
-	stdcall _lstrcpy,filename_area,start_temp_file_name
+        .by_path:
+        cmp     byte [fname_buf], 0
+        jne     @f
+        mov     eax, SAVE_ERR_NOPATH
+        ret
 
-	mov   eax,PARAMS
-	cmp   byte[eax], 0
-	je    no_params
-	cmp   byte[eax], 'h'
-	je    @f
-	cmp   byte[eax], 'H'
-	jne   .no_h
-@@:
-	mov   [hidden],1
-	jmp   no_params
-.no_h:
-	mov   [param],1
-	stdcall _lstrcpy,fname_buf,eax
-	mov   ah,2
-	jmp   noclose
+        @@:
+        mov     eax, dword [fname_buf]
+        or      eax, 0x00202000
+        and     eax, 0x00FFFFFF
+        cmp     eax, '/rd'
+        jne     .not_rd
+        mov     al, [fname_buf+3]
+        test    al, al
+        jz      .itself
+        cmp     al, '/'
+        jne     .not_rd
+
+        .itself:
+        mov     eax, SAVE_ERR_ITSELF
+        ret
+
+        .not_rd:
+        call    check_floppy_prefix
+        jne     .file
+        mov     al, [fname_buf+4]
+        cmp     al, '1'
+        je      .flp1
+        cmp     al, '2'
+        jne     .file
+        mov     ebx, 2
+        jmp     .flp_write
+
+        .flp1:
+        mov     ebx, 1
+
+        .flp_write:
+        mcall   SF_RD_TO_FLOPPY
+        test    eax, eax
+        jz      .done
+        mov     eax, SAVE_ERR_DEV
+
+        .done:
+        ret
+
+        .file:
+        mcall   SF_SYSTEM, SSF_RD_TO_HDD, fname_buf
+
+        .clamp:
+        cmp     eax, 11
+        jbe     .done
+        mov     eax, SAVE_ERR_UNKNOWN
+        ret
 
 ;---------------------------------------------------------------------
-no_params:
-	stdcall _lstrcpy,check_dir,ini_path
-	call	check_path
-	test	eax,eax
-	jz	path_ok
-	cmp	eax,6
-	je	path_ok
+
+path_mode:
+        stdcall string.copy, PARAMS, fname_buf
+
+silent_save:
+        call    do_save
+        stdcall string.copy, ntf_head, ntf_msg  ; string.* preserve eax
+        test    eax, eax
+        jnz     .err
+
+        stdcall string.concatenate, msg_ok, ntf_msg
+        stdcall string.concatenate, fname_buf, ntf_msg
+        mov     edx, ntf_end_ok
+        jmp     .send
+
+        .err:
+        mov     esi, [err_msgs+eax*4]
+        stdcall string.concatenate, err_prefix, ntf_msg
+        stdcall string.concatenate, esi, ntf_msg
+        mov     edx, ntf_end_err
+
+        .send:
+        stdcall string.concatenate, edx, ntf_msg
+        mcall   SF_FILE, notify_finfo
+
+exit:
+        mcall   SF_TERMINATE_PROCESS
+
 ;---------------------------------------------------------------------
-if debug eq yes
-dps 'read_folder_error'
-newline
-end if
-;---------------------------------------------------------------------
-default_path:
-	stdcall _lstrcpy,fname_buf,communication_area_default_path
-	mov	[hidden],0
 
-;OpenDialog     initialisation
-	push	dword OpenDialog_data
-	call	[OpenDialog_Init]
+gui_mode:
+        cmp     [boot_src], RD_LOAD_FROM_FLOPPY
+        je      .boot_target
+        cmp     [boot_src], RD_LOAD_FROM_HD
+        jne     @f
 
-; prepare for PathShow
-	push	dword PathShow_data_1
-	call	[PathShow_prepare]
+        .boot_target:
+        mov     [use_boot], 1
 
-	mcall	40,0x00000027
+        @@:
+        stdcall string.copy, def_fname, filename_area
+        push    dword OpenDialog_data
+        call    [OpenDialog_Init]
 
-	call	draw_window
-	mov	ah,3
-	jmp	noclose
-;---------------------------------------------------------------------
-path_ok:
-;OpenDialog     initialisation
-	push	dword OpenDialog_data
-	call	[OpenDialog_Init]
-
-; prepare for PathShow
-	push	dword PathShow_data_1
-	call	[PathShow_prepare]
-
-	mcall	40,0x00000027
-
-	cmp	[hidden],1
-	jne	red
-	mov	ah,2
-	jmp	noclose
 red:
-	call	draw_window
-;---------------------------------------------------------------------
+        call    draw_window
+
 still:
-	mcall 10
+        mcall   SF_WAIT_EVENT
+        dec     eax
+        jz      red
+        dec     eax
+        jz      .key
 
-	dec	eax	 ; Ø•‡•‡®·Æ¢†‚Ï Æ™≠Æ?
-	jz	red	 ; •·´® §† - ≠† ¨•‚™„ red
-	dec	eax
-	jz	key
-	dec	eax
-	jz	button
-	jmp	still
-;---------------------------------------------------------------------
-button:
-	mcall	17	; ØÆ´„Á®‚Ï ®§•≠‚®‰®™†‚Æ‡ ≠†¶†‚Æ© ™≠ÆØ™®
-	cmp	ah,1		 ; ™≠ÆØ™† · id=1("ß†™‡Î‚Ï")?
-	jne	noclose
-close:
-	mcall	-1	    ; ‰„≠™Ê®Ô -1: ß†¢•‡Ë®‚Ï Ø‡Æ£‡†¨¨„
+        ; button event
+        mcall   SF_GET_BUTTON
+        shr     eax, 8
+        cmp     eax, 1
+        je      exit
+        cmp     eax, BTN_SAVE
+        je      gui_save
+        cmp     eax, BTN_SELECT
+        je      gui_select
+        jmp     still
 
-;---------------------------------------------------------------------
-key:
-	mcall	2
-	cmp	ah,0x1b
-	je	close
-	cmp	ah,0x0D
-	jne	@f
-	mov	ah,2
-	jmp	noclose
-@@:
-	cmp	ah,9h
-	jne	still
-;---------------------------------------------------------------------
-noclose:
-	mov	ecx,fname_buf
-	push  16
-	mov   ebx,1
-	cmp   byte[ecx+1],'f'
-	je    @f
-	cmp   byte[ecx+1],'F'
-	jne   not_fdd
-@@:
-	cmp   byte[ecx+4],'1'
-	jne   @f
-	cmp   ah,2
-	je    doit
-@@:
-	inc   ebx
-	cmp   ah,2
-	je    doit
-not_fdd:
-	push  18
-	mov   ebx,6	; 18.6 = save to specified folder
-	cmp   ah,2
-	je    doit
+        .key:
+        mcall   SF_GET_KEY
+        cmp     ah, 27                  ; Esc
+        je      exit
+        cmp     ah, 13                  ; Enter
+        je      gui_save
+        jmp     still
 
-; invoke OpenDialog
-	push	dword OpenDialog_data
-	call	[OpenDialog_Start]
-	cmp	[OpenDialog_data.status],1
-	jne	still
+gui_select:
+        push    dword OpenDialog_data
+        call    [OpenDialog_Start]
+        cmp     [OpenDialog_data.status], 1
+        jne     red
+        stdcall string.copy, dialog_path, fname_buf
+        mov     [use_boot], 0
+        jmp     red
 
-; prepare for PathShow
-	push	dword PathShow_data_1
-	call	[PathShow_prepare]
-	call	draw_window
-	mov	ah,2
-	jmp	noclose
+gui_save:
+        cmp     [use_boot], 0
+        jne     @f
+        cmp     byte [fname_buf], 0
+        je      gui_select              ; nowhere to save yet - ask for a path
 
-doit:
-	cmp	[param],0
-	jne	 @f
-	call	save_ini
-@@:
-	cmp	byte[ecx+1],'r'
-	je	@f
-	cmp	byte[ecx+1],'R'
-	je	@f
-        cmp     byte[ecx],'/'
-	je	not_rd
-@@:
-	mov	edx,rdError
-	call	print_err
-	jmp	still
-not_rd:
-	cmp	 [hidden],0
-	jne	 @f
-	pusha
-	stdcall  _lstrcpy,msg,label2
-	mov	 eax,[sc.work_text]
-	or	 eax,0xc0000088
-	mov	 [color],eax
-	call	print_msg
-	popa
-@@:
-	pop	eax
-	mcall
-	call	check_for_error
-	jmp	still
+        @@:
+        mov     esi, msg_saving
+        mov     ecx, [sc.work_text]
+        or      ecx, TEXT_CP866
+        call    show_status
+        call    do_save
+        test    eax, eax
+        jz      .ok
+
+        mov     esi, [err_msgs+eax*4]
+        mov     ecx, TEXT_CP866 or 0x00AA0000
+        call    show_status
+        jmp     still
+
+        .ok:
+        cmp     [use_boot], 0           ; only file targets are remembered
+        jne     @f
+        call    check_floppy_prefix
+        je      @f
+        stdcall string.length, fname_buf
+        invoke  ini_set_str, ini_file, ini_sec, key_path, fname_buf, eax
+
+        @@:
+        mov     esi, msg_ok
+        mov     ecx, TEXT_CP866 or 0x0000AA00
+        call    show_status
+        cmp     [autoclose], 1
+        jne     still
+        mcall   SF_SLEEP, 100
+        jmp     exit
 
 ;---------------------------------------------------------------------
-check_for_error:		      ;é°‡†°Æ‚Á®™ ÆË®°Æ™
-	test	eax,eax
-	jz	print_ok
-	cmp	ebx,6
-	je	@f
-	mov	edx,error11
-	jmp	print_err
-@@:
-	cmp	eax, 11
-	ja	.unknown
-	mov	edx, [errors+eax*4]
-	stdcall _lstrcpy,msg,error
-	stdcall _lstrcat,msg,edx
-	mov	edx,msg
-	jmp	print_err
-.unknown:
-	mov	edx, aUnknownError
 
-print_err:
-	stdcall _lstrlen,ini_path
-	pusha
-	invoke	ini_set_str,ini_file,ini_section,apath,ini_path,eax
-	popa
-	stdcall _lstrcpy,msg,edx
-	cmp	[hidden],1
-	je	@f
-	cmp	[param],1
-	je	@f
-	mov	 ecx,[sc.work_text]
-	or	 ecx,0xc0880000
-	mov	 [color],ecx
-	call	print_msg
-	ret
-@@:
-	stdcall _lstrcpy, ntf_msg, ntf_start
-	stdcall _lstrcat, ntf_msg, edx
-	stdcall _lstrcat, ntf_msg, ntf_end_e
-	mov	dword [is_notify + 8], ntf_msg
-	mcall	70, is_notify
-	mov	[param],0
-	mov	[hidden],0
-	stdcall _lstrcpy,fname_buf,ini_path
-	jmp	no_params
+; in: esi = text, ecx = color with the charset flags
+show_status:
+        push    ecx esi
+        mcall   SF_DRAW_RECT, <8, WIN_W-16>, <STATUS_Y-2, 18>, [sc.work]
+        pop     edx ecx
+        mcall   SF_DRAW_TEXT, <LABEL_X, STATUS_Y>
+        ret
 
-print_ok:
-	cmp	 [hidden],1
-	je	 @f
-	cmp	 [param],1
-	je	 @f
-	stdcall  _lstrcpy,msg,ok
-	mov	 ecx,[sc.work_text]
-	or	 ecx,0xc0008800
-	mov	 [color],ecx
-	call	 print_msg
-	mcall	 5,100
-	cmp	 [autoclose],1
-	je	 close
-	ret
-@@:
-	stdcall  _lstrcpy,msg,ok
-	stdcall  _lstrcat,msg,fname_buf
-	stdcall _lstrcpy, ntf_msg, ntf_start
-	stdcall _lstrcat, ntf_msg, msg
-	stdcall _lstrcat, ntf_msg, ntf_end_o
-	mov	 edx,ntf_msg
-	mov	 dword [is_notify + 8], edx
-	mcall	 70, is_notify
-	mcall	 5,100
-	jmp	 close
-;---------------------------------------------------------------------
-print_msg:
-	mcall	13,<5,380>,<96,10>,[sc.work]
-	stdcall _lstrlen,msg
-	lea	eax,[eax+eax*2]
-	add	eax,eax
-	mov	ebx,390
-	sub	ebx,eax
-	shl	ebx,15
-	add	ebx,96
-	mcall	4, ,[color],msg, ,[sc.work]
-	ret
-;---------------------------------------------------------------------
-draw_PathShow:
-	pusha
-	mcall	13,<15,280>,<32,16>,0xffffff
-	push	dword PathShow_data_1
-	call	[PathShow_draw]
-	popa
-	ret
-;---------------------------------------------------------------------
-save_ini:
-	pusha
-	stdcall _lstrlen,fname_buf
-	invoke	ini_set_str,ini_file,ini_section,apath,fname_buf,eax
-	invoke	ini_set_int,ini_file,ini_section,aautoclose,[autoclose]
-	popa
-	ret
-;---------------------------------------------------------------------
-check_path:
-stdcall _lstrlen,check_dir
-	add	eax,check_dir
-@@:
-	dec	eax
-	cmp	byte [eax],'/'
-	jne	@b
-	mov	byte [eax+1],0
+; choose the target description for the window -> edx (clobbers eax)
+pick_target_text:
+        mov     edx, tgt_boot
+        cmp     [use_boot], 0
+        jne     .done
 
-	mcall	70,read_folder
-	ret
+        mov     edx, tgt_none
+        cmp     byte [fname_buf], 0
+        je      .done
+
+        mov     edx, tgt_floppy
+        call    check_floppy_prefix
+        je      .done
+
+        mov     edx, fname_buf          ; fn 4 clips at the window edge
+
+        .done:
+        ret
+
 ;---------------------------------------------------------------------
-;---  Draw window  ---------------------------------------------------
-;---------------------------------------------------------------------
+
 draw_window:
-	mcall  48,3,sc,sizeof.system_colors
-	mcall	12,1
+        mcall   SF_STYLE_SETTINGS, SSF_GET_COLORS, sc, sizeof.system_colors
+        mcall   SF_REDRAW, SSF_BEGIN_DRAW
 
-	mcall  48,4
-	mov ecx,200*65536+111
-	add ecx,eax
+        mcall   SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
+        mov     ecx, 200*65536 + WIN_CH
+        add     ecx, eax
+        mov     edx, [sc.work]
+        or      edx, 0x34000000
+        mcall   SF_CREATE_WINDOW, <200, WIN_W>, , , , title
 
-	mov edx,[sc.work]
-	or  edx,0x34000000
-	mcall	0,<200,400>,, , ,title
+        mov     ecx, [sc.work_text]
+        or      ecx, TEXT_CP866
+        mcall   SF_DRAW_TEXT, <LABEL_X, 10>, , lab_boot
+        mov     eax, [boot_src]
+        cmp     eax, 5
+        jbe     @f
+        xor     eax, eax
 
-;buttons
-	mcall	8,<198,70>,<68,20>,1,[sc.work_button]
-	inc	edx
-	mcall	 ,<125,70>,
-	inc	edx
-	mcall	 ,<300,75>,<30,20>
+        @@:
+        mov     edx, [boot_names+eax*4]
+        mcall   SF_DRAW_TEXT, <VALUE_X, 10>
+        mcall   SF_DRAW_TEXT, <LABEL_X, 30>, , lab_target
+        call    pick_target_text
+        mcall   SF_DRAW_TEXT, <VALUE_X, 30>
 
-;labels
-	mov	ecx,[sc.work_button_text]
-	or	ecx,0x80000000
-	mcall	4,<134,75>, ,save
-	mcall	 ,<215,75>, ,cancel
-	mcall	 ,<315,36>, ,select
+        mcall   SF_DEFINE_BUTTON, <10, 110>, <BTN_Y, 24>, BTN_SAVE, [sc.work_button]
+        mcall   SF_DEFINE_BUTTON, <130, 140>, <BTN_Y, 24>, BTN_SELECT, [sc.work_button]
+        stdcall draw_btn_label, btn_save_t, 10, 110
+        stdcall draw_btn_label, btn_select_t, 130, 140
 
-	m2m	dword [frame_data.font_backgr_color],[sc.work]
-	m2m dword [frame_data.font_color],[sc.work_text]
-	m2m dword [frame_data.ext_fr_col],[sc.work_graph]
-	m2m dword [frame_data.int_fr_col],[sc.work_light]
+        mcall   SF_REDRAW, SSF_END_DRAW
+        ret
 
-	push	dword frame_data
-	call	[Frame_draw]
-
-	call	draw_PathShow
-	call	print_msg
-
-	mcall	12,2
-	ret
+proc draw_btn_label txt:dword, x:dword, w:dword
+        stdcall string.length, [txt]    ; CP866: one byte per character
+        shl     eax, 3                  ; text width, 8 px per character
+        mov     ebx, [w]
+        sub     ebx, eax
+        sar     ebx, 1
+        add     ebx, [x]
+        shl     ebx, 16
+        add     ebx, BTN_Y+5
+        mov     ecx, [sc.work_button_text]
+        or      ecx, TEXT_CP866
+        mcall   SF_DRAW_TEXT, , , [txt]
+        ret
+endp
 
 ;---------------------------------------------------------------------
 ;---  Data  ----------------------------------------------------------
 ;---------------------------------------------------------------------
+
 if lang eq ru_RU
-save		db 'ëÆÂ‡†≠®‚Ï',0
-cancel		db 'é‚¨•≠†',0
-select		db 'àß¨•≠®‚Ï',0
-label1		db ' é°‡†ß °„§•‚ ·ÆÂ‡†≠•≠ ¢: ',0
-label2		db 'ëÆÂ‡†≠•≠®• Æ°‡†ß†...',0
-ok		db 'RAM-§®·™ ·ÆÂ‡†≠•≠ „·Ø•Ë≠Æ ',0
-error1		db '≠• ÆØ‡•§•´•≠† °†ß† ®/®´® ‡†ß§•´ ¶Ò·‚™Æ£Æ §®·™†',0
-error2		db '‰„≠™Ê®Ô ≠• ØÆ§§•‡¶®¢†•‚·Ô §´Ô §†≠≠Æ© ‰†©´Æ¢Æ© ·®·‚•¨Î',0
-error3		db '≠•®ß¢•·‚≠†Ô ‰†©´Æ¢†Ô ·®·‚•¨†',0
-error4		db '·‚‡†≠≠Æ... éË®°™† 4',0
-error5		db '≠•·„È•·‚¢„ÓÈ®© Ø„‚Ï',0
-error6		db '‰†©´ ß†™Æ≠Á®´·Ô',0
-error7		db '„™†ß†‚•´Ï ¢≠• Ø†¨Ô‚® Ø‡®´Æ¶•≠®Ô',0
-error8		db '§®·™ ß†ØÆ´≠•≠',0
-error9		db '‰†©´Æ¢†Ô ·‚‡„™‚„‡† ‡†ß‡„Ë•≠†',0
-error10 	db '§Æ·‚„Ø ß†Ø‡•ÈÒ≠',0
-error11 	db 'éË®°™† „·‚‡Æ©·‚¢†',0
-aUnknownError	db 'ç•®ß¢•·‚≠†Ô ÆË®°™†',0
-rdError 	db 'ç•´ÏßÔ ·ÆÂ‡†≠Ô‚Ï Æ°‡†ß ¢ ·†¨Æ£Æ ·•°Ô',0
-error		db 'éË®°™†: ',0
-;---------------------------------------------------------------------
-else if lang eq et_EE
-save		db 'Salvesta',0
-cancel		db 'Cancel',0
-select		db ' Valige',0
-label1		db ' RAM-drive will be saved as: ',0
-label2		db 'Saving in progress...',0
-ok		db 'RAM-ketas salvestatud edukalt ',0
-error1		db 'hard disk base and/or partition not defined',0
-error2		db 'the file system does not support this function',0
-error3		db 'tundmatu failis¸steem',0
-error4		db 'strange... Error 4',0
-error5		db 'vigane teekond',0
-error6		db 'end of file',0
-error7		db 'pointer is outside of application memory',0
-error8		db 'ketas t‰is',0
-error9		db 'FAT tabel vigane',0
-error10 	db 'juurdep‰‰s keelatud',0
-error11 	db 'Seadme viga',0
-aUnknownError	db 'Tundmatu viga',0
-rdError 	db "You can't save image on itself",0
-error		db 'Viga: ',0
-;---------------------------------------------------------------------
-else if lang eq it_IT
-save		db '  Salva',0
-cancel		db 'Cancel',0
-select		db 'Seleziona',0
-label1		db ' RAM-drive will be saved as: ',0
-label2		db 'Saving in progress...',0
-ok		db 'Il RAM-drivet e stato salvato ',0
-error1		db 'hard disk base and/or partition not defined',0
-error2		db 'the file system does not support this function',0
-error3		db 'filesystem sconosciuto',0
-error4		db 'strange... Error 4',0
-error5		db 'percorso non valido',0
-error6		db 'end of file',0
-error7		db 'pointer is outside of application memory',0
-error8		db 'disco pieno',0
-error9		db 'tabella FAT corrotta',0
-error10 	db 'accesso negato',0
-error11 	db 'Errore di device',0
-aUnknownError	db 'Errore sconosciuto',0
-rdError 	db "You can't save image on itself",0
-error		db 'Errore: ',0
-;---------------------------------------------------------------------
+        lab_boot     cp866 '–ò—Å—Ç–æ—á–Ω–∏–∫ –∑–∞–≥—Ä—É–∑–∫–∏:',0
+        lab_target   cp866 '–°–æ—Ö—Ä–∞–Ω–∏—Ç—å –≤:',0
+        src_unknown  cp866 '–Ω–µ–∏–∑–≤–µ—Å—Ç–Ω–æ',0
+        src_floppy   cp866 '–¥–∏—Å–∫–µ—Ç–∞ A',0
+        src_hd       cp866 '–∂—ë—Å—Ç–∫–∏–π –¥–∏—Å–∫',0
+        src_memory   cp866 '–æ–±—Ä–∞–∑ –≤ –ø–∞–º—è—Ç–∏',0
+        src_format   cp866 '–ø—É—Å—Ç–æ–π —Ä–∞–º–¥–∏—Å–∫',0
+        src_none     cp866 '–Ω–µ—Ç —Ä–∞–º–¥–∏—Å–∫–∞',0
+        tgt_boot     cp866 '–∑–∞–≥—Ä—É–∑–æ—á–Ω—ã–π –Ω–æ—Å–∏—Ç–µ–ª—å',0
+        tgt_floppy   cp866 '–¥–∏—Å–∫–µ—Ç–∞ A',0
+        tgt_none     cp866 '–ø—É—Ç—å –Ω–µ –≤—ã–±—Ä–∞–Ω',0
+        btn_save_t   cp866 '–°–æ—Ö—Ä–∞–Ω–∏—Ç—å',0
+        btn_select_t cp866 '–í—ã–±—Ä–∞—Ç—å —Ñ–∞–π–ª...',0
+        msg_saving   cp866 '–°–æ—Ö—Ä–∞–Ω–µ–Ω–∏–µ –æ–±—Ä–∞–∑–∞...',0
+        msg_ok       cp866 '–û–±—Ä–∞–∑ —Å–æ—Ö—Ä–∞–Ω—ë–Ω —É—Å–ø–µ—à–Ω–æ ',0
+        err_prefix   cp866 '–û—à–∏–±–∫–∞: ',0
+        e1           cp866 '–Ω–µ –æ–ø—Ä–µ–¥–µ–ª–µ–Ω–∞ –±–∞–∑–∞ –∏/–∏–ª–∏ —Ä–∞–∑–¥–µ–ª –∂—ë—Å—Ç–∫–æ–≥–æ –¥–∏—Å–∫–∞',0
+        e2           cp866 '—Ñ—É–Ω–∫—Ü–∏—è –Ω–µ –ø–æ–¥–¥–µ—Ä–∂–∏–≤–∞–µ—Ç—Å—è –¥–∞–Ω–Ω–æ–π —Ñ–∞–π–ª–æ–≤–æ–π —Å–∏—Å—Ç–µ–º–æ–π',0
+        e3           cp866 '–Ω–µ–∏–∑–≤–µ—Å—Ç–Ω–∞—è —Ñ–∞–π–ª–æ–≤–∞—è —Å–∏—Å—Ç–µ–º–∞',0
+        e4           cp866 '–∑–∞—Ä–µ–∑–µ—Ä–≤–∏—Ä–æ–≤–∞–Ω–æ (–∫–æ–¥ 4)',0
+        e5           cp866 '–Ω–µ–≤–µ—Ä–Ω—ã–π –ø—É—Ç—å',0
+        e6           cp866 '—Ñ–∞–π–ª –∑–∞–∫–æ–Ω—á–∏–ª—Å—è',0
+        e7           cp866 '—É–∫–∞–∑–∞—Ç–µ–ª—å –≤–Ω–µ –ø–∞–º—è—Ç–∏ –ø—Ä–∏–ª–æ–∂–µ–Ω–∏—è',0
+        e8           cp866 '–¥–∏—Å–∫ –ø–µ—Ä–µ–ø–æ–ª–Ω–µ–Ω',0
+        e9           cp866 '—Ñ–∞–π–ª–æ–≤–∞—è —Å—Ç—Ä—É–∫—Ç—É—Ä–∞ —Ä–∞–∑—Ä—É—à–µ–Ω–∞',0
+        e10          cp866 '–¥–æ—Å—Ç—É–ø –∑–∞–ø—Ä–µ—â—ë–Ω',0
+        e11          cp866 '–æ—à–∏–±–∫–∞ —É—Å—Ç—Ä–æ–π—Å—Ç–≤–∞',0
+        eNoPath      cp866 '–ø—É—Ç—å –Ω–µ –≤—ã–±—Ä–∞–Ω',0
+        eItself      cp866 '–Ω–µ–ª—å–∑—è —Å–æ—Ö—Ä–∞–Ω—è—Ç—å –æ–±—Ä–∞–∑ –Ω–∞ —Å–∞–º–æ–≥–æ —Å–µ–±—è',0
+        eUnknown     cp866 '–Ω–µ–∏–∑–≤–µ—Å—Ç–Ω–∞—è –æ—à–∏–±–∫–∞',0
+else if lang eq es_ES
+        lab_boot     cp850 'Origen de arranque:',0
+        lab_target   cp850 'Guardar en:',0
+        src_unknown  cp850 'desconocido',0
+        src_floppy   cp850 'disquete A',0
+        src_hd       cp850 'disco duro',0
+        src_memory   cp850 'imagen en memoria',0
+        src_format   cp850 'ramdisk vac√≠o',0
+        src_none     cp850 'sin ramdisk',0
+        tgt_boot     cp850 'medio de arranque',0
+        tgt_floppy   cp850 'disquete A',0
+        tgt_none     cp850 'ruta no seleccionada',0
+        btn_save_t   cp850 'Guardar',0
+        btn_select_t cp850 'Elegir archivo...',0
+        msg_saving   cp850 'Guardando la imagen...',0
+        msg_ok       cp850 'Imagen guardada con √©xito ',0
+        err_prefix   cp850 'Error: ',0
+        e1           cp850 'base y/o partici√≥n del disco duro no definida',0
+        e2           cp850 'el sistema de archivos no soporta esta funci√≥n',0
+        e3           cp850 'sistema de archivos desconocido',0
+        e4           cp850 'reservado (c√≥digo 4)',0
+        e5           cp850 'ruta incorrecta',0
+        e6           cp850 'fin de archivo',0
+        e7           cp850 'el puntero est√° fuera de la memoria de la aplicaci√≥n',0
+        e8           cp850 'disco lleno',0
+        e9           cp850 'estructura de archivos da√±ada',0
+        e10          cp850 'acceso denegado',0
+        e11          cp850 'error de dispositivo',0
+        eNoPath      cp850 'ruta no seleccionada',0
+        eItself      cp850 'no se puede guardar la imagen sobre s√≠ misma',0
+        eUnknown     cp850 'error desconocido',0
 else ; Default to en_US
-save		db '  Save',0
-cancel		db 'Cancel',0
-select		db ' Select',0
-label1		db ' RAM-drive will be saved as: ',0
-label2		db 'Saving in progress...',0
-ok		db 'RAM-drive was saved successfully ',0
-error1		db 'hard disk base and/or partition not defined',0
-error2		db 'the file system does not support this function',0
-error3		db 'unknown file system',0
-error4		db 'strange... Error 4',0
-error5		db 'incorrect path',0
-error6		db 'end of file',0
-error7		db 'pointer is outside of application memory',0
-error8		db 'disk is full',0
-error9		db 'file structure is destroyed',0
-error10 	db 'access denied',0
-error11 	db 'Device error',0
-aUnknownError	db 'Unknown error',0
-rdError 	db "You can't save image on itself",0
-error		db 'Error: ',0
+        lab_boot     db 'Boot source:',0
+        lab_target   db 'Save to:',0
+        src_unknown  db 'unknown',0
+        src_floppy   db 'floppy A',0
+        src_hd       db 'hard disk',0
+        src_memory   db 'image in memory',0
+        src_format   db 'empty ramdisk',0
+        src_none     db 'no ramdisk',0
+        tgt_boot     db 'boot medium',0
+        tgt_floppy   db 'floppy A',0
+        tgt_none     db 'path not selected',0
+        btn_save_t   db 'Save',0
+        btn_select_t db 'Select file...',0
+        msg_saving   db 'Saving the image...',0
+        msg_ok       db 'Image saved successfully ',0
+        err_prefix   db 'Error: ',0
+        e1           db 'hard disk base and/or partition not defined',0
+        e2           db 'the file system does not support this function',0
+        e3           db 'unknown file system',0
+        e4           db 'reserved (code 4)',0
+        e5           db 'incorrect path',0
+        e6           db 'end of file',0
+        e7           db 'pointer is outside of application memory',0
+        e8           db 'disk is full',0
+        e9           db 'file structure is destroyed',0
+        e10          db 'access denied',0
+        e11          db 'device error',0
+        eNoPath      db 'path not selected',0
+        eItself      db "you can't save the image onto itself",0
+        eUnknown     db 'unknown error',0
 end if
-;---------------------------------------------------------------------
-ntf_start	db '"RDSave\n', 0
-ntf_end_o	db '" -tO', 0
-ntf_end_e	db '" -tE', 0
-;---------------------------------------------------------------------
-errors:
-	dd	ok
-	dd	error1
-	dd	error2
-	dd	error3
-	dd	error4
-	dd	error5
-	dd	error6
-	dd	error7
-	dd	error8
-	dd	error9
-	dd	error10
-	dd	error11
+
+title db appname, version, 0
+
 ;---------------------------------------------------------------------
 
-title	db appname,version,0
+align 4
+err_msgs:
+        dd msg_ok, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11
+        dd eNoPath, eItself, eUnknown
 
-;Lib_DATA
-;Ç·•£§† ·Æ°´Ó§†‚Ï ØÆ·´•§Æ¢†‚•´Ï≠Æ·‚Ï ¢ ®¨•≠®.
-system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
-system_dir_ProcLib	db '/sys/lib/proc_lib.obj',0
-system_dir_libini	db '/sys/lib/libini.obj',0
+boot_names:
+        dd src_unknown, src_floppy, src_hd, src_memory, src_format, src_none
+
+ini_file      db '/sys/settings/app.ini',0
+ini_sec       db 'RDSave',0
+key_path      db 'path',0
+key_autoclose db 'autoclose',0
+path_default  db 0
+def_fname     db 'kolibri.img',0
+
+ntf_head      db '"RDsave\n',0
+ntf_end_ok    db '" -tO',0
+ntf_end_err   db '" -tE',0
+
+notify_finfo:
+        dd 7, 0, ntf_msg, 0, 0
+        db '/sys/@notify',0
+
 ;---------------------------------------------------------------------
-l_libs_start:
 
-library01  l_libs system_dir_Boxlib+9, library_path, system_dir_Boxlib, \
- Box_lib_import
+align 4
+importLib:
+library libini, 'libini.obj', proclib, 'proc_lib.obj'
 
-library02  l_libs system_dir_ProcLib+9, library_path, system_dir_ProcLib, \
- ProcLib_import
+import  libini, \
+        ini_get_str, 'ini_get_str', \
+        ini_get_int, 'ini_get_int', \
+        ini_set_str, 'ini_set_str'
 
-library03  l_libs system_dir_libini+9, library_path, system_dir_libini, \
- libini_import
+import  proclib, \
+        OpenDialog_Init,  'OpenDialog_init', \
+        OpenDialog_Start, 'OpenDialog_start'
 
-end_l_libs:
 ;---------------------------------------------------------------------
+
 OpenDialog_data:
-.type			dd 1	; Save
-.procinfo		dd procinfo	;+4
-.com_area_name		dd communication_area_name	;+8
-.com_area		dd 0	;+12
-.opendir_path		dd temp_dir_path	;+16
-.dir_default_path	dd communication_area_default_path	;+20
-.start_path		dd open_dialog_path	;+24
-.draw_window		dd draw_window	;+28
-.status 		dd 0	;+32
-.openfile_pach		dd fname_buf	;+36
-.filename_area		dd filename_area	;+40
-.filter_area		dd Filter
-.x:
-.x_size 		dw 420 ;+48 ; Window X size
-.x_start		dw 200 ;+50 ; Window X position
-.y:
-.y_size 		dw 320 ;+52 ; Window y size
-.y_start		dw 120 ;+54 ; Window Y position
+        .type             dd 1                  ; Save
+        .procinfo         dd procinfo
+        .com_area_name    dd communication_area_name
+        .com_area         dd 0
+        .opendir_path     dd temp_dir_path
+        .dir_default_path dd communication_area_default_path
+        .start_path       dd open_dialog_path
+        .draw_window      dd draw_window
+        .status           dd 0
+        .openfile_path    dd dialog_path        ; kept empty of the ini path so
+                                                ; a stale folder never opens
+        .filename_area    dd filename_area
+        .filter_area      dd Filter
+        .x:
+        .x_size           dw 420
+        .x_start          dw 200
+        .y:
+        .y_size           dw 320
+        .y_start          dw 120
 
-communication_area_name:
-	db 'FFFFFFFF_open_dialog',0
+communication_area_name db 'FFFFFFFF_open_dialog',0
+
 open_dialog_path:
 if __nightbuild eq yes
-    db '/sys/MANAGERS/opendial',0
+        db '/sys/MANAGERS/opendial',0
 else
-    db '/sys/File Managers/opendial',0
+        db '/sys/File Managers/opendial',0
 end if
-communication_area_default_path:
-	db '/',0
+
+communication_area_default_path db '/',0
 
 Filter:
-dd	Filter.end - Filter
-.1:
-db	'IMG',0
-db	'IMA',0
-.end:
-db	0
-
-start_temp_file_name:	db 'kolibri.img',0
+        dd Filter.end - Filter
+        db 'IMG',0
+        db 'IMA',0
+        .end:
+        db 0
 
 ;---------------------------------------------------------------------
-align 4
-ProcLib_import:
-OpenDialog_Init 	dd aOpenDialog_Init
-OpenDialog_Start	dd aOpenDialog_Start
-	dd	0,0
-aOpenDialog_Init	db 'OpenDialog_init',0
-aOpenDialog_Start	db 'OpenDialog_start',0
-;---------------------------------------------------------------------
-PathShow_data_1:
-.type			dd 0	;+0
-.start_y		dw 36	;+4
-.start_x		dw 20	;+6
-.font_size_x		dw 6	;+8     ; 6 - for font 0, 8 - for font 1
-.area_size_x		dw 270	;+10
-.font_number		dd 0	;+12    ; 0 - monospace, 1 - variable
-.background_flag	dd 0	;+16
-.font_color		dd 0	;+20
-.background_color	dd 0	;+24
-.text_pointer		dd fname_buf	;+28
-.work_area_pointer	dd text_work_area	;+32
-.temp_text_length	dd 0	;+36
-;---------------------------------------------------------------------
-align 4
-Box_lib_import:
-;edit_box_draw           dd aEdit_box_draw
-;edit_box_key            dd aEdit_box_key
-;edit_box_mouse          dd aEdit_box_mouse
-;version_ed              dd aVersion_ed
 
-PathShow_prepare	dd sz_PathShow_prepare
-PathShow_draw		dd sz_PathShow_draw
-Frame_draw		dd sz_Frame_draw
-			dd 0,0
-
-;aEdit_box_draw          db 'edit_box_draw',0
-;aEdit_box_key           db 'edit_box_key',0
-;aEdit_box_mouse         db 'edit_box_mouse',0
-;aVersion_ed             db 'version_ed',0
-
-sz_PathShow_prepare	db 'PathShow_prepare',0
-sz_PathShow_draw	db 'PathShow_draw',0
-
-sz_Frame_draw		db 'frame_draw',0
-;szVersion_frame        db 'version_frame',0
-;---------------------------------------------------------------------
-frame_data:
-.type			dd 0 ;+0
-.x:
-.x_size 		dw 374 ;+4
-.x_start		dw 8 ;+6
-.y:
-.y_size 		dw 45 ;+8
-.y_start		dw 17 ;+10
-.ext_fr_col		dd 0x888888 ;+12
-.int_fr_col		dd 0xffffff ;+16
-.draw_text_flag 	dd 1 ;+20
-.text_pointer		dd label1 ;+24
-.text_position		dd 0 ;+28
-.font_number		dd 0 ;+32
-.font_size_y		dd 9 ;+36
-.font_color		dd 0x0 ;+40
-.font_backgr_color	dd 0xdddddd ;+44
-;---------------------------------------------------------------------
-align 4
-libini_import:
-init_lib     dd a_init
-ini_get_str  dd aini_get_str
-ini_get_int  dd aini_get_int
-ini_set_str  dd aini_set_str
-ini_set_int  dd aini_set_int
-	     dd 0,0
-a_init	     db 'lib_init',0
-aini_get_str db 'ini_get_str',0
-aini_get_int db 'ini_get_int',0
-aini_set_str db 'ini_set_str',0
-aini_set_int db 'ini_set_int',0
-;---------------------------------------------------------------------
-
-ini_file db  '/sys/settings/app.ini',0
-ini_section db 'RDSave',0
-apath db 'path',0
-aautoclose db 'autoclose',0
-path	db '/hd2/1/kolibri.img',0
-;---------------------------------------------------------------------
-is_notify:
-    dd	  7, 0, ok, 0, 0
-    db	  "/sys/@notify", 0
-
-read_folder:
-.subfunction	dd 1
-.start		dd 0
-.flags		dd 0
-.size		dd 1
-.return 	dd folder_data
-		db 0
-.name:		dd check_dir
-
-param dd 0
-hidden dd 0
-;---------------------------------------------------------------------
 IM_END:
-;---------------------------------------------------------------------
+
 align 4
-PARAMS:
-       rb 256
-ini_path:
-	rb 4096
-check_dir:
-	rb 4096
-
-sc     system_colors
-
+boot_src  rd 1
 autoclose rd 1
+use_boot  rd 1
 
-color	rd 1
+sc system_colors
 
-msg:
-	rb 1024
+PARAMS        rb 256
+fname_buf     rb 4096
+dialog_path   rb 4096
+ntf_msg       rb 1152
+cur_dir_path  rb 4096
+temp_dir_path rb 4096
+filename_area rb 256
+procinfo      rb 1024
 
-ntf_msg:
-	rb 1024
+;---------------------------------------------------------------------
 
-folder_data:
-	rb 304*32+32 ; 9 Kb
-;---------------------------------------------------------------------
-cur_dir_path:
-	rb 4096
-;---------------------------------------------------------------------
-library_path:
-	rb 4096
-;---------------------------------------------------------------------
-temp_dir_path:
-	rb 4096
-;---------------------------------------------------------------------
-fname_buf:
-	rb 4096
-;---------------------------------------------------------------------
-procinfo:
-	rb 1024
-;---------------------------------------------------------------------
-filename_area:
-	rb 256
-;---------------------------------------------------------------------
-text_work_area:
-	rb 1024
-;---------------------------------------------------------------------
 align 32
-	rb 4096
+        rb 4096
 stacktop:
 I_END:
