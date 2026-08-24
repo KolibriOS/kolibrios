@@ -1634,6 +1634,7 @@ sys_getsetup:
 ; 10 = not used
 ; 11 = get the state "lba read"
 ; 12 = get the state "pci access"
+; 13 = get device the ramdisk was loaded from
 ;-----------------------------------------------------------------------------
 ; F.26.2 - get keyboard layout
         sub     ebx, 2
@@ -1725,9 +1726,18 @@ sys_getsetup:
 @@:
 ; F.26.12 - Find out whether low-level PCI access is enabled
         dec     ebx
-        jnz     .error
+        jnz     @f
 
         mov     eax, [pci_access_enabled]
+        mov     [esp + SYSCALL_STACK.eax], eax
+        ret
+;--------------------------------------
+@@:
+; F.26.13 - get device the ramdisk was loaded from, RD_LOAD_FROM_*
+        dec     ebx
+        jnz     .error
+
+        movzx   eax, byte [BOOT.rd_load_from]
         mov     [esp + SYSCALL_STACK.eax], eax
         ret
 ;--------------------------------------
