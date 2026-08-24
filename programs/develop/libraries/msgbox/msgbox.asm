@@ -3,6 +3,7 @@ public EXPORTS
 section '.flat' code readable align 16
 
 include '../../../macros.inc'
+include '../../../KOSfuncs.inc'
 include 'strlen.inc'
 
 MB_FIRST_BUT_ID equ 3 ;идентификатор 1-й кнопки на сообщении
@@ -18,14 +19,8 @@ MB_TEXT_OFFSET equ 2 ;смещение, по которому начинаеться текст заголовка окна
 
 align 4
 start:
-  mov eax,48
-  mov ebx,3
-  mov ecx,sc
-  mov edx,sizeof.system_colors
-  mcall
-  mov eax,40
-  mov ebx,0x27
-  mcall
+  mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+  mcall SF_SET_EVENTS_MASK,0x27
 
   ;-- clear id pressed button ---
   mov ebx,[mb_text]
@@ -39,9 +34,7 @@ start:
 
 align 4
 red_win:
-  mov eax,12
-  mov ebx,1
-  mcall
+  mcall SF_REDRAW,SSF_BEGIN_DRAW
 
   xor eax,eax
   mov bx,word[mb_left]
@@ -56,7 +49,7 @@ red_win:
   add edi,MB_TEXT_OFFSET ;Caption
   mcall
 
-  mcall 9,mb_procinfo,-1
+  mcall SF_THREAD_INFO,mb_procinfo,-1
   mov eax,dword[mb_procinfo.client_box.width]
 
   sub eax,[but_width]
@@ -64,7 +57,6 @@ red_win:
   add eax,MB_BUT_OTX_1
   mov [ot_left],eax
 
-  mov eax,4 ;рисование текста
   mov bx,MB_BUT_OTX_1
   shl ebx,16
   mov bx,MB_BUT_OTY_1
@@ -76,13 +68,12 @@ red_win:
     call strlen
     call linlen
 
-    cmp eax,0
-    je @f
+    or eax,eax
+    jz @f
 
     mov esi,eax
     push eax
-      mov eax,4
-      int 0x40
+      mcall SF_DRAW_TEXT
     pop eax
 
     add edx,eax
@@ -95,12 +86,11 @@ red_win:
   @@:
 
   call MsgBoxDrawAllBut
-  mcall 12,2
+  mcall SF_REDRAW,SF_REDRAW
 
 align 4
 still:
-  mov eax,10
-  mcall
+  mcall SF_WAIT_EVENT
 
   cmp al,1 ;изм. положение окна
   jz red_win
@@ -113,7 +103,7 @@ still:
 
 align 4
 key:
-  mcall 2
+  mcall SF_GET_KEY
   cmp ah,13
   jne @f
     mov ah,[mb_key_foc]
@@ -153,7 +143,7 @@ key:
 
 align 4
 button:
-  mcall 17 ;получить код нажатой кнопки
+  mcall SF_GET_BUTTON
   cmp ah,MB_FIRST_BUT_ID
   jge close
   cmp ah,1
@@ -169,8 +159,8 @@ close:
   mov byte[ebx],ah
 
   ;*** call msgbox functions ***
-  cmp ah,0
-  je @f
+  or ah,ah
+  jz @f
   cmp dword[mb_funct],0
   je @f
     xor ebx,ebx
@@ -182,7 +172,7 @@ close:
     je @f
       call dword[ebx]
   @@:
-  mcall -1 ;выход из программы
+  mcall SF_TERMINATE_PROCESS
 
 align 4
 MsgBoxDrawAllBut:
@@ -202,8 +192,8 @@ MsgBoxDrawAllBut:
     mov esi,edx
     call strlen
 
-    cmp eax,0
-    je @f
+    or eax,eax
+    jz @f
 
     call MsgBoxDrawButton
     inc ecx
@@ -253,8 +243,7 @@ MsgBoxDrawButton:
     ror ebx,16
     mov bx,ax
 
-    mov eax,8
-    int 0x40
+    mcall SF_DEFINE_BUTTON
   pop edx ebx eax
 
   ;caption
@@ -264,8 +253,7 @@ MsgBoxDrawButton:
     mov ecx,[sc.work_button]
   @@:
   mov esi,eax
-  mov eax,4
-  int 0x40
+  mcall SF_DRAW_TEXT
 
   pop ecx
   ret
@@ -283,6 +271,25 @@ MsgBoxReInit:
   inc esi ;add terminated zero
   add esi,eax ;add len of caption
   mov [txtMsg],esi
+
+  ;--- calc window width ---
+  push eax ebx esi
+  .cycle:
+  call strlen
+  mov ebx,eax
+  call linlen
+  add esi,eax
+  sub ebx,eax
+  imul eax,6
+  add eax,10+2*SF_DRAW_TEXT
+  cmp [mb_width],ax
+  jge @f
+    mov [mb_width],ax
+  @@:
+  inc esi
+  cmp ebx,5 ;length of the remaining text
+  jg .cycle
+  pop esi ebx eax
 
   ;--- go to first button text --- buttons 1...MB_MAX_BUT
   mov ebx,txtBut
@@ -320,12 +327,11 @@ MsgBoxReInit:
   add eax,MB_BUT_HEIGHT
   add ax,5 ;height of border
   mov [mb_height],ax
-  mcall 48,4 ;skin height
+  mcall SF_STYLE_SETTINGS,SSF_GET_SKIN_HEIGHT
   add [mb_height],ax
 
   ;--- calc window top ---
-  mov eax,14
-  int 0x40
+  mcall SF_GET_SCREEN_SIZE
   mov word[mb_top],ax
   mov ax,word[mb_height]
   sub word[mb_top],ax
@@ -367,6 +373,7 @@ MsgBoxReInit:
 
 ;input:
 ; [esp+8] = pointer to msgbox text
+; [esp+12] = thread stack
 align 4
 MsgBoxCreate:
   push ebp
@@ -374,11 +381,7 @@ MsgBoxCreate:
     m2m dword[mb_text],dword[ebp+8]
     push eax ebx ecx edx
 
-    mov eax,51
-    mov ebx,1
-    mov ecx,start
-    mov edx,dword[ebp+12];thread
-    int 0x40
+	mcall SF_THREAD_CONTROL,SSF_CREATE_THREAD,start,[ebp+12]
 
     mov dword[mb_funct],0
     pop edx ecx ebx eax
