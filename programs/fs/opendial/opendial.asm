@@ -1505,7 +1505,7 @@ draw_window:
 	shl	eax,16
 	sub	ebx,eax
 	mov	ecx,25 shl 16 + 16
-	mcall	SF_DEFINE_BUTTON,,,2,[w_work_button]	;0xffffff
+	mcall	SF_DEFINE_BUTTON,,,2,[w_work_button] ;Exit Dir
 
 	pusha
 	shr	ecx,16
@@ -1523,7 +1523,7 @@ draw_window:
 	push	ebx
 	sub	ebx,70 shl 16
 	mov	bx,60
-	mcall	SF_DEFINE_BUTTON,,,6
+	mcall	SF_DEFINE_BUTTON,,,6 ;Refresh
 
 	shr	ecx,16
 	mov	bx,cx
@@ -1547,7 +1547,7 @@ draw_window:
 	shl	eax,16
 	add	ecx,eax
 	mov	cx,16
-	mcall	SF_DEFINE_BUTTON,,,3
+	mcall	SF_DEFINE_BUTTON,,,3 ;Cancel
 
 	pusha
 	shr	ecx,16
@@ -1559,7 +1559,7 @@ draw_window:
 	popa
 
 	sub	ebx,65 shl 16
-	mcall	SF_DEFINE_BUTTON,,,4
+	mcall	SF_DEFINE_BUTTON,,,4 ;Open | Save
 
 	shr	ecx,16
 	mov	bx,cx
@@ -1597,6 +1597,40 @@ draw_window:
 	mcall	SF_REDRAW,SSF_END_DRAW
 	ret
 ;---------------------------------------------------------------------
+; in:
+;   edx - pointer to the button title
+align 4
+redraw_open_button:
+	mov	ebx,[open_button_coordinates]
+	test	ebx,ebx
+	jz	.exit
+	push	ebx edx
+	mov	ebx,[file_browser_data_1.x]
+	mov	ax,bx
+	shl	eax,16
+	add	ebx,eax
+	mov	eax,55
+	mov	bx,ax
+	add eax,65
+	shl	eax,16
+	sub	ebx,eax
+	mov	ecx,[file_browser_data_1.y]
+	mov	ax,cx
+	add	eax,3
+	shl	eax,16
+	add	ecx,eax
+	mov	cx,16
+	mov	esi, [w_work_button]
+	mcall	SF_DEFINE_BUTTON,,,0x80000004
+	mcall	,,,4 ;Open | Save
+	pop	edx ebx
+
+	mov	ecx,[w_work_button_text]
+	or	ecx,0x90000000
+	mcall	SF_DRAW_TEXT	;message_open_button
+.exit:
+	ret
+;---------------------------------------------------------------------
 draw_open_button_label:
 	cmp	[do_not_draw_open_button_label],1
 	je	.exit_1
@@ -1604,14 +1638,12 @@ draw_open_button_label:
 	cmp	[open_dialog_type],1
 	jne	.exit_1
 
-	cmp	[focus_pointer],1
-	je	draw_save_button_label
-
 	pusha
-	mov	ebx,[open_button_coordinates]
-	test	ebx,ebx
-	jz	.exit
-
+	cmp	[focus_pointer],1
+	jne	@f
+	mov	edx,message_1	; Save
+	jmp	.1
+@@:
 	mov	edx,[open_dialog_type]
 	shl	edx,2
 	add	edx,message_open_dialog_button
@@ -1630,26 +1662,9 @@ draw_open_button_label:
 @@:
 	call	copy_new_file_name
 .1:
-	mov	ecx,[w_work_button_text]
-	or	ecx,0xd0000000
-	mov	edi,[w_work_button]
-	mcall	SF_DRAW_TEXT	;message_open_button
-.exit:
+	call	redraw_open_button
 	popa
 .exit_1:
-	ret
-;---------------------------------------------------------------------
-draw_save_button_label:
-	pusha
-	mov	ebx,[open_button_coordinates]
-
-	mov	edx,message_1	; Save
-
-	mov	ecx,[w_work_button_text]
-	or	ecx,0xd0000000
-	mov	edi,[w_work_button]
-	mcall	SF_DRAW_TEXT	;message_open_button
-	popa
 	ret
 ;---------------------------------------------------------------------
 copy_new_file_name:
@@ -2808,7 +2823,7 @@ message_cancel_button:
 	db 'Отмена',0
 
 message_ReloadDir_button:
-	db 'Обнов.',0
+	db ' Обнов.',0
 
 message_ExitDir_button:
 	db '^',0
