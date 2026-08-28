@@ -9,9 +9,10 @@
 ;
 ;   Compile with FASM for Menuet (requires .INC files - see DATA Section)
 ;
-;   Willow - greatly srinked code size by using GIF texture and FPU to calculate sine table
+;   Willow - greatly srinked code size by using packed texture and FPU to calculate sine table
 ;
-;   !!!! Don't use GIF_LITE.INC in your apps - it's modified for FREE3D !!!!
+;   Textures are stored as a single 64x512 PNG embedded into the binary and
+;   decoded at startup with libimg.
 ;
 ;   Heavyiron - new 0-function of drawing window from kolibri (do not work correctly with menuet)
 
@@ -38,15 +39,17 @@ use32
                dd     APP_MEM;0x100000        ; memory for app
                dd     APP_MEM;0x100000        ; esp
                dd     0x0 , 0x0               ; I_Param , I_Icon
-include 'lang.inc'
 include '..\..\macros.inc'
-COLOR_ORDER equ OTHER
-include 'gif_lite.inc'
+include '..\..\proc32.inc'
+include '..\..\dll.inc'
+include '..\..\develop\libraries\libs-dev\libimg\libimg.inc'
 
 START:                          ; start of execution
-		mov  esi,textures
-		mov  edi,ceil-8
-		call ReadGIF
+		mcall 68,11                 ; init heap, libimg needs it
+		stdcall dll.Load,@IMPORT
+		test eax,eax
+		jnz  finish
+		call load_textures
 		mov  esi,sinus
 		mov  ecx,360*10
 		fninit
@@ -290,6 +293,34 @@ m_right:                                  ; turn right
     mov  eax,-1                 ; close this program
     mcall
 
+
+;   *********************************************
+;   *******        LOAD TEXTURES         ********
+;   *********************************************
+; Decodes the embedded 64x512 PNG (8 stacked 64x64 tiles) into the raw
+; 0x00RRGGBB texture bank at [ceil].
+
+load_textures:
+	invoke img.decode,textures,textures.size,0
+	test eax,eax
+	jz   finish
+	mov  ebx,eax
+	invoke img.convert,ebx,0,Image.bpp32,0,0
+	push eax
+	invoke img.destroy,ebx
+	pop  ebx
+	test ebx,ebx
+	jz   finish
+	mov  esi,[ebx+Image.Data]
+	mov  edi,ceil
+	mov  ecx,TEX_SIZE*8/4
+    .copy:
+	lodsd
+	and  eax,0x00FFFFFF     ; drop alpha, the renderer stores 32 bit dwords
+	stosd                   ; into a 24 bit image buffer
+	loop .copy
+	invoke img.destroy,ebx
+	ret
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
@@ -980,13 +1011,21 @@ dd 0x0001FFFF ; initial player position * 0xFFFF
  vpy:
 dd 0x0001FFFF
 
-title    db   'FISHEYE RAYCASTING ENGINE ETC. FREE3D',0
+title    db   'Fisheye Raycasting Engine Etc. FREE3D',0
 
 sindegree dd 0.0
 sininc    dd 0.0017453292519943295769236907684886
 sindiv    dd 6553.5
 textures:
-	file 'texture.gif'
+	file 'texture.png'
+  .size = $ - textures
+
+align 16
+@IMPORT:
+
+library                       	libimg , 'libimg.obj'
+
+import	libimg                      , 	libimg.init  , 'lib_init'   , 	img.decode   , 'img_decode' , 	img.convert  , 'img_convert', 	img.destroy  , 'img_destroy'
 
 align 4
 

@@ -10,11 +10,11 @@ By Dieter Marfurt
 
 --------------------------------------------
 
-Format of texture include files:
+Format of the texture file:
 
-dd 0x00RRGGBB,0x00RRGGBB....
-
-for 64*64 pixels. 
+texture.png - a 64*512 image holding the 8 textures of 64*64 pixels
+stacked vertically. It is embedded into the binary and decoded at
+startup with libimg.
 
 Have fun!
 
