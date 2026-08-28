@@ -573,6 +573,7 @@ tup.append_table(img_files, {
  {"DRIVERS/UHCI.SYS", VAR_DRVS .. "/usb/uhci.sys"},
  {"DRIVERS/OHCI.SYS", VAR_DRVS .. "/usb/ohci.sys"},
  {"DRIVERS/EHCI.SYS", VAR_DRVS .. "/usb/ehci.sys"},
+ {"DRIVERS/XHCI.SYS", VAR_DRVS .. "/usb/xhci/xhci.sys"},
  {"DRIVERS/USBHID.SYS", VAR_DRVS .. "/usb/usbhid/usbhid.sys"},
  {"DRIVERS/USBFTDI.SYS", VAR_DRVS .. "/usb/usbftdi/usbftdi.sys"},
  {"DRIVERS/USBOTHER.SYS",VAR_DRVS .. "/usb/usbother/usbother.sys"},
