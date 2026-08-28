@@ -2124,11 +2124,11 @@ socket_free:
         mov     ebx, eax
         cmp     [eax + STREAM_SOCKET.rcv.start_ptr], 0
         je      @f
-        stdcall free_kernel_space, [eax + STREAM_SOCKET.rcv.start_ptr]
+        stdcall kernel_free, [eax + STREAM_SOCKET.rcv.start_ptr]
   @@:
         cmp     [ebx + STREAM_SOCKET.snd.start_ptr], 0
         je      @f
-        stdcall free_kernel_space, [ebx + STREAM_SOCKET.snd.start_ptr]
+        stdcall kernel_free, [ebx + STREAM_SOCKET.snd.start_ptr]
   @@:
         mov     eax, ebx
   .no_stream:
