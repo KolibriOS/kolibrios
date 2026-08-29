@@ -2,6 +2,6 @@ LIBRARY rasterworks.obj
 
 EXPORTS
 charsFit
-cntUTF-8
+countUTF8Z
 drawText
 strWidth
