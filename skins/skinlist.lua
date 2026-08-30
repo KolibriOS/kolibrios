@@ -76,4 +76,5 @@ skinlist = {
 "_old/WindowsXP/WinXP Standard blue/WinXP Standard blue.skn",
 "_old/WindowsXP/WinXP Standard olive_green/WinXP Standard olive_green.skn",
 "_old/WindowsXP/WinXP Standard silver/WinXP Standard silver.skn",
+"Weronika_Saturday/Zune/Zune.skn",
 }
