@@ -19,3 +19,38 @@
         owner: "{{ storage_user }}"
         group: "{{ storage_user }}"
         mode: preserve
+
+    # per-program binaries browsable at <version>/<lang>/data/, like on the old builds server
+    - name: Creating build tree folders
+      ansible.builtin.file:
+        path: "{{ storage_path }}/{{ version }}/{{ item | basename | regex_replace('\\.tar\\.gz$', '') }}/data"
+        state: directory
+        owner: "{{ storage_user }}"
+        group: "{{ storage_user }}"
+        mode: '0755'
+      with_fileglob: "{{ tree_artifact_path }}/*.tar.gz"
+
+    - name: Unpacking build trees
+      ansible.builtin.unarchive:
+        src: "{{ item }}"
+        dest: "{{ storage_path }}/{{ version }}/{{ item | basename | regex_replace('\\.tar\\.gz$', '') }}/data"
+        owner: "{{ storage_user }}"
+        group: "{{ storage_user }}"
+      with_fileglob: "{{ tree_artifact_path }}/*.tar.gz"
+
+    # stable URL for the newest build: <storage_path>/latest/<lang>/...
+    - name: Updating latest symlink
+      ansible.builtin.file:
+        src: "{{ version }}"
+        dest: "{{ storage_path }}/latest"
+        state: link
+        force: true
+        owner: "{{ storage_user }}"
+        group: "{{ storage_user }}"
+
+    # emulators hardcode <site root>/<lang>/data/data/kolibri.img; storage_path is the ci folder, one level under the site root
+    - name: Sending bare images to stable emulator paths
+      ansible.builtin.copy:
+        src: "{{ stable_artifact_path }}/"
+        dest: "{{ storage_path }}/../"
+        mode: preserve

@@ -162,12 +162,13 @@ jobs:
           tup init
           tup variant ${{ matrix.lang }}.config
 
-      # build the image for language variant
+      # build the image for language variant; keep the tup log for publishing
       - name: Build KolibriOS
         run: |
+          set -o pipefail
           export PATH=/home/autobuild/tools/win32/bin:$PATH
           source kos32-export-env-vars ${{ gitea.workspace }}
-          tup build-${{ matrix.lang }}
+          tup build-${{ matrix.lang }} 2>&1 | tee build.log
 
       # stamp the cache with its commit so later builds diff against it
       - name: Record cache base commit
@@ -181,15 +182,26 @@ jobs:
         id: vars
         run: echo "descr=$(git describe --tags)" >> $GITEA_OUTPUT
 
-      # rename build outputs to their final names so artifacts are bare files
-      - name: Rename images
+      # stage build outputs under their final names, plus distribution kit and checksums
+      - name: Prepare artifacts
         run: |
+          set -e
+          BASE="kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}"
           for ext in img iso raw; do
-            cp "build-${{ matrix.lang }}/data/kolibri.$ext" \
-               "kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.$ext"
+            cp "build-${{ matrix.lang }}/data/kolibri.$ext" "$BASE.$ext"
           done
+          # zip: distr targets Windows/DOS users, Explorer opens it natively
+          (cd "build-${{ matrix.lang }}/data" && zip -r -9 -q "${{ gitea.workspace }}/$BASE.distr.zip" distribution_kit)
+          # whole build tree for per-program downloads; the big images ship separately
+          tar -C "build-${{ matrix.lang }}" \
+              --exclude './data/kolibri.iso' \
+              --exclude './data/kolibri.raw' \
+              --exclude './data/distribution_kit' \
+              -czf "$BASE.tree.tar.gz" .
+          sha256sum "$BASE".img "$BASE".iso "$BASE".raw "$BASE".distr.zip > "$BASE.sha256sums.txt"
+          mv build.log "$BASE.build.log"
 
-      #publish the three images; longer retention for the floppy image.
+      # publish the images; longer retention for the floppy image
       - name: Upload floppy image
         uses: actions/upload-artifact@v3
         with:
@@ -209,6 +221,34 @@ jobs:
         with:
           name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.raw
           path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.raw
+          retention-days: 15
+
+      - name: Upload distribution kit
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.distr.zip
+          path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.distr.zip
+          retention-days: 30
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.sha256sums.txt
+          path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.sha256sums.txt
+          retention-days: 90
+
+      - name: Upload build log
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.build.log
+          path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.build.log
+          retention-days: 90
+
+      - name: Upload build tree
+        uses: actions/upload-artifact@v3
+        with:
+          name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.tree.tar.gz
+          path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.tree.tar.gz
           retention-days: 15
 
   deploy:
@@ -235,31 +275,50 @@ jobs:
         run: |
           set -eu
 
-          rm -rf ./norm-artifacts
-          mkdir -p ./norm-artifacts
+          rm -rf ./norm-artifacts ./stable-artifacts ./tree-artifacts
+          mkdir -p ./norm-artifacts ./stable-artifacts ./tree-artifacts
 
-          find ./artifacts -type f \( \
-            -name 'kolibrios-*.img' -o \
-            -name 'kolibrios-*.iso' -o \
-            -name 'kolibrios-*.raw' \
-          \) | while read -r file; do
-            fname="$(basename "$file")"        # kolibrios-<descr>-<lang>.<ext>
-            name_without_ext="${fname%.*}"
-            lang="${name_without_ext##*-}"
+          find ./artifacts -type f -name 'kolibrios-*' | while read -r file; do
+            fname="$(basename "$file")"        # kolibrios-<descr>-<lang>.<suffix>
+            case "$fname" in
+              *.tree.tar.gz)    stem="${fname%.tree.tar.gz}";;
+              *.distr.zip)      stem="${fname%.distr.zip}";;
+              *.sha256sums.txt) stem="${fname%.sha256sums.txt}";;
+              *.build.log)      stem="${fname%.build.log}";;
+              *.img)            stem="${fname%.img}";;
+              *.iso)            stem="${fname%.iso}";;
+              *.raw)            stem="${fname%.raw}";;
+              *) continue;;
+            esac
+            lang="${stem##*-}"                 # <lang> has no dashes, <descr> may
 
             mkdir -p "./norm-artifacts/$lang"
-            cp "$file" "./norm-artifacts/$lang/$fname"
+            case "$fname" in
+              *.tree.tar.gz)
+                # unpacked on the server into <version>/<lang>/data/ for per-program downloads
+                cp "$file" "./tree-artifacts/$lang.tar.gz";;
+              *.sha256sums.txt)
+                cp "$file" "./norm-artifacts/$lang/sha256sums.txt";;
+              *.build.log)
+                cp "$file" "./norm-artifacts/$lang/build.log";;
+              *.img)
+                cp "$file" "./norm-artifacts/$lang/$fname"
+                # emulators (e.g. v86) hardcode <lang>/data/data/kolibri.img at the site root
+                mkdir -p "./stable-artifacts/$lang/data/data"
+                cp "$file" "./stable-artifacts/$lang/data/data/kolibri.img";;
+              *)
+                cp "$file" "./norm-artifacts/$lang/$fname";;
+            esac
           done
 
-          # derive the version (git describe) from an artifact name:
-          # kolibrios-<descr>-<lang>.<ext> -> <descr>
-          sample="$(find ./norm-artifacts -type f -name 'kolibrios-*' | head -n1)"
+          # derive the version (git describe) from an artifact name: kolibrios-<descr>-<lang>.iso -> <descr>
+          sample="$(find ./norm-artifacts -type f -name 'kolibrios-*.iso' | head -n1)"
           base="$(basename "${sample%.*}")"   # kolibrios-<descr>-<lang>
           version="${base%-*}"                # kolibrios-<descr>
           version="${version#kolibrios-}"     # <descr>
           echo "version=$version" >> $GITEA_OUTPUT
 
-          find ./norm-artifacts -type f -print
+          find ./norm-artifacts ./stable-artifacts ./tree-artifacts -type f -print
 
       - name: Setup SSH
         run: |
@@ -285,4 +344,6 @@ jobs:
             -e "storage_path=${{ secrets.STORAGE_PATH }}" \
             -e "version=${{ steps.normalize.outputs.version }}" \
             -e "artifact_path=${{ gitea.workspace }}/norm-artifacts" \
+            -e "stable_artifact_path=${{ gitea.workspace }}/stable-artifacts" \
+            -e "tree_artifact_path=${{ gitea.workspace }}/tree-artifacts" \
             -v
