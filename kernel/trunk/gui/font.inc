@@ -48,6 +48,10 @@ dtext:
         add     esp, 28
         ret
 
+.nomem:
+        add     esp, 40
+        ret
+
 .redirect:
         mov     ebp, [edi]
         add     edi, 8
@@ -81,6 +85,8 @@ dtext:
         mov     [esp+32], eax
         imul    ebp, eax
         stdcall kernel_alloc, ebp
+        test    eax, eax
+        jz      .nomem
         mov     ecx, ebp
         shr     ecx, 2
         mov     [esp+36], eax
