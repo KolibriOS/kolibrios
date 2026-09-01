@@ -913,7 +913,7 @@ static off_t get_fileinfo(struct reader *rds,char *buf)
 	#define syncsafe_to_long(buf,res) \
 	( \
 		(((buf)[0]|(buf)[1]|(buf)[2]|(buf)[3]) & 0x80) ? 0 : \
-		(res =  (((unsigned long) (buf)[0]) << 27) \
+		(res =  (((unsigned long) (buf)[0]) << 21) \
 		     | (((unsigned long) (buf)[1]) << 14) \
 		     | (((unsigned long) (buf)[2]) << 7) \
 		     |  ((unsigned long) (buf)[3]) \
