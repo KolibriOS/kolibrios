@@ -1,1375 +1,1281 @@
 SCAN_LWIN_RELEASE = 0xDB
 SCAN_RWIN_RELEASE = 0xDC
 
-align 16
-edit_box_draw:
-	pushad
-	mov	edi,[esp+36]
-	and	dword ed_text_color,17FFFFFFh
-	mov	ecx,ed_text_color
-	mov	ebx,ecx
-	shr	ecx,28
-	shl	ebx,4
-	shr	ebx,28
-	inc	ebx
-	mov	eax,6
-	jecxz	@f
-	mov	al, 8
-@@:
-	mul	bl
-	mov	ed_char_width,eax
-	mov	al, 9
-	jecxz	@f
-	mov	al, 16
-@@:
-	mul	bl
-	add	eax,4
-	mov	ed_height,eax
-	call	.border
-.bg_cursor_text:
-	;test    word ed_flags,ed_focus ; for unfocused controls =>
-	;jz      .skip_offset           ; do not recalculate offset
-	call	edit_box.check_offset
-;.skip_offset:
-	call	edit_box_draw.bg
-	test	word ed_flags,ed_focus ; do not draw selection(named shift)
-	jz	.cursor_text      ;
-	call	.shift
-.cursor_text:
-	call	.text
-	test	word ed_flags,ed_focus ; and dosn`t draw cursor
-	jz	edit_box_exit
-	call	.cursor
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Общий выход из editbox для всех функций и пост обработчиков;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-edit_box_exit:
-	popad
-	ret 4
+struct EditBox.InplaceStr
+	len 	rd 1
+	p_str 	rd 1
+ends
 
-;description:
-; void edit_box_key_safe(edit_box *e, ksys_oskey_t ch)
-;input:
-; e - edit struct
-; ch - key code
-align 16
-edit_box_key_safe:
-	push eax
-	mov eax,[esp+12]
-	push dword[esp+8]
-	call edit_box_key
-	pop eax
-	ret 8
+struct BClipBuf
+	cbSize 		rd 1
+	contentType rd 1
+	encoding	rd 1
+	data_ 		rb 0
+ends
 
-;==========================================================
-;=== обработка клавиатуры =================================
-;==========================================================
-align 16
-edit_box_key:
-	pushad
-	mov	edi,[esp+36]
-	test	word ed_flags,ed_focus ; если не в фокусе, выходим
-	jz	edit_box_exit
-	test	word ed_flags,ed_mouse_on or ed_disabled
-	jnz	edit_box_exit
-;--------------------------------------
-; this code for Win-keys, works with
-; kernel SVN r.3356 or later
-	mcall	SF_KEYBOARD,SSF_GET_CONTROL_KEYS
-	test	ah,$06	      ; LWin ($02) & RWin ($04)
-	jnz	edit_box_exit
-;--------------------------------------
-;Проверка нажат shift ?
-	test	al,$03
-	je	@f
-	or	word ed_flags,ed_shift	 ;установим флаг Shift
-@@:
-	and	word ed_flags,ed_ctrl_off ; очистим флаг Ctrl
-	test	al,$0C
-	je	@f
-	or	word ed_flags,ed_ctrl_on   ;установим флаг Ctrl
-@@:
-	and	word ed_flags,ed_alt_off ; очистим флаг Alt
-	test	al,$30
-	je	@f
-	or	word ed_flags,ed_alt_on   ;установим флаг Alt
-@@:
-;----------------------------------------------------------
-;--- проверяем, что нажато --------------------------------
-;----------------------------------------------------------
-	mov	eax,[esp+28]
-; get scancode in ah
-	ror	eax,8
-; check for ctrl+ combinations
-	test	word ed_flags,ed_ctrl_on
-	jz	@f
-	cmp	ah,SCAN_CODE_X ; Ctrl + X
-	je	edit_box_key.ctrl_x
-	cmp	ah,SCAN_CODE_C ; Ctrl + C
-	je	edit_box_key.ctrl_c
-	cmp	ah,SCAN_CODE_V ; Ctrl + V
-	je	edit_box_key.ctrl_v
-	cmp	ah,SCAN_CODE_A ; Ctrl + A
-	je	edit_box_key.ctrl_a
-	jmp	edit_box_exit
-@@:
-	cmp	ah,SCAN_CODE_SPACE
-	ja	@F
-	cmp	al,ASCII_KEY_BACK
-	jz	edit_box_key.backspace
-	cmp	ah,SCAN_CODE_ESCAPE
-	jz	edit_box_exit
-	cmp	ah,SCAN_CODE_TAB
-	jz	edit_box_exit
-	cmp	ah,SCAN_CODE_RETURN
-	jz	edit_box_exit
-	jmp	.printable_character
-@@:
-	cmp	ah,SCAN_CODE_DELETE
-	ja	edit_box_exit
-	cmp	ah,SCAN_CODE_HOME
-	jb	edit_box_exit
-	cmp	ax,SCAN_CODE_CLEAR shl 8 + ASCII_KEY_CLEAR ; not operate numpad unlocked 5
-	jz	edit_box_exit
-;here best place to filter up,down,pgup,pgdown
-	cmp	al,ASCII_KEY_LEFT
-	jb	.printable_character
-	and	eax,$F
-	mov	ebx,.unlock_numpad_filtration
-	jmp	dword[ebx+eax*4]
-      .unlock_numpad_filtration       \
-	     dd edit_box_key.left,    \ ; LEFT
-		edit_box_exit,\ ; DOWN
-		edit_box_exit,\ ; UP
-		edit_box_key.right,   \ ; RIGHT
-		edit_box_key.home,    \ ; HOME
-		edit_box_key.end,     \ ; END
-		edit_box_key.delete,  \ ; DELETE
-		edit_box_exit,\ ; PGDN
-		edit_box_exit,\ ; PGUP
-		edit_box_key.insert	; INSERT
+struct BColor
+	union
+		bgrf rd 1
+		struct
+			b 		rb 1
+			g 		rb 1
+			r 		rb 1
+			format 	rb 1
+		ends
+	ends
+ends
 
-.printable_character:
-	test	word ed_flags,ed_figure_only  ; только цифры?
-	jz	@f
-	cmp	al,'0'
-	jb	edit_box_exit
-	cmp	al,'9'
-	ja	edit_box_exit
-@@:
-; restore ascii code
-	rol	eax,8
+struct BPoint
+	x rw 1
+	y rw 1
+ends
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;проверка на shift, был ли нажат
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	test	word ed_flags,ed_shift_on
-	je	@f
-; edx = ed_size, ecx = ed_pos
-	push	eax
-	mov	edx,ed_size
-	mov	ecx, ed_pos
-	pusha
-; clear input area
-	mov	ebp,ed_color
-	movzx	ebx, word ed_shift_pos
-	call	edit_box_key.sh_cl_
-	mov	ebp,ed_size
-	call	edit_box_key.clear_bg
-	popa
-	call	edit_box_key.del_char
-	mov	ebx,ed_size
-	sub	bx,ed_shift_pos
-	mov	ed_size,ebx
-	pop	eax
-@@:
+struct EditBox
+	width 	dd ?
+	left 	dd ?
+	top 	dd ?
+	union
+		color 	dd ?
+		bgColor dd ?
+	ends
+	union
+		shift_color dd ?
+		selectColor dd ?
+	ends
+	union
+		focus_border_color 	dd ?
+		focusBorderColor 	dd ?
+	ends
+	union
+		blur_border_color 	dd ?
+		blurBorderColor 	dd ?
+	ends
+	union
+		text_color 	dd ?
+		txColor 	BColor
+	ends
+	union
+		max 		dd ?
+		textMaxLen 	dd ?
+	ends
+	text 	dd ?
+	union
+		mouse_variable 	dd ?
+		pp_mouseOwner 	dd ?
+	ends
+	flags 	dd ?
+	union
+		size 	dd ?
+		textLen dd ?
+	ends
+	union
+		pos 		dd ?
+		caretPos	dd ?
+	ends
+	offset 	dd 0
+	union
+		struct
+  			cl_curs_x	dw 0
+  			cl_curs_y	dw 0
+		ends
+		cursorPos BPoint
+	ends
+	union
+		shift 			dw 0
+		selectionPos	dw ?
+	ends
+	union
+		shift_old 		dw 0
+		visibleCount	dw ?
+	ends
+	height 	dd 0
+	union
+		char_width 		dd 0
+		charWidth		dd ?
+	ends
+ends
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; проверяем, находится ли курсор в конце + дальнейшая обработка
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	mov	ecx,ed_size
-	mov	edx, ed_max
-	test	word ed_flags,ed_insert
-	jne	@f
-	cmp	ecx,edx
-	jae	edit_box_exit
-@@:	mov	ebx, ed_pos
-	cmp	ebx,edx
-	jnl	edit_box_exit
-	mov	ecx,ed_size
-	push	edi eax
-	mov	ebp,edi
-	mov	esi,ed_text
-	add	esi,ecx
-	mov	edi,esi
-	cmp	ecx,ebx
-	je	edit_box_key.In_k
-	test	dword bp_flags,ed_insert
-	jne	edit_box_key.ins_v
-	pusha
-	mov	edi,ebp
-	mov	ebp,ed_size
-	call	edit_box_key.clear_bg
-	popa
-	sub	ecx,ebx
-	inc	edi
-	std
-	inc	ecx
-@@:
-	lodsb
-	stosb
-	loop	@b
-edit_box_key.In_k:
-	cld
-	pop	eax
-	mov	al,ah
-	stosb
-	pop	edi
-	inc	dword ed_size
-	inc	dword ed_pos
-	call	edit_box_key.draw_all2
-	jmp	edit_box_key.shift
+ES.PASSWORD 	= 1 	; ╤А╨╡╨╢╨╕╨╝ ╨┤╨╗╤П ╨▓╨▓╨╛╨┤╨░ ╨┐╨░╤А╨╛╨╗╤П
+ES.FOCUS 		= 2		; ╨▓ ╤Д╨╛╨║╤Г╤Б╨╡
+ES.SELECT 		= 4		; ╨╡╤Б╤В╤М ╨▓╤Л╨▒╤А╨░╨╜╨╜╤Л╨╣ ╤В╨╡╨║╤Б╤В
+ES.SHIFT_ON 	= 8		; ╨┐╤А╨╕ ╨▓╨▓╨╛╨┤╨╡ ╨╜╨░╨╢╨░╤В ╤И╨╕╤Д╤В
+ES.DRAWN_ONCE 	= 16	; ╨╛╤В╤А╨╕╤Б╨╛╨▓╨░╨╜ ╤Е╨╛╤В╤М ╤А╨░╨╖ (╨▒╤Л╨▓╤И╨╕╨╣ ES.SELECT_BAC)
+ES.LEFT_FL 		= 32	; ╨╜╨╡ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В╤Б╤П
+ES.OFFSET_FL 	= 64 	; ╨╜╨╡ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╤Г╨╡╤В╤Б╤П
+ES.INSERT_MODE 	= 128	; ╤А╨╡╨╢╨╕╨╝ ╨▓╨╛╨┤╨░ ╤Б ╨┐╨╡╤А╨╡╨╖╨░╨┐╨╕╤Б╤М╤О
+ES.MOUSE_ON 	= 256	; ╤Г╨┤╨╡╤А╨╢╨╕╨▓╨░╨╡╤В ╨╝╤Л╤И╤М
+ES.CTRL_ON 		= 512	; ╨┐╤А╨╕ ╨▓╨▓╨╛╨┤╨╡ ╨╜╨░╨╢╨░╤В ctrl
+ES.ALT_ON 		= 1024	; ╨┐╤А╨╕ ╨▓╨▓╨╛╨┤╨╡ ╨╜╨░╨╢╨░╤В alt
+ES.DISABLED 	= 2048	; ╨╛╤В╨║╨╗╤О╤З╨╡╨╜
+ES.ALWAYS_FOCUS = 16384	; ╨▓╤Б╨╡╨│╨┤╨░ ╨▓ ╤Д╨╛╨║╤Г╤Б╨╡, ╨┐╨╛╤Б╨╗╨╡ ╨┐╨╛╨╗╤Г╤З╨╡╨╜╨╕╤П ╨╜╨╡ ╤В╨╡╤А╤П╨╡╤В
+ES.NUMERIC 		= 32768	; ╤А╨╡╨╢╨╕╨╝ ╨▓╨▓╨╛╨┤╨░ ╤В╨╛╨╗╤М╨║╨╛ ╤Ж╨╕╤Д╤А╤Л
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Обработка клавиш insert,delete,backspace,home,end,left,right
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-edit_box_key.insert:
-	xor	word ed_flags,ed_insert
-	jmp	edit_box_exit
+; in private methods edi always contains 'this' pointer
 
-edit_box_key.ins_v:
-	dec	dword bp_size
-	sub	esi,ecx
-	add	esi,ebx
-	mov	edi,esi
-	pusha
-	mov	edi,ebp
-	mov	ebp,ed_pos
-	call	edit_box_key.clear_bg
-	popa
-	jmp	edit_box_key.In_k
-
-edit_box_key.delete:
-	mov	edx,ed_size
-	mov	ecx,ed_pos
-	cmp	edx,ecx
-	jg	edit_box_key.bac_del
-	test	word ed_flags,ed_shift_on
-	jne	edit_box_key.del_bac
-	popad
-	ret	4
-
-edit_box_key.bac_del:
-	call	edit_box_key.del_char
-	jmp	edit_box_key.draw_all
-
-edit_box_key.backspace:
-	test	word ed_flags,ed_shift_on
-	jne	edit_box_key.delete
-	mov	ecx,ed_pos
-	test	ecx,ecx
-	jnz	edit_box_key.del_bac
-	popad
-	ret	4
-
-edit_box_key.del_bac:
-	mov	edx,ed_size
-	cmp	edx,ecx ;if ed_pos=ed_size
-	je	@f
-	dec	ecx
-	call	edit_box_key.del_char
-@@:	test	word ed_flags,ed_shift_on
-	jne	edit_box_key.bac_del
-	dec	dword ed_pos
-edit_box_key.draw_all:
-	push	edit_box_key.shift
-	test	word ed_flags,ed_shift_on
-	je	@f
-	movzx	eax, word ed_shift_pos
-	mov	ebx,ed_size
-	sub	ebx,eax
-	mov	ed_size,ebx
-	mov	ebp,ed_color
-	call	edit_box.clear_cursor
-	call	edit_box.check_offset
-	and	word ed_flags,ed_shift_cl
-	jmp	edit_box_draw.bg
-
-@@:	dec	dword ed_size
-edit_box_key.draw_all2:
-	and	word ed_flags,ed_shift_cl
-	mov	ebp,ed_color
-	call	edit_box.clear_cursor
-	call	edit_box.check_offset
-	mov	ebp,ed_size
-	jmp	edit_box_key.clear_bg
-
-;--- нажата клавиша left ---
-edit_box_key.left:
-	mov	ebx,ed_pos
-	test	ebx,ebx
-	jz	edit_box_key.sh_st_of
-	or	word ed_flags,ed_left_fl
-	call	edit_box_key.sh_first_sh
-	dec	dword ed_pos
-	call	edit_box_draw.bg
-	call	edit_box_draw.shift
-	call	edit_box_key.sh_enable
-	jmp	edit_box_draw.cursor_text
-
-;--- нажата клавиша right ---
-edit_box_key.right:
-	mov	ebx,ed_pos
-	cmp	ebx,ed_size
-	je	edit_box_key.sh_st_of
-	and	word ed_flags,ed_right_fl
-	call	edit_box_key.sh_first_sh
-	inc	dword ed_pos
-	call	edit_box_draw.bg
-	call	edit_box_draw.shift
-	call	edit_box_key.sh_enable
-	jmp	edit_box_draw.cursor_text
-
-edit_box_key.home:
-	mov	ebx,ed_pos
-	test	ebx,ebx
-	jz	edit_box_key.sh_st_of
-	call	edit_box_key.sh_first_sh
-	xor	eax,eax
-	mov	ed_pos,eax
-	call	edit_box_draw.bg
-	call	edit_box_draw.shift
-	call	edit_box_key.sh_home_end
-	jmp	edit_box_draw.cursor_text
-
-;--- нажата клавиша end ---
-edit_box_key.end:
-	mov	ebx,ed_pos
-	cmp	ebx,ed_size
-	je	edit_box_key.sh_st_of
-	call	edit_box_key.sh_first_sh
-	mov	eax,ed_size
-	mov	ed_pos,eax
-	call	edit_box_draw.bg
-	call	edit_box_draw.shift
-	call	edit_box_key.sh_home_end
-	jmp	edit_box_draw.cursor_text
-;----------------------------------------
-StrInsert:
-; SizeOf(TmpBuf) >= StrLen(Src) + StrLen(Dst) + 1
-Dst    equ [esp + 16] ; - destination buffer
-Src    equ [esp + 12] ; - source to insert from
-Pos    equ [esp + 8] ; - position for insert
-DstMax equ [esp + 4]  ; - maximum Dst length(exclude terminating null)
-SrcCount equ [esp - 4]
-DstCount equ [esp - 8]
-TmpBuf	 equ [esp - 12]  ; - temporary buffer
-	mov    edi, Src
-	mov    ecx, -1
-	xor    eax, eax
-	repne scasb
-	mov    eax, -2
-	sub    eax, ecx
-	mov    SrcCount, eax
-	mov    edi, Dst
-	add    edi, Pos
-	mov    ecx, -1
-	xor    eax, eax
-	repne scasb
-	mov    eax, -2
-	sub    eax, ecx
-	inc    eax
-	mov    DstCount, eax
-	mov    ecx, eax
-	add    ecx, SrcCount
-	add    ecx, Pos
-	mcall	SF_SYS_MISC,SSF_MEM_ALLOC
-	mov    TmpBuf, eax
-	mov    esi, Dst
-	mov    edi, TmpBuf
-	mov    ecx, Pos
-	mov    edx, ecx
-	rep movsb
-	mov    esi, Src
-	mov    edi, TmpBuf
-	add    edi, Pos
-	mov    ecx, SrcCount
-	add    edx, ecx
-	rep movsb
-	mov    esi, Pos
-	add    esi, Dst
-	mov    ecx, DstCount
-	add    edx, ecx
-	rep movsb
-	mov    esi, TmpBuf
-	mov    edi, Dst
-; ecx = MIN(edx, DstSize)
-	cmp    edx, DstMax
-	sbb    ecx, ecx
-	and    edx, ecx
-	not    ecx
-	and    ecx, DstMax
-	add    ecx, edx
-	mov    eax, ecx ; return total length
-	rep movsb
-	mov    ecx, TmpBuf
-	mcall	SF_SYS_MISC,SSF_MEM_FREE
-	ret    16
-restore Dst
-restore Src
-restore Pos
-restore DstSize
-restore TmpBuf
-restore SrcCount
-restore DstCount
-;----------------------------------------
-edit_box_key.ctrl_x:
-	test   word ed_flags,ed_shift_on
-	jz     edit_box_exit
-	push	dword 'X'  ; this value need below to determine which action is used
-	jmp	edit_box_key.ctrl_c.pushed
-
-edit_box_key.ctrl_c:
-	test   word ed_flags,ed_shift_on
-	jz     edit_box_exit
-	push	dword 'C'  ; this value need below to determine which action is used
-.pushed:
-; add memory area
-	mov	ecx,ed_size
-	add	ecx,3*4
-	mcall	SF_SYS_MISC,SSF_MEM_ALLOC
-; building the clipboard slot header
-	xor	ecx,ecx
-	mov	[eax+4],ecx ; type 'text'
-	inc	ecx
-	mov	[eax+8],ecx ; cp866 text encoding
-	mov	ecx,ed_pos
-	movzx	ebx,word ed_shift_pos
-	sub	ecx,ebx
-.abs: ; make ecx = abs(ecx)
-	       neg     ecx
-	       jl	     .abs
-	add	ecx,3*4
-	mov	[eax],ecx
-	sub	ecx,3*4
-	mov	edx,ed_pos
-	movzx	ebx,word ed_shift_pos
-	cmp	edx,ebx
-	jle	@f
-	mov	edx,ebx
-@@:
-; copy data
-	mov	esi,ed_text
-	add	esi,edx
-	push	edi
-	mov	edi,eax
-	add	edi,3*4
-	cld
-	rep	movsb
-	pop	edi
-; put slot to the kernel clipboard
-	mov	edx,eax
-	mov	ecx,[edx]
-	push	eax
-	mcall	SF_CLIPBOARD,SSF_WRITE_CB
-	pop	ecx
-; remove unnecessary memory area
-	mcall	SF_SYS_MISC,SSF_MEM_FREE
-.exit:
-	pop	eax	   ; determine current action (ctrl+X or ctrl+C)
-	cmp	eax, 'X'
-	je	edit_box_key.delete
-	jmp	edit_box_exit
-
-edit_box_key.ctrl_v:
-	mcall	SF_CLIPBOARD,SSF_GET_SLOT_COUNT
-; no slots of clipboard ?
-	test	eax,eax
-	jz	.exit
-; main list area not found ?
-	inc	eax
-	test	eax,eax
-	jz	.exit
-	sub	eax,2
-	mov	ecx,eax
-	mcall	SF_CLIPBOARD,SSF_READ_CB
-; main list area not found ?
-	inc	eax
-	test	eax,eax
-	jz	.exit
-; error ?
-	sub	eax,2
-	test	eax,eax
-	jz	.exit
-	inc	eax
-; check contents of container
-	mov	ebx,[eax+4]
-; check for text
-	test	ebx,ebx
-	jnz	.no_valid_text
-	mov	ebx,[eax+8]
-; check for cp866
-	cmp	bl,1
-	jnz	.no_valid_text
-; if something selected then need to delete it
-	test   word ed_flags,ed_shift_on
-	jz     .selected_done
-	push   eax; dummy parameter ; need to
-	push   dword .selected_done ; correctly return
-	pushad			    ; from edit_box_key.delete
-	jmp    edit_box_key.delete
-.selected_done:
-	mov	ecx,[eax]
-	sub	ecx,3*4
-	push	ecx
-; in ecx size of string to insert
-	add	ecx,ed_size
-	mov	edx,ed_max
-	cmp	ecx,edx
-	jb	@f
-	mov	ecx,edx
-@@:
-	mov	esi,eax
-	add	esi,3*4
-	push	eax edi
-;---------------------------------------;
-	mov	ed_size,ecx
-
-	push   dword ed_text ; Dst
-	push   esi	     ; Src
-	push   dword ed_pos  ; Pos in Dst
-	push   dword ed_max  ; DstMax
-	call   StrInsert
-;---------------------------------------;
-;        mov     edi,ed_text
-;        cld
-;@@:
-;        lodsb
-;        cmp     al,0x0d ; EOS (end of string)
-;        je      .replace
-;        cmp     al,0x0a ; EOS (end of string)
-;        jne     .continue
-;.replace:
-;        mov     al,0x20 ; space
-;.continue:
-;        stosb
-;        dec     ecx
-;        jnz     @b
-	pop    edi eax
-;move cursor to the end of the inserted string          
-	pop    ecx
-	add    ecx,ed_pos
-	cmp    ecx,ed_max
-	jbe    @f
-	mov    ecx,ed_max
-@@:
-		mov    ed_pos, ecx
-.no_valid_text:
-; remove unnecessary memory area
-	mov	ecx,eax
-	mcall	SF_SYS_MISC,SSF_MEM_FREE
-.exit:
-	jmp	edit_box_draw.bg_cursor_text
-
-edit_box_key.ctrl_a:
-	mov	eax,ed_size
-	mov	ed_pos,eax
-	xor	eax,eax
-	mov	ed_shift_pos,eax
-	or	word ed_flags,ed_shift_bac+ed_shift_on
-	jmp	edit_box_draw.bg_cursor_text
-
-;==========================================================
-;=== обработка мыши =======================================
-;==========================================================
-;save for stdcall ebx,esi,edi,ebp
-align 16
-edit_box_mouse:
-	pushad
-	mov	edi,[esp+36]
-	test	word ed_flags,ed_disabled
-	jnz	edit_box_exit
-
-;----------------------------------------------------------
-;--- получаем состояние кнопок мыши -----------------------
-;----------------------------------------------------------
-	mcall	SF_MOUSE_GET,SSF_BUTTON
-;----------------------------------------------------------
-;--- проверяем состояние ----------------------------------
-;----------------------------------------------------------
-	test	eax,1
-	jnz	edit_box_mouse.mouse_left_button
-	and	word ed_flags,ed_mouse_on_off
-	mov	ebx,ed_mouse_variable
-	or	ebx,ebx
-	jz	edit_box_exit
-	push	0
-	pop	dword [ebx]
-	jmp	edit_box_exit
-
-.mouse_left_button:
-;----------------------------------------------------------
-;--- блокировка от фокусировки в других боксах при попадании на них курсора
-;----------------------------------------------------------
-	mov	eax,ed_mouse_variable
-	test	eax,eax
-	jz	@f ;если ed_mouse_variable=0
-	push	dword [eax]
-	pop	eax
-	test	eax,eax
-	jz	@f ;если [ed_mouse_variable]=0
-	cmp	eax,edi
-	jne	edit_box_mouse._blur
-;----------------------------------------------------------
-;--- получаем координаты мыши относительно 0 т.е всей области экрана
-;----------------------------------------------------------
-@@:
-	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Функция обработки  мышки получение координат и проверка их + выделения
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Не удерживаем ли мы клавишу мышки, перемещая курсор?
-	test	word ed_flags,ed_mouse_on
-	jne	edit_box_mouse.mouse_wigwag
-; проверяем, попадает ли курсор в edit box
-	mov	ebx,ed_top
-	cmp	ax,bx
-	jl	edit_box_mouse._blur
-	add	ebx,ed_height
-	cmp	ax,bx
-	jg	edit_box_mouse._blur
-	shr	eax,16
-	mov	ebx,ed_left
-	cmp	ax,bx
-	jl	edit_box_mouse._blur
-	add	ebx,ed_width
-	cmp	ax,bx
-	jg	edit_box_mouse._blur
-; изменяем позицию курсора
-	push	eax
-	mov	ebp,ed_color
-	call	edit_box.clear_cursor
-	pop	eax
-edit_box_mouse._mvpos:
-	xor	edx,edx
-	sub	eax,ed_left
-	div	word ed_char_width
-	add	eax,ed_offset
-	cmp	eax,ed_size
-	jna	edit_box_mouse._mshift
-	mov	eax,ed_size
-edit_box_mouse._mshift:
-; секция обработки shift и выделения по shift
-	test	word ed_flags,ed_shift_bac
-	je	@f
-	mov	ebp,ed_color
-	movzx	ebx, word ed_shift_pos
-	push	eax
-	call	edit_box_key.sh_cl_
-	and	word ed_flags,ed_shift_bac_cl
-	pop	eax
-@@:
-	test	word ed_flags,ed_mouse_on
-	jne	@f
-	mov	ed_shift_pos,ax
-	or	word  ed_flags,ed_mouse_on
-	mov	ed_pos,eax
-	mov	ebx,ed_mouse_variable
-	or	ebx,ebx
-	jz	edit_box_mouse.mv_end
-	push	edi
-	pop	dword [ebx]
-edit_box_mouse.mv_end:
-	bts	word ed_flags,1
-	call	edit_box_draw.bg
-	jmp	edit_box_mouse.m_sh
-
-@@:	cmp	ax,ed_shift_pos
-	je	edit_box_exit
-	mov	ed_pos,eax
-	call	edit_box_draw.bg
-	mov	ebp,shift_color
-	movzx	ebx, word ed_shift_pos
-	call	edit_box_key.sh_cl_
-	or	word ed_flags,ed_mous_adn_b
-edit_box_mouse.m_sh:
-	call	edit_box_draw.text
-	call	edit_box_draw.cursor
-; процедура установки фокуса
-	jmp	edit_box_mouse.drc
-	
-edit_box_mouse._remove_selection:
-	and	word ed_flags,ed_shift_cl
-	jmp	edit_box_draw.bg_cursor_text
-
-edit_box_mouse._blur:
-	test	word ed_flags,ed_always_focus
-	jne	edit_box_mouse._remove_selection
-	btr	word ed_flags, bsf ed_focus ;if focused then remove focus, otherwise exit
-	jnc	edit_box_mouse._remove_selection
-	mov	ebp,ed_color
-	call	edit_box.clear_cursor
-edit_box_mouse.drc:
-	call	edit_box_draw.border
-	jmp	edit_box_mouse._remove_selection
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Общие функции обработки
-;----------------------------------------------------------
-;--- процедура прорисовки выделенной части ----------------
-;----------------------------------------------------------
-edit_box_draw.shift:
-	test	word ed_flags,ed_shift_bac ;установка флага, выделенной области
-	jz	@f
-	mov	ebp,shift_color
-	movzx	ebx, word ed_shift_pos
-	call	edit_box_key.sh_cl_
-@@:	ret
-;----------------------------------------------------------
-;--- процедура прорисовки текста --------------------------
-;----------------------------------------------------------
-edit_box_draw.text:
-	call	edit_box.get_n
-	mov	esi,ed_size
-	sub	esi,ed_offset
-	cmp	eax,esi
-	jae	@f
-	mov	esi,eax
-@@:
-	test	esi,esi
-	jz	@f
-	mov	eax,SF_DRAW_TEXT
-	mov	ebx,ed_left
-	add	ebx,2
-	shl	ebx,16
-	add	ebx,ed_top
-	add	ebx,3
-	mov	ecx,ed_text_color
-	test	dword ed_flags,ed_pass
-	jnz	.password
-	mov	edx,ed_text
-	add	edx,ed_offset
-	mcall
-@@:
-	ret
-
-.password:
-	mov	ebp,esi
-	mov	esi,1
-	mov	edx,txt_pass
-@@:
-	mcall
-	rol	ebx,16
-	add	ebx,ed_char_width
-	rol	ebx,16
-	dec	ebp
-	jnz	@b
-	ret
-
-txt_pass db '*'
-;----------------------------------------------------------
-;--- процедура прорисовки фона ----------------------------
-;----------------------------------------------------------
-edit_box_draw.bg:
-	mov	ebx,ed_left
-	inc	ebx
-	shl	ebx,16
-	add	ebx,ed_width
-	dec	ebx
-	mov	edx,ed_color
-	test	word ed_flags, ed_disabled
-	jz	edit_box_draw.bg_eax
-	mov	edx, 0xCACACA	; TODO: add disabled_color field to editbox struct
-edit_box_draw.bg_eax:
-	mov	ecx,ed_top
-	inc	ecx
-	shl	ecx,16
-	add	ecx,ed_height
-	mcall	SF_DRAW_RECT
-	ret
-
-;----------------------------------------------------------
-;--- процедура получения количества символов в текущей ширине компонента
-;----------------------------------------------------------
 align 4
-edit_box.get_n:
-	mov	eax,ed_width
-	sub	eax,4
-	xor	edx,edx
-	cmp word ed_char_width,0
-	jne @f
-	xor eax,eax
-	ret
+proc EditBox.__drawBorder
+	virtual at edi
+		.this EditBox
+	end virtual
+	mov	edx, [.this.focusBorderColor]
+	test [.this.flags], ES.FOCUS
+	jne	@f
+		mov	edx, [.this.blurBorderColor]
 	@@:
-	div	word ed_char_width
-	ret
 
-;----------------------------------------------------------
-;------------------ Draw Cursor Procedure -----------------
-;----------------------------------------------------------
-; in: ebp = Color
-edit_box.clear_cursor:
-	movzx	ebx, word cl_curs_x
-	cmp	ebx, ed_left ;попадает ли курсор текстовое поле?
-	jle	@f
-	mov	edx, ebp
-	movzx	ecx, word cl_curs_y
-	cmp	ecx, ed_top
-	jg	edit_box_draw.curs
-@@:
-	ret
-
-edit_box_draw.cursor:
-	mov	edx, ed_text_color
-	mov	eax, ed_pos
-	sub	eax, ed_offset
-	mul	dword ed_char_width
-	mov	ebx, eax
-	add	ebx, ed_left
-	inc	ebx
-	mov	ecx, ed_top
-	add	ecx, 2
-	mov	cl_curs_x, bx
-	mov	cl_curs_y, cx
-edit_box_draw.curs:
+	; left:left
+	mov	ebx, [.this.left]
 	mov	eax, ebx
 	shl	ebx, 16
 	or	ebx, eax
+	; top:top
+	mov	ecx, [.this.top]
 	mov	eax, ecx
 	shl	ecx, 16
-	or	ecx, eax
-	add	ecx, ed_height
-	sub	ecx, 3
-	mcall	SF_DRAW_LINE
-	ret
+	or ecx, eax
 
-;----------------------------------------------------------
-;--- процедура рисования рамки ----------------------------
-;----------------------------------------------------------
-edit_box_draw.border:
-	test	word ed_flags,ed_focus
-	mov	edx,ed_focus_border_color
-	jne	@f
-	mov	edx,ed_blur_border_color
-@@:
-       ;mov     edx,$808080
-	mov	ebx,ed_left
-	mov	eax,ebx
-	shl	ebx,16
-	add	ebx,eax
-	;add     ebx,ed_width
-	mov	ecx,ed_top
-	mov	eax,ecx
-	shl	ecx,16
-	add	ecx,eax
-	push	ecx
-	inc	ecx
-	add	ecx,ed_height
-	mcall	SF_DRAW_LINE ; left
-	xchg	ecx,[esp]
-	add	ebx,ed_width
-	mcall		     ; top
-       ;or      edx,-1
-	pop	ecx
-	push	cx
-	push	cx
-	push	ebx
-	push	bx
-	push	bx
-	pop	ebx
-	mcall		     ; right
-	pop	ebx
-	pop	ecx
-	mcall		     ; bottom
-	ret
+	mov esi, [.this.height]
+	inc esi
+	mov ebp, [.this.width]
 
-;----------------------------------------------------------
-;--- проверка, зашел ли курсор за границы и, если надо, ---
-;--- изменяем смещение ------------------------------------
-;--- если смещение было, установка флага ed_offset_cl, иначе,
-; если ничего не изменилось, то выставление ed_offset_fl
-; в общей битовой матрице состояния компонентов word ed_flags
-;----------------------------------------------------------
-edit_box.check_offset:
-	pushad
-	mov	ecx,ed_pos
-	mov	ebx,ed_offset
-	cmp	ebx,ecx
-	ja	edit_box.sub_8
-	push	ebx
-	call	edit_box.get_n
-	pop	ebx
-	mov	edx,ebx
-	add	edx,eax
-	inc	edx	;необходимо для нормального положения курсора в крайней левой позиции
-	cmp	edx,ecx
-	ja	@f
-	mov	edx,ed_size
-	cmp	edx,ecx
-	je	edit_box.add_end
-	sub	edx,ecx
-	cmp	edx,8
-	jbe	edit_box.add_8
-	add	ebx,8
-	jmp	edit_box.chk_d
+	add	cx, si 	; top:bottom
+	mov eax, SF_DRAW_LINE
+	mcall 		; left top -> left bottom
 
-@@:	or	word ed_flags,ed_offset_fl
-	popad
-	ret
+	rol ecx, 16
+	add cx, si 	; bottom:bottom
+	add bx, bp 	; left:right
+	mcall		; left bottom -> right bottom
 
-edit_box.sub_8:
-	test	ecx,ecx
-	jz	@f
-	sub	ebx,8	;ebx=ed_offset
-	ja	edit_box.chk_d
-@@:
-	xor	ebx,ebx
-	jmp	edit_box.chk_d
+	rol ebx, 16
+	add bx, bp 	; right:right
+	sub cx, si 	; bottom:top
+	mcall 		; right bottom -> right top
 
-edit_box.add_end:
-	sub	edx,eax
-	mov	ebx,edx
-	jmp	edit_box.chk_d
-
-edit_box.add_8:
-	add	ebx,edx
-edit_box.chk_d:
-	mov	ed_offset,ebx
-	call	edit_box_draw.bg
-	and	word ed_flags,ed_offset_cl
-	popad
-	ret
-
-align 4
-proc edit_box_set_text, edit:dword, text:dword
-	pushad
-	mov	edi,[edit]
-	mov	ecx,ed_max
-	inc	ecx
-	mov	edi,[text]
-	xor	al,al
-	cld
-	repne scasb
-	mov	ecx,edi
-	mov	edi,[edit]
-	mov	esi,[text]
-	sub	ecx,esi
-	dec	ecx
-	mov	ed_size,ecx
-	mov	ed_pos,ecx
-	and	word ed_flags,ed_shift_cl
-	mov	edi,ed_text
-	repne movsb
-	mov	byte[edi],0
-	popad
+	rol ecx, 16
+	sub cx, si 	; top:top
+	sub bx, bp 	; right:left
+	mcall 		; right top -> left top
 	ret
 endp
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Функции для работы с key
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+macro EditBox.__visibleSmbCount{
+	local ..zero_width
+	mov edx, [edi + EditBox.width]
+	xor eax, eax
+	cmp [edi + EditBox.charWidth], 0
+	je ..zero_width
+		lea eax, [edx - 4]
+		xor edx, edx
+		div [edi + EditBox.charWidth]
+	..zero_width:
+}
 
-;Обработка Shift для снятия выделения неизвестной области
-edit_box_key.shift:
-	call	edit_box_draw.bg
-	test	word ed_flags,ed_shift
-	je	edit_box_key.f_exit
-	mov	ebp,shift_color
-	or	word ed_flags,ed_shift_bac ;установка флага, выделенной области
-	movzx	ebx, word ed_shift_pos
-	call	edit_box_key.sh_cl_
-	jmp	edit_box_draw.cursor_text
+align 4
+proc EditBox.__drawBg
+	virtual at edi
+		.this EditBox
+	end virtual
+	mov ebx, [.this.left]
+	inc ebx
+	shl ebx, 16
+	mov bx, word[.this.width]
+	dec bx
 
-edit_box_key.f_exit:
-	call	edit_box.check_offset
-	and	word ed_flags,ed_shift_cl
-	call	edit_box_key.enable_null
-	jmp	edit_box_draw.cursor_text
+	mov edx, [.this.bgColor]
+	mov eax, 0xCACACA
+	test [.this.flags], ES.DISABLED
+	cmovnz edx, eax
+	
+	mov ecx, [.this.top]
+	inc ecx
+	shl ecx, 16
+	mov cx, word[.this.height]
 
-edit_box_key.sh_cl_:
-;обработка очистки, при левом - правом движении выделения
-;для обработки снятия выделения
-;входные параметры ebp=color ebx=ed_shift_pos
-	mov	eax,ed_pos
-	cmp	eax,ebx
-	jae	edit_box_key.sh_n
-	push	eax  ;меньшее в eax
-	push	ebx  ;большее
-	jmp	edit_box_key.sh_n1
+	mcall SF_DRAW_RECT
+	ret
+endp
 
-edit_box_key.sh_n:
-	push	ebx
-	push	eax
-edit_box_key.sh_n1:
-	call	edit_box.check_offset
-	call	edit_box.get_n
-	mov	ecx,ed_offset
-	add	eax,ecx ;eax = w_off= ed_offset+width
-	mov	edx,eax ;save
-	pop	ebx	;большее
-	pop	eax	;меньшее
-	cmp	eax,ecx 	;сравнение меньшего с offset.
-	jae	edit_box_key.f_f	    ;если больше
-	xor	eax,eax
-	cmp	edx,ebx 	;cравним размер w_off с большим
-	jnb	@f
-	mov	ebx,edx
-@@:
-	sub	ebx,ecx
-	jmp	edit_box_key.nxt_f
+;----------------------------------------------------------
+; Calculate offset to visible part of the text based on
+; current caret position
+;----------------------------------------------------------
+align 4
+proc EditBox.__calcOffset
+	virtual at edi
+		.this EditBox
+	end virtual
+	movzx eax, [.this.visibleCount]
+	mov ecx, [.this.caretPos]
+	mov edx, [.this.offset]
+	cmp [.this.offset], ecx
+	ja .offset_above
+		lea edx, [edx + eax + 1] ; + 1 for normal cursor position on the edge of the left
+		cmp edx, [.this.caretPos]
+			ja .end_
 
-edit_box_key.f_f:
-	sub	eax,ecx
-	cmp	edx,ebx 	;cравним размер w_off с большим
-	jle	@f
-	sub	ebx,ecx
-	sub	ebx,eax
-	jmp	edit_box_key.nxt_f
+		; check if text len is equal to caret position
+		mov edx, [.this.textLen]
+		cmp edx, [.this.caretPos]
+		jne @f
+			xor ebx, ebx
+			sub edx, eax
+			cmovs edx, ebx
+			mov [.this.offset], edx
 
-@@:	mov	ebx,edx
-	sub	ebx,ecx
-	sub	ebx,eax
-edit_box_key.nxt_f:
-	mul	dword ed_char_width
-	xchg	eax,ebx
-	mul	dword ed_char_width
-	add	ebx,ed_left
-	inc	ebx
-	shl	ebx,16
-	inc	eax
-	mov	bx, ax
-	mov	edx,ebp ;shift_color
-	call	edit_box_draw.bg_eax
-	jmp	edit_box_key.enable_null
+			jmp .end_
+		@@:
 
-;Установка- снятие выделения в один символ
-edit_box_key.drw_sim:
-	mov	eax,ed_pos
-	call	edit_box_key.draw_rectangle
-	jmp	edit_box_key.enable_null
+		; offset increment correction
+		; by default visible contents shifts by 8
+		; but if visible content is lower than that,
+		; we shift by the size of visible content size
+		mov ebx, 8
+		cmp eax, ebx
+		cmova eax, ebx
+		add [.this.offset], eax
 
-;Функция установки выделения при движении влево и вправо и нажатии shift
-edit_box_key.draw_wigwag:
-	mov	ebp,shift_color
-	call	edit_box.clear_cursor
-	or	word ed_flags,ed_shift_bac ;установка флага выделенной области
-	mov	ebp,shift_color
-	mov	eax,ed_pos
-	test	word ed_flags,ed_left_fl
-	jnz	edit_box_key.draw_rectangle
-	dec	eax
-	jmp	edit_box_key.draw_rectangle
+		; check if we are still too far from caret
+		; in that case, set offset to caretPos - visibleCount
+		mov ebx, [.this.offset]
+		add bx, [.this.visibleCount]
+		cmp ebx, [.this.caretPos]
+		ja @f
+			mov ebx, ecx
+			sub bx, [.this.visibleCount]
+			mov [.this.offset], ebx
+		@@:
+		jmp .end_
+	.offset_above:
+	; offset decrement correction
+	; by default visible contents shifts by 8
+	; but if visible content is lower than that,
+	; it shifts by the size of visible content size
+	mov ebx, 8
+	cmp eax, ebx
+	cmova eax, ebx
 
-;Функция удаления выделения при движении влево и вправо и нажатии shift
-edit_box_key.draw_wigwag_cl:
-	mov	ebp,ed_color
-	call	edit_box.clear_cursor
-	mov	ebp,ed_color
-	mov	eax,ed_pos
-	test	word ed_flags,ed_left_fl
-	jnz	edit_box_key.draw_rectangle
-	dec	eax
-	jmp	edit_box_key.draw_rectangle
+	; check if decreased value lower than 0
+	xor ebx, ebx
+	sub edx, eax
+	cmovb edx, ebx
 
-;входной параметр ebx - ed_pos
-edit_box_key.sh_first_sh:
-	test	word ed_flags,ed_shift
-	je	@f
-	mov	ed_shift_pos_old,bx
-	test	word ed_flags,ed_shift_on
-	jne	@f
-	mov	ed_shift_pos,bx
-	or	word ed_flags,ed_shift_on
-@@:	ret
-;Обработка крайних положений в editbox при нажатом shift
-;производит снятие выделения, если нет shift
-;иначе вообще выходит
-edit_box_key.sh_st_of:
-	test	word ed_flags,ed_shift
-	jne	@f
-	test	word ed_flags,ed_shift_bac
-	je	@f
-	call	edit_box_draw.bg
-	mov	ebp,ed_color
-	movzx	ebx, word ed_shift_pos
-	call	edit_box_key.sh_cl_  ;очистка выделеного фрагмента
-	and	word ed_flags,ed_shift_cl ; очистка от того, что убрали выделение
-	jmp	edit_box_draw.cursor_text
+	; check if offset still above caret
+	mov ebx, ecx
+	cmp edx, ecx
+	jbe .offset_not_above_caret
+		; in case it is, set offset to caretPos - 1, if caretPos is higher than 0
+		test ebx, ebx
+		jz @f
+			dec ebx
+		@@:
+		mov edx, ebx
+	.offset_not_above_caret:
+	mov [.this.offset], edx
 
-@@:	and	word ed_flags,ed_shift_off
-	popad
-	ret	4
-;проверка состояния shift, был ли он нажат раньше?
-edit_box_key.sh_enable:
-	test	word ed_flags,ed_shift
-	jne	edit_box_key.sh_ext_en ;нарисовать закрашенный прямоугольник
-	test	word ed_flags,ed_shift_bac
-	je	@f
-	call	edit_box.check_offset
-	mov	ebp,ed_color
-	movzx	ebx, word ed_shift_pos
-	call	edit_box_key.sh_cl_  ;очистка выделенного фрагмента
-	call	edit_box_key.draw_wigwag_cl
-	and	word ed_flags,ed_shift_cl ; 1вар не нужно
+
+	.end_:
+		; fix if offset shifts us from the end of visible field
+		; while we near to the text end
+		mov eax, [.this.offset]
+		mov edx, [.this.textLen]
+		movzx ebx, [.this.visibleCount]
+		sub edx, ebx
+		cmp ecx, edx
+		jb @f
+			; check if we are near the end, but end of text is above visible range
+			mov ecx, eax
+			add cx, [.this.visibleCount]
+			cmp ecx, [.this.textLen]
+			cmova eax, edx
+		@@:
+		mov [.this.offset], eax
+		ret
+endp
+
+align 4
+proc EditBox.__drawText
+	virtual at edi
+		.this EditBox
+	end virtual
+
+	movzx eax, [.this.visibleCount]
+	mov esi, [.this.textLen]
+	sub esi, [.this.offset]
+	cmp eax, esi
+	cmovb esi, eax
+
+	test esi, esi
+	jz .no_text
+		mov eax, SF_DRAW_TEXT
+		mov ebx, [.this.left]
+		add ebx, 2
+		shl ebx, 16
+		add bx, word[.this.top]
+		add bx, 3
+		mov ecx, [.this.txColor.bgrf]
+		test [.this.flags], ES.PASSWORD
+		jnz .password_mode
+			mov edx, [.this.text]
+			add edx, [.this.offset]
+			mcall
+			ret
+
+		.password_mode:
+		local .charWidth:DWORD
+		mov edx, [.this.charWidth]
+		push edi
+		mov	edi, esi
+		mov	esi,1
+		shl edx, 16
+		mov [.charWidth], edx
+		mov	edx, .txtPass
+		@@:
+			mcall
+			add	ebx, [.charWidth]
+		dec	edi
+		jnz @b
+	.no_text:
 	ret
 
-@@:	mov	ebp,ed_color
-	call	edit_box.clear_cursor
-	jmp	edit_box.check_offset
+	.txtPass db "*"
+endp
 
-edit_box_key.sh_ext_en:
-	call	edit_box.check_offset
-	test	word ed_flags,ed_offset_fl
-	je	@f
-;Рисование закрашенных прямоугольников и их очистка
-	movzx	eax, word ed_shift_pos
-	mov	ebx,ed_pos
-	movzx	ecx, word ed_shift_pos_old
-;проверка и рисование закрашенных областей
-	cmp	eax,ecx
-	je	edit_box_key.1_shem
-	jb	edit_box_key.smaller
-	cmp	ecx,ebx
-	ja	edit_box_key.1_shem
-	call	edit_box_key.draw_wigwag_cl ;clear
-	jmp	edit_box_key.sh_e_end
+align 4
+proc EditBox.__drawSelection
+	virtual at edi
+		.this EditBox
+	end virtual
+	test [.this.flags], ES.SELECT
+	jz .no_selection
+		movzx eax, [.this.visibleCount]
+		mov ecx, [.this.offset]
+		add eax, ecx
+		; ebx - min, esi- max
+		mov edx, [.this.caretPos]
+		mov ebx, edx
+		movzx esi, [.this.selectionPos]
+		cmp esi, ebx
+		jae @f
+			xchg esi, ebx
+		@@:
+		cmp eax, esi
+		cmovb esi, eax
+		cmp ebx, ecx
+		cmovb ebx, ecx
+		sub ebx, ecx
+		sub esi, ecx
+		sub esi, ebx
 
-edit_box_key.smaller:
-	cmp	ecx,ebx
-	jb	edit_box_key.1_shem
-	call	edit_box_key.draw_wigwag_cl ;clear
-	jmp	edit_box_key.sh_e_end
+		mov ecx, [.this.charWidth]
+		imul ebx, ecx
+		mov eax, esi
+		mul ecx
 
-edit_box_key.1_shem:
-	call	edit_box_key.draw_wigwag
-edit_box_key.sh_e_end:
-	and	word ed_flags,ed_shift_off
+		add ebx, [.this.left]
+		shl ebx, 16
+		lea ebx, [ebx + 0x10000 + eax + 1]
+
+		mov edx, [.this.selectColor]
+
+		mov ecx, [.this.top]
+		inc ecx
+		shl ecx, 16
+		mov cx, word[.this.height]
+		
+		mcall SF_DRAW_RECT
+	.no_selection:
 	ret
+endp
 
-@@:	mov	ebp,shift_color
-	movzx	ebx, word ed_shift_pos
-	call	edit_box_key.sh_cl_
-	jmp	edit_box_key.sh_e_end
-;функция для обработки shift при нажатии home and end
-edit_box_key.sh_home_end:
-	mov	ebp,ed_color
-	call	edit_box.clear_cursor
-	test	word ed_flags,ed_shift_bac
-	je	@f
-	mov	ebp,ed_color
-	movzx	ebx, word ed_shift_pos_old
-	call	edit_box_key.sh_cl_
-@@:
-	test	word ed_flags,ed_shift
-	je	edit_box_key.sh_exit_ ;выйти
-	mov	ebp,shift_color
-	movzx	ebx, word ed_shift_pos
-	call	edit_box_key.sh_cl_
-	or	word ed_flags,ed_shift_bac ;установка флага, выделенной области
-	jmp	edit_box_key.sh_e_end
+macro EditBox.__calcFontParameters{
+	local ..font6x9
+	mov ecx, [edi + EditBox.txColor.bgrf]
+	and ecx, 17FFFFFFh
+	shld edx, ecx, 8
+	and edx, 0xF
+	inc edx
+	shr ecx, 28
 
-edit_box_key.sh_exit_:
-	call	edit_box_draw.bg
-	jmp	edit_box.check_offset
+	lea eax, [edx * 3]
+	lea ebx, [edx * 9 + 4]
+	jecxz ..font6x9
+		lea eax, [edx * 4]
+		lea ebx, [edx * 8 + 2]
+		shl ebx, 1
+	..font6x9:
+	shl eax, 1
+	mov [edi + EditBox.charWidth], eax
+	mov [edi + EditBox.height], ebx
+}
 
-;функция внесения 0 по адресу ed_size+1
-edit_box_key.enable_null:
+macro EditBox.__terminateText{
+	local ..void_text
+	mov ecx, [edi + EditBox.text]
+	jecxz ..void_text
+		mov eax, [edi + EditBox.textLen]
+		mov word[ecx + eax], 0
+	..void_text:
+}
+
+macro EditBox.__calcCursorPos{
+	mov eax, [edi + EditBox.caretPos]
+	sub eax, [edi + EditBox.offset]
+	mov ecx, [edi + EditBox.charWidth]
+	mul ecx
+	add eax, [edi + EditBox.left]
+	inc eax
+	mov ecx, [edi + EditBox.top]
+	add ecx, 2
+
+	mov [edi + EditBox.cursorPos.x], ax
+	mov [edi + EditBox.cursorPos.y], cx
+}
+
+align 4
+proc EditBox.__drawCursor
+	virtual at edi
+		.this EditBox
+	end virtual
+
+	mov edx, [.this.txColor.bgrf]
+
+	movzx ebx, [.this.cursorPos.x]
+	movzx ecx, [.this.cursorPos.y]
+
+	mov eax, ebx
+	shl ebx, 16
+	or ebx, eax
+
+	mov eax, ecx
+	shl ecx, 16
+	or ecx, eax
+
+	add cx, word[.this.height]
+	sub cx, 3
+
+	mcall SF_DRAW_LINE
+	ret
+endp
+
+align 4
+proc EditBox.__draw
+	virtual at edi
+		.this EditBox
+	end virtual
+	
+	EditBox.__terminateText
+	
+	EditBox.__calcFontParameters
+	EditBox.__visibleSmbCount
+	mov [.this.visibleCount], ax
+
+	call EditBox.__calcOffset
+
+	or [.this.flags], ES.DRAWN_ONCE
+	
+	call EditBox.__drawBorder
+	call EditBox.__drawBg
+
+
+	test [.this.flags], ES.FOCUS
+	jz .no_focus
+		EditBox.__calcCursorPos
+		call EditBox.__drawSelection
+		call EditBox.__drawText
+		jmp EditBox.__drawCursor
+
+	.no_focus:
+	jmp EditBox.__drawText
+endp
+
+align 4
+proc edit_box_draw stdcall, .pthis
 	pusha
-	mov	eax,ed_size
-	mov	ebx,ed_text
-	test	eax,eax
-	add	eax,ebx
-	jne	@f
-	inc	eax
-@@:	xor	ebx,ebx
-	mov	[eax],bl
-	popad
+	mov edi, [.pthis]
+	
+	call EditBox.__draw
+	popa
 	ret
+endp
 
-;- удаление символа
-;Входные данные edx=ed_size;ecx=ed_pos
-edit_box_key.del_char:
-	mov	esi,ed_text
-	test	word ed_flags,ed_shift_on
-	je	@f
-	movzx	eax, word ed_shift_pos
-	mov	ebx,esi
-	cmp	eax,ecx
-	jae	edit_box_key.dh_n
-	mov	ed_pos,eax	;чтобы не было убегания курсора
-	mov	ebp,ecx
-	sub	ebp,eax
-	add	ebx,eax  ;eax меньше
-	sub	edx,ecx
-	add	esi,ecx
-	mov	ed_shift_pos,bp
-	jmp	edit_box_key.del_ch_sh
+align 4
+proc EditBox.__processMouse
+	virtual at edi
+		.this EditBox
+	end virtual
 
-edit_box_key.dh_n:
-	mov	ebp,eax
-	sub	ebp,ecx
-	add	ebx,ecx
-	sub	edx,eax
-	add	esi,eax
-	mov	ed_shift_pos,bp
-	jmp	edit_box_key.del_ch_sh
+	test [.this.flags], ES.DRAWN_ONCE
+		jz .return
+		
+	test [.this.flags], ES.DISABLED
+		jnz .return
 
-@@:	add	esi,ecx ;указатель + смещение к реальному буферу
-	mov	ebx,esi
-	inc	esi
-	cld
-	sub	edx,ecx
-edit_box_key.del_ch_sh:
-	push	edi
-	mov	edi,ebx
-@@:
-	lodsb
-	stosb
-	dec	edx
-	jns	@b
-	pop	edi
+	mcall SF_MOUSE_GET, SSF_BUTTON
+	mov ecx, [.this.pp_mouseOwner]
+	test eax, 1  ; left button clicked
+	jnz .left_button_clicked
+		and [.this.flags], not ES.MOUSE_ON
+		jecxz @f
+			mov dword[ecx], 0
+		@@:
+		.return: ret
+	.left_button_clicked:
+
+	jecxz .mouse_is_free
+		cmp dword[ecx], 0
+			jz .mouse_is_free
+
+		cmp [ecx], edi
+		jne .mouse_blur
+
+	.mouse_is_free:
+		;╨┐╨╛╨╗╤Г╤З╨░╨╡╨╝ ╨║╨╛╨╛╤А╨┤╨╕╨╜╨░╤В╤Л ╨╝╤Л╤И╨╕ ╨╛╤В╨╜╨╛╤Б╨╕╤В╨╡╨╗╤М╨╜╨╛ 0 ╤В.╨╡ ╨▓╤Б╨╡╨╣ ╨╛╨▒╨╗╨░╤Б╤В╨╕ ╤Н╨║╤А╨░╨╜╨░
+		mcall SF_MOUSE_GET, SSF_WINDOW_POSITION
+		test [.this.flags], ES.MOUSE_ON
+		jz .mouse_not_captured
+			; mouse wig-wag
+			or [.this.flags], ES.SELECT
+			test eax, eax
+				js .mouse_left
+			
+			shr eax, 16
+			sub eax, [.this.left]
+				jc .mouse_left
+			
+			cmp [.this.width], eax
+				jc .mouse_right
+
+			xor edx, edx
+			div [.this.charWidth]
+			add eax, [.this.offset]
+			cmp eax, [.this.textLen]
+			jae @f
+				mov [.this.caretPos], eax
+			@@:
+			jmp .after_move
+
+			.mouse_right:
+				mov eax, [.this.caretPos]
+				cmp eax, [.this.textLen]
+				jae @f
+					inc [.this.caretPos]
+				@@:
+				jmp .after_move
+
+			.mouse_left:
+				cmp [.this.caretPos], 0
+				je @f
+					dec [.this.caretPos]
+				@@:
+
+			.after_move:
+				mov eax, [.this.caretPos]
+				cmp ax, [.this.selectionPos]
+				jne @f
+					and [.this.flags], not ES.SELECT
+				@@:
+				jmp EditBox.__draw
+		.mouse_not_captured:
+		mov ebx, [.this.top]
+		cmp ax, bx
+			jl .mouse_blur
+
+		add ebx, [.this.height]
+		cmp ax, bx
+			jg .mouse_blur
+
+		shr eax, 16
+		movzx ebx, word[.this.left]
+		cmp ax, bx
+			jl .mouse_blur
+
+		add bx, word[.this.width]
+		cmp ax, bx
+			jg .mouse_blur
+
+		; ╨┐╨╡╤А╨╡╨╝╨╡╤Й╨╡╨╜╨╕╨╡ ╨┐╨╛╨╖╨╕╤Ж╨╕╨╕ ╨║╤Г╤А╤Б╨╛╤А╨░
+		xor edx, edx
+		sub	eax, [.this.left]
+		div [.this.charWidth]
+		add eax, [.this.offset]
+		cmp	eax, [.this.textLen]
+		cmova eax, [.this.textLen]
+
+		; ╨╛╨▒╤А╨░╨▒╨╛╤В╨║╨░ ╨╕ ╨┐╨╡╤А╨╡╨╝╨╡╤Й╨╡╨╜╨╕╨╡ ╨▓╤Л╨┤╨╡╨╗╨╡╨╜╨╕╤П
+		test [.this.flags], ES.MOUSE_ON
+		jnz @f
+			mov [.this.caretPos], eax
+			mov [.this.selectionPos], ax
+			or [.this.flags], ES.MOUSE_ON
+			cmp [.this.pp_mouseOwner], 0
+				je @f
+
+			mov [ecx], edi
+		@@:
+		or [.this.flags], ES.FOCUS
+		and [.this.flags], not ES.SELECT
+		jmp EditBox.__draw
+
+	.mouse_blur:
+	test [.this.flags], ES.ALWAYS_FOCUS
+	jnz @f
+		and [.this.flags], not ES.FOCUS
+	@@:
+	and [.this.flags], not ES.SELECT
+	jmp EditBox.__draw
+endp
+
+align 4
+proc edit_box_mouse stdcall, .pthis
+	pusha
+	mov edi, [.pthis]
+	call EditBox.__processMouse
+	popa
 	ret
-;вычислить закрашиваемую область
-;соглашение в ebp - передается ed_size
-edit_box_key.clear_bg:
-	call	edit_box.get_n	;получить размер в символах ширины компонента
-	push	eax
-	mov	ebx,ed_offset
-	add	eax,ebx ;eax = w_off= ed_offset+width
-	mov	ebx,ebp ;ed_size
-	cmp	eax,ebx
-	jb	@f
-	mov	eax,ed_pos
-	sub	ebx,eax
-	sub	eax,ed_offset
-	jmp	edit_box_key.nxt
+endp
 
-@@:	mov	ebx,ed_pos
-	push	ebx
-	sub	eax,ebx
-	mov	ebx,eax ;It is not optimal
-	pop	eax	;ed_pos
-	sub	eax,ed_offset
-edit_box_key.nxt:
-	mov	ebp,eax  ;проверка на выход закрашиваемой области за пределы длины
-	add	ebp,ebx
-	pop	edx
-	cmp	ebp,edx
-	je	@f
-	inc	ebx
-@@:
-	mul	dword ed_char_width
-	xchg	eax,ebx
-	mul	dword ed_char_width
-	add	ebx,ed_left
-	inc	ebx
-	shl	ebx,16
-	inc	eax
-	mov	bx, ax
-	mov	edx,ed_color
-	jmp	edit_box_draw.bg_eax
+align 4
+proc EditBox.__delSelection
+	virtual at edi
+		.this EditBox
+	end virtual
 
-;;;;;;;;;;;;;;;;;;;
-;;; Обработка примитивов
-;;;;;;;;;;;;;;;;;;;;
-;Нарисовать прямоугольник, цвет передается в ebp
-;входные параметры:
-;eax=dword ed_pos
-;ebp=-цвет ed_color or shift_color
-edit_box_key.draw_rectangle:
-	sub	eax,ed_offset
-	mul	dword ed_char_width
-	add	eax,ed_left
-	inc	eax
-	shl	eax,16
-	add	eax,ed_char_width
-	mov	ebx,eax
-	mov	edx,ebp
-	jmp	edit_box_draw.bg_eax
+	xor ecx, ecx
+	movzx edx, [.this.selectionPos]
+	mov eax, [.this.caretPos]
+	cmp edx, eax
+		je .return
+	jb @f
+		xchg edx, eax
+	@@:
+	mov ecx, [.this.textLen]
+	mov esi, [.this.text]
+	
+	sub ecx, eax
+	lea ebp, [edx + ecx]
+	jecxz .end_selection
+		mov ebx, edi
+		mov edi, esi
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Функции для работы с mouse
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-edit_box_mouse.mouse_wigwag:
-	push	eax
-	call	edit_box_draw.bg
-	call	edit_box_draw.shift
-	pop	eax
-	or	word ed_flags,ed_shift_bac+ed_shift_on+ed_shift
-;Обработка положения выделенного текста, когда происходит выход за пределы editbox
-	test	eax,eax
-	js	edit_box_mouse.mleft
-	shr	eax,16
-	sub	eax,ed_left
-	jc	edit_box_mouse.mleft
-	cmp	ed_width,eax
-	jc	edit_box_mouse.mright
-	xor	edx,edx
-	div	word ed_char_width
-;Обработка положения выделенного текста, в пределах области editbox
-;Получили координаты в eax мышки, т.е. куда она переместилась
-;Рисование закрашенных прямоугольников и их очистка
-	add	eax,ed_offset
-	cmp	eax,ed_size
-	ja	edit_box_mouse.mwigvag
-edit_box_mouse.mdraw:
-	mov	ed_pos,eax
-;Рисование закрашенных прямоугольников и их очистка
-	movzx	ecx, word ed_shift_pos
-	movzx	ebx, word ed_shift_pos_old
-	mov	ed_shift_pos_old,ax
-;проверка и рисование закрашенных областей
-	cmp	ecx,ebx
-	je	edit_box_mouse.m1_shem	;движения не было ранее
-	jb	edit_box_mouse.msmaller ;было движение ->
-	cmp	ebx,eax
-	ja	edit_box_mouse.m1_shem	;было движение <-
-	je	edit_box_mouse.mwigvag
-	mov	ebp,ed_color
-	call	edit_box_key.sh_cl_	;очистить область c ed_pos ed_shift_pos_old
-	jmp	edit_box_mouse.mwigvag
+		add esi, eax
+		add edi, edx
+		rep movsb
+		mov edi, ebx
+	.end_selection:
 
-edit_box_mouse.msmaller:
-	cmp	ebx,eax
-	jb	edit_box_mouse.m1_shem
-	mov	ebp,ed_color
-	call	edit_box_key.sh_cl_
-	jmp	edit_box_mouse.mwigvag
+	mov [.this.caretPos], edx
+	mov [.this.textLen], ebp
+	and [.this.flags], not ES.SELECT
+	mov ecx, esp
+	.return: ret
+endp
 
-edit_box_mouse.m1_shem:
-	mov	ebp,shift_color
-	mov	ebx,ecx
-	call	edit_box_key.sh_cl_
-edit_box_mouse.mwigvag:
-	and	word ed_flags,ed_shift_mcl
-	jmp	edit_box_draw.cursor_text
+align 4
+proc EditBox.__replaceSelectChar
+	virtual at edi
+		.this EditBox
+	end virtual
 
-edit_box_mouse.mleft:
-	mov	eax,ed_pos
-	cmp	eax,0
-	jbe	edit_box_mouse.mwigvag
-	dec	eax
-	call	edit_box.check_offset
-	push	eax
-	movzx	ebx, word ed_shift_pos
-	mov	ebp,shift_color
-	call	edit_box_key.sh_cl_
-	pop	eax
-	jmp	edit_box_mouse.mdraw
+	mov ecx, eax
+	movzx edx, [.this.selectionPos]
+	mov eax, [.this.caretPos]
+	cmp edx, eax
+		je .return
+	jb @f
+		xchg edx, eax
+	@@:
+	mov esi, [.this.text]
+	mov byte[esi + edx], cl
+	inc edx
+	mov ecx, [.this.textLen]
+	
+	mov ebx, edi
+	mov edi, esi
 
-edit_box_mouse.mright:
-	mov	eax,ed_pos
-	mov	ebx,ed_size
-	cmp	eax,ebx
-	jae	edit_box_mouse.mwigvag
-	inc	eax
-	call	edit_box.check_offset
-	movzx	ebx, word ed_shift_pos
-	mov	ebp,shift_color
-	push	eax
-	call	edit_box_key.sh_cl_
-	pop	eax
-	jmp	edit_box_mouse.mdraw
+	add esi, eax
+	sub ecx, eax
+	lea eax, [edx + ecx]
+	jecxz .selected_at_end
+		add edi, edx
+		cmp esi, edi
+		je .one_smb_selection
+			rep movsb
+		.one_smb_selection:
+	.selected_at_end:
+	mov edi, ebx
+
+	mov [.this.textLen], eax
+	mov [.this.caretPos], edx
+	and [.this.flags], not ES.SELECT
+	.return: ret
+endp
+
+; edx != 0 - inserted, edx == 0 - not inserted
+align 4
+proc EditBox.__insertChar
+	virtual at edi
+		.this EditBox
+	end virtual
+	xor edx, edx
+	mov ecx, [.this.textLen]
+	cmp ecx, [.this.textMaxLen]
+		je .return
+
+	cmp ecx, [.this.caretPos]
+	jne .caret_not_at_end
+		mov edx, [.this.text]
+		mov [edx + ecx], al
+		inc [.this.textLen]
+		inc [.this.caretPos]
+		.return: ret
+	.caret_not_at_end:
+
+	mov esi, [.this.text]
+	test [.this.flags], ES.INSERT_MODE
+	jnz .insert_mode
+		sub ecx, [.this.caretPos]
+		mov edx, [.this.textLen]
+		lea esi, [esi + edx - 1]
+
+		mov ebx, edi
+		lea edi, [esi + 1]
+
+		std
+		rep movsb
+		cld
+
+		mov byte[edi], al
+
+		mov edi, ebx
+		inc [.this.textLen]
+		inc [.this.caretPos]
+		ret
+
+	.insert_mode:
+		mov edx, [.this.caretPos]
+		mov byte[esi + edx], al
+		inc edx
+		mov [.this.caretPos], edx
+		ret
+endp
+
+align 4
+proc EditBox.__selectionToClipboard
+	virtual at edi
+		.this EditBox
+	end virtual
+
+	test [.this.flags], ES.SELECT
+		jz .return
+
+	movzx edx, [.this.selectionPos]
+	mov ecx, [.this.caretPos]
+	cmp edx, ecx
+		je .return
+	jb @f
+		xchg edx, ecx
+	@@:
+	sub ecx, edx
+	add ecx, sizeof.BClipBuf
+	mcall SF_SYS_MISC, SSF_MEM_ALLOC
+	cmp eax, 1
+		je .return
+	cmp eax, -1
+		je .return
+
+	mov [eax + BClipBuf.cbSize], ecx
+	mov [eax + BClipBuf.contentType], 0
+	mov [eax + BClipBuf.encoding], 1
+	mov esi, [.this.text]
+	add esi, edx
+	mov ebx, edi
+	lea edi, [eax + BClipBuf.data_]
+	sub ecx, sizeof.BClipBuf
+	rep movsb
+	mov edi, ebx
+
+	mov edx, eax
+	mov ecx, [eax + BClipBuf.cbSize]
+	mcall SF_CLIPBOARD, SSF_WRITE_CB
+	mcall SF_SYS_MISC, SSF_MEM_FREE, edx
+	.return: ret
+endp
 
 
-ed_struc_size=84
+; .p_str - const parameter, never changes
+align 4
+proc EditBox.__insertStr c, .p_str
+	virtual at edi
+		.this EditBox
+	end virtual
+
+	mov ebx, [.p_str]
+	virtual at ebx
+		.str EditBox.InplaceStr
+	end virtual
+
+	locals
+	 	.startSel 	rd 1
+	 	.endSel 	rd 1
+	 	.restLen 	rd 1
+	 	.newLen 	rd 1
+	endl
+
+	mov eax, [.this.caretPos]
+	movzx edx, [.this.selectionPos]
+	test [.this.flags], ES.SELECT
+		cmovz edx, eax
+
+	cmp edx, eax
+	jb @f
+		xchg edx, eax
+	@@:
+	mov [.startSel], edx
+	mov [.endSel], eax
+
+	mov eax, [.str.len]
+	add eax, edx
+
+	mov ecx, [.this.textLen]
+	sub ecx, [.endSel]
+	mov [.restLen], ecx
+	add eax, ecx
+
+	xor edx, edx
+	mov ecx, [.this.textMaxLen]
+	inc ecx
+	div ecx
+
+	mov [.newLen], edx
+	mov ecx, edx
+	sub ecx, [.startSel]
+		jz .return
+
+	; check if we have enough place for remaining part of text after selection 
+	cmp ecx, [.str.len]
+	jle .no_place_for_rest
+		; 
+		local .newCaret:DWORD
+		mov esi, [.this.text]
+		sub ecx, [.str.len]
+		mov [.restLen], ecx
+
+		mov eax, [.startSel]
+		add eax, [.str.len]
+		mov [.newCaret], eax
+
+		push edi
+		mov edi, esi
+		add edi, eax
+		add esi, [.endSel]
+		
+		cmp esi, edi
+		je @f
+			jb .std
+				;cld
+				rep movsb
+				sub edi, [.restLen]
+				jmp .rest_move_end
+			.std:
+				lea edi, [edi + ecx - 1]
+				lea esi, [esi + ecx - 1]
+				std
+				rep movsb
+				cld
+				inc edi
+			.rest_move_end:
+		@@:
+		mov ecx, [.str.len]
+		sub edi, ecx
+		mov esi, [.str.p_str]
+		rep movsb
+
+		pop edi
+		mov eax, [.newCaret]
+		mov [.this.caretPos], eax
+		mov eax, [.newLen]
+		mov [.this.textLen], eax
+		and [.this.flags], not ES.SELECT
+		.return: ret
+
+	.no_place_for_rest:
+		push edi
+		mov edi, [.this.text]
+		add edi, [.startSel]
+		mov esi, [.str.p_str]
+		rep movsb
+		pop edi
+		mov eax, [.newLen]
+		mov [.this.caretPos], eax
+		mov [.this.textLen], eax
+		and [.this.flags], not ES.SELECT
+		ret
+endp
+
+; const parameter, didn't change
+align 4
+proc BEdit.__validateStrNumeric c, .p_str
+	virtual at edi
+		.this EditBox
+	end virtual
+
+	mov ebx, [.p_str]
+	virtual at ebx
+		.str EditBox.InplaceStr
+	end virtual
+
+	xor eax, eax
+	mov ecx, [.str.len]
+		jecxz .return
+
+	mov esi, [.str.p_str]
+	@@:
+		lodsb
+		sub al, 0x30
+		cmp al, 9
+			ja .return
+	loop @b
+	xor eax, eax
+	.return:
+		ret
+endp
+
+align 4
+proc EditBox.__processKey
+	.L_WIN 	= 0x02
+	.R_WIN 	= 0x04
+	.SHIFT 	= 0x03
+	.CTRL 	= 0x0C
+	.ALT 	= 0x30
+
+	virtual at edi
+		.this EditBox
+	end virtual
+
+	test [.this.flags], ES.DRAWN_ONCE
+		jz .return
+
+	test [.this.flags], ES.FOCUS
+		jz .return
+
+	test [.this.flags], ES.MOUSE_ON or ES.DISABLED
+		jnz .return
+
+	mov esi, eax	; save key state
+	;--------------------------------------
+	; this code for Win-keys, works with
+	; kernel SVN r.3356 or later
+	mcall SF_KEYBOARD, SSF_GET_CONTROL_KEYS
+	test ah, .L_WIN or .R_WIN
+		jnz .return
+
+	and [.this.flags], not (ES.ALT_ON or ES.CTRL_ON or ES.SHIFT_ON)
+	test eax, .SHIFT
+	jz @f
+		or [.this.flags], ES.SHIFT_ON
+	@@:
+	test eax, .CTRL
+	jz @f
+		or [.this.flags], ES.CTRL_ON
+	@@:
+	test eax, .ALT
+	jz @f
+		or [.this.flags], ES.ALT_ON
+	@@:
+
+	mov eax, esi; restore key state
+	ror eax, 8
+	test [.this.flags], ES.CTRL_ON
+	jz .skip_ctrl
+		cmp ah, SCAN_CODE_V
+			je .ctrl_plus_v
+		cmp ah, SCAN_CODE_A
+			je .ctrl_plus_a
+		cmp ah, SCAN_CODE_X
+			je .ctrl_plus_x
+		cmp ah, SCAN_CODE_C
+			je .ctrl_plus_c
+		jmp .ctrl_end_case
+		.ctrl_plus_v:
+			mcall SF_CLIPBOARD, SSF_GET_SLOT_COUNT
+			test eax, eax
+				js .ctrl_end_case
+				jz .ctrl_end_case
+			lea ecx, [eax - 1]
+			mcall SF_CLIPBOARD, SSF_READ_CB
+			cmp eax, -1
+				je .ctrl_end_case
+			cmp eax, 1
+				je .ctrl_end_case
+			mov	ecx,[eax + BClipBuf.contentType]
+			; check for text
+			test ecx,ecx
+			jz	@f
+				mov ecx, eax
+				mcall SF_SYS_MISC, SSF_MEM_FREE
+				ret
+			@@:
+			mov	ecx,[eax+8]
+			; check for cp866
+			cmp	cl,1
+			je	@f
+				mov ecx, eax
+				mcall SF_SYS_MISC, SSF_MEM_FREE
+				ret
+			@@:
+			lea ecx, [eax + BClipBuf.data_]
+			mov [eax + EditBox.InplaceStr.p_str], ecx
+			sub [eax + EditBox.InplaceStr.len], sizeof.BClipBuf
+			push eax
+			test [.this.flags], ES.NUMERIC
+			jz @f
+				call BEdit.__validateStrNumeric
+				test eax, eax
+					jz @f
+					
+				pop ecx
+				mcall SF_SYS_MISC, SSF_MEM_FREE
+				ret
+			@@:
+			call EditBox.__insertStr
+			pop ecx
+			mcall SF_SYS_MISC, SSF_MEM_FREE
+			jmp EditBox.__draw
+
+		.ctrl_plus_a:
+			mov ecx, [.this.textLen]
+				jecxz .ctrl_end_case
+
+			test [.this.flags], ES.SELECT
+			jz @f
+				cmp [.this.selectionPos], 0
+					jne @f
+				cmp [.this.caretPos], ecx
+					je .ctrl_end_case
+			@@:
+			mov [.this.selectionPos], 0
+			mov [.this.caretPos], ecx
+			or [.this.flags], ES.SELECT
+			jmp EditBox.__draw
+
+		.ctrl_plus_x:
+			call EditBox.__selectionToClipboard
+			call EditBox.__delSelection
+				jecxz .ctrl_end_case
+			jmp EditBox.__draw
+
+		.ctrl_plus_c:
+			call EditBox.__selectionToClipboard
+
+		.ctrl_end_case:
+		ret
+	.skip_ctrl:
+	cmp ah, SCAN_CODE_SPACE
+ 	ja .scan_after_space
+		cmp al, ASCII_KEY_BACK
+		jne .no_backspace
+			cmp [.this.textLen], 0
+				je .return
+
+			test [.this.flags], ES.SELECT
+			jnz @f
+				mov ecx, [.this.caretPos]
+					jecxz .return
+				dec ecx
+				mov [.this.selectionPos], cx
+				or [.this.flags], ES.SELECT
+			@@:
+			call EditBox.__delSelection
+			jmp EditBox.__draw
+		.no_backspace:
+		; skip unsupported scancodes
+		irp val, SCAN_CODE_TAB, SCAN_CODE_RETURN, SCAN_CODE_ESCAPE{
+			cmp ah, val
+				je .return
+		}
+		jmp EditBox.__processPrintableCharacter
+	.scan_after_space:
+	cmp ah, SCAN_CODE_DELETE
+		ja .return
+	cmp ah, SCAN_CODE_HOME
+		jb .return
+	cmp ax, SCAN_CODE_CLEAR shl 8 + ASCII_KEY_CLEAR
+		je .return
+	cmp al, ASCII_KEY_LEFT
+		jb EditBox.__processPrintableCharacter
+	and eax, 0x0F
+	jmp dword[.unlock_numpad_filtration + eax * 4]
+	.return: ret
+
+	.unlock_numpad_filtration: 
+	dd 	.key_left,\ 	; LEFT
+		.return,\ 		; DOWN
+		.return,\ 		; UP
+		.key_right,\	; RIGHT
+		.key_home,\		; HOME
+		.key_end,\		; END
+		.key_delete,\	; DELETE
+		.return,\		; PGDN
+		.return,\		; PGUP
+		.key_insert		; INSERT_MODE
+
+	.key_left:
+		mov ecx, [.this.caretPos]
+		jecxz @f
+			dec ecx
+		@@:
+		jmp .commit_caret_move
+
+	.key_right:
+		mov eax, [.this.textLen]
+		mov ecx, [.this.caretPos]
+		cmp ecx, eax
+		je @f
+			inc ecx
+		@@:
+		jmp .commit_caret_move
+
+	.key_home:
+		mov ecx, [.this.caretPos]
+		jecxz @f
+			xor ecx, ecx
+		@@:
+		jmp .commit_caret_move
+
+	.key_end:
+		mov eax, [.this.textLen]
+		cmp [.this.caretPos], eax
+		je @f
+			mov ecx, eax
+		@@:
+		; jmp .commit_caret_move
+
+	.commit_caret_move:
+		btr [.this.flags], bsf ES.SELECT
+		jnc .caret_no_select
+			test [.this.flags], ES.SHIFT_ON
+			jz @f
+				or [.this.flags], ES.SELECT
+				cmp ecx, [.this.caretPos]
+					je .return
+
+				mov [.this.caretPos], ecx
+				jmp EditBox.__draw
+			@@:
+			mov [.this.caretPos], ecx
+			mov eax, [.this.caretPos]
+			mov [.this.selectionPos], ax
+			jmp EditBox.__draw
+		.caret_no_select:
+		cmp ecx, [.this.caretPos]
+			je .return
+
+		mov eax, [.this.caretPos]
+		mov [.this.selectionPos], ax
+		mov [.this.caretPos], ecx
+		test [.this.flags], ES.SHIFT_ON
+		jz @f
+			cmp cx, [.this.selectionPos]
+				je @f
+
+			or [.this.flags], ES.SELECT
+		@@:
+		jmp EditBox.__draw
+
+	.key_delete:
+		cmp [.this.textLen], 0
+			je .return
+
+		test [.this.flags], ES.SELECT
+		jnz @f
+			mov ecx, [.this.caretPos]
+			cmp ecx, [.this.textLen]
+				je .return
+
+			inc ecx
+			mov [.this.selectionPos], cx
+			or [.this.flags], ES.SELECT
+		@@:
+		call EditBox.__delSelection
+		jmp EditBox.__draw
+
+	.key_insert:
+		xor [.this.flags], ES.INSERT_MODE
+		ret
+
+endp
+
+align 4
+proc EditBox.__processPrintableCharacter
+	virtual at edi
+		.this EditBox
+	end virtual
+	test [.this.flags], ES.NUMERIC
+	jz @f
+		cmp al, '0'
+			jb .return
+		cmp al, '9'
+			ja .return
+	@@:
+	rol eax, 8
+	movzx eax, ah
+	test [.this.flags], ES.SELECT
+	jz @f
+		call EditBox.__replaceSelectChar
+		jmp EditBox.__draw
+	@@:
+	call EditBox.__insertChar
+	test edx, edx
+		jz .return
+
+	jmp EditBox.__draw
+	.return: ret
+endp
+
+align 4
+proc edit_box_key_safe stdcall, .pthis, .key
+	pusha
+	mov edi, [.pthis]
+	mov eax, [.key]
+	call EditBox.__processKey
+	popa
+	ret
+endp
+
+align 4
+proc edit_box_key stdcall, .pthis
+	pusha
+	mov edi, [.pthis]
+	call EditBox.__processKey
+	popa
+	ret
+endp
+
+align 4
+proc edit_box_set_text stdcall, .pthis, .text
+	pusha
+	mov edx, [.pthis]
+	virtual at edx
+		.this EditBox
+	end virtual
+
+	mov ecx, [.this.textMaxLen]
+
+	mov esi, [.text]
+	mov edi, [.this.text]
+	@@:
+		lodsb
+		stosb
+		test al, al
+	loopnz @b
+	sub ecx, [.this.textMaxLen]
+	not ecx ; neg ecx; sub ecx, 1
+	mov [.this.caretPos], ecx
+	mov [.this.textLen], ecx
+	and [.this.flags], not ES.SELECT
+	mov edi, edx
+	call EditBox.__draw
+	popa
+	ret
+endp
