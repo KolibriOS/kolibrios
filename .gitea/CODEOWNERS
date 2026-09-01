@@ -1,0 +1,54 @@
+# =============================================================================
+# Apps
+# User-facing applications, games, multimedia, UI and desktop resources
+# =============================================================================
+
+^programs/(cmm|demos|emulator|games|media|other)/.*       @KolibriOS/apps
+^contrib/(games|media|other)/.*                           @KolibriOS/apps
+^skins/.*                                                 @KolibriOS/apps
+
+
+# =============================================================================
+# System
+# Kernel, drivers, filesystems, SDK, libraries, toolchain and system utilities
+# =============================================================================
+
+^kernel/.*                                                @KolibriOS/system
+^drivers/.*                                               @KolibriOS/system
+
+^programs/(bcc32|develop|fs|hd_load|system|testing)/.*    @KolibriOS/system
+^contrib/(C_Layer|sdk|toolchain)/.*                       @KolibriOS/system
+
+# Shared system/API includes in programs/
+^programs/[^/]+\\.inc$                                    @KolibriOS/system
+
+
+# =============================================================================
+# Network
+# Network stack, network drivers, protocols, libraries and network applications
+# =============================================================================
+
+^kernel/trunk/network/.*                                  @KolibriOS/network
+
+^drivers/ethernet/.*                                      @KolibriOS/network
+^drivers/(mii|netdrv)\\.inc$                              @KolibriOS/network
+
+^programs/network/.*                                      @KolibriOS/network
+^programs/network\\.inc$                                  @KolibriOS/network
+
+^programs/develop/libraries/(http|network|kos_mbedtls)/.* @KolibriOS/network
+
+^contrib/network/.*                                       @KolibriOS/network
+
+
+# =============================================================================
+# DevOps
+# CI/CD, repository infrastructure, build system and autobuild configuration
+# =============================================================================
+
+^\\.gitea/.*                                              @KolibriOS/devops
+^_tools/.*                                                @KolibriOS/devops
+
+^\\.gitmodules$                                           @KolibriOS/devops
+^build\\.txt$                                             @KolibriOS/devops
+^tup\\.config\\.template$                                 @KolibriOS/devops
