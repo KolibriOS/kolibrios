@@ -9,15 +9,17 @@
 #define __EXTERN extern
 #endif
 
-#define SHELL_OK   0
-#define SHELL_EXIT 1
-#define SHELL_PUTC 2
-#define SHELL_PUTS 3
-#define SHELL_GETC 4
-#define SHELL_GETS 5
-#define SHELL_CLS  6
-#define SHELL_PID  7
-#define SHELL_PING 8
+enum SHELL_API_COMMANDS {
+    SHELL_OK = 0,
+    SHELL_EXIT = 1,
+    SHELL_PUTC = 2,
+    SHELL_PUTS = 3,
+    SHELL_GETC = 4,
+    SHELL_GETS = 5,
+    SHELL_CLS = 6,
+    SHELL_PID = 7,
+    SHELL_PING = 8
+};
 
 #define SHELL_SHM_MAX 1024 * 16
 
@@ -28,15 +30,22 @@ enum __SHELL_INIT_STATE {
     __SHELL_INIT_FAILED = 3 // fail init shell
 };
 
+#pragma pack(push, 1)
+struct shell_shm_buffer {
+    uint8_t cmd;
+    char data[SHELL_SHM_MAX - sizeof(((struct shell_shm_buffer*)NULL)->cmd)];
+};
+#pragma pack(pop)
+
 __EXTERN char __shell_shm_name[32];
-__EXTERN char* __shell_shm;
+__EXTERN struct shell_shm_buffer* __shell_shm;
 __EXTERN enum __SHELL_INIT_STATE __shell_is_init;
 __EXTERN void __shell_init();
 
 #define __SHELL_WAIT()        \
     do {                      \
         _ksys_thread_yield(); \
-    } while (*__shell_shm);
+    } while (__shell_shm->cmd);
 
 __EXTERN int shell_ping();
 __EXTERN unsigned shell_get_pid();
@@ -52,4 +61,5 @@ __EXTERN void shell_printf(const char* format, ...);
 __EXTERN void shell_write_string(const char* s, size_t len);
 
 __EXTERN void shell_cls();
+
 #endif

@@ -1,10 +1,9 @@
-
-#include "../program_console.h"
+#include <shell_api.h>
 
 
 int program_console(int pid) {
     char name[32];
-    char *buffer;
+    struct shell_shm_buffer *buffer;
     char *buf1k;
     int result;
     int i;
@@ -33,55 +32,55 @@ int program_console(int pid) {
 
     is_end = 0;
     for (;;) {
-        command = *(buffer);
-    
+        command = buffer->cmd;
+
         switch (command) {
-            case SC_EXIT:
-                *buffer = SC_OK;
+            case SHELL_EXIT:
+                buffer->cmd = SHELL_OK;
                 is_end = 1;
                 break;
-            
-            case SC_OK:
+
+            case SHELL_OK:
                 kol_sleep(5);
                 break;
 
-            case SC_CLS:
+            case SHELL_CLS:
                 con_cls();
-                *buffer = SC_OK;
-                break;
-                
-            case SC_PUTC:
-                printf("%c", *(buffer+1));
-                *buffer = SC_OK;
+                buffer->cmd = SHELL_OK;
                 break;
 
-            case SC_PUTS:
-                printf("%s", buffer+1 );
-                *buffer = SC_OK;
+            case SHELL_PUTC:
+                printf("%c", buffer->data[0]);
+                buffer->cmd = SHELL_OK;
                 break;
-                    
-            case SC_GETC:
-                *(buffer+1) = (char) getch() ;
-                *buffer = SC_OK;
-                break;	
 
-            case SC_GETS:
-                gets(buffer+1, size-2);
-                *buffer = SC_OK;
-                break;	
-        
-            case SC_PID:
+            case SHELL_PUTS:
+                printf("%s", &buffer->data );
+                buffer->cmd = SHELL_OK;
+                break;
+
+            case SHELL_GETC:
+                buffer->data[0] = (char) getch() ;
+                buffer->cmd = SHELL_OK;
+                break;
+
+            case SHELL_GETS:
+                gets(buffer->data, size - 2);
+                buffer->cmd = SHELL_OK;
+                break;
+
+            case SHELL_PID:
                 buf1k=malloc(1024);
                 kol_process_info(-1, buf1k);
-                memcpy(buffer+1, buf1k+30, sizeof(unsigned));
-                *buffer = SC_OK;
+                memcpy(buffer->data, buf1k+30, sizeof(unsigned));
+                buffer->cmd = SHELL_OK;
                 free(buf1k);
                 break;
-                
-            case SC_PING:
-                *buffer = SC_OK;
+
+            case SHELL_PING:
+                buffer->cmd = SHELL_OK;
                 break;
-                
+
             default:
                 printf (CON_APP_ERROR);
                 return 0;

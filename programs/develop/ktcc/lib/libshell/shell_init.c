@@ -6,7 +6,7 @@
 
 char app_name[13];
 char __shell_shm_name[32];
-char *__shell_shm = NULL;
+struct shell_shm_buffer *__shell_shm = NULL;
 enum __SHELL_INIT_STATE __shell_is_init = __SHELL_NOT_LOADED;
 
 int __shell_shm_init()
@@ -17,12 +17,12 @@ int __shell_shm_init()
 
     _ksys_thread_info(&proc_info, -1);
     PID = proc_info.pid;
-    strncpy(app_name, (&proc_info)->name, 12);
+    strncpy(app_name, proc_info.name, sizeof(app_name) - 1);
 
     itoa(PID, __shell_shm_name);
     strcat(__shell_shm_name, "-SHELL");
 
-    return _ksys_shm_open(__shell_shm_name, KSYS_SHM_OPEN_ALWAYS | KSYS_SHM_WRITE, SHELL_SHM_MAX, &__shell_shm);
+    return _ksys_shm_open(__shell_shm_name, KSYS_SHM_OPEN_ALWAYS | KSYS_SHM_WRITE, sizeof(*__shell_shm), (char **)&__shell_shm);
 }
 
 void __shell_init()

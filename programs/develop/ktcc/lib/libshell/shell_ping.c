@@ -7,12 +7,12 @@
 
 int shell_ping()
 {
-    *__shell_shm = SHELL_PING;
+    __shell_shm->cmd = SHELL_PING;
 
     _ksys_thread_yield(); // hope shell is fast enough
 
     size_t i = 0;
-    while (*__shell_shm != SHELL_OK)
+    while (__shell_shm->cmd != SHELL_OK)
     {
         if (i > (SHELL_PING_TIMEOUT / SHELL_PING_MIN_DELAY))
         {
