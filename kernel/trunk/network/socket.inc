@@ -1068,6 +1068,11 @@ socket_send_tcp:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_send: TCP\n"
 
+; Connection closed or reset by peer?
+
+        test    [eax + SOCKET.state], SS_CANTSENDMORE
+        jnz     .cantsendmore
+
         push    eax
         add     eax, STREAM_SOCKET.snd
         call    socket_ring_write
@@ -1080,6 +1085,16 @@ socket_send_tcp:
         pop     eax
         mov     eax, [eax + SOCKET.errorcode]
         mov     [esp + SYSCALL_STACK.ebx], eax
+        ret
+
+  .cantsendmore:
+        mov     ebx, [eax + SOCKET.errorcode]
+        test    ebx, ebx
+        jnz     @f
+        mov     ebx, ENOTCONN
+       @@:
+        mov     [esp + SYSCALL_STACK.ebx], ebx
+        mov     dword[esp + SYSCALL_STACK.eax], -1
         ret
 
 
