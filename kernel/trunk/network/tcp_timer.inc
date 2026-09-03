@@ -99,6 +99,70 @@ proc tcp_timer_640ms
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: Retransmission timer expired\n", eax
 
+; Too many retransmissions? Drop the connection
+        inc     [eax + TCP_SOCKET.t_rxtshift]
+        cmp     [eax + TCP_SOCKET.t_rxtshift], TCP_max_rxtshift
+        jbe     .rexmt
+
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: too many retransmissions, dropping\n", eax
+
+        push    [eax + SOCKET.NextPtr]
+        mov     ebx, ETIMEDOUT
+        call    tcp_drop
+        pop     eax
+        jmp     .check_only
+
+  .rexmt:
+        push    ebx ecx edx
+
+; Restart timer with backoff: REXMTVAL << min(t_rxtshift, 6)
+        mov     ebx, [eax + TCP_SOCKET.t_srtt]
+        shr     ebx, TCP_RTT_SHIFT
+        add     ebx, [eax + TCP_SOCKET.t_rttvar]
+        mov     cl, [eax + TCP_SOCKET.t_rxtshift]
+        cmp     cl, 6
+        jbe     @f
+        mov     cl, 6
+       @@:
+        shl     ebx, cl
+        cmp     ebx, TCP_time_re_min
+        jae     @f
+        mov     ebx, TCP_time_re_min
+       @@:
+        cmp     ebx, TCP_time_re_max
+        jbe     @f
+        mov     ebx, TCP_time_re_max
+       @@:
+        mov     [eax + TCP_SOCKET.timer_retransmission], ebx
+
+; Resend from the last acknowledged byte, don't time it
+        push    [eax + TCP_SOCKET.SND_UNA]
+        pop     [eax + TCP_SOCKET.SND_NXT]
+        mov     [eax + TCP_SOCKET.t_rtt], 0
+        mov     [eax + TCP_SOCKET.t_dupacks], 0
+
+; Slow start: ssthresh = max(2, min(wnd, cwnd) / 2 / mss) * mss, cwnd = mss
+        mov     ecx, [eax + TCP_SOCKET.t_maxseg]
+        mov     edx, [eax + TCP_SOCKET.SND_WND]
+        cmp     edx, [eax + TCP_SOCKET.SND_CWND]
+        jbe     @f
+        mov     edx, [eax + TCP_SOCKET.SND_CWND]
+       @@:
+        mov     ebx, eax                                ; socket ptr
+        mov     eax, edx
+        shr     eax, 1
+        xor     edx, edx
+        div     ecx
+        cmp     eax, 2
+        jae     @f
+        mov     eax, 2
+       @@:
+        mul     ecx
+        mov     [ebx + TCP_SOCKET.SND_SSTHRESH], eax
+        mov     [ebx + TCP_SOCKET.SND_CWND], ecx
+        mov     eax, ebx
+        pop     edx ecx ebx
+
         push    eax
         call    tcp_output
         pop     eax

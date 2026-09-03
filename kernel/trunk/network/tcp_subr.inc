@@ -96,7 +96,7 @@ macro   tcp_init_socket socket {
         mov     [socket + TCP_SOCKET.t_srtt], TCP_time_srtt_default
         mov     [socket + TCP_SOCKET.t_rttvar], TCP_time_rtt_default * 4
         mov     [socket + TCP_SOCKET.t_rttmin], TCP_time_re_min
-;;; TODO: TCP_time_rangeset
+        mov     [socket + TCP_SOCKET.t_rxtcur], TCP_time_rtt_default
 
         mov     [socket + TCP_SOCKET.SND_CWND], TCP_max_win shl TCP_max_winshift
         mov     [socket + TCP_SOCKET.SND_SSTHRESH], TCP_max_win shl TCP_max_winshift
@@ -559,7 +559,7 @@ tcp_xmit_timer:
         ja      @f
         mov     [ebx + TCP_SOCKET.t_rttvar], 1
   @@:
-        ret
+        jmp     .rto
 
 
   .no_rtt_yet:
@@ -572,6 +572,15 @@ tcp_xmit_timer:
         mov     [ebx + TCP_SOCKET.t_rttvar], eax
         pop     ecx
 
+  .rto:
+; Retransmit timeout = srtt + 4*rttvar, reset the backoff
+        push    ecx
+        mov     ecx, [ebx + TCP_SOCKET.t_srtt]
+        shr     ecx, TCP_RTT_SHIFT
+        add     ecx, [ebx + TCP_SOCKET.t_rttvar]
+        tcpt_rangeset [ebx + TCP_SOCKET.t_rxtcur], ecx, TCP_time_re_min, TCP_time_re_max
+        pop     ecx
+        mov     [ebx + TCP_SOCKET.t_rxtshift], 0
         ret
 
 
