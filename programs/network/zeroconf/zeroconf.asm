@@ -202,6 +202,8 @@ mainloop:
         mov     bh, byte[ebp + interface.number]
         mov     bl, 7
         mcall   76                      ; Number of IP conflicts
+        cmp     eax, -1
+        je      @f
         cmp     eax, [ebp + interface.ip_conflicts]
         je      @f
         mov     [ebp + interface.ip_conflicts], eax
