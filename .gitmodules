@@ -4,7 +4,7 @@
 	branch = main
 [submodule "programs/develop/oberon07"]
 	path = programs/develop/oberon07
-	url = https://github.com/AntKrotov/oberon-07-compiler.git
+	url = https://git.kolibrios.org/KolibriOS/oberon-07-compiler.git
 	branch = master
 [submodule "programs/cmm"]
 	path = programs/cmm
