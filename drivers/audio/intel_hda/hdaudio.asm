@@ -12,6 +12,10 @@ DEBUG		equ 1
 FDEBUG		equ 0
 DEBUG_IRQ	equ 0
 
+; test knob: pretend AttachIntHandler failed, to exercise the timer-driven
+; path on hardware/emulators that do have an interrupt line
+HDA_FORCE_POLL equ 0
+
 USE_SINGLE_MODE equ  0	 ; 1 = Single mode; 0 = Normal mode.
 USE_UNSOL_EV	equ  1	 ; 1 = Use unsolicited events; 0 = Do not use unsolicited events.
 
@@ -505,8 +509,6 @@ macro spin_unlock
 	pop	ebx eax
 }
 
-data fixups
-end data
 
 include '../../struct.inc'
 include '../../macros.inc'
@@ -606,9 +608,6 @@ if IRQ_REMAP
 	mov	esi, msgRemap
 	invoke	SysMsgBoardStr
 end if
-
-	mov	ebx, [ctrl.int_line]
-	invoke	AttachIntHandler, ebx, hda_irq, dword 0
 
 ;Asper This part is from "azx_probe" proc. [
 	call	azx_codec_create
@@ -902,16 +901,25 @@ end if
 	; clear state status int
 	mov	edx, ICH6_REG_STATESTS
 	call	azx_readb
-	test	al, 0x04
+	test	al, al
 	jz	@f
 
-	mov	al, 0x04
+	; ack all state-change bits, else the level IRQ line stays asserted
 	mov	edx, ICH6_REG_STATESTS
 	call	azx_writeb
 @@:
 ;end if
 	or	eax, 1
 	spin_unlock
+	ret
+endp
+
+; timer-driven stand-in for the IRQ when no interrupt line is available;
+; TimerHS callbacks are stdcall with one argument and must keep ebx/esi/edi
+proc hda_poll stdcall, data:dword
+	push	ebx esi edi
+	call	hda_irq
+	pop	edi esi ebx
 	ret
 endp
 
@@ -1203,12 +1211,48 @@ end if
 	; allocate CORB/RIRB
 	call	azx_alloc_cmd_io
 
+	; attach the IRQ handler BEFORE the controller may raise interrupts:
+	; azx_init_chip enables GIE/CIE and a codec state-change can fire
+	; right away; an unclaimed level IRQ makes the
+	; kernel poll foreign handlers and relink their IRQH nodes onto our
+	; line (see irq_serv .try_other_irqs), corrupting the dispatch list
+	; a warm reboot can leave GIE and a stale completion bit behind, and
+	; civ_val is never resynced, so silence the controller before attaching
+	call	azx_int_disable
+if HDA_FORCE_POLL
+	xor	eax, eax
+else
+	mov	ebx, [ctrl.int_line]
+	invoke	AttachIntHandler, ebx, hda_irq, dword 0
+	test	eax, eax
+end if
+	jnz	@f
+	; No usable interrupt line (INTLINE=0xFF on boards that route INTx only
+	; through ACPI _PRT or MSI, which the kernel does not parse). The
+	; controller still latches INTSTS/SD_STS, we only lose the wakeup - so
+	; poll the RIRB for codec replies and run the interrupt handler from a
+	; 10 ms kernel timer (a 16 KB period is ~85 ms at 48 kHz, no misses)
+	mov	[ctrl.polling_mode], 1
+@@:
+
 	; initialize chip
 	call	azx_init_pci
 
 	xor	eax, eax
 	call	azx_init_chip
 ;] Asper
+
+	; no IRQ line: let a 10 ms kernel timer stand in for the interrupt.
+	; Armed only now - earlier, hda_irq could ack STATESTS in the window
+	; before reset_controller reads it into codec_mask
+	cmp	[ctrl.polling_mode], 1
+	jne	@f
+	invoke	TimerHS, 1, 1, hda_poll, 0
+if DEBUG
+	mov	esi, msgNoIrqPoll
+	invoke	SysMsgBoardStr
+end if
+@@:
 
 	xor	eax, eax
 	inc	eax
@@ -1454,6 +1498,12 @@ endp
 
 proc azx_alloc_cmd_io
 	push	eax ecx edx
+	; the unsolicited-event ring lives in reserved storage, so its
+	; pointers hold garbage until we clear them here - do it before
+	; reset_controller enables unsolicited responses in GCTL
+	mov	[unsol_events.rp], 0
+	mov	[unsol_events.wp], 0
+
 	; single page (at least 4096 bytes) must suffice for both ringbuffers
 	invoke	KernelAlloc, 4096
 	mov	[ctrl.rb], eax
@@ -1661,7 +1711,17 @@ endl
 	jz	@f
 .poll:
 	spin_lock_irq
+	; take the lock hda_irq holds so two RIRB readers never overlap
+	push	eax ebx
+	mov	eax, aspinlock
+.poll_lock:
+	mov	ebx, SPINLOCK_BUSY
+	lock xchg [eax], ebx
+	cmp	ebx, SPINLOCK_FREE
+	jnz	.poll_lock
+	pop	ebx eax
 	call	azx_update_rirb
+	mov	[aspinlock], SPINLOCK_FREE
 	spin_unlock_irq
 @@:
 	mov	eax, [ctrl.rirb_cmd]
@@ -1942,6 +2002,7 @@ proc azx_int_disable
 	mov	ebx, ICH6_INT_CTRL_EN or ICH6_INT_GLOBAL_EN
 	xor	ebx, -1
 	and	eax, ebx
+	mov	edx, ICH6_REG_INTCTL	; azx_readl turned edx into the absolute address
 	call	azx_writel
 	pop	edx ebx eax
 	ret
@@ -2696,6 +2757,7 @@ proc snd_hda_queue_unsol_event stdcall, res:dword, res_ex:dword
     ; only carries EBX across iterations and reloads the rest, and TimerHS
     ; preserves EBX too - so by using scratch regs only we need no saves.
     mov     eax, [unsol_events.wp]
+    and     eax, HDA_UNSOL_QUEUE_SIZE - 1     ; never index the ring wild
     lea     edx, [eax+1]
     and     edx, HDA_UNSOL_QUEUE_SIZE - 1     ; next write pos (size must be 2^n)
     cmp     edx, [unsol_events.rp]
@@ -3067,6 +3129,7 @@ if DEBUG
     msgTCSEL		     db 'PCI TCSEL     ',0
     msgTV		     db 'HDA test version ',TEST_VERSION_NUMBER,13,10,0
     msgGCap		     db 'GCAP = ',0
+    msgNoIrqPoll	     db 'no IRQ line: timer-driven polling',13,10,0
 end if
 
 if USE_SINGLE_MODE
@@ -3100,6 +3163,11 @@ if DEBUG
 end if
 
 ;] Asper
+
+; relocation table lives after all code and initialized data: placed before the
+; code its size feeds back into every relocation site and fasm may never converge
+data fixups
+end data
 
 aspinlock	 dd SPINLOCK_FREE
 
