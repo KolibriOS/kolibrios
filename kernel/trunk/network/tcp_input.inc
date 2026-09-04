@@ -1417,11 +1417,6 @@ endl
         test    [edx + TCP_header.Flags], TH_ACK
         jz      .drop
 
-; Connection refused. tcp_drop always ends in tcp_close, which calls
-; socket_free: the socket is gone by the time it returns, so the mutex has to
-; be released first and the segment dropped down the path that does not touch
-; the socket again. Falling into .drop here unlocked a mutex inside freed
-; kernel heap. Same shape as .unlock_and_close below.
         push    ebx
         lea     ecx, [ebx + SOCKET.mutex]
         call    mutex_unlock
