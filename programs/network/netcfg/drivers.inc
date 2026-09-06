@@ -240,7 +240,6 @@ dd  0x31061106
 dd  0x30531106
 dd  0x0
 
-
 db  'AR81XX', 0
 dd  0x10631969          ; AR8131
 ;dd  0x10621969          ; AR8132
@@ -255,8 +254,10 @@ dd  0x10911969          ; AR8161
 dd  0x10901969          ; AR8162
 dd  0x10A11969          ; AR8171 (QCA8171)
 dd  0x10A01969          ; AR8172 (QCA8172)
-
-
 dd  0x0
+
+db 'MAR_YUK2',0
+dd 0x436311AB           ; 88E8055
+dd 0x0
 
 dd  0x0 ; driverlist end
