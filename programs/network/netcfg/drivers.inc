@@ -255,8 +255,14 @@ dd  0x10911969          ; AR8161
 dd  0x10901969          ; AR8162
 dd  0x10A11969          ; AR8171 (QCA8171)
 dd  0x10A01969          ; AR8172 (QCA8172)
+dd  0x0
 
-
+db  'BCM57XX', 0
+dd  0x164514e4          ; BCM5701
+dd  0x100010b7          ; 3c985
+dd  0x165414e4          ; BCM5705
+dd  0x167714e4          ; BCM5751
+dd  0x169214e4          ; BCM57780
 dd  0x0
 
 dd  0x0 ; driverlist end

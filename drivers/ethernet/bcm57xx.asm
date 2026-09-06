@@ -85,11 +85,11 @@ entry START
 
 section '.flat' readable writable executable
 
-include '../../proc32.inc'
-include '../../struct.inc'
-include '../../macros.inc'
-include '../../fdo.inc'
-include '../../netdrv.inc'
+include '../proc32.inc'
+include '../struct.inc'
+include '../macros.inc'
+include '../fdo.inc'
+include '../netdrv.inc'
 include 'bcm57xx.inc'
 
 macro assert_pow2 name, value {
@@ -2477,7 +2477,7 @@ delay_us:
 data fixups
 end data
 
-include '../../peimport.inc'
+include '../peimport.inc'
 
 my_service      db 'BCM57XX',0
 
