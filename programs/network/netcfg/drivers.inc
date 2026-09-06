@@ -240,7 +240,6 @@ dd  0x31061106
 dd  0x30531106
 dd  0x0
 
-
 db  'AR81XX', 0
 dd  0x10631969          ; AR8131
 ;dd  0x10621969          ; AR8132
@@ -255,8 +254,19 @@ dd  0x10911969          ; AR8161
 dd  0x10901969          ; AR8162
 dd  0x10A11969          ; AR8171 (QCA8171)
 dd  0x10A01969          ; AR8172 (QCA8172)
-
-
 dd  0x0
+
+db 'MAR_YUK', 0
+dd 0x432011AB           ; Marvell Yukon 88E8001/8003/8010
+;dd 0x500511AB           ; Belkin
+;dd 0x43201148           ; SysKonnect
+;dd 0x170010B7           ; 3Com 3C940
+;dd 0x80EB10B7           ; 3Com 3C940B
+;dd 0x4B011186
+;dd 0x4C001186
+;dd 0x43021186           ; D-Link
+;dd 0x10641737
+;dd 0x10321737           ; Linksys
+dd 0x0
 
 dd  0x0 ; driverlist end
