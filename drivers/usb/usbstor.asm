@@ -1754,8 +1754,14 @@ proc disk_read_write stdcall uses ebx esi edi, \
         mov     eax, [numsectors]
         mov     eax, [eax]
 ; 2. The transfer length for SCSI_{READ,WRITE}10 commands can not be greater
-; than 0xFFFF, so split the request to slices with <= 0xFFFF sectors.
-max_sectors_at_time = 0xFFFF
+; than 0xFFFF sectors, but that is not the practical limit: the field size is
+; the only thing the standard bounds, while real sticks hang their firmware on
+; multi-megabyte single commands. The kernel disk cache asks for as much as
+; CACHE_MAX_ALLOC_SIZE (4 MB) in one call, i.e. 8192 sectors, and that is
+; exactly where such sticks stop answering and re-enumerate. Linux caps
+; usb-storage at 240 sectors (120 KB) for the same reason; do the same and
+; split larger requests into slices.
+max_sectors_at_time = 240
 .split:
         push    eax     ; .length_rest
         cmp     eax, max_sectors_at_time
