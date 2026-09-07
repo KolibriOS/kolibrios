@@ -225,15 +225,8 @@ EXTENTS_USED        = 80000h
 EXT4_IMMUTABLE_FL   = 10h
 EXT4_APPEND_ONLY_FL = 20h
 EXT4_NOATIME_FL     = 80h
-; File System Feature Flags
-INCOMPAT_FILETYPE           = 2h
-INCOMPAT_EXTENTS            = 40h
-INCOMPAT_64BIT              = 80h
-INCOMPAT_FLEX_BG            = 200h
-INCOMPAT_CSUM_SEED          = 2000h
-RO_COMPAT_METADATA_CSUM     = 400h
-RO_COMPAT_GDT_CSUM          = 10h    ; Not supported but need to check it for csum validation on RO.
-CSUM_FLAGS = RO_COMPAT_GDT_CSUM or RO_COMPAT_METADATA_CSUM
+EXT4_INDEX_FL       = 1000h
+EXT4_HUGE_FILE_FL   = 40000h
 
 EXT_CRC_POLY = 82F63B78h
 
@@ -241,27 +234,33 @@ INODE_CSUM_REQ_SIZE = 160
 EXT2_BGDESCR_SHIFT  = 5
 EXT_CSUM_FAKE_TAIL  = 0DEh
 
-; Implemented "incompatible" features:
-; 2 = have file type in directory entry
-;   40h = extents
-;   80h = 64bit
-;  200h = flexible block groups
-; 2000h = metadata_csum_seed
-INCOMPATIBLE_SUPPORT = INCOMPAT_FILETYPE or INCOMPAT_EXTENTS or INCOMPAT_64BIT or INCOMPAT_FLEX_BG or INCOMPAT_CSUM_SEED
-; Read only support for "incompatible" features:
-INCOMPATIBLE_READ_SUPPORT = INCOMPAT_EXTENTS
-
 ; Mount policies
 MOUNT_POLICY_NOATIME = 0
 MOUNT_POLICY_ATIME = 1
 MOUNT_POLICY_RELATIME = 2
 
-; Implemented "read-only" features:
-;  1 = sparse superblock
-;  2 = 64-bit file size
-; 40 = extra inode size
-;400 = metadata checksum
-READ_ONLY_SUPPORT = 443h
+; File System Feature Flags
+INCOMPAT_FILETYPE           = 2h
+INCOMPAT_EXTENTS            = 40h
+INCOMPAT_64BIT              = 80h
+INCOMPAT_FLEX_BG            = 200h
+INCOMPAT_CSUM_SEED          = 2000h
+
+INCOMPATIBLE_SUPPORT = INCOMPAT_FILETYPE or INCOMPAT_EXTENTS or INCOMPAT_64BIT or INCOMPAT_FLEX_BG or INCOMPAT_CSUM_SEED
+; Read only support for "incompatible" features:
+INCOMPATIBLE_READ_SUPPORT = 0
+
+RO_COMPAT_SPARSE_SUPER      = 1h
+RO_COMPAT_LARGE_FILE        = 2h
+RO_COMPAT_HUGE_FILE         = 8h
+RO_COMPAT_GDT_CSUM          = 10h    ; Not supported but need to check it for csum validation on RO.
+RO_COMPAT_DIR_NLINK         = 20h
+RO_COMPAT_EXTRA_ISIZE       = 40h
+RO_COMPAT_METADATA_CSUM     = 400h
+
+READ_ONLY_SUPPORT = RO_COMPAT_SPARSE_SUPER or RO_COMPAT_LARGE_FILE or RO_COMPAT_HUGE_FILE or RO_COMPAT_DIR_NLINK or RO_COMPAT_EXTRA_ISIZE or RO_COMPAT_METADATA_CSUM
+
+CSUM_FLAGS = RO_COMPAT_GDT_CSUM or RO_COMPAT_METADATA_CSUM
 
 struct EXTFS PARTITION
 Lock                MUTEX
@@ -292,6 +291,9 @@ c_inode             dd  ?
 c_sz                dd  ?
 c_curino            dd  ?
 csumSeed            dd  ?
+parentFeatureFlags  dd  ?
+extentBreadcrumbs   rb  40
+computedNodeMax     dw  ?
 ends
 
 ext_report_unsupported_features:
@@ -304,7 +306,6 @@ ext_report_unsupported_features:
         jz      .done
         shr     ecx, 1
         jnc     @f
-        DEBUGF  1, "K : %s: 0x%x (%s)\n", ext_msg_incompat_feature, edx, [eax]
 @@:
         shl     edx, 1
         add     eax, 4
@@ -455,7 +456,8 @@ ext2_create_partition:
         jc      .error
         mov     ecx, [ebx+SUPERBLOCK.sectorsPerBlockLog]
         inc     ecx
-        mov     eax, 1
+        xor     eax, eax
+        inc     eax
         shl     eax, cl
         mov     [ebp+EXTFS.sectorsPerBlock], eax
         shl     eax, 9
@@ -472,6 +474,19 @@ ext2_create_partition:
         mov     [ebp+EXTFS.mainBlockBuffer], eax
         add     eax, [ebp+EXTFS.bytesPerBlock]
         mov     [ebp+EXTFS.tempBlockBuffer], eax
+        test    [ebx+SUPERBLOCK.incompatibleFlags], INCOMPAT_EXTENTS
+        jz      .skip_extent_init
+        mov     eax, [ebp+EXTFS.bytesPerBlock]
+        sub     eax, sizeof.NODEHEADER
+        test    [ebx+SUPERBLOCK.RO_compatibleFlags], RO_COMPAT_METADATA_CSUM
+        jz      .no_csum
+        sub     eax, 4
+.no_csum:
+        xor     edx, edx
+        mov     ecx, sizeof.EXTENT
+        div     ecx
+        mov     [ebp+EXTFS.computedNodeMax], ax
+.skip_extent_init:
         mov     [ebp+EXTFS.mountType], 0
         mov     [ebp+EXTFS.MOUNT_POLICY], MOUNT_POLICY_NOATIME
         test    [ebx+SUPERBLOCK.RO_compatibleFlags], not READ_ONLY_SUPPORT
@@ -492,7 +507,8 @@ ext2_create_partition:
         bsf     eax, eax
         mov     [ebp+EXTFS.descShift], al
 
-        mov     eax, 1
+        xor     eax, eax
+        inc     eax
         test    [ebx+SUPERBLOCK.incompatibleFlags], INCOMPAT_FLEX_BG
         jz      .no_flex_bg
         movzx   ecx, [ebx+SUPERBLOCK.logGroupsPerFlex]
@@ -574,7 +590,7 @@ mount_check_csum:
         jmp     .success
 
 .compute_seed:
-        mov     eax, -1
+        or      eax, -1
         lea     edx, [ebx+SUPERBLOCK.UUID]
         stdcall crc_32, EXT_CRC_POLY, edx, 16
         mov     [ebp+EXTFS.csumSeed], eax
@@ -1051,7 +1067,7 @@ extfsGetExtent:
         jz      .listTreeSearch
         add     esi, INODE.blockNumbers
 .extentTreeSearch:
-        cmp     word [esi+NODEHEADER.magic], 0xF30A
+        cmp     [esi+NODEHEADER.magic], 0xF30A
         jne     .fail
         movzx   ebx, [esi+NODEHEADER.entriesFolow]
         add     esi, sizeof.NODEHEADER
@@ -1281,7 +1297,8 @@ writeInode:
         call    getInodeLocation
         push    edx eax ecx
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
-        mov     ecx, 1
+        xor     ecx, ecx
+        inc     ecx
         call    fs_read64_sys
         pop     edi ; Offset
         test    eax, eax
@@ -1298,7 +1315,8 @@ writeInode:
         add     edi, ebx
         mov     esi, [esp]
         rep movsb
-        mov     ecx, 1
+        xor     ecx, ecx
+        inc     ecx
         call    fs_write64_sys
 .ret:
         pop     ebx ecx esi edi edx
@@ -1316,7 +1334,8 @@ readInode:
         call    getInodeLocation
         push    ecx ; Save the offset
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
-        mov     ecx, 1
+        xor     ecx, ecx
+        inc     ecx
         call    fs_read64_sys
         pop     edx ; Restore the offset
         test    eax, eax
@@ -1532,6 +1551,12 @@ extfsExtendFile:
         inc     eax
         sub     ebx, eax
         jz      .ret
+        test    [esi+INODE.featureFlags], EXTENTS_USED
+        jz      @f
+        mov     ecx, [esp]
+        call    extfsExtendExtent
+        jmp     .ret
+@@:
         push    ebx
         mov     edx, eax
 @@:
@@ -1825,12 +1850,13 @@ freeDoublyIndirectBlock:
         ret
 
 extfsTruncateFile:
-; in: edx:eax = new size, [ebp+EXTFS.inodeBuffer] = inode
+; in: edx:eax = new size, [ebp+EXTFS.inodeBuffer] = inode, ecx = inode
+        push    ecx                 ; protect passed inode number
         lea     esi, [ebp+EXTFS.inodeBuffer]
         mov     ecx, edx
         cmp     eax, [esi+INODE.fileSize]
         sbb     ecx, [esi+INODE.fileSizeHigh]
-        jnc     .ret
+        jnc     .ret_pop
         mov     [esi+INODE.fileSize], eax
         mov     [esi+INODE.fileSizeHigh], edx
         sub     eax, 1
@@ -1840,6 +1866,14 @@ extfsTruncateFile:
 @@:
         inc     eax
         mov     edx, eax
+
+        test    [esi+INODE.featureFlags], EXTENTS_USED
+        jz      @f
+        pop     ecx                 ; restore for extent truncation
+        call    extfsTruncateExtent
+        ret
+@@:
+        pop     ecx                 ; restore for indirect blocks
         cmp     edx, 12
         jc      .directBlocks
         sub     edx, 12
@@ -1910,6 +1944,634 @@ extfsTruncateFile:
         pop     eax eax
 .done:
         call    kernel_free
+        jmp     .ret
+.ret_pop:
+        pop     ecx
+.ret:
+        ret
+
+extfsGetLastLeaf:
+; in:  ecx = starting file block, edi = stack array pointer
+; out: esi = target extent, eax = NODEHEADER ptr, edx = leaf block (0 = root), edi = advanced
+        push    ebx
+        xor     edx, edx
+        lea     esi, [ebp+EXTFS.inodeBuffer.blockNumbers]
+
+.extentTreeSearch:
+        cmp     [esi+NODEHEADER.magic], 0xF30A
+        jne     .fail
+        movzx   ebx, [esi+NODEHEADER.entriesFolow]
+        test    ebx, ebx
+        jz      .empty_tree
+        cmp     [esi+NODEHEADER.currentDepth], 0
+        mov     eax, esi
+        lea     esi, [esi+sizeof.NODEHEADER]
+        jz      .start_leaf_search
+
+        dec     ebx
+        jz      .end_search_index
+@@:
+        cmp     ecx, [esi+sizeof.INDEX+INDEX.fileBlock]
+        jb      .end_search_index
+        add     esi, sizeof.INDEX
+        dec     ebx
+        jnz     @b
+
+.end_search_index:
+        lea     eax, [ebp+EXTFS.extentBreadcrumbs+40]
+        cmp     edi, eax
+        jae     .fail
+        mov     [edi], edx
+        mov     eax, esi
+        test    edx, edx
+        jz      .save_offset
+        sub     eax, [ebp+EXTFS.tempBlockBuffer]
+.save_offset:
+        mov     [edi+4], eax
+        add     edi, 8
+
+        mov     eax, [esi+INDEX.nodeBlock]
+        mov     edx, eax
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        call    extfsReadBlock
+        jc      .fail2
+        mov     esi, [ebp+EXTFS.tempBlockBuffer]
+        jmp     .extentTreeSearch
+
+.start_leaf_search:
+        test    ebx, ebx
+        jz      .empty_tree
+        push    edi
+.leaf_block:
+        movzx   edi, [esi+EXTENT.blocksCount]
+        add     edi, [esi+EXTENT.fileBlock]
+        sub     edi, ecx
+        ja      .end_search_extent_pop
+        add     esi, sizeof.EXTENT
+        dec     ebx
+        jnz     .leaf_block
+        sub     esi, sizeof.EXTENT
+.end_search_extent_pop:
+        pop     edi
+.end_search_extent:
+        pop     ebx
+        ret
+
+.fail:
+        movi    eax, ERROR_FS_FAIL
+        jmp     .fail2
+.empty_tree:
+        movi    eax, ERROR_END_OF_FILE
+.fail2:
+        stc
+        jmp     .end_search_extent
+
+
+extfsSplitRootNode:
+        xor     edi, edi
+        mov     eax, [esp+4]
+        xor     ecx, ecx
+        inc     ecx
+        call    extfsExtentAlloc
+        jc      .fail
+        push    ebx
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        push    edi
+        xor     eax, eax
+        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
+        rep     stosd
+        pop     edi
+        lea     esi, [ebp+EXTFS.inodeBuffer.blockNumbers]
+        mov     ecx, (sizeof.NODEHEADER + 4*sizeof.EXTENT) / 4
+        rep     movsd
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        mov     ax, [ebp+EXTFS.computedNodeMax]
+        mov     [edi+NODEHEADER.entriesMax], ax
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        mov     ecx, [esp+8]
+        call    calc_extent_block_csum
+        mov     eax, ebx
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        call    extfsWriteBlock
+        jc      .fail_pop
+        pop     ebx
+        lea     edi, [ebp+EXTFS.inodeBuffer.blockNumbers]
+        mov     [edi+NODEHEADER.entriesFolow], 1
+        inc     [edi+NODEHEADER.currentDepth]
+        mov     [edi+sizeof.NODEHEADER+INDEX.nodeBlock], ebx
+        mov     [edi+sizeof.NODEHEADER+INDEX.nodeBlockHigh], 0
+        clc
+        ret     4
+.fail_pop:
+        mov     eax, [esp]
+        xor     ecx, ecx
+        inc     ecx
+        call    extfsExtentFree
+        pop     ebx
+.fail:
+        stc
+        ret     4
+
+
+extfsCreateLeafNode:
+        ; in:  eax=fsBlk_data, ecx=count, edx=logBlk, edi=breadcrumb_ptr, [esp+4]=inode
+        ; out (CF=0): edx=new_leaf_blk, eax=logBlk, ecx=count, edi=breadcrumb_ptr
+        ; out (CF=1): error
+        push    edi edx ecx eax
+        xor     edi, edi
+        mov     eax, [esp+20]
+        xor     ecx, ecx
+        inc     ecx
+        call    extfsExtentAlloc
+        jc      .err
+        push    ebx
+        mov     esi, [ebp+EXTFS.tempBlockBuffer]
+        mov     edi, esi
+        xor     eax, eax
+        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
+        rep     stosd
+        mov     [esi+NODEHEADER.magic], 0xF30A
+        mov     [esi+NODEHEADER.currentDepth], 0
+        mov     [esi+NODEHEADER.entriesFolow], 1
+        mov     ax, [ebp+EXTFS.computedNodeMax]
+        mov     [esi+NODEHEADER.entriesMax], ax
+        lea     edi, [esi+sizeof.NODEHEADER]
+        mov     eax, [esp+12]
+        mov     [edi+EXTENT.fileBlock], eax
+        mov     eax, [esp+8]
+        test    eax, eax
+        jz      .errWrite
+        cmp     eax, 32768
+        jae     .errWrite
+        mov     [edi+EXTENT.blocksCount], ax
+        mov     [edi+EXTENT.fsBlockHigh], 0
+        mov     eax, [esp+4]
+        mov     [edi+EXTENT.fsBlock], eax
+        mov     edi, esi
+        mov     ecx, [esp+24]
+        call    calc_extent_block_csum
+        mov     eax, [esp]
+        mov     ebx, esi
+        call    extfsWriteBlock
+        jc      .errWrite
+        mov     eax, [esp]
+        mov     edx, [esp+12]
+        add     esp, 8
+        pop     ecx
+        add     esp, 4
+        pop     edi
+        clc
+        ret     4
+.errWrite:
+        mov     eax, [esp]
+        xor     ecx, ecx
+        inc     ecx
+        call    extfsExtentFree
+        add     esp, 4
+.err:
+        mov     eax, [esp]
+        mov     ecx, [esp+4]
+        call    extfsExtentFree
+        add     esp, 16
+        stc
+        ret     4
+
+extfsExtendExtent:
+        push    ecx
+.extentLoop:
+        test    ebx, ebx
+        jz      .done
+        push    eax ebx
+        mov     edx, eax
+        mov     eax, [esp+8]
+        mov     ecx, ebx
+        push    eax ebx ecx
+        lea     edi, [ebp+EXTFS.extentBreadcrumbs]
+        mov     ecx, edx
+        call    extfsGetLastLeaf
+        pop     ecx ebx eax
+        jnc     .has_leaf
+        xor     edi, edi
+        jmp     @f
+.has_leaf:
+        mov     edi, [esi + EXTENT.fsBlock]
+        movzx   esi, word [esi + EXTENT.blocksCount]
+        add     edi, esi
+@@:
+        call    extfsExtentAlloc
+        jc      .errDone1
+        pop     edx
+        sub     edx, ecx
+        xchg    ebx, edx
+        mov     eax, edx
+        pop     edx
+        push    edx
+        push    eax ebx ecx
+        lea     edi, [ebp+EXTFS.extentBreadcrumbs]
+        mov     ecx, edx
+        call    extfsGetLastLeaf
+        pop     ecx ebx eax
+        jnc     @f
+        pop     edx
+        jmp     .newExtentRoot
+@@:
+        movzx   edi, [esi + EXTENT.blocksCount]
+        push    eax
+        mov     eax, [esi + EXTENT.fsBlock]
+        add     eax, edi
+        cmp     eax, [esp]
+        pop     eax
+        jnz     .addNewExtent_pop
+        push    edx
+        mov     edx, [esi + EXTENT.fileBlock]
+        add     edx, edi
+        cmp     edx, [esp+4]
+        pop     edx
+        jnz     .addNewExtent_pop
+        add     edi, ecx
+        cmp     edi, 32768
+        jae     .addNewExtent_pop
+        mov     [esi + EXTENT.blocksCount], di
+        test    edx, edx
+        jnz     @f
+        pop     edx
+        jmp     .extentNext
+@@:
+        push    ebx
+        mov     eax, edx
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        push    edi
+        mov     edi, ebx
+        push    ecx
+        mov     ecx, [esp+24]
+        call    calc_extent_block_csum
+        pop     ecx
+        pop     edi
+        call    extfsWriteBlock
+        pop     ebx
+        jnc     @f
+        pop     edx
+        jmp     .errDone
+@@:
+        pop     edx
+        jmp     .extentNext
+.newExtentRoot:
+        lea     edi, [ebp + EXTFS.inodeBuffer.blockNumbers + sizeof.NODEHEADER]
+        mov     [edi + EXTENT.fileBlock], edx
+        mov     [edi + EXTENT.blocksCount], cx
+        mov     [edi + EXTENT.fsBlockHigh], 0
+        mov     [edi + EXTENT.fsBlock], eax
+        mov     word [ebp+EXTFS.inodeBuffer.blockNumbers + NODEHEADER.entriesFolow], 1
+        jmp     .extentNext
+.addNewExtent_pop:
+        pop     edx
+.addNewExtent:
+        push    eax ebx ecx edx
+        lea     edi, [ebp+EXTFS.extentBreadcrumbs]
+        mov     ecx, edx
+        call    extfsGetLastLeaf
+        jc      .createLeafFail
+        movzx   ecx, [eax + NODEHEADER.entriesFolow]
+        cmp     cx, [eax + NODEHEADER.entriesMax]
+        jae     .createLeafEntry
+        inc     [eax + NODEHEADER.entriesFolow]
+        mov     edi, edx
+        pop     edx ecx ebx eax
+        jmp     @f
+.createLeafEntry:
+        lea     ecx, [ebp+EXTFS.inodeBuffer.blockNumbers]
+        cmp     eax, ecx
+        jne     .newLeaf
+        push    dword [esp+16]
+        call    extfsSplitRootNode
+.createLeafFail:
+        pop     edx ecx ebx eax
+        jc      .errExtentBasicSupport
+        jmp     .addNewExtent
+.newLeaf:
+        mov     eax, [esp+12]
+        mov     ecx, [esp+4]
+        mov     edx, [esp]
+        push    dword [esp+16]
+        call    extfsCreateLeafNode
+        jc      .createLeafClean
+        mov     ebx, [esp+8]
+        jmp     .ascendLoop
+.createLeafClean:
+        add     esp, 16
+        jmp     .errDone
+@@:
+        add     esi, sizeof.EXTENT
+        mov     [esi + EXTENT.fileBlock], edx
+        mov     [esi + EXTENT.blocksCount], cx
+        mov     [esi + EXTENT.fsBlockHigh], 0
+        mov     [esi + EXTENT.fsBlock], eax
+
+        test    edi, edi
+        jz      .extentNext
+        push    ebx
+        mov     eax, edi
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        mov     edi, ebx
+        push    ecx
+        mov     ecx, [esp+8]
+        call    calc_extent_block_csum
+        pop     ecx
+        call    extfsWriteBlock
+        pop     ebx
+        jc      .errDone
+.extentNext:
+        add     edx, ecx
+        mov     eax, edx
+        jmp     .extentLoop
+
+.ascendLoop:
+        sub     edi, 8
+        cmp     dword [edi], 0
+        jne     .ascendIndexNode
+
+        lea     esi, [ebp+EXTFS.inodeBuffer.blockNumbers]
+        cmp     [esi+NODEHEADER.entriesMax], 4
+        ja      .ascendLoopFail
+        movzx   edi, [esi+NODEHEADER.entriesFolow]
+        cmp     di, [esi+NODEHEADER.entriesMax]
+        jae     .ascendLoopFail
+
+        inc     [esi+NODEHEADER.entriesFolow]
+        imul    edi, sizeof.INDEX
+
+        mov     [esi+edi+sizeof.NODEHEADER+INDEX.fileBlock], edx
+        mov     [esi+edi+sizeof.NODEHEADER+INDEX.nodeBlock], eax
+        mov     dword [esi+edi+sizeof.NODEHEADER+INDEX.nodeBlockHigh], 0
+
+        add     esp, 16
+        jmp     .extentNext
+
+.ascendIndexNode:
+        push    eax ecx edx edi
+
+        mov     eax, [edi]
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        call    extfsReadBlock
+        jc      .ascendIndexNodeFail
+
+        mov     esi, [ebp+EXTFS.tempBlockBuffer]
+        movzx   ecx, [esi+NODEHEADER.entriesMax]
+        cmp     cx, [ebp+EXTFS.computedNodeMax]
+        ja      .ascendIndexNodeFail
+        cmp     [esi+NODEHEADER.entriesFolow], cx
+        jae     .ascendIndexFull
+
+        ; Room Available
+        inc     [esi+NODEHEADER.entriesFolow]
+        imul    ecx, sizeof.INDEX
+
+        mov     edx, [esp+4]
+        mov     eax, [esp+12]
+        mov     [esi+ecx+sizeof.NODEHEADER+INDEX.fileBlock], edx
+        mov     [esi+ecx+sizeof.NODEHEADER+INDEX.nodeBlock], eax
+        mov     dword [esi+ecx+sizeof.NODEHEADER+INDEX.nodeBlockHigh], 0
+
+        mov     edi, esi
+        mov     eax, [esp] ; saved breadcrumb ptr
+        mov     eax, [eax] ; parent fsBlk
+        mov     ecx, [esp+32]
+        call    calc_extent_block_csum
+
+        mov     ebx, esi
+        mov     eax, [esp]
+        mov     eax, [eax]
+        call    extfsWriteBlock
+        jc      .ascendIndexNodeFail
+
+        pop     edi edx ecx eax
+        mov     ebx, [esp+8]
+        add     esp, 16
+        jmp     .extentNext
+
+.ascendIndexFull:
+        ; No room. Allocate sibling and hijack old parent header.
+        mov     edi, [esp]
+        mov     edi, [edi]
+        mov     eax, [esp+32]
+        xor     ecx, ecx
+        inc     ecx
+        call    extfsExtentAlloc
+        jc      .ascendIndexNodeFail
+
+        push    ebx ; save new parent filesystem block
+
+        mov     edi, esi
+        add     edi, sizeof.NODEHEADER
+        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
+        sub     ecx, sizeof.NODEHEADER / 4
+        xor     eax, eax
+        rep     stosd
+
+        mov     [esi+NODEHEADER.entriesFolow], 1
+        mov     edx, [esp+8]
+        mov     eax, [esp+16]
+        mov     [esi+sizeof.NODEHEADER+INDEX.fileBlock], edx
+        mov     [esi+sizeof.NODEHEADER+INDEX.nodeBlock], eax
+
+        mov     edi, esi
+        mov     ecx, [esp+36]
+        call    calc_extent_block_csum
+
+        mov     ebx, esi
+        mov     eax, [esp] ; new parent filesystem block
+        call    extfsWriteBlock
+        jc      .ascendIndexNodeWriteFail
+
+        pop     eax edi ecx ecx esi
+        mov     ebx, [esp+8]
+        jmp     .ascendLoop
+
+.ascendIndexNodeWriteFail:
+        mov     eax, [esp]
+        xor     ecx, ecx
+        inc     ecx
+        call    extfsExtentFree
+        add     esp, 4
+.ascendIndexNodeFail:
+        pop     edi edx ecx eax
+
+.ascendLoopFail:
+        xor     ecx, ecx
+        inc     ecx
+        call    extfsExtentFree
+        pop     edx ecx ebx eax
+        push    ecx
+        call    extfsExtentFree
+        pop     ecx
+        push    ebx             ; save remaining blocks
+        push    ecx edx
+        push    dword [esp+12]
+        call    extfsSplitRootNode
+        pop     edx ecx
+        pop     ebx             ; restore remaining blocks
+        jc      .errDone
+        add     ebx, ecx        ; restore remaining + freed allocated blocks
+        mov     eax, edx        ; logical block start
+        jmp     .extentLoop
+
+.errExtentBasicSupport:
+        push    edx
+        call    extfsExtentFree
+        pop     edx
+        mov     eax, ERROR_UNSUPPORTED_FS
+        jmp     .errDone
+.errDone1:
+        add     esp, 8
+.errDone:
+        stc
+        jmp     .ret
+.done:
+        clc
+.ret:
+        pop     ecx
+        ret
+
+extfsTruncateExtent:
+        push    ebx ecx
+.truncateLoop:
+        push    edx
+        lea     edi, [ebp+EXTFS.extentBreadcrumbs]
+        or      ecx, -1
+        call    extfsGetLastLeaf
+        jnc     .normal
+
+.trim_tree:
+        test    edx, edx
+        jz      .trim_fully_done
+        mov     eax, edx
+        xor     ecx, ecx
+        inc     ecx
+        call    extfsExtentFree
+        sub     edi, 8
+        mov     edx, [edi]
+        test    edx, edx
+        jnz     .trim_index
+        dec     word [ebp+EXTFS.inodeBuffer.blockNumbers+NODEHEADER.entriesFolow]
+        jnz     .trim_done
+
+.trim_fully_done:
+        mov     word [ebp+EXTFS.inodeBuffer.blockNumbers+NODEHEADER.currentDepth], 0
+        stc
+.trim_done:
+        pop     edx
+        jc      .done
+        jmp     .truncateLoop
+
+.trim_index:
+        mov     eax, edx
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        call    extfsReadBlock
+        jc      .trim_done
+        mov     esi, [ebp+EXTFS.tempBlockBuffer]
+        dec     [esi+NODEHEADER.entriesFolow]
+        jz      .trim_tree
+        mov     edi, esi
+        mov     ecx, [esp+4]
+        call    calc_extent_block_csum
+        mov     eax, edx
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        call    extfsWriteBlock
+        jmp     .trim_done
+
+.normal:
+        mov     ebx, edx
+        pop     edx
+        movzx   ecx, word [esi + EXTENT.blocksCount]
+        mov     edi, [esi + EXTENT.fileBlock]
+        add     edi, ecx
+        cmp     edi, edx
+        jbe     .done
+
+        cmp     [esi + EXTENT.fileBlock], edx
+        jae     .freeAll
+
+        mov     edi, edx
+        sub     edi, [esi + EXTENT.fileBlock]
+        mov     [esi + EXTENT.blocksCount], di
+
+        sub     ecx, edi
+        add     edi, [esi + EXTENT.fsBlock]
+
+        test    ebx, ebx
+        jz      @f
+        push    eax ecx edx edi
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        mov     ecx, [esp+16]
+        call    calc_extent_block_csum
+        mov     eax, ebx
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        call    extfsWriteBlock
+        mov     ebx, eax
+        pop     edi edx ecx eax
+@@:
+        mov     eax, edi
+        call    extfsExtentFree
+        jmp     .done
+
+.freeAll:
+        dec     [eax + NODEHEADER.entriesFolow]
+
+        test    ebx, ebx
+        jz      @f
+        push    eax ecx edx esi
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        mov     ecx, [esp+16]
+        call    calc_extent_block_csum
+        mov     eax, ebx
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
+        call    extfsWriteBlock
+        mov     ebx, eax
+        pop     esi edx ecx eax
+@@:
+        mov     eax, [esi + EXTENT.fsBlock]
+        movzx   ecx, word [esi + EXTENT.blocksCount]
+        push    edx
+        call    extfsExtentFree
+        pop     edx
+        jmp     .truncateLoop
+
+.done:
+        pop     ecx ebx
+        ret
+
+calc_extent_block_csum:
+; in: edi = pointer to 4KB extent block buffer
+;     ecx = inode number
+        test    [ebp+EXTFS.superblock.RO_compatibleFlags], RO_COMPAT_METADATA_CSUM
+        jz      .ret
+        push    eax ebx ecx edx esi
+
+        mov     eax, [ebp+EXTFS.csumSeed]
+
+        push    ecx
+        mov     edx, esp
+        stdcall crc_32, EXT_CRC_POLY, edx, 4
+
+        lea     edx, [ebp+EXTFS.inodeBuffer.generation]
+        stdcall crc_32, EXT_CRC_POLY, edx, 4
+        add     esp, 4
+
+        movzx   esi, word [edi + NODEHEADER.entriesMax]
+        cmp     si, [ebp+EXTFS.computedNodeMax]
+        jbe     @f
+        mov     si, [ebp+EXTFS.computedNodeMax]
+@@:
+        imul    esi, sizeof.EXTENT
+        add     esi, sizeof.NODEHEADER
+
+        mov     edx, edi
+        mov     ecx, esi
+        stdcall crc_32, EXT_CRC_POLY, edx, ecx
+
+        mov     [edi + esi], eax
+
+        pop     esi edx ecx ebx eax
 .ret:
         ret
 
@@ -2062,7 +2724,7 @@ linkInode:
         call    extfsWriteBlock
         lea     ebx, [ebp+EXTFS.inodeBuffer]
         lea     eax, [ebx+INODE.mTime]
-        mov     edx, -1
+        or      edx, -1
         cmp     [ebx+INODE.extraISize], 12
         jb      .no_extra_mTime
         lea     edx, [ebx+INODE.mTimeExtra]
@@ -2143,7 +2805,7 @@ unlinkInode:
         call    extfsWriteBlock
         lea     ebx, [ebp+EXTFS.inodeBuffer]
         lea     eax, [ebx+INODE.mTime]
-        mov     edx, -1
+        or      edx, -1
         cmp     [ebx+INODE.extraISize], 12
         jb      .no_extra_mTime
         lea     edx, [ebx+INODE.mTimeExtra]
@@ -2205,6 +2867,8 @@ findInode:
         ret
 
 .next_path_part:
+        mov     eax, [ebp+EXTFS.inodeBuffer.featureFlags]
+        mov     [ebp+EXTFS.parentFeatureFlags], eax
         push    [edx+INODE.fileSize]
         xor     ecx, ecx
 .folder_block_cycle:
@@ -2302,10 +2966,7 @@ findInode:
 
 .resolve_symlink:
         dec     [ebp+EXTFS.symlink_depth]
-        jns     @f
-        movi    eax, ERROR_TOO_MANY_LINKS
-        jmp     .error
-@@:
+        js      .error_symlink
         cmp     [ebp+EXTFS.symlink_depth], SYMLINK_MAX_DEPTH - 1
         je      .setup_extraction       ; First hop - esi in shell memory
 
@@ -2315,7 +2976,7 @@ findInode:
         push    edi ecx eax
         ; Find tail length
         mov     edi, esi
-        mov     ecx, -1
+        or      ecx, -1
         xor     al, al
         repnz scasb
         not     ecx                     ; ecx = tail length including null
@@ -2437,13 +3098,12 @@ findInode:
         mov     edx, ebx
         jmp     .next_path_part
 
-.error_nested:
-        pop     eax ecx edi
-        jmp     .error
-
 .error_slow:
+        pop     eax
+.error_nested:
         add     esp, 12
-        pop     esi
+.error_symlink:
+        movi    eax, ERROR_TOO_MANY_LINKS
         jmp     .error
 
 writeSuperblock:
@@ -3092,10 +3752,14 @@ ext_Delete:
         call    extfsWritingInit
         call    findInode
         jc      .error
+        test    [ebp+EXTFS.parentFeatureFlags], EXT4_INDEX_FL
+        jnz     .error_denied
         lea     eax, [ebp+EXTFS.inodeBuffer]
         test    [eax+INODE.featureFlags], EXT4_IMMUTABLE_FL
         jnz     .error_denied
         test    [eax+INODE.featureFlags], EXT4_APPEND_ONLY_FL
+        jnz     .error_denied
+        test    [eax+INODE.featureFlags], EXT4_HUGE_FILE_FL
         jnz     .error_denied
         push    ecx
         movzx   edi, [ebp+EXTFS.inodeBuffer.accessMode]
@@ -3179,6 +3843,7 @@ ext_Delete:
         push    esi edi
         xor     eax, eax
         xor     edx, edx
+        mov     ecx, esi            ; pass inode number
         call    extfsTruncateFile   ; free file's data
         movzx   ecx, [ebp+EXTFS.superblock.inodeSize]
         lea     edi, [ebp+EXTFS.inodeBuffer]
@@ -3289,6 +3954,11 @@ ext_CreateFolder:
         jnc     .success    ; exist
         test    edi, edi
         jz      .error
+        test    [ebp+EXTFS.parentFeatureFlags], EXT4_INDEX_FL
+        jz      @f
+        movi    eax, ERROR_ACCESS_DENIED
+        jmp     .error
+@@:
         mov     eax, esi
         call    extfsInodeAlloc
         jc      .error
@@ -3303,6 +3973,11 @@ ext_CreateFolder:
 ; edx = allocated inode number, edi -> filename, esi = parent inode number
         mov     [ebx+INODE.accessMode], DIRECTORY or 511
         mov     byte [ebx+INODE.linksCount], 2
+; initialize extent tree
+        or      [ebx+INODE.featureFlags], EXTENTS_USED
+        lea     eax, [ebx+INODE.blockNumbers]
+        mov     [eax+NODEHEADER.magic], 0xF30A
+        mov     dword [eax+NODEHEADER.entriesFolow], 4 shl 16  ; entriesFolow=0, entriesMax=4
         mov     eax, edx
         call    writeInode
         jc      .error
@@ -3371,6 +4046,11 @@ ext_CreateFile:
         jnc     .exist
         test    edi, edi
         jz      .error
+        test    [ebp+EXTFS.parentFeatureFlags], EXT4_INDEX_FL
+        jz      @f
+        movi    eax, ERROR_ACCESS_DENIED
+        jmp     .error
+@@:
         mov     eax, esi
         call    extfsInodeAlloc
         jc      .error
@@ -3385,6 +4065,11 @@ ext_CreateFile:
 ; edx = allocated inode number, edi -> filename, esi = parent inode number
         mov     [ebx+INODE.accessMode], FLAG_FILE or 110110110b
         mov     byte [ebx+INODE.linksCount], 1
+; initialize extent tree
+        or      [ebx+INODE.featureFlags], EXTENTS_USED
+        lea     eax, [ebx+INODE.blockNumbers]
+        mov     [eax+NODEHEADER.magic], 0xF30A
+        mov     dword [eax+NODEHEADER.entriesFolow], 4 shl 16  ; entriesFolow=0, entriesMax=4
         mov     eax, edx
         call    writeInode
         jc      .error2
@@ -3411,6 +4096,7 @@ ext_CreateFile:
         pop     ebx
         mov     eax, [ebx+12]
         xor     edx, edx
+        mov     ecx, esi            ; pass inode number
         push    eax edx ebx esi
         call    extfsTruncateFile
         pop     esi ebx edx eax
@@ -3434,6 +4120,8 @@ ext_WriteFile:
         test    [ebp+EXTFS.inodeBuffer.accessMode], FLAG_FILE
         jz      .ret    ; not a file
         test    [ebp+EXTFS.inodeBuffer.featureFlags], EXT4_IMMUTABLE_FL
+        jnz     .error_denied
+        test    [ebp+EXTFS.inodeBuffer.featureFlags], EXT4_HUGE_FILE_FL
         jnz     .error_denied
         ; TODO: check EXT4_APPEND_ONLY_FL
         mov     dword [esp], ERROR_SUCCESS
@@ -3538,7 +4226,7 @@ ext_WriteFile:
 .done:
         lea     ebx, [ebp+EXTFS.inodeBuffer]
         lea     eax, [ebx+INODE.mTime]
-        mov     edx, -1
+        or      edx, -1
         cmp     [ebx+INODE.extraISize], 12
         jb      @f
         lea     edx, [ebx+INODE.mTimeExtra]
@@ -3573,6 +4261,8 @@ ext_SetFileEnd:
         test    [edi+INODE.accessMode], FLAG_FILE
         jz      .error2 ; not a file
         test    [ebp+EXTFS.inodeBuffer.featureFlags], EXT4_IMMUTABLE_FL
+        jnz     .error_denied ; no permission
+        test    [ebp+EXTFS.inodeBuffer.featureFlags], EXT4_HUGE_FILE_FL
         jnz     .error_denied ; no permission
         ; TODO: check EXT4_APPEND_ONLY_FL
         mov     eax, [ebx+4]
@@ -3620,7 +4310,7 @@ ext_SetFileEnd:
 .done:
         lea     ebx, [ebp+EXTFS.inodeBuffer]
         lea     eax, [ebx+INODE.mTime]
-        mov     edx, -1
+        or      edx, -1
         cmp     [ebx+INODE.extraISize], 12
         jb      @f
         lea     edx, [ebx+INODE.mTimeExtra]
@@ -3659,6 +4349,8 @@ ext_Rename:
         jnc     .error
         test    edi, edi
         jz      .error
+        test    [ebp+EXTFS.parentFeatureFlags], EXT4_INDEX_FL
+        jnz     .error_denied
         lea     eax, [ebp+EXTFS.inodeBuffer]
         test    [eax+INODE.featureFlags], EXT4_IMMUTABLE_FL
         jnz     .error_denied
@@ -3669,6 +4361,8 @@ ext_Rename:
         call    findInode
         pop     edi
         jc      .error
+        test    [ebp+EXTFS.parentFeatureFlags], EXT4_INDEX_FL
+        jnz     .error_denied
         xor     edx, edx
         inc     edx
         test    [ebp+EXTFS.inodeBuffer.accessMode], DIRECTORY
