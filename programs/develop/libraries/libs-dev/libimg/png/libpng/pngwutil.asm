@@ -1063,8 +1063,8 @@ align 4
 proc png_write_PLTE, png_ptr:dword, palette:dword, num_pal:dword
 locals
 	;max_palette_length dd ? ;uint_32
-	i dd ?
-	pal_ptr dd ? ;png_const_colorp
+	;i dd ?
+	;pal_ptr dd ? ;png_const_colorp
 	buf rb 3 ;byte[3]
 endl
 	png_debug 1, 'in png_write_PLTE'
@@ -1085,16 +1085,16 @@ pushad
 		;mov [max_palette_length],eax
 	.end0:
 
-if PNG_MNG_FEATURES_SUPPORTED eq 1
 	cmp [num_pal],eax
 	jg @f
+if PNG_MNG_FEATURES_SUPPORTED eq 1
 	mov eax,[edi+png_struct.mng_features_permitted]
 	and eax,PNG_FLAG_MNG_EMPTY_PLTE
 	jnz .end1
+end if
 	cmp [num_pal],0
 	jne .end1
 	@@:
-end if
 
 	cmp byte[edi+png_struct.color_type],PNG_COLOR_TYPE_PALETTE ;if (..==..)
 	jne @f
@@ -1118,31 +1118,24 @@ end if
 
 	imul eax,3
 	stdcall png_write_chunk_header, edi, png_PLTE, eax
-if PNG_POINTER_INDEXING_SUPPORTED eq 1
 
-;   for (i = 0, pal_ptr = palette; i < num_pal; i++, pal_ptr++)
-;   {
-;      buf[0] = pal_ptr->red;
-;      buf[1] = pal_ptr->green;
-;      buf[2] = pal_ptr->blue;
-;      png_write_chunk_data(png_ptr, buf, (png_size_t)3);
-;   }
+	mov ecx,[num_pal]
+	or ecx,ecx
+	jz .cycle0end
+	mov esi,[palette]
+	lea ebx,[ebp-3] ;ebx = &buf
+align 4
+	.cycle0: ;for (;;)
+		lodsb
+		mov [ebx],al
+		lodsb
+		mov [ebx+1],al
+		lodsb
+		mov [ebx+2],al
+		stdcall png_write_chunk_data, edi, ebx, 3
+		loop .cycle0
+	.cycle0end:
 
-else
-	; This is a little slower but some buggy compilers need to do this
-	; instead
-
-;   pal_ptr=palette;
-
-;   for (i = 0; i < num_pal; i++)
-;   {
-;      buf[0] = pal_ptr[i].red;
-;      buf[1] = pal_ptr[i].green;
-;      buf[2] = pal_ptr[i].blue;
-;      png_write_chunk_data(png_ptr, buf, (png_size_t)3);
-;   }
-
-end if
 	stdcall png_write_chunk_end, edi
 	or dword[edi+png_struct.mode], PNG_HAVE_PLTE
 .end_f:

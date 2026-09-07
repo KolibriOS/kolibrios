@@ -1163,7 +1163,7 @@ local .l1
 
 ;;================================================================================================;;
 align 4
-proc img.encode.png uses ebx edx, _img:dword, _common:dword, _specific:dword
+proc img.encode.png uses ebx edx edi, _img:dword, _common:dword, _specific:dword
 ;;------------------------------------------------------------------------------------------------;;
 ;? Encode image into raw data in png format                                                       ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -1175,12 +1175,15 @@ proc img.encode.png uses ebx edx, _img:dword, _common:dword, _specific:dword
 ;< ecx = error code / the size of encoded data                                                    ;;
 ;;================================================================================================;;
 locals
+	colormap dd 0
 	encoded_file rd 1
 	encoded_file_size rd 1
 	simag png_image
 endl
 	mov ebx,[_img]
 	mov	eax,[ebx+Image.Type]
+	cmp	eax,Image.bpp8i
+	je @f
 	cmp	eax,Image.bpp24
 	je @f
 	cmp	eax,Image.bpp32
@@ -1192,16 +1195,27 @@ endl
 	mov dword[edx+png_image.version],PNG_IMAGE_VERSION
 	mov ecx,[ebx+Image.Width]
 	mov [edx+png_image.width],ecx ;Image width in pixels (columns)
+	cmp	eax,Image.bpp8i
+	jne @f
+		mov dword[edx+png_image.format],PNG_FORMAT_RGBA_COLORMAP
+		mov eax,ecx
+		imul eax,[ebx+Image.Height]
+		add eax,[ebx+Image.Data]
+		add [colormap],eax
+		stdcall get_pallete_colors,eax
+		mov dword[edx+png_image.colormap_entries],eax
+		jmp .init
+	@@:
 	cmp	eax,Image.bpp24
 	jne @f
 		mov dword[edx+png_image.format],PNG_FORMAT_RGB
 		imul ecx,3
 	@@:
 	cmp	eax,Image.bpp32
-	jne @f
+	jne .init
 		mov dword[edx+png_image.format],PNG_FORMAT_RGBA
 		shl ecx,2
-	@@:
+.init:
 	mov eax,[ebx+Image.Height]
 	mov [edx+png_image.height],eax ;Image height in pixels (rows)
 	;mov dword[edx+png_image.flags],PNG_IMAGE_FLAG_???
@@ -1221,7 +1235,7 @@ endl
     @@:
 	mov [encoded_file],eax
 	lea edi,[edx-4]
-	stdcall png_image_write_to_memory, edx,eax,edi,0,[ebx+Image.Data],ecx,0
+	stdcall png_image_write_to_memory, edx,eax,edi,0,[ebx+Image.Data],ecx,[colormap]
 	mov	eax,[encoded_file]
 	mov	ecx,[encoded_file_size]
 	jmp	.quit
@@ -1229,5 +1243,33 @@ endl
 .error:
 	xor	eax,eax
 .quit:
+	ret
+endp
+
+
+
+;;================================================================================================;;
+align 4
+proc get_pallete_colors uses ecx edi, palette:dword
+;;------------------------------------------------------------------------------------------------;;
+;? Determine the palette size. Locate two adjacent zero-value colors;                             ;;
+;? this marks the end of the palette.                                                             ;;
+;;------------------------------------------------------------------------------------------------;;
+	mov ecx,256-1
+	mov edi,[palette]
+	xor eax,eax
+@@:
+	repne scasd
+	or ecx,ecx
+	jz .max_pal
+	cmp [edi],eax ;second color check
+	jne @b        ;find again
+	sub edi,[palette]
+	shr edi,2
+	mov eax,edi
+	jmp @f
+.max_pal:
+	mov eax,256
+@@:
 	ret
 endp

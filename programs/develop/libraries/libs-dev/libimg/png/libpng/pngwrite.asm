@@ -1925,6 +1925,7 @@ locals
 	aindex   dd 0 ;int  ;= 0
 	y dd ? ;uint_32 ;= image->height
 endl
+	png_debug 1, 'in png_write_image_16bit'
 	mov ebx,[argument]
 	mov [display],ebx
 	mov edx,[ebx+png_image_write_control.image]
@@ -2118,6 +2119,7 @@ locals
 	y dd ? ;uint_32 ;= image->height
 	component dd ? ;uint_32
 endl
+	png_debug 1, 'in png_write_image_8bit'
 	mov ebx,[argument]
 	mov [display],ebx
 	mov edx,[ebx+png_image_write_control.image]
@@ -2257,9 +2259,11 @@ locals
 	afirst dd 0
 	bgr dd 0
 	num_trans dd 0
+	i dd ?
 	palette rb 256*sizeof.png_color
 	tRNS rb 256 ;byte[]
 endl
+	png_debug 1, 'in png_image_set_PLTE'
 pushad
 	mov edx,[display]
 	mov ebx,[edx+png_image_write_control.image]
@@ -2296,30 +2300,33 @@ if PNG_FORMAT_BGR_SUPPORTED eq 1
 	@@:
 end if
 
-;   int i;
-
 	xor eax,eax
 	mov ecx,(256*sizeof.png_color)/4
-	mov edi,ebp
-	sub edi,256+256*sizeof.png_color
+	lea edi,[ebp-256-256*sizeof.png_color]
 	rep stosd ;memset(palette, 0, ...
 	not eax
 	mov ecx,256/4
-	;;mov edi,ebp ;if 'tRNS' after 'palette' this code can be comment
-	;;sub edi,256
+	;lea edi,[ebp-256] ;if 'tRNS' after 'palette' this code can be comment
 	rep stosd ;memset(tRNS, 255, ...
 
-
-;   for (i=num_trans=0; i<entries; ++i)
-;   {
+	mov [i],0
+	lea edx,[ebp-256] ;edx=&tRNS
+	lea edi,[edx-256*sizeof.png_color]
+align 4
+	.cycle0: ;for (i=num_trans=0; i<entries; ++i)
 		; This gets automatically converted to sRGB with reversal of the
 		; pre-multiplication if the color-map has an alpha channel.
 
-;      if ((format & PNG_FORMAT_FLAG_LINEAR) != 0)
-;      {
-;         png_const_uint_16p entry = cmap;
-
-;         entry += i * channels;
+		;if ((..&..) != 0)
+		mov eax,[format]
+		and eax,PNG_FORMAT_FLAG_LINEAR
+		or eax,eax
+		jz .end0
+			mov esi,[cmap] ;esi=entry uint_16p
+			mov eax,[channels]
+			mov ecx,eax
+			imul eax,[i]
+			add esi,eax ;+=i*channels;
 
 ;         if ((channels & 1) != 0) /* no alpha */
 ;         {
@@ -2369,46 +2376,86 @@ end if
 ;               palette[i].blue = palette[i].red = palette[i].green =
 ;                   png_unpremultiply(entry[afirst], alpha, reciprocal);
 ;         }
-;      }
+			jmp .end1
+		.end0: ;else Color-map has sRGB values
+			mov esi,[cmap] ;esi=entry
+			mov eax,[channels]
+			mov ecx,eax
+			imul eax,[i]
+			add esi,eax ;+=i*channels;
 
-;      else /* Color-map has sRGB values */
-;      {
-;         bytep entry = cmap;
+			;switch (channels)
+			cmp ecx,4
+			jne .end2
+				mov eax,[afirst]
+				or eax,eax
+				jz @f
+					xor eax,eax
+					jmp .end3
+				@@:
+					mov eax,3
+				.end3:
+				mov al,byte[esi+eax]
+				mov byte[edx],al ;tRNS[i] = entry[afirst ? 0 : 3]
+				cmp al,255 ;if (..<..)
+				je @f
+					mov eax,[i]
+					inc eax
+					mov [num_trans],eax
+				@@:
+				dec ecx ; FALL THROUGH
+			.end2:
+			cmp ecx,3
+			jne @f
+				add esi,[afirst]
+				mov eax,[bgr]
+				xor eax,2
+				lea eax,[esi+eax]
+				mov al,byte[eax]
+				stosb ;palette[i].blue
 
-;         entry += i * channels;
+				lea eax,[esi+1]
+				mov al,byte[eax]
+				stosb ;palette[i].green
 
-;         switch (channels)
-;         {
-;            case 4:
-;               tRNS[i] = entry[afirst ? 0 : 3];
-;               if (tRNS[i] < 255)
-;                  num_trans = i+1;
-;               /* FALL THROUGH */
-;            case 3:
-;               palette[i].blue = entry[afirst + (2 ^ bgr)];
-;               palette[i].green = entry[afirst + 1];
-;               palette[i].red = entry[afirst + bgr];
-;               break;
-
-;            case 2:
-;               tRNS[i] = entry[1 ^ afirst];
-;               if (tRNS[i] < 255)
-;                  num_trans = i+1;
-;               /* FALL THROUGH */
-;            case 1:
-;               palette[i].blue = palette[i].red = palette[i].green =
-;                  entry[afirst];
-;               break;
-
-;            default:
-;               break;
-;         }
-;      }
-;   }
+				mov eax,[bgr]
+				lea eax,[esi+eax]
+				mov al,byte[eax]
+				stosb ;palette[i].red
+				jmp .end1
+			@@:
+			cmp ecx,2
+			jne @f
+				xor eax,eax
+				inc eax
+				xor eax,[afirst]
+				mov al,byte[esi+eax]
+				mov byte[edx],al  ;tRNS[i] = entry[1 ^ afirst]
+				cmp al,255 ;if (..<..)
+				je @f
+					mov eax,[i]
+					inc eax
+					mov [num_trans],eax
+				@@:
+				dec ecx; FALL THROUGH
+			@@:
+			cmp ecx,1
+			jne .end1
+				mov eax,[afirst]
+				mov al,byte[esi+eax]
+				stosb
+				stosb
+				stosb
+		.end1:
+		inc edx
+		mov eax,[entries]
+		inc [i]
+		cmp [i],eax
+		jl .cycle0
+	.cycle0end:
 
 	mov ecx,[ebx+png_image.opaque]
-	mov eax,ebp
-	sub eax,256+256*sizeof.png_color
+	lea eax,[ebp-256-256*sizeof.png_color]
 	stdcall png_set_PLTE, [ecx+png_control.png_ptr], [ecx+png_control.info_ptr], eax, [entries]
 
 	cmp dword[num_trans],0
@@ -2820,9 +2867,26 @@ png_debug1 2, 'IDAT compress all len = %d', [len]
 	mov edi,[buf_f]
 	mov esi,[buf]
 	
+	cmp eax,PNG_COLOR_TYPE_PALETTE
+	je .cycle7
+	cmp eax,PNG_COLOR_TYPE_RGB
+	je .cycle0
 	cmp eax,PNG_COLOR_TYPE_RGB_ALPHA
 	je .cycle5
 	
+	.cycle7: ;8 bit image palette
+	cmp edx,1
+	jl .cycle0end
+		mov ecx,ebx
+		xor al,al
+		stosb ;insert filter (0 - none)
+align 4
+		rep movsb
+		dec edx
+		jmp .cycle7
+	.cycle7end:
+	jmp .cycle5end
+
 	.cycle0: ;24 bit image
 	cmp edx,1
 	jl .cycle0end
