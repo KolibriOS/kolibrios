@@ -189,6 +189,8 @@ key:
         mcall   2
         cmp     ah, ' '
         je      button.noclose
+        cmp     ah, 9                     ; Tab
+        je      button.noclose
         cmp     ah, 51 ; F2
         je      open_boardlog
         jmp     still
