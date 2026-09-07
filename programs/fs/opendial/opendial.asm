@@ -97,6 +97,11 @@ include 'lang.inc'
 
 x_minimal_size equ 350
 y_minimal_size equ 250
+FILE_BR_TOP_LINE equ 62
+FILE_BR_COL_W1 equ 240 ;name
+FILE_BR_COL_W2 equ 32 ;type
+FILE_BR_COL_W3 equ 40 ;size
+FILE_BR_COL_W4 equ 68 ;date
 ;---------------------------------------------------------------------
 ;---------------------------------------------------------------------
 START:
@@ -609,6 +614,22 @@ key_alt_down:
 ;---------------------------------------------------------------------
 button:
 	mcall	SF_GET_BUTTON
+	cmp	ah,7 ;min sort button id
+	jl	@f
+	cmp	ah,10 ;max sort button id
+	jg	@f
+	movzx	ebx,ah
+	sub	ebx,7
+	shl	ebx,1
+	cmp	[sort_type],ebx
+	jne	.invert
+	xor	ebx,1
+.invert:
+	mov	[sort_type],ebx
+	call	sort_directory
+	call	draw_draw_file_browser1
+	jmp	still
+@@:
 	cmp	ah,6
 	je	.reload_dir_1
 	cmp	ah,4
@@ -1450,7 +1471,7 @@ draw_window:
 	jne	.end
 
 	mov	eax,[window_high]
-	sub	eax,25+45
+	sub	eax,25+FILE_BR_TOP_LINE
 	mov	[file_browser_data_1.size_y],ax
 	mov	[scroll_bar_data_vertical.size_y],ax
 	mov	eax,[window_width]
@@ -1460,17 +1481,17 @@ draw_window:
 	mov	[scroll_bar_data_vertical.start_x],ax
 	mov	edx,[w_work]	; color of work area RRGGBB,8->color
 	or	edx,0x63000000
-	mcall	SF_DRAW_RECT,[window_width],45	;,0xcccccc
+	mcall	SF_DRAW_RECT,[window_width],FILE_BR_TOP_LINE
 
 	push	ecx
 	rol	ecx,16
 	add	cx,[file_browser_data_1.size_y]
-	add	cx,45
+	add	cx,FILE_BR_TOP_LINE
 	ror	ecx,16
 	mov	cx,25
 	mcall
 	pop	ecx
-	add	ecx,45 shl 16
+	add	ecx,FILE_BR_TOP_LINE shl 16
 	mov	cx,[file_browser_data_1.size_y]
 	mov	bx,10
 	mcall
@@ -1495,6 +1516,44 @@ draw_window:
 	call	[menu_bar_draw]
 	push	dword menu_data_3
 	call	[menu_bar_draw]
+
+	;sort buttons
+	mov	bx,[file_browser_data_1.start_x]
+	shl	ebx,16
+	mov	bx,FILE_BR_COL_W1
+	mov	cx,[file_browser_data_1.start_y]
+	sub	cx,16
+	shl	ecx,16
+	mov	cx,15
+	mov	esi,[w_work]
+	mcall	SF_DEFINE_BUTTON,,,7
+	add	ebx,FILE_BR_COL_W1 shl 16
+	mov	bx,FILE_BR_COL_W2
+	mcall	,,,8
+	add	ebx,FILE_BR_COL_W2 shl 16
+	mov	bx,FILE_BR_COL_W3
+	mcall	,,,10
+	add	ebx,FILE_BR_COL_W3 shl 16
+	mov	bx,FILE_BR_COL_W4
+	mcall	,,,9
+
+	;sort captions
+	mov	bx,[file_browser_data_1.start_x]
+	add	bx,4
+	shl	ebx,16
+	mov	bx,[file_browser_data_1.start_y]
+	sub	bx,12
+	mov	ecx,[w_work_text]
+	or	ecx,0x80000000
+	mcall	SF_DRAW_TEXT,,,menu_text_area_2.1
+	add	ebx,FILE_BR_COL_W1 shl 16
+	mcall	,,,menu_text_area_2.2
+	add	ebx,FILE_BR_COL_W2 shl 16
+	mcall	,,,menu_text_area_2.4
+	add	ebx,FILE_BR_COL_W3 shl 16
+	mcall	,,,menu_text_area_2.3
+
+;cmp [sort_type],1
 
 	mov	ebx,[file_browser_data_1.x]
 	mov	ax,bx
@@ -2981,15 +3040,21 @@ if lang eq ru_RU
 db 'Сортировка',0
 .1:
 db 'Имя',0
+.2:
 db 'Тип',0
+.3:
 db 'Дата',0
+.4:
 db 'Размер',0
 else ;en_US
 db 'Sort',0
 .1:
 db 'Name',0
+.2:
 db 'Type',0
+.3:
 db 'Date',0
+.4:
 db 'Size',0
 end if
 .end:
@@ -3074,7 +3139,7 @@ scroll_bar_data_vertical:
 .start_x	dw 500 ;+2
 .y:
 .size_y 	dw 300 ;+4
-.start_y	dw 45 ;+6
+.start_y	dw FILE_BR_TOP_LINE ;+6
 .btn_high	dd 15 ;+8
 .type		dd 2  ;+12
 .max_area	dd 10  ;+16
@@ -3109,7 +3174,7 @@ file_browser_data_1:
 .start_x			dw 10 ;+6
 .y:
 .size_y 			dw 550 ;+8
-.start_y			dw 45 ;+10
+.start_y			dw FILE_BR_TOP_LINE ;+10
 .icon_size_y			dw 18 ; +12
 .icon_size_x			dw 18 ; +14
 .line_size_x			dw 0 ; +16
@@ -3195,7 +3260,7 @@ window_x:
 .x_size 	dw 420
 .x_start	dw 10
 window_y:
-.y_size 	dw 320
+.y_size 	dw 335
 .y_start	dw 10
 ;---------------------------------------------------------------------
 features_table:
