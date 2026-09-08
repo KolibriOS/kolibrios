@@ -119,6 +119,7 @@
 #include "math/sinh.c"
 #include "math/tanh.c"
 
+#include "time/clock.c"
 #include "time/asctime.c"
 #include "time/difftime.c"
 #include "time/localtime.c"
@@ -338,6 +339,7 @@ ksys_dll_t EXPORTS[] = {
     { "con_cls", &con_cls },
     { "con_get_cursor_pos", &con_get_cursor_pos },
     { "con_set_cursor_pos", &con_set_cursor_pos },
+    { "clock", &clock },
     { "mktime", &mktime },
     { "time", &time },
     { "localtime", &localtime },

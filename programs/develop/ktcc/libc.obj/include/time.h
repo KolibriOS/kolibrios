@@ -1,11 +1,10 @@
 #ifndef _TIME_H_
 #define _TIME_H_
 
-#include <sys/ksys.h>
+#include <stddef.h>
 
 typedef unsigned long int clock_t;
 typedef unsigned long int time_t;
-#define clock()        _ksys_get_clock()
 #define CLOCKS_PER_SEC 100
 
 #pragma pack(push, 1)
@@ -22,6 +21,7 @@ struct tm {
 };
 #pragma pack(pop)
 
+DLLAPI clock_t clock(void);
 DLLAPI time_t mktime(struct tm* timeptr);
 DLLAPI time_t time(time_t* timer);
 DLLAPI struct tm* localtime(const time_t* timer);

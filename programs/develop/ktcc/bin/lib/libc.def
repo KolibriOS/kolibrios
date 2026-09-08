@@ -181,6 +181,7 @@ con_cls
 con_get_cursor_pos
 con_set_cursor_pos
 ;____TIME____
+clock
 mktime
 time
 localtime
