@@ -98,10 +98,10 @@ include 'lang.inc'
 x_minimal_size equ 350
 y_minimal_size equ 250
 FILE_BR_TOP_LINE equ 62
-FILE_BR_COL_W1 equ 240 ;name
-FILE_BR_COL_W2 equ 32 ;type
-FILE_BR_COL_W3 equ 40 ;size
-FILE_BR_COL_W4 equ 68 ;date
+file_br_col_w1 dd 0 ;name
+FILE_BR_COL_W2 equ 43 ;type
+FILE_BR_COL_W3 equ 50 ;size
+FILE_BR_COL_W4 equ 70 ;date
 ;---------------------------------------------------------------------
 ;---------------------------------------------------------------------
 START:
@@ -203,8 +203,6 @@ key:
 	cmp	ah,187	; F1
 	je	select_disk
 	cmp	ah,188	; F2
-	je	select_sort
-	cmp	ah,189	; F3
 	je	select_filter
 	cmp	ah,19	; R
 	je	button.reload_dir
@@ -482,41 +480,11 @@ select_disk:
 	cmp	eax,1
 	je	select_filter.1
 
-	cmp	eax,2
-	je	select_sort.1
-
 	cmp	[menu_data_1.click],dword 1
 	jne	still
 
 	cmp	[menu_data_1.cursor_out],dword 0
 	jne	analyse_out_menu_1
-	jmp	still
-;---------------------------------------------------------------------
-select_sort:
-	call	check_alt
-.1:
-	xor	eax,eax
-	mov	[menu_data_2.ret_key],eax
-
-	push	dword menu_data_2
-	call	[menu_bar_activate]
-
-	call	clear_control_key_flag
-
-	mov	eax,[menu_data_2.ret_key]
-	mov	[menu_data_2.ret_key],dword 0
-	cmp	eax,1
-	je	select_disk.1
-
-	cmp	eax,2
-	je	select_filter.1
-
-
-	cmp	[menu_data_2.click],dword 1
-	jne	still
-
-	cmp	[menu_data_2.cursor_out],dword 0
-	jne	analyse_out_menu_2
 	jmp	still
 ;---------------------------------------------------------------------
 select_filter:
@@ -532,12 +500,9 @@ select_filter:
 
 	mov	eax,[menu_data_3.ret_key]
 	mov	[menu_data_3.ret_key],dword 0
-	cmp	eax,1
-	je	select_sort.1
 
 	cmp	eax,2
 	je	select_disk.1
-
 
 	cmp	[menu_data_3.click],dword 1
 	jne	still
@@ -628,6 +593,9 @@ button:
 	mov	[sort_type],ebx
 	call	sort_directory
 	call	draw_draw_file_browser1
+	mov	edx,0x80000000
+	call	clear_sort_buttons
+	call	draw_sort_buttons
 	jmp	still
 @@:
 	cmp	ah,6
@@ -859,21 +827,10 @@ mouse:
 	call	[menu_bar_mouse]
 
 	cmp	[menu_data_1.click],dword 1
-	jne	.menu_bar_2
+	jne	.menu_bar_3
 
 	cmp	[menu_data_1.cursor_out],dword 0
 	jne	select_disk.1	;analyse_out_menu_1
-	jmp	.menu_bar_1
-;--------------------------------------------
-.menu_bar_2:
-	push	dword menu_data_2
-	call	[menu_bar_mouse]
-
-	cmp	[menu_data_2.click],dword 1
-	jne	.menu_bar_3
-
-	cmp	[menu_data_2.cursor_out],dword 0
-	jne	analyse_out_menu_2
 	jmp	.menu_bar_1
 ;---------------------------------------------------
 .menu_bar_3:
@@ -984,7 +941,6 @@ mouse:
 	xor	eax,eax
 	inc	eax
 	mov	[menu_data_1.get_mouse_flag],eax
-	mov	[menu_data_2.get_mouse_flag],eax
 	ret
 ;---------------------------------------------------------------------
 analyse_out_menu_1:
@@ -996,31 +952,6 @@ analyse_out_menu_1:
 	mov	edi,dir_path
 	call	copy_dir_name
 	call	load_next_dir.1
-	jmp	still
-;---------------------------------------------------------------------
-analyse_out_menu_2:
-; Sort
-	mov	eax,[menu_data_2.cursor_out]
-	xor	ebx,ebx
-	cmp	eax,dword 1
-	je	.1
-	cmp	eax,dword 2
-	je	.2
-	cmp	eax,dword 3
-	je	.3
-	cmp	eax,dword 4
-	je	.4
-	jmp	still
-.4:
-	add	ebx,2
-.3:
-	add	ebx,2
-.2:
-	add	ebx,2
-.1:
-	mov	[sort_type],ebx
-	call	sort_directory
-	call	draw_draw_file_browser1
 	jmp	still
 ;---------------------------------------------------------------------
 analyse_out_menu_3:
@@ -1512,48 +1443,13 @@ draw_window:
 .1:
 	push	dword menu_data_1
 	call	[menu_bar_draw]
-	push	dword menu_data_2
-	call	[menu_bar_draw]
 	push	dword menu_data_3
 	call	[menu_bar_draw]
 
-	;sort buttons
-	mov	bx,[file_browser_data_1.start_x]
-	shl	ebx,16
-	mov	bx,FILE_BR_COL_W1
-	mov	cx,[file_browser_data_1.start_y]
-	sub	cx,16
-	shl	ecx,16
-	mov	cx,15
-	mov	esi,[w_work]
-	mcall	SF_DEFINE_BUTTON,,,7
-	add	ebx,FILE_BR_COL_W1 shl 16
-	mov	bx,FILE_BR_COL_W2
-	mcall	,,,8
-	add	ebx,FILE_BR_COL_W2 shl 16
-	mov	bx,FILE_BR_COL_W3
-	mcall	,,,10
-	add	ebx,FILE_BR_COL_W3 shl 16
-	mov	bx,FILE_BR_COL_W4
-	mcall	,,,9
-
-	;sort captions
-	mov	bx,[file_browser_data_1.start_x]
-	add	bx,4
-	shl	ebx,16
-	mov	bx,[file_browser_data_1.start_y]
-	sub	bx,12
-	mov	ecx,[w_work_text]
-	or	ecx,0x80000000
-	mcall	SF_DRAW_TEXT,,,menu_text_area_2.1
-	add	ebx,FILE_BR_COL_W1 shl 16
-	mcall	,,,menu_text_area_2.2
-	add	ebx,FILE_BR_COL_W2 shl 16
-	mcall	,,,menu_text_area_2.4
-	add	ebx,FILE_BR_COL_W3 shl 16
-	mcall	,,,menu_text_area_2.3
-
-;cmp [sort_type],1
+	movzx	eax,word[file_browser_data_1.size_x]
+	sub	eax,FILE_BR_COL_W2+FILE_BR_COL_W3+FILE_BR_COL_W4
+	mov	[file_br_col_w1],eax
+	call	draw_sort_buttons
 
 	mov	ebx,[file_browser_data_1.x]
 	mov	ax,bx
@@ -1580,8 +1476,8 @@ draw_window:
 	popa
 
 	push	ebx
-	sub	ebx,70 shl 16
-	mov	bx,60
+	sub	ebx,80 shl 16
+	mov	bx,70
 	mcall	SF_DEFINE_BUTTON,,,6 ;Refresh
 
 	shr	ecx,16
@@ -1654,6 +1550,91 @@ draw_window:
 	mcall	SF_DRAW_TEXT	;message_open_button
 .end:
 	mcall	SF_REDRAW,SSF_END_DRAW
+	ret
+;---------------------------------------------------------------------
+; in:
+;   edx - 0 or 0x80000000
+align 4
+clear_sort_buttons:
+	;sort buttons
+	mov	bx,[file_browser_data_1.start_x]
+	shl	ebx,16
+	mov	bx,word[file_br_col_w1]
+	dec	bx
+	mov	cx,[file_browser_data_1.start_y]
+	sub	cx,16
+	shl	ecx,16
+	mov	cx,15
+	mov	esi,[w_work]
+	mov dx,7
+	mcall	SF_DEFINE_BUTTON
+	ror	ebx,16
+	add	bx,word[file_br_col_w1]
+	ror	ebx,16
+	mov	bx,FILE_BR_COL_W2-1
+	mov dx,8
+	mcall
+	add	ebx,FILE_BR_COL_W2 shl 16
+	mov	bx,FILE_BR_COL_W3-1
+	mov dx,10
+	mcall
+	add	ebx,FILE_BR_COL_W3 shl 16
+	mov	bx,FILE_BR_COL_W4-1
+	mov dx,9
+	mcall
+	ret
+;---------------------------------------------------------------------
+align 4
+draw_sort_buttons:
+	xor	edx,edx
+	call	clear_sort_buttons
+
+	;make arrows
+	mov	byte[menu_text_area_2.1e],' '
+	mov	byte[menu_text_area_2.2e],' '
+	mov	byte[menu_text_area_2.3e],' '
+	mov	byte[menu_text_area_2.4e],' '
+	mov	al,byte[symbol_down]
+	bt	[sort_type],0
+	jnc	@f
+	mov	al,byte[symbol_up]
+@@:
+	mov	ebx,[sort_type]
+	shr	ebx,1
+	cmp	ebx,3
+	jne	@f
+	mov	byte[menu_text_area_2.4e],al
+@@:
+	cmp	ebx,2
+	jne	@f
+	mov	byte[menu_text_area_2.3e],al
+@@:
+	cmp	ebx,1
+	jne	@f
+	mov	byte[menu_text_area_2.2e],al
+@@:
+	or	ebx,ebx
+	jnz	@f
+	mov	byte[menu_text_area_2.1e],al
+@@:
+
+	;sort captions
+	mov	bx,[file_browser_data_1.start_x]
+	add	bx,4
+	shl	ebx,16
+	mov	bx,[file_browser_data_1.start_y]
+	sub	bx,12
+	mov	ecx,[w_work_text]
+	or	ecx,0x80000000
+	mcall	SF_DRAW_TEXT,,,menu_text_area_2.1
+	ror	ebx,16
+	add	bx,word[file_br_col_w1]
+	ror	ebx,16
+	mcall	,,,menu_text_area_2.2
+	add	ebx,FILE_BR_COL_W2 shl 16
+	mcall	,,,menu_text_area_2.4
+	add	ebx,FILE_BR_COL_W3 shl 16
+	mcall	,,,menu_text_area_2.3
 	ret
 ;---------------------------------------------------------------------
 ; in:
@@ -1757,35 +1738,29 @@ prepare_system_colors:
 
 	mov	eax,[w_work]
 	mov	[menu_data_1.bckg_col],eax
-	mov	[menu_data_2.bckg_col],eax
 	mov	[menu_data_3.bckg_col],eax
 
 	mov	[menu_data_1.menu_col],eax
-	mov	[menu_data_2.menu_col],eax
 	mov	[menu_data_3.menu_col],eax
 
 	mov	[scroll_bar_data_vertical.bckg_col],eax
 
 	mov	eax,[w_work_button]
 	mov	[menu_data_1.frnt_col],eax
-	mov	[menu_data_2.frnt_col],eax
 	mov	[menu_data_3.frnt_col],eax
 
 	mov	[scroll_bar_data_vertical.frnt_col],eax
 
 	mov	eax,[w_work_button]
 	mov	[menu_data_1.menu_sel_col],eax
-	mov	[menu_data_2.menu_sel_col],eax
 	mov	[menu_data_3.menu_sel_col],eax
 
 	mov	eax,[w_work_text]
 	mov	[menu_data_1.bckg_text_col],eax
-	mov	[menu_data_2.bckg_text_col],eax
 	mov	[menu_data_3.bckg_text_col],eax
 
 	mov	eax,[w_work_button_text]
 	mov	[menu_data_1.frnt_text_col],eax
-	mov	[menu_data_2.frnt_text_col],eax
 	mov	[menu_data_3.frnt_text_col],eax
 
 	mov	[scroll_bar_data_vertical.line_col],eax
@@ -2882,7 +2857,7 @@ message_cancel_button:
 	db 'Отмена',0
 
 message_ReloadDir_button:
-	db ' Обнов.',0
+	db 'Обновить',0
 
 message_ExitDir_button:
 	db '^',0
@@ -2984,78 +2959,43 @@ else ;en_US
 db 'Select Disk',0
 end if
 ;---------------------------------------------------------------------
-align 4
-menu_data_2:
-.type:		dd 0   ;+0
-.x:
-.size_x:
-if lang eq ru_RU
-	dw 66
-else ;en_US
-	dw 30
-end if
-.start_x	dw 95	;+6
-.y:
-.size_y 	dw 15	;+8
-.start_y	dw 26  ;+10
-.text_pointer:	dd menu_text_area_2  ;0 ;+12
-.pos_pointer:	dd menu_text_area_2.1 ;0 ;+16
-.text_end	dd menu_text_area_2.end ;0 ;+20
-.ret_key	dd 0  ;+24
-.mouse_keys	dd 0  ;+28
-.x1:
-.size_x1:
-if lang eq ru_RU
-	dw 66
-else ;en_US
-	dw 30
-end if
-.start_x1	dw 95	;+34
-.y1:
-.size_y1	dw 100	 ;+36
-.start_y1	dw 41  ;+38
-.bckg_col	dd 0xffffff ; 0xe5e5e5 ;+40
-.frnt_col	dd 0xff ;+44
-.menu_col	dd 0xeef0ff  ;0xffffff ;+48
-.select 	dd 0 ;+52
-.out_select	dd 0 ;+56
-.buf_adress	dd 0 ;+60
-.procinfo	dd procinfo ;+64
-.click		dd 0 ;+68
-.cursor 	dd 0 ;+72
-.cursor_old	dd 0 ;+76
-.interval	dd 16 ;+80
-.cursor_max	dd 0 ;+84
-.extended_key	dd 0 ;+88
-.menu_sel_col	dd 0x00cc00 ;+92
-.bckg_text_col	dd 0 ; +96
-.frnt_text_col	dd 0xffffff ;+100
-.mouse_keys_old dd 0 ;+104
-.font_height	dd 8 ;+108
-.cursor_out	dd 0 ;+112
-.get_mouse_flag dd 0 ;+116
-;---------------------------------------------------------------------
 menu_text_area_2:
 if lang eq ru_RU
 db 'Сортировка',0
 .1:
-db 'Имя',0
+db 'Имя '
+.1e:
+db ' ',0
 .2:
-db 'Тип',0
+db 'Тип '
+.2e:
+db ' ',0
 .3:
-db 'Дата',0
+db 'Дата '
+.3e:
+db ' ',0
 .4:
-db 'Размер',0
+db 'Разм. '
+.4e:
+db ' ',0
 else ;en_US
 db 'Sort',0
 .1:
-db 'Name',0
+db 'Name '
+.1e:
+db ' ',0
 .2:
-db 'Type',0
+db 'Type '
+.2e:
+db ' ',0
 .3:
-db 'Date',0
+db 'Date '
+.3e:
+db ' ',0
 .4:
-db 'Size',0
+db 'Size '
+.4e:
+db ' ',0
 end if
 .end:
 db 0
@@ -3065,14 +3005,9 @@ menu_data_3:
 .type:		dd 0   ;+0
 .x:
 .size_x 	dw 45  ;+4
-.start_x:
-if lang eq ru_RU
-	dw 166
-else ;en_US
-	dw 130
-end if
+.start_x	dw 95  ;+6
 .y:
-.size_y 	dw 15	;+8
+.size_y 	dw 15  ;+8
 .start_y	dw 26  ;+10
 .text_pointer:	dd menu_text_area_3  ;0 ;+12
 .pos_pointer:	dd menu_text_area_3.1 ;0 ;+16
@@ -3086,12 +3021,7 @@ if lang eq ru_RU
 else ;en_US
 	dw 95
 end if
-.start_x1:
-if lang eq ru_RU
-	dw 166
-else ;en_US
-	dw 130
-end if
+.start_x1	dw 95	 ;+34
 .y1:
 .size_y1	dw 100	 ;+36
 .start_y1	dw 41  ;+38
@@ -3265,10 +3195,10 @@ window_y:
 ;---------------------------------------------------------------------
 features_table:
 .type_table:
-	db '<DIR> '
+	db '<DIR>  '
 ;---------------------------------------------------------------------
 .size_table:
-	db '1023b '
+	db '1023 b '
 ;---------------------------------------------------------------------
 .date_table:
 	db '00.00.0000 00:00 '
@@ -3289,6 +3219,8 @@ end if
 .filter: rb 4096
 .end:
 	db '." -tdW',0
+symbol_up db 24,0
+symbol_down db 25,0
 IM_END:
 ;---------------------------------------------------------------------
 do_not_draw_open_button_label	rb 1

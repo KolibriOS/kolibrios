@@ -444,13 +444,13 @@ fb_draw_type_size_date:
 	test	[edx-40],byte 0x10
 	jz	.copy_type
 	mov	[eax],dword '<DIR'
-	mov	[eax+4],word '> '
+	mov	[eax+4],dword '>  '
 	mov	fb_file_name_length,0
 	mov	fb_extension_size,0
 	jmp	.start
 .copy_type:
 	mov	[eax],dword '    '
-	mov	[eax+4],word '  '
+	mov	[eax+4],dword '   '
 .start:
 	mov	esi,edx
 	xor	eax,eax
@@ -505,16 +505,16 @@ fb_draw_type_size_date:
 	mov	eax,fb_type_table
 	test	[edx-40],byte 0x10
 	jz	.copy_size
-	mov	[eax+6],dword '----'
-	mov	[eax+6+4],word '- '
+	mov	[eax+7],dword '----'
+	mov	[eax+7+4],dword '-- '
 	jmp	.date
 ;-----------------------------------------
 align 4
 .call_decimal_string:
 	mov	ebx,fb_type_table
-	add	ebx,9
+	add	ebx,10
 	call	fb_decimal_string
-	mov	[ebx+1],dl
+	mov	[ebx+1],dx
 	jmp	.size_convert_end
 ;-----------------------------------------
 .qword_div:
@@ -548,7 +548,7 @@ align 4
 	call	.qword_div
 	pop	ecx
 	jz	@f
-	mov	dl,byte 'E' ; Exa Byte
+	mov	dx,'E ' ; Exa Byte
 	jmp	.call_decimal_string
 @@:
 	push	ecx
@@ -556,7 +556,7 @@ align 4
 	call	.qword_div
 	pop	ecx
 	jz	@f
-	mov	dl,byte 'P' ; Peta Byte
+	mov	dx,'P ' ; Peta Byte
 	jmp	.call_decimal_string
 @@:
 	push	ecx
@@ -564,7 +564,7 @@ align 4
 	call	.qword_div
 	pop	ecx
 	jz	@f
-	mov	dl,byte 'T' ; Tera Byte
+	mov	dx,'T ' ; Tera Byte
 	jmp	.call_decimal_string
 @@:
 	push	ecx
@@ -572,7 +572,7 @@ align 4
 	call	.qword_div
 	pop	ecx
 	jz	@f
-	mov	dl,byte 'G' ; Giga Byte
+	mov	dx,'G ' ; Giga Byte
 	jmp	.call_decimal_string
 @@:
 	mov	eax,[edx-40+32]
@@ -580,19 +580,20 @@ align 4
 	shr	eax,20 ; /(1024*1024)
 	test	eax,eax
 	jz	@f
-	mov	dl,byte 'M' ; Mega Byte
+	mov	dx,'M ' ; Mega Byte
 	jmp	.call_decimal_string
 @@:
 	mov	eax,ebx
 	shr	eax,10 ; /1024
 	test	eax,eax
 	jz	@f
-	mov	dl,byte 'K' ; Kilo Byte
+	mov	dx,'K ' ; Kilo Byte
 	jmp	.call_decimal_string
 @@:
 	mov	eax,ebx
 	mov	ebx,fb_type_table
 	add	ebx,10
+	mov	dword[ebx+1],'  ' ; clear K, M, ..., E
 	call	fb_decimal_string
 .size_convert_end:
 	pop	edx ebx
@@ -608,22 +609,22 @@ align 4
 	mov	al,[edx-40+28]
 	push	ebx
 	mov	ebx,fb_type_table
-	add	ebx,12
+	add	ebx,14
 	call	fb_decimal_string_2 ; day
 	mov	al,[edx-40+29]
 	mov	ebx,fb_type_table
-	add	ebx,12+3
+	add	ebx,14+3
 	call	fb_decimal_string_2 ; month
 	mov	ax,[edx-40+30]
 	mov	ebx,fb_type_table
-	add	ebx,12+9
+	add	ebx,14+9
 	mov	[ebx-3], dword '0000'
 	call	fb_decimal_string ; year
 	pop	ebx
 ;-----------------------------------------
 	ror	ebx,16
 	add	bx,fb_size_x
-	sub	ebx,161 ; 122+12+15
+	sub	ebx,173 ; 122+18+21
 	rol	ebx,16
 	mov	ecx,fb_text_color
 	cmp	fb_marked_file,0
@@ -631,7 +632,7 @@ align 4
 	mov	ecx,fb_reduct_text_color
 @@:
 	mov	edx,fb_type_table
-	mov	esi,22
+	mov	esi,24 ; text length
 	mov	ax,fb_line_size_y
 	sub	ax,fb_font_size_y
 	push	ebx
