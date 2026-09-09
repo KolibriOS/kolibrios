@@ -224,7 +224,7 @@ dd	szVersion_menu_bar,		0x00010002
 dd	sz_FileBrowser_draw,		fb_draw_panel
 dd	sz_FileBrowser_mouse,		fb_mouse
 dd	sz_FileBrowser_key,		fb_key
-dd	szVersion_FileBrowser,		0x00010001
+dd	szVersion_FileBrowser,		0x00010002
 
 dd	sz_tl_data_init,		tl_data_init
 dd	sz_tl_data_clear,		tl_data_clear

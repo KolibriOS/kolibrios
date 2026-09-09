@@ -10,8 +10,7 @@ OpenDialog - file open dialog:
    b) choose a file.
 3) Using the menu:
    Alt+F1 - call disk selection menu.
-   Alt+F2 - call sort menu.
-   Alt+F3 - call filter menu.
+   Alt+F2 - call filter menu.
    Inside the menu:
     Arrow cursor up and down - move to item.
     Esc - close the window.
