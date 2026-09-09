@@ -126,10 +126,25 @@ path_show_exit
 .draw:
 path_show_start
 ;-------------------------------------
+	mov	eax,ps_background_flag
+	bt	eax,1
+	jnc	.no_fill
+	mov	bx,ps_start_x
+	shl ebx,16
+	mov bx,ps_area_size_x
+	mov	cx,ps_start_y
+	shl	ecx,16
+	add	ecx,9
+	cmp	ps_font_number,dword 0
+	je	@f
+	add	ecx,7
+@@:
+	mov	edx,ps_background_color
+	mcall	SF_DRAW_RECT
+.no_fill:
 	mov	ebx,ps_start_y
 	xor	ecx,ecx
 	or	ecx,0x80000000
-	mov	eax,ps_background_flag
 	and	eax,1b
 	shl	eax,30
 	add	ecx,eax

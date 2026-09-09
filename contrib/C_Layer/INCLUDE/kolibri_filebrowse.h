@@ -159,7 +159,7 @@ static inline filebrowser* kolibri_filebrowser(filebrowser* fb, uint32_t x_w, ui
 {
     static char name_temp_area[256];
     static char keymap_area[128];
-    static char type_table[128] = "<DIR> 1023b 00.00.00 00:00     temp1.asm";
+    static char type_table[128] = "<DIR>  1023b  00.00.00 00:00     temp1.asm";
 
     memset(fb, 0, sizeof(filebrowser));
     fb->x_w = x_w;

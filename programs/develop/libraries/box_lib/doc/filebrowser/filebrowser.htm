@@ -1,0 +1,179 @@
+<html>
+<head>
+<title>элемент File Browser</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<link href="../style.css" type=text/css rel=stylesheet>
+</head>
+<body>
+<p><a href="../box_lib.htm">На главную &uarr;</a></p>
+<h1>Оглавление</h1>
+<p><a href="#vveden">Введение</a></p>
+<p><a href="#funct">Функции</a></p>
+<ul>
+<li><a href="#fun_fb_draw">FileBrowser_draw</a></li>
+<li><a href="#fun_fb_mouse">FileBrowser_mouse</a></li>
+<li><a href="#fun_fb_key">FileBrowser_key</a></li>
+<li><a href="#version">version_FileBrowser</a></li>
+</ul>
+<p><a href="#struc_fb">Структура FileBrowser</a></p>
+
+<h1><a name="vveden">Введение</a></h1>
+<p>FileBrowser, используется при выборе файлов в программах: OpenDialog, Kfm.</p>
+
+<h1><a name="funct">Функции</a></h1>
+
+<h2><a name="fun_fb_draw">FileBrowser_draw</a></h2>
+<p>Рисование FileBrowser, параметры перерисовки задаются в переменной <i>fb_all_redraw</i>.</p>
+
+<h2><a name="fun_fb_mouse">FileBrowser_mouse</a></h2>
+<p>Эта функция должна вызыватся при движении мышей в FileBrowser.</p>
+
+<h2><a name="fun_fb_key">FileBrowser_key</a></h2>
+<p>Выполнение действий по нажатию клавиш. Перед вызовом функции в переменной <i>fb_key_action</i> должно передаваться одно из следующих значений:</p>
+<pre>; 1 - arrow down
+; 2 - arrow up
+; 3 - PageDown
+; 4 - PageUp
+; 5 - Home
+; 6 - End
+; 7 - Enter
+; 8 - Insert (выделение файла)
+; 9 - Ctrl+A выделить все файлы
+; 10 - отменить выделение файлов
+; 11 - обратить выделение файлов
+; 12 - поиск по букве</pre>
+
+<h2><a name="version">version_FileBrowser</a></h2>
+<p>Версия элемента</p>
+
+<h1><a name="struc_fb">Структура FileBrowser</a></h1>
+<p>Макроса для создания структуры FileBrowser нет. Потому данные для нее задаются вручную.
+Данные для структуры FileBrowser:</p>
+<pre>fb_type				equ dword [edi]
+fb_size_x			equ [edi+4]		;word
+fb_start_x			equ [edi+6]		;word
+fb_size_y			equ [edi+8]		;word
+fb_start_y			equ [edi+10]		;word
+fb_icon_size_y			equ word [edi+12]
+fb_icon_size_x			equ word [edi+14]
+fb_line_size_x			equ word [edi+16]
+fb_line_size_y			equ word [edi+18]
+fb_type_size_x			equ word [edi+20]
+fb_size_size_x			equ word [edi+22]
+fb_date_size_x			equ word [edi+24]
+fb_attributes_size_x		equ word [edi+26]
+fb_icon_assoc_area		equ dword [edi+28]
+fb_icon_raw_area		equ dword [edi+32]
+fb_resolution_raw		equ dword [edi+36]
+fb_palette_raw			equ dword [edi+40]
+fb_directory_path_area		equ dword [edi+44]
+fb_file_name_area		equ dword [edi+48]
+fb_select_flag			equ dword [edi+52]
+fb_background_color		equ dword [edi+56]
+fb_select_color			equ dword [edi+60]
+fb_seclect_text_color		equ dword [edi+64]
+fb_text_color			equ dword [edi+68]
+fb_reduct_text_color		equ dword [edi+72]
+fb_marked_text_color		equ dword [edi+76]
+fb_max_panel_line		equ dword [edi+80]
+fb_select_panel_counter		equ dword [edi+84]
+fb_folder_block			equ dword [edi+88]
+fb_start_draw_line		equ dword [edi+92]
+fb_start_draw_cursor_line	equ word [edi+96]
+fb_folder_data			equ dword [edi+98]
+fb_temp_counter			equ dword [edi+102]
+fb_file_name_length		equ dword [edi+106]
+fb_marked_file			equ dword [edi+110]
+fb_extension_size		equ dword [edi+114]
+fb_extension_start		equ dword [edi+118]
+fb_type_table			equ dword [edi+122]
+fb_ini_file_start		equ dword [edi+126]
+fb_ini_file_end			equ dword [edi+130]
+fb_draw_scroll_bar		equ dword [edi+134]
+fb_font_size_y			equ word [edi+138]
+fb_font_size_x			equ word [edi+140]
+fb_mouse_keys			equ dword [edi+142]
+fb_mouse_keys_old		equ dword [edi+146]
+fb_mouse_pos			equ dword [edi+150]
+fb_mouse_keys_delta		equ dword [edi+154]
+fb_mouse_key_delay		equ dword [edi+158]
+fb_mouse_keys_tick		equ dword [edi+162]
+fb_start_draw_cursor_line_2	equ word [edi+166]
+fb_all_redraw			equ dword [edi+168]
+fb_selected_BDVK_adress		equ dword [edi+172]
+fb_key_action			equ word [edi+176]
+fb_key_action_num		equ word [edi+178]
+fb_name_temp_area		equ dword [edi+180]
+fb_max_name_temp_size		equ dword [edi+184]
+fb_display_name_max_length	equ dword [edi+188]
+fb_draw_panel_selection_flag	equ dword [edi+192]
+fb_mouse_pos_old		equ dword [edi+196]
+fb_marked_counter		equ dword [edi+200]
+fb_keymap_pointer		equ dword [edi+204]</pre>
+
+<p><b>fb_type</b> - тип элемента, если:</p>
+<ul>
+<li>0 - открыть,</li>
+<li>1 - сохранить,</li>
+<li>2 - выбрать директорию.</li>
+</ul>
+<p><b>fb_size_x</b> - ширина элемента (без скроллинга).</p>
+<p><b>fb_start_x</b> - отступ слева (положение по x).</p>
+<p><b>fb_size_y</b> - высота элемента.</p>
+<p><b>fb_start_y</b> - отступ сверху (положение по y).</p>
+<p><b>fb_icon_size_y</b> - высота иконки.</p>
+<p><b>fb_icon_size_x</b> - ширина иконки.</p>
+<p><b>fb_line_size_y</b> - высота линии.</p>
+<p><b>fb_type_size_x</b> - ширина колонки с типом файлов (зарезервировано, пока не используется).</p>
+<p><b>fb_size_size_x</b> - ширина колонки с размером файлов (зарезервировано, пока не используется).</p>
+<p><b>fb_date_size_x</b> - ширина колонки с датой файлов (зарезервировано, пока не используется).</p>
+<p><b>fb_attributes_size_x</b> - ширина колонки с атрибутами файлов (зарезервировано, пока не используется).</p>
+<p><b>fb_icon_raw_area</b> - данные для отображения иконок.</p>
+<p><b>fb_resolution_raw</b> - колличество бит на пиксель в данных для отображения иконок.</p>
+<p><b>fb_background_color</b> - цвет фона.</p>
+<p><b>fb_select_color</b> - цвет курсора.</p>
+<p><b>fb_select_flag</b> - 0,1.</p>
+<p><b>fb_max_panel_line</b> - максимальное число строк в окне.</p>
+<p><b>fb_select_panel_counter</b>:</p>
+<ul>
+<li>0 - панель не в фокусе,</li>
+<li>1 - панель в фокусе.</li>
+</ul>
+<p><b>fb_folder_block</b> - количество блоков данных входа каталога (БДВК).</p>
+<p><b>fb_start_draw_line</b> - номер первого отображаемого в окне файла или папки (номерация начинается с 0).</p>
+<p><b>fb_start_draw_cursor_line</b> - позиция курсора для выбора файла или папки (координата y в пикселях относительно <i>fb_start_y</i>).</p>
+<p><b>fb_folder_data</b> - буфер с информацией о файлах.</p>
+<p><b>fb_temp_counter</b> - внутренняя переменная, используется в функциях перерисовки панели.</p>
+<p><b>fb_extension_size</b> - внутренняя переменная, размер расширения файла (включая символы '.' и '\0').</p>
+<p><b>fb_extension_start</b> - внутренняя переменная, указатель на расширение файла, используется в функции <i>fb_get_icon_number</i> для определения номера иконки.</p>
+<p><b>fb_type_table</b> - указатель на память для заполнения строки с типом, размером и датой файла.</p>
+<p><b>fb_ini_file_start</b> - начало данных с расширениями и номерами иконок, получаемых из <i>*.ini</i> файла. Пример формата данных:</p>
+<pre>&lt;dir&gt;=0\n
+&lt;up&gt;=1\n
+&lt;dic&gt;=3\n
+&lt;doc&gt;=3\n
+...
+src=61\n
+vox=74\0</pre>
+<p><b>fb_ini_file_end</b> - начало данных с расширениями и номерами иконок, получаемых из *.ini файла.</p>
+<p><b>fb_draw_scroll_bar</b> - параметр необходимости обновления дочернего скроллинга:</p>
+<ul>
+<li>0 - дочерний скроллинг обновлять не нужно,</li>
+<li>1 - изменилась позиция <i>fb_start_draw_line</i> и нужно обновить дочерний скроллинг.</li>
+</ul>
+<p><b>fb_mouse_keys_delta</b> - 0,1,2,3.</p>
+<p><b>fb_all_redraw</b> - параметр для функции <i>FileBrowser_draw</i>, задает параметры перерисовки:</p>
+<ul>
+<li>0 - текст,</li>
+<li>1 - все окно,</li>
+<li>2 - иконки с текстом.</li>
+</ul>
+<p><b>fb_key_action</b> - код клавиатурного события для функции FileBrowser_key, возможные значения 0...12.</p>
+<p><b>fb_draw_panel_selection_flag</b> - внутренняя переменная, определяет с каким фоном будет рисоваться текст (<i>fb_background_color</i> или <i>fb_select_color</i>).</p>
+<p><b>fb_marked_counter</b> - число выделенных файлов.</p>
+<p><b>fb_keymap_pointer</b> - указатель на буфер 128 байт, для функции 26.2 (SF_SYSTEM_GET, SSF_KEYBOARD_LAYOUT).</p>
+
+<hr>
+<p>Документация обновлялась последний раз 10.10.26.</p>
+</body>
+</html>

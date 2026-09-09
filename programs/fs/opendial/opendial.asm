@@ -74,55 +74,53 @@
 	org	0x0
 
 	db 'MENUET01'
-	dd 0x01
-	dd START
-	dd IM_END
-	dd I_END
-	dd stacktop
-	dd param
-	dd path
+	dd 1,start,IM_END,I_END,stacktop,param,path
 
+include '../../proc32.inc'
 include '../../macros.inc'
 ;define __DEBUG__ 1
 ;define __DEBUG_LEVEL__ 1
 ;include '../../debug-fdo.inc'
+;include '../../debug.inc'
 include '../../KOSfuncs.inc'
 include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/box_lib.mac'
-;include 'macros.inc'
-;include 'load_lib.mac'
-;include 'box_lib.mac'
+include '../../develop/libraries/kmenu/kmenu.inc'
 include 'lang.inc'
 @use_library
 
 x_minimal_size equ 350
 y_minimal_size equ 250
 FILE_BR_TOP_LINE equ 62
-FILE_BR_COL_W1 equ 240 ;name
-FILE_BR_COL_W2 equ 32 ;type
-FILE_BR_COL_W3 equ 40 ;size
-FILE_BR_COL_W4 equ 68 ;date
+file_br_col_w1 dd 0 ;name
+FILE_BR_COL_W2 equ 43 ;type
+FILE_BR_COL_W3 equ 50 ;size
+FILE_BR_COL_W4 equ 70 ;date
+DLG_YN_W equ 24+8*(msgbox_3.end-msgbox_3-1) ;must be a multiple of 2
+ID_BUT_START_DISC equ 200
+ID_BUT_START_EXTENTION equ 800
 ;---------------------------------------------------------------------
-;---------------------------------------------------------------------
-START:
+align 4
+start:
 	mcall	SF_SYS_MISC,SSF_HEAP_INIT
 	mcall	SF_KEYBOARD,SSF_SET_INPUT_MODE,1
 	mcall	SF_SET_EVENTS_MASK, EVM_REDRAW + EVM_KEY + EVM_BUTTON + EVM_MOUSE
 	call	get_communication_area
-
 	call	get_active_pocess
 
 load_libraries	l_libs_start,end_l_libs
 	test	eax,eax
 	jnz	button.exit
 ; initialize sort
-	push	dword 1
-	call	dword [sort_init]
+	stdcall	[sort_init],1
+	mcall	SF_STYLE_SETTINGS,SSF_GET_COLORS,app_colours,sizeof.system_colors
 
 	mov	esi,start_pach
 	mov	edi,previous_dir_path
 	call	copy_dir_name.1
 
+	mov	[scroll_bar_data_vertical.type],2
+	call	init_menu
 	call	load_root_directory
 	call	load_start_directory
 	call	sort_directory
@@ -201,11 +199,13 @@ key:
 	cmp	ah,14	; Backspace
 	je	button.exit_dir
 	cmp	ah,187	; F1
-	je	select_disk
+	je	select_menu
 	cmp	ah,188	; F2
-	je	select_sort
+	je	select_menu
 	cmp	ah,189	; F3
-	je	select_filter
+	je	select_menu
+	cmp	ah,190	; F4
+	je	select_menu
 	cmp	ah,19	; R
 	je	button.reload_dir
 	cmp	ah,42
@@ -288,37 +288,26 @@ key:
 ;---------------------------------
 .12:
 	inc	ebx	; 12 - Search with key
-;---------------------------------
 .11:
 	inc	ebx	; 11 - Invert Mark
-;---------------------------------
 .10:
 	inc	ebx	; 10 - Unmark All
-;---------------------------------
 .9:
 	inc	ebx	; 9 - Mark All
-;---------------------------------
 .8:
 	inc	ebx	; 8 - Insert (Mark)
-;---------------------------------
 .7:
 	inc	ebx	; 7 - Enter
-;---------------------------------
 .6:
 	inc	ebx	; 6 - End
-;---------------------------------
 .5:
 	inc	ebx	; 5 - Home
-;---------------------------------
 .4:
 	inc	ebx	; 4 - PageUp
-;---------------------------------
 .3:
 	inc	ebx	; 3 - PageDown
-;---------------------------------
 .2:
 	inc	ebx	; 2 - arrow up
-;---------------------------------
 .1:
 	inc	ebx	; 1 - arrow down
 ;---------------------------------
@@ -342,9 +331,7 @@ key:
 	shr	ax,8
 	mov	[file_browser_data_1.key_action_num],ax
 
-	push	dword file_browser_data_1
-	call	[FileBrowser_key]
-
+	stdcall	[FileBrowser_key], file_browser_data_1
 	call	draw_open_button_label
 
 	cmp	[file_browser_data_1.draw_scroll_bar],0
@@ -358,7 +345,8 @@ change_focus_area_Tab_key_ASCII:
 	xor	eax,eax
 	inc	eax
 	mov	[Tab_key_block],al
-	jmp	change_focus_area
+	call	change_focus_area
+	jmp	still
 ;---------------------------------------------------------------------
 change_focus_area_press_Tab_key:
 	cmp	[open_dialog_type],1
@@ -382,12 +370,15 @@ change_focus_area_check_Tab_key:
 	xor	eax,eax
 	mov	[Tab_key],al
 ;---------------------------------------------------------------------
+; in:
+;  if .1: al = 0 - FileBrowser set focus, 1 -  edit_box set focus
+align 4
 change_focus_area:
 	mov	al,[focus_pointer]
 	inc	al
 	and	al,1
-	mov	[focus_pointer],al
 .1:
+	mov	[focus_pointer],al
 	test	al,al
 	jne	@f
 	mov	[file_browser_data_1.select_panel_counter],1
@@ -395,14 +386,14 @@ change_focus_area:
 	mov	[edit1.color],0xffffff ; white
 	call	draw_draw_file_browser1
 	mcall	SF_KEYBOARD,SSF_SET_INPUT_MODE,1
-	jmp	still
+	ret
 @@:
 	mov	[file_browser_data_1.select_panel_counter],0
 	or	[edit1.flags],dword ed_focus
 	mov	[edit1.color],0xffffb0 ; yellow
 	call	draw_draw_file_browser1
 	mcall	SF_KEYBOARD,SSF_SET_INPUT_MODE,0
-	jmp	still
+	ret
 ;---------------------------------------------------------------------
 key_ASCII:
 	mcall	SF_GET_KEY
@@ -412,8 +403,7 @@ key_ASCII:
 	je	.13
 	cmp	ah,27
 	je	button.exit
-	push	dword name_editboxes
-	call	[edit_box_key]
+	stdcall	[edit_box_key],edit1
 	jmp	still
 .13:
 ;	cmp [open_dialog_type],2	; Select dir
@@ -465,86 +455,101 @@ user_selected_name_action:
 	mov	[eax],word 1
 	jmp	button.exit
 ;---------------------------------------------------------------------
+; in:
+;  ah - 187...190 (59...62)
+align 4
+select_menu:
+	shr	eax,8
+	sub	eax,187
+	cmp	eax,3
+	jl	@f
+	cmp	[open_dialog_type],1
+	jne	still
+@@:
+	push	pt
+	push	[main_menu_select+4*eax]
+	mov	ebx,[main_menu]
+	mov	ebx,[ebx+ksubmenu_t.items]
+	mov	ebx,[ebx+eax*4]
+	mov	eax,[ebx+ksubmenu_t.level]
+	mov	[pt.left],ax
+	mov	eax,19 ;[ebx+ksubmenu_t.set_new_margin]?
+	mov	[pt.top],ax
+
+	mcall	SF_THREAD_INFO, procinfo,-1
+	mov	eax,[procinfo.box.left]
+	add	eax,[procinfo.client_box.left]
+	add	[pt.left],ax
+	mov	eax,[procinfo.box.top]
+	add	eax,[procinfo.client_box.top]
+	add	[pt.top],ax
+
+	call	[ksubmenu_draw]
+	jmp	still
+
+align 4
+pt:
+.left dw 0
+.top dw 0
+;---------------------------------------------------------------------
+; in:
+;  ebx - disk number (0...)
+align 4
 select_disk:
-	call	check_alt
-.1:
-	call	load_root_directory
-	xor	eax,eax
-	mov	[menu_data_1.ret_key],eax
-
-	push	dword menu_data_1
-	call	[menu_bar_activate]
-
-	call	clear_control_key_flag
-
-	mov	eax,[menu_data_1.ret_key]
-	mov	[menu_data_1.ret_key],dword 0
-	cmp	eax,1
-	je	select_filter.1
-
-	cmp	eax,2
-	je	select_sort.1
-
-	cmp	[menu_data_1.click],dword 1
-	jne	still
-
-	cmp	[menu_data_1.cursor_out],dword 0
-	jne	analyse_out_menu_1
+	;call	load_root_directory
+	mov	esi,1
+	imul	esi,ebx,10
+	add	esi,retrieved_devices_table
+	mov	edi,dir_path
+	call	copy_dir_name
+	call	load_next_dir.1
 	jmp	still
 ;---------------------------------------------------------------------
-select_sort:
-	call	check_alt
-.1:
-	xor	eax,eax
-	mov	[menu_data_2.ret_key],eax
+; in:
+;  ebx - extension number (0...)
+align 4
+set_extension:
+	push    eax esi edi
+	mov     esi,[communication_area]
+	add     esi,4104
+	xor     edi,edi
+.cycle:
+	cmp     ebx,edi
+	je     .cycle_end
+@@:
+	lodsb
+	or      al,al
+	jnz     @b
+	cmp     byte[esi],0
+	jz      .end
+@@:
+	inc     edi
+	jmp     .cycle
+.cycle_end:
 
-	push	dword menu_data_2
-	call	[menu_bar_activate]
+	mov     edi,esi
+	mov     esi,user_selected_name
+	call    search_extension_start
+	xchg    edi,esi
+	mov     al,'.'
+	cmp     byte[edi-1],al
+	je      @f
+	stosb
+@@:
+	movsb
+	cmp     byte[esi],0
+	jne     @b
+	movsb
+	sub     edi,user_selected_name
+	mov     ed_size,edi
+	mov     ed_pos,edi
 
-	call	clear_control_key_flag
-
-	mov	eax,[menu_data_2.ret_key]
-	mov	[menu_data_2.ret_key],dword 0
-	cmp	eax,1
-	je	select_disk.1
-
-	cmp	eax,2
-	je	select_filter.1
-
-
-	cmp	[menu_data_2.click],dword 1
-	jne	still
-
-	cmp	[menu_data_2.cursor_out],dword 0
-	jne	analyse_out_menu_2
-	jmp	still
-;---------------------------------------------------------------------
-select_filter:
-	call	check_alt
-.1:
-	xor	eax,eax
-	mov	[menu_data_3.ret_key],eax
-
-	push	dword menu_data_3
-	call	[menu_bar_activate]
-
-	call	clear_control_key_flag
-
-	mov	eax,[menu_data_3.ret_key]
-	mov	[menu_data_3.ret_key],dword 0
-	cmp	eax,1
-	je	select_sort.1
-
-	cmp	eax,2
-	je	select_disk.1
-
-
-	cmp	[menu_data_3.click],dword 1
-	jne	still
-
-	cmp	[menu_data_3.cursor_out],dword 0
-	jne	analyse_out_menu_3
-	jmp	still
+	xor     al,al
+	inc     al
+	call    change_focus_area.1
+.end:
+	pop     edi esi eax
+	jmp     still
 ;---------------------------------------------------------------------
 symbol_a_up:
 NumPad_plus_Up:
@@ -559,17 +564,6 @@ NumPad_invert_Up:
 	call	check_ctrl
 	jmp	key.11
 ;---------------------------------------
-check_alt:
-	xor	eax,eax
-	mov	al,[alt_flag]
-	test	eax,eax
-	jz	@f
-	xor	ebx,ebx
-	ret
-@@:
-	add	esp,4
-	jmp	still
-;---------------------------------------
 check_ctrl:
 	xor	eax,eax
 	mov	al,[ctrl_flag]
@@ -580,13 +574,6 @@ check_ctrl:
 @@:
 	add	esp,4
 	jmp	still
-;---------------------------------------------------------------------
-clear_control_key_flag:
-	xor	eax,eax
-	mov	[shift_flag],al
-	mov	[ctrl_flag],al
-	mov	[alt_flag],al
-	ret
 ;---------------------------------------------------------------------
 key_shift_up:
 	mov	[shift_flag],1
@@ -614,6 +601,19 @@ key_alt_down:
 ;---------------------------------------------------------------------
 button:
 	mcall	SF_GET_BUTTON
+
+	cmp	ah,11 ;Filter
+	jne	@f
+	mov	[filter_flag],0
+	call	load_next_dir.1
+	jmp	still
+@@:
+	cmp	ah,12 ;Filter
+	jne	@f
+	mov	[filter_flag],1
+	call	load_next_dir.1
+	jmp	still
+@@:
 	cmp	ah,7 ;min sort button id
 	jl	@f
 	cmp	ah,10 ;max sort button id
@@ -628,6 +628,9 @@ button:
 	mov	[sort_type],ebx
 	call	sort_directory
 	call	draw_draw_file_browser1
+	mov	edx,0x80000000
+	call	clear_sort_buttons
+	call	draw_sort_buttons
 	jmp	still
 @@:
 	cmp	ah,6
@@ -638,6 +641,25 @@ button:
 	je	.exit
 	cmp	ah,2
 	je	.exit_dir
+
+	mov ebx,eax
+	shr ebx,8
+	sub ebx,ID_BUT_START_DISC
+	cmp ebx,0
+	jl	@f
+	cmp	ebx,[retrieved_devices_table_counter]
+	jg	@f
+	jmp	select_disk
+@@:
+	cmp	[open_dialog_type],1
+	jne	@f
+	mov ebx,eax
+	shr ebx,8
+	sub ebx,ID_BUT_START_EXTENTION
+	cmp ebx,0
+	jl	@f
+	jmp	set_extension
+@@:
 	cmp	ah,1
 	jne	still
 .exit:
@@ -680,24 +702,27 @@ button:
 	jmp	still
 ;---------------------------------------------------------------------
 .open_dir_or_file:
-	cmp	[open_dialog_type],0	;Open file
-	jne	@f
-
-	mov	eax,[file_browser_data_1.folder_data]
-	mov	eax,[eax+4]
-	test	eax,eax
-	jz	button.exit
-@@:
 	cmp	[open_dialog_type],2	;Select dir
 	je	file_no_folder
 
+	mov	eax,[file_browser_data_1.folder_data]
+	mov	eax,[eax+4]
+
+	cmp	[open_dialog_type],0	;Open file
+	jne	@f
+	test	eax,eax
+	jz	button.exit
+@@:
 	cmp	[open_dialog_type],1	;Save file
 	jne	@f
-
+	test	eax,eax
+	jnz	@f
+	mov	[focus_pointer],1	;if the root and the disk are empty
+@@:
 	mov	al,[focus_pointer]
 	test	al,al
 	jne	file_no_folder
-@@:
+
 	xor	ebx,ebx
 	jmp	key.7
 ;---------------------------------------------------------------------
@@ -706,12 +731,6 @@ thread_start:
 	cmp	al,1
 	jne	@f
 	mov	[N_error],load_ini_error_type
-	mov	[error_path],file_name
-	jmp	.error_type
-@@:
-	cmp	al,2
-	jne	@f
-	mov	[N_error],load_icons_error_type
 	mov	[error_path],file_name
 	jmp	.error_type
 @@:
@@ -801,6 +820,23 @@ mouse:
 	mcall	SF_MOUSE_GET,SSF_SCROLL_DATA
 	mov	[mouse_scroll_data],eax
 
+    cmp  [library03.status_lib],0 ; test load library
+    jnz  .m_end
+    cld
+    stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
+
+	mov  eax,[main_menu]
+	cmp  dword[eax+ksubmenu_t.focus_idx],-1
+	je   @f
+	mov  [m_lost],1
+	jmp  still
+@@:
+	cmp  [m_lost],0
+	je   .m_end
+	dec  [m_lost]
+	jmp  still
+.m_end:
+
 	mcall	SF_MOUSE_GET,SSF_WINDOW_POSITION
 	mov	[mouse_position],eax
 
@@ -809,9 +845,7 @@ mouse:
 
 	mov	[file_browser_data_1.select_flag],0
 
-	push	dword file_browser_data_1
-	call	[FileBrowser_mouse]
-
+	stdcall	[FileBrowser_mouse],file_browser_data_1
 	call	draw_open_button_label
 
 	mov	eax,file_browser_data_1.mouse_keys_delta
@@ -828,9 +862,9 @@ mouse:
 	mov	al,[focus_pointer]
 	test	al,al
 	jz	.scrollbar
-	xor	eax,eax
-	mov	[focus_pointer],al
-	jmp	change_focus_area.1
+	xor	al,al
+	call	change_focus_area.1
+	jmp	still
 ;---------------------------------------------------
 .scrollbar:
 	mov	eax,[scroll_bar_data_vertical.max_area]
@@ -851,49 +885,13 @@ mouse:
 .menu_bar:
 	cmp	[scroll_bar_data_vertical.delta2],0
 	jne	still
-
-.menu_bar_1:
-	call	.set_mouse_flag
-@@:
-	push	dword menu_data_1
-	call	[menu_bar_mouse]
-
-	cmp	[menu_data_1.click],dword 1
-	jne	.menu_bar_2
-
-	cmp	[menu_data_1.cursor_out],dword 0
-	jne	select_disk.1	;analyse_out_menu_1
-	jmp	.menu_bar_1
-;--------------------------------------------
-.menu_bar_2:
-	push	dword menu_data_2
-	call	[menu_bar_mouse]
-
-	cmp	[menu_data_2.click],dword 1
-	jne	.menu_bar_3
-
-	cmp	[menu_data_2.cursor_out],dword 0
-	jne	analyse_out_menu_2
-	jmp	.menu_bar_1
-;---------------------------------------------------
-.menu_bar_3:
-	push	dword menu_data_3
-	call	[menu_bar_mouse]
-
-	cmp	[menu_data_3.click],dword 1
-	jne	.check_editboxes
-
-	cmp	[menu_data_3.cursor_out],dword 0
-	jne	analyse_out_menu_3
-	jmp	.menu_bar_1
 ;---------------------------------------------------
 .check_editboxes:
 	cmp	[open_dialog_type],1
 	jne	.check_scroll_event
 	mov	eax,[edit1.flags]
 	and	eax,10b
-	push	dword name_editboxes
-	call	[edit_box_mouse]
+	stdcall	[edit_box_mouse],edit1
 	mov	ebx,[edit1.flags]
 	and	ebx,10b
 	cmp	eax,ebx
@@ -906,8 +904,8 @@ mouse:
 	jz	@f
 	inc	eax
 @@:
-	mov	[focus_pointer],al
-	jmp	change_focus_area.1
+	call	change_focus_area.1
+	jmp	still
 ;---------------------------------------------------
 .check_scroll_event:
 	mov	eax,[mouse_position]
@@ -978,64 +976,6 @@ mouse:
 	jmp	still
 ;---------------------------------------------------
 .mouse_next:
-	jmp	still
-;---------------------------------------------------------------------
-.set_mouse_flag:
-	xor	eax,eax
-	inc	eax
-	mov	[menu_data_1.get_mouse_flag],eax
-	mov	[menu_data_2.get_mouse_flag],eax
-	ret
-;---------------------------------------------------------------------
-analyse_out_menu_1:
-; Available disks
-	mov	eax,[menu_data_1.cursor_out]
-	dec	eax
-	imul	esi,eax,10
-	add	esi,retrieved_devices_table
-	mov	edi,dir_path
-	call	copy_dir_name
-	call	load_next_dir.1
-	jmp	still
-;---------------------------------------------------------------------
-analyse_out_menu_2:
-; Sort
-	mov	eax,[menu_data_2.cursor_out]
-	xor	ebx,ebx
-	cmp	eax,dword 1
-	je	.1
-	cmp	eax,dword 2
-	je	.2
-	cmp	eax,dword 3
-	je	.3
-	cmp	eax,dword 4
-	je	.4
-	jmp	still
-.4:
-	add	ebx,2
-.3:
-	add	ebx,2
-.2:
-	add	ebx,2
-.1:
-	mov	[sort_type],ebx
-	call	sort_directory
-	call	draw_draw_file_browser1
-	jmp	still
-;---------------------------------------------------------------------
-analyse_out_menu_3:
-; Filter
-	mov	eax,[menu_data_3.cursor_out]
-	cmp	eax,dword 1
-	jne	@f
-	mov	[filter_flag],0
-	call	load_next_dir.1
-	jmp	still
-@@:
-	cmp	eax,dword 2
-	jne	still
-	mov	[filter_flag],1
-	call	load_next_dir.1
 	jmp	still
 ;---------------------------------------------------------------------
 get_communication_area:
@@ -1137,9 +1077,9 @@ load_next_dir:
 @@:
 	call	sort_directory
 
-	mov	ebx,[scroll_bar_data_vertical.x]
+	mov	ebx,dword[scroll_bar_data_vertical.x_size]
 	inc	ebx
-	mov	ecx,[scroll_bar_data_vertical.y]
+	mov	ecx,dword[scroll_bar_data_vertical.y_size]
 	inc	ecx
 	mcall	SF_DRAW_RECT,,,0xcccccc
 	xor	eax,eax
@@ -1246,8 +1186,7 @@ file_no_folder:
 	je	.no_save
 	push	eax ebx ecx esi edi
 	mov	[edit1.color],0xffb0b0 ; light red
-	push	edit1
-	call	[edit_box_draw]
+	stdcall	[edit_box_draw],edit1
 	mov	esi,user_selected_name
 	call	search_expansion
 	test	eax,eax
@@ -1257,11 +1196,13 @@ file_no_folder:
 	call	compare_expansion
 	test	eax,eax
 @@:
-	jz	@f
-	call	show_help_message
-@@:
 	pop	edi esi ecx ebx eax
-	jnz	still
+	jz	.no_save
+	;call	show_help_message
+	call	confirmation_action
+	cmp	[work_confirmation_yes],1
+	je	.no_save
+	jmp	still
 .no_save:
 	mov	esi,dir_path
 	mov	edi,file_name
@@ -1310,12 +1251,14 @@ file_no_folder:
 	mov	[eax],word 1
 	jmp	button.exit
 ;---------------------------------------------------------------------
-show_help_message:
+align 4
+proc show_help_message
 	pushf
 	mov	esi,[communication_area]
 	add	esi,4104
 	mov	edi,msgbox_1.filter
 	mov	ecx,msgbox_1.end-8
+	cld
 .cycle:
 	lodsb
 	or	al,al
@@ -1337,7 +1280,9 @@ show_help_message:
 	notify_window_run msgbox_1
 	popf
 	ret
+endp
 ;---------------------------------------------------------------------
+align 4
 load_root_directory:
 	mov	[dirinfo.name],dword dir_path_temp
 	mov	eax,[dirinfo.return]
@@ -1389,6 +1334,10 @@ load_root_directory:
 .start_copy_device_patch:
 	imul	edi,[retrieved_devices_table_counter],10
 	add	edi,retrieved_devices_table
+	mov eax,[retrieved_devices_table_counter]
+	add eax,ID_BUT_START_DISC
+	push eax ;menuitem id
+	push edi ;menuitem text
 	mov	[edi],byte '/'
 	inc	edi
 	imul	esi,[temp_counter_1],304
@@ -1402,7 +1351,12 @@ load_root_directory:
 	add	esi,32+40
 	mov	[edi-1],byte '/'
 
+	;esi = disk number
+	;edi = end disk name
 	call	copy_dir_name
+	;edi = end disk name + disk number
+	stdcall [kmenuitem_new], KMENUITEM_NORMAL ;,,
+	stdcall [ksubmenu_add], [main_menu_select], eax
 
 	inc	[retrieved_devices_table_counter]
 	inc	ebp
@@ -1420,19 +1374,6 @@ load_root_directory:
 	test	eax,eax
 	jz	memory_free_error
 @@:
-
-	xor	ecx,ecx
-	mov	edi,menu_text_area_1_1	;.1
-@@:
-	imul	esi,ecx,10
-	add	esi,retrieved_devices_table
-	call	copy_dir_name
-	inc	ecx
-	cmp	ecx,[retrieved_devices_table_counter]
-	jb	@b
-	mov	[menu_data_1.text_end],edi
-	xor	eax,eax
-	mov	[edi],eax
 	pop	eax
 	mov	[file_browser_data_1.folder_data],eax
 	pop	eax
@@ -1459,8 +1400,8 @@ type_title:
 @@:
 	ret
 ;---------------------------------------------------------------------
+align 4
 draw_window:
-
 	mcall	SF_REDRAW,SSF_BEGIN_DRAW
 	call	prepare_system_colors
 	xor	esi,esi
@@ -1473,15 +1414,19 @@ draw_window:
 	mov	eax,[window_high]
 	sub	eax,25+FILE_BR_TOP_LINE
 	mov	[file_browser_data_1.size_y],ax
-	mov	[scroll_bar_data_vertical.size_y],ax
+	mov	[scroll_bar_data_vertical.y_size],ax
 	mov	eax,[window_width]
 	sub	eax,10+20
 	mov	[file_browser_data_1.size_x],ax
 	add	ax,10
-	mov	[scroll_bar_data_vertical.start_x],ax
-	mov	edx,[w_work]	; color of work area RRGGBB,8->color
+	mov	[scroll_bar_data_vertical.x_pos],ax
+	mov	edx,[app_colours.work]	; color of work area RRGGBB,8->color
 	or	edx,0x63000000
 	mcall	SF_DRAW_RECT,[window_width],FILE_BR_TOP_LINE
+	pushad
+	cld
+	stdcall [kmainmenu_draw], [main_menu]
+	popad
 
 	push	ecx
 	rol	ecx,16
@@ -1510,50 +1455,11 @@ draw_window:
 	call	draw_draw_file_browser1
 	mov	[do_not_draw_open_button_label],0
 .1:
-	push	dword menu_data_1
-	call	[menu_bar_draw]
-	push	dword menu_data_2
-	call	[menu_bar_draw]
-	push	dword menu_data_3
-	call	[menu_bar_draw]
 
-	;sort buttons
-	mov	bx,[file_browser_data_1.start_x]
-	shl	ebx,16
-	mov	bx,FILE_BR_COL_W1
-	mov	cx,[file_browser_data_1.start_y]
-	sub	cx,16
-	shl	ecx,16
-	mov	cx,15
-	mov	esi,[w_work]
-	mcall	SF_DEFINE_BUTTON,,,7
-	add	ebx,FILE_BR_COL_W1 shl 16
-	mov	bx,FILE_BR_COL_W2
-	mcall	,,,8
-	add	ebx,FILE_BR_COL_W2 shl 16
-	mov	bx,FILE_BR_COL_W3
-	mcall	,,,10
-	add	ebx,FILE_BR_COL_W3 shl 16
-	mov	bx,FILE_BR_COL_W4
-	mcall	,,,9
-
-	;sort captions
-	mov	bx,[file_browser_data_1.start_x]
-	add	bx,4
-	shl	ebx,16
-	mov	bx,[file_browser_data_1.start_y]
-	sub	bx,12
-	mov	ecx,[w_work_text]
-	or	ecx,0x80000000
-	mcall	SF_DRAW_TEXT,,,menu_text_area_2.1
-	add	ebx,FILE_BR_COL_W1 shl 16
-	mcall	,,,menu_text_area_2.2
-	add	ebx,FILE_BR_COL_W2 shl 16
-	mcall	,,,menu_text_area_2.4
-	add	ebx,FILE_BR_COL_W3 shl 16
-	mcall	,,,menu_text_area_2.3
-
-;cmp [sort_type],1
+	movzx	eax,word[file_browser_data_1.size_x]
+	sub	eax,FILE_BR_COL_W2+FILE_BR_COL_W3+FILE_BR_COL_W4
+	mov	[file_br_col_w1],eax
+	call	draw_sort_buttons
 
 	mov	ebx,[file_browser_data_1.x]
 	mov	ax,bx
@@ -1564,13 +1470,13 @@ draw_window:
 	shl	eax,16
 	sub	ebx,eax
 	mov	ecx,25 shl 16 + 16
-	mcall	SF_DEFINE_BUTTON,,,2,[w_work_button] ;Exit Dir
+	mcall	SF_DEFINE_BUTTON,,,2,[app_colours.work_button] ;Exit Dir
 
 	pusha
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,21 shl 16
-	mov	ecx,[w_work_button_text]
+	mov	ecx,[app_colours.work_button_text]
 	or	ecx,0x90000000
 	mcall	SF_DRAW_TEXT,,,message_ExitDir_button
 	add	ebx,4
@@ -1580,14 +1486,14 @@ draw_window:
 	popa
 
 	push	ebx
-	sub	ebx,70 shl 16
-	mov	bx,60
+	sub	ebx,80 shl 16
+	mov	bx,70
 	mcall	SF_DEFINE_BUTTON,,,6 ;Refresh
 
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,2 shl 16
-	mov	ecx,[w_work_button_text]
+	mov	ecx,[app_colours.work_button_text]
 	or	ecx,0x90000000
 	mcall	SF_DRAW_TEXT,,,message_ReloadDir_button
 	pop	ebx
@@ -1612,7 +1518,7 @@ draw_window:
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,4 shl 16
-	mov	ecx,[w_work_button_text]
+	mov	ecx,[app_colours.work_button_text]
 	or	ecx,0x90000000
 	mcall	SF_DRAW_TEXT,,,message_cancel_button
 	popa
@@ -1645,15 +1551,100 @@ draw_window:
 	test	[eax],byte 0x10
 	jz	@f
 
-	mov	edx,message_0	; Open Dir
+	mov	edx,sz_Open
 @@:
 ;--------------------------------------
 	mov	[open_button_coordinates],ebx
-	mov	ecx,[w_work_button_text]
+	mov	ecx,[app_colours.work_button_text]
 	or	ecx,0x90000000
 	mcall	SF_DRAW_TEXT	;message_open_button
 .end:
 	mcall	SF_REDRAW,SSF_END_DRAW
+	ret
+;---------------------------------------------------------------------
+; in:
+;   edx - 0 or 0x80000000
+align 4
+clear_sort_buttons:
+	;sort buttons
+	mov	bx,[file_browser_data_1.start_x]
+	shl	ebx,16
+	mov	bx,word[file_br_col_w1]
+	dec	bx
+	mov	cx,[file_browser_data_1.start_y]
+	sub	cx,16
+	shl	ecx,16
+	mov	cx,15
+	mov	esi,[app_colours.work]
+	mov dx,7
+	mcall	SF_DEFINE_BUTTON
+	ror	ebx,16
+	add	bx,word[file_br_col_w1]
+	ror	ebx,16
+	mov	bx,FILE_BR_COL_W2-1
+	mov dx,8
+	mcall
+	add	ebx,FILE_BR_COL_W2 shl 16
+	mov	bx,FILE_BR_COL_W3-1
+	mov dx,10
+	mcall
+	add	ebx,FILE_BR_COL_W3 shl 16
+	mov	bx,FILE_BR_COL_W4-1
+	mov dx,9
+	mcall
+	ret
+;---------------------------------------------------------------------
+align 4
+draw_sort_buttons:
+	xor	edx,edx
+	call	clear_sort_buttons
+
+	;make arrows
+	mov	byte[sz_Sort.1e],' '
+	mov	byte[sz_Sort.2e],' '
+	mov	byte[sz_Sort.3e],' '
+	mov	byte[sz_Sort.4e],' '
+	mov	al,byte[symbol_down]
+	bt	[sort_type],0
+	jnc	@f
+	mov	al,byte[symbol_up]
+@@:
+	mov	ebx,[sort_type]
+	shr	ebx,1
+	cmp	ebx,3
+	jne	@f
+	mov	byte[sz_Sort.4e],al
+@@:
+	cmp	ebx,2
+	jne	@f
+	mov	byte[sz_Sort.3e],al
+@@:
+	cmp	ebx,1
+	jne	@f
+	mov	byte[sz_Sort.2e],al
+@@:
+	or	ebx,ebx
+	jnz	@f
+	mov	byte[sz_Sort.1e],al
+@@:
+
+	;sort captions
+	mov	bx,[file_browser_data_1.start_x]
+	add	bx,4
+	shl	ebx,16
+	mov	bx,[file_browser_data_1.start_y]
+	sub	bx,12
+	mov	ecx,[app_colours.work_text]
+	or	ecx,0x80000000
+	mcall	SF_DRAW_TEXT,,,sz_Sort.name
+	ror	ebx,16
+	add	bx,word[file_br_col_w1]
+	ror	ebx,16
+	mcall	,,,sz_Sort.type
+	add	ebx,FILE_BR_COL_W2 shl 16
+	mcall	,,,sz_Sort.size
+	add	ebx,FILE_BR_COL_W3 shl 16
+	mcall	,,,sz_Sort.date
 	ret
 ;---------------------------------------------------------------------
 ; in:
@@ -1679,17 +1670,18 @@ redraw_open_button:
 	shl	eax,16
 	add	ecx,eax
 	mov	cx,16
-	mov	esi, [w_work_button]
+	mov	esi, [app_colours.work_button]
 	mcall	SF_DEFINE_BUTTON,,,0x80000004
 	mcall	,,,4 ;Open | Save
 	pop	edx ebx
 
-	mov	ecx,[w_work_button_text]
+	mov	ecx,[app_colours.work_button_text]
 	or	ecx,0x90000000
 	mcall	SF_DRAW_TEXT	;message_open_button
 .exit:
 	ret
 ;---------------------------------------------------------------------
+align 4
 draw_open_button_label:
 	cmp	[do_not_draw_open_button_label],1
 	je	.exit_1
@@ -1698,15 +1690,9 @@ draw_open_button_label:
 	jne	.exit_1
 
 	pusha
+	mov	edx,sz_Save
 	cmp	[focus_pointer],1
-	jne	@f
-	mov	edx,message_1	; Save
-	jmp	.1
-@@:
-	mov	edx,[open_dialog_type]
-	shl	edx,2
-	add	edx,message_open_dialog_button
-	mov	edx,[edx]
+	je	.1
 
 	mov	eax,[file_browser_data_1.folder_block]
 	test	eax,eax
@@ -1715,80 +1701,30 @@ draw_open_button_label:
 	mov	eax,[file_browser_data_1.selected_BDVK_adress]
 	test	[eax],byte 0x10
 	jz	@f
-
-	mov	edx,message_0	; Open Dir
+	mov	edx,sz_Open
 	jmp	.1
 @@:
-	call	copy_new_file_name
+	; copy new file name
+	add	eax,40
+	stdcall	[edit_box_set_text],edit1,eax
+	stdcall	[edit_box_draw],edit1
 .1:
 	call	redraw_open_button
 	popa
 .exit_1:
 	ret
 ;---------------------------------------------------------------------
-copy_new_file_name:
-	mov	esi,[file_browser_data_1.selected_BDVK_adress]
-	add	esi,40
-	mov	edi,user_selected_name
-	cld
-	lodsb
-	test	al,al
-	jnz	.1
-	ret
-@@:
-	lodsb
-.1:
-	stosb
-	test	al,al
-	jnz	@r
-
-	sub	edi,user_selected_name
-	dec	edi
-
-	mov	[edit1.size],edi
-	mov	[edit1.pos],edi
-
-	push	dword name_editboxes
-	call	[edit_box_draw]
-	ret
-;---------------------------------------------------------------------
 prepare_system_colors:
-	mcall	SF_STYLE_SETTINGS,SSF_GET_COLORS,app_colours,10*4
+	mcall	SF_STYLE_SETTINGS,SSF_GET_COLORS,app_colours,sizeof.system_colors
 
-	mov	eax,[w_work]
-	mov	[menu_data_1.bckg_col],eax
-	mov	[menu_data_2.bckg_col],eax
-	mov	[menu_data_3.bckg_col],eax
+	mov	eax,[app_colours.work]
+	mov	[scroll_bar_data_vertical.bg_color],eax
 
-	mov	[menu_data_1.menu_col],eax
-	mov	[menu_data_2.menu_col],eax
-	mov	[menu_data_3.menu_col],eax
+	mov	eax,[app_colours.work_button]
+	mov	[scroll_bar_data_vertical.front_color],eax
 
-	mov	[scroll_bar_data_vertical.bckg_col],eax
-
-	mov	eax,[w_work_button]
-	mov	[menu_data_1.frnt_col],eax
-	mov	[menu_data_2.frnt_col],eax
-	mov	[menu_data_3.frnt_col],eax
-
-	mov	[scroll_bar_data_vertical.frnt_col],eax
-
-	mov	eax,[w_work_button]
-	mov	[menu_data_1.menu_sel_col],eax
-	mov	[menu_data_2.menu_sel_col],eax
-	mov	[menu_data_3.menu_sel_col],eax
-
-	mov	eax,[w_work_text]
-	mov	[menu_data_1.bckg_text_col],eax
-	mov	[menu_data_2.bckg_text_col],eax
-	mov	[menu_data_3.bckg_text_col],eax
-
-	mov	eax,[w_work_button_text]
-	mov	[menu_data_1.frnt_text_col],eax
-	mov	[menu_data_2.frnt_text_col],eax
-	mov	[menu_data_3.frnt_text_col],eax
-
-	mov	[scroll_bar_data_vertical.line_col],eax
+	mov	eax,[app_colours.work_button_text]
+	mov	[scroll_bar_data_vertical.line_color],eax
 	ret
 ;---------------------------------------------------------------------
 draw_for_fs_errors:
@@ -1841,12 +1777,12 @@ draw_for_fs_errors:
 	add	ecx,eax
 	mov	cx,15
 
-	mcall	SF_DEFINE_BUTTON,,,5,[w_work_button]	;0xffffff
+	mcall	SF_DEFINE_BUTTON,,,5,[app_colours.work_button]	;0xffffff
 
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,4 shl 16
-	mov	ecx,[w_work_button_text]
+	mov	ecx,[app_colours.work_button_text]
 	add	ecx,0x90000000
 	mcall	SF_DRAW_TEXT,,,message_cancel_button
 
@@ -1883,8 +1819,7 @@ draw_file_name:
 	add	eax,5
 	mov	[edit1.top],eax
 
-	push	dword name_editboxes
-	call	[edit_box_draw]
+	stdcall	[edit_box_draw],edit1
 
 	mov	bx,[file_browser_data_1.start_x]
 	add	bx,5
@@ -1892,7 +1827,7 @@ draw_file_name:
 	mov	bx,[file_browser_data_1.start_y]
 	add	bx,[file_browser_data_1.size_y]
 	add	bx,9
-	mov	ecx,[w_work_text]
+	mov	ecx,[app_colours.work_text]
 	add	ecx,0x80000000
 	mcall	SF_DRAW_TEXT,,,message_file_name
 	ret
@@ -1901,47 +1836,17 @@ draw_dir_path:
 	mov	eax,[file_browser_data_1.x]
 	mov	ebx,eax
 	shr	ebx,16
-	add	ebx,3
 	and	eax,0xffff
-	sub	eax,5
+	sub	eax,138
 
 	mov	[PathShow_data_1.area_size_x],ax
 	mov	[PathShow_data_1.start_x],bx
 ;--------------------------------------
-;; top line
-;	mov	ebx,[file_browser_data_1.x]
-;	mcall	SF_DRAW_RECT,,<7,1>,0x0
-; down line
-;	push	ebx ecx
-;	mcall	,,<21,1>,
-;	pop	ecx ebx
-; left line
-;	push	ebx
-;	mov	bx,1
-;	mov	cx,15
-;	mcall
-;	pop	ebx
-; right line
-;	mov	ax,bx
-;	shr	ebx,16
-;	add	bx,ax
-;	dec	ebx
-;	shl	ebx,16
-;	mov	bx,1
-;	mcall	SF_DRAW_RECT
-;--------------------------------------
-	mov	ebx,[file_browser_data_1.x]
-	sub	ebx,2
-	add	ebx,1 shl 16
-	mcall	SF_DRAW_RECT,,<8,13>,0xffffcc
-;--------------------------------------
 ; prepare for PathShow
-	push	dword PathShow_data_1
-	call	[PathShow_prepare]
+	stdcall	[PathShow_prepare],PathShow_data_1
 
 ; draw for PathShow
-	push	dword PathShow_data_1
-	call	[PathShow_draw]
+	stdcall	[PathShow_draw],PathShow_data_1
 
 	ret
 ;---------------------------------------------------------------------
@@ -1956,13 +1861,9 @@ draw_draw_file_browser1:
 	mov	[file_browser_data_1.all_redraw],eax
 	mov	[scroll_bar_data_vertical.all_redraw],eax
 
-	push	dword file_browser_data_1
-	call	[FileBrowser_draw]
-
+	stdcall	[FileBrowser_draw],file_browser_data_1
 	call	draw_open_button_label
-
 	call	prepare_scrollbar_data
-
 	call	draw_scrollbar
 
 	xor	eax,eax
@@ -1975,10 +1876,7 @@ draw_draw_file_browser2:
 	mov	[file_browser_data_1.all_redraw],eax
 
 	call	get_scrollbar_data
-
-	push	dword file_browser_data_1
-	call	[FileBrowser_draw]
-
+	stdcall	[FileBrowser_draw],file_browser_data_1
 	call	draw_open_button_label
 
 	xor	eax,eax
@@ -2004,8 +1902,26 @@ draw_scrollbar:
 @@:
 	ret
 ;---------------------------------------------------------------------
+align 4
 get_scrollbar_data:
 	mov	eax,[scroll_bar_data_vertical.position]
+	cmp	[file_browser_data_1.start_draw_line],eax
+	je	.no_change_cursor
+	push	ecx edx
+	mov	ecx,eax
+	sub	ecx,[file_browser_data_1.start_draw_line]
+	movzx	edx,word[file_browser_data_1.line_size_y]
+	imul	ecx,edx
+	mov	dx,[file_browser_data_1.start_draw_cursor_line]
+	sub	dx,cx
+	cmp	dx,0
+	jge	@f
+	xor	dx,dx
+@@:
+	mov	[file_browser_data_1.start_draw_cursor_line],dx
+	mov	[file_browser_data_1.all_redraw],1
+	pop	edx ecx
+.no_change_cursor:
 	mov	[file_browser_data_1.start_draw_line],eax
 	ret
 ;---------------------------------------------------------------------
@@ -2174,11 +2090,6 @@ load_ini:
 ;---------------------------------------------------------------------
 load_icons:
 	mcall	SF_SYS_MISC,SSF_MEM_OPEN,str_icon_18,,0
-	or	eax,eax
-	jnz	@f
-	mov	[N_error],2
-	mov	[error_type],eax
-@@:
 ; set of RAW resolution to pixel
 	mov	[file_browser_data_1.resolution_raw],32
 ; set RAW palette,use else resolution 8bit or less
@@ -2389,20 +2300,25 @@ search_expansion:
 	ret
 ;---------------------------------------------------------------------
 ; in:
-;   esi - file name
+;   esi - file expansion
 ;   edi - filtering values ([communication_area+4100])
+;   [expansion_length] - strlen(file expansion)+1
 ; out:
 ;   eax - 0 - ok, 1 - error
+align 4
 compare_expansion:
+	cmp	[expansion_length],1
+	jle	.end_err ;if null
 	mov	ebx,[edi]
 	add	ebx,edi
 	add	edi,3
 .start:
 	cmp	ebx,edi
 	jb	.end_err
-	mov	ecx,[expansion_length]
 	inc	edi
-
+	cmp	byte[edi-1],0 ;start extension in filter?
+	jne .start
+	mov	ecx,[expansion_length]
 	push	esi edi
 @@:
 	cld
@@ -2416,8 +2332,7 @@ compare_expansion:
 	call	char_todown
 	cmp	al,ah
 	jne	@f
-	dec	ecx
-	jnz	@b
+	loop	@b
 	jmp	.end
 @@:
 	pop	edi esi
@@ -2432,6 +2347,7 @@ compare_expansion:
 	inc	eax
 	ret
 ;---------------------------------------------------------------------
+align 4
 prepare_extension_and_mark:
 	mov	esi,[dirinfo.return]
 	mov	ebp,[esi+4]
@@ -2456,6 +2372,12 @@ prepare_extension_and_mark:
 .end:
 	ret
 ;---------------------------------------------------------------------
+; in:
+;  esi - file name
+; out:
+;  esi - extension start
+;  ebx - extension end
+align 4
 search_extension_start:
 	mov	edx,esi
 	xor	eax,eax
@@ -2654,13 +2576,254 @@ copy_dir_name:
 	jnz	@b
 .exit:
 	ret
-;---------------------------------------------------------------------
+;------------------------------------------------------------------------------
+;description:
+;  run dialog [yes] [no]
+align 4
+confirmation_action:
+	mcall	SF_KEYBOARD,SSF_SET_INPUT_MODE,1
+	mov	[work_confirmation],0
+	mov	[work_confirmation_yes],0
+	jmp	.red
+.error:
+	ret
+;--------------------------------------
+.red_1:
+	call	control_minimal_window_size
+	call	draw_window
+.red:
+	call	draw_confirmation_menu
+;--------------------------------------
+.still:
+	mcall	SF_WAIT_EVENT
+	cmp	eax,EV_REDRAW
+	je	.red_1
+
+	cmp	eax,EV_KEY
+	je	key_menu_confirmation
+
+	cmp	eax,EV_BUTTON
+	jne	.still
+
+	mcall	SF_GET_BUTTON
+	cmp	ah,161
+	je	.no
+	cmp	ah,160
+	jne	@f
+.yes:
+	mov	[work_confirmation_yes],1
+.no:
+	call	draw_window ;to clear the dialog box
+	ret
+@@:
+	cmp	ah,1
+	jne	.still
+	ret
+;------------------------------------------------------------------------------
+align 4
+draw_confirmation_menu:
+    stdcall draw_dialogbox_rectangle,DLG_YN_W,80
+	pushad
+	add	ebx,(DLG_YN_W-90) shl 15
+	add	ecx,(80-15-12) shl 16
+	mov	cx,15-1
+	mov	bx,40-1
+	mov edx,160
+	cmp	[work_confirmation],0
+	je	@f
+	or edx,0x40000000
+@@:
+	mcall	SF_DEFINE_BUTTON, ,,,[app_colours.work_button]
+	add	ebx,50 shl 16
+	inc	edx
+	xor edx,0x40000000
+	mcall
+	popad
+	push	ebx ecx
+	add	ebx,(DLG_YN_W-90) shl 15
+	add	ecx,(80-15-12) shl 16
+	mov	bx,40
+	mov	cx,15
+	mov	edx,[app_colours.work_graph]
+	cmp	[work_confirmation],0
+	jne	@f
+	add	ebx,50 shl 16 ;x_pos+=50
+@@:
+	mcall ;inactive button border
+	add	ecx,1 shl 16
+	add	ebx,1 shl 16
+	mov	bx,38 ;x_size
+	mov	cx,13
+	mcall	,,,[app_colours.work] ;fill in inactive buttons
+	pop	ecx	ebx
+	shr	ecx,16
+	mov	bx,cx
+	push ebx
+	add	ebx,11 shl 16+10
+	mov ecx,[app_colours.work_text]
+	or ecx,0x90000000
+	mcall	SF_DRAW_TEXT,,,[confirmation_type]
+	add	ebx,18
+	mcall	,,,msgbox_3
+	pop ebx
+	add	ebx,(16+DLG_YN_W-90) shl 15+52
+	mov ecx,[app_colours.work_button_text]
+	or ecx,0x90000000
+	mcall	,,,sz_Yes
+	add	ebx,54 shl 16
+	mcall	,,,sz_No
+	ret
+;------------------------------------------------------------------------------
+align 4
+key_menu_confirmation:
+	mcall	SF_GET_KEY
+	cmp	ah,75
+	je	confirmation_key_75
+	cmp	ah,77
+	je	confirmation_key_75
+	cmp	ah,28
+	jne	@f
+	cmp	[work_confirmation],0
+	je	confirmation_action.yes
+	jmp	confirmation_action.no
+
+@@:
+	cmp	ah,1
+	jne	confirmation_action.still
+	ret
+;------------------------------------------------------------------------------
+confirmation_key_75:
+	dec	[work_confirmation]
+	and	[work_confirmation],1
+	jmp	confirmation_action.red
+;------------------------------------------------------------------------------
+;description:
+;  draw a rectangle for the dialog box
+; in:
+;  size_x - message width
+;  size_y - message height
+; out:
+;  ebx - (pos_x<<16)+size_x
+;  ecx - (pos_y<<16)+size_y
+align 4
+proc draw_dialogbox_rectangle, size_x:dword, size_y:dword
+    mov  ecx,[window_high]
+    mov  ebx,[window_width]
+    sub  ecx,[size_y]
+    shr  ecx,1
+    sub  ebx,[size_x]
+    shr  ebx,1
+    sub  ebx,5
+    shl  ecx,16
+    shl  ebx,16
+    mov  cx,word[size_y]
+    mov  bx,word[size_x]
+
+    push ecx
+; top line
+    mov	cx,1
+    mcall	SF_DRAW_RECT,,,[app_colours.work_graph]
+; down line
+	ror ecx,16
+	add ecx,[size_y]
+	dec ecx
+	ror ecx,16
+	mcall
+	pop ecx
+	push ecx
+	add ecx,1 shl 16
+	sub ecx,2
+	push ebx
+; left line
+    mov	bx,1
+    mcall
+; right line
+    ror ebx,16
+    add ebx,[size_x]
+    dec ebx
+    ror ebx,16
+    mcall
+    pop ebx
+    push ebx
+    add ebx,1 shl 16
+    sub ebx,2
+    mcall ,,, [app_colours.work]
+    pop ebx
+    pop ecx
+    ret
+endp
+;------------------------------------------------------------------------------
+align 4
+init_menu:
+    cmp     [library03.status_lib],0 ; test load library
+    jnz     .end
+    stdcall [kmenu_init], app_colours
+    stdcall [ksubmenu_new]
+    mov     [main_menu], eax
+
+    stdcall [ksubmenu_new]
+    mov     [main_menu_select], eax
+    ;menuitems init in load_root_directory
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_Select_Disk, [main_menu_select]
+    stdcall [ksubmenu_add], [main_menu], eax
+
+    ;cmp     [sort_init], f_null_1
+    ;je      @f
+    stdcall [ksubmenu_new]
+    mov     [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Sort.name, 7
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Sort.type, 8
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Sort.size, 10
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Sort.date, 9
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_Sort, [main_menu_sort]
+    stdcall [ksubmenu_add], [main_menu], eax
+;@@:
+    stdcall [ksubmenu_new]
+    mov     [main_menu_filter], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_show_all, 11
+    stdcall [ksubmenu_add], [main_menu_filter], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_Only_supported, 12
+    stdcall [ksubmenu_add], [main_menu_filter], eax
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_Filter, [main_menu_filter]
+    stdcall [ksubmenu_add], [main_menu], eax
+
+    cmp     [open_dialog_type],1
+    jne     .end
+    stdcall [ksubmenu_new]
+    mov     [main_menu_extension], eax
+    mov     esi,[communication_area]
+    add     esi,4104
+    mov     edi,ID_BUT_START_EXTENTION
+    cld
+.cycle:
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, esi, edi
+    stdcall [ksubmenu_add], [main_menu_extension], eax
+@@:
+    lodsb
+    or      al,al
+    jnz     @b
+    cmp     byte[esi],0
+    jz      .cycle_end
+@@:
+    inc     edi
+    jmp     .cycle
+.cycle_end:
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_Extension, [main_menu_extension]
+    stdcall [ksubmenu_add], [main_menu], eax
+
+.end:
+    ret
 
 ;plugins_directory	db 'plugins/',0
 plugins_directory	db 0
 
 system_dir_Boxlib	db '/sys/lib/box_lib.obj',0
 system_dir_Sort 	db '/sys/lib/sort.obj',0
+system_dir_Kmenu 	db '/sys/lib/kmenu.obj',0
 
 align	4
 l_libs_start:
@@ -2670,8 +2833,9 @@ import_box_lib,plugins_directory
 library02	l_libs	system_dir_Sort+9,file_name,system_dir_Sort,\
 Sort_import,plugins_directory
 
+library03	l_libs	system_dir_Kmenu+9,file_name,system_dir_Kmenu,\
+import_libkmenu,plugins_directory
 end_l_libs:
-
 
 ;---------------------------------------------------------------------
 align	4
@@ -2680,8 +2844,7 @@ sort_init	dd aSort_init
 sort_version	dd aSort_version
 sort_dir	dd aSort_SortDir
 sort_strcmpi	dd aSort_strcmpi
-	dd 0
-	dd 0
+	dd 0,0
 
 aSort_init	db 'START',0
 aSort_version	db 'version',0
@@ -2690,6 +2853,7 @@ aSort_strcmpi	db 'strcmpi',0
 
 ;---------------------------------------------------------------------
 include '../../develop/libraries/box_lib/import.inc'
+include '../../develop/libraries/kmenu/import.inc'
 ;---------------------------------------------------------------------
 align	4
 window_high			dd 0
@@ -2715,10 +2879,14 @@ open_dialog_title_pointer:
 	dd 0
 
 message_open_dialog_button:
-	dd message_0
-	dd message_1
-	dd message_2
+	dd sz_Open
+	dd sz_Save
+	dd sz_Select
 	dd 0
+
+confirmation_type dd msgbox_2
+work_confirmation rb 1
+work_confirmation_yes rb 1
 ;---------------------------------------------------------------------
 expansion_length	dd 0
 ;---------------------------------------------------------------------
@@ -2767,9 +2935,6 @@ if lang eq ru_RU
 load_ini_error_type:
 	db 'Ошибка загрузки INI-файла',0
 
-load_icons_error_type:
-	db 'Ошибка загрузки иконок',0
-
 memory_free_error_type:
 	db 'Ошибка освобождения памяти',0
 
@@ -2785,9 +2950,6 @@ error_help_text:
 else ;en_US
 load_ini_error_type:
 	db 'Error loading INI file',0
-
-load_icons_error_type:
-	db 'Error loading icons',0
 
 memory_free_error_type:
 	db 'Error of free memory',0
@@ -2859,7 +3021,7 @@ Tab_key_block	db 0
 
 filter_flag	db 1
 
-focus_pointer	db 0
+focus_pointer	db 0 ;for button caption, if 0 - Open, 1 - Save
 ;---------------------------------------------------------------------
 start_pach:
 	db '/sys',0
@@ -2882,7 +3044,7 @@ message_cancel_button:
 	db 'Отмена',0
 
 message_ReloadDir_button:
-	db ' Обнов.',0
+	db 'Обновить',0
 
 message_ExitDir_button:
 	db '^',0
@@ -2890,11 +3052,11 @@ message_ExitDir_button:
 message_file_name:
 	db 'Имя файла:',0
 
-message_0:
+sz_Open:
 	db ' Откр.',0
-message_1:
+sz_Save:
 	db ' Сохр.',0
-message_2:
+sz_Select:
 	db 'Выбор',0
 
 title_0:
@@ -2904,6 +3066,8 @@ title_1:
 title_2:
 	db 'Выбрать Директорию',0
 
+sz_Yes db 'Да',0
+sz_No  db 'Нет',0
 else ;en_US
 message:
 	db 'Press any key...',0
@@ -2920,11 +3084,11 @@ message_ExitDir_button:
 message_file_name:
 	db 'File name:',0
 
-message_0:
+sz_Open:
 	db ' Open ',0
-message_1:
+sz_Save:
 	db ' Save ',0
-message_2:
+sz_Select:
 	db 'Select',0
 
 title_0:
@@ -2934,237 +3098,70 @@ title_1:
 title_2:
 	db 'Select Dir',0
 
+sz_Yes db 'Yes',0
+sz_No  db 'No',0
 end if
 ;---------------------------------------------------------------------
 align 4
-menu_data_1:
-.type:		dd 1   ;+0
-.x:
-.size_x 	dw 80  ;+4
-.start_x	dw 10	;+6
-.y:
-.size_y 	dw 15	;+8
-.start_y	dw 26  ;+10
-.text_pointer:	dd menu_text_area_1  ;0 ;+12
-.pos_pointer:	dd menu_text_area_1_1 ;0 ;+16
-.text_end	dd menu_text_area_1_1 ;0 ;+20
-.ret_key	dd 0  ;+24
-.mouse_keys	dd 0  ;+28
-.x1:
-.size_x1	dw 80  ;+32
-.start_x1	dw 10	;+34
-.y1:
-.size_y1	dw 100	 ;+36
-.start_y1	dw 41  ;+38
-.bckg_col	dd 0xffffff  ;0xe5e5e5 ;+40
-.frnt_col	dd 0xff ;+44
-.menu_col	dd 0xeef0ff ;0xffffff ;+48
-.select 	dd 0 ;+52
-.out_select	dd 0 ;+56
-.buf_adress	dd 0 ;+60
-.procinfo	dd procinfo ;+64
-.click		dd 0 ;+68
-.cursor 	dd 0 ;+72
-.cursor_old	dd 0 ;+76
-.interval	dd 16 ;+80
-.cursor_max	dd 0 ;+84
-.extended_key	dd 0 ;+88
-.menu_sel_col	dd 0x00cc00 ;+92
-.bckg_text_col	dd 0 ; +96
-.frnt_text_col	dd 0xffffff ;+100
-.mouse_keys_old dd 0 ;+104
-.font_height	dd 8 ;+108
-.cursor_out	dd 0 ;+112
-.get_mouse_flag dd 0 ;+116
+main_menu dd 0
+
+main_menu_select dd 0
+main_menu_sort dd 0
+main_menu_filter dd 0
+main_menu_extension dd 0
 ;---------------------------------------------------------------------
-menu_text_area_1:
+sz_Select_Disk:
 if lang eq ru_RU
-db 'Выбор Диска',0
+db 'Выбор диска',0
 else ;en_US
-db 'Select Disk',0
+db 'Select disk',0
 end if
 ;---------------------------------------------------------------------
-align 4
-menu_data_2:
-.type:		dd 0   ;+0
-.x:
-.size_x:
-if lang eq ru_RU
-	dw 66
-else ;en_US
-	dw 30
-end if
-.start_x	dw 95	;+6
-.y:
-.size_y 	dw 15	;+8
-.start_y	dw 26  ;+10
-.text_pointer:	dd menu_text_area_2  ;0 ;+12
-.pos_pointer:	dd menu_text_area_2.1 ;0 ;+16
-.text_end	dd menu_text_area_2.end ;0 ;+20
-.ret_key	dd 0  ;+24
-.mouse_keys	dd 0  ;+28
-.x1:
-.size_x1:
-if lang eq ru_RU
-	dw 66
-else ;en_US
-	dw 30
-end if
-.start_x1	dw 95	;+34
-.y1:
-.size_y1	dw 100	 ;+36
-.start_y1	dw 41  ;+38
-.bckg_col	dd 0xffffff ; 0xe5e5e5 ;+40
-.frnt_col	dd 0xff ;+44
-.menu_col	dd 0xeef0ff  ;0xffffff ;+48
-.select 	dd 0 ;+52
-.out_select	dd 0 ;+56
-.buf_adress	dd 0 ;+60
-.procinfo	dd procinfo ;+64
-.click		dd 0 ;+68
-.cursor 	dd 0 ;+72
-.cursor_old	dd 0 ;+76
-.interval	dd 16 ;+80
-.cursor_max	dd 0 ;+84
-.extended_key	dd 0 ;+88
-.menu_sel_col	dd 0x00cc00 ;+92
-.bckg_text_col	dd 0 ; +96
-.frnt_text_col	dd 0xffffff ;+100
-.mouse_keys_old dd 0 ;+104
-.font_height	dd 8 ;+108
-.cursor_out	dd 0 ;+112
-.get_mouse_flag dd 0 ;+116
-;---------------------------------------------------------------------
-menu_text_area_2:
+sz_Sort:
 if lang eq ru_RU
 db 'Сортировка',0
-.1:
-db 'Имя',0
-.2:
-db 'Тип',0
-.3:
-db 'Дата',0
-.4:
-db 'Размер',0
+.name: db 'Имя '
+.1e: db ' ',0
+.type: db 'Тип '
+.2e: db ' ',0
+.date: db 'Дата '
+.3e: db ' ',0
+.size: db 'Разм. '
+.4e: db ' ',0
 else ;en_US
 db 'Sort',0
-.1:
-db 'Name',0
-.2:
-db 'Type',0
-.3:
-db 'Date',0
-.4:
-db 'Size',0
+.name: db 'Name '
+.1e: db ' ',0
+.type: db 'Type '
+.2e: db ' ',0
+.date: db 'Date '
+.3e: db ' ',0
+.size: db 'Size '
+.4e: db ' ',0
 end if
 .end:
 db 0
 ;---------------------------------------------------------------------
-align 4
-menu_data_3:
-.type:		dd 0   ;+0
-.x:
-.size_x 	dw 45  ;+4
-.start_x:
 if lang eq ru_RU
-	dw 166
+sz_Filter db 'Фильтр',0
+sz_show_all db '*.* - показать все',0
+sz_Only_supported db 'Только поддерживаемые',0
+
+sz_Extension db 'Расширение',0
 else ;en_US
-	dw 130
+sz_Filter db 'Filter',0
+sz_show_all db '*.* - show all',0
+sz_Only_supported db 'Only supported',0
+
+sz_Extension db 'Extension',0
 end if
-.y:
-.size_y 	dw 15	;+8
-.start_y	dw 26  ;+10
-.text_pointer:	dd menu_text_area_3  ;0 ;+12
-.pos_pointer:	dd menu_text_area_3.1 ;0 ;+16
-.text_end	dd menu_text_area_3.end ;0 ;+20
-.ret_key	dd 0  ;+24
-.mouse_keys	dd 0  ;+28
-.x1:
-.size_x1:
-if lang eq ru_RU
-	dw 137
-else ;en_US
-	dw 95
-end if
-.start_x1:
-if lang eq ru_RU
-	dw 166
-else ;en_US
-	dw 130
-end if
-.y1:
-.size_y1	dw 100	 ;+36
-.start_y1	dw 41  ;+38
-.bckg_col	dd 0xffffff ; 0xe5e5e5 ;+40
-.frnt_col	dd 0xff ;+44
-.menu_col	dd 0xeef0ff  ;0xffffff ;+48
-.select 	dd 0 ;+52
-.out_select	dd 0 ;+56
-.buf_adress	dd 0 ;+60
-.procinfo	dd procinfo ;+64
-.click		dd 0 ;+68
-.cursor 	dd 0 ;+72
-.cursor_old	dd 0 ;+76
-.interval	dd 16 ;+80
-.cursor_max	dd 0 ;+84
-.extended_key	dd 0 ;+88
-.menu_sel_col	dd 0x00cc00 ;+92
-.bckg_text_col	dd 0 ; +96
-.frnt_text_col	dd 0xffffff ;+100
-.mouse_keys_old dd 0 ;+104
-.font_height	dd 8 ;+108
-.cursor_out	dd 0 ;+112
-.get_mouse_flag dd 0 ;+116
-;---------------------------------------------------------------------
-menu_text_area_3:
-if lang eq ru_RU
-db 'Фильтр',0
-.1:
-db '*.* - показать все',0
-db 'Только поддерживаемые',0
-else ;en_US
-db 'Filter',0
-.1:
-db '*.* - show all',0
-db 'Only supported',0
-end if
-.end:
-db 0
+
+m_lost db 0
 ;---------------------------------------------------------------------
 
 align 4
-scroll_bar_data_vertical:
-.x:
-.size_x 	dw 15 ;+0
-.start_x	dw 500 ;+2
-.y:
-.size_y 	dw 300 ;+4
-.start_y	dw FILE_BR_TOP_LINE ;+6
-.btn_high	dd 15 ;+8
-.type		dd 2  ;+12
-.max_area	dd 10  ;+16
-.cur_area	dd 2  ;+20
-.position	dd 0  ;+24
-.bckg_col	dd 0xeeeeee ;+28
-.frnt_col	dd 0xbbddff ;+32 ;0x8aeaa0
-.line_col	dd 0  ;+36
-.redraw 	dd 0  ;+40
-.delta		dw 0  ;+44
-.delta2 	dw 0  ;+46
-.run_x:
-.r_size_x	dw 0  ;+48
-.r_start_x	dw 0  ;+50
-.run_y:
-.r_size_y	dw 0 ;+52
-.r_start_y	dw 0 ;+54
-.m_pos		dd 0 ;+56
-.m_pos_2	dd 0 ;+60
-.m_keys 	dd 0 ;+64
-.run_size	dd 0 ;+68
-.position2	dd 0 ;+72
-.work_size	dd 0 ;+76
-.all_redraw	dd 0 ;+80
-.ar_offset	dd 1 ;+84
+scroll_bar_data_vertical scrollbar 15, 500, 300, FILE_BR_TOP_LINE,\
+	15, 10, 2, 0, 0xeeeeee, 0xbbddff, 0, 1
 ;---------------------------------------------------------------------
 align 4
 file_browser_data_1:
@@ -3234,23 +3231,21 @@ file_browser_data_1:
 ;---------------------------------------------------------------------
 PathShow_data_1:
 .type			dd 0	;+0
-.start_y		dw 11	;+4
+.start_y		dw 25	;+4
 .start_x		dw 10	;+6
-.font_size_x		dw 6	;+8	; 6 - for font 0, 8 - for font 1
+.font_size_x		dw 8	;+8	; 6 - for font 0, 8 - for font 1
 .area_size_x		dw 200	;+10
-.font_number		dd 0	;+12	; 0 - monospace, 1 - variable
-.background_flag	dd 0	;+16
+.font_number		dd 1	;+12	; 0 - monospace, 1 - variable
+.background_flag	dd 2	;+16
 .font_color		dd 0x0	;+20
-.background_color	dd 0x0	;+24
+.background_color	dd 0xffffcc	;+24
 .text_pointer		dd dir_path	;+28
 .work_area_pointer	dd text_work_area	;+32
 .temp_text_length	dd 0	;+36
 ;---------------------------------------------------------------------
 ; for EDITBOX
 align	4
-name_editboxes:
-edit1	edit_box 200,10,7,0xffffff,0xbbddff,0,0,0,4095,user_selected_name,mouse_dd,,0
-name_editboxes_end:
+edit1	edit_box 200,10,7,0xffffff,0xbbddff,0,0,0,511,user_selected_name,mouse_dd,,0
 
 ;mouse_flag:	dd 0x0
 
@@ -3265,10 +3260,10 @@ window_y:
 ;---------------------------------------------------------------------
 features_table:
 .type_table:
-	db '<DIR> '
+	db '<DIR>  '
 ;---------------------------------------------------------------------
 .size_table:
-	db '1023b '
+	db '1023b  '
 ;---------------------------------------------------------------------
 .date_table:
 	db '00.00.0000 00:00 '
@@ -3289,6 +3284,18 @@ end if
 .filter: rb 4096
 .end:
 	db '." -tdW',0
+
+msgbox_2:
+if lang eq ru_RU
+	db 'Ошибка при сохранении файла!',0
+msgbox_3 db 'Сохранить с Вашим расширением?',0
+else ;en_US
+	db 'Error saving file!',0
+msgbox_3 db 'Save with your extension?',0
+end if
+.end:
+symbol_up db 24,0
+symbol_down db 25,0
 IM_END:
 ;---------------------------------------------------------------------
 do_not_draw_open_button_label	rb 1
@@ -3296,25 +3303,11 @@ do_not_draw_open_button_label	rb 1
 ;include_debug_strings
 ;---------------------------------------------------------------------
 align 4
-app_colours:
-
-w_frame 		rd 1
-w_grab			rd 1
-w_work_dark		rd 1
-w_work_light	rd 1
-w_grab_text		rd 1
-w_work			rd 1
-w_work_button		rd 1
-w_work_button_text	rd 1
-w_work_text		rd 1
-w_work_graph		rd 1
+app_colours system_colors
 ;---------------------------------------------------------------------
 open_button_coordinates rd 1
 ;---------------------------------------------------------------------
 error_handler_store_input_mode rd 1
-;---------------------------------------------------------------------
-menu_text_area_1_1:
-rb 256
 ;---------------------------------------------------------------------
 	rb 1024
 stacktop:
