@@ -20,7 +20,7 @@ MB_TEXT_OFFSET equ 2 ;смещение, по которому начинаеться текст заголовка окна
 align 4
 start:
   mcall SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
-  mcall SF_SET_EVENTS_MASK,0x27
+  mcall SF_SET_EVENTS_MASK, EVM_MOUSE + EVM_BUTTON + EVM_KEY + EVM_REDRAW
 
   ;-- clear id pressed button ---
   mov ebx,[mb_text]
@@ -86,17 +86,17 @@ red_win:
   @@:
 
   call MsgBoxDrawAllBut
-  mcall SF_REDRAW,SF_REDRAW
+  mcall SF_REDRAW,SSF_END_DRAW
 
 align 4
 still:
   mcall SF_WAIT_EVENT
 
-  cmp al,1 ;изм. положение окна
+  cmp al,EV_REDRAW
   jz red_win
-  cmp al,2
+  cmp al,EV_KEY
   jz key
-  cmp al,3
+  cmp al,EV_BUTTON
   jz button
 
   jmp still
