@@ -421,8 +421,7 @@ draw_scrollbars:
     jbe   @f
 	cmp   [scroll_bar_data_vertical.cur_area],0
 	je   @f
-	push    dword scroll_bar_data_vertical
-	call    [scrollbar_ver_draw]
+	stdcall    [scrollbar_v_draw], scroll_bar_data_vertical
 ;    draw_scroll_bar_vertical scroll_bar_data_vertical
 	inc  [draw_scrollbar_counter]
 @@:
@@ -434,8 +433,7 @@ draw_scrollbars:
     jbe   @f
 	cmp   [scroll_bar_data_horizontal.cur_area],0
 	je   @f
-	push    dword scroll_bar_data_horizontal
-	call    [scrollbar_hor_draw]
+	stdcall    [scrollbar_h_draw], scroll_bar_data_horizontal
 ;    draw_scroll_bar_horizontal scroll_bar_data_horizontal
 	inc  [draw_scrollbar_counter]
 @@:

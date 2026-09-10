@@ -451,19 +451,19 @@ mouse:
 ;--------------------------------------
 align 4
 .red:
-	stdcall	[scrollbar_ver_mouse], scroll_bar_data_red
+	stdcall	[scrollbar_v_mouse], scroll_bar_data_red
 	cmp	[scroll_bar_data_red.delta2],0
 	jne	@f
 ;--------------------------------------
 align 4
 .green:
-	stdcall	[scrollbar_ver_mouse], scroll_bar_data_green
+	stdcall	[scrollbar_v_mouse], scroll_bar_data_green
 	cmp	[scroll_bar_data_green.delta2],0
 	jne	@f
 ;--------------------------------------
 align 4
 .blue:
-	stdcall	[scrollbar_ver_mouse], scroll_bar_data_blue
+	stdcall	[scrollbar_v_mouse], scroll_bar_data_blue
 	cmp	[scroll_bar_data_blue.delta2],0
 	jne	@f
 ;--------------------------------------
@@ -499,9 +499,9 @@ draw_tone:
 ;---------------------------------------------------------------------
 align 4
 draw_scrollbars:
-	stdcall	[scrollbar_ver_draw], scroll_bar_data_red
-	stdcall	[scrollbar_ver_draw], scroll_bar_data_green
-	stdcall	[scrollbar_ver_draw], scroll_bar_data_blue
+	stdcall	[scrollbar_v_draw], scroll_bar_data_red
+	stdcall	[scrollbar_v_draw], scroll_bar_data_green
+	stdcall	[scrollbar_v_draw], scroll_bar_data_blue
 	ret
 ;---------------------------------------------------------------------
 align 4
@@ -512,7 +512,7 @@ draw_history_frame:
 	mov	[frame_data.draw_text_flag],dword 1
 
 	mov	[frame_data.text_pointer],dword history_text
-	stdcall	[Frame_draw], frame_data
+	stdcall	[frame_draw], frame_data
 	ret
 ;---------------------------------------------------------------------
 align 4
@@ -590,7 +590,7 @@ newcol:
 	mov	[frame_data.x],ebx
 	mov	[frame_data.y],ecx
 
-	stdcall	[Frame_draw], frame_data
+	stdcall	[frame_draw], frame_data
 
 	pop	ecx ebx
 
