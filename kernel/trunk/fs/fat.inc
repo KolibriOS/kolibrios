@@ -2405,11 +2405,12 @@ fat_Write:
 ; hd_extend_file can return three error codes: FAT table error, device error or disk full.
 ; First two cases are fatal errors, in third case we may write some data
         cmp     al, ERROR_DISK_FULL
-        jnz     @f
+        jnz     .noWrite
 ; correct number of bytes to write
         mov     ecx, [edi+28]
         cmp     ecx, ebx
         ja      .length_ok
+.noWrite:
         push    0
 .ret:
         pop     eax eax eax ecx ecx
