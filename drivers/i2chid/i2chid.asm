@@ -27,8 +27,15 @@ entry start
 
 API_VERSION     = 1
 
+; Debug board output. fdo.inc prints a DEBUGF only when its level is not
+; below __DEBUG_LEVEL__, so the lower the build level, the more gets out:
+;   1 - bring-up chatter: probed addresses, full descriptors, report and
+;       touch frame dumps, silence recovery steps. Kilobytes per boot and a
+;       steady stream while the pad is used; build with it for a new pad.
+;   2 - the normal log: load, the controller and device found, settings,
+;       and every error. A few lines per boot.
 __DEBUG__ equ 1
-__DEBUG_LEVEL__ equ 1
+__DEBUG_LEVEL__ equ 2
 
 section '.reloc' data readable discardable fixups
 section '.text' code readable executable
@@ -38,19 +45,6 @@ include '../struct.inc'
 include '../macros.inc'
 include '../fdo.inc'
 
-; Chatter that is only interesting while bringing a new pad up. Compiled
-; in, but silent unless the debug setting is on. The skip label is local to
-; the expansion and starts with two dots, so it neither collides with
-; another expansion nor breaks the surrounding local label scope.
-macro DBG [args]
-{
- common
-  local ..skip
-        cmp     [DbgOn], 0
-        jz      ..skip
-        DEBUGF 1, args
-  ..skip:
-}
 
 ; --------------------------- HID over I2C ------------------------------------
 ; HID descriptor layout (all fields little-endian words).
@@ -157,10 +151,6 @@ CFG_RIGHT_CLICK     = 1
 ; pointer motion behaves identically over the whole surface.
 CFG_BTN_ZONE_PCT    = 12
 CFG_RIGHT_SPLIT_PCT = 50
-; Log everything the driver learns about the hardware. Off by default: the
-; full report descriptor alone is a couple of kilobytes on every boot.
-CFG_DEBUG           = 0
-;
 ; Fallback surface extents, used only when the report descriptor does not
 ; declare any - the zones then land where they did on the pad this driver
 ; was written against.
@@ -199,7 +189,7 @@ virtual at esp
 end virtual
         cmp     [.reason], DRV_ENTRY
         jnz     .fail
-        DEBUGF 1, "i2chid: loading\n"
+        DEBUGF 2, "i2chid: loading\n"
         call    read_config
         mov     [XferTimeout], DW_TIMEOUT_INIT
         call    detect_hw
@@ -218,10 +208,10 @@ end virtual
         invoke  CreateThread
         test    eax, eax
         jns     @f
-        DEBUGF 1, "i2chid: cannot create poll thread (%d)\n", eax
+        DEBUGF 2, "i2chid: cannot create poll thread (%d)\n", eax
         jmp     .fail
 @@:
-        DEBUGF 1, "i2chid: polling started\n"
+        DEBUGF 2, "i2chid: polling started\n"
         invoke  RegService, my_service, service_proc
         pop     edi esi ebx
         ret
@@ -399,12 +389,10 @@ proc read_config uses ebx esi edi
         movi    eax, CFG_RIGHT_SPLIT_PCT
 @@:
         mov     [RightSplitPct], eax
-        stdcall ini_int, key_debug, CFG_DEBUG
-        mov     [DbgOn], eax
         call    apply_geometry
-        DEBUGF 1, "i2chid: settings speed %u, jitter %u/%u, scroll %u/%u, tap %u/%u, rclick %u, zones %u%/%u%, debug %u\n", \
+        DEBUGF 2, "i2chid: settings speed %u, jitter %u/%u, scroll %u/%u, tap %u/%u, rclick %u, zones %u%/%u%\n", \
                 [Speed], [Jitter], [JitterBtn], [ScrollStep], [ScrollInvert], [TapEnable], \
-                [TapDrag], [RightClick], [BtnZonePct], [RightSplitPct], [DbgOn]
+                [TapDrag], [RightClick], [BtnZonePct], [RightSplitPct]
         ret
 endp
 
@@ -511,7 +499,7 @@ proc detect_hw uses ebx esi edi
         mov     [PciDevfn], eax
         mov     eax, [esi+PCIDEV.vendor_device_id]
         inc     [CtrlCount]
-        DBG "i2chid: candidate %x at PCI bus %x devfn %x\n", eax, [PciBus], [PciDevfn]
+        DEBUGF 1, "i2chid: candidate %x at PCI bus %x devfn %x\n", eax, [PciBus], [PciDevfn]
         call    setup_controller
         test    eax, eax
         jz      .next
@@ -530,7 +518,7 @@ proc detect_hw uses ebx esi edi
 ; A zero here means neither the PCI filter nor the AMD table matched
 ; anything at all, which is a very different problem from having tried
 ; controllers and found no device.
-        DEBUGF 1, "i2chid: no usable HID over I2C device found (%u controllers tried)\n", [CtrlCount]
+        DEBUGF 2, "i2chid: no usable HID over I2C device found (%u controllers tried)\n", [CtrlCount]
         xor     eax, eax
         ret
 .found:
@@ -561,7 +549,7 @@ proc detect_amd_fixed uses ebx esi edi
         jz      .none
         mov     [FixedBase], eax
         inc     [CtrlCount]
-        DEBUGF 1, "i2chid: AMD FCH I2C candidate at %x\n", eax
+        DEBUGF 2, "i2chid: AMD FCH I2C candidate at %x\n", eax
         call    setup_fixed_controller
         test    eax, eax
         jz      .skip
@@ -595,7 +583,7 @@ proc setup_fixed_controller uses ebx esi edi
         mov     eax, [ebx+DwIcCompType]
         cmp     eax, DW_COMP_TYPE_VALUE
         je      .good_hw
-        DEBUGF 1, "i2chid:   signature reads %x, asking AOAC to power the block on\n", eax
+        DEBUGF 2, "i2chid:   signature reads %x, asking AOAC to power the block on\n", eax
         call    amd_aoac_power_on
         mov     eax, [ebx+DwIcCompType]
         cmp     eax, DW_COMP_TYPE_VALUE
@@ -605,16 +593,16 @@ proc setup_fixed_controller uses ebx esi edi
         mov     [DwLcnt], DW_AMD_FS_LCNT
         mov     [DwSdaHold], DW_AMD_SDA_HOLD
         call    dw_ctrl_init
-        DEBUGF 1, "i2chid:   DesignWare I2C at %x, FIFO param %x\n", [FixedBase], [ebx+DwIcCompParam1]
+        DEBUGF 2, "i2chid:   DesignWare I2C at %x, FIFO param %x\n", [FixedBase], [ebx+DwIcCompParam1]
         movi    eax, 1
         ret
 .bad_hw:
-        DEBUGF 1, "i2chid:   still no DW_apb_i2c signature, got %x\n", eax
+        DEBUGF 2, "i2chid:   still no DW_apb_i2c signature, got %x\n", eax
         invoke  FreeKernelSpace, [I2cMmio]
         mov     [I2cMmio], 0
         jmp     .fail
 .no_map:
-        DEBUGF 1, "i2chid:   MapIoMem failed for %x\n", [FixedBase]
+        DEBUGF 2, "i2chid:   MapIoMem failed for %x\n", [FixedBase]
 .fail:
         xor     eax, eax
         ret
@@ -651,10 +639,10 @@ proc amd_aoac_power_on uses ebx esi edi
         je      .up
         dec     ecx
         jnz     .wait
-        DEBUGF 1, "i2chid:   AOAC did not report the block ready\n"
+        DEBUGF 2, "i2chid:   AOAC did not report the block ready\n"
         jmp     .unmap
 .up:
-        DEBUGF 1, "i2chid:   AOAC reports the block powered and clocked\n"
+        DEBUGF 2, "i2chid:   AOAC reports the block powered and clocked\n"
 .unmap:
         mov     esi, edi
         and     esi, not 0xFFF
@@ -747,27 +735,27 @@ proc setup_controller uses ebx esi edi
         mov     [DwLcnt], DW_FS_LCNT
         mov     [DwSdaHold], DW_SDA_HOLD
         call    dw_ctrl_init
-        DBG "i2chid: DesignWare I2C mapped at %x\n", ebx
+        DEBUGF 1, "i2chid: DesignWare I2C mapped at %x\n", ebx
         movi    eax, 1
         ret
 .bad_hw:
-        DBG "i2chid:   no DW_apb_i2c signature, got %x\n", eax
+        DEBUGF 1, "i2chid:   no DW_apb_i2c signature, got %x\n", eax
         invoke  FreeKernelSpace, [I2cMmio]
         mov     [I2cMmio], 0
         jmp     .fail
 ; Every reason to give up on a controller is named, so that a log from a
 ; machine where nothing works still says which step failed.
 .io_bar:
-        DBG "i2chid:   BAR0 is an I/O range, not MMIO\n"
+        DEBUGF 1, "i2chid:   BAR0 is an I/O range, not MMIO\n"
         jmp     .fail
 .no_bar:
-        DBG "i2chid:   BAR0 not assigned by firmware\n"
+        DEBUGF 1, "i2chid:   BAR0 not assigned by firmware\n"
         jmp     .fail
 .bar_high:
-        DBG "i2chid:   BAR0 lives above 4G\n"
+        DEBUGF 1, "i2chid:   BAR0 lives above 4G\n"
         jmp     .fail
 .no_map:
-        DBG "i2chid:   MapIoMem failed for %x\n", ebx
+        DEBUGF 1, "i2chid:   MapIoMem failed for %x\n", ebx
 .fail:
         xor     eax, eax
         ret
@@ -828,13 +816,13 @@ proc scan_bus uses ebx esi edi
         invoke  Sleep
         jmp     .pass
 .dead:
-        DBG "i2chid:   controller does not respond, skipping it\n"
+        DEBUGF 1, "i2chid:   controller does not respond, skipping it\n"
 .fail:
 ; The three counters say which of the possible worlds this is: only NAKs
 ; means a healthy bus with nobody at the probed addresses (widen the table),
 ; only timeouts means the controller never drove SCL, and a nonzero ack
 ; count means something answered but did not look like an I2C-HID device.
-        DBG "i2chid:   no HID device here (ack %u, nak %u, timeout %u)\n", \
+        DEBUGF 1, "i2chid:   no HID device here (ack %u, nak %u, timeout %u)\n", \
                 [AckCount], [NakCount], [TmoCount]
         xor     eax, eax
         ret
@@ -862,7 +850,7 @@ proc try_hid_addr stdcall uses ebx esi edi, addr:dword, dreg:dword
 ; reporting together with the raw bytes: if the checks below then reject it,
 ; the log still shows what is sitting at this address.
         inc     [AckCount]
-        DBG "i2chid:   addr %x reg %x answered:", [addr], [dreg]
+        DEBUGF 1, "i2chid:   addr %x reg %x answered:", [addr], [dreg]
         mov     esi, hid_desc
         mov     ecx, I2CHID_DESC_LEN
         call    dump_hex
@@ -898,7 +886,7 @@ proc try_hid_addr stdcall uses ebx esi edi, addr:dword, dreg:dword
         mov     [RepDescReg], eax
         movzx   eax, word [hid_desc+HIDD_wVendorID]
         movzx   ecx, word [hid_desc+HIDD_wProductID]
-        DEBUGF 1, "i2chid: HID device at I2C addr %x (desc reg %x), VID %x PID %x\n", [addr], [dreg], eax, ecx
+        DEBUGF 2, "i2chid: HID device at I2C addr %x (desc reg %x), VID %x PID %x\n", [addr], [dreg], eax, ecx
 ; The SIPODEV SP1064 family (SYNA3602 in ACPI, VID 093A PID 0255) never
 ; talks to a generic HID driver on Windows - a filter driver feeds the OS
 ; hardcoded descriptors instead of the firmware's own, so the firmware's
@@ -914,7 +902,7 @@ proc try_hid_addr stdcall uses ebx esi edi, addr:dword, dreg:dword
         movi    eax, 1
         ret
 .bad_desc:
-        DBG "i2chid:   ...not a valid HID over I2C descriptor, ignored\n"
+        DEBUGF 1, "i2chid:   ...not a valid HID over I2C descriptor, ignored\n"
 .no:
         xor     eax, eax
         ret
@@ -927,15 +915,14 @@ endp
 ; writes are not atomic, so a dump made of one call per byte comes out
 ; shredded by whatever else happens to be logging at that moment - which is
 ; exactly what a descriptor dump must not be.
-; Every dump is diagnostic, and the headers that introduce them are
-; conditional - so this has to be conditional too, or the bytes would
+; Every dump is level 1 output, and the headers that introduce them are
+; DEBUGF 1 - so this is compiled out together with them, or the bytes would
 ; still pour out with the explanation missing. The raw entry point is for
 ; the few dumps that are always wanted.
 proc dump_hex
-        cmp     [DbgOn], 0
-        jz      @f
+if __DEBUG_LEVEL__ <= 1
         call    dump_hex_raw
-@@:
+end if
         ret
 endp
 
@@ -975,10 +962,10 @@ proc dump_hex_raw uses eax ebx ecx edx esi edi
         jnz     .byte
 .flush:
         mov     byte [edi], 0
-        DEBUGF 1, "%s", hexbuf
+        DEBUGF 2, "%s", hexbuf
         jmp     .line
 .done:
-        DEBUGF 1, "\n"
+        DEBUGF 2, "\n"
         ret
 endp
 
@@ -992,14 +979,14 @@ proc setup_device uses ebx esi edi
         stdcall hid_command, I2CHID_PWR_ON, I2CHID_OP_SET_POWER
         test    eax, eax
         jz      @f
-        DEBUGF 1, "i2chid: SET_POWER failed (%x)\n", eax
+        DEBUGF 2, "i2chid: SET_POWER failed (%x)\n", eax
 @@:
         mov     esi, 1
         invoke  Sleep
         stdcall hid_command, 0, I2CHID_OP_RESET
         test    eax, eax
         jz      @f
-        DEBUGF 1, "i2chid: RESET failed (%x)\n", eax
+        DEBUGF 2, "i2chid: RESET failed (%x)\n", eax
 @@:
 ; Reset takes time, and the bus must be left completely alone while it runs.
 ; The specification has the device announce completion by asserting its
@@ -1013,7 +1000,7 @@ proc setup_device uses ebx esi edi
         mov     esi, 150
         invoke  Sleep
         stdcall dw_read_block, [SlaveAddr], 0, 0, input_buf, [MaxInput]
-        DBG "i2chid: post-reset read status %x, first bytes:", eax
+        DEBUGF 1, "i2chid: post-reset read status %x, first bytes:", eax
         mov     esi, input_buf
         mov     ecx, 8
         call    dump_hex
@@ -1024,7 +1011,7 @@ proc setup_device uses ebx esi edi
         stdcall hid_command, I2CHID_PWR_ON, I2CHID_OP_SET_POWER
         test    eax, eax
         jz      @f
-        DEBUGF 1, "i2chid: post-reset SET_POWER failed (%x)\n", eax
+        DEBUGF 2, "i2chid: post-reset SET_POWER failed (%x)\n", eax
 @@:
         mov     esi, 10
         invoke  Sleep
@@ -1034,7 +1021,7 @@ proc setup_device uses ebx esi edi
         stdcall dw_xfer, [SlaveAddr], wbuf, 2, rep_desc, [RepDescLen]
         test    eax, eax
         jz      @f
-        DEBUGF 1, "i2chid: report descriptor read failed (%x)\n", eax
+        DEBUGF 2, "i2chid: report descriptor read failed (%x)\n", eax
         jmp     .fail
 @@:
         mov     esi, rep_desc
@@ -1045,7 +1032,7 @@ proc setup_device uses ebx esi edi
 ; Nothing usable was found. The whole descriptor goes to the log: without it
 ; a failure here cannot be diagnosed at all, and with it the parser can be
 ; fixed offline against the exact bytes this device sent.
-        DBG "i2chid: no relative mouse report; full descriptor (%u bytes):\n", [RepDescLen]
+        DEBUGF 1, "i2chid: no relative mouse report; full descriptor (%u bytes):\n", [RepDescLen]
         mov     esi, rep_desc
         mov     ecx, [RepDescLen]
         call    dump_hex
@@ -1055,7 +1042,7 @@ proc setup_device uses ebx esi edi
 ; to find out which feature reports the device offers - and on a pad that
 ; answers every command yet never reports a finger, the mode-selecting
 ; feature report is the next thing to look at.
-        DBG "i2chid: full descriptor (%u bytes):", [RepDescLen]
+        DEBUGF 1, "i2chid: full descriptor (%u bytes):", [RepDescLen]
         mov     esi, rep_desc
         mov     ecx, [RepDescLen]
         call    dump_hex
@@ -1072,15 +1059,15 @@ proc setup_device uses ebx esi edi
         je      @f
         mov     [PtpLayoutOk], 1
 @@:
-        DEBUGF 1, "i2chid: touchpad report id %d, %u bytes, %u fingers, tip@%u cid@%u/%u x@%u/%u y@%u/%u count@%u/%u btn@%u/%u ok %u\n", \
+        DEBUGF 2, "i2chid: touchpad report id %d, %u bytes, %u fingers, tip@%u cid@%u/%u x@%u/%u y@%u/%u count@%u/%u btn@%u/%u ok %u\n", \
                 [t_ptp_id], [t_ptp_bytes], [t_fcount], [t_ftip], [t_fcid], [t_fcids], [t_fx], [t_fxs], [t_fy], [t_fys], \
                 [t_ccnt_off], [t_ccnt_size], [t_pbtn_off], [t_pbtn_cnt], [PtpLayoutOk]
 ; The surface extents are known now, so the zone percentages can be turned
 ; into coordinates.
         call    apply_geometry
-        DBG "i2chid: pad %u x %u, button strip from %u, right half from %u\n", \
+        DEBUGF 1, "i2chid: pad %u x %u, button strip from %u, right half from %u\n", \
                 [t_padmaxx], [t_padmaxy], [BtnZoneY], [RightSplitX]
-        DBG "i2chid: report id %x, %x bytes; Xoff %x Yoff %x btns %x wheel size %x\n", \
+        DEBUGF 1, "i2chid: report id %x, %x bytes; Xoff %x Yoff %x btns %x wheel size %x\n", \
                 [f_repid], [f_bytes], [t_xoff], [t_yoff], [t_btncnt], [t_wsize]
 ; The chosen report must fit into the input buffer.
         mov     eax, [f_bytes]
@@ -1109,7 +1096,7 @@ proc setup_device uses ebx esi edi
         mov     eax, [MaxInput]
 @@:
         mov     [ReadLen], eax
-        DEBUGF 1, "i2chid: input reads of %u bytes (device maximum %u)\n", eax, [MaxInput]
+        DEBUGF 2, "i2chid: input reads of %u bytes (device maximum %u)\n", eax, [MaxInput]
 ; Switch the pad into touchpad mode. Every OS that works with a Precision
 ; Touchpad writes its Input Mode feature = 3 first; some firmwares (the
 ; SIPODEV one) never report anything at all in mouse mode.
@@ -1572,7 +1559,7 @@ proc set_ptp_mode uses ebx esi edi
         mov     ecx, [ModeRepLen]
         add     ecx, 9
         stdcall dw_xfer, [SlaveAddr], setrep_buf, ecx, 0, 0
-        DEBUGF 1, "i2chid: PTP input mode set via feature id %u, %u data byte(s) (%x)\n", [ModeRepId], [ModeRepLen], eax
+        DEBUGF 2, "i2chid: PTP input mode set via feature id %u, %u data byte(s) (%x)\n", [ModeRepId], [ModeRepLen], eax
 ; Read it back: a firmware that silently ignored the write is otherwise
 ; indistinguishable from one that took it.
         mov     esi, 10
@@ -1589,7 +1576,7 @@ proc set_ptp_mode uses ebx esi edi
         mov     ecx, [ModeRepLen]
         add     ecx, 3
         stdcall dw_read_block, [SlaveAddr], diag_buf, 6, input_buf, ecx
-        DEBUGF 1, "i2chid: input mode feature reads back (%x):", eax
+        DEBUGF 2, "i2chid: input mode feature reads back (%x):", eax
         mov     esi, input_buf
         mov     ecx, [ModeRepLen]
         add     ecx, 3
@@ -1604,7 +1591,7 @@ endp
 ; these even while the input register stays empty - and the report id that
 ; answers says which mode selector to write.
 proc get_report_sweep uses ebx esi edi
-        DBG "i2chid: GET_REPORT sweep over %u report ids\n", [p_idcnt]
+        DEBUGF 1, "i2chid: GET_REPORT sweep over %u report ids\n", [p_idcnt]
         xor     ebx, ebx                ; index into p_ids
 .id_loop:
         cmp     ebx, [p_idcnt]
@@ -1636,7 +1623,7 @@ proc get_report_sweep uses ebx esi edi
         mov     word [diag_buf+5], ax
         stdcall dw_read_block, [SlaveAddr], diag_buf, 7, input_buf, 16
 .asked:
-        DBG "i2chid:   type %u id %u status %x:", edi, [p_ids+ebx*4], eax
+        DEBUGF 1, "i2chid:   type %u id %u status %x:", edi, [p_ids+ebx*4], eax
         mov     esi, input_buf
         mov     ecx, 16
         call    dump_hex
@@ -1694,7 +1681,7 @@ proc trace_idle uses eax ecx esi edi
         je      .nothing
         dec     [IdleChanges]
 .dump:
-        DBG "i2chid: idle answer:"
+        DEBUGF 1, "i2chid: idle answer:"
         mov     esi, input_buf
         mov     ecx, 12
         call    dump_hex
@@ -1795,7 +1782,7 @@ proc i2chid_thread
         test    edx, edx
         jnz     @f
 .stats:
-        DEBUGF 1, "i2chid: after %u polls: %u reads, %u reports, %u duplicates, %u empty, at most %u per poll, %u lifts by silence\n", \
+        DEBUGF 2, "i2chid: after %u polls: %u reads, %u reports, %u duplicates, %u empty, at most %u per poll, %u lifts by silence\n", \
                 [StPolls], [StReads], [StReports], [StDups], [StEmpty], [StMaxDrain], [StForced]
 @@:
 ; Syscall 5 is the delay that sleeps on an event and yields; the Sleep import
@@ -1884,7 +1871,7 @@ proc i2chid_poll_once uses ebx esi edi
         jz      .no_trace
         dec     [TraceCount]
         push    eax
-        DBG "i2chid: report:"
+        DEBUGF 1, "i2chid: report:"
         mov     esi, input_buf
         mov     ecx, eax
         call    dump_hex
@@ -1966,13 +1953,13 @@ proc i2chid_poll_once uses ebx esi edi
         dec     [LiftTrace]
         mov     eax, [LiftTick]
         sub     eax, [TapTick]
-        DEBUGF 1, "i2chid: lift: fingers %u, moved %u, strip %u, held %u ticks -> button %x\n", \
+        DEBUGF 2, "i2chid: lift: fingers %u, moved %u, strip %u, held %u ticks -> button %x\n", \
                 [TapFingers], [TapMoved], [TapInStrip], eax, ebx
 .no_lift_trace:
         cmp     [DecodeTrace], 0
         jz      @f
         dec     [DecodeTrace]
-        DBG "i2chid: decoded btn %x dx %d dy %d wheel %d\n", ebx, [v_x], [v_y], [v_w]
+        DEBUGF 1, "i2chid: decoded btn %x dx %d dy %d wheel %d\n", ebx, [v_x], [v_y], [v_w]
 @@:
         invoke  SetMouseData, ebx, [v_x], [v_y], [v_w], 0
 .done:
@@ -2013,26 +2000,26 @@ proc i2chid_poll_once uses ebx esi edi
         jmp     .done                   ; ladder exhausted, stay quiet
 .rec_mode:
         xor     [PollMode], 1
-        DBG "i2chid: still silent, poll mode now %u\n", [PollMode]
+        DEBUGF 1, "i2chid: still silent, poll mode now %u\n", [PollMode]
         jmp     .done
 .rec_power:
 ; A full power cycle: some firmwares only start scanning on the ON edge.
-        DBG "i2chid: still silent, power cycling the device\n"
+        DEBUGF 1, "i2chid: still silent, power cycling the device\n"
         stdcall hid_command, 1, I2CHID_OP_SET_POWER      ; SLEEP
         mov     esi, 50
         invoke  Sleep
         stdcall hid_command, I2CHID_PWR_ON, I2CHID_OP_SET_POWER
-        DBG "i2chid: power cycle done (%x)\n", eax
+        DEBUGF 1, "i2chid: power cycle done (%x)\n", eax
         jmp     .done
 .rec_reset:
 ; And a second reset, this time with the device already powered on.
-        DBG "i2chid: still silent, resetting the device again\n"
+        DEBUGF 1, "i2chid: still silent, resetting the device again\n"
         stdcall hid_command, 0, I2CHID_OP_RESET
         push    eax
         mov     esi, 150
         invoke  Sleep
         pop     eax
-        DBG "i2chid: second reset done (%x)\n", eax
+        DEBUGF 1, "i2chid: second reset done (%x)\n", eax
         stdcall hid_command, I2CHID_PWR_ON, I2CHID_OP_SET_POWER
 ; The reset above also cleared the input-mode selection - set it again.
         call    set_ptp_mode
@@ -2045,7 +2032,7 @@ proc i2chid_poll_once uses ebx esi edi
 ; GET_REPORT through the command and data registers. Whatever comes back
 ; (a report, an empty answer, a NAK code) tells whether the input path
 ; works at all - completely independent of the input-register mechanism.
-        DBG "i2chid: still silent, asking with GET_REPORT\n"
+        DEBUGF 1, "i2chid: still silent, asking with GET_REPORT\n"
         mov     eax, [CmdReg]
         mov     word [diag_buf], ax
         mov     eax, [f_repid]
@@ -2056,7 +2043,7 @@ proc i2chid_poll_once uses ebx esi edi
         mov     eax, [DataReg]
         mov     word [diag_buf+4], ax
         stdcall dw_read_block, [SlaveAddr], diag_buf, 6, input_buf, 12
-        DBG "i2chid: GET_REPORT probe status %x, data:", eax
+        DEBUGF 1, "i2chid: GET_REPORT probe status %x, data:", eax
         mov     esi, input_buf
         mov     ecx, 12
         call    dump_hex
@@ -2080,7 +2067,7 @@ proc i2chid_poll_once uses ebx esi edi
         cmp     [FbLogged], 0
         jnz     @f
         mov     [FbLogged], 1
-        DEBUGF 1, "i2chid: using SP1064 fallback report layout\n"
+        DEBUGF 2, "i2chid: using SP1064 fallback report layout\n"
 @@:
         movzx   ebx, byte [esi+1]
         and     ebx, 3
@@ -2108,7 +2095,7 @@ proc i2chid_poll_once uses ebx esi edi
         jz      @f
         dec     [PtpRawTrace]
         push    eax esi
-        DEBUGF 1, "i2chid: touch frame:"
+        DEBUGF 2, "i2chid: touch frame:"
         mov     esi, input_buf
         mov     ecx, 16
         call    dump_hex_raw
@@ -2117,7 +2104,7 @@ proc i2chid_poll_once uses ebx esi edi
         cmp     [FbLogged], 0
         jnz     @f
         mov     [FbLogged], 1
-        DBG "i2chid: PTP frames flowing, single-finger decode\n"
+        DEBUGF 1, "i2chid: PTP frames flowing, single-finger decode\n"
 @@:
         mov     ebx, [PtpBtn]
         mov     [PtpMode], 1
@@ -2129,7 +2116,7 @@ proc i2chid_poll_once uses ebx esi edi
         jz      @f
         dec     [BtnTrace]
         push    eax esi
-        DBG "i2chid: button frame:"
+        DEBUGF 1, "i2chid: button frame:"
         mov     esi, input_buf
         mov     ecx, 32
         call    dump_hex
@@ -2332,7 +2319,7 @@ proc i2chid_poll_once uses ebx esi edi
         dec     [JumpTrace]
         mov     eax, [LastFrameTick]
         sub     eax, [PrevFrameTick]
-        DEBUGF 1, "i2chid: jump: dx %d dy %d, prev %u/%u now %u/%u, pointer %d, %u ticks since last frame, held %u:", \
+        DEBUGF 2, "i2chid: jump: dx %d dy %d, prev %u/%u now %u/%u, pointer %d, %u ticks since last frame, held %u:", \
                 [v_x], [v_y], [PrevX], [PrevY], [PtpX], [PtpY], [PointerId], eax, [HeldBtn]
         push    esi ecx
         mov     esi, input_buf
@@ -2497,7 +2484,7 @@ proc i2chid_poll_once uses ebx esi edi
         inc     [ErrCnt]
         cmp     [ErrCnt], MAX_POLL_ERRORS
         jb      .done
-        DEBUGF 1, "i2chid: device stopped responding (%x), polling disabled\n", eax
+        DEBUGF 2, "i2chid: device stopped responding (%x), polling disabled\n", eax
         mov     [PollStop], 1
         jmp     .done
 endp
@@ -2535,7 +2522,6 @@ key_tap_drag    db 'tap_drag', 0
 key_right_click db 'right_click', 0
 key_btn_zone    db 'button_zone', 0
 key_right_split db 'right_split', 0
-key_debug       db 'debug', 0
 
 ; I2C addresses that laptop firmware assigns to HID touchpads and touchscreens
 ; (Synaptics, Elan, Cypress, Focaltech, Goodix, Atmel and friends). Addresses
@@ -2620,7 +2606,6 @@ TapDrag         dd CFG_TAP_DRAG
 RightClick      dd CFG_RIGHT_CLICK
 BtnZonePct      dd CFG_BTN_ZONE_PCT
 RightSplitPct   dd CFG_RIGHT_SPLIT_PCT
-DbgOn           dd CFG_DEBUG
 ; Derived from the percentages above once the surface extents are known.
 BtnZoneY        dd 930
 RightSplitX     dd 853
