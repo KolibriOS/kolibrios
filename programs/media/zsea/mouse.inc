@@ -1,20 +1,20 @@
 ;---------------------------------------------------------------------
 mouse:
-    mcall 18,7
+    mcall SF_SYSTEM,SSF_GET_ACTIVE_WINDOW
     cmp  [active_process],eax
     jne  still
 	
-    mcall 37,7
+    mcall SF_MOUSE_GET,SSF_SCROLL_DATA
     mov   [mouse_scroll_data],eax
 	
 	mov  eax,[mouse_position]
 	mov  [mouse_position_old],eax
-	mcall 37,1
+	mcall SF_MOUSE_GET,SSF_WINDOW_POSITION
     mov  [mouse_position],eax
 	
 	mov  eax,[mouse_keys]
 	mov  [mouse_keys_old],eax
-    mcall 37,2
+    mcall SF_MOUSE_GET,SSF_BUTTON
     mov  [mouse_keys],eax
 	
 	cmp [soi],dword 0
@@ -32,8 +32,7 @@ mouse:
     cmp   eax,[scroll_bar_data_horizontal.cur_area]
     jbe   .vertical
 	
-	push    dword scroll_bar_data_horizontal
-	call    [scrollbar_hor_mouse]
+	stdcall    [scrollbar_h_mouse], scroll_bar_data_horizontal
 	
 	;    mouse_scroll_bar_horizontal scroll_bar_data_horizontal
     cmp   [scroll_bar_data_horizontal.redraw],0	
@@ -50,8 +49,7 @@ mouse:
     cmp   eax,[scroll_bar_data_vertical.cur_area]
     jbe   .menu_bar
 	
-	push    dword scroll_bar_data_vertical
-	call    [scrollbar_ver_mouse]
+	stdcall    [scrollbar_v_mouse], scroll_bar_data_vertical
 	
 ;    mouse_scroll_bar_vertical scroll_bar_data_vertical
     cmp   [scroll_bar_data_vertical.redraw],0	
@@ -83,8 +81,7 @@ mouse:
 .menu_bar_1:
 	call   .set_mouse_flag
 @@:
-	push    dword menu_data_1
-	call    [menu_bar_mouse]
+	stdcall    [menu_bar_mouse], menu_data_1
 ;    mouse_menubar menu_data_1
     cmp   [menu_data_1.click],dword 1
 	jne   .menu_bar_2
@@ -95,8 +92,7 @@ mouse:
 ;--------------------------------------------
 .menu_bar_2:
 ; Edit
-	push    dword menu_data_2
-	call    [menu_bar_mouse]
+	stdcall    [menu_bar_mouse], menu_data_2
 ;    mouse_menubar menu_data_2
     cmp   [menu_data_2.click],dword 1
 	jne   .menu_bar_3
@@ -107,8 +103,7 @@ mouse:
 ;--------------------------------------------
 .menu_bar_3:
 ; View
-	push    dword menu_data_3
-	call    [menu_bar_mouse]
+	stdcall    [menu_bar_mouse], menu_data_3
 ;    mouse_menubar menu_data_3
     cmp   [menu_data_3.click],dword 1
 	jne   .menu_bar_4
@@ -119,8 +114,7 @@ mouse:
 ;--------------------------------------------
 .menu_bar_4:
 ; Zoom
-	push    dword menu_data_4
-	call    [menu_bar_mouse]
+	stdcall    [menu_bar_mouse], menu_data_4
 ;    mouse_menubar menu_data_4
     cmp   [menu_data_4.click],dword 1
 	jne   .menu_bar_5
@@ -131,8 +125,7 @@ mouse:
 ;--------------------------------------------
 .menu_bar_5:
 ; Tools
-	push    dword menu_data_5
-	call    [menu_bar_mouse]
+	stdcall    [menu_bar_mouse], menu_data_5
 ;    mouse_menubar menu_data_5
     cmp   [menu_data_5.click],dword 1
 	jne   .menu_bar_6
@@ -143,8 +136,7 @@ mouse:
 ;--------------------------------------------
 .menu_bar_6:
 ; Help
-	push    dword menu_data_6
-	call    [menu_bar_mouse]
+	stdcall    [menu_bar_mouse], menu_data_6
 ;    mouse_menubar menu_data_6
     cmp   [menu_data_6.click],dword 1
 	jne   .mouse_dinamic_button
@@ -155,8 +147,7 @@ mouse:
 ;---------------------------------------------------
 .mouse_dinamic_button:
 ; open file
-	push    dword dinamic_button_data_1
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_1
 ;    mouse_dinamic_button dinamic_button_data_1
 	mov   eax,dinamic_button_data_1.click
     cmp   [eax],dword 1
@@ -166,8 +157,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; reload file
-	push    dword dinamic_button_data_2
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_2
 ;    mouse_dinamic_button dinamic_button_data_2
 	mov   eax,dinamic_button_data_2.click
     cmp   [eax],dword 1
@@ -177,8 +167,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; left limit
-	push    dword dinamic_button_data_3
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_3
 ;    mouse_dinamic_button dinamic_button_data_3
 	mov   eax,dinamic_button_data_3.click
     cmp   [eax],dword 1
@@ -188,8 +177,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; left arrow
-	push    dword dinamic_button_data_4
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_4
 ;    mouse_dinamic_button dinamic_button_data_4
 	mov   eax,dinamic_button_data_4.click
     cmp   [eax],dword 1
@@ -199,8 +187,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; slide show
-	push    dword dinamic_button_data_5
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_5
 ;    mouse_dinamic_button dinamic_button_data_5
 	mov   eax,dinamic_button_data_5.click
     cmp   [eax],dword 1
@@ -210,8 +197,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; right arrow
-	push    dword dinamic_button_data_6
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_6
 ;    mouse_dinamic_button dinamic_button_data_6
 	mov   eax,dinamic_button_data_6.click
     cmp   [eax],dword 1
@@ -221,8 +207,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; right limit
-	push    dword dinamic_button_data_7
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_7
 ;    mouse_dinamic_button dinamic_button_data_7
 	mov   eax,dinamic_button_data_7.click
     cmp   [eax],dword 1
@@ -232,8 +217,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; zoom +
-	push    dword dinamic_button_data_8
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_8
 ;    mouse_dinamic_button dinamic_button_data_8
 	mov   eax,dinamic_button_data_8.click
     cmp   [eax],dword 1
@@ -243,8 +227,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; zoom -
-	push    dword dinamic_button_data_9
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_9
 ;    mouse_dinamic_button dinamic_button_data_9
 	mov   eax,dinamic_button_data_9.click
     cmp   [eax],dword 1
@@ -254,8 +237,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; zoom 100%
-	push    dword dinamic_button_data_10
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_10
 ;    mouse_dinamic_button dinamic_button_data_10
 	mov   eax,dinamic_button_data_10.click
     cmp   [eax],dword 1
@@ -265,8 +247,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; rotate clockwise
-	push    dword dinamic_button_data_11
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_11
 ;    mouse_dinamic_button dinamic_button_data_11
 	mov   eax,dinamic_button_data_11.click
     cmp   [eax],dword 1
@@ -276,8 +257,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; rotate counter-clockwise
-	push    dword dinamic_button_data_12
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_12
 ;    mouse_dinamic_button dinamic_button_data_12
 	mov   eax,dinamic_button_data_12.click
     cmp   [eax],dword 1
@@ -287,8 +267,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; file information
-	push    dword dinamic_button_data_13
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_13
 ;    mouse_dinamic_button dinamic_button_data_13
 	mov   eax,dinamic_button_data_13.click
     cmp   [eax],dword 1
@@ -298,8 +277,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; wallpaper
-	push    dword dinamic_button_data_14
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_14
 ;    mouse_dinamic_button dinamic_button_data_14
 	mov   eax,dinamic_button_data_14.click
     cmp   [eax],dword 1
@@ -309,8 +287,7 @@ mouse:
 ;-------------------------------------------------
 @@:
 ; settings
-	push    dword dinamic_button_data_15
-	call    [dinamic_button_mouse]
+	stdcall    [dbutton_mouse], dinamic_button_data_15
 ;    mouse_dinamic_button dinamic_button_data_15
 	mov   eax,dinamic_button_data_15.click
     cmp   [eax],dword 1

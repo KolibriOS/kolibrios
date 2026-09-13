@@ -456,8 +456,7 @@ newcol:
 	mov	[frame_data.x],ebx
 	mov	[frame_data.y],ecx
 
-	push	dword frame_data
-	call	[Frame_draw]
+	stdcall	[frame_draw], frame_data
 
 	pop	ecx ebx
 
@@ -560,15 +559,13 @@ draw_window:
 	mov	[frame_data.font_color],eax
 	mov	[frame_data.draw_text_flag],dword 1
 
-	push	dword frame_data
-	call	[Frame_draw]
+	stdcall	[frame_draw], frame_data
 ;-----------------------------------
 	mov	[frame_data.x],dword frame_2.x shl 16+frame_2.w
 	mov	[frame_data.y],dword frame_2.y shl 16+frame_2.height
 	mov	[frame_data.text_pointer],dword select_skin_text
 
-	push	dword frame_data
-	call	[Frame_draw]
+	stdcall	[frame_draw], frame_data
 ;-----------------------------------
 	call	draw_PathShow
 ;-----------------------------------

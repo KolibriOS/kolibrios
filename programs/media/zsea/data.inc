@@ -474,7 +474,7 @@ system_dir_ProcLib			db '/sys/lib/proc_lib.obj',0
 ;---------------------------------------------------------------------
 l_libs_start:
 library01  l_libs system_dir_Boxlib+9, library_path, system_dir_Boxlib, \
-Box_lib_import, plugins_directory
+import_box_lib, plugins_directory
 
 library02  l_libs system_dir_Libini+9, library_path, system_dir_Libini, \
 Libini_import, plugins_directory
@@ -728,83 +728,7 @@ aIni_set_int            db      'ini_set_int',0
 aIni_set_color          db      'ini_set_color',0
 
 ;---------------------------------------------------------------------
-align 4
-Box_lib_import:
-;init_lib            dd      a_init
-;version_lib         dd      a_version
-
-edit_box_draw   dd      aEdit_box_draw
-edit_box_key    dd      aEdit_box_key
-edit_box_mouse  dd      aEdit_box_mouse
-;version_ed      dd      aVersion_ed
-
-init_checkbox   dd      aInit_checkbox
-check_box_draw  dd      aCheck_box_draw
-check_box_mouse dd      aCheck_box_mouse
-;version_ch      dd      aVersion_ch
-
-option_box_draw  dd      aOption_box_draw
-option_box_mouse dd      aOption_box_mouse
-;version_op       dd      aVersion_op
-
-scrollbar_ver_draw	dd aScrollbar_ver_draw
-scrollbar_ver_mouse	dd aScrollbar_ver_mouse
-scrollbar_hor_draw	dd aScrollbar_hor_draw
-scrollbar_hor_mouse	dd aScrollbar_hor_mouse
-;version_scrollbar	dd aVersion_scrollbar
-
-dinamic_button_draw	dd      aDbutton_draw
-dinamic_button_mouse	dd      aDbutton_mouse
-;version_dbutton		dd      aVersion_dbutton
-
-menu_bar_draw		dd      aMenu_bar_draw
-menu_bar_mouse		dd      aMenu_bar_mouse
-menu_bar_activate	dd      aMenu_bar_activate
-;version_menu_bar	dd      aVersion_menu_bar
-
-;FileBrowser_draw	dd      aFileBrowser_draw
-;FileBrowser_mouse	dd      aFileBrowser_mouse
-;FileBrowser_key		dd      aFileBrowser_key
-;Version_FileBrowser	dd      aVersion_FileBrowser
-                dd      0
-                dd      0
-
-;a_init          db 'lib_init',0
-;a_version       db 'version',0
-
-aEdit_box_draw  db 'edit_box_draw',0
-aEdit_box_key   db 'edit_box_key',0
-aEdit_box_mouse db 'edit_box_mouse',0
-;aVersion_ed     db 'version_ed',0
-
-aInit_checkbox   db 'init_checkbox2',0
-aCheck_box_draw  db 'check_box_draw2',0
-aCheck_box_mouse db 'check_box_mouse2',0
-;aVersion_ch      db 'version_ch2',0
-
-aOption_box_draw  db 'option_box_draw',0
-aOption_box_mouse db 'option_box_mouse',0
-;aVersion_op       db 'version_op',0
-
-aScrollbar_ver_draw             db 'scrollbar_v_draw',0
-aScrollbar_ver_mouse    db 'scrollbar_v_mouse',0
-aScrollbar_hor_draw             db 'scrollbar_h_draw',0
-aScrollbar_hor_mouse    db 'scrollbar_h_mouse',0
-;aVersion_scrollbar              db 'version_scrollbar',0
-
-aDbutton_draw                   db 'dbutton_draw',0
-aDbutton_mouse                  db 'dbutton_mouse',0
-;aVersion_dbutton                db 'version_dbutton',0
-
-aMenu_bar_draw                  db 'menu_bar_draw',0
-aMenu_bar_mouse                 db 'menu_bar_mouse',0
-aMenu_bar_activate              db 'menu_bar_activate',0
-;aVersion_menu_bar               db 'version_menu_bar',0
-
-;aFileBrowser_draw             db 'FileBrowser_draw',0
-;aFileBrowser_mouse            db 'FileBrowser_mouse',0
-;aFileBrowser_key              db 'FileBrowser_key',0
-;aVersion_FileBrowser          db 'version_FileBrowser',0
+include '../../develop/libraries/box_lib/import.inc'
 ;---------------------------------------------------------------------
 align 4
 load_directory_pointer dd 0

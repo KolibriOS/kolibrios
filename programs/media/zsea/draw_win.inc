@@ -18,49 +18,28 @@ draw_window:
 	
 	call	draw_other
 
-	push	dword menu_data_1
-	call	[menu_bar_draw]
-	push	dword menu_data_2
-	call	[menu_bar_draw]
-	push	dword menu_data_3
-	call	[menu_bar_draw]
-	push	dword menu_data_4
-	call	[menu_bar_draw]
-	push	dword menu_data_5
-	call	[menu_bar_draw]
-	push	dword menu_data_6
-	call	[menu_bar_draw]
+	stdcall	[menu_bar_draw], menu_data_1
+	stdcall	[menu_bar_draw], menu_data_2
+	stdcall	[menu_bar_draw], menu_data_3
+	stdcall	[menu_bar_draw], menu_data_4
+	stdcall	[menu_bar_draw], menu_data_5
+	stdcall	[menu_bar_draw], menu_data_6
 
-	push	dword dinamic_button_data_1
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_2
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_3
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_4
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_5
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_6
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_7
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_8
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_9
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_10
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_11
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_12
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_13
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_14
-	call	[dinamic_button_draw]
-	push	dword dinamic_button_data_15
-	call	[dinamic_button_draw]
+	stdcall	[dbutton_draw], dinamic_button_data_1
+	stdcall	[dbutton_draw], dinamic_button_data_2
+	stdcall	[dbutton_draw], dinamic_button_data_3
+	stdcall	[dbutton_draw], dinamic_button_data_4
+	stdcall	[dbutton_draw], dinamic_button_data_5
+	stdcall	[dbutton_draw], dinamic_button_data_6
+	stdcall	[dbutton_draw], dinamic_button_data_7
+	stdcall	[dbutton_draw], dinamic_button_data_8
+	stdcall	[dbutton_draw], dinamic_button_data_9
+	stdcall	[dbutton_draw], dinamic_button_data_10
+	stdcall	[dbutton_draw], dinamic_button_data_11
+	stdcall	[dbutton_draw], dinamic_button_data_12
+	stdcall	[dbutton_draw], dinamic_button_data_13
+	stdcall	[dbutton_draw], dinamic_button_data_14
+	stdcall	[dbutton_draw], dinamic_button_data_15
 	
 	mcall	13,<225,2>,<3,22>,0x677EA0 ;0x052B64
 	mcall	,<280,2>
