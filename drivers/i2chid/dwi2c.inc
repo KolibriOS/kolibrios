@@ -80,8 +80,8 @@ DW_AMD_SDA_HOLD     = 45
 
 ; A transfer gives up after [XferTimeout] hundredths of a second. The init
 ; value must cover a full report descriptor read: descriptors run up to 2 KB
-; and the bus may be as slow as 77 kHz, which is ~240 ms of clock time for a
-; single transfer. Polling is generous too now that it runs in its own thread
+; and the bus may be as slow as 77 kHz, so at 9 SCL cycles per byte a single
+; transfer takes ~240 ms of wall-clock time. Polling is generous too now that it runs in its own thread
 ; rather than in a timer callback - a wedged bus costs this thread its slice
 ; and nothing else.
 DW_TIMEOUT_INIT     = 60
