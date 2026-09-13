@@ -49,4 +49,14 @@
 #define schedule_timeout(x)  delay(x)
 #define MAX_SCHEDULE_TIMEOUT    LONG_MAX
 
+/*
+ * No processes and no signals behind a driver thread: signal_pending() is
+ * always false, so interruptible waits only ever end on their timeout, and
+ * every task carries the singleton name set in kos_stubs.c.
+ */
+struct task_struct;
+extern int signal_pending(struct task_struct *p);
+extern void __set_current_state(int state);
+extern char *get_task_comm(char *buf, struct task_struct *tsk);
+
 #endif

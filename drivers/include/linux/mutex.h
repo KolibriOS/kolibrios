@@ -77,6 +77,15 @@ void __attribute__ ((fastcall)) __attribute__ ((dllimport))
 void __attribute__ ((fastcall)) __attribute__ ((dllimport))
      mutex_unlock(struct mutex*)__asm__("MutexUnlock");
 
+/*
+ * mutex_init() is the DDK's MutexInit(); these two are the spellings upstream
+ * code reaches for when it wants a lockdep class, which this port does not
+ * have.  Both end up in the same place.
+ */
+extern void __mutex_init(struct mutex *lock, const char *name,
+			 struct lock_class_key *key);
+extern void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
+
 static inline int mutex_lock_interruptible(struct mutex *lock)
 {
     mutex_lock(lock);

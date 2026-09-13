@@ -226,6 +226,14 @@ int drm_fb_helper_init(struct drm_device *dev,
 		       struct drm_fb_helper *helper, int crtc_count,
 		       int max_conn);
 void drm_fb_helper_fini(struct drm_fb_helper *helper);
+
+/*
+ * 4.9's fbdev handover.  There is no other framebuffer driver to evict on
+ * KolibriOS; implemented in each port's kos_stubs.c.
+ */
+struct apertures_struct;
+int drm_fb_helper_remove_conflicting_framebuffers(struct apertures_struct *a,
+						  const char *name, bool primary);
 int drm_fb_helper_blank(int blank, struct fb_info *info);
 int drm_fb_helper_pan_display(struct fb_var_screeninfo *var,
 			      struct fb_info *info);

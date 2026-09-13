@@ -8,6 +8,12 @@
 #define nth_page(page,n) ((void*)(((page_to_phys(page)>>12)+(n))<<12))
 
 #define __page_to_pfn(page) (page_to_phys(page)>>12)
+/*
+ * A struct page * here is just the physical address (see page_to_phys() in
+ * <linux/kernel.h>), so the reverse direction is the same shift back.
+ */
+#define __pfn_to_page(pfn)  ((struct page *)((dma_addr_t)(pfn) << 12))
+#define pfn_to_page(pfn)    __pfn_to_page(pfn)
 
 /* to align the pointer to the (next) page boundary */
 #define PAGE_ALIGN(addr) ALIGN(addr, PAGE_SIZE)

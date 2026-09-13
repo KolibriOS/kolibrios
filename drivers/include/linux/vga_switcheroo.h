@@ -188,6 +188,7 @@ static inline enum vga_switcheroo_handler_flags_t vga_switcheroo_handler_flags(v
 static inline int vga_switcheroo_lock_ddc(struct pci_dev *pdev) { return -ENODEV; }
 static inline int vga_switcheroo_unlock_ddc(struct pci_dev *pdev) { return -ENODEV; }
 static inline int vga_switcheroo_process_delayed_switch(void) { return 0; }
+static inline bool vga_switcheroo_client_probe_defer(struct pci_dev *pdev) { return false; }
 static inline enum vga_switcheroo_state vga_switcheroo_get_client_state(struct pci_dev *dev) { return VGA_SWITCHEROO_ON; }
 
 static inline void vga_switcheroo_set_dynamic_switch(struct pci_dev *pdev, enum vga_switcheroo_state dynamic) {}

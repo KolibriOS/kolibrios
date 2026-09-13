@@ -275,6 +275,13 @@ struct pci_dev {
 	struct pci_bus	*bus;		/* bus this device is on */
 	struct pci_bus	*subordinate;	/* bus this device bridges to */
 
+	/*
+	 * Always NULL on this port: there is no driver model to bind through.
+	 * nouveau_drm.c reads it to decide whether the HDMI audio function is
+	 * claimed before powering the GPU down, and takes the safe branch.
+	 */
+	struct pci_driver *driver;
+
 	void		*sysdata;	/* hook for sys-specific extension */
 //    struct proc_dir_entry *procent; /* device entry in /proc/bus/pci */
 	struct pci_slot	*slot;		/* Physical slot this device is in */

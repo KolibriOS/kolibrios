@@ -326,6 +326,30 @@ int autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *
 
 #define DEFINE_WAIT(name) DEFINE_WAIT_FUNC(name, autoremove_wake_function)
 
+/*
+ * The "_locked" variants are entered with wq.lock already held and must give
+ * it up while waiting.  That rules out the event-based path above, which takes
+ * the lock itself, so these poll instead - the same trade the rest of this
+ * header already makes.
+ *
+ * Because nothing ever blocks on an event here, wake_up_all_locked() has
+ * nothing to signal: the waiter re-tests the condition on its next tick.
+ */
+#define wait_event_interruptible_locked(wq, condition)			\
+({									\
+	while (!(condition)) {						\
+		spin_unlock(&(wq).lock);				\
+		delay(1);						\
+		spin_lock(&(wq).lock);					\
+	}								\
+	0;								\
+})
+
+#define wait_event_locked(wq, condition) \
+	wait_event_interruptible_locked(wq, condition)
+
+#define wake_up_locked(q)	do { } while (0)
+#define wake_up_all_locked(q)	do { } while (0)
 
 #endif
 

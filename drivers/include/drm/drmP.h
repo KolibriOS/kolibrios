@@ -359,6 +359,13 @@ struct drm_file {
 	int event_space;
 
 	struct mutex event_read_lock;
+
+	/*
+	 * Upstream stores the opening process here.  Nothing opens a DRM node
+	 * on this port, so it stays NULL; nouveau_drm.c only feeds it to
+	 * pid_nr() when it names a client.
+	 */
+	struct pid *pid;
 };
 
 /**
@@ -678,6 +685,14 @@ struct drm_device {
 	/*@} */
 
 	struct list_head filelist;
+	/*
+	 * Backported from Linux 4.9, which moved filelist from under
+	 * struct_mutex to its own lock.  Nothing in the 4.6 core takes it, so
+	 * it only ever serialises the driver against itself.
+	 */
+	struct mutex filelist_mutex;
+	/* Backported from Linux 4.9; unused without a real inode layer. */
+	struct inode *anon_inode;
 
 	/** \name Memory management */
 	/*@{ */
@@ -748,6 +763,12 @@ struct drm_device {
 //   struct drm_agp_head *agp;   /**< AGP data */
 
 	struct pci_dev *pdev;		/**< PCI device structure */
+	/*
+	 * Always NULL here - no platform bus.  nouveau_drm.c branches on
+	 * pdev vs platformdev when it builds the device name, and the
+	 * Tegra half of that branch is never taken.
+	 */
+	struct platform_device *platformdev;
 #ifdef __alpha__
 	struct pci_controller *hose;
 #endif
@@ -980,6 +1001,15 @@ static __inline__ int drm_pci_device_is_agp(struct drm_device *dev)
 	return pci_find_capability(dev->pdev, PCI_CAP_ID_AGP);
 }
 void drm_pci_agp_destroy(struct drm_device *dev);
+
+/*
+ * Implemented in drm_pci.c and the entry point every port's probe calls, but
+ * its upstream declaration is in the "#if 0" block below - so each main.c used
+ * to declare it by hand.  Declared here instead.
+ */
+extern int drm_get_pci_dev(struct pci_dev *pdev,
+			   const struct pci_device_id *ent,
+			   struct drm_driver *driver);
 
 #if 0
 extern int drm_pci_init(struct drm_driver *driver, struct pci_driver *pdriver);

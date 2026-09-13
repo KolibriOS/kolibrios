@@ -5,6 +5,18 @@
 #include <linux/kernel.h>
 #include <linux/bitops.h>
 #include <linux/irqreturn.h>
+
+/*
+ * Taking an interrupt outside drm_irq_install().  nouveau's nvkm_pci_init()
+ * does exactly that, so the driver supplies request_irq()/free_irq() over
+ * AttachIntHandler(); the signatures are upstream's.
+ */
+typedef irqreturn_t (*irq_handler_t)(int irq, void *dev_id);
+
+extern int request_irq(unsigned int irq, irq_handler_t handler,
+		       unsigned long flags, const char *name, void *dev_id);
+extern void free_irq(unsigned int irq, void *dev_id);
+
 #include <linux/kref.h>
 #include <linux/atomic.h>
 /*

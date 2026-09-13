@@ -86,6 +86,9 @@ extern int
 dma_set_mask(struct device *dev, u64 mask);
 
 extern int
+dma_set_coherent_mask(struct device *dev, u64 mask);
+
+extern int
 dma_get_cache_alignment(void);
 
 extern void

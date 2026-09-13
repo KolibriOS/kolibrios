@@ -30,6 +30,12 @@ extern void *vmalloc(unsigned long size);
 extern void *vzalloc(unsigned long size);
 extern void vfree(const void *addr);
 
+/*
+ * kmalloc() and vmalloc() come from the same allocator on this port, so one
+ * free serves both - which is what kvfree() means upstream too.
+ */
+extern void kvfree(const void *addr);
+
 extern void *vmap(struct page **pages, unsigned int count,
 			unsigned long flags, pgprot_t prot);
 extern void vunmap(const void *addr);

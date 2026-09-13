@@ -268,6 +268,9 @@ static inline bool mod_delayed_work(struct workqueue_struct *wq,
         (_work)->work.func = _func;             \
     } while (0)
 
+/* Defined in each driver's kos_kernel.c. */
+extern bool flush_work(struct work_struct *work);
+
 static inline bool schedule_work(struct work_struct *work)
 {
     return queue_work(system_wq, work);

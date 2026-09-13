@@ -131,6 +131,12 @@ struct dma_buf {
 	const char *exp_name;
 	struct list_head list_node;
 	void *priv;
+	/*
+	 * Upstream keeps the exporter's reservation object here.  No dma-buf
+	 * is ever created on this port, so nouveau_prime.c's import path is
+	 * dead code - but it dereferences the field, so it has to exist.
+	 */
+	struct reservation_object *resv;
 };
 
 /**

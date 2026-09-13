@@ -315,6 +315,18 @@ extern bool xen_biovec_phys_mergeable(const struct bio_vec *vec1,
 
 #define IO_SPACE_LIMIT 0xffff
 
+/*
+ * Write-combining range management.  Upstream declares these under
+ * CONFIG_MTRR and provides !MTRR fallbacks from <linux/io.h>, which this tree
+ * does not carry - so they are declared unconditionally here and implemented
+ * as no-ops by each driver's kos_io.c.  arch_io_*_memtype_wc() is the 4.9
+ * spelling that came in with the PAT rework.
+ */
+extern int __must_check arch_phys_wc_add(unsigned long base, unsigned long size);
+extern void arch_phys_wc_del(int handle);
+extern int arch_io_reserve_memtype_wc(resource_size_t start, resource_size_t size);
+extern void arch_io_free_memtype_wc(resource_size_t start, resource_size_t size);
+
 #ifdef CONFIG_MTRR
 extern int __must_check arch_phys_wc_index(int handle);
 #define arch_phys_wc_index arch_phys_wc_index

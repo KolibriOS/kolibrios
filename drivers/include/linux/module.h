@@ -26,4 +26,14 @@
 
 struct module {};
 
+/*
+ * Nothing is a module here - everything is linked into the one image - so the
+ * reference count can never drop and a request for another module can never be
+ * satisfied.  Implemented in the driver's kos_* glue.
+ */
+extern int request_module(const char *name, ...);
+extern int try_module_get(struct module *module);
+extern void module_put(struct module *module);
+
+
 #endif /* _LINUX_MODULE_H */

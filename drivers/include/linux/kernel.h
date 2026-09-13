@@ -684,7 +684,20 @@ typedef union
 	u64 raw;
 }evhandle_t;
 
-struct vm_area_struct {};
+/*
+ * KolibriOS has no user address space that drivers can map into, so these are
+ * placeholders.  The fields exist because the mmap/userptr entry points of the
+ * ported DRM drivers reference them; those paths are never reached, since no
+ * ioctl surface is exposed to user code.
+ */
+struct vm_area_struct {
+	unsigned long	 vm_start;
+	unsigned long	 vm_end;
+	unsigned long	 vm_pgoff;
+	unsigned long	 vm_flags;
+	struct file	*vm_file;
+	void		*vm_private_data;
+};
 struct address_space {};
 
 #define in_dbg_master() (0)
@@ -731,6 +744,13 @@ int del_timer(struct timer_list *timer);
 
 #define mmiowb() barrier()
 
+/* String-to-integer conversions; each driver's kos_kernel.c implements them. */
+extern int kstrtol(const char *s, unsigned int base, long *res);
+extern int kstrtoul(const char *s, unsigned int base, unsigned long *res);
+extern int kstrtoint(const char *s, unsigned int base, int *res);
+extern int kstrtou32(const char *s, unsigned int base, u32 *res);
+
+
 #define dev_err(dev, format, arg...)            \
         printk("Error %s " format, __func__ , ## arg)
 
@@ -739,6 +759,18 @@ int del_timer(struct timer_list *timer);
 
 #define dev_info(dev, format, arg...)       \
         printk("Info %s " format , __func__, ## arg)
+
+/*
+ * nouveau routes all of its logging through dev_*() (NV_PRINTK in
+ * nouveau_drv.h picks the level by name), so the two levels the other drivers
+ * never needed have to exist as well.  dev_dbg() keeps its arguments checked
+ * but emits nothing, matching the !CONFIG_DYNAMIC_DEBUG behaviour upstream.
+ */
+#define dev_crit(dev, format, arg...)            \
+        printk("Critical %s " format, __func__ , ## arg)
+
+#define dev_dbg(dev, format, arg...)             \
+        do { if (0) printk(format, ## arg); } while (0)
 
 struct page
 {

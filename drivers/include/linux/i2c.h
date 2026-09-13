@@ -52,6 +52,19 @@ struct i2c_board_info;
 extern int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
 			int num);
 
+/*
+ * Declared here rather than left implicit: i2c-core.c defines them, and
+ * nouveau reaches all three - i2c_new_device()/i2c_unregister_device() from
+ * nvkm/subdev/therm/ic.c, i2c_register_driver() through the i2c_add_driver()
+ * inline below.
+ */
+struct module;
+extern int i2c_register_driver(struct module *owner, struct i2c_driver *driver);
+extern void i2c_del_driver(struct i2c_driver *driver);
+extern struct i2c_client *i2c_new_device(struct i2c_adapter *adap,
+					 struct i2c_board_info const *info);
+extern void i2c_unregister_device(struct i2c_client *client);
+
 /**
  * struct i2c_driver - represent an I2C device driver
  * @class: What kind of i2c device we instantiate (for detect)
@@ -114,11 +127,18 @@ struct i2c_driver {
 	 */
 	int (*command)(struct i2c_client *client, unsigned int cmd, void *arg);
 
-//	struct device_driver driver;
+	/*
+	 * Restored for nouveau: nvkm/subdev/therm/ic.c reaches the bound
+	 * driver through to_i2c_driver(client->dev.driver)->detect().  There
+	 * is no driver-model binding on this port, so dev.driver is always
+	 * NULL and the probe short-circuits - but the fields have to exist
+	 * for to_i2c_driver() to compile.
+	 */
+	struct device_driver driver;
 	const struct i2c_device_id *id_table;
 
 	/* Device detection callback for automatic device creation */
-//	int (*detect)(struct i2c_client *, struct i2c_board_info *);
+	int (*detect)(struct i2c_client *, struct i2c_board_info *);
 	const unsigned short *address_list;
 	struct list_head clients;
 };

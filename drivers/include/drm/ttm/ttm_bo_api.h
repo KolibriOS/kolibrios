@@ -257,6 +257,15 @@ struct ttm_buffer_object {
 	struct reservation_object *resv;
 	struct reservation_object ttm_resv;
 	struct mutex wu_mutex;
+
+	/*
+	 * Backported from Linux 4.9: fence of the last accelerated move, kept
+	 * outside the reservation object so a pipelined eviction can be waited
+	 * on without blocking other users.  The 4.6 TTM in this tree still
+	 * waits synchronously, so the core leaves this NULL; amdgpu sets and
+	 * checks it on its own paths.
+	 */
+	struct fence *moving;
 };
 
 /**

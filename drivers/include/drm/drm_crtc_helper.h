@@ -43,6 +43,15 @@
 #include <drm/drm_modeset_helper_vtables.h>
 
 extern void drm_helper_disable_unused_functions(struct drm_device *dev);
+
+/*
+ * Added after 4.6 and implemented by each port's kos_stubs.c:
+ * drm_crtc_force_disable_all() is 4.9's unload-time "turn everything off",
+ * and drm_kms_helper_is_poll_worker() is how 4.9 avoids deadlocking against
+ * its own hotplug worker - there is no such worker here.
+ */
+extern void drm_crtc_force_disable_all(struct drm_device *dev);
+extern bool drm_kms_helper_is_poll_worker(void);
 extern int drm_crtc_helper_set_config(struct drm_mode_set *set);
 extern bool drm_crtc_helper_set_mode(struct drm_crtc *crtc,
 				     struct drm_display_mode *mode,

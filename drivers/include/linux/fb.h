@@ -470,7 +470,12 @@ struct fb_info {
 	struct fb_fix_screeninfo fix;	/* Current fix */
 	struct fb_monspecs monspecs;	/* Current Monitor specs */
 //   struct work_struct queue;   /* Framebuffer event queue */
-//   struct fb_pixmap pixmap;    /* Image hardware mapper */
+	/*
+	 * Restored for nouveau, which sets pixmap.buf_align after
+	 * drm_fb_helper_initial_config().  Nothing on this port consumes the
+	 * field - there is no fbcon - but the assignment has to compile.
+	 */
+	struct fb_pixmap pixmap;    /* Image hardware mapper */
 //   struct fb_pixmap sprite;    /* Cursor hardware mapper */
 //   struct fb_cmap cmap;        /* Current cmap */
 	struct list_head modelist;      /* mode list */

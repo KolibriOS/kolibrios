@@ -152,6 +152,13 @@ struct drm_display_info {
 	u8 edid_hdmi_dc_modes;
 
 	u8 cea_rev;
+
+	/*
+	 * Backported from Linux 4.9: maximum TMDS clock in kHz advertised by an
+	 * HDMI sink.  drm_edid.c in this tree does not fill it in yet, so it
+	 * stays 0 and drivers fall back to their built-in limit.
+	 */
+	int max_tmds_clock;
 };
 
 /* data corresponds to displayid vend/prod/serial */
@@ -701,6 +708,17 @@ struct drm_crtc_funcs {
 				   const struct drm_crtc_state *state,
 				   struct drm_property *property,
 				   uint64_t *val);
+
+	/*
+	 * Backported from Linux 4.9 for the amdgpu port.  The 4.6 DRM core in
+	 * this tree never calls these; they exist so that drivers written
+	 * against the newer struct layout still compile and keep their hooks.
+	 */
+	void (*early_unregister)(struct drm_crtc *crtc);
+	int (*page_flip_target)(struct drm_crtc *crtc,
+				struct drm_framebuffer *fb,
+				struct drm_pending_vblank_event *event,
+				uint32_t flags, uint32_t target);
 };
 
 /**
@@ -1044,6 +1062,9 @@ struct drm_connector_funcs {
 				   const struct drm_connector_state *state,
 				   struct drm_property *property,
 				   uint64_t *val);
+
+	/* Backported from Linux 4.9 - see drm_crtc_funcs::early_unregister. */
+	void (*early_unregister)(struct drm_connector *connector);
 };
 
 /**
@@ -1069,6 +1090,9 @@ struct drm_encoder_funcs {
 	 * hotplugged in DRM.
 	 */
 	void (*destroy)(struct drm_encoder *encoder);
+
+	/* Backported from Linux 4.9 - see drm_crtc_funcs::early_unregister. */
+	void (*early_unregister)(struct drm_encoder *encoder);
 };
 
 #define DRM_CONNECTOR_MAX_ENCODER 3
@@ -1490,6 +1514,9 @@ struct drm_plane_funcs {
 				   const struct drm_plane_state *state,
 				   struct drm_property *property,
 				   uint64_t *val);
+
+	/* Backported from Linux 4.9 - see drm_crtc_funcs::early_unregister. */
+	void (*early_unregister)(struct drm_plane *plane);
 };
 
 enum drm_plane_type {

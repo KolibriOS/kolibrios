@@ -31,6 +31,12 @@ enum probe_type {
 
 struct device_driver {
 	const char		*name;
+	/*
+	 * Restored for drm_encoder_slave.c, which pins the slave encoder's
+	 * module around a bind.  Nothing is ever bound on this port, so it
+	 * stays NULL and try_module_get()/module_put() are no-ops.
+	 */
+	struct module		*owner;
 	const char		*mod_name;	/* used for built-in modules */
 
 	bool suppress_bind_attrs;	/* disables bind/unbind via sysfs */
@@ -126,5 +132,28 @@ static inline __printf(2, 3)
 void dev_notice(const struct device *dev, const char *fmt, ...)
 {}
 
+/*
+ * sysfs attribute types.  KolibriOS has no sysfs, so nothing ever walks these
+ * tables - but drivers still declare them at file scope, so the layout has to
+ * exist.  Matches the upstream definitions field for field.
+ */
+#include <linux/sysfs.h>
+
+struct device_attribute {
+	struct attribute attr;
+	ssize_t (*show)(struct device *dev, struct device_attribute *attr,
+			char *buf);
+	ssize_t (*store)(struct device *dev, struct device_attribute *attr,
+			 const char *buf, size_t count);
+};
+
+#define __ATTR(_name, _mode, _show, _store) {				\
+	.attr  = { .name = __stringify(_name), .mode = (_mode) },	\
+	.show  = _show,							\
+	.store = _store,						\
+}
+
+#define DEVICE_ATTR(_name, _mode, _show, _store) \
+	struct device_attribute dev_attr_##_name = __ATTR(_name, _mode, _show, _store)
 
 #endif /* _DEVICE_H_ */

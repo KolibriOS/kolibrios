@@ -434,7 +434,19 @@ struct ttm_bo_driver {
 	 */
 	int (*io_mem_reserve)(struct ttm_bo_device *bdev, struct ttm_mem_reg *mem);
 	void (*io_mem_free)(struct ttm_bo_device *bdev, struct ttm_mem_reg *mem);
+
+	/*
+	 * Backported from Linux 4.9 for the amdgpu port.  The 4.6 TTM in this
+	 * tree does not consult these hooks - it always uses the default LRU
+	 * placement - but drivers written against 4.9 still populate them.
+	 */
+	void (*lru_removal)(struct ttm_buffer_object *bo);
+	struct list_head *(*lru_tail)(struct ttm_buffer_object *bo);
+	struct list_head *(*swap_lru_tail)(struct ttm_buffer_object *bo);
 };
+
+struct list_head *ttm_bo_default_lru_tail(struct ttm_buffer_object *bo);
+struct list_head *ttm_bo_default_swap_lru_tail(struct ttm_buffer_object *bo);
 
 /**
  * struct ttm_bo_global_ref - Argument to initialize a struct ttm_bo_global.
