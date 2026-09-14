@@ -35,8 +35,40 @@ ATA_DEV_DRQ     = 0x08
 
 ; ATAPI commands
 ATAPI_IDENTIFY  = 0xA1
+ATA_CMD_PACKET  = 0xA0
 
 PRDT_MAX_ENTRIES = 16 ;65535
+
+; feature register bits of the PACKET command
+ATAPI_FEAT_DMA    = 1 shl 0 ; transfer the data by DMA rather than by PIO
+ATAPI_FEAT_DMADIR = 1 shl 2 ; 1 = the data goes from the device to the host
+
+; SCSI commands sent to an optical drive inside an ATAPI packet
+SCSI_REQUEST_SENSE   = 0x03
+SCSI_START_STOP_UNIT = 0x1B
+SCSI_READ_CAPACITY   = 0x25
+SCSI_READ10          = 0x28
+SCSI_READ_TOC        = 0x43
+
+; the SCSI sense keys and additional sense codes the driver reacts to
+SENSE_NOT_READY        = 2
+SENSE_UNIT_ATTENTION   = 6
+ASC_MEDIUM_NOT_PRESENT = 0x3A
+
+; results of ahci_atapi_cmd
+ATAPI_OK      = 0
+ATAPI_ERR_DEV = 1 ; the device refused the command, sense data is waiting
+ATAPI_ERR_HW  = 2 ; a timeout or a driver-side problem
+
+CD_BLOCK_SIZE = 2048 ; sector size of every data disc
+
+; A buffer of this size spans at most PRDT_MAX_ENTRIES pages whatever its
+; alignment, so its PRDT never runs out of entries. Keeping every ATAPI
+; transfer within it means the length in the command packet and the length
+; described by the PRDT cannot disagree.
+ATAPI_MAX_XFER = (PRDT_MAX_ENTRIES - 1) * 4096
+
+ATAPI_READY_RETRIES = 5 ; TEST UNIT READY attempts before giving up on the disc
 
 ; bit_ prefix means that its index of bit
 ; format: bit_AHCI_STR_REG_BIT
@@ -181,6 +213,14 @@ struct PORT_DATA
     portno        dd ? ; port index, 0..31
     drive_type    db ? ; drive type
     sector_count  dq ? ; number of sectors
+    sector_size   dd ? ; bytes in one sector: 512 for a disk, 2048 for a disc
+    cdb_len       dd ? ; size of an ATAPI command packet, 12 or 16 bytes
+    atapi_feat    dd ? ; feature bits every PACKET command is issued with
+    atapi_dmadir  dd ? ; 1 = the drive wants the direction spelled out in DMADIR
+    last_session  dd ? ; first sector of the last session of a multisession disc
+    media_changed dd ? ; 1 = the disc may not be the one that was measured
+    tmp_buf       dd ? ; page for the answers of the ATAPI service commands
+    media_reported dd ? ; 1 = querymedia told the kernel a disc is in, the kernel holds it
     ctr_ptr       dd ? ; pointer to controller to which port belongs
     intr_status   dd ? ; PxIS bits accumulated by the irq handler
     event_ptr     dd ? ; EVENT of the thread waiting for command completion, 0 = nobody waits
@@ -193,6 +233,8 @@ struct PORT_DATA
     next_probe    dd ? ; timer tick after which to re-probe sleeping while wake_slow = 1
     long_run      dd ? ; consecutive commands longer than the sleep threshold
     short_run     dd ? ; consecutive commands shorter than the sleep threshold
+    irq_misses    dd ? ; ATAPI only: completions in a row whose interrupt did not arrive
+    irq_dead      dd ? ; ATAPI only: 1 = interrupts of this port do not work, keep PxIE off
     mutex         MUTEX ; serializes commands on this port
 ends
 
@@ -380,9 +422,22 @@ ahci_callbacks:
     dd  0   ; no flush function
     dd  0   ; use default cache size
 .end:
+ahci_atapi_callbacks:
+    dd  ahci_atapi_callbacks.end - ahci_atapi_callbacks
+    dd  0   ; no close function
+    dd  ahci_atapi_closemedia
+    dd  ahci_atapi_querymedia
+    dd  ahci_atapi_read
+    dd  0   ; optical media is read-only
+    dd  0   ; no flush function
+    dd  0   ; use default cache size
+    dd  ahci_atapi_loadtray
+.end:
 hd_name db 'sd', 0, 0, 0
+cd_name db 'sr', 0, 0, 0 ; an optical drive cannot be named 'cd*': that prefix
+                         ; is claimed by fs_lfn for the old ATAPI-over-IDE code
 sata_dev_counter dd 0    ; sata devices counter
-; TODO: satapi_dev_counter dd 0 ; satapi devices (optical drives) counter
+satapi_dev_counter dd 0  ; optical drives counter
 ctr_counter dd 0         ; controllers counter
 endg
 
@@ -426,7 +481,7 @@ ahci_init:
         movzx   ebx, [esi + PCIDEV.bus]
         movzx   ebp, [esi + PCIDEV.devfn]
         stdcall pci_read32, ebx, ebp, PCI_REG_BAR5
-        DEBUGF  1, "K: AHCI controller MMIO = %x\n", eax
+        DEBUGF  AHCI_DBGLVL, "K: AHCI controller MMIO = %x\n", eax
         mov     edi, eax
 
         ; get the size of MMIO region
@@ -434,7 +489,7 @@ ahci_init:
         stdcall pci_read32, ebx, ebp, PCI_REG_BAR5
         not     eax
         inc     eax
-        DEBUGF  1, "K: AHCI: MMIO region size = 0x%x bytes\n", eax
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: MMIO region size = 0x%x bytes\n", eax
 
         ; Map MMIO region to virtual memory
         stdcall map_io_mem, edi, eax, PG_SWR + PG_NOCACHE
@@ -442,7 +497,7 @@ ahci_init:
         mov     ecx, [ctr_ptr]
         mov     [ecx + AHCI_CTR.abar], eax
         pop     ecx
-        DEBUGF  1, "K: AHCI controller BAR5 mapped to virtual addr %x\n", eax
+        DEBUGF  AHCI_DBGLVL, "K: AHCI controller BAR5 mapped to virtual addr %x\n", eax
 
         ; Restore the original BAR5 value
         stdcall pci_write32, ebx, ebp, PCI_REG_BAR5, edi
@@ -452,10 +507,10 @@ ahci_init:
         movzx   ebx, [esi + PCIDEV.bus]
         movzx   ebp, [esi + PCIDEV.devfn]
         stdcall pci_read32, ebx, ebp, PCI_REG_STATUS_COMMAND
-        DEBUGF  1, "K: AHCI: pci_status_command = %x\nEnabling interrupts, DMA bus mastering and memory space access\n", eax
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: pci_status_command = %x\nEnabling interrupts, DMA bus mastering and memory space access\n", eax
         or      eax, 0x06 ; pci.command |= 0x06 (dma bus mastering + memory space access)
         btr     eax, 10 ; clear the "disable interrupts" bit
-        DEBUGF  1, "K: AHCI: pci_status_command = %x\n", eax
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: pci_status_command = %x\n", eax
         stdcall pci_write32, ebx, ebp, PCI_REG_STATUS_COMMAND, eax
 
         ; Get the PCI interrupt line and install the interrupt handler.
@@ -497,7 +552,7 @@ ahci_init:
         ;DEBUGF  1, "K: AHCI: HBA_MEM.cap2 = %x\n", ebx
         bt      [esi + HBA_MEM.cap2], bit_AHCI_HBA_CAP2_BOH
         jnc     .end_handoff
-        DEBUGF  1, "K: AHCI: requesting AHCI ownership change...\n"
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: requesting AHCI ownership change...\n"
         bts     [esi + HBA_MEM.bohc], bit_AHCI_HBA_BOHC_OOS
 
         mov     ecx, 200 ; wait up to 2 s for BIOS to release the controller
@@ -520,7 +575,7 @@ ahci_init:
         mov     ebx, 200
         call    delay_hs
 @@:
-        DEBUGF  1, "K: AHCI: ownership change completed.\n"
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: ownership change completed.\n"
 
 .end_handoff:
         ;-------------------------------------------------------
@@ -549,7 +604,7 @@ ahci_init:
         mov     ebx, 2
         call    delay_hs
 
-        DEBUGF  1, "K: AHCI: caps: %x %x, ver: %x, ghc: %x, pi: %x\n", [esi + HBA_MEM.cap], [esi + HBA_MEM.cap2], [esi + HBA_MEM.version], [esi + HBA_MEM.ghc], [esi + HBA_MEM.pi]
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: caps: %x %x, ver: %x, ghc: %x, pi: %x\n", [esi + HBA_MEM.cap], [esi + HBA_MEM.cap2], [esi + HBA_MEM.version], [esi + HBA_MEM.ghc], [esi + HBA_MEM.pi]
 
         xor     ebx, ebx
 .detect_drives:
@@ -567,7 +622,7 @@ ahci_init:
         add     edi, esi
         ; now edi - base of HBA_MEM.ports[ebx]
 
-        DEBUGF  1, "K: AHCI: port %d, cmd = %x, ssts = %x\n", ebx, [edi + HBA_PORT.command], [edi + HBA_PORT.sata_status]
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: port %d, cmd = %x, ssts = %x\n", ebx, [edi + HBA_PORT.command], [edi + HBA_PORT.sata_status]
 
         ; If port is not idle force it to be idle
         mov     eax, [edi + HBA_PORT.command]
@@ -576,7 +631,7 @@ ahci_init:
         jz      @f
 
         mov     eax, edi
-        DEBUGF  1, "ahci_stop_cmd..\n"
+        DEBUGF  AHCI_DBGLVL, "ahci_stop_cmd..\n"
         call    ahci_stop_cmd
 @@:
         ; TODO: what is purpose of this block of code ?
@@ -596,7 +651,7 @@ ahci_init:
         ; rewritten to:
         bt      [esi + HBA_MEM.cap], 27 ; check Supports Staggered Spin-up bit in capabilities
         jnc     @f
-        DEBUGF  1, "Supports Staggered Spin-up, spinning up the port..\n"
+        DEBUGF  AHCI_DBGLVL, "Supports Staggered Spin-up, spinning up the port..\n"
         or      [edi + HBA_PORT.command], (0x0002 or 0x0004 or 0x10000000)
         push    ebx
         mov     ebx, 10 ; wait 100 ms
@@ -670,35 +725,26 @@ ahci_init:
 .end_switch_sig:
         mov     [ecx + PORT_DATA.drive_type], al
 
-        DEBUGF  1, "K: AHCI: found drive on port %u: TYPE = %u\n", ebx, [ecx + PORT_DATA.drive_type]
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: found drive on port %u: TYPE = %u\n", ebx, [ecx + PORT_DATA.drive_type]
 
         stdcall ahci_port_identify, ecx
         test    eax, eax
         jnz     .continue_detect_drives ; identification failed - no disk to add
 
         cmp     [ecx + PORT_DATA.drive_type], AHCI_DEV_SATA
-        jne     .after_add_disk ; skip adding disk code
+        je      .add_sata_disk
+        cmp     [ecx + PORT_DATA.drive_type], AHCI_DEV_SATAPI
+        je      .add_optical_drive
+        jmp     .after_add_disk ; nothing else can be used as a disk
+
+.add_sata_disk:
         ; register disk in system:
 
         ;stdcall ahci_read_first_sector, ecx
 
         push    ecx
-        mov     eax, [sata_dev_counter]
+        stdcall ahci_set_disk_number, hd_name, [sata_dev_counter]
         inc     [sata_dev_counter]
-        xor     edx, edx
-        mov     ecx, 10
-        div     ecx ; eax = sata_dev_counter / 10, edx = sata_dev_counter % 10
-        test    eax, eax
-        jz      .concat_one
-        add     al, '0'
-        mov     byte [hd_name + 2], al
-        add     dl, '0'
-        mov     byte [hd_name + 3], dl
-        jmp     .endif1
-.concat_one:
-        add     dl, '0'
-        mov     byte [hd_name + 2], dl
-.endif1:
         pop     ecx
 
         DEBUGF  1, "adding '%s'\n", hd_name
@@ -711,6 +757,28 @@ ahci_init:
         push    ecx
         stdcall disk_media_changed, eax, 1 ; system will scan for partitions on disk
         pop     ecx
+
+        jmp     .after_add_disk
+
+.add_optical_drive:
+        ; the disc in the tray comes and goes, so the kernel is asked to check
+        ; with 'querymedia' instead of waiting for an insert notification
+        push    ecx
+        stdcall ahci_set_disk_number, cd_name, [satapi_dev_counter]
+        inc     [satapi_dev_counter]
+        pop     ecx
+
+        DEBUGF  1, "adding '%s'\n", cd_name
+
+        push    ecx
+        stdcall disk_add, ahci_atapi_callbacks, cd_name, ecx, DISK_NO_INSERT_NOTIFICATION
+        pop     ecx
+        test    eax, eax
+        jz      .disk_add_fail
+        push    ecx
+        stdcall disk_media_changed, eax, 1 ; a disc may already be in the tray
+        pop     ecx
+
 
         jmp     .after_add_disk
 
@@ -849,10 +917,23 @@ proc ahci_port_identify stdcall, pdata: dword
         stdcall swap_bytes_in_words, modelstr, (46-27)+1
         DEBUGF  1, "IDENTIFICATION RESULT: MODEL = %s\n", modelstr
 
+        mov     ebx, [pdata]
+        mov     [ebx + PORT_DATA.sector_size], 512
+        cmp     [ebx + PORT_DATA.drive_type], AHCI_DEV_SATAPI
+        jne     .not_atapi
+        ; an optical drive reports its geometry in SCSI answers, not here, and
+        ; only once a disc is in the tray
+        stdcall ahci_atapi_parse_identify, ebx, [buf_virt]
+        test    eax, eax
+        jnz     .free_buf
+        mov     [result], 0
+        jmp     .free_buf
+.not_atapi:
+
         mov     esi, [buf_virt]
         mov     eax, [esi + 200]
         mov     edx, [esi + 200 + 4]
-        DEBUGF 1, "lba48 mode sector count = 0x%x:%x\n", edx, eax
+        DEBUGF  AHCI_DBGLVL, "lba48 mode sector count = 0x%x:%x\n", edx, eax
 
         mov     ebx, [pdata]
         mov     dword [ebx + PORT_DATA.sector_count], eax
@@ -904,15 +985,16 @@ proc ahci_querymedia stdcall, pdata, mediainfo
         ret
 endp
 
-; Read/write sectors, note: currently work for SATA, not SATAPI
-; return value: 0 = success, otherwise = error
-proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, numsectors: dword, is_write: dword
+; Describe a buffer by the PRDT of a command table. Entries are merged over
+; physically contiguous pages and split at the 4M limit of one entry.
+; in: [cmdtable] - virtual address of the HBA_CMD_TBL
+;     [vbuf]     - virtual address of the buffer
+;     [len]      - length of the buffer in bytes
+; out: eax = number of bytes covered by the created entries; less than [len]
+;            if the buffer needs more than PRDT_MAX_ENTRIES regions
+;      edx = number of entries created
+proc ahci_build_prdt stdcall, cmdtable: dword, vbuf: dword, len: dword
         locals
-            cmdslot dd ?
-            cmdheader dd ?
-            cmdtable  dd ?
-            vbuf_orig dd ?
-            vbuf_len  dd ?
             phys_region_start dd ?
             new_phys_region_start dd ?
             cur_prd   dd ?
@@ -923,55 +1005,9 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
             cur_antioffset dd ?
             prdt_bytes_total dd ?
         endl
+        push    ebx
 
-        pushad
-
-        DEBUGF  AHCI_DBGLVL, "    ahci_rw_sectors: buffer = 0x%x, startsector = 0x%x:%x, numsectors = %u, is_write = %u\n", [vbuf], [startsector], [startsector + 4], [numsectors], [is_write]:1
-
-        ; the count field of the command FIS is 16 bit wide (0 means 65536)
-        cmp     [numsectors], 65536
-        jbe     @f
-        mov     [numsectors], 65536
-@@:
-        mov     esi, [pdata] ; esi - address of PORT_DATA struct of port
-        stdcall ahci_find_cmdslot, esi
-        cmp     eax, -1
-        jne     .cmdslot_found
-
-        DEBUGF  AHCI_DBGLVL, "No free cmdslot on port %u\n", [esi + PORT_DATA.portno]
-        jmp     .fail
-
-.cmdslot_found:
-        mov     [cmdslot], eax
-        DEBUGF  AHCI_DBGLVL, "Found free cmdslot %u on port %u\n", [cmdslot], [esi + PORT_DATA.portno]
-
-        shl     eax, BSF sizeof.HBA_CMD_HDR
-        add     eax, [esi + PORT_DATA.clb]
-        mov     [cmdheader], eax ; address of virtual mapping of command header
-        mov     eax, [cmdslot]
-        mov     eax, [esi + eax*4 + PORT_DATA.ctba_arr]
-        mov     [cmdtable], eax ; address of virtual mapping of command table of command header
-
-        mov     eax, [cmdheader]
-        and     [eax + HBA_CMD_HDR.flags1], not 0x1F ; zero out lower 5 bits, they will be used for cfl
-        or      [eax + HBA_CMD_HDR.flags1], (sizeof.FIS_REG_H2D / 4) ; set command fis length in dwords
-        movzx   bx, [eax + HBA_CMD_HDR.flags1]
-        btr     bx, 6 ; flag W = 0
-        cmp     [is_write], 1 ; if is_write then set W flag
-        jne     @f
-        bts     bx, 6
-@@:
-        mov     [eax + HBA_CMD_HDR.flags1], bl
-        movzx   bx, [eax + HBA_CMD_HDR.flags2]
-        btr     bx, 2 ; flag C = 0
-        mov     [eax + HBA_CMD_HDR.flags2], bl
-
-        mov     eax, [vbuf]
-        mov     [vbuf_orig], eax
-        mov     ebx, [numsectors]
-        shl     ebx, 9 ; *= 512
-        mov     [vbuf_len], ebx
-        DEBUGF  AHCI_DBGLVL, "vbuf_len = %u bytes\n", ebx
+        DEBUGF  AHCI_DBGLVL, "buffer length = %u bytes\n", [len]
 
         mov     ebx, [vbuf]
         and     ebx, 0xFFF
@@ -982,7 +1018,7 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
         mov     [prdt_bytes_total], 0
         mov     [cur_prd], 0
 .fill_prdt:
-        cmp     [vbuf_len], 0
+        cmp     [len], 0
         jbe     .fill_prdt_end
 
         mov     eax, [vbuf]
@@ -1002,13 +1038,13 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
         mov     [cur_phys], eax
 
 .check_if1:
-        mov     eax, [vbuf_len]
+        mov     eax, [len]
         cmp     eax, [cur_antioffset]
         ja      .check_if2
 
         mov     eax, [cur_phys]
         sub     eax, [phys_region_start]
-        add     eax, [vbuf_len]
+        add     eax, [len]
         dec     eax
         mov     [dbc], eax
         mov     eax, [next_phys_page]
@@ -1071,26 +1107,85 @@ proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, nums
 @@:
 
 .step_next:
-        mov     eax, [vbuf_len]
+        mov     eax, [len]
         cmp     eax, [cur_antioffset]
         jbe     @f
         mov     eax, [cur_antioffset]
 @@:
         add     [vbuf], eax
-        sub     [vbuf_len], eax
+        sub     [len], eax
         jmp     .fill_prdt
 
 .fill_prdt_end:
 
-        mov     eax, [cmdheader]
-        mov     ebx, [cur_prd]
-        DEBUGF  AHCI_DBGLVL, " PRDTL = %u\n", ebx
-        mov     [eax + HBA_CMD_HDR.prdtl], bx
-
         mov     eax, [prdt_bytes_total]
-        DEBUGF  AHCI_DBGLVL, " prdt_bytes_total = %u\n", eax
+        mov     edx, [cur_prd]
+        DEBUGF  AHCI_DBGLVL, " PRDTL = %u, prdt_bytes_total = %u\n", edx, eax
+        pop     ebx
+        ret
+endp
+
+; Read/write sectors of a SATA disk; ATAPI devices are served by
+; ahci_atapi_read, which speaks SCSI commands instead.
+; return value: number of bytes transferred, 0 = error
+proc ahci_rw_sectors stdcall pdata: dword, vbuf: dword, startsector: qword, numsectors: dword, is_write: dword
+        locals
+            cmdslot dd ?
+            cmdheader dd ?
+            cmdtable  dd ?
+        endl
+
+        pushad
+
+        DEBUGF  AHCI_DBGLVL, "    ahci_rw_sectors: buffer = 0x%x, startsector = 0x%x:%x, numsectors = %u, is_write = %u\n", [vbuf], [startsector], [startsector + 4], [numsectors], [is_write]:1
+
+        ; the count field of the command FIS is 16 bit wide (0 means 65536)
+        cmp     [numsectors], 65536
+        jbe     @f
+        mov     [numsectors], 65536
+@@:
+        mov     esi, [pdata] ; esi - address of PORT_DATA struct of port
+        stdcall ahci_find_cmdslot, esi
+        cmp     eax, -1
+        jne     .cmdslot_found
+
+        DEBUGF  AHCI_DBGLVL, "No free cmdslot on port %u\n", [esi + PORT_DATA.portno]
+        jmp     .fail
+
+.cmdslot_found:
+        mov     [cmdslot], eax
+        DEBUGF  AHCI_DBGLVL, "Found free cmdslot %u on port %u\n", [cmdslot], [esi + PORT_DATA.portno]
+
+        shl     eax, BSF sizeof.HBA_CMD_HDR
+        add     eax, [esi + PORT_DATA.clb]
+        mov     [cmdheader], eax ; address of virtual mapping of command header
+        mov     eax, [cmdslot]
+        mov     eax, [esi + eax*4 + PORT_DATA.ctba_arr]
+        mov     [cmdtable], eax ; address of virtual mapping of command table of command header
+
+        mov     eax, [cmdheader]
+        and     [eax + HBA_CMD_HDR.flags1], not 0x1F ; zero out lower 5 bits, they will be used for cfl
+        or      [eax + HBA_CMD_HDR.flags1], (sizeof.FIS_REG_H2D / 4) ; set command fis length in dwords
+        movzx   bx, [eax + HBA_CMD_HDR.flags1]
+        btr     bx, 6 ; flag W = 0
+        cmp     [is_write], 1 ; if is_write then set W flag
+        jne     @f
+        bts     bx, 6
+@@:
+        mov     [eax + HBA_CMD_HDR.flags1], bl
+        movzx   bx, [eax + HBA_CMD_HDR.flags2]
+        btr     bx, 2 ; flag C = 0
+        mov     [eax + HBA_CMD_HDR.flags2], bl
+
+        mov     eax, [numsectors]
+        shl     eax, 9 ; *= 512
+        stdcall ahci_build_prdt, [cmdtable], [vbuf], eax
+        ; eax = bytes covered by the PRDT, edx = number of entries created
+        mov     ebx, [cmdheader]
+        mov     [ebx + HBA_CMD_HDR.prdtl], dx
         shr     eax, 9 ; /= 512
         mov     [numsectors], eax
+        jz      .fail ; not even one sector fits into PRDT_MAX_ENTRIES regions
 
         mov     eax, [cmdtable]
         mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.fis_type], FIS_TYPE_REG_H2D
@@ -1289,6 +1384,695 @@ proc ahci_write stdcall pdata: dword, buffer: dword, startsector: qword, numsect
         ret
 endp
 
+; Append a device number to a disk name whose two-letter prefix is already in
+; place; the buffer must have room for two digits and a terminating zero.
+; in: [name] - address of the name buffer
+;     [num]  - number of the device, 0..99
+proc ahci_set_disk_number stdcall, name: dword, num: dword
+        push    eax ecx edx edi
+        mov     edi, [name]
+        mov     eax, [num]
+        xor     edx, edx
+        mov     ecx, 10
+        div     ecx ; eax = num / 10, edx = num % 10
+        add     dl, '0'
+        test    eax, eax
+        jz      .one_digit
+        add     al, '0'
+        mov     [edi + 2], al
+        mov     [edi + 3], dl
+        mov     byte [edi + 4], 0
+        jmp     .ret
+.one_digit:
+        mov     [edi + 2], dl
+        mov     byte [edi + 3], 0
+.ret:
+        pop     edi edx ecx eax
+        ret
+endp
+
+; ---------------------------------------------------------------------------
+; ATAPI: optical drives (CD/DVD/BD) behind an AHCI port
+;
+; Such a drive speaks SCSI: every request is a command packet (CDB) delivered
+; by the ATA PACKET command, while the data itself is described by the usual
+; PRDT. The medium is removable and read-only, so the disk is registered with
+; DISK_NO_INSERT_NOTIFICATION and the kernel asks 'querymedia' whether a disc
+; is in the tray before each filesystem operation.
+; ---------------------------------------------------------------------------
+
+; Execute one SCSI command on an ATAPI device.
+; in: [pdata]  - address of the PORT_DATA structure
+;     [cdb]    - address of the command packet, PORT_DATA.cdb_len bytes
+;     [vbuf]   - virtual address of the data buffer, 0 for commands with no data
+;     [buflen] - size of the data buffer in bytes: even and at most
+;                ATAPI_MAX_XFER, so that the PRDT always describes all of it
+;     [bytes_ptr] - if not 0, receives the number of bytes actually transferred
+; out: eax = ATAPI_OK / ATAPI_ERR_DEV / ATAPI_ERR_HW
+proc ahci_atapi_cmd stdcall, pdata: dword, cdb: dword, vbuf: dword, buflen: dword, bytes_ptr: dword
+        locals
+            cmdslot   dd ?
+            cmdheader dd ?
+            cmdtable  dd ?
+            prdcount  dd ?
+            feature   dd ?
+            errcode   dd ?
+        endl
+
+        pushad
+
+        mov     [errcode], ATAPI_ERR_HW
+        mov     [prdcount], 0
+        mov     esi, [pdata]
+
+        stdcall ahci_find_cmdslot, esi
+        cmp     eax, -1
+        je      .ret
+
+        mov     [cmdslot], eax
+        shl     eax, BSF sizeof.HBA_CMD_HDR
+        add     eax, [esi + PORT_DATA.clb]
+        mov     [cmdheader], eax
+        mov     eax, [cmdslot]
+        mov     eax, [esi + eax*4 + PORT_DATA.ctba_arr]
+        mov     [cmdtable], eax
+
+        ; the command FIS and the packet are built from scratch every time
+        stdcall _memset, eax, 0, HBA_CMD_TBL.prdt_entry
+
+        cmp     [buflen], 0
+        je      .no_data
+        stdcall ahci_build_prdt, [cmdtable], [vbuf], [buflen]
+        test    edx, edx
+        jz      .ret
+        cmp     eax, [buflen]
+        jne     .ret ; the caller asked for more than one command can carry
+        mov     [prdcount], edx
+.no_data:
+
+        ; command header: A = 1 (this is a packet command), W = 0 (the data
+        ; travels from the device to us), command FIS length in dwords
+        mov     eax, [cmdheader]
+        mov     byte [eax + HBA_CMD_HDR.flags1], (sizeof.FIS_REG_H2D / 4) or (1 shl 5)
+        mov     byte [eax + HBA_CMD_HDR.flags2], 0
+        mov     edx, [prdcount]
+        mov     [eax + HBA_CMD_HDR.prdtl], dx
+        mov     [eax + HBA_CMD_HDR.prdbc], 0
+
+        ; feature register: ask for DMA if the drive can do it, and spell the
+        ; direction out for the drives that require DMADIR to be valid
+        mov     eax, [esi + PORT_DATA.atapi_feat]
+        mov     [feature], eax
+        test    eax, ATAPI_FEAT_DMA
+        jz      .pio_limit
+        cmp     [esi + PORT_DATA.atapi_dmadir], 0
+        je      .feature_done
+        cmp     [buflen], 0
+        je      .feature_done
+        or      [feature], ATAPI_FEAT_DMADIR ; data goes from device to host
+        jmp     .feature_done
+.pio_limit:
+        ; in PIO the device splits the data into chunks of at most this many
+        ; bytes; the controller collects them into the same PRDT anyway
+        mov     eax, [buflen]
+        cmp     eax, 0xFFFE
+        jbe     @f
+        mov     eax, 0xFFFE
+@@:
+        mov     edx, [cmdtable]
+        mov     byte [edx + HBA_CMD_TBL.cfis + FIS_REG_H2D.lba1], al
+        mov     byte [edx + HBA_CMD_TBL.cfis + FIS_REG_H2D.lba2], ah
+.feature_done:
+
+        mov     eax, [cmdtable]
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.fis_type], FIS_TYPE_REG_H2D
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.flags], 1 shl bit_AHCI_H2D_FLAG_CMD
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.command], ATA_CMD_PACKET
+        mov     edx, [feature]
+        mov     byte [eax + HBA_CMD_TBL.cfis + FIS_REG_H2D.featurel], dl
+
+        ; the packet itself; it is shorter than the field, the tail stays zero
+        lea     edi, [eax + HBA_CMD_TBL.acmd]
+        mov     esi, [cdb]
+        mov     ecx, [pdata]
+        mov     ecx, [ecx + PORT_DATA.cdb_len]
+        cld
+        rep movsb
+
+        mov     esi, [pdata]
+        mov     edi, [esi + PORT_DATA.port]
+
+        ; Wait on previous command to complete, before issuing new command.
+        stdcall ahci_port_wait, edi, AHCI_PORT_TIMEOUT
+        test    eax, eax
+        jnz     .fail_recover
+
+        stdcall ahci_port_update_ie, esi
+        ; drop the PxIS bits accumulated by previous commands (with PxIE off
+        ; nobody clears them), so that a stale error bit does not fail us
+        mov     [edi + HBA_PORT.interrupt_status], 0xFFFFFFFF
+        mov     [esi + PORT_DATA.intr_status], 0
+        mov     eax, [cmdslot]
+        bts     [edi + HBA_PORT.command_issue], eax ; Issue the command
+
+        stdcall ahci_port_cmd_wait, esi, eax
+        test    eax, eax
+        jnz     .cmd_failed
+
+        mov     [errcode], ATAPI_OK
+        cmp     [bytes_ptr], 0
+        je      .ret
+        mov     eax, [cmdheader]
+        mov     eax, [eax + HBA_CMD_HDR.prdbc]
+        mov     edx, [bytes_ptr]
+        mov     [edx], eax
+        jmp     .ret
+
+.cmd_failed:
+        cmp     eax, 1
+        jne     .fail_recover
+        ; The device refused the command and now waits for us to pick up the
+        ; sense data; an empty tray answers every TEST UNIT READY that way,
+        ; so this is a normal event and not worth a message. The refusal did
+        ; stop the port engine, though, so it has to be started again.
+        mov     [errcode], ATAPI_ERR_DEV
+        stdcall ahci_port_restart, esi
+        jmp     .ret
+.fail_recover:
+        DEBUGF  1, "K: AHCI: ATAPI command timed out on port %u, tfd = %x, serr = %x\n", [esi + PORT_DATA.portno], [edi + HBA_PORT.task_file_data], [edi + HBA_PORT.sata_error]
+        ; the controller has stopped the port on the error, bring it back
+        stdcall ahci_port_error_recovery, esi
+.ret:
+        popad
+        mov     eax, [errcode]
+        ret
+endp
+
+; Ask the device why the previous command failed. Reading the sense data also
+; clears the error condition, so it has to be done before anything else is
+; sent to the device.
+; in: [pdata] - address of the PORT_DATA structure
+; out: eax = (ASCQ shl 16) or (ASC shl 8) or sense key, -1 if unreadable
+proc ahci_atapi_request_sense stdcall, pdata: dword
+        locals
+            cdb rd 4
+        endl
+        push    ebx ecx edx esi edi
+        mov     esi, [pdata]
+        lea     edi, [cdb]
+        stdcall _memset, edi, 0, 16
+        mov     byte [edi], SCSI_REQUEST_SENSE
+        mov     byte [edi + 4], 18 ; allocation length
+        stdcall ahci_atapi_cmd, esi, edi, [esi + PORT_DATA.tmp_buf], 18, 0
+        test    eax, eax
+        jnz     .fail
+
+        mov     esi, [pdata]
+        mov     esi, [esi + PORT_DATA.tmp_buf]
+        movzx   eax, byte [esi + 2]
+        and     eax, 0x0F               ; sense key
+        movzx   edx, byte [esi + 12]    ; additional sense code
+        shl     edx, 8
+        or      eax, edx
+        movzx   edx, byte [esi + 13]    ; additional sense code qualifier
+        shl     edx, 16
+        or      eax, edx
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: ATAPI sense %x\n", eax
+        jmp     .ret
+.fail:
+        mov     eax, -1
+.ret:
+        pop     edi esi edx ecx ebx
+        ret
+endp
+
+; Make sure the drive is ready to serve data commands.
+; in: [pdata] - address of the PORT_DATA structure
+; out: eax = 0 - a disc is loaded and the drive is ready
+;      eax = 1 - the tray is empty or the drive never became ready
+;      eax = 2 - the port is broken
+proc ahci_atapi_wait_ready stdcall, pdata: dword
+        locals
+            cdb     rd 4
+            retries dd ?
+            result  dd ?
+        endl
+
+        pushad
+
+        mov     [retries], ATAPI_READY_RETRIES
+        mov     esi, [pdata]
+.again:
+        lea     edi, [cdb]
+        stdcall _memset, edi, 0, 16 ; TEST UNIT READY is all zeroes
+        stdcall ahci_atapi_cmd, esi, edi, 0, 0, 0
+        test    eax, eax
+        jz      .ready
+        cmp     eax, ATAPI_ERR_DEV
+        jne     .hw_error
+
+        stdcall ahci_atapi_request_sense, esi
+        cmp     eax, -1
+        je      .hw_error
+        mov     ebx, eax
+        shr     ebx, 8
+        and     ebx, 0xFF ; ebx = additional sense code
+        and     eax, 0x0F ; eax = sense key
+
+        cmp     eax, SENSE_UNIT_ATTENTION
+        jne     .not_attention
+        ; the drive was reset or the disc was swapped: whatever we knew about
+        ; the medium is stale now, and the command has to be repeated
+        mov     [esi + PORT_DATA.media_changed], 1
+        jmp     .next_try
+.not_attention:
+        cmp     eax, SENSE_NOT_READY
+        jne     .no_media
+        cmp     ebx, ASC_MEDIUM_NOT_PRESENT
+        je      .no_media ; an empty tray will not fill itself while we wait
+        ; the disc is spinning up, give the drive some time
+        mov     ebx, 20
+        call    delay_hs
+.next_try:
+        dec     [retries]
+        jnz     .again
+.no_media:
+        mov     [result], 1
+        jmp     .ret
+.hw_error:
+        mov     [result], 2
+        jmp     .ret
+.ready:
+        mov     [result], 0
+.ret:
+        popad
+        mov     eax, [result]
+        ret
+endp
+
+; Measure the medium currently in the drive.
+; in: [pdata] - address of the PORT_DATA structure
+; out: eax = 0 on success, PORT_DATA.sector_count and .sector_size are filled
+proc ahci_atapi_read_capacity stdcall, pdata: dword
+        locals
+            cdb    rd 4
+            result dd ?
+        endl
+
+        pushad
+
+        mov     [result], 1
+        mov     esi, [pdata]
+        mov     dword [esi + PORT_DATA.sector_count], 0
+        mov     dword [esi + PORT_DATA.sector_count + 4], 0
+
+        lea     edi, [cdb]
+        stdcall _memset, edi, 0, 16
+        mov     byte [edi], SCSI_READ_CAPACITY
+        stdcall ahci_atapi_cmd, esi, edi, [esi + PORT_DATA.tmp_buf], 8, 0
+        test    eax, eax
+        jnz     .ret
+
+        mov     edi, [esi + PORT_DATA.tmp_buf]
+        mov     eax, [edi]      ; number of the last sector, big endian
+        bswap   eax
+        inc     eax             ; -> number of sectors on the medium
+        jz      .ret            ; 0xFFFFFFFF means "capacity unknown"
+        mov     dword [esi + PORT_DATA.sector_count], eax
+
+        mov     eax, [edi + 4]  ; sector size in bytes, big endian
+        bswap   eax
+        ; the disk cache needs a power of two and iso9660 wants exactly 2048;
+        ; anything else is more likely a confused drive than a real geometry
+        cmp     eax, 512
+        jb      .odd_size
+        cmp     eax, 4096
+        ja      .odd_size
+        lea     edx, [eax - 1]
+        test    eax, edx
+        jz      .size_ok
+.odd_size:
+        mov     eax, CD_BLOCK_SIZE
+.size_ok:
+        mov     [esi + PORT_DATA.sector_size], eax
+        mov     [result], 0
+.ret:
+        popad
+        mov     eax, [result]
+        ret
+endp
+
+; Find where the last session of a multisession disc starts: iso9660 looks for
+; the volume descriptors relative to that sector. A single session disc simply
+; reports zero, and so does a drive that does not answer at all.
+; in: [pdata] - address of the PORT_DATA structure
+proc ahci_atapi_read_toc stdcall, pdata: dword
+        locals
+            cdb rd 4
+        endl
+
+        pushad
+
+        mov     esi, [pdata]
+        mov     [esi + PORT_DATA.last_session], 0
+
+        lea     edi, [cdb]
+        stdcall _memset, edi, 0, 16
+        mov     byte [edi], SCSI_READ_TOC
+        mov     byte [edi + 2], 1  ; format 1: session information
+        mov     byte [edi + 8], 12 ; allocation length: header + one descriptor
+        stdcall ahci_atapi_cmd, esi, edi, [esi + PORT_DATA.tmp_buf], 12, 0
+        test    eax, eax
+        jnz     .ret
+
+        mov     edi, [esi + PORT_DATA.tmp_buf]
+        mov     eax, [edi + 8] ; start of the first track of the last session
+        bswap   eax
+        ; do not let a strange answer make the whole disc unreadable
+        cmp     eax, dword [esi + PORT_DATA.sector_count]
+        jb      @f
+        xor     eax, eax
+@@:
+        mov     [esi + PORT_DATA.last_session], eax
+.ret:
+        popad
+        ret
+endp
+
+; Read sectors from the disc.
+; return value: one of DISK_STATUS_*
+proc ahci_atapi_read stdcall, pdata: dword, buffer: dword, startsector: qword, numsectors_ptr: dword
+        locals
+            cdb        rd 4
+            numsectors dd ?
+            maxblocks  dd ?
+            blocks     dd ?
+            lba        dd ?
+            done       dd ?
+            errcode    dd ?
+        endl
+
+        pushad
+
+        mov     [errcode], DISK_STATUS_OK
+        mov     [done], 0
+
+        mov     ecx, [pdata]
+        lea     ecx, [ecx + PORT_DATA.mutex]
+        call    mutex_lock
+        mov     esi, [pdata]
+
+        mov     eax, [numsectors_ptr]
+        mov     eax, [eax]
+        mov     [numsectors], eax
+        DEBUGF  AHCI_DBGLVL, "  ahci_atapi_read: buffer = 0x%x, startsector = 0x%x:%x, numsectors = %u\n", [buffer], [startsector], [startsector + 4], eax
+
+        ; READ(10) addresses the disc with a 32 bit LBA, which covers far more
+        ; than any optical medium holds
+        cmp     dword [startsector + 4], 0
+        jnz     .end_of_media
+        mov     eax, dword [startsector]
+        mov     [lba], eax
+        cmp     eax, dword [esi + PORT_DATA.sector_count]
+        jae     .end_of_media
+
+        ; how many sectors one command may carry, see ATAPI_MAX_XFER
+        mov     eax, ATAPI_MAX_XFER
+        xor     edx, edx
+        div     dword [esi + PORT_DATA.sector_size]
+        mov     [maxblocks], eax
+
+.read_loop:
+        mov     eax, [numsectors]
+        sub     eax, [done]
+        jz      .read_loop_end
+        cmp     eax, [maxblocks]
+        jbe     @f
+        mov     eax, [maxblocks]
+@@:
+        ; and do not run over the end of the medium
+        mov     edx, dword [esi + PORT_DATA.sector_count]
+        sub     edx, [lba]
+        jbe     .end_of_media
+        cmp     eax, edx
+        jbe     @f
+        mov     eax, edx
+@@:
+        mov     [blocks], eax
+
+        lea     edi, [cdb]
+        stdcall _memset, edi, 0, 16
+        mov     byte [edi], SCSI_READ10
+        mov     eax, [lba]
+        bswap   eax
+        mov     [edi + 2], eax
+        mov     eax, [blocks]
+        xchg    al, ah
+        mov     [edi + 7], ax
+
+        mov     eax, [blocks]
+        imul    eax, dword [esi + PORT_DATA.sector_size]
+        stdcall ahci_atapi_cmd, esi, edi, [buffer], eax, 0
+        test    eax, eax
+        jz      .block_done
+        cmp     eax, ATAPI_ERR_DEV
+        jne     .fail
+
+        ; Pick up the sense data, which also clears the error condition. A
+        ; unit attention means the disc may have been swapped under our feet:
+        ; a retry would return data of a disc the kernel does not know about.
+        ; Fail the read instead; the next querymedia makes the kernel let go
+        ; of the old disc.
+        stdcall ahci_atapi_request_sense, esi
+        and     eax, 0x0F
+        cmp     eax, SENSE_UNIT_ATTENTION
+        jne     .fail
+        mov     [esi + PORT_DATA.media_changed], 1
+        jmp     .fail
+
+.block_done:
+        mov     eax, [blocks]
+        add     [done], eax
+        add     [lba], eax
+        imul    eax, dword [esi + PORT_DATA.sector_size]
+        add     [buffer], eax
+        jmp     .read_loop
+
+.end_of_media:
+        mov     [errcode], DISK_STATUS_END_OF_MEDIA
+        jmp     .read_loop_end
+.fail:
+        mov     [errcode], DISK_STATUS_GENERAL_ERROR
+.read_loop_end:
+        mov     eax, [numsectors_ptr]
+        mov     ecx, [done]
+        mov     [eax], ecx ; number of sectors actually read
+
+        mov     ecx, [pdata]
+        lea     ecx, [ecx + PORT_DATA.mutex]
+        call    mutex_unlock
+
+        popad
+        mov     eax, [errcode]
+        ret
+endp
+
+; Report the parameters of the disc in the tray, or an error if there is none.
+; The kernel calls this before every filesystem operation, so the measurement
+; itself is repeated only when the medium may have changed.
+; return value: one of DISK_STATUS_*
+proc ahci_atapi_querymedia stdcall, pdata: dword, mediainfo: dword
+        locals
+            result dd ?
+        endl
+
+        pushad
+
+        mov     [result], DISK_STATUS_NO_MEDIA
+
+        mov     ecx, [pdata]
+        lea     ecx, [ecx + PORT_DATA.mutex]
+        call    mutex_lock
+        mov     esi, [pdata]
+
+        stdcall ahci_atapi_wait_ready, esi
+        test    eax, eax
+        jnz     .unlock
+
+        cmp     [esi + PORT_DATA.media_changed], 0
+        jnz     .changed
+        cmp     dword [esi + PORT_DATA.sector_count], 0
+        jnz     .measured
+        jmp     .measure
+.changed:
+        ; The disc may have been swapped. The kernel never asks whether a disc
+        ; it already holds is still the same one: it lets go of a medium only
+        ; when this callback fails. So fail once - the kernel then closes the
+        ; old disc, drops its partitions and cache, and asks again right away,
+        ; and that second call measures the new disc.
+        cmp     [esi + PORT_DATA.media_reported], 0
+        jz      .measure
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: port %u: the disc may have changed, dropping the old one\n", [esi + PORT_DATA.portno]
+        jmp     .unlock
+.measure:
+        stdcall ahci_atapi_read_capacity, esi
+        test    eax, eax
+        jnz     .unlock
+        stdcall ahci_atapi_read_toc, esi
+        mov     [esi + PORT_DATA.media_changed], 0
+        mov     eax, dword [esi + PORT_DATA.sector_count]
+        mov     ebx, [esi + PORT_DATA.sector_size]
+        mov     ecx, [esi + PORT_DATA.last_session]
+        DEBUGF  1, "K: AHCI: port %u: medium of %u sectors of %u bytes, last session at %u\n", [esi + PORT_DATA.portno], eax, ebx, ecx
+.measured:
+        mov     edi, [mediainfo]
+        mov     [edi + DISKMEDIAINFO.Flags], DISK_MEDIA_READONLY
+        mov     eax, [esi + PORT_DATA.sector_size]
+        mov     [edi + DISKMEDIAINFO.SectorSize], eax
+        mov     eax, dword [esi + PORT_DATA.sector_count]
+        mov     dword [edi + DISKMEDIAINFO.Capacity], eax
+        mov     dword [edi + DISKMEDIAINFO.Capacity + 4], 0
+        mov     eax, [esi + PORT_DATA.last_session]
+        mov     [edi + DISKMEDIAINFO.LastSessionSector], eax
+        mov     [result], DISK_STATUS_OK
+.unlock:
+        ; whatever we answered is what the kernel holds from now on
+        xor     eax, eax
+        cmp     [result], DISK_STATUS_OK
+        sete    al
+        mov     [esi + PORT_DATA.media_reported], eax
+
+        mov     ecx, [pdata]
+        lea     ecx, [ecx + PORT_DATA.mutex]
+        call    mutex_unlock
+
+        popad
+        mov     eax, [result]
+        ret
+endp
+
+; The kernel has finished with the medium: forget its parameters, so that a
+; disc swapped while nobody was looking is measured again.
+proc ahci_atapi_closemedia stdcall, pdata: dword
+        push    eax
+        mov     eax, [pdata]
+        mov     dword [eax + PORT_DATA.sector_count], 0
+        mov     dword [eax + PORT_DATA.sector_count + 4], 0
+        mov     [eax + PORT_DATA.media_changed], 1
+        mov     [eax + PORT_DATA.media_reported], 0
+        pop     eax
+        xor     eax, eax
+        ret
+endp
+
+; Open or close the tray.
+; [flags]: 0 = load the disc, 1 = eject it
+; return value: one of DISK_STATUS_*
+proc ahci_atapi_loadtray stdcall, pdata: dword, flags: dword
+        locals
+            cdb    rd 4
+            result dd ?
+        endl
+
+        pushad
+
+        mov     ecx, [pdata]
+        lea     ecx, [ecx + PORT_DATA.mutex]
+        call    mutex_lock
+        mov     esi, [pdata]
+
+        lea     edi, [cdb]
+        stdcall _memset, edi, 0, 16
+        mov     byte [edi], SCSI_START_STOP_UNIT
+        mov     al, 3 ; LoEj = 1, Start = 1: pull the tray in and spin up
+        cmp     [flags], 0
+        jz      @f
+        mov     al, 2 ; LoEj = 1, Start = 0: spin down and eject
+@@:
+        mov     byte [edi + 4], al
+        stdcall ahci_atapi_cmd, esi, edi, 0, 0, 0
+        mov     [result], DISK_STATUS_OK
+        test    eax, eax
+        jz      @f
+        mov     [result], DISK_STATUS_GENERAL_ERROR
+@@:
+        ; whatever is in the tray now is not what we measured before
+        mov     dword [esi + PORT_DATA.sector_count], 0
+        mov     dword [esi + PORT_DATA.sector_count + 4], 0
+        mov     [esi + PORT_DATA.media_changed], 1
+
+        mov     ecx, [pdata]
+        lea     ecx, [ecx + PORT_DATA.mutex]
+        call    mutex_unlock
+
+        popad
+        mov     eax, [result]
+        ret
+endp
+
+; Pick up what IDENTIFY PACKET DEVICE told us about an optical drive and
+; allocate the scratch buffer its service commands need.
+; in: [pdata] - address of the PORT_DATA structure
+;     [idbuf] - address of the 512 byte identify data
+; out: eax = 0 on success
+proc ahci_atapi_parse_identify stdcall, pdata: dword, idbuf: dword
+        push    ebx ecx edx esi
+        mov     esi, [idbuf]
+        mov     ebx, [pdata]
+
+        ; the capacity is not in the identify data, READ CAPACITY reports it
+        mov     dword [ebx + PORT_DATA.sector_count], 0
+        mov     dword [ebx + PORT_DATA.sector_count + 4], 0
+        mov     [ebx + PORT_DATA.sector_size], CD_BLOCK_SIZE
+        mov     [ebx + PORT_DATA.last_session], 0
+        mov     [ebx + PORT_DATA.media_changed], 1
+
+        ; word 0, bits 1:0 - size of the command packet: 0 = 12, 1 = 16 bytes
+        movzx   eax, word [esi]
+        and     eax, 3
+        cmp     eax, 1
+        mov     eax, 12
+        jne     @f
+        mov     eax, 16
+@@:
+        mov     [ebx + PORT_DATA.cdb_len], eax
+
+        ; word 49, bit 8 - the drive can transfer packet data by DMA
+        xor     eax, eax
+        test    word [esi + 49*2], 1 shl 8
+        jz      @f
+        mov     eax, ATAPI_FEAT_DMA
+@@:
+        mov     [ebx + PORT_DATA.atapi_feat], eax
+
+        ; word 62, bit 15 - the drive requires the DMADIR bit to be valid
+        xor     eax, eax
+        test    word [esi + 62*2], 1 shl 15
+        jz      @f
+        inc     eax
+@@:
+        mov     [ebx + PORT_DATA.atapi_dmadir], eax
+
+        ; a page for the answers of READ CAPACITY, REQUEST SENSE and friends
+        stdcall kernel_alloc, 4096
+        mov     [ebx + PORT_DATA.tmp_buf], eax
+        test    eax, eax
+        jz      .no_memory
+
+        mov     eax, [ebx + PORT_DATA.cdb_len]
+        mov     ecx, [ebx + PORT_DATA.atapi_feat]
+        mov     edx, [ebx + PORT_DATA.atapi_dmadir]
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: port %u: optical drive, packet %u bytes, feature %x, dmadir %u\n", [ebx + PORT_DATA.portno], eax, ecx, edx
+        xor     eax, eax
+        jmp     .ret
+.no_memory:
+        DEBUGF  1, "K: AHCI: no memory for the ATAPI buffer of port %u\n", [ebx + PORT_DATA.portno]
+        mov     eax, 1
+.ret:
+        pop     esi edx ecx ebx
+        ret
+endp
+
 ; Start command engine
 ; in: eax - address of HBA_PORT structure
 ahci_start_cmd:
@@ -1459,7 +2243,14 @@ proc ahci_port_cmd_wait stdcall, pdata: dword, cmdslot: dword
         ; on this board is high and unstable between boots and wrecked the
         ; random tests. The deadline check above bounds a truly hung command.
         cmp     [esi + PORT_DATA.ie_mode], 0
-        jz      .check
+        jnz     .interrupts_on
+        ; ...but not on an optical drive: a single command there can take
+        ; seconds (spinning the disc up, retrying a bad sector), and
+        ; busy-polling it would freeze the system for all that time
+        cmp     [esi + PORT_DATA.drive_type], AHCI_DEV_SATAPI
+        je      .yield
+        jmp     .check
+.interrupts_on:
         ; if interrupt wakeups on this port have proven to be late or
         ; missing, don't sleep: poll politely instead (old-driver speed);
         ; every couple of seconds probe the interrupt path again
@@ -1536,8 +2327,15 @@ proc ahci_port_cmd_wait stdcall, pdata: dword, cmdslot: dword
         cmp     [esi + PORT_DATA.wake_slow], 0
         jz      .after_streaks
         mov     [esi + PORT_DATA.wake_slow], 0
-        DEBUGF  1, "K: AHCI: port %u: interrupt wakeups are fine again\n", [esi + PORT_DATA.portno]
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: port %u: interrupt wakeups are fine again\n", [esi + PORT_DATA.portno]
 .after_streaks:
+        ; the interrupt arrived: restart the count of missing ones - on the
+        ; port itself for an optical drive, controller-wide for a disk
+        cmp     [esi + PORT_DATA.drive_type], AHCI_DEV_SATAPI
+        jne     @f
+        mov     [esi + PORT_DATA.irq_misses], 0
+        jmp     .check
+@@:
         mov     eax, [esi + PORT_DATA.ctr_ptr]
         mov     [eax + AHCI_CTR.irq_miss_count], 0
         jmp     .check
@@ -1559,6 +2357,8 @@ proc ahci_port_cmd_wait stdcall, pdata: dword, cmdslot: dword
         call    .note_slow_wakeup
         mov     eax, [esi + PORT_DATA.ctr_ptr]
         inc     [eax + AHCI_CTR.miss_total]
+        cmp     [esi + PORT_DATA.drive_type], AHCI_DEV_SATAPI
+        je      .atapi_irq_miss
         inc     [eax + AHCI_CTR.irq_miss_count]
         cmp     [eax + AHCI_CTR.irq_miss_count], AHCI_IRQ_MISS_LIMIT
         jb      .check
@@ -1572,6 +2372,23 @@ proc ahci_port_cmd_wait stdcall, pdata: dword, cmdslot: dword
         mov     [edi + HBA_PORT.interrupt_enable], 0
         mov     [esi + PORT_DATA.ie_mode], 0
         DEBUGF  1, "K: AHCI: interrupts are not arriving, falling back to polling\n"
+        jmp     .check
+
+.atapi_irq_miss:
+        ; An optical drive does not get to decide for the whole controller:
+        ; polling mode would slow the disks next to it down until reboot, and
+        ; whether their interrupts work they find out by themselves. Only this
+        ; port stops using interrupts, and its PxIE is cleared so that it
+        ; cannot keep a shared INTx line asserted either.
+        inc     [esi + PORT_DATA.irq_misses]
+        cmp     [esi + PORT_DATA.irq_misses], AHCI_IRQ_MISS_LIMIT
+        jb      .check
+        cmp     [esi + PORT_DATA.irq_dead], 0
+        jnz     .check
+        mov     [esi + PORT_DATA.irq_dead], 1
+        mov     [edi + HBA_PORT.interrupt_enable], 0
+        mov     [esi + PORT_DATA.ie_mode], 0
+        DEBUGF  1, "K: AHCI: port %u: interrupts are not arriving, polling this port\n", [esi + PORT_DATA.portno]
         jmp     .check
 
 .cancel_wait:
@@ -1601,7 +2418,7 @@ proc ahci_port_cmd_wait stdcall, pdata: dword, cmdslot: dword
         mov     eax, [timer_ticks]
         add     eax, 200
         mov     [esi + PORT_DATA.next_probe], eax
-        DEBUGF  1, "K: AHCI: port %u: interrupt wakeups are late, polling instead of sleeping\n", [esi + PORT_DATA.portno]
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: port %u: interrupt wakeups are late, polling instead of sleeping\n", [esi + PORT_DATA.portno]
 .nsw_ret:
         retn
 
@@ -1650,7 +2467,7 @@ proc ahci_port_cmd_wait stdcall, pdata: dword, cmdslot: dword
         inc     [ecx + AHCI_CTR.cmds_total]
         test    byte [ecx + AHCI_CTR.cmds_total], 0xFF
         jnz     @f
-        DEBUGF  1, "K: AHCI stats: cmds=%u sleeps=%u misses=%u irqs=%u avg_tsc=%u ie=%u slow=%u\n", [ecx + AHCI_CTR.cmds_total], [ecx + AHCI_CTR.sleeps_total], [ecx + AHCI_CTR.miss_total], [ecx + AHCI_CTR.intr_count], [esi + PORT_DATA.avg_cmd_tsc], [esi + PORT_DATA.ie_mode], [esi + PORT_DATA.wake_slow]
+        DEBUGF  AHCI_DBGLVL, "K: AHCI stats: cmds=%u sleeps=%u misses=%u irqs=%u avg_tsc=%u ie=%u slow=%u\n", [ecx + AHCI_CTR.cmds_total], [ecx + AHCI_CTR.sleeps_total], [ecx + AHCI_CTR.miss_total], [ecx + AHCI_CTR.intr_count], [esi + PORT_DATA.avg_cmd_tsc], [esi + PORT_DATA.ie_mode], [esi + PORT_DATA.wake_slow]
 @@:
         test    [esi + PORT_DATA.intr_status], AHCI_PORT_INTR_ERR_MASK
         jnz     .error
@@ -1695,6 +2512,8 @@ proc ahci_port_update_ie stdcall, pdata: dword
         mov     eax, [edx + PORT_DATA.ctr_ptr]
         cmp     [eax + AHCI_CTR.polling_mode], 0
         jnz     .done
+        cmp     [edx + PORT_DATA.irq_dead], 0 ; interrupts of this port were found not to work
+        jnz     .done
         cmp     [edx + PORT_DATA.long_run], 3
         jb      .done
         mov     eax, [edx + PORT_DATA.port]
@@ -1734,7 +2553,7 @@ ahci_irq_handler:
         inc     [esi + AHCI_CTR.intr_count]
         cmp     [esi + AHCI_CTR.intr_count], 1
         jne     @f
-        DEBUGF  1, "K: AHCI: first interrupt received\n"
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: first interrupt received\n"
 @@:
         push    8 ; bound for the handle-ack-recheck loop, just in case
 .handle_loop:
@@ -1835,6 +2654,33 @@ proc ahci_port_comreset stdcall, port: dword
 endp
 
 
+; Restart a port whose engine was stopped by an error that left the device
+; itself perfectly healthy - an ATAPI device refusing a command (an empty
+; tray answers every TEST UNIT READY that way) is the usual reason. If the
+; device turns out to be stuck after all, fall back to the full recovery.
+; in: [pdata] - address of PORT_DATA structure
+proc ahci_port_restart stdcall, pdata: dword
+        push    eax esi edi
+        mov     esi, [pdata]
+        mov     edi, [esi + PORT_DATA.port]
+        mov     eax, [edi + HBA_PORT.task_file_data]
+        test    eax, ATA_DEV_BUSY or ATA_DEV_DRQ
+        jnz     .stuck
+        mov     eax, edi
+        call    ahci_stop_cmd
+        mov     [edi + HBA_PORT.sata_error], 0xFFFFFFFF
+        mov     [edi + HBA_PORT.interrupt_status], 0xFFFFFFFF
+        mov     [esi + PORT_DATA.intr_status], 0
+        mov     eax, edi
+        call    ahci_start_cmd
+        jmp     .ret
+.stuck:
+        stdcall ahci_port_error_recovery, esi
+.ret:
+        pop     edi esi eax
+        ret
+endp
+
 ; Try to bring the port back to a working state after a command error/timeout
 ; (AHCI spec 6.2.2.1)
 ; in: [pdata] - address of PORT_DATA structure
@@ -1920,7 +2766,7 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
 
         pushad
 
-        DEBUGF  1, "Rebasing port %u\n", [portno]
+        DEBUGF  AHCI_DBGLVL, "Rebasing port %u\n", [portno]
 
         mov     [result], 1
 
@@ -2071,13 +2917,13 @@ proc ahci_port_rebase stdcall, port: dword, portno: dword, pdata: dword
         call    ahci_start_cmd
 
         mov     [result], 0
-        DEBUGF  1, "End rebasing port %u\n", [portno]
+        DEBUGF  AHCI_DBGLVL, "End rebasing port %u\n", [portno]
 .ret:
         popad
         mov     eax, [result]
         ret
 .no_device:
-        DEBUGF  1, "K: AHCI: port %u: no device detected\n", [portno]
+        DEBUGF  AHCI_DBGLVL, "K: AHCI: port %u: no device detected\n", [portno]
         jmp     .ret
 endp
 
