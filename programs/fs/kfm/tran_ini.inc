@@ -156,8 +156,7 @@ open_file_with_appl:
     jnz   @b
 .continue:
     mov   [start_file_data.param],start_parameter
-    ;call  start_appl ;Leency
-	mcall 70,sysopen  ;Leency
+    mcall SF_FILE, sysopen  ;Leency
     cmp   eax,0
     jge   @f
     mov  ebx,0
@@ -171,12 +170,14 @@ open_file_with_appl:
     mov   eax,1
     ret
 ;---------------------------------------------------------------------
+align 4
 search_star_and_end_tags:
     mov   edi,[ini_file_start]
     dec   edi
+    mov   edx,[ini_size]
 .search_tag1:
-    cmp   [left_folder_data],edi
-    jbe  .end
+    or    edx,edx
+    jz    .end
     mov   esi,ebp
     mov   ecx,22
     inc   edi
@@ -186,9 +187,10 @@ search_star_and_end_tags:
     pop    edi
     jne     .search_tag1
     dec    edi
+    add    edx,[ini_file_start]
     push   edi
 .search_end_tag:
-    cmp   [left_folder_data],edi
+    cmp   edx,edi
     jbe  .end
     mov   esi,end_section_tag
     mov   ecx,7

@@ -1,4 +1,4 @@
-header_text       db 'Kolibri File Manager v0.48e',0
+header_text       db 'Kolibri File Manager v0.49',0
 ;---------------------------------------------------------------------
 fbutton_name:
     .f1   db '1 Help',0
@@ -62,10 +62,14 @@ select_disk_char:
 truncated_filename_char db '..'
 ;---------------------------------------------------------------------
 sort_button_name:
-    .name  db 'Name'
-    .type  db 'Type'
-    .size  db 'Size'
-    .date  db 'Date'
+    .name   db 'Name '
+    .name_e db ' ',0
+    .type   db 'Type '
+    .type_e db ' ',0
+    .size   db 'Size '
+    .size_e db ' ',0
+    .date   db 'Date '
+    .date_e db ' ',0
 ;---------------------------------------------------------------------
 type_table:
      db '<DIR> '
@@ -81,6 +85,9 @@ year_table:
 ;---------------------------------------------------------------------
 ini_file_name:
      db 'kfm.ini',0
+error_open_ini_file:
+     db '"Initialization error',13,10,\
+		'Error opening file ',39,'kfm.ini',39,'!" -tW',0
 ;---------------------------------------------------------------------
 error_type:
      db 'File system error',0
@@ -201,12 +208,6 @@ mouse_key_delay dd 100
 copy_editboxes:
 create_editboxes:
 edit1 edit_box 150,10,10,0xffffff,0xbbddff,0,0,0,255,create_dir_name,ed_focus+ed_always_focus,0
-copy_editboxes_end:
-create_editboxes_end:
-;---------------------------------------------------------------------
-;copy_editboxes:
-;edit2 edit_box 150,10,10,0xffffff,0,0,0,0,255,create_dir_name,ed_focus,0
-;copy_editboxes_end:
 ;---------------------------------------------------------------------
 align 4
 sysopen:

@@ -1,4 +1,16 @@
+align 4
+FILE_BR_TOP_LINE equ 70
+FILE_BR_SEL_DR_W equ 60
+FILE_BR_COL_LEFT equ 60+15 ;ширина списка + отступ до кнопки name
+file_br_col_w1   dd   ? ;name
+FILE_BR_COL_W2   equ 45 ;type
+FILE_BR_COL_W3   equ 45 ;size
+FILE_BR_COL_W4   equ 65 ;date
+symbol_up   db 24,0
+symbol_down db 25,0
+
 ;------------------------------------------------------------------------------
+align 4
 draw_buttons_panel:
 	mov	ecx,[skin_high]
 	add	ecx,19
@@ -7,17 +19,17 @@ draw_buttons_panel:
 	mov	ebx,[window_width]
 	sub	ebx,9
 	add	ebx,5 shl 16
-	mcall	13,,,0xffffff
+	mcall	SF_DRAW_RECT, ,,0xffffff
 	
 	mov	edx,15 shl 16+20
 	add	edx,[skin_high]
-	mcall	7,buttons_file_data,<198,16>
+	mcall	SF_PUT_IMAGE, buttons_file_data,<198,16>
 	
 	mov ecx, 20
 	add ecx, [skin_high]
 	shl ecx, 16
 	add ecx, 16
-	mcall	8,<15,16>,,150+0x40000000
+	mcall	SF_DEFINE_BUTTON, <15,16>,,150+0x40000000
 	
 _new_but:
 	add	ebx,26 shl 16
@@ -27,127 +39,133 @@ _new_but:
 	jl  _new_but
 	
 	ret
-;--------------------------------------
-.calculate_button:
-	mov	ebx,edx
-	mov	bx,15
-	mov	ecx,edx
-	shl	ecx,16
-	mov	cx,bx
-	ret
 ;------------------------------------------------------------------------------
+align 4
 draw_left_sort_button:
-	mov	bx,[left_panel_x.start_x]
-	add	bx,[left_panel_x.size_x]
-	sub	ebx,50+15+12
-	mov	cx,[left_panel_y.start_y]
-	call	calclulate_sort_button_1
-	mov	edx,145
-;--------------------------------------
-.start:
-	mov	esi,0xffffff
-	dec	ebp
-	cmp	[left_sort_flag],ebp
-	jne	@f
+	movzx	ebx,[left_panel_x.start_x]
+	add	ebx,FILE_BR_SEL_DR_W
+	shl   ebx,16
+	mov   bx,[left_panel_x.size_x]
+	sub   bx,FILE_BR_SEL_DR_W-1
+	movzx	ecx,[left_panel_y.start_y]
+	sub   ecx,14
+	shl   ecx,16
+	mov   cx,14
+	mcall SF_DRAW_RECT, ,,0xcccccc
 
-	mov	esi,0xccccff
-;--------------------------------------
-@@:
-	call	calclulate_sort_button_2
-	jnz	.start
-
+	movzx	ebx,[left_panel_x.start_x]
+	add	ebx,FILE_BR_COL_LEFT+1
+	movzx	ecx,[left_panel_y.start_y]
+	stdcall draw_sort_buttons, ebx, ecx, 142, [left_sort_flag]
 	ret
 ;------------------------------------------------------------------------------
-calclulate_sort_button_1:
+align 4
+draw_right_sort_button:
+	movzx	ebx,[right_panel_x.start_x]
+	add	ebx,FILE_BR_SEL_DR_W
+	shl   ebx,16
+	mov   bx,[right_panel_x.size_x]
+	sub   bx,FILE_BR_SEL_DR_W-1
+	movzx	ecx,[right_panel_y.start_y]
+	sub   ecx,14
+	shl   ecx,16
+	mov   cx,14
+	mcall SF_DRAW_RECT, ,,0xcccccc
+
+	movzx	ebx,[right_panel_x.start_x]
+	add	ebx,FILE_BR_COL_LEFT+1
+	movzx	ecx,[right_panel_y.start_y]
+	stdcall draw_sort_buttons, ebx, ecx, 146, [right_sort_flag]
+	ret
+;------------------------------------------------------------------------------
+; in:
+;   ebx - coord x
+;   ecx - coord y
+;   edx - button id or 0x80000000 + button id
+align 4
+clear_sort_buttons:
 	shl	ebx,16
-	mov	bx,50
+	mov	bx,word[file_br_col_w1]
+	dec	bx
 	sub	cx,14
 	shl	ecx,16
-	mov	cx,12
-	mov	eax,8
-	mov	ebp,4
+	mov	cx,12 ;buttons height
+	mov	esi,0xffffff ;0xccccff
+	mcall	SF_DEFINE_BUTTON
+	ror	ebx,16
+	add	bx,word[file_br_col_w1]
+	ror	ebx,16
+	mov	bx,FILE_BR_COL_W2-1
+	inc edx
+	mcall
+	add	ebx,FILE_BR_COL_W2 shl 16
+	mov	bx,FILE_BR_COL_W3-1
+	inc edx
+	mcall
+	add	ebx,FILE_BR_COL_W3 shl 16
+	mov	bx,FILE_BR_COL_W4-1
+	inc edx
+	mcall
 	ret
 ;------------------------------------------------------------------------------
-calclulate_sort_button_2:
-	inc	ebp
-	mcall
-	pusha
-	push	ebx
-	mov	eax,ebx
-	inc	eax
-	shl	eax,16
-	add	ebx,eax
-	cmp	ebp,4
-	jne	@f
+;in:
+;  but_id - start button id
+align 4
+proc draw_sort_buttons, coord_x:dword, coord_y, but_id:dword, sort_type:dword
+	mov	ebx,[coord_x]
+	mov	ecx,[coord_y]
+	mov	edx,[but_id]
+	call	clear_sort_buttons
 
-	mov	bx,15+12
-	jmp	.continue
-;--------------------------------------
+	;make arrows
+	mov	byte[sort_button_name.name_e],' '
+	mov	byte[sort_button_name.type_e],' '
+	mov	byte[sort_button_name.size_e],' '
+	mov	byte[sort_button_name.date_e],' '
+	mov	al,byte[symbol_down]
+	bt	[sort_type],0
+	jnc	@f
+	mov	al,byte[symbol_up]
 @@:
-	mov	bx,1
-;--------------------------------------
-.continue:
-	inc	ecx
-	mcall	13,,,0xcccccc
-	pop	ebx
-	cmp	ebp,1
+	mov	ebx,[sort_type]
+	shr	ebx,1
+	cmp	ebx,3
 	jne	@f
+	mov	byte[sort_button_name.size_e],al
+@@:
+	cmp	ebx,2
+	jne	@f
+	mov	byte[sort_button_name.date_e],al
+@@:
+	cmp	ebx,1
+	jne	@f
+	mov	byte[sort_button_name.type_e],al
+@@:
+	or	ebx,ebx
+	jnz	@f
+	mov	byte[sort_button_name.name_e],al
+@@:
 
-	mov	eax,[temp_panel_end]
-	shl	eax,16
-	add	eax,[temp_panel_end]
-	shr	eax,16
-	shr	ebx,16
-	sub	ebx,eax
+	;sort captions
+	mov	ebx,[coord_x]
+	add	bx,4
 	shl	ebx,16
-	mov	bx,ax
-	rol	ebx,16
-	mcall	13
-	mov	[temp_panel_end],ebx
-;--------------------------------------
-@@:
-	popa
-	pusha
-	shr	ecx,16
-	mov	bx,cx
-	add	ebx,3 shl 16+2
-	mov	edx,ebp
-	dec	edx
-	shl	edx,2
-	add	edx,sort_button_name
-	mov	eax,4
-	xor	ecx,ecx
-	mov	esi,eax
-	mcall
-	popa
-	dec	edx
-	sub	ebx,38 shl 16
-	mov	bx,36
-	dec	ebp
+	mov	bx,word[coord_y]
+	sub	bx,12
+	mov	ecx,0x80000000
+	mcall	SF_DRAW_TEXT,,,sort_button_name.name
+	ror	ebx,16
+	add	bx,word[file_br_col_w1]
+	ror	ebx,16
+	mcall	,,,sort_button_name.type
+	add	ebx,FILE_BR_COL_W2 shl 16
+	mcall	,,,sort_button_name.size
+	add	ebx,FILE_BR_COL_W3 shl 16
+	mcall	,,,sort_button_name.date
 	ret
+endp
 ;------------------------------------------------------------------------------
-draw_right_sort_button:
-	mov	bx,[right_panel_x.start_x]
-	add	bx,[right_panel_x.size_x]
-	sub	ebx,50+15+12
-	mov	cx,[right_panel_y.start_y]
-	call	calclulate_sort_button_1
-	mov	edx,149
-;--------------------------------------
-.start:
-	mov	esi,0xffffff
-	dec	ebp
-	cmp	[right_sort_flag],ebp
-	jne	@f
-
-	mov	esi,0xccccff
-;--------------------------------------
-@@:
-	call	calclulate_sort_button_2
-	jnz	.start
-
-	ret
-;------------------------------------------------------------------------------
+align 4
 draw_left_select_disk_button:
 	mov	bx,[left_panel_x.start_x]
 	mov	cx,[left_panel_y.start_y]
@@ -160,8 +178,8 @@ draw_left_select_disk_button:
 	sub	cx,14
 	shl	ecx,16
 	mov	cx,13
-	mcall	8,,,,0xffffff
-	mcall	13,,,0xffffff
+	mcall	SF_DEFINE_BUTTON, ,,,0xffffff
+	mcall	SF_DRAW_RECT, ,,0xffffff
 	pusha
 	mov	esi,ebp
 	add	esi,2
@@ -183,7 +201,7 @@ draw_left_select_disk_button:
 	mov	bx,cx
 	add	ebx,3
 	mov	edx,ebp
-	mcall	4,,0  ;,read_folder.name
+	mcall	SF_DRAW_TEXT, ,0  ;,read_folder.name
 	popa
 	add	ebx,50 shl 16
 	mov	bx,10
@@ -193,7 +211,7 @@ draw_left_select_disk_button:
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,3
-	mcall	4, ,0x80ffffff,select_disk_char
+	mcall	SF_DRAW_TEXT, ,0x80ffffff,select_disk_char
 	add	ebx,1 shl 16
 	mcall
 	ret
@@ -215,6 +233,8 @@ calc_max_panel_line:
 	xor	edx,edx
 	div	ebx
 	mov	[max_panel_line],eax
+	mov [sb_left.cur_area],eax
+	mov [sb_right.cur_area],eax
 	ret
 ;------------------------------------------------------------------------------
 draw_icon:
@@ -243,7 +263,7 @@ draw_icon:
 	sub	edx,12
 	rol	edx,16
 	dec edx
-	mcall	7, ,<10,9>
+	mcall	SF_PUT_IMAGE, ,<10,9>
 	popa
 	ret
 ;------------------------------------------------------------------------------
@@ -523,7 +543,7 @@ draw_type_size_date:
 	mov	ecx,0xff0000
 ;--------------------------------------
 @@:
-	mcall	4,,,type_table,22
+	mcall	SF_DRAW_TEXT, ,,type_table,22
 ;--------------------------------------
 .not_show_date:
 	popa
@@ -539,6 +559,7 @@ draw_folder_data:
 	jz	.ok_left
 
 	mov	[left_start_draw_line],0
+	mov	[sb_left.position],0
 	jmp	@f
 ;--------------------------------------
 .ok_left:
@@ -546,6 +567,7 @@ draw_folder_data:
 	jae	@f
 
 	mov	[left_start_draw_line],eax
+	mov	[sb_left.position],eax
 ;--------------------------------------
 @@:
 	mov	bx,[left_panel_x.start_x]
@@ -567,6 +589,7 @@ draw_folder_data:
 	jz	.ok_right
 
 	mov	[right_start_draw_line],0
+	mov	[sb_right.position],0
 	jmp	@f
 ;--------------------------------------
 .ok_right:
@@ -574,6 +597,7 @@ draw_folder_data:
 	jae	@f
 
 	mov	[right_start_draw_line],eax
+	mov	[sb_right.position],eax
 ;--------------------------------------
 @@:
 	mov	bx,[right_panel_x.start_x]
@@ -655,7 +679,7 @@ draw_folder_data:
 	mov	ecx,0xff0000
 ;--------------------------------------
 @@:
-	mcall	4
+	mcall	SF_DRAW_TEXT
 	cmp	[temp_counter_1],0
 	je	.continue
 
@@ -664,7 +688,7 @@ draw_folder_data:
 	shl	eax,16
 	push	ebx edx
 	add	ebx,eax
-	mcall	4,,0xff0000,truncated_filename_char,2
+	mcall	SF_DRAW_TEXT, ,0xff0000,truncated_filename_char,2
 	add	ebx,1 shl 16
 	mcall
 	pop	edx ebx
@@ -694,18 +718,20 @@ draw_folder_data:
 
 	mov	bx,[left_panel_x.size_x]
 	sub	ebx,12 shl 16
-	mcall	13,,,0xffffff
+	mcall	SF_DRAW_RECT, ,,0xffffff
 ;--------------------------------------
 @@:
 .end:
 	cmp	[drawing_panel_folder],1
 	jne	@f
 
-	call	draw_scroll_bar_left
+	mov [sb_left.all_redraw], 1
+	stdcall [scrollbar_v_draw], sb_left
 	ret
 ;--------------------------------------
 @@:
-	call	draw_scroll_bar_right
+	mov [sb_right.all_redraw], 1
+	stdcall [scrollbar_v_draw], sb_right
 	ret
 ;------------------------------------------------------------------------------
 clear_line:
@@ -745,14 +771,8 @@ clear_line:
 	rol	ecx,16
 	mov	cx,10
 	mov	bx,[left_panel_x.size_x]
-	cmp	[drawing_panel_folder],1
-	je	@f
-
-	dec	ebx
-;--------------------------------------
-@@:
 	sub	ebx,12 shl 16+15
-	mcall	13,,,0xffffff
+	mcall	SF_DRAW_RECT, ,,0xffffff
 ;--------------------------------------
 .end:
 	popa
@@ -760,6 +780,7 @@ clear_line:
 .end_1:
 	ret
 ;------------------------------------------------------------------------------
+align 4
 draw_left_panel:
 	call	clear_left_panel
 	call	calc_max_panel_line
@@ -769,6 +790,7 @@ draw_left_panel:
 	call	draw_left_panel_patch
 	ret
 ;------------------------------------------------------------------------------
+align 4
 draw_right_panel:
 	call	clear_right_panel
 	call	calc_max_panel_line
@@ -778,6 +800,7 @@ draw_right_panel:
 	call	draw_right_panel_patch
 	ret
 ;------------------------------------------------------------------------------
+align 4
 draw_left_panel_patch:
 	cmp	[select_panel_counter],0
 	jne	.end
@@ -789,7 +812,7 @@ draw_left_panel_patch:
 	mov	ebx,[window_high]
 	sub	ebx,33
 	add	ebx,8 shl 16
-	mcall	4,,0x80000000  ; ,read_folder.name
+	mcall	SF_DRAW_TEXT, ,0x80000000  ; ,read_folder.name
 ;--------------------------------------
 .end:
 	ret
@@ -810,7 +833,7 @@ clear_patch_area:
 	sub	ecx,35
 	shl	ecx,16
 	mov	cx,12
-	mcall	13,,,0xffffcc
+	mcall	SF_DRAW_RECT, ,,0xffffcc
 	pop	edx
 	ret
 ;------------------------------------------------------------------------------
@@ -840,7 +863,7 @@ draw_left_panel_selection:
 	shl	ecx,16
 	mov	cx,10
 	sub	ebx,15
-	mcall	13,,,0xbbddff
+	mcall	SF_DRAW_RECT, ,,0xbbddff
 ;--------------------------------------
 .end:
 	ret
@@ -887,14 +910,32 @@ for_all_panel_selection:
 @@:
 	ret
 ;------------------------------------------------------------------------------
+align 4
 clear_left_panel:
 	mov	ebx,7 shl 16
 	add	ebx,[window_width]
 	shr	bx,1
-	sub	ebx,6+1
+	sub	ebx,6+2
 	mov	[left_panel_x],ebx
+	;calculate left scroll
+	mov [sb_left.x_pos],bx
+	add [sb_left.x_pos],7-15 ;left_panel_x.start_x-sb_sb_left.x_size
+	;calculate name column width
+	movzx eax,bx
+	sub eax,FILE_BR_COL_LEFT+FILE_BR_COL_W2+FILE_BR_COL_W3+FILE_BR_COL_W4+16
+	cmp eax,40
+	jge @f
+	mov eax,40 ;min width
+@@:
+	mov [file_br_col_w1],eax
 	call	calculate_panel_1
 	mov	[left_panel_y],ecx
+	;calculate left scroll
+	mov eax,ecx
+	mov [sb_left.y_size],ax
+	shr eax,16
+	mov [sb_left.y_pos],ax
+
 	xor	eax,eax
 	mov	ax,cx
 	xor	edx,edx
@@ -908,23 +949,37 @@ clear_left_panel:
 ;------------------------------------------------------------------------------
 calculate_panel_1:
 	mov	ecx,[skin_high]
-	add	ecx,70
+	add	ecx,FILE_BR_TOP_LINE
 	shl	ecx,16
 	add	ecx,[window_high]
-	sub	ecx,129
+	sub	ecx,FILE_BR_TOP_LINE+62
 	ret
 ;------------------------------------------------------------------------------
 clear_right_panel:
 	mov	ebx,[window_width]
-	shr	ebx,1
-	add	ebx,3
-	shl	ebx,16
-	add	ebx,[window_width]
 	shr	bx,1
-	sub	bx,2+6
+	sub	bx,6+2
+	mov	eax,[window_width]
+	sub eax,ebx
+	sub eax,5 ;border width
+	shl eax,16
+	add ebx,eax
 	mov	[right_panel_x],ebx
+	;calculate left scroll
+	mov [sb_right.x_pos],bx
+	mov eax,ebx
+	shr eax,16
+	sub ax,[sb_right.x_size]
+	add [sb_right.x_pos],ax
+
 	call	calculate_panel_1
 	mov	[right_panel_y],ecx
+	;calculate left scroll
+	mov eax,ecx
+	mov [sb_right.y_size],ax
+	shr eax,16
+	mov [sb_right.y_pos],ax
+
 	xor	eax,eax
 	mov	ax,cx
 	xor	edx,edx
@@ -938,7 +993,7 @@ clear_right_panel:
 ;------------------------------------------------------------------------------
 erase_fbutton:
 	mov	edx,0x80000065
-	mov	eax,8
+	mov	eax,SF_DEFINE_BUTTON
 	mov	ebp,12
 ;--------------------------------------
 .start:
@@ -969,7 +1024,7 @@ draw_fbutton:
 	sub	ebx,2
 	mov	esi,0xaa00
 	mov	edx,101
-	mov	eax,8
+	mov	eax,SF_DEFINE_BUTTON
 	mov	ebp,12
 ;--------------------------------------
 .start:
@@ -983,7 +1038,7 @@ draw_fbutton:
 	sub	ax,bx
 	sub	ax,5
 	mov	bx,ax
-	mov	eax,8
+	mov	eax,SF_DEFINE_BUTTON
 ;--------------------------------------
 @@:
 	mcall
@@ -996,7 +1051,7 @@ draw_fbutton:
 	mov	bx,18
 ;--------------------------------------
 @@:
-	mcall	13
+	mcall	SF_DRAW_RECT
 	cmp	ebp,1
 	je	@f
 
@@ -1031,7 +1086,7 @@ draw_fbutton_name:
 	mov	ebx, 7 shl 16
 	add	ebx,[window_high]
 	sub	ebx,19
-	mov	eax,4
+	mov	eax,SF_DRAW_TEXT
 	mov	ecx,0x90000000
 	push	ebx
 	call	.type_1

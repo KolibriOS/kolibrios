@@ -65,7 +65,7 @@ copy_file_f5:
     mov edi, edit1
     mov ed_size, eax
     mov ed_pos, eax
-default_box
+    and word ed_flags,ed_shift_cl
     cmp  [select_panel_counter],0
     jne  .right_2
     mov esi,read_folder_name
@@ -78,21 +78,21 @@ default_box
     ret
 ;-------------------------------------------------------------
 editbox_copy_name:
-    mcall 66, 1, 0
+    mcall SF_KEYBOARD, SSF_SET_INPUT_MODE, 0
     jmp  .red
 .red_1:
     call  draw_window
 .red:
     call  draw_editbox_copy_name
 .still:
-    mcall 10
-    cmp  eax,1
+    mcall SF_WAIT_EVENT
+    cmp  eax,EV_REDRAW
     je	 .red_1
-    cmp  eax,2
+    cmp  eax,EV_KEY
     je	 .key_copy
-    cmp  eax,3
+    cmp  eax,EV_BUTTON
     je	 .button_copy
-	mouse_edit_box copy_editboxes
+	stdcall [edit_box_mouse], copy_editboxes
 	jmp .still
 ;-------------------------------------------------------------
 .button_copy:
@@ -106,7 +106,7 @@ editbox_copy_name:
     je	.exit_without_copy
     cmp   ah,1
     jne   .still
-    mcall -1
+    mcall SF_TERMINATE_PROCESS
 .exit_with_copy:
     mov  [max_progress_value],1
     mov  [draw_all_progressbar],1
@@ -121,7 +121,7 @@ editbox_copy_name:
     call proc_read_left_folder
     call proc_read_right_folder
 .exit_without_copy:
-    mcall 66, 1, 1
+    mcall SF_KEYBOARD, SSF_SET_INPUT_MODE, 1
     mov  [move_file_flag],0
     jmp  red
 ;-------------------------------------------------------------
@@ -132,7 +132,7 @@ editbox_copy_name:
     je	.exit_with_copy
     cmp ah,27
     je	.exit_without_copy
-    key_edit_box copy_editboxes
+    stdcall [edit_box_key], copy_editboxes
     jmp .still
 ;-------------------------------------------------------------
 draw_editbox_copy_name:
@@ -146,7 +146,7 @@ draw_editbox_copy_name:
     shl  ebx,16
     mov   cx,60
     mov   bx,174
-    mcall 13, , ,0x6060ff ;0xff
+    mcall SF_DRAW_RECT, , ,0x6060ff ;0xff
     pusha
     shr ebx,16
     add  ebx,10
@@ -155,7 +155,7 @@ draw_editbox_copy_name:
     mov eax,copy_editboxes
     mov dword [eax+4],ebx
     mov dword [eax+8],ecx
-	draw_edit_box copy_editboxes
+	stdcall [edit_box_draw], copy_editboxes
 	popa
 	pusha
 	add   ebx,70 shl 16
@@ -164,8 +164,7 @@ draw_editbox_copy_name:
     mov   bx,40
     mov   esi,0xffffff
     mov   edx,0x40000000+160
-    mov   eax,8
-	mcall
+	mcall SF_DEFINE_BUTTON
     add   ebx,50 shl 16
     inc   edx
 	mcall
@@ -203,7 +202,7 @@ draw_editbox_copy_name:
 .copy:
     mov   edx,copy_type_1
 @@:
-    mcall 4, ,0x90ffffff
+    mcall SF_DRAW_TEXT, ,0x90ffffff
     add   ebx,18 shl 16+36
     mov   edx,type_yes
 	mcall
@@ -215,31 +214,31 @@ draw_editbox_copy_name:
 copy_file_1:
     mov  ebx,create_dir_name
 .1:
-    mov   [error_pointer],ebx
+    mov  [error_pointer],ebx
     cmp  [select_panel_counter],0
-    je	.right_2
-    mov esi,read_folder_name
+    je   .right_2
+    mov  esi,read_folder_name
     jmp  @f
 .right_2:
-    mov esi,read_folder_1_name
+    mov  esi,read_folder_1_name
 @@:
-    mov  edi,start_parameter
-    call copy_path_1
-    call get_file_size
+    mov   edi,start_parameter
+    call  copy_path_1
+    call  get_file_size
     test  eax,eax
     jnz   .error
     mov   [read_file.Offset],eax
     mov   [add_save_file.Offset],eax
-    mov   eax,[appl_memory]
+    xor   eax,eax
     mov   [read_file.return],eax
     mov   [save_file.pointer],eax
     mov   [add_save_file.pointer],eax
-    mcall 18,16
+    mcall SF_SYSTEM, SSF_GET_FREE_RAM
     mov   ebx,[file_features_temp_area+32]
     shr   ebx,10
     shr   eax,2
     cmp   ebx,eax
-    jb	 .copy_for_one
+    jb    .copy_for_one
     shl   eax,10
     mov   ecx,eax
     mov   [read_file.size],eax
@@ -263,10 +262,16 @@ copy_file_1:
     popa
 .continue_5:
     call  progress_bar_copy    ;_1
-    call  add_application_memory.1
+    add   ecx,[tm_size]
+    mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [tmp_memory]
+    mov   [tmp_memory],eax
+    mov   [tm_size],ecx
+    mov   [read_file.return],eax
+    mov   [save_file.pointer],eax
+    mov   [add_save_file.pointer],eax
     cmp   [copy_many_files],byte 0
     jne   @f
-    inc  [current_progress_value]
+    inc   [current_progress_value]
     call  progress_bar_copy   ;_1
 @@:
     call  load_file
@@ -274,7 +279,7 @@ copy_file_1:
     jnz   .error
     cmp   [copy_many_files],byte 0
     jne   @f
-    inc  [current_progress_value_1]
+    inc   [current_progress_value_1]
     call  progress_bar_copy   ;_1
 @@:
     call  write_file
@@ -302,7 +307,7 @@ copy_file_1:
     inc  [current_progress_value_1]
     call  progress_bar_copy   ;_1
 @@:
-    call  add_write_file
+    mcall SF_FILE, add_save_file
     test  eax,eax
     jnz   .error_1
     jmp   .continue
@@ -319,46 +324,57 @@ copy_file_1:
     jnz   .error_1
     inc  [current_progress_value_1]
     call  progress_bar_copy
-    call  add_write_file
+    mcall SF_FILE, add_save_file
     test  eax,eax
     jnz   .error_1
-    mov   ecx,[appl_memory]
-    sub   ecx,[save_file.size]
-    call  sub_application_memory.1
+    mcall SF_SYS_MISC, SSF_MEM_FREE, [tmp_memory]
+    mov   [tmp_memory],0
+    mov   [tm_size],0
 .exit:
     ret
 
-
+align 4
 .copy_for_one:
-    call  add_application_memory
+    mov   ecx,[file_features_temp_area+32]
+    add   ecx,[tm_size]
+    mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [tmp_memory]
+    mov   [tmp_memory],eax
+    mov   [tm_size],ecx
+    mov   [read_file.return],eax
+    mov   [save_file.pointer],eax
+    mov   [add_save_file.pointer],eax
     mov   eax,[file_features_temp_area+32]
     mov   [read_file.size],eax
-    inc  [current_progress_value]
+    inc   [current_progress_value]
     call  progress_bar_copy
     call  load_file
     test  eax,eax
     jnz   .error
     mov   [save_file.size],ebx
-    inc  [current_progress_value_1]
+    inc   [current_progress_value_1]
     call  progress_bar_copy
     call  write_file
     test  eax,eax
     jnz   .error
-    call  sub_application_memory
+    mcall SF_SYS_MISC, SSF_MEM_FREE, [tmp_memory]
+    mov   [tmp_memory],0
+    mov   [tm_size],0
     ret
 
 .error:
     call start_error_window_thread
-    call  sub_application_memory
+    mcall SF_SYS_MISC, SSF_MEM_FREE, [tmp_memory]
+    mov   [tmp_memory],0
+    mov   [tm_size],0
     add  esp,4
     mov  [move_file_flag],0
     jmp  editbox_copy_name.exit_without_copy
 
 .error_1:
     call start_error_window_thread
-    mov   ecx,[appl_memory]
-    sub   ecx,[save_file.size]
-    call  sub_application_memory.1
+    mcall SF_SYS_MISC, SSF_MEM_FREE, [tmp_memory]
+    mov   [tmp_memory],0
+    mov   [tm_size],0
     add  esp,4
     mov  [move_file_flag],0
     jmp  editbox_copy_name.exit_without_copy

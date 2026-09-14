@@ -1,3 +1,4 @@
+align 4
 files_information:
 	xor	eax,eax
 	mov	[alt_flag],al
@@ -10,7 +11,7 @@ files_information:
 	jmp	still
 ;------------------------------------------------------------------------------
 start_files_information_thread:
-	mcall	9,procinfo,-1
+	mcall	SF_THREAD_INFO, procinfo,-1
 	mov	eax,[ebx+46]
 	shr	eax,1
 	add	eax,[ebx+38]
@@ -21,12 +22,12 @@ start_files_information_thread:
 	add	eax,[ebx+34]
 	sub	eax,INF_WINW/2
 	mov	[files_information_window_x+2],ax
-	mcall	51,1,thread_files_information_start,thread_stack
+	mcall	SF_THREAD_CONTROL, SSF_CREATE_THREAD,thread_files_information_start,thread_stack
 	ret
 ;------------------------------------------------------------------------------
 draw_files_information_window:
-	mcall	12,1
-	mcall	0,[files_information_window_x],[files_information_window_y],0x33ffffcc,,infowin_title
+	mcall	SF_REDRAW, SSF_BEGIN_DRAW
+	mcall	SF_CREATE_WINDOW, [files_information_window_x],[files_information_window_y],0x33ffffcc,,infowin_title
 	mov	edx,INF_DATAX shl 16+INF_DATAY+INF_LINEH
 	mov	ebx,0x800a0000
 	mov	esi,0x10000000
@@ -40,7 +41,7 @@ draw_files_information_window:
 ;--------------------------------------
 .continue_4:
 ; show files counter
-	mcall	47,,[files_counter]
+	mcall	SF_DRAW_NUMBER, ,[files_counter]
 ;--------------------------------------
 @@:
 	cmp	[inf_marked_yes],1
@@ -60,7 +61,7 @@ draw_files_information_window:
 @@:
 ; show file or directory size
 	add	edx,INF_LINEH
-	mcall	47,0xc0140001,files_size
+	mcall	SF_DRAW_NUMBER, 0xc0140001,files_size
 ;--------------------------------------
 	mov	ebp,date.create
 	call	show_date_and_time_of_files_information
@@ -81,7 +82,7 @@ draw_files_information_window:
 	mov	edx,read_folder_1_name
 ;--------------------------------------
 @@:
-	mcall	4,<INF_DATAX,INF_DATAY>,0x90000000,	;file_name
+	mcall	SF_DRAW_TEXT, <INF_DATAX,INF_DATAY>,0x90000000,	;file_name
 	mcall	,<10,INF_DATAY>,0x90000000,type_location
 	cmp	[inf_marked_yes],1
 	je	.continue
@@ -139,7 +140,7 @@ draw_files_information_window:
 	add	ebx,INF_LINEH
 	mcall
 
-	mcall	12,2
+	mcall	SF_REDRAW, SSF_END_DRAW
 	ret
 ;------------------------------------------------------------------------------
 show_date_and_time_of_files_information:
@@ -173,28 +174,29 @@ thread_files_information_start:
 	call	draw_files_information_window
 ;--------------------------------------
 .still:
-	mcall	10
-	cmp	eax,1
+	mcall	SF_WAIT_EVENT
+	cmp	eax,EV_REDRAW
 	je	.red
 
-	cmp	eax,2
+	cmp	eax,EV_KEY
 	je	.key
 
-	cmp	eax,3
+	cmp	eax,EV_BUTTON
 	je	.button
 
 	jmp	.still
 ;--------------------------------------
 .key:
-	mcall	2
+	mcall	SF_GET_KEY
 ;--------------------------------------
 .button:
-	mcall	-1
+	mcall	SF_TERMINATE_PROCESS
 	jmp	.still
 ;------------------------------------------------------------------------------
 ; деление 64-битного числа divident на 16-битное число divisor.
 ; Частное помещается в 64-битную переменную quotent,
 ; а остаток - в 16-битную переменную modulo
+align 4
 Division_64bit:
     	mov	ax,[ebp+6]
     	xor	dx,dx
@@ -222,6 +224,7 @@ quotent:
 ;modulo:
 ;      rb 2
 ;------------------------------------------------------------------------------
+align 4
 copy_type_name:
 	push	esi
 	mov	esi,ebx
@@ -237,6 +240,7 @@ copy_type_name:
 	pop	esi
 	ret
 ;------------------------------------------------------------------------------
+align 4
 get_files_information:
 	call	get_information_marked_files
 	cmp	[inf_marked_yes],1
@@ -327,6 +331,7 @@ get_files_information:
 .end_2:
 	ret
 ;------------------------------------------------------------------------------
+align 4
 get_information_marked_files:
 	xor	eax,eax
 	mov	[inf_marked_yes],al
@@ -363,6 +368,7 @@ get_information_marked_files:
 
 	ret
 ;--------------------------------------
+align 4
 .right_1:
 	mov	ebp,[right_folder_block]
 ;--------------------------------------
@@ -394,6 +400,9 @@ get_information_marked_files:
 
 	ret
 ;------------------------------------------------------------------------------
+; in:
+;  ebp = ..._folder_block
+align 4
 prepare_data_9:
 	mov	[error_pointer],ebx
 	mov	edi,file_name
@@ -423,6 +432,7 @@ prepare_data_9:
 .continue_1:
 	ret
 ;------------------------------------------------------------------------------
+align 4
 prepare_data_8:
 	add	ebx,32+40
 	cmp	[ebx],word '..'
@@ -445,17 +455,18 @@ prepare_data_8:
 .continue:
 	ret
 ;------------------------------------------------------------------------------
+; in:
+;  ebp = ..._folder_block
+align 4
 get_inf_dir:
 	mov	[nesting_direction],0
 	pusha
 	mov	[recursive_pointer],0
-	mov	eax,[appl_memory]
-	mov	[appl_memory_old],eax
 ;--------------------------------------
 .1:
 	mov	[read_delete_dir_data.size],0
 	mov	[read_delete_dir_data.return],delete_dir_data
-	call	read_delete_dir
+	mcall SF_FILE, read_delete_dir_data
 	test	eax,eax
 	jz	@f
 
@@ -469,22 +480,17 @@ get_inf_dir:
 	mov	eax,[delete_dir_data+8]
 	imul	eax,304
 	add	eax,32
-	mov	ebx,eax
-	add	ebx,[appl_memory_old]
-	cmp	ebx,[appl_memory]
-	jbe	@f
 
-	mov	ecx,[appl_memory]
-	mov	ecx,ebx
-	mov	[appl_memory],ecx
-	mcall	64,1
-;--------------------------------------
-@@:
+	mov	ecx,eax
+	add	ecx,[tm_size]
+	mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [tmp_memory]
+	mov	[tmp_memory],eax
+	mov	[tm_size],ecx
+
+	mov	[read_delete_dir_data.return],eax
 	mov	eax,[delete_dir_data+8]
 	mov	[read_delete_dir_data.size],eax
-	mov	eax,[appl_memory_old]
-	mov	[read_delete_dir_data.return],eax
-	call	read_delete_dir
+	mcall SF_FILE, read_delete_dir_data
 	test	eax,eax
 	jz	@f
 
@@ -498,7 +504,8 @@ get_inf_dir:
 	cmp	[nesting_direction],0
 	je	@f
 
-	call	get_inf_dir_2
+	pop	ebp
+	call	get_inf_dir_1.start
 	jnc	.end
 
 	dec	ebp
@@ -518,26 +525,16 @@ get_inf_dir:
 	cmp	[recursive_pointer],0
 	jge	.1
 
-	mov	ecx,[appl_memory_old]
-	cmp	[appl_memory],ecx
-	je	@f
-
-	mov	[appl_memory],ecx
-	mcall	64,1
-;--------------------------------------
-@@:
+    mcall SF_SYS_MISC, SSF_MEM_FREE, [tmp_memory]
+    mov   [tmp_memory],0
+    mov   [tm_size],0
 	popa
 	ret
 ;------------------------------------------------------------------------------
-get_inf_dir_2:
-	pop	eax
-	pop	ebp
-	push	eax
-	jmp	get_inf_dir_1.start
-;--------------------------------------
+align 4
 get_inf_dir_1:
 	inc	[directories_counter]
-	mov	ebp,[appl_memory_old]
+	mov	ebp,[tmp_memory]
 	mov	ebp,[ebp+8]
 ;--------------------------------------
 .start:
@@ -546,7 +543,7 @@ get_inf_dir_1:
 	mov	ebx,ebp
 	dec	ebx
 	imul	ebx,304
-	add	ebx,[appl_memory_old]
+	add	ebx,[tmp_memory]
 	add	ebx,32+40
 	cmp	[ebx],byte '.'
 	jne	@f
@@ -590,20 +587,4 @@ get_inf_dir_1:
 	stc
 	mov	[nesting_direction],0
 	ret
-;------------------------------------------------------------------------------
-;type_patch_test:
-;	pusha
-;	mcall	5,200
-;	mcall	13,<290,300>,<3,13>,0x0
-;	mcall	4,<300,5>,0x80FFFFFF,file_name  ;[error_pointer]
-;	mcall	47,0x160100,[recursive_pointer],<300,5>,0xffffff
-;	mcall	47,0x160100,ebp,<300,5>,0xffffff
-;	mcall	5,1
-;	popa
-;	ret
-;temp_value_1	db '1',0
-;temp_value_2	db '2',0
-;temp_value_3	db '3',0
-;temp_value_4	db '4',0
-;temp_value_5	db '5',0
 ;------------------------------------------------------------------------------

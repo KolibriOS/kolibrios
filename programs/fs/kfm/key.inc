@@ -1,5 +1,6 @@
+align 4
 key:
-    mcall 2
+    mcall SF_GET_KEY
     cmp   [extended_key],1
     je    .extended_key
     test  al, al
@@ -131,6 +132,7 @@ key_80:
 @@:
     mov  [marked_action],0
     inc  [left_start_draw_line]
+    inc  [sb_left.position]
     call draw_left_panel
     jmp  still
 .right_1:
@@ -191,6 +193,7 @@ key_72:
     cmp  [left_start_draw_line],0
     je   still
     dec  [left_start_draw_line]
+    dec  [sb_left.position]
     call draw_left_panel
     jmp  still
 .right_1:
@@ -230,6 +233,7 @@ key_81:
     je   still
 @@:
     mov  [left_start_draw_line],ebx
+    mov  [sb_left.position],ebx
 .left_3:
     dec  eax
     imul eax,10
@@ -247,6 +251,7 @@ key_81:
     jmp  .left_1
 .ok_1:
     add  [left_start_draw_line],eax
+    add  [sb_left.position],eax
     call draw_left_panel
     jmp  still
 .right_1:
@@ -265,6 +270,7 @@ key_81:
     je   still
 @@:
     mov  [right_start_draw_line],ebx
+    mov  [sb_right.position],ebx
 .right_4:
     dec  eax
     imul eax,10
@@ -282,6 +288,7 @@ key_81:
     jmp  .right_2
 .ok_2:
     add  [right_start_draw_line],eax
+    add  [sb_right.position],eax
     call draw_right_panel
     jmp  still
 ;-------------------------------------------------------------    
@@ -318,10 +325,12 @@ key_73:
     mov  [left_start_draw_cursor_line],0
 .draw_line_1:
     mov  [left_start_draw_line],0
+    mov  [sb_left.position],0
     call draw_left_panel
     jmp  still
 @@:
     sub  [left_start_draw_line],eax
+    sub  [sb_left.position],eax
     call draw_left_panel
     jmp  still
 .right_1:
@@ -336,10 +345,12 @@ key_73:
     mov  [right_start_draw_cursor_line],0
 .draw_line_2:
     mov  [right_start_draw_line],0
+    mov  [sb_right.position],0
     call draw_right_panel
     jmp  still
 @@:
     sub  [right_start_draw_line],eax
+    sub  [sb_right.position],eax
     call draw_right_panel
     jmp  still
 ;-------------------------------------------------------------
@@ -354,6 +365,7 @@ key_71:
     je   still
 .draw_left_panel:
     mov  [left_start_draw_line],0
+    mov  [sb_left.position],0
     mov  [left_start_draw_cursor_line],0
     call draw_left_panel
     jmp  still
@@ -364,6 +376,7 @@ key_71:
     je   still
 .draw_right_panel:
     mov  [right_start_draw_line],0
+    mov  [sb_right.position],0
     mov  [right_start_draw_cursor_line],0
     call draw_right_panel
     jmp  still
@@ -383,6 +396,7 @@ key_79:
     je   still
 @@:
     mov  [left_start_draw_line],eax
+    mov  [sb_left.position],eax
     mov  eax,[max_panel_line]
     jmp  key_81.left_3
 .right_1:
@@ -396,6 +410,7 @@ key_79:
     je   still
 @@:
     mov  [right_start_draw_line],eax
+    mov  [sb_right.position],eax
     mov  eax,[max_panel_line]
     jmp  key_81.right_4    
 ;-------------------------------------------------------------
@@ -433,6 +448,7 @@ key_28:
     call calculate_key_28_1
     mov  [left_start_draw_cursor_line],0
     mov  [left_start_draw_line],0
+    mov  [sb_left.position],0
     jmp  proc_read_folder
 .up_patch:
     call calculate_key_28_2
@@ -455,6 +471,7 @@ key_28:
     call calculate_key_28_1
     mov  [right_start_draw_cursor_line],0
     mov  [right_start_draw_line],0
+    mov  [sb_right.position],0
     jmp  proc_read_folder_1
 .up_patch_1:
     call calculate_key_28_2
@@ -530,8 +547,8 @@ symbol_a_up:
     je   still
     cmp  [ctrl_flag],1
     je   .ctrl
-    cmp  [alt_flag],1
-    je   still
+    ;cmp  [alt_flag],1
+    ;je   still
     jmp  still
 .ctrl:
     mov  [mark_action_counter],0
@@ -542,8 +559,8 @@ NumPad_plus_Up:
     je   still
     cmp  [ctrl_flag],1
     je   .ctrl
-    cmp  [alt_flag],1
-    je   still
+    ;cmp  [alt_flag],1
+    ;je   still
     jmp  still
 .ctrl:
     mov  [mark_action_counter],0
@@ -554,8 +571,8 @@ NumPad_minus_Up:
     je   still
     cmp  [ctrl_flag],1
     je   .ctrl
-    cmp  [alt_flag],1
-    je   still
+    ;cmp  [alt_flag],1
+    ;je   still
     jmp  still
 .ctrl:
     mov  [mark_action_counter],1
@@ -566,8 +583,8 @@ NumPad_sneg_Up:
     je   still
     cmp  [ctrl_flag],1
     je   .ctrl
-    cmp  [alt_flag],1
-    je   still
+    ;cmp  [alt_flag],1
+    ;je   still
     jmp  still
 .ctrl:
     mov  [mark_action_counter],2
@@ -599,8 +616,8 @@ f_key_f3:
     je   still
     cmp  [ctrl_flag],1
     je   .ctrl
-    cmp  [alt_flag],1
-    je   still
+    ;cmp  [alt_flag],1
+    ;je   still
     jmp  still
 .ctrl:
     cmp  [select_panel_counter],1

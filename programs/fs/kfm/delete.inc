@@ -1,4 +1,5 @@
 ;---------------------------------------------------------------------
+align 4
 delete_file:
 ;    call progress_bar
 ;    jmp  still
@@ -71,6 +72,7 @@ delete_file:
     call proc_read_right_folder
     jmp  red
 ;---------------------------------------------------------------------
+align 4
 delete_marked_files:
     mov  eax,[directories_counter]
     add  eax,[files_counter]
@@ -83,8 +85,6 @@ delete_marked_files:
     
    cmp  [select_panel_counter],al
     jne  .right_1
-;    mov  eax,[left_marked_counter]
-;    mov  [max_progress_value],eax
     mov  ebp,[left_folder_block]
 .start:
     mov  ebx,ebp
@@ -112,8 +112,6 @@ delete_marked_files:
 @@:
     ret
 .right_1:
-;    mov  eax,[right_marked_counter]
-;    mov  [max_progress_value],eax
     mov  ebp,[right_folder_block]
 .start_1:
     mov  ebx,ebp
@@ -141,6 +139,7 @@ delete_marked_files:
 @@:
     ret
 ;---------------------------------------------------------------------
+align 4
 prepare_data_6:
     mov   [error_pointer],ebx
     mov  edi,file_name	 ;delete_file_data.name
@@ -162,6 +161,7 @@ prepare_data_6:
 .continue:
     ret
 ;---------------------------------------------------------------------
+align 4
 prepare_data_7:
     add  ebx,32+40
     cmp  [ebx],word '..'
@@ -173,88 +173,82 @@ prepare_data_7:
 .continue:
     ret
 ;---------------------------------------------------------------------
+align 4
 delete_dir:
     pusha
     mov   [recursive_pointer],0
-    mov   eax,[appl_memory]
-    mov   [appl_memory_old],eax
 .1:
-    mov  [read_delete_dir_data.size],0
-    mov  [read_delete_dir_data.return],delete_dir_data
-    call read_delete_dir
-    test eax,eax
-    jz	 @f
+    mov   [read_delete_dir_data.size],0
+    mov   [read_delete_dir_data.return],delete_dir_data
+    mcall SF_FILE, read_delete_dir_data
+    test  eax,eax
+    jz	  @f
     mov   [error_pointer],file_name
-    call start_error_window_thread
+    call  start_error_window_thread
     popa
-    add  esp,8+4
-    jmp  still
+    add   esp,8+4
+    jmp   still
 @@:
-    mov  eax,[delete_dir_data+8]
-    test eax,eax
-    jnz  @f
-    inc  [current_progress_value]
-    call progress_bar_delete
-    call del_file
-    test eax,eax
-    jz	 .end
+    mov   eax,[delete_dir_data+8]
+    test  eax,eax
+    jnz   @f
+    inc   [current_progress_value]
+    call  progress_bar_delete
+    call  del_file
+    test  eax,eax
+    jz	  .end
     mov   [error_pointer],file_name
-    call start_error_window_thread
+    call  start_error_window_thread
     popa
-    add  esp,8+4
-    jmp  still
+    add   esp,8+4
+    jmp   still
 @@:
     imul  eax,304
     add   eax,32
-    mov   ebx,eax
-    add   ebx,[appl_memory_old]
-    cmp   ebx,[appl_memory]
-    jbe   @f
-    mov   ecx,[appl_memory]
-    mov   ecx,ebx
-    mov   [appl_memory],ecx
-    mcall 64,1
-@@:
-    mov  eax,[delete_dir_data+8]
-    mov  [read_delete_dir_data.size],eax
-    mov   eax,[appl_memory_old]
-    mov  [read_delete_dir_data.return],eax
-    call read_delete_dir
-    test eax,eax
-    jz	 @f
+    mov   ecx,eax
+    add   ecx,[tm_size]
+    mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [tmp_memory]
+    mov   [tmp_memory],eax
+    mov   [tm_size],ecx
+
+    mov   [read_delete_dir_data.return],eax
+    mov   eax,[delete_dir_data+8]
+    mov   [read_delete_dir_data.size],eax
+    mcall SF_FILE, read_delete_dir_data
+    test  eax,eax
+    jz	  @f
     mov   [error_pointer],file_name
-    call start_error_window_thread
+    call  start_error_window_thread
     popa
-    add  esp,8+4
-    jmp  still
+    add   esp,8+4
+    jmp   still
 @@:
-    call delete_dir_1
-    jc	.1
+    call  delete_dir_1
+    jc	  .1
 .end:
     call  return_delete_path
     dec   [recursive_pointer]
     cmp   [recursive_pointer],0
     jge	  .1
 @@:
-    mov   ecx,[appl_memory_old]
-    cmp   [appl_memory],ecx
-    je	  @f
-    mov   [appl_memory],ecx
-    mcall 64,1
-@@:
+    mcall SF_SYS_MISC, SSF_MEM_FREE, [tmp_memory]
+    mov   [tmp_memory],0
+    mov   [tm_size],0
     popa
     ret
 ;---------------------------------------------------------------------
+align 4
 delete_dir_1:
-    mov  ebp,[appl_memory_old]
+    mov  ebp,[tmp_memory]
     mov  ebp,[ebp+8]
+align 4
 .start:
     test ebp,ebp
     jz   .continue_4
     mov  ebx,ebp
     dec  ebx
     imul ebx,304
-    add  ebx,[appl_memory_old]
+    add  ebx,[tmp_memory]
     add  ebx,32+40
     cmp  [ebx],byte '.'
     jne  @f

@@ -1,6 +1,7 @@
 ;------------------------------------------------------------------------------
+align 16
 button:
-        mcall   17
+        mcall   SF_GET_BUTTON
 ;--------------------------------------
 .1:
         cmp     ah,101
@@ -109,7 +110,7 @@ button:
         jne     still
 ;--------------------------------------
 .exit:
-        mcall -1
+        mcall SF_TERMINATE_PROCESS
 ;---------------------------------------------------------------------
 reload_dir:
         cmp     [select_panel_counter],0
@@ -144,28 +145,33 @@ right_panel_read_folder:
 left_sort_name:
         xor     eax,eax
         cmp     [left_sort_flag],eax
-        je      still
+        je      left_sort_date.2
         mov     [left_sort_flag],eax
         jmp     left_sort_date.1
 ;---------------------------------------------------------------------
 left_sort_type:
-        cmp     [left_sort_flag],1
-        je      still
-        mov     [left_sort_flag],1
-        jmp     left_sort_date.1
-;---------------------------------------------------------------------
-left_sort_size:
         cmp     [left_sort_flag],2
-        je      still
+        je      left_sort_date.2
         mov     [left_sort_flag],2
         jmp     left_sort_date.1
 ;---------------------------------------------------------------------
+left_sort_size:
+        cmp     [left_sort_flag],6
+        je      left_sort_date.2
+        mov     [left_sort_flag],6
+        jmp     left_sort_date.1
+;---------------------------------------------------------------------
 left_sort_date:
-        cmp     [left_sort_flag],3
-        je      still
-        mov     [left_sort_flag],3
+        cmp     [left_sort_flag],4
+        je      left_sort_date.2
+        mov     [left_sort_flag],4
+        jmp     left_sort_date.1
+.2:
+        xor     [left_sort_flag],1
 .1:
         call    draw_left_select_disk_button
+        mov     edx,0x80000000+142
+        call    clear_sort_buttons
         call    draw_left_sort_button
         call    left_sort_files
         call    draw_left_panel
@@ -174,28 +180,33 @@ left_sort_date:
 right_sort_name:
         xor     eax,eax
         cmp     [right_sort_flag],eax
-        je      still
+        je      right_sort_date.2
         mov     [right_sort_flag],eax
         jmp     right_sort_date.1
 ;---------------------------------------------------------------------
 right_sort_type:
-        cmp     [right_sort_flag],1
-        je      still
-        mov     [right_sort_flag],1
-        jmp     right_sort_date.1
-;---------------------------------------------------------------------
-right_sort_size:
         cmp     [right_sort_flag],2
-        je      still
+        je      right_sort_date.2
         mov     [right_sort_flag],2
         jmp     right_sort_date.1
 ;---------------------------------------------------------------------
+right_sort_size:
+        cmp     [right_sort_flag],6
+        je      right_sort_date.2
+        mov     [right_sort_flag],6
+        jmp     right_sort_date.1
+;---------------------------------------------------------------------
 right_sort_date:
-        cmp     [right_sort_flag],3
-        je      still
-        mov     [right_sort_flag],3
+        cmp     [right_sort_flag],4
+        je      right_sort_date.2
+        mov     [right_sort_flag],4
+        jmp     right_sort_date.1
+.2:
+        xor     [right_sort_flag],1
 .1:
         call    draw_right_select_disk_button
+        mov     edx,0x80000000+146
+        call    clear_sort_buttons
         call    draw_right_sort_button
         call    right_sort_files
         call    draw_right_panel

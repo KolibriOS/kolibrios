@@ -110,7 +110,7 @@ start_file:
     test  eax,eax
     jnz   @b
     mov   [start_file_data.param],eax
-    call  start_appl
+    mcall SF_FILE, start_file_data
     cmp   eax,0
     jge    @f
     mov  ebx,0

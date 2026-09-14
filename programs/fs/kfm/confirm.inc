@@ -12,17 +12,17 @@ confirmation_action:
 	call	draw_confirmation_menu
 ;--------------------------------------
 .still:
-	mcall	10
-	cmp	eax,1
+	mcall	SF_WAIT_EVENT
+	cmp	eax,EV_REDRAW
 	je	.red_1
 
-	cmp	eax,2
+	cmp	eax,EV_KEY
 	je	key_menu_confirmation
 
-	cmp	eax,3
+	cmp	eax,EV_BUTTON
 	jne	.still
 
-	mcall	17
+	mcall	SF_GET_BUTTON
 	cmp	ah,161
 	je	.no_del
 
@@ -32,7 +32,7 @@ confirmation_action:
 	cmp	ah,1
 	jne	.still
 
-	mcall	-1
+	mcall	SF_TERMINATE_PROCESS
 ;--------------------------------------
 .del:
 	mov	[work_confirmation_yes],1
@@ -53,7 +53,7 @@ draw_confirmation_button:
 	shl	ebx,16
 	mov	cx,15
 	mov	bx,40
-	mcall	8,,,0x40000000+160,0xffffff
+	mcall	SF_DEFINE_BUTTON, ,,0x40000000+160,0xffffff
 	add	ebx,50 shl 16
 	inc	edx
 	mcall
@@ -70,7 +70,7 @@ draw_confirmation_menu:
 	shl	ebx,16
 	mov	cx,44
 	mov	bx,120
-	mcall	13,,,0x6060ff
+	mcall	SF_DRAW_RECT, ,,0x6060ff
 	push	ebx ecx
 	add	ebx,15 shl 16
 	add	ecx,22 shl 16
@@ -104,7 +104,7 @@ draw_confirmation_menu:
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,7 shl 16+2
-	mcall	4,,0x90ffffff,[confirmation_type]
+	mcall	SF_DRAW_TEXT, ,0x90ffffff,[confirmation_type]
 	add	ebx,15 shl 16+20
 	mcall	,,,type_yes
 	add	ebx,56 shl 16
@@ -112,7 +112,7 @@ draw_confirmation_menu:
 	ret
 ;------------------------------------------------------------------------------
 key_menu_confirmation:
-	mcall	2
+	mcall	SF_GET_KEY
 	cmp	[extended_key],1
 	je	.extended_key
 

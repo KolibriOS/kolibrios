@@ -1,6 +1,6 @@
 ;---------------------------------------------------------------------
 key_menu:
-    mcall 2
+    mcall SF_GET_KEY
     cmp  [extended_key],1
     je	 .extended_key
     test al, al
@@ -140,7 +140,7 @@ menu_key_82:
     xor  ecx,ecx
     mov  cl,[esi+2]
     sub  ecx,0x30
-    mcall 24,5
+    mcall SF_CD, SSF_INSERT_TRAY
 @@:
     ret
 ;---------------------------------------------------------------------
@@ -156,7 +156,7 @@ menu_key_83:
     xor  ecx,ecx
     mov  cl,[esi+2]
     sub  ecx,0x30
-    mcall 24,4
+    mcall SF_CD, SSF_EJECT_TRAY
 @@:
     ret
 ;---------------------------------------------------------------------
@@ -169,18 +169,17 @@ menu_key_28:
 menu_key_end:
     jmp  key_menu.end
 ;---------------------------------------------------------------------
+align 4
 key_menu_left:
     mov  [close_menu],0
-    mov [press_enter_menu],0
+    mov  [press_enter_menu],0
     call key_menu
     cmp  [press_enter_menu],1
     je	 .press_enter_menu
     cmp  [close_menu],0
     je	 draw_left_select_disk_menu.red
 .1:
-;    mov   [left_panel_clear_all],1
     call draw_left_panel
-;    mov   [right_panel_clear_all],1
     call draw_right_panel
     cmp  [alt_flag],0
     je	 still
@@ -194,21 +193,20 @@ key_menu_left:
     inc  esi
     call copy_folder_name
     mov  [left_start_draw_cursor_line],0
-    call proc_read_folder
-    jmp  still
+    jmp  proc_read_folder
+    ;jmp  still
 ;---------------------------------------------------------------------
+align 4
 key_menu_right:
     mov  [close_menu],0
-    mov [press_enter_menu],0
+    mov  [press_enter_menu],0
     call key_menu
     cmp  [press_enter_menu],1
     je	 .press_enter_menu
     cmp  [close_menu],0
     je	 draw_right_select_disk_menu.red
 .1:
-;    mov   [left_panel_clear_all],1
     call draw_left_panel
-;    mov   [right_panel_clear_all],1
     call draw_right_panel
     cmp  [alt_flag],0
     je	 still
@@ -222,8 +220,8 @@ key_menu_right:
     inc  esi
     call copy_folder_name_1
     mov  [right_start_draw_cursor_line],0
-    call proc_read_folder_1
-    jmp  still
+    jmp  proc_read_folder_1
+    ;jmp  still
 ;---------------------------------------------------------------------
 draw_left_select_disk_menu:
     call  device_detect_f70
@@ -234,14 +232,14 @@ draw_left_select_disk_menu:
 .red:
     call  draw_left_menu
 .still:
-    mcall 10
-    cmp  eax,1
+    mcall SF_WAIT_EVENT
+    cmp  eax,EV_REDRAW
     je	 red
-    cmp  eax,2
+    cmp  eax,EV_KEY
     je	 key_menu_left
-    cmp  eax,3
+    cmp  eax,EV_BUTTON
     je   @f
-    cmp   eax,6
+    cmp   eax,EV_MOUSE
     je    mouse_menu_left
     jmp  .still
 @@:
@@ -257,14 +255,14 @@ draw_right_select_disk_menu:
 .red:
     call  draw_right_menu
 .still:
-    mcall 10
-    cmp  eax,1
+    mcall SF_WAIT_EVENT
+    cmp  eax,EV_REDRAW
     je	 red
-    cmp  eax,2
+    cmp  eax,EV_KEY
     je	 key_menu_right
-    cmp  eax,3
+    cmp  eax,EV_BUTTON
     je   @f
-    cmp   eax,6
+    cmp   eax,EV_MOUSE
     je    mouse_menu_right
     jmp  .still
 @@:
@@ -279,9 +277,8 @@ draw_left_menu:
     mov  cx,ax
     imul cx,10
     mov  edx,0xffffcc
-	dec  ebx
-    mov  eax,13
-	mcall
+    dec  ebx
+    mcall SF_DRAW_RECT
     call draw_menu_Selection
     call draw_menu_data
     ret
@@ -294,8 +291,7 @@ draw_right_menu:
     mov  cx,ax
     imul cx,10
     mov  edx,0xffffcc
-    mov  eax,13
-	mcall
+    mcall SF_DRAW_RECT
     call draw_menu_Selection
     call draw_menu_data
     ret
@@ -306,7 +302,7 @@ draw_menu_data:
     mov  bx,cx
     mov  ebp,0
 .start:
-    mcall 4, ,0x80000000
+    mcall SF_DRAW_TEXT, ,0x80000000
     add   ebx,10
     add   edx,10
     inc   ebp
@@ -322,15 +318,14 @@ draw_menu_Selection:
     add  ecx,eax
     mov  cx,10
     mov  edx,0xbbffbb
-    mov  eax,13
-	mcall
+    mcall SF_DRAW_RECT
     pop  ecx ebx
     ret
 ;---------------------------------------------------------------------
 mouse_menu_left:
-    mcall 37,2
+    mcall SF_MOUSE_GET, SSF_BUTTON
     mov  [mouse_keys],eax
-    mcall 37,1
+    mcall SF_MOUSE_GET, SSF_WINDOW_POSITION
     mov  [mouse_position],eax
     test eax,0x80000000
     jnz   draw_left_select_disk_menu.still
@@ -375,9 +370,9 @@ mouse_menu_left:
     jmp   still
 ;---------------------------------------------------------------------
 mouse_menu_right:
-    mcall 37,2
+    mcall SF_MOUSE_GET, SSF_BUTTON
     mov  [mouse_keys],eax
-    mcall 37,1
+    mcall SF_MOUSE_GET, SSF_WINDOW_POSITION
     mov  [mouse_position],eax
     test eax,0x80000000
     jnz   draw_right_select_disk_menu.still

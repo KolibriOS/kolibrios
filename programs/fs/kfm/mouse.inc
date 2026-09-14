@@ -1,12 +1,10 @@
 mouse:
-    mcall 18,7
+    mcall SF_SYSTEM, SSF_GET_ACTIVE_WINDOW
     cmp  [active_process],eax
     jne  still
-    mcall 37,7
+    mcall SF_MOUSE_GET, SSF_SCROLL_DATA
     mov   [mouse_scroll_data],eax
-;    test  eax,eax
-;    jnz   .continue_2
-    mcall 37,2
+    mcall SF_MOUSE_GET, SSF_BUTTON
     cmp  [mouse_keys],eax
     je	 @f
     mov  [mouse_keys],eax
@@ -15,9 +13,9 @@ mouse:
 @@:
     mov  [mouse_keys_delta],1
 .continue_2:
-    mcall 37,1
+    mcall SF_MOUSE_GET, SSF_WINDOW_POSITION
     mov  [mouse_position],eax
-;    mcall 18,7
+;    mcall SF_SYSTEM, SSF_GET_ACTIVE_WINDOW
 ;    cmp  [active_process],eax
 ;    jne  still
     mov  eax,[mouse_position]
@@ -64,23 +62,16 @@ mouse:
     jbe   @f
 .check_scroll_bar_left_event:
     mov   [scroll_bar_event],0
-    call  check_scroll_left_event
+    call  check_scroll_left_event ;file panel mouse wheel
     cmp   [scroll_bar_event],0
     jne    still
     mov   [scroll_bar_event],0
-    call  check_scroll_bar_left_event
+    call  check_scroll_bar_left_event ;scrollbar mouse
     cmp   [scroll_bar_event],0
     jne    still  ;.continue
-;    cmp   [scroll_pointer],1
-;    je   .continue
 @@:
-    call  check_left_panel_mouse_event
-;    jmp   still
+    call  check_left_panel_mouse_event ;file panel mouse click
 .continue:
-;    mov   [temp_edx],mouse_left_panel
-;    call  mouse.draw_data
-;    mov  [scroll_pointer],0
-;    mov  [mouse_keys_delta_1],0
     jmp   still
 
 .check_scroll_bar_right:
@@ -106,35 +97,28 @@ mouse:
 @@:
     call  check_right_panel_mouse_event
 .continue_1:
-;    mov   [temp_edx],mouse_right_panel
-;    call  mouse.draw_data
     jmp   still
 
 .other:
-;    mov   [temp_edx],mouse_other_panel
-;    call  mouse.draw_data
     jmp   still
 
 ;.draw_data:
 ;    pusha
 ;    mov   [temp_eax],eax
-;    mcall 13,<190,400>,<3,15>,0x0
+;    mcall SF_DRAW_RECT, <190,400>,<3,15>,0x0
 ;    xor   ecx,ecx
 ;    mov   cx,[mouse_position.x]
-;    mcall 47,0x80000, ,<200, 5>,0xffffff
+;    mcall SF_DRAW_NUMBER, 0x80000, ,<200, 5>,0xffffff
 ;    mov   cx,[mouse_position.y]
-;    mcall 47,0x80000, ,<300, 5>,0xffffff
-;    mcall 47,0x80000,[mouse_keys],<400, 5>,0xffffff
-;    mcall 4,<500,5>,0xffffff,[temp_edx],5
-;    mcall 47,0x80000,[mouse_keys],<200, 5>,0xffffff
+;    mcall SF_DRAW_NUMBER, 0x80000, ,<300, 5>,0xffffff
+;    mcall SF_DRAW_NUMBER, 0x80000,[mouse_keys],<400, 5>,0xffffff
+;    mcall SF_DRAW_TEXT, <500,5>,0xffffff,[temp_edx],5
+;    mcall SF_DRAW_NUMBER, 0x80000,[mouse_keys],<200, 5>,0xffffff
 ;    popa
 ;    ret
 ;---------------------------------------------------------------------
 check_left_panel_mouse_event:
-;    cmp  [scroll_pointer],0
-;    je   @f
     mov  [scroll_pointer],0
-;    ret
 @@:
     cmp  [mouse_keys_delta],0
     jz	 .start
@@ -179,27 +163,23 @@ check_left_panel_mouse_event:
 .enter:
     cmp  [mouse_keys_delta_1],1
     je	 .enter_1
-    mcall 26,9
+    mcall SF_SYSTEM_GET, SSF_SHUTDOWN
     add  eax,[mouse_key_delay]
     mov  [mouse_keys_tick],eax
     mov  [mouse_keys_delta_1],1
     jmp  .continue_1
 .enter_1:
     mov  [mouse_keys_delta_1],0
-    mcall 26,9
+    mcall SF_SYSTEM_GET, SSF_SHUTDOWN
     cmp  eax,[mouse_keys_tick]
     jbe  @f
     ret
 @@:
     add  esp,4
-;    call draw_left_panel
     jmp  key_28.1
 ;---------------------------------------------------------------------
 check_right_panel_mouse_event:
-;    cmp  [scroll_pointer],0
-;    je   @f
     mov  [scroll_pointer],0
-;    ret
 @@:
     cmp  [mouse_keys_delta],0
     jz	 .start
@@ -228,10 +208,6 @@ check_right_panel_mouse_event:
     je	 .enter
 @@:
     mov  [mouse_keys_delta_1],0
-;    cmp  [mouse_keys_delta],1
-;    je   .continue
-;    cmp  [right_start_draw_cursor_line],ax
-;    je   .enter
 .continue:
     imul  ebx,[right_folder_block],10
     cmp  eax,ebx
@@ -248,19 +224,18 @@ check_right_panel_mouse_event:
 .enter:
     cmp  [mouse_keys_delta_1],1
     je	 .enter_1
-    mcall 26,9
+    mcall SF_SYSTEM_GET, SSF_SHUTDOWN
     add  eax,[mouse_key_delay]
     mov  [mouse_keys_tick],eax
     mov  [mouse_keys_delta_1],1
     jmp  .continue_1
 .enter_1:
     mov  [mouse_keys_delta_1],0
-    mcall 26,9
+    mcall SF_SYSTEM_GET, SSF_SHUTDOWN
     cmp  eax,[mouse_keys_tick]
     jbe  @f
     ret
 @@:
     add  esp,4
-;    call draw_right_panel
     jmp  key_28.1
 ;---------------------------------------------------------------------
