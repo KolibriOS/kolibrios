@@ -5,7 +5,7 @@ device_detect_f70:
     mov   [read_folder_3_name],ax
 ;    mov   eax,left_folder_data_1
 ;    mov   [read_folder_2.return],eax
-    mcall 70, read_folder_2
+    mcall SF_FILE, read_folder_2
     test  eax,eax
     jz    @f
     cmp   eax,6
@@ -21,7 +21,7 @@ device_detect_f70:
     call  copy_folder_name_3
 ;    mov   eax,right_folder_data_1
 ;    mov   [read_folder_3.return],eax
-    mcall 70, read_folder_3
+    mcall SF_FILE, read_folder_3
     test  eax,eax
     jz    @f
     cmp   eax,6

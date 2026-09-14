@@ -156,8 +156,7 @@ open_file_with_appl:
     jnz   @b
 .continue:
     mov   [start_file_data.param],start_parameter
-    ;call  start_appl ;Leency
-	mcall 70,sysopen  ;Leency
+	mcall SF_FILE, sysopen  ;Leency
     cmp   eax,0
     jge   @f
     mov  ebx,0

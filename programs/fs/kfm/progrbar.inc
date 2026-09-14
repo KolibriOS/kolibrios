@@ -17,7 +17,7 @@ progress_bar_delete:
     mov  bx,cx
     sub  ebx,13
     call  clear_text_area_1
-    mcall 4, ,0x90ffffff,file_name
+    mcall SF_DRAW_TEXT, ,0x90ffffff,file_name
     cmp  [draw_all_progressbar],0
     je   .end
     sub  ebx,13
@@ -59,10 +59,10 @@ progress_bar_copy:
     mov  bx,cx
     sub  ebx,11
     call  clear_text_area_1
-    mcall 4, ,0x80ffffff,start_parameter
+    mcall SF_DRAW_TEXT, ,0x80ffffff,start_parameter
     sub  ebx,30
     call  clear_text_area_1
-    mcall 4, ,0x80ffffff,file_name
+    mcall SF_DRAW_TEXT, ,0x80ffffff,file_name
     cmp  [draw_all_progressbar],0
     je   .end
     sub  ebx,13
@@ -90,7 +90,7 @@ clear_text_area_1:
     mov  eax,[window_width]
     sub  eax,70
     mov  bx,ax
-    mov  eax,13
+    mov  eax,SF_DRAW_RECT
     mov  edx, 0x6060ff
 	mcall
     pop  ebx
@@ -131,7 +131,7 @@ calculate_progress_data_2:
 ;---------------------------------------------------------------------
 calculate_progress_data_3: 
     mov   bx,ax
-    mov  eax,13
+    mov  eax,SF_DRAW_RECT
     cmp  [draw_all_progressbar],0
     je   @f
     mov  edx, 0x6060ff
@@ -142,7 +142,7 @@ calculate_progress_data_3:
     ret
 ;---------------------------------------------------------------------
 calculate_progress_data_4:
-    mcall 11
+    mcall SF_CHECK_EVENT
     cmp  eax,1
     jne   .1
     call draw_window

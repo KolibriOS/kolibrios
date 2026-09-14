@@ -179,57 +179,55 @@ delete_dir:
     mov   eax,[appl_memory]
     mov   [appl_memory_old],eax
 .1:
-    mov  [read_delete_dir_data.size],0
-    mov  [read_delete_dir_data.return],delete_dir_data
-    call read_delete_dir
-    test eax,eax
-    jz	 @f
+    mov   [read_delete_dir_data.size],0
+    mov   [read_delete_dir_data.return],delete_dir_data
+    mcall SF_FILE, read_delete_dir_data
+    test  eax,eax
+    jz	  @f
     mov   [error_pointer],file_name
-    call start_error_window_thread
+    call  start_error_window_thread
     popa
-    add  esp,8+4
-    jmp  still
+    add   esp,8+4
+    jmp   still
 @@:
-    mov  eax,[delete_dir_data+8]
-    test eax,eax
-    jnz  @f
-    inc  [current_progress_value]
-    call progress_bar_delete
-    call del_file
-    test eax,eax
-    jz	 .end
+    mov   eax,[delete_dir_data+8]
+    test  eax,eax
+    jnz   @f
+    inc   [current_progress_value]
+    call  progress_bar_delete
+    call  del_file
+    test  eax,eax
+    jz	  .end
     mov   [error_pointer],file_name
-    call start_error_window_thread
+    call  start_error_window_thread
     popa
-    add  esp,8+4
-    jmp  still
+    add   esp,8+4
+    jmp   still
 @@:
     imul  eax,304
     add   eax,32
-    mov   ebx,eax
-    add   ebx,[appl_memory_old]
-    cmp   ebx,[appl_memory]
+    mov   ecx,eax
+    add   ecx,[appl_memory_old]
+    cmp   ecx,[appl_memory]
     jbe   @f
-    mov   ecx,[appl_memory]
-    mov   ecx,ebx
     mov   [appl_memory],ecx
-    mcall 64,1
+    mcall SF_MEMORY_RESIZE, 1
 @@:
-    mov  eax,[delete_dir_data+8]
-    mov  [read_delete_dir_data.size],eax
+    mov   eax,[delete_dir_data+8]
+    mov   [read_delete_dir_data.size],eax
     mov   eax,[appl_memory_old]
-    mov  [read_delete_dir_data.return],eax
-    call read_delete_dir
-    test eax,eax
-    jz	 @f
+    mov   [read_delete_dir_data.return],eax
+    mcall SF_FILE, read_delete_dir_data
+    test  eax,eax
+    jz	  @f
     mov   [error_pointer],file_name
-    call start_error_window_thread
+    call  start_error_window_thread
     popa
-    add  esp,8+4
-    jmp  still
+    add   esp,8+4
+    jmp   still
 @@:
-    call delete_dir_1
-    jc	.1
+    call  delete_dir_1
+    jc	  .1
 .end:
     call  return_delete_path
     dec   [recursive_pointer]
@@ -240,7 +238,7 @@ delete_dir:
     cmp   [appl_memory],ecx
     je	  @f
     mov   [appl_memory],ecx
-    mcall 64,1
+    mcall SF_MEMORY_RESIZE, 1
 @@:
     popa
     ret

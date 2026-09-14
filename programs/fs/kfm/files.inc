@@ -1,47 +1,31 @@
-read_delete_dir:
-   mcall 70, read_delete_dir_data
-   ret
-;---------------------------------------------------------------------
-create_directory_f70:
-   mcall 70, create_dir_file_data 
-   ret
-;---------------------------------------------------------------------
+
 del_file:
-   mcall 70, delete_file_data 
-   ret
-;---------------------------------------------------------------------
-start_appl:
-   mcall 70, start_file_data
+   mcall SF_FILE, delete_file_data 
    ret
 ;---------------------------------------------------------------------
 get_file_size:
-   mcall 70, read_file_features
+   mcall SF_FILE, read_file_features
    ret
 ;---------------------------------------------------------------------
 load_file:
-   mcall 70, read_file
+   mcall SF_FILE, read_file
    ret
 ;---------------------------------------------------------------------
 write_file:
-   mcall 70, save_file
+   mcall SF_FILE, save_file
    ret
 ;---------------------------------------------------------------------
-add_write_file:
-   mcall 70, add_save_file
-   ret
-;---------------------------------------------------------------------
+; out:
+;  eax - 0 or error code
+align 4
 proc_read_left_folder:
-   mov   ebx,304
-   push  ebx ecx
-   mov   ecx,[appl_memory]
-   add   ecx,ebx
-   mov   [esp],ebx
-   mov   ebx,[appl_memory]
-   mov   [esp+4],ebx
-   mov   [appl_memory],ecx
-   mcall 64,1
-   call  move_up_right_table
-   pop   ecx ebx
+   push  ebx ecx edx
+   mov   ecx,[lfd_size]
+   add   ecx,304
+   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [left_folder_data]
+   mov   [left_folder_data], eax
+   mov   [lfd_size],ecx
+   pop   edx ecx ebx
 
    xor   eax,eax
    mov   [left_marked_counter],eax
@@ -49,82 +33,52 @@ proc_read_left_folder:
    inc   eax
    mov	 [read_folder.size],eax     ;dword 1
    mov   eax,[left_folder_data]
-   push  eax
    mov   [read_folder.return],eax
-   mcall 70, read_folder
-    test  eax,eax
-    jz    @f
-    cmp   eax,6
-    jne   .error_1
-@@:
-   mov   eax,[esp]
-   cmp	 [eax+32+40],word 2Eh
-   jne	 @f
-   mov	 [read_folder.start],dword 1
-@@:
-   mov   ebx,[eax+8]
-   mov	 [read_folder.size],ebx  ;dword 10  ;5000
-   imul  ebx,304
-   add   ebx,32
-   mov   ecx,[right_folder_data]
-   sub   ecx,[left_folder_data]
-   push  ebx ecx
-   cmp   ebx,ecx
-   je    .continue
-   sub   ebx,ecx
-   js    .sub_mem
-.add_mem:
-   mov   ecx,[appl_memory]
-   add   ecx,ebx
-   mov   [esp],ebx
-   mov   ebx,[appl_memory]
-   mov   [esp+4],ebx
-   mov   [appl_memory],ecx
-   mcall 64,1
-   call  move_up_right_table
-;   mov   [temp_znak],1
-   jmp   .continue
-.sub_mem:
-   mov   ebx,[esp]
-   mov   ecx,[esp+4]
-   sub   ebx,ecx
-   mov   ecx,[appl_memory]
-   sub   ecx,ebx
-   mov   [esp],ebx
-   mov   ebx,[appl_memory]
-   mov   [esp+4],ebx
-   mov   [appl_memory],ecx
-   call  move_down_right_table
-   mcall 64,1
-;   mov   [temp_znak],2
-.continue:
-;   mov	 edi,eax  ;folder_data
-;   call  clear_folder_data_area
-   mcall 70, read_folder
-   mov	 [left_folder_block],ebx
-   add   esp,4*3
+
+   mcall SF_FILE, read_folder
     test  eax,eax
     jz    @f
     cmp   eax,6
     jne   .error
 @@:
+   mov   eax,[left_folder_data]
+   cmp	 [eax+32+40],word 2Eh
+   jne	 @f
+   mov	 [read_folder.start],dword 1
+@@:
+   mov   ecx,[eax+8] ; число файлов и папок
+   mov	 [read_folder.size],ecx
+   mov	 [sb_left.max_area],ecx
+   imul  ecx,304
+   add   ecx,32
+
+   push  edx
+   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [left_folder_data]
+   mov   [left_folder_data], eax
+   mov   [lfd_size],ecx
+   mov   [read_folder.return],eax
+   pop   edx
+
+   mcall SF_FILE, read_folder
+   mov	 [left_folder_block],ebx
+    test  eax,eax
+    jz    @f
+    cmp   eax,6
+    jne   .error
+align 4
+@@:
    push  eax
-;   call  left_files_name_normalize
-   call  left_prepare_extension_start
    call  left_sort_files
    pop   eax
-;   pusha
-;   call  draw_window
-;   popa
    ret
-.error_1:
-   add   esp,4
+align 4
 .error:
    mov	 [left_folder_block],dword 2
    mov   edi,[left_folder_data]
    call  error_handler
    ret
 ;---------------------------------------------------------------------
+align 4
 error_handler:
    push  eax
    xor   eax,eax
@@ -154,129 +108,76 @@ error_handler:
    pop   eax
    ret
 ;---------------------------------------------------------------------
+align 4
+; out:
+;  eax - 0 or error code
 proc_read_right_folder:
-   mov   ecx,[appl_memory]
+   push  ebx ecx edx
+   mov   ecx,[rfd_size]
    add   ecx,304
-   mov   [appl_memory],ecx
-   mcall 64,1
+   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [right_folder_data]
+   mov   [right_folder_data], eax
+   mov   [rfd_size],ecx
+   pop   edx ecx ebx
+
    xor   eax,eax
    mov   [right_marked_counter],eax
    mov	 [read_folder_1.start],eax      ;dword 0
    inc   eax
    mov	 [read_folder_1.size],eax       ;dword 1
    mov   eax,[right_folder_data]
-   push  eax
    mov   [read_folder_1.return],eax
-   mcall 70, read_folder_1
-    test  eax,eax
-    jz    @f
-    cmp   eax,6
-    jne   .error_1
-@@:
-   mov   eax,[esp]
-   cmp	 [eax+32+40],word 2Eh
-   jne	 @f
-   mov	 [read_folder_1.start],dword 1
-@@:
-   mov   ebx,[eax+8]
-   mov	 [read_folder_1.size],ebx  ;dword 10  ;5000
-   imul  ebx,304
-   add   ebx,32
-   mov   ecx,[appl_memory]
-   sub   ecx,[right_folder_data]
-   push  ebx ecx
-   cmp   ebx,ecx
-   je    .continue
-   sub   ebx,ecx
-   js    .sub_mem
-.add_mem:
-   mov   ecx,[appl_memory]
-   add   ecx,ebx
-   mov   [appl_memory],ecx
-   mcall 64,1
-;   mov   [temp_znak],1
-   jmp   .continue
-.sub_mem:
-   mov   ebx,[esp]
-   mov   ecx,[esp+4]
-   sub   ebx,ecx
-   mov   ecx,[appl_memory]
-   sub   ecx,ebx
-   mov   [appl_memory],ecx
-   mcall 64,1
-;   mov   [temp_znak],2
-.continue:
-;   mov	 edi,eax  ;folder_data_1
-;   call  clear_folder_data_area
-   mcall 70, read_folder_1
-   mov	 [right_folder_block],ebx
-   add   esp,4*3
+   mcall SF_FILE, read_folder_1
     test  eax,eax
     jz    @f
     cmp   eax,6
     jne   .error
 @@:
+   mov   eax,[right_folder_data]
+   cmp	 [eax+32+40],word 2Eh
+   jne	 @f
+   mov	 [read_folder_1.start],dword 1
+@@:
+   mov   ecx,[eax+8] ; число файлов и папок
+   mov	 [read_folder_1.size],ecx
+   mov	 [sb_right.max_area],ecx
+   imul  ecx,304
+   add   ecx,32
+
+   push  edx
+   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [right_folder_data]
+   mov   [right_folder_data], eax
+   mov   [rfd_size],ecx
+   mov   [read_folder_1.return],eax
+   pop   edx
+
+   mcall SF_FILE, read_folder_1
+   mov	 [right_folder_block],ebx
+    test  eax,eax
+    jz    @f
+    cmp   eax,6
+    jne   .error
+align 4
+@@:
    push  eax
-;   call  right_files_name_normalize
-   call  right_prepare_extension_start
    call  right_sort_files
    pop   eax
-;   pusha
-;   call  draw_window
-;   popa
    ret
-.error_1:
-   add   esp,4
+align 4
 .error:
    mov	 [right_folder_block],dword 2
    mov   edi,[right_folder_data]
    call  error_handler
    ret
 ;---------------------------------------------------------------------
-move_up_right_table:
-   mov  esi,[esp+8]
-   mov  ecx,esi
-   sub  ecx,[right_folder_data]
-   mov  edi,esi
-   add  edi,[esp+4]
-   shr  ecx,2
-   std
-;   rep  movsb
-   rep  movsd
-   mov  eax,[esp+4]
-   add  [right_folder_data],eax
-   ret
-;---------------------------------------------------------------------
-move_down_right_table:
-   mov  esi,[right_folder_data]
-   mov  edi,esi
-   sub  edi,[esp+4]
-   push ecx
-   mov  ecx,[esp+12]
-   sub  ecx,[right_folder_data]
-   shr  ecx,2
-   cld
-;   rep  movsb
-   rep  movsd
-   pop  ecx
-   mov  eax,[esp+4]
-   sub  [right_folder_data],eax
-   ret
-;---------------------------------------------------------------------
-;clear_folder_data_area:
-;   mov ecx,4096*10/4
-;   xor eax,eax
-;   cld
-;   rep stosd
-;   ret
-;---------------------------------------------------------------------
+align 4
 proc_read_folder:
     call  proc_read_left_folder
-;    mov   [left_panel_clear_all],1
     cmp  [search_pre_folder],0
     jne   @f
     mov  [left_start_draw_cursor_line],0
-    mov  [left_start_draw_line],0    
+    mov  [left_start_draw_line],0
+    mov  [sb_left.position],0
     jmp  .continue
 @@:
     mov  edi,[left_folder_data]
@@ -291,7 +192,6 @@ proc_read_folder:
     add   edi,304
     inc   ebp
     cld
-;    mov   [temp_counter_dword_1],edi
     push   edi
     rep  cmpsb
     pop    edi
@@ -304,26 +204,17 @@ proc_read_folder:
     imul eax,10
     mov  [left_start_draw_cursor_line],ax
     mov  [left_start_draw_line],0
+    mov  [sb_left.position],0
     jmp  .end_folder
 @@:
-;    sub  eax,ebp
-;    push eax
-;    sub  eax,[max_panel_line]
-;    jns  @f
-;    mov  eax,[max_panel_line]
-;    sub  eax,[esp]
-;    imul eax,10
-;    mov  [left_start_draw_cursor_line],ax
-;@@:
     mov  [left_start_draw_cursor_line],0
     mov  [left_start_draw_line],ebp
+    mov  [sb_left.position],ebp
 .end_folder:
     mov  [search_pre_folder],0
 .continue:
     call  draw_left_panel
     call  draw_left_select_disk_button
-;    call  draw_window
-;    pop   eax
     jmp   still
 ;---------------------------------------------------------------------
 proc_read_folder_1:
@@ -332,7 +223,8 @@ proc_read_folder_1:
     cmp  [search_pre_folder],0
     jne   @f
     mov  [right_start_draw_cursor_line],0
-    mov  [right_start_draw_line],0    
+    mov  [right_start_draw_line],0
+    mov  [sb_right.position],0
     jmp  .continue
 @@:
     mov  edi,[right_folder_data]
@@ -360,19 +252,12 @@ proc_read_folder_1:
     imul eax,10
     mov  [right_start_draw_cursor_line],ax
     mov  [right_start_draw_line],0
+    mov  [sb_right.position],0
     jmp  .end_folder
 @@:
-;    sub  eax,ebp
-;    push eax
-;    sub  eax,[max_panel_line]
-;    jns  @f
-;    mov  eax,[max_panel_line]
-;    sub  eax,[esp]
-;    imul eax,10
-;    mov  [right_start_draw_cursor_line],ax
-;@@:
     mov  [right_start_draw_cursor_line],0
     mov  [right_start_draw_line],ebp
+    mov  [sb_right.position],ebp
 .end_folder:
     mov  [search_pre_folder],0
 .continue:
@@ -404,7 +289,7 @@ copy_folder_name_3:
     jmp  copy_folder_name.1
 ;---------------------------------------------------------------------
 read_folder:
-    .subfunction dd   1
+    .subfunction dd   SSF_READ_FOLDER
     .start	 dd   0
     .flags	 dd   0
     .size	 dd   5000
@@ -413,7 +298,7 @@ read_folder:
     .name: dd read_folder_name
 ;---------------------------------------------------------------------
 read_folder_1:
-    .subfunction dd   1
+    .subfunction dd   SSF_READ_FOLDER
     .start	 dd   0
     .flags	 dd   0
     .size	 dd   5000
@@ -422,7 +307,7 @@ read_folder_1:
     .name: dd read_folder_1_name
 ;---------------------------------------------------------------------
 read_folder_2:
-    .subfunction dd   1
+    .subfunction dd   SSF_READ_FOLDER
     .start	 dd   0
     .flags	 dd   0
     .size	 dd   5000
@@ -431,7 +316,7 @@ read_folder_2:
     .name: dd read_folder_2_name
 ;---------------------------------------------------------------------
 read_folder_3:
-    .subfunction dd   1
+    .subfunction dd   SSF_READ_FOLDER
     .start	 dd   0
     .flags	 dd   0
     .size	 dd   5000
@@ -440,7 +325,7 @@ read_folder_3:
     .name: dd read_folder_3_name
 ;---------------------------------------------------------------------
 read_file_features:
-    .subfunction dd   5
+    .subfunction dd   SSF_GET_INFO
     .Offset	 dd   0
     .Offset_1	 dd   0
     .size	     dd   0
@@ -449,7 +334,7 @@ read_file_features:
     .name: dd file_name
 ;---------------------------------------------------------------------
 read_file:
-    .subfunction dd   0
+    .subfunction dd   SSF_READ_FILE
     .Offset	 dd   0
     .Offset_1	 dd   0
     .size	     dd   0
@@ -458,7 +343,7 @@ read_file:
     .name: dd file_name
 ;---------------------------------------------------------------------
 save_file:
-    .subfunction dd   2
+    .subfunction dd   SSF_CREATE_FILE
     .Offset	 dd   0
     .Offset_1	 dd   0
     .size	     dd   0
@@ -467,7 +352,7 @@ save_file:
     .name: dd start_parameter
 ;---------------------------------------------------------------------
 add_save_file:
-    .subfunction dd   3
+    .subfunction dd   SSF_WRITE_FILE
     .Offset	 dd   0
     .Offset_1	 dd   0
     .size	     dd   0
@@ -476,7 +361,7 @@ add_save_file:
     .name: dd start_parameter
 ;---------------------------------------------------------------------
 create_dir_file_data:
-    .subfunction dd   9
+    .subfunction dd   SSF_CREATE_FOLDER
     .flags	 dd   0
     .param	 dd   0
     .rezerv	 dd   0
@@ -485,7 +370,7 @@ create_dir_file_data:
     .name: dd file_name
 ;---------------------------------------------------------------------
 start_file_data:
-    .subfunction dd   7
+    .subfunction dd   SSF_START_APP
     .flags	 dd   0
     .param	 dd   0
     .rezerv	 dd   0
@@ -494,7 +379,7 @@ start_file_data:
     .name: dd file_name
 ;---------------------------------------------------------------------
 delete_file_data:
-    .subfunction dd   8
+    .subfunction dd   SSF_DELETE
     .flags	 dd   0
     .param	 dd   0
     .rezerv	 dd   0
@@ -503,7 +388,7 @@ delete_file_data:
     .name: dd file_name
 ;---------------------------------------------------------------------
 read_delete_dir_data:
-    .subfunction dd   1
+    .subfunction dd   SSF_READ_FOLDER
     .start	 dd   0
     .flags	 dd   0
     .size	     dd   0

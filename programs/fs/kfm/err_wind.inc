@@ -12,28 +12,28 @@ error_window:
 .red:
     call  draw_error_window
 .still:
-    mcall 10
-    cmp   eax,1
+    mcall SF_WAIT_EVENT
+    cmp   eax,EV_REDRAW
     je    .red
-    cmp   eax,3
+    cmp   eax,EV_BUTTON
     je    .button
     jmp   .still
 .button:
-    mcall -1
+    mcall SF_TERMINATE_PROCESS
     jmp   .still
 ;---------------------------------------------------------------------
 draw_error_window:
-    mcall 12, 1
-    mcall 0,[error_window_x] ,[error_window_y], 0x03D22F36
-    mcall 4,<10,30>,0x90ffffff,[error_pointer]
-    mcall 4,<10,50>, ,error_type
-    mcall 47,0xa0000,[file_system_error],<148,50>,0x10ffffff
-    mcall 12, 2
+    mcall SF_REDRAW, SSF_BEGIN_DRAW
+    mcall SF_CREATE_WINDOW, [error_window_x] ,[error_window_y], 0x03D22F36
+    mcall SF_DRAW_TEXT, <10,30>,0x90ffffff,[error_pointer]
+    mcall SF_DRAW_TEXT, <10,50>, ,error_type
+    mcall SF_DRAW_NUMBER, 0xa0000,[file_system_error],<148,50>,0x10ffffff
+    mcall SF_REDRAW, SSF_END_DRAW
     ret
 ;---------------------------------------------------------------------
 start_error_window_thread:
     mov   [file_system_error],eax
-    mcall 9, procinfo, -1
+    mcall SF_THREAD_INFO, procinfo, -1
     mov   eax,[ebx+46]
     shr   eax,1
     add   eax,[ebx+38]
@@ -44,7 +44,7 @@ start_error_window_thread:
     add   eax,[ebx+34]
     sub   eax,ERR_WINW/2
     mov   [error_window_x+2],ax
-    mcall 51,1,thread_start,thread_stack
+    mcall SF_THREAD_CONTROL, SSF_CREATE_THREAD,thread_start,thread_stack
     ret
 ;---------------------------------------------------------------------
 thread_start:

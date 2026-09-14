@@ -33,41 +33,44 @@
 use32
 org     0x0
 
-    db    'MENUET01'
-    dd    0x01
-    dd    START
-    dd    I_END
-    dd    mem
-    dd    stacktop
-    dd    0x0
-    dd    path
+	db 'MENUET01'
+	dd 1, START, I_END, mem, stacktop, 0, path
 
 ;include   'lang.inc'
-;include   'kglobals.inc'
-;include   'macros.inc'
+include '../../proc32.inc'
 include '../../macros.inc'
-include '../../config.inc'           ;for nightbuild
 ;include '../../debug.inc'           ;for nightbuild
+include '../../KOSfuncs.inc'
 
 ;define __DEBUG__ 1
 ;define __DEBUG_LEVEL__ 1
 ;include '../../debug-fdo.inc'
+include '../../load_lib.mac'
+;include '../../dll.inc'
 
-include   'editbox.inc'
-;use_edit_box
-use_edit_box procinfo
-;include   'ASCGL.INC'
+include '../../develop/libraries/box_lib/box_lib.mac'
+
 ;---------------------------------------------------------------------
 include   'files.inc'
 ;---------------------------------------------------------------------
 STRLEN = 1024
+
+@use_library
 ;---------------------------------------------------------------------
+align 4
 START:
-        mcall   9,procinfo,-1
-        mov     ecx,[ebx+30]    ; PID
-        mcall   18,21
-        mov     [active_process],eax    ; WINDOW SLOT
-    mov   [appl_memory],mem
+    load_libraries l_libs_start,end_l_libs
+    cmp   eax,-1
+    jz    exit_apl
+    purge copy_path
+
+    stdcall	[sort_init], 1
+
+    mcall   SF_THREAD_INFO, procinfo,-1
+    mov     ecx,[ebx+30]    ; PID
+    mcall   SF_SYSTEM, SSF_GET_THREAD_SLOT
+    mov     [active_process],eax    ; WINDOW SLOT
+
     mov   ax,[select_disk_char]
     mov   [read_folder_name],ax
     mov   [read_folder_1_name],ax
@@ -75,8 +78,8 @@ START:
     call  add_memory_for_folders
     call  device_detect_f70
     call  select_starting_directories
-    mcall 66, 1, 1
-    mov   eax,1
+    mcall SF_KEYBOARD, SSF_SET_INPUT_MODE, 1
+    mov   eax,2
     mov   [left_sort_flag],eax
     mov   [right_sort_flag],eax
 
@@ -103,7 +106,7 @@ START:
     cmp   eax,6
     jne   read_folder_1_error
 @@:
-        mcall 40, 0x27
+        mcall SF_SET_EVENTS_MASK, EVM_MOUSE + EVM_BUTTON + EVM_KEY + EVM_REDRAW
         jmp   red_1
 ;---------------------------------------------------------------------
 red:
@@ -115,33 +118,34 @@ red:
     cmp   [window_high],180
     ja    @f
     mov   esi,180
-    mcall 67,-1,ebx,ebx
+    mcall SF_CHANGE_WINDOW, -1,ebx,ebx
 @@:
     cmp   [window_width],495
     ja    red_1
     mov   edx,495
-    mcall 67,-1,ebx, ,ebx
+    mcall SF_CHANGE_WINDOW, -1,ebx, ,ebx
 red_1:
     call  draw_window
 ;---------------------------------------------------------------------
+align 16
 still:
-    mcall 10
+    mcall SF_WAIT_EVENT
 
     call  check_active_process_for_clear_all_flags
 
-    cmp   eax,1
+    cmp   eax,EV_REDRAW
     je    red
-    cmp   eax,2
+    cmp   eax,EV_KEY
     je    key
-    cmp   eax,3
+    cmp   eax,EV_BUTTON
     je    button
-    cmp   eax,6
+    cmp   eax,EV_MOUSE
     je    mouse
     jmp   still
 ;---------------------------------------------------------------------
 check_active_process_for_clear_all_flags:
         push    eax
-        mcall   18,7
+        mcall   SF_SYSTEM, SSF_GET_ACTIVE_WINDOW
         cmp     [active_process],eax
         je      .exit
 
@@ -167,42 +171,31 @@ check_active_process_for_clear_all_flags:
         ret
 ;---------------------------------------------------------------------
 get_window_param:
-    mcall 9, procinfo, -1
+    mcall SF_THREAD_INFO, procinfo, -1
     mov   eax,[ebx+46]
     mov   [window_high],eax
     mov   eax,[ebx+42]
     mov   [window_width],eax
     mov   eax,[ebx+70]
     mov   [window_status],eax
-    mcall 48,4
+    mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
     mov   [skin_high],eax
     ret
 ;---------------------------------------------------------------------
+align 4
 draw_window:
-    mcall 12, 1
+    mcall SF_REDRAW, SSF_BEGIN_DRAW
         xor     esi,esi
-    mcall 0, <20,728>, <20,460>, 0x43cccccc   ; 0x805080D0, 0x005080D0
+    mcall SF_CREATE_WINDOW, <20,728>, <20,460>, 0x43cccccc   ; 0x805080D0, 0x005080D0
     call  get_window_param
 
-    mcall 71, 1, header_text
+    mcall SF_SET_CAPTION, 1, header_text
 
         test    [window_status],100b    ; window is rolled up
         jnz     .exit
 
         test    [window_status],10b     ; window is minimized to panel
         jnz     .exit
-
-    ; create_dir_name
-    ; start_parameter
-    ; file_name
-    ; [temp_edi]
-    ; header
-    ; delete_file_data.name
-    ; start_file_data.name
-    ; start_parameter
-     ; start_file_data.name
-      ; read_icon_file.name
-                ; read_file_features.name ;path ;header
 
     cmp   [window_high],180
     jb    .exit
@@ -220,63 +213,48 @@ draw_window:
     call  draw_menu_bar
     call  draw_buttons_panel
 .exit:
-    mcall 12, 2
+    mcall SF_REDRAW, SSF_END_DRAW
     ret
 ;---------------------------------------------------------------------
-prepare_load_data:
+align 4
+load_initiation_file:
+    mov   ebx,ini_file_name
     mov   esi,path
     mov   edi,file_name
     call  copy_path
     call  get_file_size
     test  eax,eax
-    ret
-;---------------------------------------------------------------------
-prepare_load_data_1:
-    mov   [read_file.return],eax
-    mov   ebp,eax
-prepare_load_data_4:
-    call  load_file
-    test  eax,eax
-    ret
-;---------------------------------------------------------------------
-prepare_load_data_2:
-    call  add_application_memory
-prepare_load_data_3:
-    call  add_application_memory
-    mov   eax,[file_features_temp_area+32]
-    mov   [read_file.size],eax
-    ret
-;---------------------------------------------------------------------
-load_initiation_file:
-    mov   ebx,ini_file_name
-    call  prepare_load_data
     jnz   initiation_error
-    call  prepare_load_data_3
-    mov   eax,[appl_memory]
-    mov   [left_folder_data],eax
-    sub   eax,[read_file.size]
-    mov   [read_file.return],eax
+    mov   ecx,[file_features_temp_area+32]
+    or    ecx,ecx
+    jz    @f ;initiation_error
+    push  edx
+    mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [ini_file_start]
     mov   [ini_file_start],eax
-    call  load_file
+    mov   [ini_size],ecx
+    mov   [read_file.return],eax
+    mov   [read_file.size],ecx
+    pop   edx
+	call  load_file
     test  eax,eax
     jnz   initiation_error
     mov   ebp,icons_associations
     call  search_star_and_end_tags
     mov   eax,[end_tag]
     mov   [icons_end_tag],eax
+@@:
     ret
 ;---------------------------------------------------------------------
+align 4
 add_memory_for_folders:
-    mov   ecx,[appl_memory]
-    add   ecx,304*32+32
-    mov   [right_folder_data],ecx
-    add   ecx,304*32+32
-    mov   [appl_memory],ecx
-    mcall 64,1
-
-    mov   eax,[left_folder_data]
+    mov   ecx,304*32+32
+	mov   [lfd_size],ecx
+	mov   [rfd_size],ecx
+	mcall SF_SYS_MISC, SSF_MEM_ALLOC
+	mov   [left_folder_data],eax
     mov   [read_folder.return],eax
-    mov   eax,[right_folder_data]
+	mcall SF_SYS_MISC, SSF_MEM_ALLOC
+	mov   [right_folder_data],eax
     mov   [read_folder_1.return],eax
     ret
 ;---------------------------------------------------------------------
@@ -323,28 +301,12 @@ copy_path_1:
     jnz   @b
     ret
 ;---------------------------------------------------------------------
-add_application_memory:
-    mov   ecx,[file_features_temp_area+32]
-.1:
-    add   ecx,[appl_memory]
-    mov   [appl_memory],ecx
-    mcall 64,1
-    ret
-;---------------------------------------------------------------------
-sub_application_memory:
-    mov   ecx,[appl_memory]
-    sub   ecx,[file_features_temp_area+32]
-.1:
-    mov   [appl_memory],ecx
-    mcall 64,1
-    ret
-;---------------------------------------------------------------------
 exit_apl:
     mov  [confirmation_type],exit_type
     call confirmation_action
     cmp  [work_confirmation_yes],1
     jne  red
-    mcall -1
+    mcall SF_TERMINATE_PROCESS
 ;---------------------------------------------------------------------
 include   'key.inc'
 ;---------------------------------------------------------------------
@@ -394,7 +356,44 @@ include   'file_inf.inc'
 ;---------------------------------------------------------------------
 include   'text.inc'
 ;---------------------------------------------------------------------
-;include_debug_strings
+plugins_directory db 0
+
+system_dir_Boxlib db '/sys/lib/box_lib.obj',0
+system_dir_Sort 	db '/sys/lib/sort.obj',0
+
+align 4
+l_libs_start:
+library01	l_libs	system_dir_Boxlib+9,file_name,system_dir_Boxlib,\
+import_box_lib,plugins_directory
+
+library02	l_libs	system_dir_Sort+9,file_name,system_dir_Sort,\
+Sort_import,plugins_directory
+end_l_libs:
+
+include '../../develop/libraries/box_lib/import.inc'
+
+align	4
+Sort_import:
+sort_init	dd aSort_init
+sort_version	dd aSort_version
+sort_dir	dd aSort_SortDir
+sort_strcmpi	dd aSort_strcmpi
+	dd 0,0
+aSort_init	db 'START',0
+aSort_version	db 'version',0
+aSort_SortDir	db 'SortDir',0
+aSort_strcmpi	db 'strcmpi',0
+
+mouse_scroll_data:
+    .vertical   rw 1
+    .horizontal rw 1
+scroll_bar_event rb 1
+scroll_pointer rb 1
+align	4
+sb_left  scrollbar 15, 348, 200, 24+FILE_BR_TOP_LINE, 16, 5, 1, 0, 0xeeeeee, 0xbbddff, 0, 1
+sb_right scrollbar 15, 708, 200, 24+FILE_BR_TOP_LINE, 16, 5, 1, 0, 0xeeeeee, 0xbbddff, 0, 1
+
+align 16
 I_END:
 ;---------------------------------------------------------------------
 include   'data.inc'

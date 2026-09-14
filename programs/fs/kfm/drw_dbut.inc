@@ -27,7 +27,7 @@ draw_device_button:
 	mov	bx,si
 	pop	esi
 	
-	mcall	8
+	mcall	SF_DEFINE_BUTTON
 
 	pusha
 	mov	eax,ebx
@@ -36,7 +36,7 @@ draw_device_button:
 	add	ebx,eax
 	mov	bx,2
 	inc	ecx
-	mcall	13,,,0xcccccc
+	mcall	SF_DRAW_RECT, ,,0xcccccc
 	popa
 
 	pusha
@@ -45,7 +45,7 @@ draw_device_button:
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,4 shl 16
-	mcall	4,,0x90000000
+	mcall	SF_DRAW_TEXT, ,0x90000000
 	sub	ebx,1 shl 16 + 1
 	mcall	,,0x90ffffff
 	popa
@@ -71,6 +71,6 @@ draw_device_button:
 	
 	add	ecx,1
 	add	ebx,1
-	mcall	13,,,0xcccccc
+	mcall	SF_DRAW_RECT, ,,0xcccccc
 	ret
 ;------------------------------------------------------------------------------

@@ -4,23 +4,23 @@ create_new_file:
     mov edi, edit1
     mov ed_size, dword 0 
     mov ed_pos, dword 0
-default_box
+    and word ed_flags,ed_shift_cl
     mov [create_dir_name],byte 0
-    mcall 66, 1, 0
+    mcall SF_KEYBOARD, SSF_SET_INPUT_MODE, 0
     jmp  .red
 .red_1:
     call  draw_window
 .red:
     call  draw_create_file
 .still:
-    mcall 10
-    cmp  eax,1
+    mcall SF_WAIT_EVENT
+    cmp  eax,EV_REDRAW
     je   .red_1
-    cmp  eax,2
+    cmp  eax,EV_KEY
     je   .key_create
-    cmp  eax,3
+    cmp  eax,EV_BUTTON
     je   .button_create
-        mouse_edit_box create_editboxes
+        stdcall [edit_box_mouse], create_editboxes
         jmp .still
 ;-------------------------------------------------------------
 .button_create:
@@ -34,7 +34,7 @@ default_box
     je  .exit_without_create
     cmp   ah,1
     jne   .still
-    mcall -1
+    mcall SF_TERMINATE_PROCESS
 .exit_with_create:
     call  create_new_file_1
     cmp   [select_panel_counter],0
@@ -44,7 +44,7 @@ default_box
 @@:
     call proc_read_right_folder
 .exit_without_create:
-    mcall 66, 1, 1
+    mcall SF_KEYBOARD, SSF_SET_INPUT_MODE, 1
     jmp  red
 ;-------------------------------------------------------------
 .key_create:
@@ -54,7 +54,7 @@ default_box
     je  .exit_with_create
     cmp ah,27
     je  .exit_without_create
-    key_edit_box create_editboxes
+    stdcall [edit_box_key], create_editboxes
     jmp .still
 ;-------------------------------------------------------------
 draw_create_file:
@@ -68,7 +68,7 @@ draw_create_file:
     shl  ebx,16
     mov   cx,60
     mov   bx,174
-    mcall 13, , ,0x6060ff ;0xff
+    mcall SF_DRAW_RECT, , ,0x6060ff ;0xff
     pusha
     shr ebx,16
     add  ebx,10
@@ -77,7 +77,7 @@ draw_create_file:
     mov eax,create_editboxes
     mov dword [eax+4],ebx
     mov dword [eax+8],ecx
-        draw_edit_box create_editboxes
+        stdcall [edit_box_draw], create_editboxes
         popa
         pusha
         add   ebx,70 shl 16
@@ -118,7 +118,7 @@ draw_create_file:
     shr   ecx,16
     mov   bx,cx
     add   ebx,30 shl 16+1
-    mcall 4, ,0x90ffffff,create_file  ;[confirmation_type]
+    mcall SF_DRAW_TEXT, ,0x90ffffff,create_file  ;[confirmation_type]
     add   ebx,48 shl 16+36
     mov   edx,type_yes
         mcall
@@ -156,12 +156,8 @@ create_new_file_1:
     call  write_file
     cmp   eax,0
     je    @f
-;    mov  ebx,0
-;    sub  ebx,eax
-;    mov  eax,ebx
     call start_error_window_thread
 @@:
-;    call create_directory_f70
     ret
 ;-------------------------------------------------------------
 ;clear_file_buffer:

@@ -72,16 +72,8 @@ mouse_position:
     .x	     rw 1
 mouse_keys rd 1
 mouse_keys_tick rd 1
-mouse_scroll_data:
-    .vertical   rw 1
-    .horizontal rw 1
-left_scroll_compens rd 1
-right_scroll_compens rd 1
 mouse_keys_delta rb 1
 mouse_keys_delta_1 rb 1
-scroll_bar_event rb 1
-scroll_pointer rb 1
-scroll_pointer_1 rb 1
 ;---------------------------------------------------------------------
 align 4
 max_progress_value rd 1
@@ -111,14 +103,7 @@ right_start_draw_cursor_line rw 1
 right_folder_block_1 rd 1
 ;---------------------------------------------------------------------
 align 4
-sort_counter rd 1
-sorting_low_limit rd 1
-sorting_high_limit rd 1
-dir_temp_counter rd 1
-dir_temp_counter_1 rd 1
-draw_scroll_character rb 1
 nesting_direction rb 1
-dir_or_file  rb 1
 ;---------------------------------------------------------------------
 align 4
 left_marked_counter rd 1
@@ -152,7 +137,6 @@ error_pointer rd 1
 file_system_error rd 1
 end_tag rd 1
 icons_end_tag rd 1
-exit_to_dir rb 1
 exit_dir rb 1
 use_patch rb 1
 ;---------------------------------------------------------------------
@@ -161,8 +145,13 @@ appl_memory rd 1
 appl_memory_old rd 1
 buttons_img_start rd 1
 ini_file_start rd 1
+ini_size rd 1
 left_folder_data rd 1
+lfd_size rd 1
 right_folder_data rd 1
+rfd_size rd 1
+tmp_memory rd 1
+tm_size rd 1
 ;---------------------------------------------------------------------
 shift_flag rb 1
 ctrl_flag  rb 1

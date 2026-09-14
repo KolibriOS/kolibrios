@@ -62,10 +62,14 @@ select_disk_char:
 truncated_filename_char db '..'
 ;---------------------------------------------------------------------
 sort_button_name:
-    .name  db 'Name'
-    .type  db 'Type'
-    .size  db 'Size'
-    .date  db 'Date'
+    .name   db 'Name '
+    .name_e db ' ',0
+    .type   db 'Type '
+    .type_e db ' ',0
+    .size   db 'Size '
+    .size_e db ' ',0
+    .date   db 'Date '
+    .date_e db ' ',0
 ;---------------------------------------------------------------------
 type_table:
      db '<DIR> '
@@ -201,12 +205,6 @@ mouse_key_delay dd 100
 copy_editboxes:
 create_editboxes:
 edit1 edit_box 150,10,10,0xffffff,0xbbddff,0,0,0,255,create_dir_name,ed_focus+ed_always_focus,0
-copy_editboxes_end:
-create_editboxes_end:
-;---------------------------------------------------------------------
-;copy_editboxes:
-;edit2 edit_box 150,10,10,0xffffff,0,0,0,0,255,create_dir_name,ed_focus,0
-;copy_editboxes_end:
 ;---------------------------------------------------------------------
 align 4
 sysopen:
