@@ -1255,12 +1255,17 @@ end if
 	xor	edx, edx
 	invoke	CreateThread
 	pop	edi esi
-if DEBUG
 	test	eax, eax
-	mov	esi, msgNoIrqPoll
 	jns	.thread_ok
+	; nothing would ever complete a period and playback would stall,
+	; so fail the init rather than register a service that hangs
 	mov	esi, msgNoIrqThread
+	invoke	SysMsgBoardStr
+	xor	eax, eax
+	ret
 .thread_ok:
+if DEBUG
+	mov	esi, msgNoIrqPoll
 	invoke	SysMsgBoardStr
 end if
 @@:
@@ -3071,6 +3076,7 @@ sz_sound_srv	     db 'SOUND',0
 
 msgInit      db 'detect hardware...',13,10,0
 msgFail      db 'device not found',13,10,0
+msgNoIrqThread db 'no IRQ line: cannot create polling thread',13,10,0
 msgAttchIRQ  db 'IRQ line not supported', 13,10,0
 msgInvIRQ    db 'IRQ line not assigned or invalid', 13,10,0
 msgPlay      db 'start play', 13,10,0
@@ -3141,7 +3147,6 @@ if DEBUG
     msgTV		     db 'HDA test version ',TEST_VERSION_NUMBER,13,10,0
     msgGCap		     db 'GCAP = ',0
     msgNoIrqPoll	     db 'no IRQ line: polling thread',13,10,0
-    msgNoIrqThread	     db 'no IRQ line: cannot create polling thread',13,10,0
 end if
 
 if USE_SINGLE_MODE
