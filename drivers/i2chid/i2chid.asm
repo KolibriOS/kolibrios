@@ -287,14 +287,21 @@ proc ini_int stdcall uses ebx ecx edx esi edi, key:dword, defval:dword
 .next:
         inc     esi
         jmp     .scan
-; A match only counts as the key when it starts a line and is followed by
-; '=' (spaces allowed before it). Otherwise 'jitter' would be found inside
-; 'jitter_buttons', or inside a comment that mentions it, whichever comes
-; first in the file.
+; A match only counts as the key when nothing but blanks precedes it on its
+; line and '=' follows it (blanks allowed there too). Otherwise 'jitter'
+; would be found inside 'jitter_buttons', or inside a comment that mentions
+; it, whichever comes first in the file.
 .found:
-        cmp     esi, [IniStart]
-        je      .line_start
-        mov     al, [esi-1]
+        lea     edi, [esi-1]
+.indent:
+        cmp     edi, [IniStart]
+        jb      .line_start
+        mov     al, [edi]
+        dec     edi
+        cmp     al, ' '
+        je      .indent
+        cmp     al, 9
+        je      .indent
         cmp     al, 10
         je      .line_start
         cmp     al, 13
@@ -547,6 +554,8 @@ proc detect_hw uses ebx esi edi
         jnz     .found
         invoke  FreeKernelSpace, [I2cMmio]
         mov     [I2cMmio], 0
+; A DesignWare master with nobody on it is just as much not ours.
+        call    restore_controller
         jmp     .next
 .none:
 ; Nothing on PCI. AMD machines keep their I2C masters off the PCI bus
@@ -571,8 +580,11 @@ endp
 ; =============================================================================
 ; AMD platforms. The FCH's DesignWare I2C masters are not PCI functions: they
 ; sit at fixed MMIO addresses that an ACPI-aware OS reads out of the DSDT
-; (AMDI0010 devices). KolibriOS has no AML interpreter, but the addresses have
-; been the same from Stoney Ridge through Renoir and Cezanne, so a table does.
+; (AMDI0010 devices). KolibriOS has no AML interpreter, but the addresses of
+; I2C0..I2C3 have been the same from Stoney Ridge through Renoir and Cezanne,
+; so a table does. I2C4 exists from Picasso on only; on Stoney Ridge its
+; address is UART0 and its AOAC slot is unassigned, which costs one stray
+; AOAC write before the signature check rejects the block.
 ; I2C2 and I2C3 come first: on Picasso and later the firmware keeps I2C0 and
 ; I2C1 for the PSP and the touchpad hangs off one of the other two, so a hit
 ; there means the PSP buses are never touched; older parts expose all four.
@@ -804,14 +816,22 @@ proc setup_controller uses ebx esi edi
 .no_map:
         DEBUGF 1, "i2chid:   MapIoMem failed for %x\n", ebx
 .fail:
-; Decode off again first, then back to the power state it was found in.
+        call    restore_controller
+        xor     eax, eax
+        ret
+endp
+
+; Puts the PCI function setup_controller last touched back the way the
+; firmware left it: for one that is not a DesignWare master, and for one that
+; is but has no HID device on its bus. [I2cMmio] must already be unmapped.
+; Decode goes off first, then the function returns to its old power state.
+proc restore_controller
         invoke  PciWrite16, [PciBus], [PciDevfn], 4, [PciCmdOrig]
         mov     eax, [PmcsrOff]
         test    eax, eax
         jz      @f
         invoke  PciWrite16, [PciBus], [PciDevfn], eax, [PmcsrOrig]
 @@:
-        xor     eax, eax
         ret
 endp
 
@@ -2568,7 +2588,8 @@ hid_addrs_cnt   = $ - hid_addrs
 ; Fixed MMIO bases of the AMD FCH I2C masters, in probing order (see
 ; detect_amd_fixed). Zero terminates. FCH I2C0..I2C4 sit at FEDC2000..
 ; FEDC6000 with AOAC device numbers 5..9 (coreboot APU_I2Cn_BASE and
-; FCH_AOAC_DEV_I2Cn); the UARTs start at FEDC9000, so none is listed.
+; FCH_AOAC_DEV_I2Cn, Picasso and later; Stoney Ridge has no I2C4, see
+; detect_amd_fixed).
 align 4
 amd_i2c_bases   dd 0xFEDC4000, 0xFEDC5000, 0xFEDC2000, 0xFEDC3000, 0xFEDC6000, 0
 
