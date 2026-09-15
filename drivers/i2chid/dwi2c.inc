@@ -122,6 +122,28 @@ proc dw_ctrl_abort
         ret
 endp
 
+; One idle step of a transfer wait loop.
+; A healthy transfer is over within a few milliseconds, well inside the
+; first two timer ticks, and spins through them: a transfer that yields
+; its slice is at the scheduler's mercy for the rest of it. Past that the
+; bus is stuck or crawling, and the wait gives up the CPU a tick at a time
+; instead of burning a core until XferTimeout.
+; in: eax = ticks elapsed since the transfer began. Preserves all but eax.
+DW_SPIN_TICKS       = 2
+
+proc dw_wait_step
+        cmp     eax, DW_SPIN_TICKS
+        jae     .yield
+        pause
+        ret
+.yield:
+        push    ebx
+        movi    ebx, 1
+        invoke  Delay                   ; preserves every register
+        pop     ebx
+        ret
+endp
+
 ; One-time controller setup after mapping.
 ; in: ebx = MMIO base.
 proc dw_ctrl_init
@@ -257,7 +279,7 @@ endl
         sub     eax, [t0]
         cmp     eax, [XferTimeout]
         jae     .timeout
-        pause
+        call    dw_wait_step
         jmp     .loop
 .abort:
         mov     esi, [ebx+DwIcTxAbrtSource]
@@ -283,8 +305,9 @@ endp
 ; rest, stop short) was cut down on the wire to 3 bytes for an empty poll -
 ; and the SIPODEV/Hantick touchpad firmwares are exactly the kind of thing
 ; that wedges when an input read is shorter than the frame they prepared.
-; rlen should not exceed the TX FIFO depth (see DwTxDepth) or the queue loop
-; degrades to feeding the FIFO on the fly, which reintroduces pauses.
+; rlen should not exceed the TX FIFO depth (IC_COMP_PARAM_1 bits 23:16, plus
+; one) or the queue loop degrades to feeding the FIFO on the fly, which
+; reintroduces pauses.
 ; in: addr = slave, wlen bytes at wbuf written first (0 = plain read),
 ;     rlen bytes read into buf.
 ; out: eax = 0 ok, IC_TX_ABRT_SOURCE on NAK/abort, -1 on timeout.
@@ -295,7 +318,7 @@ macro BLOCK_TICK fail_label {
         sub     eax, [t0]
         cmp     eax, [XferTimeout]
         jae     fail_label
-        pause
+        call    dw_wait_step
 }
 
 proc dw_read_block stdcall uses ebx esi edi, addr:dword, wbuf:dword, wlen:dword,         buf:dword, rlen:dword
@@ -358,14 +381,7 @@ endl
 ; queue loop (the RX side fills while the TX side is full).
         test    dword [ebx+DwIcStatus], DW_STAT_RFNE
         jz      .rq
-        push    ecx
-        mov     edx, [rgot]
-        mov     eax, [ebx+DwIcDataCmd]
-        mov     edi, [buf]
-        mov     [edi+edx], al
-        inc     edx
-        mov     [rgot], edx
-        pop     ecx
+        call    .take_byte
         jmp     .rq
 .rq_wait:
         BLOCK_TICK .timeout
@@ -375,13 +391,24 @@ endl
         jnz     .abort
         test    dword [ebx+DwIcStatus], DW_STAT_RFNE
         jz      .chk
+        call    .take_byte
+        jmp     .drain
+; Moves one byte from the RX FIFO into the caller's buffer. Exactly rlen
+; reads are queued into freshly flushed FIFOs, so a byte beyond rlen should
+; never arrive; if one does anyway it is still taken off the FIFO, so the
+; drain loop cannot stall on it, but it is dropped rather than written
+; past the end of the buffer.
+.take_byte:
         mov     edx, [rgot]
         mov     eax, [ebx+DwIcDataCmd]
+        cmp     edx, [rlen]
+        jae     @f
         mov     edi, [buf]
         mov     [edi+edx], al
         inc     edx
         mov     [rgot], edx
-        jmp     .drain
+@@:
+        retn
 .chk:
         mov     eax, [rgot]
         cmp     eax, [rlen]

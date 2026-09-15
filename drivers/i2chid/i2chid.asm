@@ -90,17 +90,19 @@ SILENT_LIMIT        = 150
 ; patch shifts by a handful of units per frame, and following that puts
 ; the cursor somewhere else by the time the click lands. So the reported
 ; position must move CFG_JITTER units away from the position the pointer
-; stands on before the pointer follows at all - about half a millimetre on
-; a typical pad, the margin libinput uses for the same reason. Wobble stays
-; inside the margin and moves nothing; deliberate travel crosses it and
-; then tracks one-to-one. This also gives the slightly stepped feel of a
-; Windows touchpad rather than the smooth but jittery tracking of a raw
-; one-to-one driver. 0 turns the filter off.
-CFG_JITTER          = 12
+; stands on before the pointer follows at all. Wobble stays inside the
+; margin and moves nothing; deliberate travel crosses it and then tracks
+; one-to-one. The default of 1 only swallows single-unit noise and keeps
+; tracking smooth, which is what felt right on the pads tried so far; a
+; pad whose pointer creeps under a resting finger wants more - 12 is about
+; half a millimetre on a typical pad, the margin libinput uses, and gives
+; the slightly stepped feel of a Windows touchpad. 0 turns the filter off.
+CFG_JITTER          = 1
 ; The same margin for a finger that landed on the button strip, where it
-; is pressing rather than steering and wobbles more. Kept separate because
-; what feels right for tracking is too loose for aiming at a button.
-CFG_JITTER_BTN      = 20
+; is pressing rather than steering and wobbles a lot more. Kept separate
+; because what feels right for tracking is far too loose for aiming at a
+; button.
+CFG_JITTER_BTN      = 45
 ; Pointer speed in percent: 100 is one pixel per two pad units; the
 ; remainder is carried over so slow travel is not lost to the division.
 ; This is on top of the kernel's own mouse speed/acceleration, and exists
@@ -149,7 +151,7 @@ CFG_RIGHT_CLICK     = 1
 ; the strip and the point where its left half ends and the right one
 ; begins. The strip decides which button a press means and refuses taps;
 ; pointer motion behaves identically over the whole surface.
-CFG_BTN_ZONE_PCT    = 12
+CFG_BTN_ZONE_PCT    = 15
 CFG_RIGHT_SPLIT_PCT = 50
 ; Fallback surface extents, used only when the report descriptor does not
 ; declare any - the zones then land where they did on the pad this driver
@@ -276,18 +278,43 @@ proc ini_int stdcall uses ebx ecx edx esi edi, key:dword, defval:dword
         sub     ebx, ecx                ; last offset worth testing
 .scan:
         cmp     esi, ebx
-        ja      .done
+        ja      .done_def               ; eax was clobbered by the match tests
         push    ecx esi
         mov     edi, [key]
         repe cmpsb
         pop     esi ecx
         jz      .found
+.next:
         inc     esi
         jmp     .scan
+; A match only counts as the key when it starts a line and is followed by
+; '=' (spaces allowed before it). Otherwise 'jitter' would be found inside
+; 'jitter_buttons', or inside a comment that mentions it, whichever comes
+; first in the file.
 .found:
-        add     esi, ecx
-; Step over the separator to the number. Give up if no digit turns up soon,
-; so a key mentioned in a comment cannot send the parser wandering.
+        cmp     esi, [IniStart]
+        je      .line_start
+        mov     al, [esi-1]
+        cmp     al, 10
+        je      .line_start
+        cmp     al, 13
+        jne     .next
+.line_start:
+        lea     edi, [esi+ecx]
+.blanks:
+        cmp     edi, [IniEnd]
+        jae     .next
+        mov     al, [edi]
+        inc     edi
+        cmp     al, ' '
+        je      .blanks
+        cmp     al, 9
+        je      .blanks
+        cmp     al, '='
+        jne     .next
+        mov     esi, edi
+; Step over blanks to the number. Give up if no digit turns up soon, so a
+; value that is not a number cannot send the parser wandering.
         mov     ecx, 8
 .seek:
         mov     al, [esi]
@@ -325,6 +352,18 @@ proc ini_int stdcall uses ebx ecx edx esi edi, key:dword, defval:dword
         ret
 endp
 
+; A value above the largest meaningful one is a typo, not a wish: fall back
+; to the built-in default for it, the same as for a missing key.
+; in/out: eax = value.
+macro INI_MAX_OR_DEFAULT maxval, defval
+{
+ local ..ok
+        cmp     eax, maxval
+        jbe     ..ok
+        movi    eax, defval
+ ..ok:
+}
+
 ; Reads the configuration file and locates the driver's own section in it,
 ; then applies every setting. Called at startup and again whenever the
 ; service is asked to reload, so editing the file and asking for a reload is
@@ -360,8 +399,10 @@ proc read_config uses ebx esi edi
 .speed_ok:
         mov     [Speed], eax
         stdcall ini_int, key_jitter, CFG_JITTER
+        INI_MAX_OR_DEFAULT 1000, CFG_JITTER
         mov     [Jitter], eax
         stdcall ini_int, key_jitter_btn, CFG_JITTER_BTN
+        INI_MAX_OR_DEFAULT 1000, CFG_JITTER_BTN
         mov     [JitterBtn], eax
         stdcall ini_int, key_scroll_step, CFG_SCROLL_STEP
         test    eax, eax
@@ -370,24 +411,22 @@ proc read_config uses ebx esi edi
 @@:
         mov     [ScrollStep], eax
         stdcall ini_int, key_scroll_invert, CFG_SCROLL_INVERT
+        INI_MAX_OR_DEFAULT 1, CFG_SCROLL_INVERT
         mov     [ScrollInvert], eax
         stdcall ini_int, key_tap, CFG_TAP
+        INI_MAX_OR_DEFAULT 1, CFG_TAP
         mov     [TapEnable], eax
         stdcall ini_int, key_tap_drag, CFG_TAP_DRAG
+        INI_MAX_OR_DEFAULT 1, CFG_TAP_DRAG
         mov     [TapDrag], eax
         stdcall ini_int, key_right_click, CFG_RIGHT_CLICK
+        INI_MAX_OR_DEFAULT 3, CFG_RIGHT_CLICK
         mov     [RightClick], eax
         stdcall ini_int, key_btn_zone, CFG_BTN_ZONE_PCT
-        cmp     eax, 100
-        jbe     @f
-        movi    eax, CFG_BTN_ZONE_PCT
-@@:
+        INI_MAX_OR_DEFAULT 100, CFG_BTN_ZONE_PCT
         mov     [BtnZonePct], eax
         stdcall ini_int, key_right_split, CFG_RIGHT_SPLIT_PCT
-        cmp     eax, 100
-        jbe     @f
-        movi    eax, CFG_RIGHT_SPLIT_PCT
-@@:
+        INI_MAX_OR_DEFAULT 100, CFG_RIGHT_SPLIT_PCT
         mov     [RightSplitPct], eax
         call    apply_geometry
         DEBUGF 2, "i2chid: settings speed %u, jitter %u/%u, scroll %u/%u, tap %u/%u, rclick %u, zones %u%/%u%\n", \
@@ -652,6 +691,12 @@ proc amd_aoac_power_on uses ebx esi edi
 endp
 
 proc setup_controller uses ebx esi edi
+; The class filter is not exact, so this may be touching a function that
+; turns out not to be ours. Remember what the firmware left in the command
+; and power registers, so that such a function is put back as it was.
+        mov     [PmcsrOff], 0
+        invoke  PciRead16, [PciBus], [PciDevfn], 4
+        mov     [PciCmdOrig], eax
 ; Power management first: force D0 (firmware parks unused LPSS devices in
 ; D3, and that is the norm on UEFI machines where no OS driver ever touched
 ; them). The D3hot->D0 transition soft-resets the function, which CLEARS the
@@ -683,9 +728,11 @@ proc setup_controller uses ebx esi edi
         invoke  PciRead16, [PciBus], [PciDevfn], eax
         test    eax, 3
         jz      .pm_done
+        mov     [PmcsrOrig], eax
         and     eax, not 3              ; -> D0
         mov     ebx, eax
         lea     eax, [esi+4]
+        mov     [PmcsrOff], eax
         invoke  PciWrite16, [PciBus], [PciDevfn], eax, ebx
         mov     esi, 10
         invoke  Sleep                   ; D3->D0 settle time, 10 ms per PCI PM
@@ -757,6 +804,13 @@ proc setup_controller uses ebx esi edi
 .no_map:
         DEBUGF 1, "i2chid:   MapIoMem failed for %x\n", ebx
 .fail:
+; Decode off again first, then back to the power state it was found in.
+        invoke  PciWrite16, [PciBus], [PciDevfn], 4, [PciCmdOrig]
+        mov     eax, [PmcsrOff]
+        test    eax, eax
+        jz      @f
+        invoke  PciWrite16, [PciBus], [PciDevfn], eax, [PmcsrOrig]
+@@:
         xor     eax, eax
         ret
 endp
@@ -2027,27 +2081,6 @@ proc i2chid_poll_once uses ebx esi edi
 .rec_probe:
         call    get_report_sweep
         jmp     .done
-.rec_probe_old:
-; On the first silence timeout, ask for the input report explicitly once:
-; GET_REPORT through the command and data registers. Whatever comes back
-; (a report, an empty answer, a NAK code) tells whether the input path
-; works at all - completely independent of the input-register mechanism.
-        DEBUGF 1, "i2chid: still silent, asking with GET_REPORT\n"
-        mov     eax, [CmdReg]
-        mov     word [diag_buf], ax
-        mov     eax, [f_repid]
-        and     eax, 15
-        or      eax, 0x10               ; report type = input
-        mov     [diag_buf+2], al
-        mov     byte [diag_buf+3], 0x02 ; GET_REPORT
-        mov     eax, [DataReg]
-        mov     word [diag_buf+4], ax
-        stdcall dw_read_block, [SlaveAddr], diag_buf, 6, input_buf, 12
-        DEBUGF 1, "i2chid: GET_REPORT probe status %x, data:", eax
-        mov     esi, input_buf
-        mov     ecx, 12
-        call    dump_hex
-        jmp     .done
 .try_fallback:
 ; The touchpad report, once the pad has been switched into touchpad mode.
         cmp     [PtpLayoutOk], 0
@@ -2533,7 +2566,9 @@ hid_addrs       db 0x2C, 0x15, 0x2A, 0x1F, 0x10, 0x20, 0x2B, 0x0A
 hid_addrs_cnt   = $ - hid_addrs
 
 ; Fixed MMIO bases of the AMD FCH I2C masters, in probing order (see
-; detect_amd_fixed). Zero terminates.
+; detect_amd_fixed). Zero terminates. FCH I2C0..I2C4 sit at FEDC2000..
+; FEDC6000 with AOAC device numbers 5..9 (coreboot APU_I2Cn_BASE and
+; FCH_AOAC_DEV_I2Cn); the UARTs start at FEDC9000, so none is listed.
 align 4
 amd_i2c_bases   dd 0xFEDC4000, 0xFEDC5000, 0xFEDC2000, 0xFEDC3000, 0xFEDC6000, 0
 
@@ -2548,6 +2583,10 @@ DwSdaHold       dd DW_SDA_HOLD
 PciHead         dd 0
 PciBus          dd 0
 PciDevfn        dd 0
+; What setup_controller found in the function before touching it.
+PciCmdOrig      dd 0
+PmcsrOff        dd 0
+PmcsrOrig       dd 0
 SlaveAddr       dd 0
 CmdReg          dd 0
 InputReg        dd 0

@@ -513,6 +513,7 @@ proc hid_parse_report_desc uses ebx esi edi
 .m_input:
         mov     [v_flags], edx
         call    hid_process_input
+        jmp     .m_clear_locals         ; input bits are not feature bits
 .m_feature:
 ; Feature reports are only ever written, never decoded, but writing one
 ; needs its exact size: a SET_REPORT shorter than the report is ignored by
