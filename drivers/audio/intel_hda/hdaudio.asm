@@ -12,10 +12,6 @@ DEBUG		equ 1
 FDEBUG		equ 0
 DEBUG_IRQ	equ 0
 
-; test knob: pretend AttachIntHandler failed, to exercise the timer-driven
-; path on hardware/emulators that do have an interrupt line
-HDA_FORCE_POLL equ 0
-
 USE_SINGLE_MODE equ  0	 ; 1 = Single mode; 0 = Normal mode.
 USE_UNSOL_EV	equ  1	 ; 1 = Use unsolicited events; 0 = Do not use unsolicited events.
 
@@ -277,8 +273,8 @@ RIRB_INT_RESPONSE	 equ  0x01
 RIRB_INT_OVERRUN	 equ  0x04
 RIRB_INT_MASK		 equ  0x05
 
-; STATESTS int mask: SD2,SD1,SD0
-STATESTS_INT_MASK	 equ  0x07
+; STATESTS int mask: SDIWAKE[14:0], a 16-bit register
+STATESTS_INT_MASK	 equ  0x7FFF
 AZX_MAX_CODECS		 equ  4
 
 ; SD_CTL bits
@@ -406,6 +402,7 @@ struc AC_CNTRL		    ;AC controller base class
 	.response_reset     dd 0
 	.polling_mode	    db 0
 	.poll_count	    db 0
+	.no_irq 	    db 0 ; no interrupt line: a thread runs hda_irq
 	.posbuf 	    dd ?
 	.start_wallclk	    dd ? ; start + minimum wallclk
 	.period_wallclk     dd ? ; wallclk for period
@@ -857,13 +854,13 @@ end if
 
 	mov	edx, ICH6_REG_SD_STS + SDO_OFS
 	call	azx_readb
-	mov	bl, al
+	mov	cl, al
 
 	mov	al, SD_INT_MASK
 	mov	edx, ICH6_REG_SD_STS + SDO_OFS
 	call	azx_writeb
 
-	test	bl, SD_INT_COMPLETE
+	test	cl, SD_INT_COMPLETE
 	jz	@f
 
 	mov	eax, [ctrl.civ_val]
@@ -900,13 +897,13 @@ end if
 ;if 0
 	; clear state status int
 	mov	edx, ICH6_REG_STATESTS
-	call	azx_readb
-	test	al, al
+	call	azx_readw
+	and	eax, STATESTS_INT_MASK
 	jz	@f
 
 	; ack all state-change bits, else the level IRQ line stays asserted
 	mov	edx, ICH6_REG_STATESTS
-	call	azx_writeb
+	call	azx_writew
 @@:
 ;end if
 	or	eax, 1
@@ -914,13 +911,22 @@ end if
 	ret
 endp
 
-; timer-driven stand-in for the IRQ when no interrupt line is available;
-; TimerHS callbacks are stdcall with one argument and must keep ebx/esi/edi
-proc hda_poll stdcall, data:dword
-	push	ebx esi edi
+; Stand-in for the interrupt when no interrupt line is available. A thread,
+; not a TimerHS callback: the kernel calls timer callbacks with the global
+; timer list lock held, and hda_irq may stall and refill the audio buffer.
+; hda_irq runs with interrupts off, as it would in IRQ context: it holds
+; aspinlock, which azx_rirb_get_response waits for with interrupts off, so
+; a holder that could be preempted would hang the machine.
+proc hda_poll_thread
+.loop:
+	pushfd
+	cli
 	call	hda_irq
-	pop	edi esi ebx
-	ret
+	popfd
+	mov	eax, 5		; delay, sleeping instead of spinning
+	mov	ebx, 1		; 10 ms; a 16 KB period is ~85 ms at 48 kHz
+	int	0x40
+	jmp	.loop
 endp
 
 
@@ -1219,20 +1225,16 @@ end if
 	; a warm reboot can leave GIE and a stale completion bit behind, and
 	; civ_val is never resynced, so silence the controller before attaching
 	call	azx_int_disable
-if HDA_FORCE_POLL
-	xor	eax, eax
-else
 	mov	ebx, [ctrl.int_line]
 	invoke	AttachIntHandler, ebx, hda_irq, dword 0
 	test	eax, eax
-end if
 	jnz	@f
 	; No usable interrupt line (INTLINE=0xFF on boards that route INTx only
 	; through ACPI _PRT or MSI, which the kernel does not parse). The
 	; controller still latches INTSTS/SD_STS, we only lose the wakeup - so
 	; poll the RIRB for codec replies and run the interrupt handler from a
-	; 10 ms kernel timer (a 16 KB period is ~85 ms at 48 kHz, no misses)
-	mov	[ctrl.polling_mode], 1
+	; thread. A flag of its own: polling_mode is the timeout recovery state.
+	mov	[ctrl.no_irq], 1
 @@:
 
 	; initialize chip
@@ -1242,14 +1244,23 @@ end if
 	call	azx_init_chip
 ;] Asper
 
-	; no IRQ line: let a 10 ms kernel timer stand in for the interrupt.
-	; Armed only now - earlier, hda_irq could ack STATESTS in the window
+	; no IRQ line: let a polling thread stand in for the interrupt.
+	; Started only now - earlier, hda_irq could ack STATESTS in the window
 	; before reset_controller reads it into codec_mask
-	cmp	[ctrl.polling_mode], 1
-	jne	@f
-	invoke	TimerHS, 1, 1, hda_poll, 0
+	cmp	[ctrl.no_irq], 0
+	je	@f
+	push	esi edi 	; CreateThread clobbers them, START needs esi
+	mov	ebx, 1
+	mov	ecx, hda_poll_thread
+	xor	edx, edx
+	invoke	CreateThread
+	pop	edi esi
 if DEBUG
+	test	eax, eax
 	mov	esi, msgNoIrqPoll
+	jns	.thread_ok
+	mov	esi, msgNoIrqThread
+.thread_ok:
 	invoke	SysMsgBoardStr
 end if
 @@:
@@ -1287,7 +1298,7 @@ endl
 	; clear STATESTS
 	mov	eax, STATESTS_INT_MASK
 	mov	edx, ICH6_REG_STATESTS
-	call	azx_writeb
+	call	azx_writew
 
 	; reset controller
 	mov	edx, ICH6_REG_GCTL
@@ -1704,7 +1715,7 @@ endl
 	mov	ecx, 1000;+1000
 .next_try:
 	mov	al, [ctrl.polling_mode]
-	test	al, al
+	or	al, [ctrl.no_irq]
 	jnz	.poll
 	mov	ah, [do_poll]
 	test	ah, ah
@@ -2018,9 +2029,9 @@ proc azx_int_clear
 	call	azx_writeb
 
 	; clear STATESTS
-	mov	al, STATESTS_INT_MASK
+	mov	ax, STATESTS_INT_MASK
 	mov	edx, ICH6_REG_STATESTS
-	call	azx_writeb
+	call	azx_writew
 
 	; clear rirb status
 	mov	al, RIRB_INT_MASK
@@ -3129,7 +3140,8 @@ if DEBUG
     msgTCSEL		     db 'PCI TCSEL     ',0
     msgTV		     db 'HDA test version ',TEST_VERSION_NUMBER,13,10,0
     msgGCap		     db 'GCAP = ',0
-    msgNoIrqPoll	     db 'no IRQ line: timer-driven polling',13,10,0
+    msgNoIrqPoll	     db 'no IRQ line: polling thread',13,10,0
+    msgNoIrqThread	     db 'no IRQ line: cannot create polling thread',13,10,0
 end if
 
 if USE_SINGLE_MODE
