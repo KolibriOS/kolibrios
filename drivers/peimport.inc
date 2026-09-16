@@ -139,6 +139,7 @@ import core,\
               RegKeyboard,\
               DelKeyboard,\
               Sleep,\
+              Delay,\
               GetTimerTicks,\
 \
               strncat,\
