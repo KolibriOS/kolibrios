@@ -54,3 +54,27 @@
         src: "{{ stable_artifact_path }}/"
         dest: "{{ storage_path }}/../"
         mode: preserve
+
+    # older builds shrink to zipped images and lose their unpacked tree; the newest keeps both
+    - name: Looking for zip on the storage server
+      ansible.builtin.shell: command -v zip
+      register: zip_present
+      changed_when: false
+      failed_when: false
+
+    - name: Requiring zip for compaction
+      ansible.builtin.assert:
+        that: zip_present.rc == 0
+        fail_msg: >-
+          zip is not installed on the storage server, so older builds cannot
+          be compacted. Install it and re-run this build.
+
+    - name: Compacting older builds
+      ansible.builtin.script:
+        cmd: >-
+          ../../utils/compact-builds.sh
+          {{ storage_path | quote }}
+          {{ version | quote }}
+          {{ compact_max | default(20) | int }}
+      register: compaction
+      changed_when: "'compacted 0 of' not in compaction.stdout"
