@@ -1277,8 +1277,15 @@ endp
 ; in: esi -> report id byte.
 ; out: PtpTip/PtpX/PtpY (the pointer contact), PtpCnt, PtpBtn.
 PTP_SLOTS           = HID_MAX_FINGERS
-SLOT_SIZE           = 32            ; tip, x, y, last seen, first seen, thumb
+SLOT_SIZE           = 32            ; tip, x, y, last seen, first seen, thumb, landing x/y
 CONTACT_AGE         = 8             ; 1/100 s without news = the finger is gone
+; A contact that lands on the button strip is taken for a resting thumb and
+; kept out of the finger count, so that a thumb parked there cannot turn a
+; steering finger into a scroll. But a thumb rests: one that travels this
+; far from where it landed is a finger after all - which is what the lower
+; finger of a two-finger scroll low on the pad looks like, and without this
+; that scroll steers the pointer instead.
+THUMB_MOVE          = 48
 proc ptp_decode uses eax ebx ecx edx esi edi
         invoke  GetTimerTicks
         mov     edx, eax                ; now
@@ -1363,11 +1370,31 @@ proc ptp_decode uses eax ebx ecx edx esi edi
         jb      @f
         mov     dword [edi+20], 1       ; a thumb
 @@:
+        mov     ecx, [edi+4]
+        mov     [edi+24], ecx           ; where it landed
+        mov     [edi+28], eax
         mov     ecx, edi
         sub     ecx, contacts
         shr     ecx, 5                  ; its id again
         bts     [NewMask], ecx
 .slot_known:
+        cmp     dword [edi+20], 0
+        jz      .slot_live
+        mov     eax, [edi+4]
+        sub     eax, [edi+24]
+        jns     @f
+        neg     eax
+@@:
+        mov     ecx, [edi+8]
+        sub     ecx, [edi+28]
+        jns     @f
+        neg     ecx
+@@:
+        add     eax, ecx
+        cmp     eax, THUMB_MOVE
+        jb      .slot_live
+        mov     dword [edi+20], 0       ; it moved: a finger, not a thumb
+.slot_live:
         mov     dword [edi], 1
 .slot_next:
         inc     ebx
@@ -2268,6 +2295,16 @@ proc i2chid_poll_once uses ebx esi edi
         mov     [v_w], eax
         mov     ecx, [PtpX]             ; idiv clobbered ecx
         mov     edx, [PtpY]
+; The pointer stands still through a scroll, but the finger does not, and
+; the hysteresis anchor is where the pointer stands. Left where the scroll
+; began, it becomes the whole length of the scroll in one frame as soon as
+; the other finger leaves and this one starts steering again - a jump in
+; the direction just scrolled. So the scroll carries the pointer with it:
+; the anchor follows the finger, and only the wheel moves.
+        mov     [FiltX], ecx
+        mov     [FiltY], edx
+        mov     [MoveAccX], 0
+        mov     [MoveAccY], 0
         jmp     .ptp_store
 .no_scroll:
         cmp     [LeftoverTouch], 0
