@@ -599,6 +599,7 @@ tup.append_table(img_files, {
  {"DRIVERS/SIS.SYS", VAR_DRVS .. "/audio/sis.sys"},
  {"DRIVERS/SDHCI.SYS", "../drivers/sdhci/sdhci.sys"},
  {"DRIVERS/I2CHID.SYS", VAR_DRVS .. "/i2chid/i2chid.sys"},
+ {"DRIVERS/NVME.SYS", VAR_DRVS .. "/nvme/nvme.sys"},
 })
 tup.append_table(extra_files, {
  {"HD_Load/9x2klbr/", VAR_PROGS .. "/hd_load/9x2klbr/9x2klbr.exe"},
