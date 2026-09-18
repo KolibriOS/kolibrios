@@ -774,14 +774,19 @@ ahci_init:
         stdcall disk_add, ahci_atapi_callbacks, cd_name, ecx, DISK_NO_INSERT_NOTIFICATION
         pop     ecx
         test    eax, eax
-        jz      .disk_add_fail
+        jz      .optical_add_fail
         push    ecx
         stdcall disk_media_changed, eax, 1 ; a disc may already be in the tray
         pop     ecx
 
-
         jmp     .after_add_disk
 
+.optical_add_fail:
+        ; nobody is going to use the drive, return its scratch page
+        push    ecx
+        stdcall kernel_free, [ecx + PORT_DATA.tmp_buf]
+        pop     ecx
+        mov     [ecx + PORT_DATA.tmp_buf], 0
 .disk_add_fail:
         DEBUGF  1, "Failed to add disk\n"
 .after_add_disk:
@@ -1954,13 +1959,23 @@ endp
 ; The kernel has finished with the medium: forget its parameters, so that a
 ; disc swapped while nobody was looking is measured again.
 proc ahci_atapi_closemedia stdcall, pdata: dword
-        push    eax
+        pushad
+
+        mov     ecx, [pdata]
+        lea     ecx, [ecx + PORT_DATA.mutex]
+        call    mutex_lock
+
         mov     eax, [pdata]
         mov     dword [eax + PORT_DATA.sector_count], 0
         mov     dword [eax + PORT_DATA.sector_count + 4], 0
         mov     [eax + PORT_DATA.media_changed], 1
         mov     [eax + PORT_DATA.media_reported], 0
-        pop     eax
+
+        mov     ecx, [pdata]
+        lea     ecx, [ecx + PORT_DATA.mutex]
+        call    mutex_unlock
+
+        popad
         xor     eax, eax
         ret
 endp
