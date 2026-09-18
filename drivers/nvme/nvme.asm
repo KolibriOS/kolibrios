@@ -377,55 +377,47 @@ proc alloc_dptr stdcall, ns:dword, prps_ptr:dword, numsectors:dword, prp_list_pt
 	mov 	edi, [prps_ptr]
 	mov 	eax, [buf]
 	invoke  GetPhysAddr
-	mov 	dword [edi], eax
+	mov 	dword [edi], eax ; PRP1 runs from the buffer to the end of its page
+
+	; What decides the shape of PRP2 is how many memory pages the transfer
+	; touches, not how many sectors it carries: the controller reads PRP2 as a
+	; plain data pointer whenever a single page holds everything PRP1 could not,
+	; and only as a PRP List pointer beyond that. Counting sectors instead got
+	; this wrong for an unaligned buffer carrying more than a page worth of
+	; sectors while still landing inside two pages - the controller then took the
+	; list itself for the data, which is the file corruption of GSoC issue #7.
+	mov 	eax, [numsectors]
 	mov 	cl, byte [esi + NSINFO.lbads]
-	mov 	ebx, PAGE_SIZE
-	shr 	ebx, cl
-	mov 	edx, [numsectors]
+	shl 	eax, cl ; bytes to transfer
+	mov 	ebx, [buf]
+	and 	ebx, PAGE_SIZE - 1 ; offset into the first page
+	add 	eax, ebx
+	add 	eax, PAGE_SIZE - 1
+	shr 	eax, LOG2 PAGE_SIZE ; pages the transfer touches
 
-	; is the buffer offset portion equal to 0?
-	mov 	eax, [buf]
-	mov 	ecx, eax
-	and 	eax, PAGE_SIZE - 1
-	mov 	eax, ebx
-	jnz 	@f
+	; whatever PRP1 does not cover starts at the next page boundary
+	mov 	ebx, [buf]
+	and 	ebx, not (PAGE_SIZE - 1)
+	add 	ebx, PAGE_SIZE
 
-	; is the number of sectors less than or equal to one memory page?
-	cmp 	edx, ebx
-	jbe 	.success
-	shl 	ebx, 1 ; it is page aligned, so set ebx to 2 memory pages
-
-@@:
-	; is the number of sectors greater than one or two memory pages?
-	cmp 	edx, ebx
+	cmp 	eax, 1
+	jbe 	.success ; it all fits in the first page, PRP2 is unused
+	cmp 	eax, 2
 	ja 	.build_prp_list
-	
-	; set PRP2
-	mov 	eax, ecx
-	and 	eax, not (PAGE_SIZE - 1)
-	add 	eax, PAGE_SIZE
+
+	; exactly two pages: PRP2 is the second page itself
+	mov 	eax, ebx
 	invoke  GetPhysAddr
 	mov 	dword [edi + 4], eax
 	jmp 	.success
 
 .build_prp_list:
-	mov 	ebx, ecx
-	mov 	ecx, eax
-	mov 	eax, edx
-	xor 	edx, edx
-	div 	ecx
-	test 	ebx, PAGE_SIZE - 1
-	jz 	@f
-	inc 	eax
-
-@@:
-	and 	ebx, not (PAGE_SIZE - 1)
-	add 	ebx, PAGE_SIZE
+	dec 	eax ; PRP1 already covers the first page
 	stdcall build_prp_list, eax, ebx, [prp_list_ptr]
 	test 	eax, eax
 	jz 	.err
 	mov 	dword [edi + 4], eax
-	
+
 .success:
 	xor 	eax, eax
 	inc 	eax
@@ -1201,11 +1193,24 @@ proc nvme_enable_ctrl stdcall, pci:dword
 
 endp
 
-; Waits for the command in flight to complete. The interrupt handler releases the
-; lock as soon as it takes the completion, but the driver does not depend on that:
-; plenty of machines give an NVMe controller no usable pin interrupt at all (the
-; controller is MSI-X only, or the firmware left the interrupt line at 0xFF), so
-; after a short grace period the completion queues are drained from here instead.
+; Waits for the command in flight to complete.
+;
+; TODO: this whole arrangement - one command in flight per device, a lock spun on
+; by the thread that submitted it - should give way to the kernel's asynchronous
+; API, so that a thread issuing disk I/O sleeps on an event and the queues can
+; hold more than one command at a time. It was left as a spinlock because the
+; driver had enough other bugs at the time that changing the completion path as
+; well would have made regressions impossible to attribute. The queues, their
+; doorbells and the phase tracking are already per queue, so what has to change
+; is this procedure, the claim in nvme_drain_cq, and giving each NVMQCMD entry
+; its own event instead of sharing pcidev.spinlock.
+;
+; The interrupt handler releases the lock as soon as it takes the completion, but
+; the driver does not depend on that: plenty of machines give an NVMe controller
+; no usable pin interrupt at all (the controller is MSI-X only, or the firmware
+; left the interrupt line at 0xFF), so after a short grace period the completion
+; queues are drained from here instead.
+;
 ; Returns 1 when the command completed without error, 0 on failure or timeout.
 proc nvme_poll stdcall, pci:dword
 locals
@@ -1695,4 +1700,3 @@ align 4
 data fixups
 end data
 
-; vim: syntax=fasm

@@ -597,4 +597,3 @@ assert sizeof.NSGRANLS = 288
 assert sizeof.NVMQCMD = 16
 assert sizeof.NVM_QUEUE_ENTRY = 32
 
-; vim: syntax=fasm

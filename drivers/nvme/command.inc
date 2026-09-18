@@ -209,40 +209,6 @@ proc delete_io_submission_queue stdcall, pci:dword, qid:word
 
 endp
 
-; See page 117-118 of the NVMe 1.4 specification for reference
-; INCOMPLETE
-proc get_log_page stdcall, pci:dword, prp1:dword, lid:byte
-
-	sub 	esp, sizeof.SQ_ENTRY
-	mov 	eax, esp
-	stdcall memsetdz, eax, sizeof.SQ_ENTRY / 4
-	stdcall set_cdw0, [pci], ADMIN_QUEUE, ADM_CMD_GET_LOG_PAGE
-	mov 	dword [esp + SQ_ENTRY.cdw0], eax
-	mov 	eax, [prp1]
-	mov 	dword [esp + SQ_ENTRY.prp1], eax
-	add 	esp, sizeof.SQ_ENTRY
-	ret
-
-endp
-
-; See pages 348-349 of the NVMe 1.4 specification for information on creating namespaces
-proc create_namespace stdcall, pci:dword, cid:word
-	
-	push 	esi
-	invoke  AllocPage
-	test 	eax, eax
-	jz 	.fail
-	invoke  GetPhysAddr
-	stdcall nvme_identify, [pci], 0xffffffff, eax, CNS_IDNS
-	test 	eax, eax
-	jz 	.fail
-
-.fail:
-	pop 	esi
-	ret
-
-endp
-
 ; See page 258-261 (read) and 269-271 (write) of the NVMe 1.4 specification for reference
 proc nvme_io_rw stdcall, pci:dword, qid:word, nsid:dword, prps:qword, slba:qword, nlb:dword, opcode:dword
 	
@@ -275,4 +241,3 @@ proc nvme_io_rw stdcall, pci:dword, qid:word, nsid:dword, prps:qword, slba:qword
 	
 endp
 
-; vim: syntax=fasm

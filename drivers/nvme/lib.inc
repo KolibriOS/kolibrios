@@ -32,4 +32,3 @@ proc memcpyd stdcall, dest:dword, src:dword, sz:dword
 
 endp
 
-; vim: syntax=fasm
