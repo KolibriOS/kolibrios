@@ -37,6 +37,10 @@ MAX_PRP_PAGES = 256
 
 PCI_MAX_CAPS = 48 ; a config space holds at most 48 capabilities
 
+; Registers take the first page of the BAR, the doorbells start at 0x1000 with a
+; stride of 4 << CAP.DSTRD bytes; this much is mapped before CAP.DSTRD is known.
+MMIO_MIN_MAP_SIZE = 0x2000
+
 ; How long to wait on the controller, in milliseconds.
 CTRL_POLL_MS = 10
 SHUTDOWN_WAIT_MS = 5000
@@ -349,8 +353,7 @@ ends
 struct pcidev 
 	bus 	    	db ?
 	devfn 	    	db ?
-	ipin 	    	db ?
-	iline 	        db ?
+	    		rb 2 ; align
 	num 	    	dd ?
 	io_addr 	dd ?
 	queue_entries 	dd ?
@@ -358,30 +361,26 @@ struct pcidev
 	nsid 	    	dd ?
 	spinlock 	dd ?
 	nsinfo 	    	dd ?
-	cqlock 	    	dd ? ; held by whoever is draining the completion queues
 	last_status 	dd ? ; status field of the last completion, 0 when all went well
 	nn 	    	dd ?
+	last_cdw0 	dd ? ; command specific result of the last completion
 	max_sectors 	dd ? ; biggest transfer a single I/O command may carry
+	iolock 	    	MUTEX ; taken by whoever is using the I/O queue
 	dstrd 	    	db ?
 	mdts 	    	db ? ; Maximum Data Transfer Size, in 2^(12+MPSMIN) byte units
-	    		rb 2 ; align
+	ready 	    	db ? ; 1 once the controller is initialised and its disk usable
+	    		rb 1 ; align
 ends
 TOTAL_PCIDEVS = 4
 TOTAL_PCIDEVS_MALLOC_SZ = TOTAL_PCIDEVS * sizeof.pcidev
-
-struct NVMQCMD
-	cid 		dd ?
-	mutex_ptr 	MUTEX
-ends
 
 struct NVM_QUEUE_ENTRY
 	tail 	    	dw ?
 	head 	    	dw ?
 	sq_ptr 	    	dd ?
 	cq_ptr 	    	dd ?
-	cmd_ptr 	dd ?
 	phase 	    	db ? ; phase tag the next completion of this queue will carry
-	    		rb 15 ; pad to a power of two, the queue index is shifted by LOG2 of it
+	    		rb 19 ; pad to a power of two, the queue index is shifted by LOG2 of it
 ends
 
 ; Identify Controller Data Structure
@@ -594,6 +593,5 @@ assert sizeof.CQ_ENTRY = 16
 assert sizeof.IDENTC = 4096
 assert sizeof.IDENTN = 4096
 assert sizeof.NSGRANLS = 288
-assert sizeof.NVMQCMD = 16
 assert sizeof.NVM_QUEUE_ENTRY = 32
 

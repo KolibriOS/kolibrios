@@ -73,8 +73,13 @@ local   AnythingLoadedSuccessfully db 0
 	pop 	esi ebx
 
 .next:
+	; one working controller is enough to keep the driver loaded; this must not
+	; be overwritten by a later controller that fails
 	test 	eax, eax
-	setne	[AnythingLoadedSuccessfully]
+	jz 	@f
+	mov 	[AnythingLoadedSuccessfully], 1
+
+@@:
 	inc 	ebx
 	cmp 	ebx, dword [num_pcidevs]
 	jne 	.loop
@@ -85,7 +90,9 @@ local   AnythingLoadedSuccessfully db 0
 	ret
 
 .err:
+	; the kernel takes anything but 0 for a service handle and writes into it
 	call    nvme_cleanup
+	xor 	eax, eax
 	pop 	edi esi ebx
       	ret
 
@@ -169,11 +176,14 @@ proc nvme_query_media stdcall, userdata:dword, info:dword
 	shl 	eax, cl
 	DEBUGF  DBG_INFO, "nvme%un%u (Query Media): Sector size = %u\n", [ebx + pcidev.num], [esi + NSINFO.nsid], eax
 	mov 	dword [edi + DISKMEDIAINFO.sectorsize], eax
-	mov 	eax, dword [esi + NSINFO.capacity]
+	; NSZE is the size of the namespace, i.e. how many logical blocks may be
+	; addressed; NCAP is how many may be allocated at once, which is smaller on a
+	; thin provisioned namespace and is not what a disk size means
+	mov 	eax, dword [esi + NSINFO.size]
 	mov 	dword [edi + DISKMEDIAINFO.capacity], eax
-	mov 	eax, dword [esi + NSINFO.capacity + 4]
+	mov 	eax, dword [esi + NSINFO.size + 4]
 	mov 	dword [edi + DISKMEDIAINFO.capacity + 4], eax
-	DEBUGF  DBG_INFO, "nvme%un%u (Query Media): Capacity = %u + %u sectors\n", [ebx + pcidev.num], [esi + NSINFO.nsid], [esi + NSINFO.capacity], [esi + NSINFO.capacity + 4]
+	DEBUGF  DBG_INFO, "nvme%un%u (Query Media): Capacity = %u + %u sectors\n", [ebx + pcidev.num], [esi + NSINFO.nsid], [esi + NSINFO.size], [esi + NSINFO.size + 4]
 	xor 	eax, eax
 	pop 	edi esi ebx
 	ret
@@ -251,104 +261,58 @@ proc determine_active_nsids stdcall, pci:dword
 	jmp 	.loop
 
 .ret:
-	pop 	edi esi
 	mov 	eax, ebx
+	pop 	esi ebx
 	ret
 
 endp
 
-; Allocates prp_list_ptr and creates a PRP list there. nprps should
-; be set appropriately to the number of PRPs the caller wants to create.
+; Allocates a PRP list of nprps entries describing the pages from buf (which must
+; be page aligned) onwards, stores its virtual address through prp_list_ptr and
+; returns its physical address, 0 on failure.
 ;
-; This function should only be called if the conditions for building
-; a PRP list are met (see page 68 of the NVMe 1.4.0 spec).
-;
-; TODO: Currently the code for building recursive PRP lists is untested.
-; If you want to test it, do a read/write with a sector count equivalant
-; to more than 4MiB. Will test in the future.
+; The list is a single page and is never chained: a transfer is capped at
+; MAX_PRP_PAGES pages, which is well below the PAGE_SIZE/8 entries one list holds.
+; (The chained variant this replaced was never reached and was wrong when it
+; would have been - a full list has to end with the pointer to the next one, so
+; it holds one data page fewer than it has entries.)
 proc build_prp_list stdcall, nprps:dword, buf:dword, prp_list_ptr:dword
 
 	push 	esi ebx edi
-	sub 	esp, 4
-
-	; stack:
-	; 	[esp]: virtual pointer to first PRP list
-	; here, we store the pointer to the very first
-	; PRP list so that free_prp_list can free the
-	; entire PRP list if something goes wrong, it
-	; also serves as our return value placeholder
-	mov 	dword [esp], 0
-
-	xor 	edi, edi
-	xor 	esi, esi
 	mov 	ecx, [nprps]
-	shl 	ecx, 3 ; multiply by 8 since each PRP pointer is a QWORD
-
-	; we'll store consecutive PRP list buffers here, for example
-	; given 2 PRP lists, we allocate 2 continuous pages
-	push 	ecx
-	invoke  KernelAlloc, ecx ; store pointers to the PRP entries here
-	pop 	ecx
+	cmp 	ecx, PAGE_SIZE / 8
+	ja 	.err
+	invoke  KernelAlloc, PAGE_SIZE
 	test 	eax, eax
 	jz 	.err
-	mov 	dword [esp], eax
 	mov 	edi, eax
 	mov 	eax, [prp_list_ptr]
 	mov 	dword [eax], edi
-	shr 	ecx, 2 ; ECX holds the size in bytes, memsetdz wants it in DWORDs
-	stdcall memsetdz, edi, ecx
-	
-	; note we assume buf is page-aligned
+	stdcall memsetdz, edi, PAGE_SIZE / 4
+
 	mov 	esi, [buf]
-
-.build_prp_list:
-	; ensure we don't cross a page boundary
 	mov 	ebx, [nprps]
-	cmp 	ebx, PAGE_SIZE / 8
-	jb 	@f
-	mov 	ebx, PAGE_SIZE / 8
-	sub 	[nprps], ebx
-
-@@:
 	xor 	ecx, ecx
-	cmp 	dword [esp], edi
-	je 	.loop
-
-	; we need to store the pointer of the next
-	; PRP list to the previous PRP list last entry
-	mov 	eax, edi
-	invoke  GetPhysAddr
-	mov 	dword [edi - 8], eax
-	mov 	dword [edi - 4], 0
 
 .loop:
 	mov 	eax, esi
 	invoke  GetPhysAddr
 	mov 	dword [edi + ecx * 8], eax
-	mov 	dword [edi + ecx * 8 + 4], 0
 	add 	esi, PAGE_SIZE
 	inc 	ecx
 	cmp 	ecx, ebx
 	jne 	.loop
 
-	; check if we we need to build another PRP list
-	add 	edi, PAGE_SIZE
-	cmp 	ebx, PAGE_SIZE / 8
-	je 	.build_prp_list
-
-	; PRP list successfully created
-	mov 	eax, dword [esp]
+	mov 	eax, edi
 	invoke  GetPhysAddr
-	add 	esp, 4
 	pop 	edi ebx esi
 	ret
 
 .err:
-	add 	esp, 4
 	pop 	edi ebx esi
 	xor 	eax, eax
 	ret
-	
+
 endp
 
 ; Allocates PRP1/PRP2. Note that it is not required to call this function
@@ -461,6 +425,11 @@ assert prp2 - prp1 = 4
 	mov 	esi, [ns]
 	mov 	ebx, dword [esi + NSINFO.pci]
 
+	; one command in flight per controller, so callers take turns here - the
+	; kernel calls a disk driver from any thread without serialising them
+	lea 	ecx, [ebx + pcidev.iolock]
+	invoke 	MutexLock
+
 	mov 	eax, [numsectors_ptr]
 	mov 	eax, dword [eax]
 	mov 	[left], eax
@@ -525,6 +494,8 @@ assert prp2 - prp1 = 4
 	jmp 	.next_chunk
 
 .done:
+	lea 	ecx, [ebx + pcidev.iolock]
+	invoke 	MutexUnlock
 	xor 	eax, eax
 	pop 	edi esi ebx
 	ret
@@ -542,8 +513,33 @@ assert prp2 - prp1 = 4
 	mov 	ecx, dword [eax]
 	sub 	ecx, [left]
 	mov 	dword [eax], ecx
+	lea 	ecx, [ebx + pcidev.iolock]
+	invoke 	MutexUnlock
 	pop 	edi esi ebx
 	or 	eax, -1 ; generic disk error
+	ret
+
+endp
+
+; Asks the controller to commit whatever it holds in a volatile write cache. The
+; kernel calls this once it has written out every modified sector of its own cache.
+proc nvme_flush stdcall, ns:dword
+
+	push 	ebx esi
+	mov 	esi, [ns]
+	mov 	ebx, dword [esi + NSINFO.pci]
+	lea 	ecx, [ebx + pcidev.iolock]
+	invoke 	MutexLock
+	mov 	dword [ebx + pcidev.spinlock], 1
+	; a Flush carries no data and no LBA, so the read/write builder serves
+	stdcall nvme_io_rw, ebx, 1, [esi + NSINFO.nsid], 0, 0, 0, 0, 0, NVM_CMD_FLUSH
+	stdcall nvme_poll, ebx
+	push 	eax
+	lea 	ecx, [ebx + pcidev.iolock]
+	invoke 	MutexUnlock
+	pop 	eax
+	dec 	eax ; nvme_poll gives 1 or 0, the kernel wants 0 or an error
+	pop 	esi ebx
 	ret
 
 endp
@@ -598,8 +594,8 @@ proc detect_nvme
 	test 	eax, eax
 	jz 	.err
 	mov     dword [p_nvme_devices], eax 
-	; clear it: a slot for a controller that has not been initialised yet is
-	; still walked by the interrupt handler
+	; clear it: nvme_cleanup walks every slot, including those of controllers
+	; whose initialisation never got anywhere
 	stdcall memsetdz, eax, sizeof.pcidev * TOTAL_PCIDEVS / 4
 	mov 	eax, dword [p_nvme_devices]
 	mov 	dword [esi + PCIDEV.owner], eax
@@ -632,24 +628,52 @@ endp
 ; initialization for some reason, due to bad design decisions made in the beginning
 ; but since the code works I haven't felt inclined to change it.
 proc device_is_compat stdcall, pci:dword
+locals
+	bar 	dd ? ; physical address of the register block
+endl
 
 	push  	 esi edx ecx
 	mov 	 esi, [pci]
-	invoke 	 PciRead8, dword [esi + pcidev.bus], dword [esi + pcidev.devfn], PCI_header00.interrupt_line
-	mov 	 byte [esi + pcidev.iline], al
+	; The registers sit behind a 64-bit BAR. This kernel cannot reach physical
+	; memory above 4 GiB, so a controller the firmware placed there is unusable.
+	invoke   PciRead32, dword [esi + pcidev.bus], dword [esi + pcidev.devfn], PCI_header00.base_addr_1
+	test 	 eax, eax
+	jnz 	 .failure
 	invoke   PciRead32, dword [esi + pcidev.bus], dword [esi + pcidev.devfn], PCI_header00.base_addr_0
 	and      eax, 0xfffffff0
 	test     eax, eax
 	jz       .failure
-	mov 	 edx, eax
+	mov 	 [bar], eax
 
-	invoke   MapIoMem, eax, 0x2000, PG_SW+PG_NOCACHE
+	invoke   MapIoMem, eax, MMIO_MIN_MAP_SIZE, PG_SW+PG_NOCACHE
 	test     eax, eax
 	jz       .failure
 	mov 	 dword [esi + pcidev.io_addr], eax
 	mov 	 eax, dword [eax + NVME_MMIO.CAP + 4]
 	and 	 eax, CAP_DSTRD
 	mov 	 byte [esi + pcidev.dstrd], al
+
+	; The doorbells of the queues in use must be inside the mapping: a tail and
+	; a head doorbell per queue, each 4 << CAP.DSTRD bytes apart from 0x1000 on.
+	; Map again, larger, if the stride puts them beyond what is mapped so far.
+	mov 	 ecx, eax
+	mov 	 eax, 4
+	shl 	 eax, cl
+	imul 	 eax, 2 * (LAST_QUEUE_ID + 1)
+	add 	 eax, 0x1000 + PAGE_SIZE - 1
+	and 	 eax, not (PAGE_SIZE - 1)
+	cmp 	 eax, MMIO_MIN_MAP_SIZE
+	jbe 	 @f
+	push 	 eax
+	invoke   FreeKernelSpace, dword [esi + pcidev.io_addr]
+	pop 	 eax
+	mov 	 dword [esi + pcidev.io_addr], 0
+	invoke   MapIoMem, [bar], eax, PG_SW+PG_NOCACHE
+	test     eax, eax
+	jz       .failure
+	mov 	 dword [esi + pcidev.io_addr], eax
+
+@@:
 	mov 	 eax, dword [esi + pcidev.io_addr]
 	mov 	 eax, dword [eax + NVME_MMIO.VS]
 	DEBUGF   DBG_INFO, "nvme%u: Controller version: 0x%x\n", [esi + pcidev.num], eax
@@ -673,10 +697,19 @@ proc nvme_init stdcall, pci:dword
 	push 	 ebx esi edi
 	mov 	 esi, dword [pci]
 
-	; Check the PCI header to see if interrupts are disabled, if so
-	; we have to re-enable them
+	; The driver runs without an interrupt, so the first thing is to make sure
+	; the function never asserts INTx. Its completion path is synchronous anyway:
+	; nvme_poll drains the queues itself within a few spins of a command
+	; completing, and a pin interrupt would only ever shorten that by nothing
+	; measurable. What it can do is harm. Plenty of boards give an NVMe
+	; controller no usable INTx at all (MSI-X only, or firmware leaving the line
+	; at 0xFF), and this kernel's shared-IRQ heuristics may relink a handler
+	; onto the wrong line the first time an unrelated IRQ fires while a
+	; completion is pending; from then on a level-triggered interrupt that
+	; nobody services storms and freezes the machine, which is what happened
+	; under QEMU. Not asking for one avoids all of that.
 	invoke   PciRead16, dword [esi + pcidev.bus], dword [esi + pcidev.devfn], PCI_header00.command
-	and 	 eax, not (1 shl 10)
+	or 	 eax, (1 shl 10) ; INTx disable
 	; Enable Bus Master bit, memory space access, and I/O space access. QEMU automatically sets the
 	; bus master bit, but Virtualbox does not. Not sure about the other bits though, but let's set them
 	; to 1 to anyway just to be extra cautious.
@@ -693,6 +726,8 @@ proc nvme_init stdcall, pci:dword
 	invoke   PciRead8, dword [esi + pcidev.bus], dword [esi + pcidev.devfn], PCI_header00.cap_ptr
 	and 	 eax, 0xfc ; bottom two bits are reserved, so mask them before we access the configuration space
 	mov 	 edi, eax
+	test 	 edi, edi
+	jz 	 .end_cap_parse ; the status bit promised a list, there is none
 	DEBUGF   DBG_INFO, "nvme%u: Checking capabilities...\n", [esi + pcidev.num]
 
 ; We need to check if there are any MSI/MSI-X capabilities, and if so, make sure they're disabled since
@@ -817,30 +852,6 @@ proc nvme_init stdcall, pci:dword
 	mov 	dword [edi + ebx + NVM_QUEUE_ENTRY.sq_ptr], eax
 	mov 	byte [edi + ebx + NVM_QUEUE_ENTRY.phase], CQ_PHASE_TAG
 	stdcall memsetdz, edx, QUEUE_ALLOC_SIZE / 4
-
-	; Initialize command entries
-	invoke  KernelAlloc, sizeof.NVMQCMD * CQ_ENTRIES
-	test 	eax, eax
-	jz 	.exit_fail
-	mov 	dword [edi + ebx + NVM_QUEUE_ENTRY.cmd_ptr], eax
-	push 	ebx esi
-	mov  	esi, eax
-	xor 	ebx, ebx
-
-.init_cmd_entries:
-	invoke  KernelAlloc, sizeof.MUTEX
-	test 	eax, eax
-	jz 	.exit_fail_cleanup
-	mov 	dword [esi + NVMQCMD.mutex_ptr], eax
-	mov 	dword [esi + NVMQCMD.cid], ebx
-	mov 	ecx, eax
-	invoke  MutexInit
-	inc 	ebx
-	add 	esi, sizeof.NVMQCMD
-	cmp 	ebx, CQ_ENTRIES
-	jne 	.init_cmd_entries
-
-	pop 	esi ebx
 	add 	ebx, sizeof.NVM_QUEUE_ENTRY
 	cmp 	ebx, (LAST_QUEUE_ID + 1) * sizeof.NVM_QUEUE_ENTRY
 	jne 	.init_queues
@@ -871,14 +882,11 @@ proc nvme_init stdcall, pci:dword
 		pop 	esi
 	end if
 
-	; Attach interrupt handler
+	; Belt and braces with the INTx disable above: mask every interrupt vector
+	; in the controller as well, so it does not even try to signal completions.
 	mov 	esi, [pci]
-	movzx 	eax, byte [esi + pcidev.iline]
-	DEBUGF  DBG_INFO, "nvme%u: Attaching interrupt handler to IRQ %u\n", [esi + pcidev.num], eax
-	invoke  AttachIntHandler, eax, irq_handler, 0
-	test 	eax, eax
-	jz 	.exit_fail
-	DEBUGF  DBG_INFO, "nvme%u: Successfully attached interrupt handler\n", [esi + pcidev.num]
+	mov 	eax, dword [esi + pcidev.io_addr]
+	mov 	dword [eax + NVME_MMIO.INTMS], 0xffffffff
 
 	; Restart the controller
 	stdcall nvme_enable_ctrl, esi
@@ -920,11 +928,12 @@ proc nvme_init stdcall, pci:dword
 	
 	cmp 	edx, VS140
 	jb 	@f
-	; This is a reserved field in pre-1.4 controllers
+	; This is a reserved field in pre-1.4 controllers. 0 means "not reported",
+	; which is what plenty of 1.4 controllers say, so only refuse the types that
+	; are known to carry no storage: discovery and administrative controllers.
 	mov 	al, byte [edi + IDENTC.cntrltype]
-	cmp 	al, CNTRLTYPE_IO_CONTROLLER
-	jne 	.exit_fail 	
-	;DEBUGF  DBG_INFO, "nvme%u: I/O controller detected...\n", [esi + pcidev.num]
+	cmp 	al, CNTRLTYPE_DISCOVERY_CONTROLLER
+	jae 	.exit_fail
 
 @@:
 	; TODO: check IDENTC.AVSCC
@@ -940,22 +949,21 @@ proc nvme_init stdcall, pci:dword
 	jb 	.exit_fail
 	invoke  KernelFree, edi
 
-	mov 	eax, 1 or (1 shl 16) ; CDW11 (set the number of queues we want)
+	; Ask for one I/O submission and one I/O completion queue (both fields are
+	; 0's based). The controller answers with how many it allocated, at least one
+	; of each, and one of each is all this driver uses - so any answer will do.
 	mov 	esi, [pci]
 	mov 	dword [esi + pcidev.spinlock], 1
-	stdcall set_features, [pci], NULLPTR, FID_NUMBER_OF_QUEUES, eax
+	stdcall set_features, [pci], NULLPTR, FID_NUMBER_OF_QUEUES, 0
 	stdcall nvme_poll, esi
 	test 	eax, eax
 	jz 	.exit_fail
-	mov 	esi, dword [esi + pcidev.queue_entries]
-	mov 	esi, dword [esi + NVM_QUEUE_ENTRY.cq_ptr]
-	mov 	eax, dword [esi + sizeof.CQ_ENTRY + CQ_ENTRY.cdw0]
-	;DEBUGF  DBG_INFO, "nvme%u: Set Features CDW0: 0x%x\n", [esi + pcidev.num], eax
-	test 	ax, ax ; Number of I/O Submission Queues allocated
-	jz 	.exit_fail
-	shl 	eax, 16
-	test 	ax, ax ; Number of I/O Completion Queues allocated
-	jnz	.exit_fail
+	mov 	eax, dword [esi + pcidev.last_cdw0]
+	movzx 	ecx, ax
+	inc 	ecx
+	shr 	eax, 16
+	inc 	eax
+	DEBUGF  DBG_INFO, "nvme%u: I/O queues allocated: %u submission, %u completion\n", [esi + pcidev.num], ecx, eax
 
 	; Create I/O Queues
 	; (TODO: create N queue pairs for N CPU cores, see page 8 of NVMe 1.4 spec for an explaination)
@@ -965,7 +973,7 @@ proc nvme_init stdcall, pci:dword
 	add 	esi, sizeof.NVM_QUEUE_ENTRY
 	mov 	eax, dword [esi + NVM_QUEUE_ENTRY.cq_ptr]
 	invoke 	GetPhysAddr
-	stdcall create_io_completion_queue, [pci], eax, 1, IEN_ON
+	stdcall create_io_completion_queue, [pci], eax, 1, IEN_OFF
 	test 	eax, eax
 	jz 	.exit_fail
 	;DEBUGF  DBG_INFO, "nvme%u: Successfully created I/O completion queue 1\n", [edi + pcidev.num]
@@ -1047,34 +1055,15 @@ proc nvme_init stdcall, pci:dword
 	imul 	eax, edx
 	mov 	dword [esi + pcidev.max_sectors], eax
 	DEBUGF  DBG_INFO, "nvme%u: Maximum transfer size: %u sectors\n", [esi + pcidev.num], eax
-	if 0
-		invoke  KernelAlloc, 0x6000
-		test 	eax, eax
-		jz 	.exit_fail
-		mov 	edi, eax
-		invoke  KernelAlloc, 0x8
-		test 	eax, eax
-		jz 	.exit_fail
-		mov 	edx, NVM_CMD_READ
-		mov 	dword [eax], 6
-		add 	edi, 0x5
-		mov 	dword [esi + pcidev.spinlock], 1
-		stdcall nvme_readwrite, [esi + pcidev.nsinfo], edi, 0x0, 0, eax
-		stdcall nvme_poll, esi
-		test 	eax, eax
-		jz 	.exit_fail
-	        DEBUGF  DBG_INFO, "STRING: %s\n", edi
-		add 	edi, 0x2000
-		DEBUGF  DBG_INFO, "STRING: %s\n", edi
-	end if
+
+	lea 	ecx, [esi + pcidev.iolock]
+	invoke  MutexInit
+	mov 	byte [esi + pcidev.ready], 1
 	DEBUGF  DBG_INFO, "nvme%u: Successfully initialized driver\n", [esi + pcidev.num]
       	xor     eax, eax
       	inc     eax
 	pop 	edi esi ebx
       	ret
-
-.exit_fail_cleanup:
-	add 	esp, 8
 
 .exit_fail:
 	mov 	esi, [pci]
@@ -1086,6 +1075,9 @@ proc nvme_init stdcall, pci:dword
 	DEBUGF  DBG_INFO, "nvme%u: A fatal controller error has occurred\n", [esi + pcidev.num]
 
 @@:
+	; leave the controller idle; nvme_cleanup skips it from here on, so this is
+	; the last the driver does to it
+	stdcall nvme_disable_ctrl, esi
 	xor 	eax, eax
 	pop 	edi esi ebx
 	ret
@@ -1198,18 +1190,17 @@ endp
 ; TODO: this whole arrangement - one command in flight per device, a lock spun on
 ; by the thread that submitted it - should give way to the kernel's asynchronous
 ; API, so that a thread issuing disk I/O sleeps on an event and the queues can
-; hold more than one command at a time. It was left as a spinlock because the
-; driver had enough other bugs at the time that changing the completion path as
-; well would have made regressions impossible to attribute. The queues, their
-; doorbells and the phase tracking are already per queue, so what has to change
-; is this procedure, the claim in nvme_drain_cq, and giving each NVMQCMD entry
-; its own event instead of sharing pcidev.spinlock.
+; hold more than one command at a time. That is also the point at which a real
+; interrupt (MSI-X, once the kernel can hand one out) starts to pay for itself.
+; It was left as a spinlock because the driver had enough other bugs at the time
+; that changing the completion path as well would have made regressions
+; impossible to attribute. The queues, their doorbells and the phase tracking are
+; already per queue, so what has to change is this procedure and giving each
+; command in flight its own event instead of sharing pcidev.spinlock.
 ;
-; The interrupt handler releases the lock as soon as it takes the completion, but
-; the driver does not depend on that: plenty of machines give an NVMe controller
-; no usable pin interrupt at all (the controller is MSI-X only, or the firmware
-; left the interrupt line at 0xFF), so after a short grace period the completion
-; queues are drained from here instead.
+; There is no interrupt handler (see nvme_init for why): after a few spins on the
+; lock the completion queues are drained from here, and the lock is released by
+; consume_cq_entries once it has taken the completion.
 ;
 ; Returns 1 when the command completed without error, 0 on failure or timeout.
 proc nvme_poll stdcall, pci:dword
@@ -1278,13 +1269,12 @@ proc cqyhdbl_write stdcall, pci:dword, y:dword, cqh:dword
 
 	; 1000h + ((2y + 1) * (4 << CAP.DSTRD))
 	mov 	eax, [y]
-	shl 	al, 1
-	inc 	al
+	lea 	eax, [eax * 2 + 1]
 	mov 	edx, 4
 	mov 	cl, byte [esi + pcidev.dstrd]
-	shl 	dx, cl
-	imul 	dx, ax
-	add 	dx, 0x1000
+	shl 	edx, cl
+	imul 	edx, eax
+	add 	edx, 0x1000
 	mov 	ecx, [y]
 	shl 	ecx, LOG2 sizeof.NVM_QUEUE_ENTRY
 	mov 	edi, dword [esi + pcidev.queue_entries]
@@ -1293,21 +1283,6 @@ proc cqyhdbl_write stdcall, pci:dword, y:dword, cqh:dword
 	mov 	esi, dword [esi + pcidev.io_addr]
 	mov 	word [esi + edx], ax ; Write to CQyHDBL
 	mov 	word [edi + NVM_QUEUE_ENTRY.head], ax
-
-	; NOTE: Currently commented out since we're just using
-	; plain spinlocks for notifying when a command has been
-	; completed, but this will be uncommented later and use
-	; semaphores instead of mutexes once the polling code
-	; has been replaced with the asynchronous API.
-
-	; Unlock the mutex now that the command is complete
-	;mov 	edi, dword [edi + NVM_QUEUE_ENTRY.cmd_ptr]
-	;mov 	ecx, [cqh]
-	;shl 	ecx, SIZEOF_NVMQCMD
-	;add 	edi, ecx
-	;mov 	ecx, dword [edi + NVMQCMD.mutex_ptr]
-	;invoke  MutexUnlock
-
 	pop 	edi esi
 	ret
 
@@ -1323,7 +1298,6 @@ proc sqytdbl_write stdcall, pci:dword, y:word, cmd:dword
 	movzx 	ebx, [y]
 	shl 	ebx, LOG2 sizeof.NVM_QUEUE_ENTRY
 	lea 	edi, [edi + ebx]
-	;mov 	eax, dword [edi + NVM_QUEUE_ENTRY.cmd_ptr]
 	mov 	edx, dword [edi + NVM_QUEUE_ENTRY.sq_ptr]
 	mov 	esi, [cmd]
 
@@ -1337,10 +1311,6 @@ proc sqytdbl_write stdcall, pci:dword, y:word, cmd:dword
 	stdcall memcpyd, edx, esi, sizeof.SQ_ENTRY / 4
 	mov 	esi, [pci]
 	mov 	dword [esi + pcidev.last_status], 0
-	;mov 	ecx, dword [ebx + NVMQCMD.mutex_ptr]
-	;invoke  MutexLock
-
-	mov 	esi, [pci]
 	mov 	ax, word [edi + NVM_QUEUE_ENTRY.tail]
 	inc 	ax
 	cmp 	ax, NVM_ASQS ; valid indices are 0..NVM_ASQS-1
@@ -1360,40 +1330,6 @@ proc sqytdbl_write stdcall, pci:dword, y:word, cmd:dword
 	mov 	esi, dword [esi + pcidev.io_addr]
 	mov 	word [esi + edx], ax
 	pop 	edi esi ebx
-	ret
-
-endp
-
-proc is_queue_full stdcall, tail:word, head:word
-	
-	push 	bx
-	mov 	ax, [tail]
-	mov 	bx, [head]
-	cmp 	ax, bx
-	je 	.not_full
-	test 	bx, bx
-	jnz 	@f
-	cmp 	ax, NVM_ASQS - 1
-	jne 	@f
-	pop 	bx
-	xor 	eax, eax
-	inc 	eax
-	ret
-
-@@:
-	cmp 	ax, bx
-	jae 	.not_full
-	sub 	ax, bx
-	cmp 	ax, 1
-	jne 	.not_full
-	pop 	bx
-	xor 	eax, eax
-	inc 	eax
-	ret
-	
-.not_full:
-	pop 	bx
-	xor 	eax, eax
 	ret
 
 endp
@@ -1457,8 +1393,10 @@ proc consume_cq_entries stdcall, pci:dword, queue:dword
 	shl 	ecx, LOG2 sizeof.CQ_ENTRY
 	movzx 	eax, word [edi + ecx + CQ_ENTRY.status]
 	shr 	eax, 1 ; drop the phase tag, what is left is the status
+	mov 	edx, dword [edi + ecx + CQ_ENTRY.cdw0] ; command specific result
 	mov 	edi, [pci]
 	or 	dword [edi + pcidev.last_status], eax
+	mov 	dword [edi + pcidev.last_cdw0], edx
 	inc 	ebx
 
 	movzx 	ecx, word [esi + NVM_QUEUE_ENTRY.head]
@@ -1489,101 +1427,11 @@ proc consume_cq_entries stdcall, pci:dword, queue:dword
 
 endp
 
-; Drains both completion queues of a device. The waiting thread and the interrupt
-; handler both call this, so a claim keeps them from taking the same entry twice.
-;
-; The controller's interrupts stay masked for the duration. That is what makes the
-; handoff safe: an interrupt that arrives while the other side is already draining
-; finds the claim taken and returns without consuming anything, and because it left
-; the interrupts masked, the controller stops re-asserting a pin that nobody is
-; going to service - otherwise it would re-enter the handler forever and the thread
-; holding the claim would never run again. Whoever holds the claim unmasks on its
-; way out, which also re-raises the interrupt if any completion is still waiting.
+; Drains both completion queues of a device.
 proc nvme_drain_cq stdcall, pci:dword
 
-	push 	esi edi
-	mov 	esi, [pci]
-	mov 	edi, dword [esi + pcidev.io_addr]
-	mov 	dword [edi + NVME_MMIO.INTMS], 0x3
-	xor 	eax, eax
-	inc 	eax
-	xchg 	eax, dword [esi + pcidev.cqlock]
-	test 	eax, eax
-	jnz 	.busy
-	stdcall consume_cq_entries, esi, ADMIN_QUEUE
-	stdcall consume_cq_entries, esi, 1
-	mov 	dword [esi + pcidev.cqlock], 0
-	mov 	dword [edi + NVME_MMIO.INTMC], 0x3
-
-.busy:
-	pop 	edi esi
-	ret
-
-endp
-
-; Our interrupt handler. Once the controller finishes a command,
-; it should generate an interrupt (assuming that no fatal error
-; occurred). If an interrupt isn't being generated when it is expected
-; to, check the CSTS register to make sure that the error bit isn't being
-; set. The controller doesn't generate any interrupts in such cases.
-;
-; Once a command has complete (successfully or not), the controller will
-; add a new completion queue entry and it is the interrupt handler's 
-; responsibility to write to the appropriate completion queue's head doorbell
-; register and update it correctly, otherwise the controller will continue
-; to generate interrupts (the most common causes for freezes with the driver,
-; in my experience).
-proc irq_handler
-
-	push 	ebx esi edi
-	mov 	esi, dword [p_nvme_devices]
-	mov 	ebx, dword [num_pcidevs_sz]
-	add 	ebx, esi
-
-.check_who_raised_irq:
-	stdcall device_generated_interrupt, esi
-	test 	eax, eax
-	jnz 	@f
-	add 	esi, sizeof.pcidev
-	cmp 	esi, ebx
-	jb 	.check_who_raised_irq
-
-	; Interrupt not handled by driver, return 0
-	pop 	edi esi ebx
-	xor 	eax, eax
-	ret
-
-@@:
-	stdcall nvme_drain_cq, esi
-
-	; Interrupt handled by driver, return 1
-	pop 	edi esi ebx
-	mov 	eax, 1
-	ret
-
-endp
-
-; The IRQ line may be shared, so only claim the interrupt when one of this
-; device's completion queues really does hold something new.
-proc device_generated_interrupt stdcall, pci:dword
-
-	push 	ebx
-	xor 	ebx, ebx
-
-@@:
-	stdcall cq_entry_pending, [pci], ebx
-	test 	eax, eax
-	jnz 	.ours
-	inc 	ebx
-	cmp 	ebx, LAST_QUEUE_ID
-	jbe 	@b
-	pop 	ebx
-	xor 	eax, eax
-	ret
-
-.ours:
-	pop 	ebx
-	mov 	eax, 1
+	stdcall consume_cq_entries, [pci], ADMIN_QUEUE
+	stdcall consume_cq_entries, [pci], 1
 	ret
 
 endp
@@ -1592,9 +1440,6 @@ endp
 ; and shuts down all of the controllers. See page 295-297 of
 ; the NVMe 1.4.0 spec for details on how shutdown processing
 ; should occur.
-;
-; Currently shutdown still has problems on VMWare.
-; See: https://git.kolibrios.org/GSoC/kolibrios-nvme-driver/issues/5
 proc nvme_cleanup
 
 	DEBUGF  DBG_INFO, "nvme: Cleaning up...\n"
@@ -1612,10 +1457,13 @@ proc nvme_cleanup
 .get_pcidev:
 	add 	esi, sizeof.pcidev
 
+	; a controller whose initialisation failed was left idle right then and
+	; owns no queues worth deleting
+	cmp 	byte [esi + pcidev.ready], 0
+	je 	.next_pcidev
+
 	; Free the queues
 	mov 	edi, dword [esi + pcidev.queue_entries]
-	test 	edi, edi
-	jz 	.ret
 	sub 	edi, sizeof.NVM_QUEUE_ENTRY
 	push 	ebx
 	xor 	ebx, ebx
@@ -1666,6 +1514,7 @@ proc nvme_cleanup
 	pop 	ebx
 	stdcall nvme_disable_ctrl, esi
 
+.next_pcidev:
 	inc 	ebx
 	cmp 	ebx, dword [num_pcidevs]
 	jne 	.get_pcidev
@@ -1689,7 +1538,7 @@ align 4
 		dd 	 nvme_query_media
 		dd 	 nvme_read
 		dd 	 nvme_write
-		dd 	 0 ; no flush function
+		dd 	 nvme_flush
 		dd 	 0 ; use default cache size
 	.end:
 	if __DEBUG__
