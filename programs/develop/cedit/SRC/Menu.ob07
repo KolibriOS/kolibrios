@@ -238,7 +238,6 @@ BEGIN
     m.active := FALSE;
    	resetTimer;
     m.tid := 0;
-    G.destroy(m.canvas);
     K.Exit
 END exit;
 
@@ -250,7 +249,6 @@ BEGIN
     	resetTimer
     END;
     m.tid := 0;
-    G.destroy(m.canvas);
     K.Exit
 END escape;
 
@@ -356,7 +354,6 @@ BEGIN
     	END;
     	temp := m.tid;
     	m.tid := 0;
-    	G.destroy(m.canvas);
         K.ExitID(temp);
         m.active := FALSE
     END
@@ -512,7 +509,6 @@ BEGIN
 	            	IF m.parent # NIL THEN
 	            		temp := m.parent.tid;
 	            		m.parent.tid := 0;
-	            		G.destroy(m.parent.canvas);
 	            		K.ExitID(temp)
 	            	END;
 	                exit(m)
