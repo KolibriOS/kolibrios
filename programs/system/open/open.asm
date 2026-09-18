@@ -455,7 +455,7 @@ end if
     shl     esi, 5
     add     esi, list
  @@:
-    cmpe    ebx, esi, @f
+    cmpge   ebx, esi, @f   ; >=, not ==: the search may start past the list end
 
     movzx   edx, byte [ebx]
     stdcall downcase_char, edx
