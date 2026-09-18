@@ -23,7 +23,8 @@ Licensed under the GNU General Public License, version 2.
 | Namespace identification           | Yes         | Across all controller versions.                                     |
 | Multiple NVMe controllers          | Yes         | Up to `TOTAL_PCIDEVS`.                                              |
 | Multiple namespaces per controller | No          | Only the first active namespace is registered.                      |
-| MSI/MSI-X interrupts               | No          | Both are actively disabled; see below.                              |
+| Flush                              | Yes         | Issued once the kernel has written out its own cache.               |
+| Interrupts                         | No          | Completions are polled; INTx, MSI and MSI-X are all disabled.       |
 | Asynchronous API                   | No          | Every command blocks the calling thread until it completes.         |
 | SMART/health reporting             | No          |                                                                     |
 
@@ -32,21 +33,33 @@ supports.
 
 ## Interrupts
 
-The driver asks for a pin-based interrupt and uses it when it arrives, but it does not
-depend on it: if a completion does not turn up quickly, the waiting thread reads the
-completion queues itself. That matters on real machines, where an NVMe controller is
-often MSI-X only, or where firmware leaves the PCI interrupt line at 0xFF, and no INTx
-ever reaches the kernel.
+The driver does not use one. A thread that submits a command spins briefly on its
+completion and then reads the completion queues itself, using the phase tag; the
+controller's interrupt vectors are masked and INTx is disabled in the PCI command
+register, so the controller never signals anything. Since every command blocks its
+caller anyway, an interrupt would not make a completion arrive any sooner, while
+asking for one has real costs: many machines give an NVMe controller no usable INTx
+at all (MSI-X only, or firmware leaving the interrupt line at 0xFF), and the kernel's
+shared-IRQ heuristic can relink a handler onto the wrong line the first time an
+unrelated IRQ fires while a completion is pending - after which a level-triggered
+interrupt nobody services storms and freezes the machine. That last case was seen
+under QEMU while the driver still registered a handler.
+
+Once the completion path becomes asynchronous, an MSI-X vector is the interrupt to
+add; there is nothing to gain from INTx before then.
 
 Every wait on the controller (reset, enable, shutdown, command completion) is bounded,
 so a controller that never answers makes the driver give up rather than hang the boot.
+Calls into the driver are serialised per controller, since the kernel may issue disk
+requests from several threads at once and the driver keeps one command in flight.
 
 ## Testing
 
 Verified under QEMU (`-device nvme`) against controller version 1.4.0: driver load,
 partition detection, small and multi-megabyte file round trips, transfers from
-unaligned buffers checked against what actually landed on the disk image, and the same
-with INTx generation forced off so that only the polling path can complete a command.
+unaligned buffers checked against what actually landed on the disk image, and a boot
+of the same image with no NVMe controller present, where the driver has to back off
+without disturbing anything else.
 Also verified on VMware Workstation 17.6 (its controller reports firmware 1.3 and
 MDTS 8): the disk tests pass and the machine powers off cleanly, where the last
 upstream build faults during the 2 MB transfer and then hangs on shutdown. Upstream
