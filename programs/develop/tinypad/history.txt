@@ -1,6 +1,10 @@
 
 HISTORY:
 
+4.1.1 (18/09/2026, Leency)
+  bug-fixes:
+    - fixed crash on deleting the whole text (Ctrl+A, Del)
+
 4.1  (17/07/2015, Pathoswithin)
     - various fixes
 
