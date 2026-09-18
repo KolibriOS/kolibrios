@@ -41,10 +41,6 @@ img_files = {
  {"LIB/KMENU.OBJ", "common/lib/kmenu.obj"},
  {"LIB/PIXLIB.OBJ", "common/lib/pixlib.obj"},
  {"MEDIA/AC97SND", "common/media/ac97snd"},
- {"MEDIA/IMGF/IMGF", "common/media/ImgF/ImgF"},
- {"MEDIA/IMGF/CEDG.OBJ", "common/media/ImgF/cEdg.obj"},
- {"MEDIA/IMGF/DITHER.OBJ", "common/media/ImgF/dither.obj"},
- {"MEDIA/IMGF/INVSOL.OBJ", "common/media/ImgF/invSol.obj"},
  {"NETWORK/FTPC.INI", SRC_PROGS .. "/network/ftpc/ftpc.ini"},
  {"NETWORK/FTPD.INI", "common/network/ftpd.ini"},
  {"NETWORK/KNMAP", "common/network/knmap"},
@@ -273,6 +269,10 @@ extra_files = {
  {"kolibrios/lib/i915_dri.drv", "common/lib/i915_dri.drv"},
  {"kolibrios/media/fplay", "common/media/fplay"},
  {"kolibrios/media/fplay_run", "common/media/fplay_run"},
+ {"kolibrios/media/ImgF/ImgF", "common/media/ImgF/ImgF"},
+ {"kolibrios/media/ImgF/cEdg.obj", "common/media/ImgF/cEdg.obj"},
+ {"kolibrios/media/ImgF/dither.obj", "common/media/ImgF/dither.obj"},
+ {"kolibrios/media/ImgF/invSol.obj", "common/media/ImgF/invSol.obj"},
  {"kolibrios/media/minimp3", "common/media/minimp3"},
  {"kolibrios/media/updf", SRC .. "/contrib/media/updf/build/uPDF"},
  {"kolibrios/media/vttf", "common/media/vttf"},
@@ -655,18 +655,21 @@ tup.append_table(extra_files, {
  {"kolibrios/develop/examples/cslide", VAR_PROGS .. "/demos/cslide/cslide"},
  {"kolibrios/develop/examples/thread", VAR_PROGS .. "/develop/examples/thread/thread"}
 })
--- For russian build, add russian-only programs.
-if build_type == "ru_RU" then tup.append_table(img_files, {
- {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
-}) else tup.append_table(img_files, {
- {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
-}) end
+-- -- For russian build, add russian-only programs.
+-- if build_type == "ru_RU" then tup.append_table(img_files, {
+-- {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
+-- }) else tup.append_table(img_files, {
+-- {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
+-- }) end
 
 if build_type == "ru_RU" then tup.append_table(extra_files, {
+ {"kolibrios/develop/examples/testcon2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
  {"kolibrios/utils/period", VAR_PROGS .. "/other/period/period"},
  {"kolibrios/games/Dungeons/Dungeons", VAR_PROGS .. "/games/Dungeons/Dungeons"},
  {"kolibrios/games/klavisha/klavisha", VAR_PROGS .. "/games/klavisha/klavisha"},
  {"kolibrios/games/klavisha/basekurs.kla", "ru_RU/games/basekurs.kla"},
+}) else tup.append_table(img_files, {
+ {"kolibrios/develop/examples/testcon2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
 }) end
 
 end -- tup.getconfig('NO_FASM') ~= 'full'
