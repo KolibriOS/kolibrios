@@ -993,6 +993,8 @@ endp
 proc editor_realloc_lines ;///// ADD $DELTA$ TO LINES SIZE ///////////////////
 ;-----------------------------------------------------------------------------
 ; EAX = delta
+; Output:
+;  EAX = buffer displacement, CF = 1 on failure (buffer left untouched)
 ;-----------------------------------------------------------------------------
 	push	ebx ecx
 	mov	ebx,[cur_editor.Lines.Size]
@@ -1008,11 +1010,13 @@ proc editor_realloc_lines ;///// ADD $DELTA$ TO LINES SIZE ///////////////////
 	mov	[cur_editor.Lines],eax
 	sub	eax,ecx
 	pop	ecx ebx
+	clc
 	ret
   .failed:
 	pop	[cur_editor.Lines.Size]
 	xor	eax,eax
 	pop	ecx ebx
+	stc
 	ret
 endp
 

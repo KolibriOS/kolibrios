@@ -235,7 +235,7 @@ proc load_from_memory ;///////////////////////////////////////////////////////
 	call	get_lines_in_file
 	mov	[ebp+EDITOR.Lines.Count],eax
 	lea	edx,[ebx+ecx]
-	imul	ebx,eax,18
+	imul	ebx,eax,16
 	add	ebx,edx
 	add	ebx,sizeof.EDITOR_LINE_DATA
 	mov	[ebp+EDITOR.Lines.Size],ebx

@@ -591,10 +591,12 @@ proc key.ctrl_v ;///// PASTE ///////////////////////////////////
 	mov	eax,[copy_size]
 	sub	eax,sizeof.EDITOR_LINE_DATA
 	call	editor_realloc_lines
+	jc	.exit_1
 	mov	ecx,[cur_editor.Caret.Y]
 	call	get_line_offset
 	mov	ecx,[cur_editor.Caret.X]
 	call	line_add_spaces
+	jc	.exit_1
 	pushd	[esi+EDITOR_LINE_DATA.Size]
 	push	esi
 	lea	eax,[esi+ecx+sizeof.EDITOR_LINE_DATA]
@@ -692,6 +694,7 @@ proc key.ctrl_d ;///// INSERT SEPARATOR ////////////////////////
 ;---------------------------------------------------------------
 	mov	eax,90+sizeof.EDITOR_LINE_DATA
 	call	editor_realloc_lines
+	jc	.exit
 
 	mov	ecx,[cur_editor.Caret.Y]
 	call	get_line_offset
@@ -748,6 +751,7 @@ proc key.ctrl_y ;///// DELETE CURRENT LINE /////////////////////
 	shr	ecx,2
 	cld
 	rep	movsd
+	call	set_lines_terminator
 
 	pop	eax
 	add	eax,sizeof.EDITOR_LINE_DATA
@@ -1265,6 +1269,7 @@ proc key.tab ;///// TABULATE ///////////////////////////////////
 	push	eax
 	call	editor_realloc_lines
 	pop	eax
+	jc	.failed
 	mov	ecx,[cur_editor.Caret.Y]
 	call	get_line_offset
 	and	[esi+EDITOR_LINE_DATA.Flags],not EDITOR_LINE_FLAG_SAVED
@@ -1283,6 +1288,7 @@ proc key.tab ;///// TABULATE ///////////////////////////////////
 	push	eax
 	mov	eax,10
 	call	editor_realloc_lines
+	jc	.failed.1
 	add	esi,eax
 	pop	eax
 	pushad
@@ -1333,6 +1339,12 @@ proc key.tab ;///// TABULATE ///////////////////////////////////
 
   .exit:
 	ret
+
+  .failed.1:
+	pop	eax
+  .failed:
+	add	esp,4*2
+	ret
 endp
 
 ;---------------------------------------------------------------
@@ -1343,6 +1355,7 @@ proc key.return ;///// CARRIAGE RETURN /////////////////////////
 ; so you should do a little more value
 	mov	eax,14*100
 	call	editor_realloc_lines
+	jc	.exit
 
 	mov	ecx,[cur_editor.Caret.Y]
 	call	get_line_offset

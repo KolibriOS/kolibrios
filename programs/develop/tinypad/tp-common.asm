@@ -355,7 +355,7 @@ proc line_add_spaces ;////////////////////////////////////////////////////////
 ;  ESI = line offset
 ;  ECX = needed line length
 ; Output:
-;  EAX = delta
+;  EAX = delta, CF = 1 on failure
 ;-----------------------------------------------------------------------------
 	xor	eax,eax
 	pushad
@@ -365,6 +365,7 @@ proc line_add_spaces ;////////////////////////////////////////////////////////
 	sub	ecx,edx
 	lea	eax,[ecx+sizeof.EDITOR_LINE_DATA]
 	call	editor_realloc_lines
+	jc	.failed
 	mov	[esp+4*7],eax
 	add	esi,eax
 	push	ecx
@@ -388,6 +389,11 @@ proc line_add_spaces ;////////////////////////////////////////////////////////
 	rep	stosb
   .exit:
 	popad
+	clc
+	ret
+  .failed:
+	popad
+	stc
 	ret
 endp
 
@@ -401,6 +407,7 @@ proc set_lines_terminator ;///////////////////////////////////////////////////
 	mov	ecx,[cur_editor.Lines.Count]
 	call	get_line_offset
 	mov	[esi+EDITOR_LINE_DATA.Size],0
+	mov	[esi+EDITOR_LINE_DATA.Flags],0
 	pop	esi ecx
 	ret
 endp
@@ -422,6 +429,7 @@ proc delete_selection ;///////////////////////////////////////////////////////
 	or	[esi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 	mov	ecx,[sel.begin.x]
 	call	line_add_spaces
+	jc	.abort
 	add	esi,eax
 	lea	edi,[esi+sizeof.EDITOR_LINE_DATA]
 	mov	ecx,[sel.end.y]
@@ -491,6 +499,11 @@ proc delete_selection ;///////////////////////////////////////////////////////
 
 	popad
 	mov	[cur_editor.Modified],1
+	clc
+	ret
+
+  .abort:
+	popad
 	clc
 	ret
 
