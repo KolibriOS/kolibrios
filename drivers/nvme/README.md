@@ -62,8 +62,10 @@ of the same image with no NVMe controller present, where the driver has to back 
 without disturbing anything else.
 Also verified on VMware Workstation 17.6 (its controller reports firmware 1.3 and
 MDTS 8): the disk tests pass and the machine powers off cleanly, where the last
-upstream build faults during the 2 MB transfer and then hangs on shutdown. Upstream
-additionally reports VirtualBox (1.2.0) working. Real hardware is still untested.
+upstream build faults during the 2 MB transfer and then hangs on shutdown. And on
+VirtualBox 7.2 (controller version 1.2.0, MDTS 0, i.e. no limit of its own): the same
+tests pass, the image is correct on the host, and the machine powers off. Real
+hardware is still untested.
 
 Watch out when writing tests for this: a round trip done from inside KolibriOS can pass
 over corrupt data, because the kernel buffer the file was read back into may still hold
