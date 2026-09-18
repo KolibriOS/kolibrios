@@ -648,12 +648,12 @@ tup.append_table(extra_files, {
  {"kolibrios/3D/blocks/block.bin", VAR_PROGS .. "/bcc32/games/blocks/block.bin"},
  {"kolibrios/develop/tcc/lib/crt0.o", VAR_PROGS ..  "/develop/ktcc/bin/lib/crt0.o", group = "../programs/develop/ktcc/<crt0.o>"},
  {"kolibrios/develop/tcc/lib/tiny.o", VAR_PROGS ..  "/develop/ktcc/bin/lib/tiny.o", group = "../programs/develop/ktcc/<tiny.o>"},
- {"kolibrios/develop/tcc/lib/libsound.a", VAR_PROGS ..  "/develop/ktcc/bin/lib/libsound.a", group = "../programs/develop/ktcc/<libsound.a>"}
+ {"kolibrios/develop/tcc/lib/libsound.a", VAR_PROGS ..  "/develop/ktcc/bin/lib/libsound.a", group = "../programs/develop/ktcc/<libsound.a>"},
  {"kolibrios/develop/examples/circle", VAR_PROGS .. "/develop/examples/circle/circle"},
  {"kolibrios/develop/examples/colorref", VAR_PROGS .. "/demos/colorref/colorref"},
  {"kolibrios/develop/examples/conget", VAR_PROGS .. "/develop/libraries/console_coff/examples/test_gets"},
  {"kolibrios/develop/examples/cslide", VAR_PROGS .. "/demos/cslide/cslide"},
- {"kolibrios/develop/examples/thread", VAR_PROGS .. "/develop/examples/thread/thread"},
+ {"kolibrios/develop/examples/thread", VAR_PROGS .. "/develop/examples/thread/thread"}
 })
 -- For russian build, add russian-only programs.
 if build_type == "ru_RU" then tup.append_table(img_files, {
