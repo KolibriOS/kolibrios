@@ -1,5 +1,6 @@
 format MS COFF
 public EXPORTS
+include '../../../KOSfuncs.inc'
 section '.flat' code readable align 16
 ; void __stdcall START(dword state);
 DLL_ENTRY equ 1
@@ -60,6 +61,7 @@ START:
 ;   SORT_BY_ACCESSED = 12, SORT_BY_ACCESSED_REV = 13 };
 ; int __stdcall sort_dir(BDFE* folder_data, unsigned num_folder_entries, sort_mode mode);
 ; return: 0 = ok, 1 = error
+align 4
 sort_dir:
         cmp     dword [esp+12], num_compare_fns
         jae     .error
@@ -73,9 +75,9 @@ sort_dir:
         jz      .done
         cmp     eax, ecx
         jae     .memok
-        push    68
+        push    SF_SYS_MISC
         pop     eax
-        push    12
+        push    SSF_MEM_ALLOC
         pop     ebx
         int     0x40
         test    eax, eax
@@ -103,6 +105,8 @@ sort_dir:
         pop     ecx
         mov     ebx, edx
         sub     esp, 304
+        cld
+align 4
 .moveloop:
         mov     esi, [ebx]
         test    esi, esi
@@ -139,9 +143,9 @@ sort_dir:
 .done_free:
         cmp     edx, ptr_table
         jz      .done
-        push    68
+        push    SF_SYS_MISC
         pop     eax
-        push    13
+        push    SSF_MEM_FREE
         pop     ebx
         mov     ecx, edx
         int     0x40
@@ -269,6 +273,7 @@ compare_name_rev:
         stc
         ret
 
+align 4
 strcmpi:
         push    eax
 @@:
