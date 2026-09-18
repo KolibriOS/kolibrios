@@ -47,21 +47,26 @@ Verified under QEMU (`-device nvme`) against controller version 1.4.0: driver lo
 partition detection, small and multi-megabyte file round trips, transfers from
 unaligned buffers checked against what actually landed on the disk image, and the same
 with INTx generation forced off so that only the polling path can complete a command.
-Upstream additionally reports VirtualBox (1.2.0) and VMware (1.3.0) working. Real
-hardware is still untested.
+Also verified on VMware Workstation 17.6 (its controller reports firmware 1.3 and
+MDTS 8): the disk tests pass and the machine powers off cleanly, where the last
+upstream build faults during the 2 MB transfer and then hangs on shutdown. Upstream
+additionally reports VirtualBox (1.2.0) working. Real hardware is still untested.
 
 Watch out when writing tests for this: a round trip done from inside KolibriOS can pass
 over corrupt data, because the kernel buffer the file was read back into may still hold
 the correct bytes from the write. What a transfer really left on the medium has to be
 checked from outside.
 
-Two problems reported upstream are addressed here. The file corruption of
+Two problems reported upstream are addressed here, both reproduced first and then
+confirmed fixed by running the last upstream build and this one against the same
+machine. The file corruption of
 [issue #7](https://git.kolibrios.org/GSoC/kolibrios-nvme-driver/issues/7) was PRP2
 being built as a list for transfers that fit in two memory pages, which the controller
-reads as a plain data pointer - it is reproducible, and fixed. The shutdown hang of
-[issue #5](https://git.kolibrios.org/GSoC/kolibrios-nvme-driver/issues/5) came from
-unbounded waits on the controller, which are now all bounded; that one could not be
-confirmed here, as it was only ever seen on VMware.
+reads as a plain data pointer. The shutdown hang of
+[issue #5](https://git.kolibrios.org/GSoC/kolibrios-nvme-driver/issues/5) is visible on
+VMware Workstation, where the upstream build also faults inside the driver during a
+multi-megabyte transfer - VMware reports MDTS 8, so a 2 MB request is more than one
+command may carry, and the request was not being split.
 
 ## Building
 
