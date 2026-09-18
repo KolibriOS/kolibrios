@@ -841,8 +841,7 @@ disk_scan_partitions:
 ; 15a. Test whether it is the global buffer or we have allocated it.
         cmp     ebx, mbr_buffer
         jz      .release_partition_buffer
-; 15b. If we have allocated it, free it. It came from kernel_alloc, so it
-; must go back through kernel_free, not through the malloc heap's free.
+; 15b. If we have allocated it, free it.
         stdcall kernel_free, ebx
         jmp     .nothing
 ; 15c. Otherwise, release reference.
