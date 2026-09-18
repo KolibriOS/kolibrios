@@ -44,10 +44,24 @@ so a controller that never answers makes the driver give up rather than hang the
 ## Testing
 
 Verified under QEMU (`-device nvme`) against controller version 1.4.0: driver load,
-partition detection, small and multi-megabyte file round trips, and the same with INTx
-generation forced off so that only the polling path can complete a command. Upstream
-additionally reports VirtualBox (1.2.0) and VMware (1.3.0) working; shutdown on VMware
-is a known upstream problem. Real hardware is still untested.
+partition detection, small and multi-megabyte file round trips, transfers from
+unaligned buffers checked against what actually landed on the disk image, and the same
+with INTx generation forced off so that only the polling path can complete a command.
+Upstream additionally reports VirtualBox (1.2.0) and VMware (1.3.0) working. Real
+hardware is still untested.
+
+Watch out when writing tests for this: a round trip done from inside KolibriOS can pass
+over corrupt data, because the kernel buffer the file was read back into may still hold
+the correct bytes from the write. What a transfer really left on the medium has to be
+checked from outside.
+
+Two problems reported upstream are addressed here. The file corruption of
+[issue #7](https://git.kolibrios.org/GSoC/kolibrios-nvme-driver/issues/7) was PRP2
+being built as a list for transfers that fit in two memory pages, which the controller
+reads as a plain data pointer - it is reproducible, and fixed. The shutdown hang of
+[issue #5](https://git.kolibrios.org/GSoC/kolibrios-nvme-driver/issues/5) came from
+unbounded waits on the controller, which are now all bounded; that one could not be
+confirmed here, as it was only ever seen on VMware.
 
 ## Building
 
