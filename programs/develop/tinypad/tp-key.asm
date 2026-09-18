@@ -1151,6 +1151,7 @@ proc key.del ;///// DELETE NEXT CHAR OR SELECTION //////////////
 
   .ok.dec.lines:
 	dec	[cur_editor.Lines.Count]
+	call	set_lines_terminator
 	mov	eax,[cur_editor.Lines.Count]
 	cmp	[cur_editor.Caret.Y],eax
 	jb	@f

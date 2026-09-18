@@ -392,6 +392,20 @@ proc line_add_spaces ;////////////////////////////////////////////////////////
 endp
 
 ;-----------------------------------------------------------------------------
+proc set_lines_terminator ;///////////////////////////////////////////////////
+;-----------------------------------------------------------------------------
+; Lines buffer is terminated by a line header with zero Size, restore it after
+; the data has been compacted (line count decreased)
+;-----------------------------------------------------------------------------
+	push	ecx esi
+	mov	ecx,[cur_editor.Lines.Count]
+	call	get_line_offset
+	mov	[esi+EDITOR_LINE_DATA.Size],0
+	pop	esi ecx
+	ret
+endp
+
+;-----------------------------------------------------------------------------
 proc delete_selection ;///////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 ;       call    init_sel_vars
@@ -456,6 +470,8 @@ proc delete_selection ;///////////////////////////////////////////////////////
 	rep	movsb
 
   .exit:
+	call	set_lines_terminator
+
 	mov	eax,[sel.begin.x]
 	mov	[cur_editor.Caret.X],eax
 	mov	[cur_editor.SelStart.X],eax
