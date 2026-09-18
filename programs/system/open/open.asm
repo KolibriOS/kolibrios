@@ -440,6 +440,10 @@ end if
     push    eax
 
     stdcall get_index
+    test    eax, eax        ; nothing selected yet: last_x/last_y are -1
+    jns     @f
+    or      eax, -1         ; start the search from the first item
+  @@:
     inc     eax
 
     mov     ecx, eax
