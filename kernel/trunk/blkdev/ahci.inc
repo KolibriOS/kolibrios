@@ -460,7 +460,11 @@ ahci_init:
         jmp     .find_ahci_ctr
 
 .ahci_ctr_not_found:
+        ; the scan always ends here; complain only if it found nothing
+        cmp     [ctr_counter], 0
+        jnz     @f
         DEBUGF  1, "K: AHCI controller not found\n"
+@@:
         ret
 
 .ahci_ctr_found:
