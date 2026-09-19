@@ -1126,7 +1126,14 @@ cmdSTOR:
         test    eax, eax
         jz      .cannot_open
 
+        ; STOR replaces the file: drop the previous, possibly longer contents
         push    eax
+        invoke  file.truncate, eax
+        pop     ebx
+        test    eax, eax
+        js      .truncate_error
+
+        push    ebx
         sendFTP "150 Here it comes.."
         pop     ebx
 
@@ -1187,6 +1194,13 @@ cmdSTOR:
 
 .cannot_open:
         sendFTP "550 No create file"
+        ret
+
+.truncate_error:
+        invoke  file.close, ebx
+        mov     [ebp + thread_data.mode], MODE_NOTREADY
+        mcall   close, [ebp + thread_data.datasocketnum]
+        sendFTP "550 Cannot truncate file"
         ret
 
 ;------------------------------------------------

@@ -447,6 +447,7 @@ import  libio,\
         file.open,              'file_open',\
         file.read,              'file_read',\
         file.write,             'file_write',\
+        file.truncate,          'file_truncate',\
         file.close,             'file_close',\
         file.find.first,        'file_find_first',\
         file.find.next,         'file_find_next',\
