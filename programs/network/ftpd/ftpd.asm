@@ -237,6 +237,7 @@ end if
         lea     eax, [ebp + thread_data.buffer]
         mov     [ebp + thread_data.buffer_ptr], eax
         mov     [ebp + thread_data.passivesocknum], -1
+        mov     [ebp + thread_data.datasocketnum], -1
 
         sendFTP "220 Welcome to KolibriOS FTP daemon"  ; fix output code
 
@@ -264,7 +265,7 @@ threadloop:
         je      .not_passive
         mov     [ebp + thread_data.datasocketnum], eax
         mov     [ebp + thread_data.mode], MODE_PASSIVE_OK
-        mcall   close   ; [ebp + thread_data.passivesocknum]
+        mcall   close, [ebp + thread_data.passivesocknum]
         mov     [ebp + thread_data.passivesocknum], -1
 
         invoke  con_write_asciiz, str_datasock

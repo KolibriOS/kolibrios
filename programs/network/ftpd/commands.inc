@@ -137,11 +137,47 @@ socketerror:
         ret
 
 align 4
+; Close the data socket if this thread currently owns one. datasocketnum only
+; holds a live socket in these two modes; in any other mode it is a handle that
+; has already been closed or was never opened.
+close_data_sock:
+        cmp     [ebp + thread_data.mode], MODE_PASSIVE_OK
+        je      @f
+        cmp     [ebp + thread_data.mode], MODE_ACTIVE
+        jne     .done
+@@:
+        mov     [ebp + thread_data.mode], MODE_NOTREADY
+        mcall   close, [ebp + thread_data.datasocketnum]
+        mov     [ebp + thread_data.datasocketnum], -1
+  .done:
+        ret
+
+align 4
+; Close the passive listening socket if one is still open. It is open only
+; while waiting for the client (MODE_PASSIVE_WAIT, MODE_PASSIVE_FAILED) or after
+; a failed listen, so no data connection exists and the mode drops to NOTREADY.
+close_pasv_sock:
+        cmp     [ebp + thread_data.passivesocknum], -1
+        je      .done
+        mcall   close, [ebp + thread_data.passivesocknum]
+        mov     [ebp + thread_data.passivesocknum], -1
+        mov     [ebp + thread_data.mode], MODE_NOTREADY
+  .done:
+        ret
+
+align 4
+; A data transfer failed with the file in ebx open: close the file and the data
+; socket, then report the error.
+transfer_error:
+        invoke  file.close, ebx
+        call    close_data_sock
+        jmp     socketerror
+
+align 4
 abort_transfer:
         and     [ebp + thread_data.permissions], not ABORT
-        mov     [ebp + thread_data.mode], MODE_NOTREADY
         invoke  file.close, ebx
-        mcall   close, [ebp + thread_data.datasocketnum]
+        call    close_data_sock
 
         sendFTP "530 Transfer aborted"
         ret
@@ -327,7 +363,7 @@ open_datasock:
   .pasv_ok:
         mov     [ebp + thread_data.datasocketnum], eax
         mov     [ebp + thread_data.mode], MODE_PASSIVE_OK
-        mcall   close   ; [ebp + thread_data.passivesocknum]
+        mcall   close, [ebp + thread_data.passivesocknum]
         mov     [ebp + thread_data.passivesocknum], -1
         invoke  con_write_asciiz, str_datasock
 
@@ -691,13 +727,13 @@ cmdLIST:
         mcall   send
 
 ; close the data socket..
-        mov     [ebp + thread_data.mode], MODE_NOTREADY
-        mcall   close, [ebp + thread_data.datasocketnum]
+        call    close_data_sock
 
         sendFTP "226 List OK"
         ret
 
   .nosuchdir:
+        call    close_data_sock
         sendFTP "550 Directory does not exist"
         ret
 
@@ -793,10 +829,9 @@ cmdPASS:
 align 4
 cmdPASV:
 
-;        cmp     [ebp + thread_data.passivesocknum], -1
-;        je      @f
-;        mcall   close, [ebp + thread_data.passivesocknum]       ; if there is still a socket open, close it
-;       @@:
+; Drop whatever data connection the previous PASV/PORT left behind
+        call    close_data_sock
+        call    close_pasv_sock
 
 ; Open a new TCP socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
@@ -932,6 +967,10 @@ cmdPWD:
 align 4
 cmdPORT:
 
+; Drop whatever data connection the previous PASV/PORT left behind
+        call    close_data_sock
+        call    close_pasv_sock
+
 ; PORT a1,a2,a3,a4,p1,p2
 ; IP address a1.a2.a3.a4, port p1*256+p2
 
@@ -972,7 +1011,8 @@ align 4
 cmdQUIT:
 
         sendFTP "221 Bye!"
-        mcall   close, [ebp + thread_data.datasocketnum]
+        call    close_data_sock
+        call    close_pasv_sock
         mcall   close, [ebp + thread_data.socketnum]
 
         add     esp, 4          ; get rid of call return address
@@ -1035,7 +1075,7 @@ cmdRETR:
         lea     eax, [ebp + thread_data.buffer]                 ; FIXME: use another buffer!! if we receive something on control connection now, we screw up!
         invoke  file.read, ebx, eax, BUFFERSIZE
         cmp     eax, -1
-        je      .cannot_open                                    ; FIXME: this is not the correct error
+        je      .read_error                                     ; FIXME: this is not the correct error
 
         push eax
         invoke  con_write_asciiz, str2
@@ -1049,7 +1089,7 @@ cmdRETR:
         mcall   send
         pop     ebx ecx
         cmp     eax, -1
-        je      socketerror                                     ; FIXME: not the correct error
+        je      transfer_error                                  ; FIXME: not the correct error
 
 ;        cmp     eax, ecx
 ;        jne     not_all_byes_sent                               ; TODO
@@ -1061,13 +1101,15 @@ cmdRETR:
 
         invoke  con_write_asciiz, str2b
 
-        mov     [ebp + thread_data.mode], MODE_NOTREADY
-        mcall   close, [ebp + thread_data.datasocketnum]
+        call    close_data_sock
 
         sendFTP "226 Transfer OK, closing connection"
         ret
 
+  .read_error:
+        invoke  file.close, ebx
   .cannot_open:
+        call    close_data_sock
         invoke  con_set_flags, 0x0c
         invoke  con_write_asciiz, str_notfound
         invoke  con_set_flags, 0x07
@@ -1149,7 +1191,7 @@ cmdSTOR:
         mcall   recv
         pop     ebx ecx
         cmp     eax, -1
-        je      socketerror                                     ; FIXME: not the correct error
+        je      transfer_error                                  ; FIXME: not the correct error
 
         test    eax, eax
         jz      @f
@@ -1161,7 +1203,7 @@ cmdSTOR:
         pop     edx
 
         cmp     eax, -1
-        je      .cannot_open                                    ; FIXME: this is not the correct error
+        je      .write_error                                    ; FIXME: this is not the correct error
 
         invoke  con_write_asciiz, str2
 
@@ -1177,8 +1219,7 @@ cmdSTOR:
 
         invoke  con_write_asciiz, str2b
 
-        mov     [ebp + thread_data.mode], MODE_NOTREADY
-        mcall   close, [ebp + thread_data.datasocketnum]
+        call    close_data_sock
 
 
 
@@ -1192,7 +1233,10 @@ cmdSTOR:
         sendFTP "226 Transfer OK"
         ret
 
+.write_error:
+        invoke  file.close, ebx
 .cannot_open:
+        call    close_data_sock
         sendFTP "550 No create file"
         ret
 
