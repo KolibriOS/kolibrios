@@ -842,8 +842,7 @@ disk_scan_partitions:
         cmp     ebx, mbr_buffer
         jz      .release_partition_buffer
 ; 15b. If we have allocated it, free it.
-        xchg    eax, ebx
-        call    free
+        stdcall kernel_free, ebx
         jmp     .nothing
 ; 15c. Otherwise, release reference.
 .release_partition_buffer:
