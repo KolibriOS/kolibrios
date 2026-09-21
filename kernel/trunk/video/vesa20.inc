@@ -29,6 +29,33 @@ align 4
         overlapping_of_points_ptr       dd overlapping_of_points
 endg
 
+; the converter slots are laid out so that bytes_per_pixel indexes them
+struct putimage_format
+        getter          dd ?
+        src_bpp         dd ?
+        conv_16         dd ?
+        conv_24         dd ?
+        conv_32         dd ?
+ends
+
+iglobal
+align 4
+putimage_stores         dd 0, 0, putimage_store_16, putimage_store_24, \
+                                                    putimage_store_32
+putimage_fallbacks      dd 0, 0, putimage_conv_any_16, putimage_conv_any_24, \
+                                                    putimage_conv_any_32
+
+; 1, 2 and 4bpp are absent: their runs cannot be skipped over
+putimage_formats:
+        dd putimage_get8bpp,  1, 0, 0, putimage_conv_8_32
+        dd putimage_get9bpp,  1, 0, 0, 0
+        dd putimage_get15bpp, 2, 0, 0, 0
+        dd putimage_get16bpp, 2, putimage_conv_16_16, 0, 0
+        dd putimage_get24bpp, 3, 0, putimage_conv_24_24, putimage_conv_24_32
+        dd putimage_get32bpp, 4, 0, 0, putimage_conv_32_32
+        dd 0
+endg
+
 
 ;-----------------------------------------------------------------------------
 ; eax = x
@@ -149,7 +176,14 @@ virtual at esp
    .screen_newline dd ?
    .real_sx_and_abs_cx dd ?
    .real_sy_and_abs_cy dd ?
-   .stack_data = 4*14
+   .conv        dd      ?
+   .skip        dd      ?
+   .store       dd      ?
+   .src_bpp     dd      ?
+   .dst_bpp     dd      ?
+   .mask        dd      ?
+   .row         dd      ?
+   .stack_data = 4*21
    .edi         dd      ?
    .esi         dd      ?
    .ebp         dd      ?
@@ -265,338 +299,67 @@ end virtual
 ; get process number
         mov     ebx, [current_slot_idx]
 
-        cmp     byte [_display.bits_per_pixel], 16
-        je      put_image_end_16
-        cmp     byte [_display.bits_per_pixel], 24
-        je      put_image_end_24
-        cmp     byte [_display.bits_per_pixel], 32
-        je      put_image_end_32
+        movzx   ecx, bl
+        imul    ecx, 0x01010101                 ; the slot in all four lanes
+        mov     [putimg.mask], ecx
+
+        mov     [putimg.row], putimage_row
+        cmp     [_display.select_cursor], select_cursor
+        jne     .row_done
+        mov     [putimg.row], putimage_row_cursor
+  .row_done:
+
+; _display.bytes_per_pixel is 2, 3 or 4, so it indexes the tables directly
+        mov     eax, [_display.bytes_per_pixel]
+        mov     [putimg.dst_bpp], eax
+        mov     ecx, [putimage_stores + eax*4]
+        mov     [putimg.store], ecx
+        mov     ecx, [putimage_fallbacks + eax*4]
+        mov     [putimg.conv], ecx
+
+        mov     [putimg.skip], putimage_skip_bytes
+        mov     edi, putimage_formats
+  .format:
+        mov     ecx, [edi]
+        test    ecx, ecx
+        jz      .format_stateful
+        cmp     ecx, [putimg.ebp]
+        je      .format_found
+        add     edi, sizeof.putimage_format
+        jmp     .format
+
+; past the table are the getters that carry a bit position between calls
+  .format_stateful:
+        mov     [putimg.skip], putimage_skip_getter
+        jmp     .format_done
+
+  .format_found:
+        mov     ecx, [edi + putimage_format.src_bpp]
+        mov     [putimg.src_bpp], ecx
+        mov     ecx, [edi + eax*4]              ; the column for this screen
+        test    ecx, ecx
+        jz      .format_done
+        mov     [putimg.conv], ecx
+  .format_done:
 
 ;------------------------------------------------------------------------------
 
-put_image_end_16:
+align 4
+put_image_end:
 
         mov     edi, [putimg.real_sy]
 
-; check for hardware cursor
-        mov     ecx, [_display.select_cursor]
-        cmp     ecx, select_cursor
-        je      put_image_end_16_new
-
   .new_line:
         mov     ecx, [putimg.real_sx]
-  .new_x:
-        push    [putimg.edi]
-        mov     eax, [putimg.ebp + 4]
-        call    eax
-        cmp     [ebp], bl
-        jne     .skip
-; convert to 16 bpp and store to LFB
-        and     eax, 00000000111110001111110011111000b
-        shr     ah, 2
-        shr     ax, 3
-        ror     eax, 8
-        add     al, ah
-        rol     eax, 8
-        mov     [LFB_BASE + edx], ax
-  .skip:
-        add     edx, 2
-        inc     ebp
-        dec     ecx
-        jnz     .new_x
-
-        add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline]
-        add     ebp, [putimg.winmap_newline]
-
-        cmp     [putimg.ebp], putimage_get1bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get2bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get4bpp
-        jnz     @f
-  .correct:
-        mov     eax, [putimg.edi]
-        mov     byte [eax], 80h
-  @@:
-        dec     edi
-        jnz     .new_line
-  .finish:
-        add     esp, putimg.stack_data
-        popad
-        ret
-
-;------------------------------------------------------------------------------
-
-align 4
-put_image_end_16_new:
-
-  .new_line:
-        mov     ecx, [putimg.real_sx]
-
-  .new_x:
-        push    [putimg.edi]
-        mov     eax, [putimg.ebp + 4]
-        call    eax
-
-        cmp     [ebp], bl
-        jne     .skip
-
-        push    ecx
-  .sh:
-        neg     ecx
-        add     ecx, [putimg.real_sx_and_abs_cx + 4]
-
-; check for X
-        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
-        jae     .no_mouse_area
-
-        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
-        jb      .no_mouse_area
-
-        shl     ecx, 16
-        add     ecx, [putimg.real_sy_and_abs_cy + 4]
-        sub     ecx, edi
-
-; check for Y
-        cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
-        jae     .no_mouse_area
-
-        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
-        jb      .no_mouse_area
-
-; check mouse area for putpixel
-        call    check_mouse_area_for_putpixel_new.1
-        cmp     ecx, -1                 ; MISTAKES HAPPEN?
-        jne     .no_mouse_area
-
-        mov     ecx, [esp]
-        jmp     .sh
-
-  .no_mouse_area:
-        pop     ecx
-; convert to 16 bpp and store to LFB
-        and     eax, 00000000111110001111110011111000b
-        shr     ah, 2
-        shr     ax, 3
-        ror     eax, 8
-        add     al, ah
-        rol     eax, 8
-        mov     [LFB_BASE+edx], ax
-
-  .skip:
-        add     edx, 2
-        inc     ebp
-        dec     ecx
-        jnz     .new_x
-
-        add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline]
-        add     ebp, [putimg.winmap_newline]
-
-        cmp     [putimg.ebp], putimage_get1bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get2bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get4bpp
-        jnz     @f
-
-  .correct:
-        mov     eax, [putimg.edi]
-        mov     byte [eax], 80h
-
-  @@:
-        dec     edi
-        jnz     .new_line
-        jmp     put_image_end_16.finish
-
-;------------------------------------------------------------------------------
-
-align 4
-put_image_end_24:
-
-        mov     edi, [putimg.real_sy]
-
-; check for hardware cursor
-        mov     ecx, [_display.select_cursor]
-        cmp     ecx, select_cursor
-        je      put_image_end_24_new
-
-  .new_line:
-        mov     ecx, [putimg.real_sx]
-  .new_x:
-        push    [putimg.edi]
-        mov     eax, [putimg.ebp + 4]
-        call    eax
-        cmp     [ebp], bl
-        jne     .skip
-
-; store to LFB
-        mov     [LFB_BASE + edx], ax
-        shr     eax, 16
-        mov     [LFB_BASE + edx + 2], al
-
-  .skip:
-        add     edx, 3
-        inc     ebp
-        dec     ecx
-        jnz     .new_x
-
-        add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline]
-        add     ebp, [putimg.winmap_newline]
-
-        cmp     [putimg.ebp], putimage_get1bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get2bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get4bpp
-        jnz     @f
-  .correct:
-        mov     eax, [putimg.edi]
-        mov     byte [eax], 80h
-  @@:
-        dec     edi
-        jnz     .new_line
-  .finish:
-        add     esp, putimg.stack_data
-        popad
-        ret
-
-;------------------------------------------------------------------------------
-
-align 4
-put_image_end_24_new:
-
-  .new_line:
-        mov     ecx, [putimg.real_sx]
-
-  .new_x:
-        push    [putimg.edi]
-        mov     eax, [putimg.ebp + 4]
-        call    eax
-        cmp     [ebp], bl
-        jne     .skip
-
-        push    ecx
-  .sh:
-        neg     ecx
-        add     ecx, [putimg.real_sx_and_abs_cx + 4]
-
-; check for X
-        cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
-        jae     .no_mouse_area
-
-        sub     cx, [X_UNDER_subtraction_CUR_hot_x]
-        jb      .no_mouse_area
-
-        shl     ecx, 16
-
-        add     ecx, [putimg.real_sy_and_abs_cy + 4]
-        sub     ecx, edi
-
-; check for Y
-        cmp     cx, [Y_UNDER_sub_CUR_hot_y_add_curh]
-        jae     .no_mouse_area
-
-        sub     cx, [Y_UNDER_subtraction_CUR_hot_y]
-        jb      .no_mouse_area
-
-; check mouse area for putpixel
-        call    check_mouse_area_for_putpixel_new.1
-        cmp     ecx, -1         ; MISTAKES HAPPEN?
-        jne     .no_mouse_area
-
-        mov     ecx, [esp]
-        jmp     .sh
-
-  .no_mouse_area:
-        pop     ecx
-
-; store to LFB
-        mov     [LFB_BASE + edx], ax
-        shr     eax, 16
-        mov     [LFB_BASE + edx + 2], al
-
-  .skip:
-        add     edx, 3
-        inc     ebp
-        dec     ecx
-        jnz     .new_x
-
-        add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline]
-        add     ebp, [putimg.winmap_newline]
-
-        cmp     [putimg.ebp], putimage_get1bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get2bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get4bpp
-        jnz     @f
-
-  .correct:
-        mov     eax, [putimg.edi]
-        mov     byte [eax], 80h
-
-  @@:
-        dec     edi
-        jnz     .new_line
-        jmp     put_image_end_24.finish
-
-;------------------------------------------------------------------------------
-
-align 4
-put_image_end_32:
-
-        mov     edi, [putimg.real_sy]
-
-; check for hardware cursor
-        mov     ecx, [_display.select_cursor]
-        cmp     ecx, select_cursor
-        je      put_image_end_32_new
-
-  .new_line:
-        mov     ecx, [putimg.real_sx]
-
-  .new_x:
-        push    [putimg.edi]
-        mov     eax, [putimg.ebp + 4]
-        call    eax
-        cmp     [ebp], bl
-        jne     .skip
-
-; store to LFB
-        mov     [LFB_BASE + edx], eax
-
-  .skip:
-        add     edx, 4
-        inc     ebp
-        dec     ecx
-        jnz     .new_x
-
-        add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline]
-        add     ebp, [putimg.winmap_newline]
-
-        cmp     [putimg.ebp], putimage_get1bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get2bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get4bpp
-        jnz     @f
-
-  .correct:
-        mov     eax, [putimg.edi]
-        mov     byte [eax], 80h
-
-  @@:
+        call    [putimg.row]
+        call    putimage_next_row
         dec     edi
         jnz     .new_line
 
   .finish:
         add     esp, putimg.stack_data
         popad
+
         cmp     [SCR_MODE], 0x12
         jne     @f
         call    VGA__putimage
@@ -606,24 +369,30 @@ put_image_end_32:
 
 ;------------------------------------------------------------------------------
 
-align 4
-put_image_end_32_new:
+; a row the software cursor sits on; the rest go to putimage_row untouched
+; edi = rows left, otherwise as putimage_row; putimg refs carry +4
 
-  .new_line:
-        mov     ecx, [putimg.real_sx]
+align 4
+putimage_row_cursor:
+
+        mov     eax, [putimg.real_sy_and_abs_cy + 4]
+        sub     eax, edi                        ; screen y of this row
+        cmp     ax, [Y_UNDER_sub_CUR_hot_y_add_curh]
+        jae     putimage_row
+        sub     ax, [Y_UNDER_subtraction_CUR_hot_y]
+        jb      putimage_row
 
   .new_x:
-        push    [putimg.edi]
-        mov     eax, [putimg.ebp + 4]
+        push    [putimg.edi + 4]
+        mov     eax, [putimg.ebp + 8]
         call    eax
         cmp     [ebp], bl
         jne     .skip
 
         push    ecx
-
   .sh:
         neg     ecx
-        add     ecx, [putimg.real_sx_and_abs_cx + 4]
+        add     ecx, [putimg.real_sx_and_abs_cx + 8]
 
 ; check for X
         cmp     cx, [X_UNDER_sub_CUR_hot_x_add_curh]
@@ -632,7 +401,7 @@ put_image_end_32_new:
         jb      .no_mouse_area
         shl     ecx, 16
 
-        add     ecx, [putimg.real_sy_and_abs_cy + 4]
+        add     ecx, [putimg.real_sy_and_abs_cy + 8]
         sub     ecx, edi
 
 ; check for Y
@@ -643,7 +412,7 @@ put_image_end_32_new:
 
 ; check mouse area for putpixel
         call    check_mouse_area_for_putpixel_new.1
-        cmp     ecx, -1         ; SHIT HAPPENS?
+        cmp     ecx, -1
         jne     .no_mouse_area
 
         mov     ecx, [esp]
@@ -651,35 +420,292 @@ put_image_end_32_new:
 
   .no_mouse_area:
         pop     ecx
-
-; store to LFB
-        mov     [LFB_BASE+edx], eax
+        call    [putimg.store + 4]
 
   .skip:
-        add     edx, 4
+        add     edx, [putimg.dst_bpp + 4]
         inc     ebp
         dec     ecx
         jnz     .new_x
+        ret
 
-        add     esi, [putimg.line_increment]
-        add     edx, [putimg.screen_newline]
-        add     ebp, [putimg.winmap_newline]
+;------------------------------------------------------------------------------
+; the bit position a 1, 2 or 4bpp getter carries between calls
 
-        cmp     [putimg.ebp], putimage_get1bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get2bpp
-        jz      .correct
-        cmp     [putimg.ebp], putimage_get4bpp
-        jnz     @f
+align 4
+putimage_next_row:
+        add     esi, [putimg.line_increment + 4]
+        add     edx, [putimg.screen_newline + 4]
+        add     ebp, [putimg.winmap_newline + 4]
 
-  .correct:
-        mov     eax, [putimg.edi]
+        cmp     [putimg.skip + 4], putimage_skip_getter
+        jne     .done
+        mov     eax, [putimg.edi + 4]
         mov     byte [eax], 80h
+  .done:
+        ret
 
+;------------------------------------------------------------------------------
+; esi = source, edx = framebuffer offset, ebp = window map, ecx = width, bl = slot
+; esi, edx, ebp come back advanced by one row; putimg refs carry +16
+
+align 4
+putimage_row:
+
+        push    edi                     ; the caller's row counter
+        lea     edi, [LFB_BASE + edx]
+
+  .find:
+        mov     eax, [putimg.mask + 8]
+        push    ebp                     ; the run start
+        cmp     [ebp], bl
+        je      .ours
+
+  .skip_dw:
+; four at a time: xor turns a slot byte into zero, and zero borrows into bit 7
+        cmp     ecx, 4
+        jb      .skip_tail
+        mov     edx, [ebp]
+        xor     edx, eax
+        sub     edx, 0x01010101
+        test    edx, 0x80808080
+        jnz     .skip_scan
+        add     ebp, 4
+        sub     ecx, 4
+        jmp     .skip_dw
+  .skip_tail:
+        jecxz   .skip_go        ; the dwords took the whole row
+  .skip_scan:
+        inc     ebp
+        dec     ecx
+        jz      .skip_go
+        cmp     [ebp], bl
+        jne     .skip_scan
+  .skip_go:
+        mov     edx, [putimg.skip + 12]
+        jmp     .go
+
+  .ours:
+        mov     edx, ecx
+        shr     edx, 2
+        jz      .ours_byte
+        lea     ebp, [ebp + edx*4]
+        neg     edx
+  .ours_dw:
+        cmp     [ebp + edx*4], eax
+        jne     .ours_dw_end
+        inc     edx
+        jnz     .ours_dw
+  .ours_dw_end:
+        lea     ebp, [ebp + edx*4]
+  .ours_byte:
+        mov     edx, ebp
+        sub     edx, [esp]
+        sub     ecx, edx                ; pixels left past the matched dwords
+        jz      .ours_go
+  .ours_scan:
+        cmp     [ebp], bl
+        jne     .ours_go
+        inc     ebp
+        dec     ecx
+        jnz     .ours_scan
+  .ours_go:
+        mov     edx, [putimg.conv + 12]
+
+  .go:
+        pop     eax                     ; the run start
+        push    ecx                     ; pixels left in the row
+        mov     ecx, ebp
+        sub     ecx, eax                ; the run length
+        call    edx
+        pop     ecx
+        test    ecx, ecx
+        jnz     .find
+
+  .done:
+        lea     edx, [edi - LFB_BASE]
+        pop     edi
+        ret
+
+;------------------------------------------------------------------------------
+align 4
+putimage_skip_bytes:
+        mov     eax, [putimg.dst_bpp + 16]
+        imul    eax, ecx
+        add     edi, eax
+        mov     eax, [putimg.src_bpp + 16]
+        imul    eax, ecx
+        add     esi, eax
+        ret
+
+align 4
+putimage_skip_getter:
+        mov     eax, [putimg.dst_bpp + 16]
+        imul    eax, ecx
+        add     edi, eax
+  .one:
+        push    [putimg.edi + 16]
+        mov     eax, [putimg.ebp + 20]
+        call    eax
+        dec     ecx
+        jnz     .one
+        ret
+
+align 4
+putimage_conv_16_16:
+; the getter 565 is the screen 565, so the pixels travel untouched
+        shr     ecx, 1
+        jnc     @f
+        movsw
   @@:
-        dec     edi
-        jnz     .new_line
-        jmp     put_image_end_32.finish
+        rep     movsd
+        ret
+
+align 4
+putimage_conv_24_24:
+        lea     ecx, [ecx + ecx*2]
+        rep     movsb
+        ret
+
+align 4
+putimage_conv_8_32:
+; the palette is the getter argument
+        push    ebx
+        mov     ebx, [putimg.edi + 20]
+  .one:
+        movzx   eax, byte [esi]
+        mov     eax, [ebx + eax*4]
+        mov     [edi], eax
+        inc     esi
+        add     edi, 4
+        dec     ecx
+        jnz     .one
+        pop     ebx
+        ret
+
+align 4
+putimage_conv_24_32:
+; a dword read takes a byte of the next pixel, so the last four go slow
+        cmp     ecx, 5
+        jb      .tail
+  .four:
+        mov     eax, [esi]
+        and     eax, 0x00FFFFFF
+        mov     [edi], eax
+        mov     eax, [esi + 3]
+        and     eax, 0x00FFFFFF
+        mov     [edi + 4], eax
+        mov     eax, [esi + 6]
+        and     eax, 0x00FFFFFF
+        mov     [edi + 8], eax
+        mov     eax, [esi + 9]
+        and     eax, 0x00FFFFFF
+        mov     [edi + 12], eax
+        add     esi, 12
+        add     edi, 16
+        sub     ecx, 4
+        cmp     ecx, 5
+        jae     .four
+  .tail:
+  .one:
+        movzx   eax, byte [esi + 2]
+        shl     eax, 16
+        mov     ax, [esi]
+        mov     [edi], eax
+        add     esi, 3
+        add     edi, 4
+        dec     ecx
+        jnz     .one
+        ret
+
+; esi = source, edi = framebuffer, ecx = pixels, nonzero; both come back past
+; the run. putimg refs here carry +16, or +20 with something pushed
+
+align 4
+putimage_conv_32_32:
+        rep     movsd
+        ret
+
+;------------------------------------------------------------------------------
+;------------------------------------------------------------------------------
+;------------------------------------------------------------------------------
+;------------------------------------------------------------------------------
+;------------------------------------------------------------------------------
+;------------------------------------------------------------------------------
+align 4
+putimage_conv_any_16:
+  .one:
+        push    [putimg.edi + 16]
+        mov     eax, [putimg.ebp + 20]
+        call    eax
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [edi], ax
+        add     edi, 2
+        dec     ecx
+        jnz     .one
+        ret
+
+;------------------------------------------------------------------------------
+align 4
+putimage_conv_any_24:
+  .one:
+        push    [putimg.edi + 16]
+        mov     eax, [putimg.ebp + 20]
+        call    eax
+        mov     [edi], ax
+        shr     eax, 16
+        mov     [edi + 2], al
+        add     edi, 3
+        dec     ecx
+        jnz     .one
+        ret
+
+;------------------------------------------------------------------------------
+align 4
+putimage_conv_any_32:
+  .one:
+        push    [putimg.edi + 16]
+        mov     eax, [putimg.ebp + 20]
+        call    eax
+        mov     [edi], eax
+        add     edi, 4
+        dec     ecx
+        jnz     .one
+        ret
+
+;------------------------------------------------------------------------------
+; eax = pixel, edx = framebuffer offset
+
+align 4
+putimage_store_16:
+        and     eax, 00000000111110001111110011111000b
+        shr     ah, 2
+        shr     ax, 3
+        ror     eax, 8
+        add     al, ah
+        rol     eax, 8
+        mov     [LFB_BASE + edx], ax
+        ret
+
+align 4
+putimage_store_24:
+        mov     [LFB_BASE + edx], ax
+        shr     eax, 16
+        mov     [LFB_BASE + edx + 2], al
+        ret
+
+align 4
+putimage_store_32:
+        mov     [LFB_BASE + edx], eax
+        ret
+
+
+
 
 ;------------------------------------------------------------------------------
 ; eax = x coordinate
