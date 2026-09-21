@@ -234,23 +234,25 @@ endl
         mov     ebx, TCP_max_win
         shl     ebx, cl
         pop     ecx
-        sub     ebx, [eax + TCP_SOCKET.RCV_ADV]
-        add     ebx, [eax + TCP_SOCKET.RCV_NXT]
+
+; Clamp to available window first, then subtract what the peer already knows (as in BSD)
 
         cmp     ebx, ecx
-        jl      @f
+        jbe     @f
         mov     ebx, ecx
        @@:
+        sub     ebx, [eax + TCP_SOCKET.RCV_ADV]
+        add     ebx, [eax + TCP_SOCKET.RCV_NXT]
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: we can increase window by %d bytes\n", ebx
 
         mov     edi, [eax + TCP_SOCKET.t_maxseg]
         shl     edi, 1
-        cmp     ebx, edi
-        jae     .send
+        cmp     ebx, edi                                ; signed: may be negative if window shrank
+        jge     .send
 
         cmp     ebx, SOCKET_BUFFER_SIZE/2
-        jae     .send
+        jge     .send
 
   .no_window:
 
