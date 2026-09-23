@@ -237,6 +237,7 @@ proc load_from_memory ;///////////////////////////////////////////////////////
 	lea	edx,[ebx+ecx]
 	imul	ebx,eax,16
 	add	ebx,edx
+	add	ebx,sizeof.EDITOR_LINE_DATA
 	mov	[ebp+EDITOR.Lines.Size],ebx
 	stdcall mem.ReAlloc,[ebp+EDITOR.Lines],ebx
 	mov	[ebp+EDITOR.Lines],eax
