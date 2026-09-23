@@ -72,8 +72,25 @@ I2CHID_PWR_ON       = 0x00
 ; single tick forever.
 MAX_POLL_ERRORS     = 100
 
-; Polls of silence before the next recovery step is tried (20 ms each).
+; Polls of silence before the next recovery step is tried (10 ms each).
+; The ladder exists for bringing up a pad that never reports at all, and is
+; compiled in only at debug level 1: on a working pad it would run merely
+; because nobody touched it during the first seconds after boot, and the
+; power cycle, the second reset and the poll-mode flips it consists of are
+; exactly the kind of thing a fragile firmware answers with silence.
 SILENT_LIMIT        = 150
+
+; A pad that has ever answered an idle poll with an empty length, yet keeps
+; returning one and the same non-empty frame, has stopped producing frames:
+; a finger on the surface changes the scan time in every report, and a pad
+; that holds its last frame instead of answering empty (Elan) never counts
+; here. Seen on the SIPODEV SP1064: a single frame came through and was
+; then repeated on every poll for good. This many identical answers in a
+; row, and the device is reset and switched into touchpad mode again; the
+; limit doubles on each reset, up to the maximum, so a pad that stays wedged
+; is retried, not hammered.
+STUCK_DUPS          = 100
+STUCK_DUPS_MAX      = 3000
 
 ; ---------------------------- Settings -------------------------------------
 ; Everything below has a built-in default and can be overridden from the
@@ -1686,6 +1703,56 @@ proc set_ptp_mode uses ebx esi edi
         ret
 endp
 
+; The pad has wedged (see STUCK_DUPS): drop whatever touch the driver holds,
+; then bring the device up again the way setup_device did - RESET, a quiet
+; wait, one read to consume the ack, SET_POWER(ON), and the touchpad mode,
+; which the reset cleared. Runs in the poll thread.
+proc reinit_device uses ebx esi edi
+        inc     [StReinit]
+        DEBUGF 2, "i2chid: pad stuck: the same frame %u polls in a row, resetting it (%u so far)\n", [DupRun], [StReinit]
+        mov     [DupRun], 0
+        mov     eax, [StuckLimit]
+        add     eax, eax
+        cmp     eax, STUCK_DUPS_MAX
+        jbe     @f
+        mov     eax, STUCK_DUPS_MAX
+@@:
+        mov     [StuckLimit], eax
+; Whatever the driver was in the middle of is over: no finger, no button.
+        call    ptp_forget
+        mov     [PrevTip], 0
+        mov     [BtnLatch], 0
+        mov     [HeldBtn], 0
+        mov     [TapHold], 0
+        mov     [TapRelease], 0
+        mov     [PendingPress], 0
+        mov     [DragActive], 0
+        invoke  SetMouseData, 0, 0, 0, 0, 0
+        stdcall hid_command, 0, I2CHID_OP_RESET
+        test    eax, eax
+        jz      @f
+        DEBUGF 2, "i2chid: RESET failed (%x)\n", eax
+@@:
+        mov     esi, 150
+        invoke  Sleep
+        stdcall dw_read_block, [SlaveAddr], 0, 0, input_buf, [MaxInput]
+        stdcall hid_command, I2CHID_PWR_ON, I2CHID_OP_SET_POWER
+        test    eax, eax
+        jz      @f
+        DEBUGF 2, "i2chid: post-reset SET_POWER failed (%x)\n", eax
+@@:
+        mov     esi, 10
+        invoke  Sleep
+        call    set_ptp_mode
+        mov     [PollMode], 0
+; The held frame is stale now; the next one the pad sends must count as new.
+        mov     edi, prev_rep
+        mov     ecx, MAX_INPUT_BUF
+        xor     eax, eax
+        rep stosb
+        ret
+endp
+
 ; Asks the device for every report it declared, as both an Input and a
 ; Feature report, and logs each answer. A pad whose sensor is alive but
 ; whose reporting mode was never selected will answer at least one of
@@ -1883,8 +1950,8 @@ proc i2chid_thread
         test    edx, edx
         jnz     @f
 .stats:
-        DEBUGF 2, "i2chid: after %u polls: %u reads, %u reports, %u duplicates, %u empty, at most %u per poll, %u lifts by silence\n", \
-                [StPolls], [StReads], [StReports], [StDups], [StEmpty], [StMaxDrain], [StForced]
+        DEBUGF 2, "i2chid: after %u polls: %u reads, %u reports, %u duplicates, %u empty, at most %u per poll, %u lifts by silence, %u resets\n", \
+                [StPolls], [StReads], [StReports], [StDups], [StEmpty], [StMaxDrain], [StForced], [StReinit]
 @@:
 ; Syscall 5 is the delay that sleeps on an event and yields; the Sleep import
 ; drivers normally use is delay_ms, which busy-waits and would burn a core.
@@ -1965,6 +2032,8 @@ proc i2chid_poll_once uses ebx esi edi
         mov     [GotAny], 1
         mov     [Consumed], 1
         inc     [StReports]
+        mov     [DupRun], 0
+        mov     [StuckLimit], STUCK_DUPS
 ; The first few reports are dumped raw, before any interpretation, so that a
 ; touchpad which does send data but whose bytes the driver reads wrongly can
 ; be told apart from one that says nothing at all.
@@ -2068,9 +2137,17 @@ proc i2chid_poll_once uses ebx esi edi
 .duplicate:
         pop     eax
         inc     [StDups]
+        cmp     [StEmpty], 0
+        je      .done                   ; holding the last frame is this pad's idle
+        inc     [DupRun]
+        mov     eax, [DupRun]
+        cmp     eax, [StuckLimit]
+        jb      .done
+        call    reinit_device
         jmp     .done
 .silent:
         inc     [StEmpty]
+        mov     [DupRun], 0
 ; Nothing arrived. An idle answer is still evidence: if the device reacts
 ; to a finger at all, something in those bytes changes even when it never
 ; sets a length, so the first answers and every change are logged.
@@ -2080,6 +2157,8 @@ proc i2chid_poll_once uses ebx esi edi
 ; If any of them wakes the device, GotAny freezes the ladder for good.
         cmp     [GotAny], 0
         jnz     .done
+        cmp     [LadderOn], 0
+        jz      .done
         inc     [SilentPolls]
         cmp     [SilentPolls], SILENT_LIMIT
         jb      .done
@@ -2759,6 +2838,15 @@ TraceCount      dd 8
 DecodeTrace     dd 8
 GotAny          dd 0
 SilentPolls     dd 0
+DupRun          dd 0
+; The bring-up ladder runs only in a level-1 (chatty) build.
+if __DEBUG_LEVEL__ > 1
+LadderOn        dd 0
+else
+LadderOn        dd 1
+end if
+StuckLimit      dd STUCK_DUPS
+StReinit        dd 0
 
 ; Parser state (see hidmin.inc).
 p_usage_page    dd 0
