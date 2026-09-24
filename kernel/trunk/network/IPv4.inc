@@ -1079,14 +1079,23 @@ ipv4_route:
         cmp     eax, 0xffffffff
         je      @f
 
+; An interface without an address (DHCP not done yet, or the lease
+; dropped when the link went down) can send nothing but broadcasts: with
+; address and mask both zero every destination compared as on-link, and
+; the stack went asking ARP for internet addresses on behalf of 0.0.0.0.
+        test    edx, edx
+        jz      .fail
+
 ; Check if we should route to gateway or not
-        mov     ebx, [IPv4_address + edi]
+        mov     ebx, edx
         and     ebx, [IPv4_subnet + edi]
         mov     ecx, eax
         and     ecx, [IPv4_subnet + edi]
         cmp     ecx, ebx
         je      @f
         mov     eax, [IPv4_gateway + edi]
+        test    eax, eax
+        jz      .fail                                ; off-link and no gateway
   @@:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "IPv4_route: %u\n", edi
         ret
