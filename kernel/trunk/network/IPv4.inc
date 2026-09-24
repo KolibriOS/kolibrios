@@ -107,6 +107,29 @@ macro   ipv4_init {
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
+; ipv4_clear_device: Reset the IPv4 settings of a removed device, ;
+;                    so no route points to it anymore.            ;
+;                                                                 ;
+;  IN:  edi = device number * 4                                   ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+macro   ipv4_clear_device {
+
+        xor     eax, eax
+        mov     [IPv4_address + edi], eax
+        mov     [IPv4_subnet + edi], eax
+        mov     [IPv4_nameserver + edi], eax
+        mov     [IPv4_gateway + edi], eax
+        mov     [IPv4_broadcast + edi], eax
+        mov     [IPv4_packets_tx + edi], eax
+        mov     [IPv4_packets_rx + edi], eax
+        mov     [IPv4_packets_dumped + edi], eax
+
+}
+
+
+;-----------------------------------------------------------------;
+;                                                                 ;
 ; Decrease TimeToLive of all fragment slots                       ;
 ;                                                                 ;
 ;-----------------------------------------------------------------;
@@ -757,6 +780,8 @@ ipv4_output_raw:
         push    esi eax
 
         call    ipv4_route
+        test    eax, eax
+        jz      .arp_error
         call    arp_ip_to_mac
 
         test    eax, 0xffff0000         ; error bits
@@ -967,6 +992,8 @@ ipv4_route:
 ; Check for on-link
         xor     edi, edi
   .loop:
+        cmp     [net_device_list + edi], 0      ; skip slots without a device
+        je      .next
         mov     ebx, [IPv4_address + edi]
         and     ebx, [IPv4_subnet + edi]
         jz      .next
@@ -983,7 +1010,10 @@ ipv4_route:
         mov     edi, 4                  ; skip loopback device
   .loop_gw:
         cmp     [IPv4_gateway + edi], 0
+        je      .next_gw
+        cmp     [net_device_list + edi], 0
         jne     .found_gw
+  .next_gw:
         add     edi, 4
         cmp     edi, 4*NET_DEVICES_MAX
         jb      .loop_gw

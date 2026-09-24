@@ -61,6 +61,41 @@ macro   eth_init {
 
 }
 
+;-----------------------------------------------------------------;
+;                                                                 ;
+; eth_clear_device: Drop the frames of a removed device that are  ;
+;                   still waiting in the input queue, their       ;
+;                   NET_BUFF.device will not be valid anymore.    ;
+;                                                                 ;
+;  IN:  ebx = device ptr                                          ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+macro   eth_clear_device {
+
+local   .loop, .done
+
+        spin_lock_irqsave
+        mov     esi, [ETH_frame_head]
+  .loop:
+        cmp     esi, ETH_frame_head
+        je      .done
+        mov     eax, esi
+        mov     esi, [esi + NET_BUFF.NextPtr]
+        cmp     [eax + NET_BUFF.device], ebx
+        jne     .loop
+
+; unlink it, ETH_frame_head/tail double as the NextPtr/PrevPtr of the list head
+        mov     ecx, [eax + NET_BUFF.PrevPtr]
+        mov     [ecx + NET_BUFF.NextPtr], esi
+        mov     [esi + NET_BUFF.PrevPtr], ecx
+        dec     [ETH_frame_queued]
+        stdcall net_buff_free, eax
+        jmp     .loop
+  .done:
+        spin_unlock_irqrestore
+
+}
+
 align 4
 ; This function is called by ethernet drivers.
 ; Push the received ethernet packet onto the ethernet input queue.
@@ -245,6 +280,9 @@ eth_output:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_output: size=%u device=%x\n", ecx, ebx
 
+        test    ebx, ebx
+        jz      .no_device
+
         cmp     ecx, [ebx + ETH_DEVICE.mtu]
         ja      .too_large
 
@@ -295,8 +333,13 @@ eth_output:
         ret
 
   .too_large:
-        inc     [eax + NET_DEVICE.packets_tx_err]
+        inc     [ebx + NET_DEVICE.packets_tx_err]
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ETH_output: Packet too large!\n"
+        xor     eax, eax
+        ret
+
+  .no_device:
+        DEBUGF  DEBUG_NETWORK_ERROR, "ETH_output: no device!\n"
         xor     eax, eax
         ret
 
