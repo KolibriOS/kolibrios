@@ -1,7 +1,11 @@
+align 4
 mouse:
     mcall SF_SYSTEM, SSF_GET_ACTIVE_WINDOW
     cmp  [active_process],eax
     jne  still
+    cld
+    stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
+
     mcall SF_MOUSE_GET, SSF_SCROLL_DATA
     mov   [mouse_scroll_data],eax
     mcall SF_MOUSE_GET, SSF_BUTTON

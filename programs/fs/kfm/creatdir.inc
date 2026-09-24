@@ -20,7 +20,11 @@ create_directory:
     je	 .key_create
     cmp  eax,EV_BUTTON
     je	 .button_create
+if USE_STATIC_LIBS eq 0
     stdcall [edit_box_mouse], create_editboxes
+else
+    stdcall edit_box_mouse, create_editboxes
+end if
     jmp .still
 ;-------------------------------------------------------------
 .button_create:
@@ -52,7 +56,11 @@ create_directory:
     je	.exit_with_create
     cmp ah,27
     je	.exit_without_create
+if USE_STATIC_LIBS eq 0
     stdcall [edit_box_key], create_editboxes
+else
+    stdcall edit_box_key, create_editboxes
+end if
     jmp .still
 ;-------------------------------------------------------------
 draw_create_dir:
@@ -75,7 +83,11 @@ draw_create_dir:
     mov eax,create_editboxes
     mov dword [eax+4],ebx
     mov dword [eax+8],ecx
+if USE_STATIC_LIBS eq 0
 	stdcall [edit_box_draw], create_editboxes
+else
+    stdcall edit_box_draw, create_editboxes
+end if
 	popa
 	pusha
 	add   ebx,70 shl 16
@@ -84,8 +96,7 @@ draw_create_dir:
     mov   bx,40
     mov   esi,0xffffff
     mov   edx,0x40000000+160
-    mov   eax,8
-	mcall
+    mcall SF_DEFINE_BUTTON
     add   ebx,50 shl 16
     inc   edx
 	mcall
@@ -96,7 +107,7 @@ draw_create_dir:
     add   ecx,37 shl 16
     mov   bx,40
     mov   cx,15
-    mov   edx,0
+    xor   edx,edx
     push  ebx ecx
     sub   ecx,1 shl 16
     sub   ebx,1 shl 16

@@ -48,6 +48,8 @@ include '../../KOSfuncs.inc'
 include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/box_lib.mac'
 
+USE_STATIC_LIBS equ 0
+
 ;---------------------------------------------------------------------
 include   'files.inc'
 ;---------------------------------------------------------------------
@@ -64,6 +66,7 @@ START:
 
     stdcall	[sort_init], 1
 
+    mcall   SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
     mcall   SF_THREAD_INFO, procinfo,-1
     mov     ecx,[ebx+30]    ; PID
     mcall   SF_SYSTEM, SSF_GET_THREAD_SLOT
@@ -73,6 +76,8 @@ START:
     mov   [read_folder_name],ax
     mov   [read_folder_1_name],ax
     call  load_initiation_file
+
+    call  init_menu
     call  add_memory_for_folders
     call  device_detect_f70
     call  select_starting_directories
@@ -107,6 +112,7 @@ START:
         mcall SF_SET_EVENTS_MASK, EVM_MOUSE + EVM_BUTTON + EVM_KEY + EVM_REDRAW
         jmp   red_1
 ;---------------------------------------------------------------------
+align 4
 red:
     call  get_window_param
     test  [window_status],10b
@@ -184,7 +190,7 @@ align 4
 draw_window:
     mcall SF_REDRAW, SSF_BEGIN_DRAW
         xor     esi,esi
-    mcall SF_CREATE_WINDOW, <20,728>, <20,460>, 0x43cccccc   ; 0x805080D0, 0x005080D0
+    mcall SF_CREATE_WINDOW, <20,728>, <20,460>, 0x63cccccc   ; 0x805080D0, 0x005080D0
     call  get_window_param
 
     mcall SF_SET_CAPTION, 1, header_text
@@ -361,19 +367,145 @@ plugins_directory db 0
 
 system_dir_Boxlib db '/sys/lib/box_lib.obj',0
 system_dir_Sort 	db '/sys/lib/sort.obj',0
+system_dir_Kmenu 	db '/sys/lib/kmenu.obj',0
 
 align 4
 l_libs_start:
+if USE_STATIC_LIBS eq 0
 library01	l_libs	system_dir_Boxlib+9,file_name,system_dir_Boxlib,\
 import_box_lib,plugins_directory
+end if
 
 library02	l_libs	system_dir_Sort+9,file_name,system_dir_Sort,\
 Sort_import,plugins_directory
+
+library03	l_libs	system_dir_Kmenu+9,file_name,system_dir_Kmenu,\
+import_libkmenu,plugins_directory
 end_l_libs:
 
+if USE_STATIC_LIBS eq 0
 include '../../develop/libraries/box_lib/import.inc'
+else
+include '../../develop/libraries/box_lib/keys.inc'
+include '../../develop/libraries/box_lib/editbox.asm'
+include '../../develop/libraries/box_lib/scrollbar.asm'
+scrollbar_v_draw dd scroll_bar_vertical.draw
+scrollbar_v_mouse  dd scroll_bar_vertical.mouse
+scrollbar_h_draw dd scroll_bar_horizontal.draw
+scrollbar_h_mouse  dd scroll_bar_horizontal.mouse
+end if
 
-align	4
+align 4
+proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dword, box_h:dword,\
+        col_0:dword, col_1:dword, col_2:dword
+
+	mov esi,[col_1]
+	and esi,111111101111111011111110b
+
+	mov eax,SF_DRAW_RECT
+	;bottom line
+	mov edx,[col_2]
+	mov ebx,[box_l]
+	shl ebx,16
+	add ebx,[box_w]
+	inc ebx ;для заливки диагональных пикселей
+	mov ecx,[box_t]
+	add ecx,[box_h]
+	shl ecx,16
+	inc ecx
+
+	mov edi,3 ;for cycle
+	@@:
+		;calculate colors
+		and edx,111111101111111011111110b
+		add edx,esi
+		shr edx,1
+		;line move up and ->...<-
+		sub ecx,1 shl 16 ;move up
+		add ebx,1 shl 16 ;->...
+		sub ebx,2 ;...<-
+		;draw line
+		int 0x40
+		dec edi
+	jnz @b
+
+	;right line
+	mov edx,[col_2]
+	mov ebx,[box_l]
+	add ebx,[box_w]
+	shl ebx,16
+	inc ebx
+	mov ecx,[box_t]
+	shl ecx,16
+	add ecx,[box_h]
+
+	mov edi,3 ;for cycle
+	@@:
+		;calculate colors
+		and edx,111111101111111011111110b
+		add edx,esi
+		shr edx,1
+		;line move left and ...
+		sub ebx,1 shl 16 ;move left
+		add ecx,1 shl 16
+		sub ecx,2
+		;draw line
+		int 0x40
+		dec edi
+	jnz @b
+
+	;top line
+	mov edx,[col_0]
+	mov ebx,[box_l]
+	shl ebx,16
+	add ebx,[box_w]
+	mov ecx,[box_t]
+	shl ecx,16
+	inc ecx
+
+	mov edi,3 ;for cycle
+        @@:
+		;calculate colors
+		and edx,111111101111111011111110b
+		add edx,esi
+		shr edx,1
+		;line move down and ->...<-
+		add ecx,1 shl 16 ;move down
+		add ebx,1 shl 16 ;->...
+		sub ebx,2 ;...<-
+		;draw line
+		int 0x40
+		dec edi
+	jnz @b
+
+	;left line
+	mov edx,[col_0]
+	mov ebx,[box_l]
+	shl ebx,16
+	inc ebx
+	mov ecx,[box_t]
+	shl ecx,16
+	add ecx,[box_h]
+
+	mov edi,3 ;for cycle
+	@@:
+		;calculate colors
+		and edx,111111101111111011111110b
+		add edx,esi
+		shr edx,1
+		;line move left and ...
+		add ebx,1 shl 16 ;move left
+		add ecx,1 shl 16
+		sub ecx,2
+		;draw line
+		int 0x40
+		dec edi
+	jnz @b
+
+	ret
+endp
+
+align 4
 Sort_import:
 sort_init	dd aSort_init
 sort_version	dd aSort_version
@@ -385,12 +517,37 @@ aSort_version	db 'version',0
 aSort_SortDir	db 'SortDir',0
 aSort_strcmpi	db 'strcmpi',0
 
+align 4
+import_libkmenu:
+	kmenu_init                     dd akmenu_init
+	kmainmenu_draw                 dd akmainmenu_draw
+	kmainmenu_dispatch_cursorevent dd akmainmenu_dispatch_cursorevent
+	ksubmenu_new                   dd aksubmenu_new
+	ksubmenu_delete                dd aksubmenu_delete
+	ksubmenu_draw                  dd aksubmenu_draw
+	ksubmenu_add                   dd aksubmenu_add
+	kmenuitem_new                  dd akmenuitem_new
+	kmenuitem_delete               dd akmenuitem_delete
+	kmenuitem_draw                 dd akmenuitem_draw
+dd 0,0
+	akmenu_init                     db 'kmenu_init',0
+	akmainmenu_draw                 db 'kmainmenu_draw',0
+	akmainmenu_dispatch_cursorevent db 'kmainmenu_dispatch_cursorevent',0
+	aksubmenu_new                   db 'ksubmenu_new',0
+	aksubmenu_delete                db 'ksubmenu_delete',0
+	aksubmenu_draw                  db 'ksubmenu_draw',0
+	aksubmenu_add                   db 'ksubmenu_add',0
+	akmenuitem_new                  db 'kmenuitem_new',0
+	akmenuitem_delete               db 'kmenuitem_delete',0
+	akmenuitem_draw                 db 'kmenuitem_draw',0
+
+align 4
 mouse_scroll_data:
     .vertical   rw 1
     .horizontal rw 1
 scroll_bar_event rb 1
 scroll_pointer rb 1
-align	4
+align 4
 sb_left  scrollbar 15, 348, 200, 24+FILE_BR_TOP_LINE, 16, 5, 1, 0, 0xeeeeee, 0xbbddff, 0, 1
 sb_right scrollbar 15, 708, 200, 24+FILE_BR_TOP_LINE, 16, 5, 1, 0, 0xeeeeee, 0xbbddff, 0, 1
 

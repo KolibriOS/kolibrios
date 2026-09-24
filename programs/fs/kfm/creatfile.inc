@@ -20,12 +20,15 @@ create_new_file:
     je   .key_create
     cmp  eax,EV_BUTTON
     je   .button_create
-        stdcall [edit_box_mouse], create_editboxes
-        jmp .still
+if USE_STATIC_LIBS eq 0
+    stdcall [edit_box_mouse], create_editboxes
+else
+    stdcall edit_box_mouse, create_editboxes
+end if
+    jmp .still
 ;-------------------------------------------------------------
 .button_create:
-    mov eax,17
-        mcall
+    mcall SF_GET_BUTTON
     test ah,ah
     jz  .still
     cmp  ah,160
@@ -48,13 +51,16 @@ create_new_file:
     jmp  red
 ;-------------------------------------------------------------
 .key_create:
-    mov eax,2
-        mcall
+    mcall SF_GET_KEY
     cmp ah,13
     je  .exit_with_create
     cmp ah,27
     je  .exit_without_create
+if USE_STATIC_LIBS eq 0
     stdcall [edit_box_key], create_editboxes
+else
+    stdcall edit_box_key, create_editboxes
+end if
     jmp .still
 ;-------------------------------------------------------------
 draw_create_file:
@@ -77,17 +83,20 @@ draw_create_file:
     mov eax,create_editboxes
     mov dword [eax+4],ebx
     mov dword [eax+8],ecx
-        stdcall [edit_box_draw], create_editboxes
-        popa
-        pusha
-        add   ebx,70 shl 16
-        add   ecx,37 shl 16
+if USE_STATIC_LIBS eq 0
+    stdcall [edit_box_draw], create_editboxes
+else
+    stdcall edit_box_draw, create_editboxes
+end if
+    popa
+    pusha
+    add   ebx,70 shl 16
+    add   ecx,37 shl 16
     mov   cx,15
     mov   bx,40
     mov   esi,0xffffff
     mov   edx,0x40000000+160
-    mov   eax,8
-        mcall
+    mcall SF_DEFINE_BUTTON
     add   ebx,50 shl 16
     inc   edx
         mcall
@@ -98,7 +107,7 @@ draw_create_file:
     add   ecx,37 shl 16
     mov   bx,40
     mov   cx,15
-    mov   edx,0
+    xor   edx,edx
     push  ebx ecx
     sub   ecx,1 shl 16
     sub   ebx,1 shl 16

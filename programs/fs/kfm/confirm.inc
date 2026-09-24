@@ -47,8 +47,9 @@ draw_confirmation_button:
 	mov	ecx,[window_high]
 	mov	ebx,[window_width]
 	shr	ecx,1
+	sub ecx,[skin_high]
 	shr	ebx,1
-	sub	ebx,45
+	sub	ebx,50
 	shl	ecx,16
 	shl	ebx,16
 	mov	cx,15
@@ -65,7 +66,8 @@ draw_confirmation_menu:
 	shr	ecx,1
 	shr	ebx,1
 	sub	ecx,22
-	sub	ebx,60
+	sub ecx,[skin_high]
+	sub	ebx,65
 	shl	ecx,16
 	shl	ebx,16
 	mov	cx,44

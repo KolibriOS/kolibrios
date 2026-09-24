@@ -171,6 +171,7 @@ proc mark_file_clear_all uses eax ecx edi, tmem:dword, tsize:dword
     mov  ecx,edi
     add  ecx,[tsize]
     add  edi,32+299
+    cld
 @@:
     stosb
     add  edi,304-1

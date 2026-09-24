@@ -55,13 +55,14 @@ progress_bar_copy:
 @@:
     mov  edx,0xff0000
 .continue_1:
-	mcall
+    mcall
     call calculate_progress_data_2
     shr  ecx,16
     mov  bx,cx
     sub  ebx,11
     call  clear_text_area_1
     mcall SF_DRAW_TEXT, ,0x80ffffff,start_parameter
+    sub  ebx,[skin_high]
     sub  ebx,30
     call  clear_text_area_1
     mcall SF_DRAW_TEXT, ,0x80ffffff,file_name

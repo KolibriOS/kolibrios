@@ -92,12 +92,15 @@ editbox_copy_name:
     je	 .key_copy
     cmp  eax,EV_BUTTON
     je	 .button_copy
+if USE_STATIC_LIBS eq 0
 	stdcall [edit_box_mouse], copy_editboxes
+else
+	stdcall edit_box_mouse, copy_editboxes
+end if
 	jmp .still
 ;-------------------------------------------------------------
 .button_copy:
-    mov eax,17
-	mcall
+    mcall SF_GET_BUTTON
     test ah,ah
     jz	.still
     cmp  ah,160
@@ -126,13 +129,16 @@ editbox_copy_name:
     jmp  red
 ;-------------------------------------------------------------
 .key_copy:
-    mov eax,2
-	mcall
+    mcall SF_GET_KEY
     cmp ah,13
     je	.exit_with_copy
     cmp ah,27
     je	.exit_without_copy
+if USE_STATIC_LIBS eq 0
     stdcall [edit_box_key], copy_editboxes
+else
+    stdcall edit_box_key, copy_editboxes
+end if
     jmp .still
 ;-------------------------------------------------------------
 draw_editbox_copy_name:
@@ -155,7 +161,11 @@ draw_editbox_copy_name:
     mov eax,copy_editboxes
     mov dword [eax+4],ebx
     mov dword [eax+8],ecx
+if USE_STATIC_LIBS eq 0
 	stdcall [edit_box_draw], copy_editboxes
+else
+	stdcall edit_box_draw, copy_editboxes
+end if
 	popa
 	pusha
 	add   ebx,70 shl 16
@@ -175,7 +185,7 @@ draw_editbox_copy_name:
     add   ecx,37 shl 16
     mov   bx,40
     mov   cx,15
-    mov   edx,0
+    xor   edx,edx
     push  ebx ecx
     sub   ecx,1 shl 16
     sub   ebx,1 shl 16

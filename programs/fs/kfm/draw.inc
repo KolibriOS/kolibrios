@@ -1,5 +1,5 @@
 align 4
-FILE_BR_TOP_LINE equ 70
+FILE_BR_TOP_LINE equ 46
 FILE_BR_SEL_DR_W equ 60
 FILE_BR_COL_LEFT equ 60+15 ;ширина списка + отступ до кнопки name
 file_br_col_w1   dd   ? ;name
@@ -12,24 +12,11 @@ symbol_down db 25,0
 ;------------------------------------------------------------------------------
 align 4
 draw_buttons_panel:
-	mov	ecx,[skin_high]
-	add	ecx,19
-	shl	ecx,16
-	mov	cx,18
 	mov	ebx,[window_width]
 	sub	ebx,9
-	add	ebx,5 shl 16
-	mcall	SF_DRAW_RECT, ,,0xffffff
-	
-	mov	edx,15 shl 16+20
-	add	edx,[skin_high]
-	mcall	SF_PUT_IMAGE, buttons_file_data,<198,16>
-	
-	mov ecx, 20
-	add ecx, [skin_high]
-	shl ecx, 16
-	add ecx, 16
-	mcall	SF_DEFINE_BUTTON, <15,16>,,150+0x40000000
+	mcall	SF_DRAW_RECT, ,<19,18>,0xffffff
+	mcall	SF_PUT_IMAGE, buttons_file_data,<198,16>,<10,20>
+	mcall	SF_DEFINE_BUTTON, <10,16>,<20,16>,150+0x40000000
 	
 _new_but:
 	add	ebx,26 shl 16
@@ -810,8 +797,9 @@ draw_left_panel_patch:
 .1:
 	call	clear_patch_area
 	mov	ebx,[window_high]
+	sub ebx,[skin_high]
 	sub	ebx,33
-	add	ebx,8 shl 16
+	add	ebx,3 shl 16
 	mcall	SF_DRAW_TEXT, ,0x80000000  ; ,read_folder.name
 ;--------------------------------------
 .end:
@@ -828,8 +816,8 @@ clear_patch_area:
 	push	edx
 	mov	ebx,[window_width]
 	sub	ebx,9
-	add	ebx,5 shl 16
 	mov	ecx,[window_high]
+	sub ecx,[skin_high]
 	sub	ecx,35
 	shl	ecx,16
 	mov	cx,12
@@ -912,14 +900,14 @@ for_all_panel_selection:
 ;------------------------------------------------------------------------------
 align 4
 clear_left_panel:
-	mov	ebx,7 shl 16
+	mov	ebx,2 shl 16
 	add	ebx,[window_width]
 	shr	bx,1
 	sub	ebx,6+2
 	mov	[left_panel_x],ebx
 	;calculate left scroll
 	mov [sb_left.x_pos],bx
-	add [sb_left.x_pos],7-15 ;left_panel_x.start_x-sb_sb_left.x_size
+	add [sb_left.x_pos],2-15 ;left_panel_x.start_x-sb_sb_left.x_size
 	;calculate name column width
 	movzx eax,bx
 	sub eax,FILE_BR_COL_LEFT+FILE_BR_COL_W2+FILE_BR_COL_W3+FILE_BR_COL_W4+16
@@ -952,7 +940,7 @@ calculate_panel_1:
 	add	ecx,FILE_BR_TOP_LINE
 	shl	ecx,16
 	add	ecx,[window_high]
-	sub	ecx,FILE_BR_TOP_LINE+62
+	sub	ecx,FILE_BR_TOP_LINE+86
 	ret
 ;------------------------------------------------------------------------------
 clear_right_panel:
@@ -961,7 +949,7 @@ clear_right_panel:
 	sub	bx,6+2
 	mov	eax,[window_width]
 	sub eax,ebx
-	sub eax,5 ;border width
+	sub eax,10 ;2*border width
 	shl eax,16
 	add ebx,eax
 	mov	[right_panel_x],ebx
@@ -1003,6 +991,7 @@ erase_fbutton:
 
 	ret
 ;------------------------------------------------------------------------------
+align 4
 draw_fbutton:
 	test	[window_status],100b	; window is rolled up
 	jnz	.exit
@@ -1011,16 +1000,16 @@ draw_fbutton:
 	jnz	.exit
 
 	mov	ecx,[window_high]
+	sub	ecx,[skin_high]
 	sub	ecx,20
 	shl	ecx,16
-	add	ecx,15
+	add	ecx,15 ; button height
 	mov	eax,[window_width]
 	mov	ebx,12
 	xor	edx,edx
 	div	ebx
 	mov	[fbutton_width],eax
-	mov	ebx,5 shl 16
-	add	ebx,eax
+	mov	ebx,eax
 	sub	ebx,2
 	mov	esi,0xaa00
 	mov	edx,101
@@ -1036,7 +1025,7 @@ draw_fbutton:
 	mov	bx,ax
 	mov	eax,[window_width]
 	sub	ax,bx
-	sub	ax,5
+	sub	ax,10 ;2*border width
 	mov	bx,ax
 	mov	eax,SF_DEFINE_BUTTON
 ;--------------------------------------
@@ -1083,8 +1072,9 @@ draw_fbutton:
 	ret
 ;------------------------------------------------------------------------------
 draw_fbutton_name:
-	mov	ebx, 7 shl 16
+	mov	ebx, 2 shl 16
 	add	ebx,[window_high]
+	sub ebx,[skin_high]
 	sub	ebx,19
 	mov	eax,SF_DRAW_TEXT
 	mov	ecx,0x90000000
