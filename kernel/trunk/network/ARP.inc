@@ -23,6 +23,7 @@ ARP_AWAITING_RESPONSE   = 2
 ARP_RESPONSE_TIMEOUT    = 3
 
 ARP_REQUEST_TTL         = 31          ; 20 s
+ARP_WAIT_TICKS          = 100         ; 1 s
 ARP_ENTRY_TTL           = 937         ; 600 s
 ARP_STATIC_ENTRY        = -1
 
@@ -577,11 +578,32 @@ if ARP_BLOCK
 
         cmp     [esi + ARP_entry.Status], ARP_AWAITING_RESPONSE         ; Are we waiting for reply from remote end?
         jne     .give_up
-        push    esi
-        mov     esi, 10                 ; wait 10 ms
-        call    delay_ms
-        pop     esi
-        jmp     .found_it               ; now check again
+
+; Only applications may wait for the reply, kernel threads give up at once
+
+        push    ecx edx
+        mov     edx, [current_slot]
+        cmp     [edx + APPDATA.priority], MAX_PRIORITY
+        je      .wait_over
+        mov     edx, [timer_ticks]
+        add     edx, ARP_WAIT_TICKS
+  .wait:
+        push    ebx
+        mov     ebx, 1                  ; sleep 10 ms
+        call    delay_hs
+        pop     ebx
+        cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING
+        je      .wait_done
+        cmp     [esi + ARP_entry.Status], ARP_AWAITING_RESPONSE
+        jne     .wait_over
+        mov     ecx, [timer_ticks]
+        sub     ecx, edx
+        js      .wait
+  .wait_over:
+        pop     edx ecx
+        jmp     .give_up
+  .wait_done:
+        pop     edx ecx
 
 else
 
