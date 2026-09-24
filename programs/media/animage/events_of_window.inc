@@ -4,12 +4,11 @@
 drawwin:
 	or	ecx,-1
 	mcall SF_THREAD_INFO,procinfo
-	mov	esi,procinfo
 
-	mov	eax,[esi+process_information.box.left]
-	mov	ebx,[esi+process_information.box.top]
-	mov	ecx,[esi+process_information.box.width]
-	mov	edx,[esi+process_information.box.height]
+	mov	eax,[procinfo.box.left]
+	mov	ebx,[procinfo.box.top]
+	mov	ecx,[procinfo.box.width]
+	mov	edx,[procinfo.box.height]
 	mov	[Window_CordinatX],eax
 	mov	[Window_CordinatY],ebx
 	
@@ -23,6 +22,20 @@ drawwin:
 	@@:
 	mov	[Window_SizeX],ecx
 	mov [Window_SizeY],edx
+	; keep the size alone for a rolled up window
+	test [procinfo.wnd_state],byte 100b
+	jnz .no_change
+	cmp ecx,[procinfo.box.width]
+	jne @f
+	cmp edx,[procinfo.box.height]
+	jz .no_change
+	@@:
+	push ecx edx esi
+	mov esi,edx
+	mov edx,ecx
+	mcall   SF_CHANGE_WINDOW, -1, -1
+	pop esi edx ecx
+.no_change:
 	mov	[MaxWorkScreen_SizeX],ecx
 	mov	[MaxWorkScreen_SizeY],edx
 	sub	[MaxWorkScreen_SizeX],ci_edit_wnd_x_pos+2*ci_edit_wnd_border\
@@ -51,7 +64,7 @@ no_znak2:
 	add	ecx, [Window_SizeY]
 	mcall SF_CREATE_WINDOW,,,0x73aabbcc,,name_of_program
 	
-	mov	eax,[procinfo+70] ;staus of window
+	movzx eax,byte [procinfo.wnd_state]
 	test eax,100b
 	jne	.end
 	
@@ -81,7 +94,7 @@ no_znak2:
 	add	ebx,ci_edit_wnd_x_pos+ci_edit_wnd_border
 	mov	edx,[Window_SizeX]
 	sub	edx,ebx
-	sub	edx,ci_scroll_dim+5-ci_edit_wnd_border
+	sub	edx,ci_scroll_dim+5+ci_edit_wnd_border
 	shl	ebx,16
 	mov	bx,dx ;ширина бордюра
 	
@@ -113,23 +126,6 @@ no_znak2:
 ;------------------------------------------------
 	mcall ,,<ci_edit_wnd_y_pos,ci_edit_wnd_border> ;бордюр под панелью и над окном
 ;------------------------------------------------
-	mov	eax,ci_edit_wnd_x_pos
-	mov	ebx,[Window_SizeY]
-	mov	ecx,[Window_SizeX]
-	mov	edx,ci_scroll_dim
-	mov	esi,3
-	sub	ecx,ci_scroll_dim+5+ci_edit_wnd_x_pos+ci_offs_skin_w
-	sub	ebx,ci_scroll_dim+5+ci_offs_skin_h
-	call draw_volume_rectangle ; horizontal scrollbar border
-;------------------------------------------------
-	mov	eax,[Window_SizeX]
-	mov	ebx,ci_edit_wnd_y_pos
-	mov	ecx,ci_scroll_dim
-	mov	edx,[Window_SizeY]
-	mov	esi,3
-	sub	eax,ci_scroll_dim+5+ci_offs_skin_w
-	sub	edx,ci_scroll_dim+5+ci_edit_wnd_y_pos+ci_offs_skin_h
-	call draw_volume_rectangle ; vertical scrollbar border
 	call draw_scrollers
 ;------------------------------------------------
 	mov	eax,[Window_SizeX]

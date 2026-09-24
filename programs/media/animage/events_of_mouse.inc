@@ -1,17 +1,22 @@
 ;---------------------------------------------
 ;-------------interraction MOUSE--------------
 ;---------------------------------------------
+align 4
 mouse:
 	stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
 
 	or ecx,-1
 	mcall SF_THREAD_INFO,procinfo
 	
-	mov	eax,[procinfo+70] ;staus of window
+	movzx eax,byte [procinfo.wnd_state]
 	test eax,100b
 	jne	still
 	
 	call GetMouseClick
+	bt [MouseBut],16
+	jnc @f
+	mov	[scroll_drag],0
+@@:
 
 	call GetMouseCoordinats
 	mov	eax,[MouseX]
@@ -20,6 +25,11 @@ mouse:
 	mov	edx,[WorkScreen_SizeY]
 	add	ecx,ci_scrollh_coord_x_min
 	add	edx,ci_scrollv_coord_y_min
+
+	cmp [scroll_drag],1
+	je sb_hor_mouse
+	cmp [scroll_drag],2
+	je sb_ver_mouse
 
 	cmp	eax,ecx
 	jae	mouse_scroll
@@ -36,105 +46,50 @@ mouse_scroll:
 
 	;call GetMouseCoordinats
 ;interraction with horizontal scroller
-	mov	eax,[Scroll1CoordinatX]
-	mov	ebx,[Scroll1CoordinatY]
+	movzx	eax,[sb_horizont.x_pos]
+	movzx	ebx,[sb_horizont.y_pos]
 	mov	ecx,[MouseX]
 	mov	edx,[MouseY]
-	mov	esi,[Scroll1MaxSizeX]
-	mov	edi,[Scroll1MaxSizeY]
+	movzx	esi,[sb_horizont.x_size]
+	movzx	edi,[sb_horizont.y_size]
 	call	columnus
 	test	eax,eax
 	jz	no_horizontal
 
-	mov	eax,ci_scrollh_coord_x_min
-	mov	ebx,[Scroll1CoordinatY]
-	mov	ecx,[Scroll1MaxSizeX]
-	inc ecx
-	mov	edx,ci_scroll_dim-6
-	mov	esi,7
-	call draw_volume_rectangle ; horizontal scrollbar clear
-
-	mov	eax,[MouseX]
-	mov	ebx,[Scroll1SizeX]
-	shr	ebx,1
-	sub	eax,ebx
-	mov	ecx,[MouseX]
-	add	ecx,ebx
-	mov	edx,ci_scrollh_coord_x_min
-	add	edx,[Scroll1MaxSizeX]
-	mov	[Scroll1CoordinatX],eax
-	sub	eax,ci_scrollh_coord_x_min
-	jns	no_min_scroll
-
-	mov	[Scroll1CoordinatX],ci_scrollh_coord_x_min
-
-no_min_scroll:
-	cmp	ecx,edx
-	jl	no_max_scroll
-
-	sub	edx,ebx
-	sub	edx,ebx
-	mov	[Scroll1CoordinatX],edx
-
-no_max_scroll:
-	mov	eax,[Scroll1CoordinatX]
-	sub	eax,ci_scrollh_coord_x_min
+	bt [MouseBut],8
+	jnc sb_hor_mouse
+	mov	[scroll_drag],1
+sb_hor_mouse:
+	stdcall [scrollbar_h_mouse],sb_horizont
+	mov	eax,[sb_horizont.position]
 	mov	ebx,[Picture_SizeX]
 	imul	eax,ebx
-	mov	ebx,[Scroll1MaxSizeX]
+	mov	ebx,[sb_horizont.max_area]
 	cdq
 	idiv	ebx
 	mov	[PosX],eax
 	jmp	no_vertical
 
 no_horizontal:
-	mov	eax,[Scroll2CoordinatX]
-	mov	ebx,[Scroll2CoordinatY]
+	movzx	eax,[sb_vertical.x_pos]
+	movzx	ebx,[sb_vertical.y_pos]
 	mov	ecx,[MouseX]
 	mov	edx,[MouseY]
-	mov	esi,[Scroll2MaxSizeX]
-	mov	edi,[Scroll2MaxSizeY]
+	movzx	esi,[sb_vertical.x_size]
+	movzx	edi,[sb_vertical.y_size]
 	call	columnus
 	test	eax,eax
 	jz	no_vertical
 
-	mov	eax,[Scroll2CoordinatX]
-	mov	ebx,ci_scrollv_coord_y_min
-	mov	ecx,ci_scroll_dim-6
-	mov	edx,[Scroll2MaxSizeY]
-	inc edx
-	mov	esi,7
-	call draw_volume_rectangle ; vertical scrollbar clear
-
-	mov	eax,[MouseY]
-	mov	ebx,[Scroll2SizeY]
-	shr	ebx,1
-	sub	eax,ebx
-	mov	ecx,[MouseY]
-	add	ecx,ebx
-	mov	edx,ci_scrollv_coord_y_min
-	add	edx,[Scroll2MaxSizeY]
-	mov	[Scroll2CoordinatY],eax
-
-	sub	eax,ci_scrollv_coord_y_min
-	jns	no_min_scroll2
-
-	mov	[Scroll2CoordinatY],ci_scrollv_coord_y_min
-
-no_min_scroll2:
-	cmp	ecx,edx
-	jl	no_max_scroll2
-
-	sub	edx,ebx
-	sub	edx,ebx
-	mov	[Scroll2CoordinatY],edx
-
-no_max_scroll2:
-	mov	eax,[Scroll2CoordinatY]
-	sub	eax,ci_scrollv_coord_y_min
+	bt [MouseBut],8
+	jnc sb_ver_mouse
+	mov	[scroll_drag],2
+sb_ver_mouse:
+	stdcall [scrollbar_v_mouse],sb_vertical
+	mov	eax,[sb_vertical.position]
 	mov	ebx,[Picture_SizeY]
 	imul	eax,ebx
-	mov	ebx,[Scroll2MaxSizeY]
+	mov	ebx,[sb_vertical.max_area]
 	cdq
 	idiv	ebx
 	mov	[PosY],eax

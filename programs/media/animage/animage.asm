@@ -51,6 +51,7 @@ include '../../load_lib.mac'
 include '../../dll.inc'
 include '../../develop/libraries/libs-dev/libio/libio.inc'
 include '../../develop/libraries/libs-dev/libimg/libimg.inc'
+include '../../develop/libraries/box_lib/box_lib.mac'
 ;include '../../debug.inc'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
@@ -63,15 +64,16 @@ ci_offs_skin_w equ  5 ;adjustment to the width of the skin frame
 ci_offs_skin_h equ 24 ;skin height adjustment
 
 ; main window
-ci_wnd_min_siz_x equ 585 ;minimum size x
-ci_wnd_min_siz_y equ 400 ;minimum size y
+ci_wnd_start_siz_x equ 585
+ci_wnd_start_siz_y equ 400
+ci_wnd_min_siz_x equ 510 ;minimum size x
+ci_wnd_min_siz_y equ 180 ;minimum size y
 
 ; toolbar
 ci_panel_x_pos equ  0 ;coord. x for panel
 ci_panel_y_pos equ 20 ;coord. y for panel
 ci_panel_but_y1 equ ci_panel_y_pos +5 ;y coordinate for 1st row of buttons
 ci_panel_but_y2 equ ci_panel_y_pos+30 ;y coordinate for 2nd row of buttons
-ci_palete_y_pos equ ci_panel_y_pos+51 ;y coordinate for color palette
 ci_panel_zoom_x equ 178 ;x coordinate for zoom bar buttons
 
 ; editor window
@@ -80,7 +82,7 @@ ci_edit_wnd_y_pos  equ 71 ;y coordinate for editor window
 ci_edit_wnd_border equ  3 ;frame around the editor window
 
 ; scrolling
-ci_scroll_dim equ 22 ;scroll sizes
+ci_scroll_dim equ 16 ;scroll sizes
 ci_scrollh_coord_x_min equ (ci_edit_wnd_x_pos+3) ;x minimum slider position
         ;horizontal scrolling
 ci_scrollv_coord_y_min equ (ci_edit_wnd_y_pos+3) ;y minimum slider position
@@ -149,6 +151,12 @@ include 'init_data.inc'
 ;OpenDialog     initialisation
         stdcall [OpenDialog_Init], OpenDialog_data
         stdcall [ColorDialog_Init], ColorDialog_data
+
+        mcall   SF_REDRAW,SSF_BEGIN_DRAW
+        mov     ebx,50 shl 16 + ci_wnd_start_siz_x
+        mov     ecx,50 shl 16 + ci_wnd_start_siz_y
+        mcall   SF_CREATE_WINDOW,,,0x73aabbcc,,name_of_program
+        mcall   SF_REDRAW,SSF_END_DRAW
 ;---------------------------------------------------------------------
 
 align 4
@@ -161,16 +169,16 @@ align 4
 still:
         mcall SF_WAIT_EVENT
 
-        cmp     eax,1
+        cmp     eax,EV_REDRAW
         je      red
 
-        cmp     eax,2
+        cmp     eax,EV_KEY
         je      keys
 
-        cmp     eax,3
+        cmp     eax,EV_BUTTON
         je      buttons
 
-        cmp     eax,6
+        cmp     eax,EV_MOUSE
         je      mouse
 
         jmp     still
@@ -186,7 +194,16 @@ copy_str_1:
         jnz     @b
         ret
 ;---------------------------------------------------------------------
-include 'events.inc'
+;description:
+; move both scrollbars back to the top left corner (0,0)
+align 4
+scrollbar_move_00:
+	and [PosX],0
+	and [PosY],0
+	mov [sb_horizont.position],0
+	mov [sb_vertical.position],0
+	ret
+;---------------------------------------------------------------------
 include 'events_of_window.inc'
 include 'events_of_keys.inc'
 include 'events_of_buttons.inc'
@@ -205,7 +222,6 @@ include 'menu.inc'
 ;-----------------------------------------------------------
 ;------------variables and data of program------------------
 ;-----------------------------------------------------------
-;sound_havent_memory db 150,64,0
 
 include 'lib_data.inc'
 include 'panel_data.inc'
@@ -240,6 +256,13 @@ spray_cursor:
 file 'cursors/spray.cur'
 zoom_cursor:
 file 'cursors/zoom.cur'
+
+align 4
+scroll_drag dd 0
+sb_horizont scrollbar ci_wnd_start_siz_x-ci_scroll_dim-2*ci_offs_skin_w,0,\
+	ci_scroll_dim,ci_edit_wnd_y_pos+284, 15, 100,30,0, 0xaaaaaa, 0xcccccc,0, 1
+sb_vertical scrollbar ci_scroll_dim,ci_wnd_start_siz_x-ci_scroll_dim-2*ci_offs_skin_w,\
+	284,ci_edit_wnd_y_pos, 15, 100,30,0, 0xaaaaaa, 0xcccccc,0, 1
 ;----------------------------------------------------------
 align 4
 IM_END:
@@ -305,20 +328,6 @@ counter2                rd 1
 number_panel            rd 1
 number_menu             rd 1
 
-Scroll1CoordinatX       rd 1 ;scroll x screen position
-Scroll1CoordinatY       rd 1 ;scroll y screen position
-Scroll1MaxSizeX         rd 1
-Scroll1MaxSizeY         rd 1
-Scroll1SizeX            rd 1 ;scroll polzunok size
-Scroll1FreeX            rd 1
-
-Scroll2CoordinatX       rd 1
-Scroll2CoordinatY       rd 1
-Scroll2MaxSizeX         rd 1
-Scroll2MaxSizeY         rd 1
-Scroll2SizeY            rd 1
-Scroll2FreeY            rd 1
-
 x                       rd 1
 y                       rd 1
 
@@ -366,7 +375,7 @@ filename_area rb 256
 temp_dir_pach rb 4096
 library_path rb 4096
 cur_dir_path rb 4096
-procinfo: rb 1024
+procinfo process_information
 align 4
 syscolors rb 192
 syscolors_end:
