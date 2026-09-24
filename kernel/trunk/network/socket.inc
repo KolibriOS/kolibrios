@@ -780,6 +780,7 @@ socket_close:
 
         cmp     [eax + SOCKET.Protocol], IP_PROTO_TCP
         jne     .free
+        or      [eax + SOCKET.state], SS_NOFDREF                ; the application is gone
         test    [eax + SOCKET.state], SS_ISDISCONNECTING
         jnz     @f
         call    tcp_disconnect
@@ -2406,6 +2407,7 @@ socket_process_end:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "SOCKET_process_end: killing socket %x\n", ebx
 
         mov     [ebx + SOCKET.PID], 0
+        or      [ebx + SOCKET.state], SS_NOFDREF
         mov     eax, ebx
         mov     ebx, [ebx + SOCKET.NextPtr]
 

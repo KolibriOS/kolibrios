@@ -192,13 +192,13 @@ tcp_disconnect:
 ;        je     TCP_drop
 
   .nolinger:
-        call    socket_is_disconnecting
 
-        push    eax
-        add     eax, STREAM_SOCKET.rcv
-        mov     ecx, [eax + RING_BUFFER.size]
-        call    socket_ring_free
-        pop     eax
+; Unread data: reset the connection instead of sending FIN (RFC 2525, 2.17)
+
+        cmp     [eax + STREAM_SOCKET.rcv.size], 0
+        jne     .reset
+
+        call    socket_is_disconnecting
 
         call    tcp_usrclosed
 
@@ -209,6 +209,10 @@ tcp_disconnect:
         pop     eax
   @@:
         ret
+
+  .reset:
+        mov     ebx, ECONNRESET
+        jmp     tcp_drop
 
 
 ;-----------------------------------------------------------------;

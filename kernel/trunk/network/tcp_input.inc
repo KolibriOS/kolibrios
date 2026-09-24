@@ -722,17 +722,28 @@ endl
   .no_duplicate:
 
 ;--------------------------------------------------
-; Handle data that arrives after process terminates
+; Handle data that arrives after the application closed the socket
 
-        cmp     [ebx + SOCKET.PID], 0                   ;;; TODO: use socket flags instead??
+        test    [ebx + SOCKET.state], SS_NOFDREF
+        jnz     .closed_by_app
+        cmp     [ebx + SOCKET.PID], 0
         jne     .not_terminated
+  .closed_by_app:
         cmp     [ebx + TCP_SOCKET.t_state], TCPS_CLOSE_WAIT
         jbe     .not_terminated
         test    ecx, ecx
         jz      .not_terminated
 
+; Unlock the socket, tcp_close frees it
+        pusha
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+
         mov     eax, ebx
+        push    edx
         call    tcp_close
+        pop     edx
         inc     [TCPS_rcvafterclose]
         jmp     .respond_seg_reset
   .not_terminated:
