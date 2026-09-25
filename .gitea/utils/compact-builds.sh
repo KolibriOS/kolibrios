@@ -10,6 +10,7 @@
 #          <root>/<version>/<lang>/data/                                  -> removed
 #
 # Usage: compact-builds.sh <storage-root> [keep] [max-per-run]
+#        DRY_RUN=1 walks the same selection and changes nothing
 
 set -euo pipefail
 
@@ -18,6 +19,17 @@ root=${1:?storage root required}
 keep=${2:-5}
 # a build is hundreds of MiB to re-compress: cap the first pass over the backlog
 max=${3:-10}
+dry=${DRY_RUN:-0}
+verb=compacted
+[ "$dry" = 1 ] && verb="would compact"
+
+# zip -m drops the source only once the archive is written; the box serves the
+# site over NFS, so compaction yields to it
+zip_image() {
+    ( cd "$(dirname "$1")" \
+      && nice -n 10 ionice -c3 zip -9 -q -m "$(basename "$1").zip" "$(basename "$1")" )
+}
+export -f zip_image
 
 leftovers() {
     local build=$1
@@ -37,19 +49,23 @@ while IFS= read -r version; do
     pending=$((pending + 1))
     [ "$compacted" -lt "$max" ] || continue
 
+    if [ "$dry" = 1 ]; then
+        compacted=$((compacted + 1))
+        echo "$verb $version"
+        continue
+    fi
+
     find "$dir" -mindepth 2 -maxdepth 2 -type d -name data -exec rm -rf {} +
 
-    # zip -m drops the source only once the archive is written
-    while IFS= read -r -d '' image; do
-        ( cd "$(dirname "$image")" \
-          && zip -9 -q -m "$(basename "$image").zip" "$(basename "$image")" )
-    done < <(find "$dir" -mindepth 2 -maxdepth 2 -type f \
-                  \( -name '*.img' -o -name '*.iso' -o -name '*.raw' \) -print0)
+    # zip is single threaded and a build holds nine images: one per core
+    find "$dir" -mindepth 2 -maxdepth 2 -type f \
+         \( -name '*.img' -o -name '*.iso' -o -name '*.raw' \) -print0 \
+        | xargs -0 -r -P "$(nproc)" -I{} bash -c 'zip_image "$@"' _ {}
 
     compacted=$((compacted + 1))
-    echo "compacted $version"
+    echo "$verb $version"
 # <tag>-<commit count>-g<sha>: order by the count, never by mtime
 done < <(find "$root" -mindepth 1 -maxdepth 1 -type d -name '*-*-g*' -printf '%f\n' \
              | sort -t- -k2,2n | head -n "-$keep")
 
-echo "compacted $compacted of $pending older build(s), $((pending - compacted)) left for the next run"
+echo "$verb $compacted of $pending older build(s), $((pending - compacted)) left for the next run"
