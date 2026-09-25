@@ -55,12 +55,14 @@ while IFS= read -r version; do
         continue
     fi
 
-    find "$dir" -mindepth 2 -maxdepth 2 -type d -name data -exec rm -rf {} +
-
-    # zip is single threaded and a build holds nine images: one per core
+    # zip is single threaded and a build holds nine images: one per core.
+    # Archive before dropping the tree, so a failure here leaves the build
+    # merely uncompacted and the next run picks it up again
     find "$dir" -mindepth 2 -maxdepth 2 -type f \
          \( -name '*.img' -o -name '*.iso' -o -name '*.raw' \) -print0 \
         | xargs -0 -r -P "$(nproc)" -I{} bash -c 'zip_image "$@"' _ {}
+
+    find "$dir" -mindepth 2 -maxdepth 2 -type d -name data -exec rm -rf {} +
 
     compacted=$((compacted + 1))
     echo "$verb $version"
