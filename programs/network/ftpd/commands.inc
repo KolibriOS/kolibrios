@@ -14,6 +14,7 @@ struct  thread_data
         socketnum       dd ?    ; Commands socket
         state           dd ?    ; disconnected/logging in/logged in/..
         passivesocknum  dd ?    ; when in passive mode, this is the listening socket
+        pasv_ports_left dd ?    ; ports left to try for the current PASV
         datasocketnum   dd ?    ; socket used for data transfers
         permissions     dd ?    ; read/write/execute/....
         buffer_ptr      dd ?
@@ -847,7 +848,13 @@ cmdPASV:
         lea     edx, [ebp + thread_data.datasock]
         mov     esi, sizeof.thread_data.datasock
 
-  .next_port:                                                   ; TODO: break the endless loop
+        movzx   eax, word [pasv_end]
+        movzx   ebx, word [pasv_start]
+        sub     eax, ebx
+        inc     eax
+        mov     [ebp + thread_data.pasv_ports_left], eax        ; number of ports in the range
+
+  .next_port:
         call    nextpasvport
         mov     ax, [pasv_port]
         xchg    al, ah
@@ -855,12 +862,23 @@ cmdPASV:
 
         mcall   bind
         cmp     eax, -1
-        je      .next_port
+        jne     .bound
+        dec     dword [ebp + thread_data.pasv_ports_left]       ; only count a port once bind failed
+        jnz     .next_port
+
+; No usable port: the range is exhausted, or listen() refused the bound one.
+; Give up instead of spinning, and drop the socket before answering 425.
+  .fail:
+        call    close_data_sock
+        call    close_pasv_sock
+        jmp     socketerror
+
+  .bound:
 
 ; And set it to listen!
         mcall   listen, , 1
         cmp     eax, -1
-        je      socketerror
+        je      .fail
 
 ; Tell our thread we are ready to accept incoming calls
         mov     [ebp + thread_data.mode], MODE_PASSIVE_WAIT

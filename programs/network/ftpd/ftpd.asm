@@ -172,6 +172,14 @@ start:
         invoke  ini.get_int, path, str_pasv, str_end, 5000
         mov     [pasv_end], ax
 
+; an inverted range would leave no port to bind, fall back to the defaults
+        mov     ax, [pasv_start]
+        cmp     ax, [pasv_end]
+        jbe     @f
+        mov     word [pasv_start], 2000
+        mov     word [pasv_end], 5000
+@@:
+
         mov     [alive], 1
 
 mainloop:
