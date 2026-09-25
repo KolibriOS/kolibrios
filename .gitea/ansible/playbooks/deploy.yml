@@ -55,7 +55,7 @@
         dest: "{{ storage_path }}/../"
         mode: preserve
 
-    # older builds shrink to zipped images and lose their unpacked tree; the newest keeps both
+    # older builds shrink to zipped images and lose their unpacked tree; the newest few keep both
     - name: Looking for zip on the storage server
       ansible.builtin.shell: command -v zip
       register: zip_present
@@ -74,7 +74,7 @@
         cmd: >-
           ../../utils/compact-builds.sh
           {{ storage_path | quote }}
-          {{ version | quote }}
-          {{ compact_max | default(20) | int }}
+          {{ compact_keep | default(5) | int }}
+          {{ compact_max | default(10) | int }}
       register: compaction
       changed_when: "'compacted 0 of' not in compaction.stdout"

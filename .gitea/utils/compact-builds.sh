@@ -3,28 +3,25 @@
 # SPDX-FileCopyrightText: 2026 KolibriOS team
 
 # Shrink older builds on the storage server: zip their images and drop their
-# unpacked tree, which is rebuildable from the commit. The current build is
-# left alone. Distribution kits, checksums and build logs are never touched -
-# note that sha256sums.txt keeps naming the bare images, so a compacted build
-# has to be unzipped before verifying.
+# unpacked tree, which is rebuildable from the commit. sha256sums.txt keeps
+# naming the bare images, so a compacted build has to be unzipped to verify.
 #
 # Layout:  <root>/<version>/<lang>/kolibrios-<descr>-<lang>.{img,iso,raw} -> .zip
 #          <root>/<version>/<lang>/data/                                  -> removed
 #
-# Usage: compact-builds.sh <storage-root> <current-version> [max-per-run]
+# Usage: compact-builds.sh <storage-root> [keep] [max-per-run]
 
 set -euo pipefail
 
 root=${1:?storage root required}
-current=${2:?current version required}
-# a raw image is 128 MiB apiece, so cap the first pass over the whole backlog
-max=${3:-20}
-# a build untouched for this long is not being uploaded by a concurrent deploy
-quiet_minutes=30
+# the build just published is always among these, so an upload in flight is safe
+keep=${2:-5}
+# a build is hundreds of MiB to re-compress: cap the first pass over the backlog
+max=${3:-10}
 
-# images and the unpacked tree both sit exactly two levels below <version>
 leftovers() {
-    find "$1" -mindepth 2 -maxdepth 2 \
+    local build=$1
+    find "$build" -mindepth 2 -maxdepth 2 \
         \( -type d -name data \
            -o -type f \( -name '*.img' -o -name '*.iso' -o -name '*.raw' \) \) \
         -print -quit
@@ -51,7 +48,8 @@ while IFS= read -r version; do
 
     compacted=$((compacted + 1))
     echo "compacted $version"
-done < <(find "$root" -mindepth 1 -maxdepth 1 -type d \
-              ! -name "$current" -mmin "+$quiet_minutes" -printf '%f\n' | sort)
+# <tag>-<commit count>-g<sha>: order by the count, never by mtime
+done < <(find "$root" -mindepth 1 -maxdepth 1 -type d -name '*-*-g*' -printf '%f\n' \
+             | sort -t- -k2,2n | head -n "-$keep")
 
 echo "compacted $compacted of $pending older build(s), $((pending - compacted)) left for the next run"
