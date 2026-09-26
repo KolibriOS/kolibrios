@@ -41,10 +41,6 @@ img_files = {
  {"LIB/KMENU.OBJ", "common/lib/kmenu.obj"},
  {"LIB/PIXLIB.OBJ", "common/lib/pixlib.obj"},
  {"MEDIA/AC97SND", "common/media/ac97snd"},
- {"MEDIA/IMGF/IMGF", "common/media/ImgF/ImgF"},
- {"MEDIA/IMGF/CEDG.OBJ", "common/media/ImgF/cEdg.obj"},
- {"MEDIA/IMGF/DITHER.OBJ", "common/media/ImgF/dither.obj"},
- {"MEDIA/IMGF/INVSOL.OBJ", "common/media/ImgF/invSol.obj"},
  {"NETWORK/FTPC.INI", SRC_PROGS .. "/network/ftpc/ftpc.ini"},
  {"NETWORK/FTPD.INI", "common/network/ftpd.ini"},
  {"NETWORK/KNMAP", "common/network/knmap"},
@@ -58,8 +54,7 @@ img_files = {
  {"SETTINGS/FB2READ.INI", "common/settings/fb2read.ini"},
  {"SETTINGS/HA.CFG", SRC_PROGS .. "/other/ha/SETTINGS/HA.CFG"},
  {"SETTINGS/ICON.INI", build_type .. "/settings/icon.ini"},
- {"SETTINGS/KEYMAP.KEY", SRC_PROGS .. "/system/taskbar/KEYMAP.KEY"},
- {"SETTINGS/KOLIBRI.LBL", build_type .. "/settings/kolibri.lbl"},
+ {"SETTINGS/KEYMAP.KEY", VAR_PROGS .. "/system/taskbar/keymap.key.kpack"},
  {"SETTINGS/LANG.INI", build_type .. "/settings/lang.ini"},
  {"SETTINGS/MENU.DAT", build_type .. "/settings/menu.dat"},
  {"SETTINGS/NETWORK.INI", "common/settings/network.ini"},
@@ -273,6 +268,10 @@ extra_files = {
  {"kolibrios/lib/i915_dri.drv", "common/lib/i915_dri.drv"},
  {"kolibrios/media/fplay", "common/media/fplay"},
  {"kolibrios/media/fplay_run", "common/media/fplay_run"},
+ {"kolibrios/media/ImgF/ImgF", "common/media/ImgF/ImgF"},
+ {"kolibrios/media/ImgF/cEdg.obj", "common/media/ImgF/cEdg.obj"},
+ {"kolibrios/media/ImgF/dither.obj", "common/media/ImgF/dither.obj"},
+ {"kolibrios/media/ImgF/invSol.obj", "common/media/ImgF/invSol.obj"},
  {"kolibrios/media/minimp3", "common/media/minimp3"},
  {"kolibrios/media/updf", SRC .. "/contrib/media/updf/build/uPDF"},
  {"kolibrios/media/vttf", "common/media/vttf"},
@@ -487,11 +486,6 @@ tup.append_table(img_files, {
  {"DEVELOP/MTDBG", VAR_PROGS .. "/develop/mtdbg/mtdbg"},
  {"DEVELOP/MSTATE", VAR_PROGS .. "/develop/mstate/mstate"},
  {"DEVELOP/SCANCODE", VAR_PROGS .. "/develop/scancode/scancode"},
- {"DEVELOP/EXAMPLES/CIRCLE", VAR_PROGS .. "/develop/examples/circle/circle"},
- {"DEVELOP/EXAMPLES/COLORREF", VAR_PROGS .. "/demos/colorref/colorref"},
- {"DEVELOP/EXAMPLES/CONGET", VAR_PROGS .. "/develop/libraries/console_coff/examples/test_gets"},
- {"DEVELOP/EXAMPLES/CSLIDE", VAR_PROGS .. "/demos/cslide/cslide"},
- {"DEVELOP/EXAMPLES/THREAD", VAR_PROGS .. "/develop/examples/thread/thread"},
  {"File Managers/KFAR", VAR_PROGS .. "/fs/kfar/kfar"},
  {"File Managers/OPENDIAL", VAR_PROGS .. "/fs/opendial/opendial"},
  {"LOD", VAR_PROGS .. "/fs/lod/lod"},
@@ -652,20 +646,28 @@ tup.append_table(extra_files, {
  {"kolibrios/3D/blocks/block.bin", VAR_PROGS .. "/bcc32/games/blocks/block.bin"},
  {"kolibrios/develop/tcc/lib/crt0.o", VAR_PROGS ..  "/develop/ktcc/bin/lib/crt0.o", group = "../programs/develop/ktcc/<crt0.o>"},
  {"kolibrios/develop/tcc/lib/tiny.o", VAR_PROGS ..  "/develop/ktcc/bin/lib/tiny.o", group = "../programs/develop/ktcc/<tiny.o>"},
- {"kolibrios/develop/tcc/lib/libsound.a", VAR_PROGS ..  "/develop/ktcc/bin/lib/libsound.a", group = "../programs/develop/ktcc/<libsound.a>"}
+ {"kolibrios/develop/tcc/lib/libsound.a", VAR_PROGS ..  "/develop/ktcc/bin/lib/libsound.a", group = "../programs/develop/ktcc/<libsound.a>"},
+ {"kolibrios/develop/examples/circle", VAR_PROGS .. "/develop/examples/circle/circle"},
+ {"kolibrios/develop/examples/colorref", VAR_PROGS .. "/demos/colorref/colorref"},
+ {"kolibrios/develop/examples/conget", VAR_PROGS .. "/develop/libraries/console_coff/examples/test_gets"},
+ {"kolibrios/develop/examples/cslide", VAR_PROGS .. "/demos/cslide/cslide"},
+ {"kolibrios/develop/examples/thread", VAR_PROGS .. "/develop/examples/thread/thread"}
 })
--- For russian build, add russian-only programs.
-if build_type == "ru_RU" then tup.append_table(img_files, {
- {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
-}) else tup.append_table(img_files, {
- {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
-}) end
+-- -- For russian build, add russian-only programs.
+-- if build_type == "ru_RU" then tup.append_table(img_files, {
+-- {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
+-- }) else tup.append_table(img_files, {
+-- {"DEVELOP/EXAMPLES/TESTCON2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
+-- }) end
 
 if build_type == "ru_RU" then tup.append_table(extra_files, {
+ {"kolibrios/develop/examples/testcon2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_rus"},
  {"kolibrios/utils/period", VAR_PROGS .. "/other/period/period"},
  {"kolibrios/games/Dungeons/Dungeons", VAR_PROGS .. "/games/Dungeons/Dungeons"},
  {"kolibrios/games/klavisha/klavisha", VAR_PROGS .. "/games/klavisha/klavisha"},
  {"kolibrios/games/klavisha/basekurs.kla", "ru_RU/games/basekurs.kla"},
+}) else tup.append_table(extra_files, {
+ {"kolibrios/develop/examples/testcon2", VAR_PROGS .. "/develop/libraries/console_coff/examples/testcon2_eng"},
 }) end
 
 end -- tup.getconfig('NO_FASM') ~= 'full'

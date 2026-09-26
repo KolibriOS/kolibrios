@@ -41,7 +41,7 @@
 16 Image viewer KIV      |media/kiv
 16 Image viewer zSea  *  |/kolibrios/media/zsea/zsea
 16 Animage               |media/animage
-16 Efectos de im genes   |media/imgf/imgf
+16 Efectos de im genes * |/kolibrios/media/ImgF/ImgF
 16 Palitra               |media/palitra
 #4   **** MULTIMEDIA
 16 Pixie Audioplayer     |media/pixie

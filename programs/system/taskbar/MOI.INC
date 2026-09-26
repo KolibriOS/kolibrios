@@ -104,10 +104,26 @@ applyKeymap:
 	cmp	al, 9
 	jnc	@f
 	push	eax
+	push	esi edi
 	shl	eax,7
-	lea	eax,[eax*2+eax]
-	mov	[point],eax
-	mcall	70,get_key
+	lea	edi,[eax*2+eax]	; offset of the layout = index*384
+	cmp	[keymap_file],0
+	jnz	.loaded
+	mcall	68,27,keymap_path
+	test	eax,eax
+	jz	.fail
+	mov	[keymap_file],eax
+	mov	[keymap_size],edx
+.loaded:
+	lea	eax,[edi+384]
+	cmp	eax,[keymap_size]
+	ja	.fail
+	mov	esi,[keymap_file]
+	add	esi,edi
+	mov	edi,current_keymap
+	mov	ecx,384/4
+	rep movsd
+	pop	edi esi
 	mcall	21,2,1,current_keymap
 	inc	ecx
 	mcall	21,,,current_keymap_shift
@@ -117,6 +133,9 @@ applyKeymap:
 	inc	edx
 	mcall	21,,9
 @@:
+	ret
+.fail:
+	pop	edi esi eax
 	ret
 ;---------------------------------------------------------------
 align 4
@@ -132,13 +151,9 @@ point2	dd 0
 	dd inicont
 	db '/sys/settings/lang.ini',0
 
-get_key:
-	dd 0
-point	dd 0
-	dd 0
-	dd 384
-	dd current_keymap
-	db '/sys/settings/keymap.key',0
+keymap_path	db '/sys/settings/keymap.key',0
+keymap_file	dd 0
+keymap_size	dd 0
 
 key_r		db 0
 key_r2		db 0
