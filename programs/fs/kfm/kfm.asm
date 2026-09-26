@@ -28,7 +28,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
-; KFM v0.49 22/09/2026
+; KFM v0.49 28/09/2026
 ;---------------------------------------------------------------------
 use32
 org     0x0
@@ -49,6 +49,24 @@ include '../../load_lib.mac'
 include '../../develop/libraries/box_lib/box_lib.mac'
 
 USE_STATIC_LIBS equ 0
+
+F_BUT_PANEL_H    equ 23
+FILE_BR_TOP_LINE equ F_BUT_PANEL_H+52
+FILE_BR_SEL_DR_W equ 60
+FILE_BR_COL_LEFT equ 60+15 ;ширина списка + отступ до кнопки name
+file_br_col_w1   dd   ? ;name
+FILE_BR_COL_W2   equ 45 ;type
+FILE_BR_COL_W3   equ 45 ;size
+FILE_BR_COL_W4   equ 65 ;date
+
+ICON_TOP_B  = 1 ; top border
+ICON_BOT_B  = 1
+ICON_LEFT_B = 1 ; left border
+ICON_RIGHT_B = 1
+BUTTON_SIZE_W = (18+ICON_LEFT_B+ICON_RIGHT_B)
+BUTTON_SIZE_H = (18+ICON_TOP_B+ICON_BOT_B)
+BUTTON_W_SP = (BUTTON_SIZE_W+6)
+ICON_SIZE   = BUTTON_SIZE_W*BUTTON_SIZE_H*3
 
 ;---------------------------------------------------------------------
 include   'files.inc'
@@ -80,8 +98,26 @@ end if
     stdcall	[sort_init], 1
 
     mcall   SF_STYLE_SETTINGS,SSF_GET_COLORS,sc,sizeof.system_colors
+
+if USE_STATIC_LIBS eq 0
+    ; read icons
+    mcall   SF_SYS_MISC, SSF_MEM_OPEN, str_icon_18,, 0
+    or      eax, eax
+    jz      @f
+    mov     [icons_max_size], edx
+    mov     esi, eax
+    stdcall copy_icon, buttons_file_data,esi,1
+    stdcall copy_icon, eax,esi,66
+    stdcall copy_icon, eax,esi,0
+    stdcall copy_icon, eax,esi,20
+    stdcall copy_icon, eax,esi,31 ;30?
+    stdcall copy_icon, eax,esi,55
+    stdcall copy_icon, eax,esi,56
+    stdcall copy_icon, eax,esi,67
+end if
+
     mcall   SF_THREAD_INFO, procinfo,-1
-    mov     ecx,[ebx+30]    ; PID
+    mov     ecx,[procinfo.PID]
     mcall   SF_SYSTEM, SSF_GET_THREAD_SLOT
     mov     [active_process],eax    ; WINDOW SLOT
 
@@ -191,12 +227,12 @@ check_active_process_for_clear_all_flags:
 align 4
 get_window_param:
     mcall SF_THREAD_INFO, procinfo, -1
-    mov   eax,[ebx+46]
+    mov   eax,[procinfo.box.height]
     mov   [window_high],eax
-    mov   eax,[ebx+42]
+    mov   eax,[procinfo.box.width]
     mov   [window_width],eax
-    mov   eax,[ebx+70]
-    mov   [window_status],eax
+    mov   al,[procinfo.wnd_state]
+    mov   [window_status],al
     mcall SF_STYLE_SETTINGS, SSF_GET_SKIN_HEIGHT
     mov   [skin_high],eax
     ret
@@ -204,17 +240,17 @@ get_window_param:
 align 4
 draw_window:
     mcall SF_REDRAW, SSF_BEGIN_DRAW
-        xor     esi,esi
+    xor   esi,esi
     mcall SF_CREATE_WINDOW, <20,728>, <20,460>, 0x63cccccc   ; 0x805080D0, 0x005080D0
     call  get_window_param
 
     mcall SF_SET_CAPTION, 1, header_text
 
-        test    [window_status],100b    ; window is rolled up
-        jnz     .exit
+    test  [window_status],100b    ; window is rolled up
+    jnz   .exit
 
-        test    [window_status],10b     ; window is minimized to panel
-        jnz     .exit
+    test  [window_status],10b     ; window is minimized to panel
+    jnz   .exit
 
     cmp   [window_high],180
     jb    .exit
@@ -566,6 +602,125 @@ dd 0,0
 	akmenuitem_delete               db 'kmenuitem_delete',0
 	akmenuitem_draw                 db 'kmenuitem_draw',0
 
+;in:
+;  buf_d = pointer to destination buffer 24-bit
+;  buf_s = pointer to source buffer 32-bit (with icons)
+;  ind   = icon index
+;out:
+;  eax   = pointer to destination buffer + icon size
+align 4
+proc copy_icon uses ebx ecx esi edi, buf_d:dword, buf_s:dword, ind:dword
+    mov     edi,[buf_d]
+    mov     esi,[ind]
+    imul    esi,18*18*4
+    cmp     esi,[icons_max_size]
+    jge     .quit
+    ; fill the whole button area with sc.work:
+    ; write the first pixel, then propagate the 3-byte pattern with overlapping movsb
+    mov     eax,[sc.work_light]
+    mov     [edi],ax        ; B, G
+    shr     eax,16
+    mov     [edi+2],al      ; R
+    push    esi
+    mov     esi,edi
+    add     edi,3
+    mov     ecx,ICON_SIZE-3
+    rep     movsb
+    pop     esi
+    ; copy icon into the center
+    add     esi,[buf_s]
+    mov     edi,[buf_d]
+    add     edi,(BUTTON_SIZE_W*ICON_TOP_B+ICON_LEFT_B)*3
+    mov     ebx,18
+.cycle0:
+    mov     ecx,18
+.cycle1:
+    cmp     byte[esi+3],255
+    je      @f
+    add     edi,3 ;skip
+    add     esi,4
+    loop    .cycle1
+    jmp     .cycle1e
+@@:
+    movsw ;copy
+    movsb
+    inc     esi ; skip transparent byte
+    loop    .cycle1
+.cycle1e:
+    add     edi,(ICON_RIGHT_B+ICON_LEFT_B)*3
+    dec     ebx
+    jnz     .cycle0
+
+; draw shadow 1
+    mov     eax,[sc.work]
+    mov     esi,[ind]
+    imul    esi,18*18*4
+    add     esi,(18+1)*4
+    add     esi,[buf_s]
+    mov     edi,[buf_d]
+    add     edi,(BUTTON_SIZE_W*(ICON_TOP_B+1)+ICON_LEFT_B+1)*3
+    mov     ebx,18-1
+.cycle2:
+    mov     ecx,18-1
+.cycle3:
+    cmp     byte[esi+3],255
+    je      @f
+    cmp     byte[esi+3-(18+1)*4],255
+    jne     @f
+    stosw
+    stosb
+    jmp     .1
+@@:
+    add     edi,3
+.1:
+    add     esi,4
+    loop    .cycle3
+    add     edi,(ICON_RIGHT_B+ICON_LEFT_B+1)*3
+    add     esi,4
+    dec     ebx
+    jnz     .cycle2
+
+    ; draw shadow 2
+    ;mov     eax,[sc.work]
+    mov     edi,[buf_d]
+    add     edi,(BUTTON_SIZE_W*(ICON_TOP_B+1)+ICON_LEFT_B+1)*3	
+    mov     esi,[ind]
+    imul    esi,18*18*4
+    add     esi,[buf_s]
+    mov     ebx,18
+.cycle4:
+    mov     ecx,18
+.cycle5:
+	cmp     ebx,1
+	jle     .2
+    cmp     ecx,1
+	jg      @f
+.2:
+    cmp     byte[esi+3],255
+    jne     @f
+    stosw
+    stosb
+    jmp     .3
+@@:
+    add     edi,3
+.3:
+    add     esi,4
+    loop    .cycle5
+    add     edi,(ICON_RIGHT_B+ICON_LEFT_B)*3
+    dec     ebx
+    jnz     .cycle4
+
+.quit:
+    mov     eax,[buf_d]
+    add     eax,ICON_SIZE
+    ret
+endp
+
+if USE_STATIC_LIBS eq 0
+numimages = 8
+str_icon_18 db 'ICONS18W',0
+end if
+
 align 4
 mouse_scroll_data:
     .vertical   rw 1
@@ -573,8 +728,8 @@ mouse_scroll_data:
 scroll_bar_event rb 1
 scroll_pointer rb 1
 align 4
-sb_left  scrollbar 15, 348, 200, 24+FILE_BR_TOP_LINE, 16, 5, 1, 0, 0xeeeeee, 0xbbddff, 0, 1
-sb_right scrollbar 15, 708, 200, 24+FILE_BR_TOP_LINE, 16, 5, 1, 0, 0xeeeeee, 0xbbddff, 0, 1
+sb_left  scrollbar 15, 348, 200, FILE_BR_TOP_LINE, 16, 5, 1, 0, 0xeeeeee, 0xbbddff, 0, 1
+sb_right scrollbar 15, 708, 200, FILE_BR_TOP_LINE, 16, 5, 1, 0, 0xeeeeee, 0xbbddff, 0, 1
 
 align 16
 I_END:

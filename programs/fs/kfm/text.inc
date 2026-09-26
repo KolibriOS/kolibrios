@@ -1,4 +1,8 @@
-header_text       db 'Kolibri File Manager v0.49',0
+header_text       db 'Kolibri File Manager v0.49'
+if USE_STATIC_LIBS eq 1
+db ' static'
+end if
+db 0
 ;---------------------------------------------------------------------
 fbutton_name:
     .f1   db '1 Help',0
@@ -227,6 +231,8 @@ sysopen:
         dd  7,0,start_parameter,0,0
         db  '/sys/@open',0
 ;---------------------------------------------------------------------
+if USE_STATIC_LIBS eq 1
 buttons_file_data file 'images/buttons.raw'
+end if
 icons_file_data	file 'images/icons.raw'
 ;---------------------------------------------------------------------

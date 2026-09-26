@@ -1,11 +1,4 @@
 align 4
-FILE_BR_TOP_LINE equ 47
-FILE_BR_SEL_DR_W equ 60
-FILE_BR_COL_LEFT equ 60+15 ;ширина списка + отступ до кнопки name
-file_br_col_w1   dd   ? ;name
-FILE_BR_COL_W2   equ 45 ;type
-FILE_BR_COL_W3   equ 45 ;size
-FILE_BR_COL_W4   equ 65 ;date
 symbol_up   db 24,0
 symbol_down db 25,0
 
@@ -14,12 +7,26 @@ align 4
 draw_buttons_panel:
 	mov	ebx,[window_width]
 	sub	ebx,9
-	mcall	SF_DRAW_RECT, ,<19,18>,0xffffff
-	mcall	SF_PUT_IMAGE, buttons_file_data,<198,16>,<10,20>
-	mcall	SF_DEFINE_BUTTON, <10,16>,<20,16>,150+0x40000000
+	mcall	SF_DRAW_RECT, ,<19,F_BUT_PANEL_H>,[sc.work_light]
+if USE_STATIC_LIBS eq 1
+	mcall	SF_PUT_IMAGE, buttons_file_data,<199,19>,<10,21>
+else
+	mcall   SF_PUT_IMAGE_EXT, buttons_file_data,\
+		<BUTTON_SIZE_W, BUTTON_SIZE_H>, <10,20>, 24,, 0
+	mov     ecx,numimages-1
+@@:
+	push    ecx
+	mov     ecx,(BUTTON_SIZE_W shl 16)+BUTTON_SIZE_H
+	add     ebx,ICON_SIZE
+	add     edx,BUTTON_W_SP shl 16
+	mcall
+	pop     ecx
+	loop    @b
+end if
+	mcall	SF_DEFINE_BUTTON, <10,BUTTON_SIZE_W>,<20,BUTTON_SIZE_H>,150+0x40000000
 	
 _new_but:
-	add	ebx,26 shl 16
+	add	ebx,BUTTON_W_SP shl 16
 	inc edx
 	mcall
 	cmp edx, 157+0x40000000
@@ -83,7 +90,7 @@ clear_sort_buttons:
 	sub	cx,14
 	shl	ecx,16
 	mov	cx,12 ;buttons height
-	mov	esi,0xffffff ;0xccccff
+	mov	esi,[sc.work_light]
 	mcall	SF_DEFINE_BUTTON
 	ror	ebx,16
 	add	bx,word[file_br_col_w1]
@@ -145,7 +152,8 @@ proc draw_sort_buttons, coord_x:dword, coord_y, but_id:dword, sort_type:dword
 	shl	ebx,16
 	mov	bx,word[coord_y]
 	sub	bx,12
-	mov	ecx,0x80000000
+	mov	ecx,[sc.work_text]
+	or  ecx,0x80000000
 	mcall	SF_DRAW_TEXT,,,sort_button_name.name
 	ror	ebx,16
 	add	bx,word[file_br_col_w1]
@@ -942,11 +950,10 @@ clear_left_panel:
 	ret
 ;------------------------------------------------------------------------------
 calculate_panel_1:
-	mov	ecx,[skin_high]
-	add	ecx,FILE_BR_TOP_LINE
+	mov	ecx,FILE_BR_TOP_LINE
 	shl	ecx,16
 	add	ecx,[window_high]
-	sub	ecx,FILE_BR_TOP_LINE+62
+	sub	ecx,FILE_BR_TOP_LINE+38
 	sub ecx,[skin_high]
 	ret
 ;------------------------------------------------------------------------------

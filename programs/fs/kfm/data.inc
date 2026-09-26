@@ -1,5 +1,12 @@
 ;---------------------------------------------------------------------
 align 4
+if USE_STATIC_LIBS eq 0
+icons_max_size dd 0
+buttons_file_data:
+    rb ICON_SIZE*numimages
+end if
+
+align 4
 files_counter	rd 1
 directories_counter	rd 1
 
@@ -38,10 +45,8 @@ align 4
 PID  rd 1
 active_process rd 1
 ;---------------------------------------------------------------------
-align 4
 window_high rd 1
 window_width	     rd 1
-window_status rd 1
 skin_high	     rd 1
 fbutton_width	     rd 1
 
@@ -64,6 +69,7 @@ right_panel_y:
 left_panel_y_correct_size_y	rw 1
 right_panel_y_correct_size_y	rw 1
 
+window_status rb 1
 drawing_panel_folder rb 1 ; 1-left, 2 right
 ;---------------------------------------------------------------------
 align 4
@@ -186,8 +192,7 @@ retrieved_devices_table:
 	rb 10*100
 ;---------------------------------------------------------------------
 align 4
-procinfo:
-	rb 1024
+procinfo process_information
 ;---------------------------------------------------------------------
 align 4
 type_name:

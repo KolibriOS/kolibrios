@@ -20,15 +20,13 @@ draw_menu_bar:
     cld
     stdcall [kmainmenu_draw], [main_menu]
     popad
-    add   ecx,37 shl 16
-    mov   cx,FILE_BR_TOP_LINE-67
-	add   cx,word[skin_high]
+    add   ecx,(F_BUT_PANEL_H+19) shl 16
+    mov   cx,FILE_BR_TOP_LINE-F_BUT_PANEL_H-49
     mcall ; horizontal line before disk buttons
     push  ecx
-	ror   ecx,16
-    add   cx,FILE_BR_TOP_LINE-54
-	add   cx,word[skin_high]
-	ror   ecx,16
+    ror   ecx,16
+    add   cx,FILE_BR_TOP_LINE-F_BUT_PANEL_H-36
+    ror   ecx,16
     mov   cx,3
     mcall ; horizontal line after disk buttons
     add   ecx,16 shl 16

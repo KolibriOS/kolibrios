@@ -1,4 +1,5 @@
 ;------------------------------------------------------------------------------
+align 4
 draw_device_button:
 	call	device_detect_f70
 	mov	edi,[retrieved_devices_table_counter]
@@ -22,8 +23,7 @@ draw_device_button:
 	jnz	@b
 	
 	sub	esi,ebp
-	lea	esi,[esi*3]
-	shl	esi,1
+	shl	esi,3
 	mov	bx,si
 	pop	esi
 	
@@ -44,7 +44,7 @@ draw_device_button:
 	inc	edx
 	shr	ecx,16
 	mov	bx,cx
-	add	ebx,4 shl 16
+	add	ebx,8 shl 16
 	mcall	SF_DRAW_TEXT, ,0x90000000
 	sub	ebx,1 shl 16 + 1
 	mcall	,,0x90ffffff

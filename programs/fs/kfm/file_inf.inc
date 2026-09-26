@@ -12,14 +12,14 @@ files_information:
 ;------------------------------------------------------------------------------
 start_files_information_thread:
 	mcall	SF_THREAD_INFO, procinfo,-1
-	mov	eax,[ebx+46]
+	mov	eax,[procinfo.box.height]
 	shr	eax,1
-	add	eax,[ebx+38]
+	add	eax,[procinfo.box.top]
 	sub	eax,INF_WINH/2
 	mov	[files_information_window_y+2],ax
-	mov	eax,[ebx+42]
+	mov	eax,[procinfo.box.width]
 	shr	eax,1
-	add	eax,[ebx+34]
+	add	eax,[procinfo.box.left]
 	sub	eax,INF_WINW/2
 	mov	[files_information_window_x+2],ax
 	mcall	SF_THREAD_CONTROL, SSF_CREATE_THREAD,thread_files_information_start,thread_stack
