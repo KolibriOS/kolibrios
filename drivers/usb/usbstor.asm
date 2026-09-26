@@ -193,7 +193,7 @@ Parent          dd      ?       ; pointer to parent usb_device_data
 LUN             db      ?       ; index in usb_device_data.LogicalDevices array
 DiskIndex       db      ?       ; for name "usbhd<index>"
 MediaPresent    db      ?
-                db      ?       ; alignment
+Polled          db      ?
 DiskDevice      dd      ?       ; handle of disk device or NULL
 SectorSize      dd      ?       ; sector size
 ; For some devices, the first request to the medium fails with 'unit not ready'.
@@ -324,6 +324,9 @@ endp
 proc complete_request
 ; 1. Print common debug messages on fails.
 if DEBUG
+        mov     ebx, [esi+usb_device_data.RequestsQueue+request_queue_item.Next]
+        cmp     [ebx+request_queue_item.Callback], poll_tur_callback
+        jz      .normal
         cmp     [esi+usb_device_data.Status.Status], CSW_STATUS_FAIL
         jb      .normal
         jz      .fail
@@ -1293,6 +1296,7 @@ end virtual
         mov     [esi+usb_unit_data.LUN], cl
         xor     eax, eax
         mov     [esi+usb_unit_data.MediaPresent], al
+        mov     [esi+usb_unit_data.Polled], al
         mov     [esi+usb_unit_data.DiskDevice], eax
         mov     [esi+usb_unit_data.SectorSize], eax
         mov     [esi+usb_unit_data.UnitReadyAttempts], eax
@@ -1305,6 +1309,17 @@ end virtual
         add     esi, sizeof.usb_unit_data
         cmp     ecx, [ebx+usb_device_data.MaxLUN]
         jbe     .looplun
+        lock inc [ebx+usb_device_data.NumReferences]
+        push    ebx edi
+        mov     edx, ebx
+        movi    ebx, 1
+        mov     ecx, poll_thread
+        invoke  CreateThread
+        pop     edi ebx
+        cmp     eax, -1
+        jnz     @f
+        lock dec [ebx+usb_device_data.NumReferences]
+@@:
 ; 4. Return.
         pop     esi ebx
         ret     20
@@ -1338,11 +1353,14 @@ proc inquiry_callback
         test    al, al
         jnz     .nothing
         DEBUGF 1,'K : direct-access mass storage device detected\n'
-; Units that report 'medium not present' (the empty card slot of an LTE
-; modem or card reader) are not registered: the kernel has no media
-; change detection, so such a disk would only sit dead in the file
-; managers. Replugging the device after inserting a card registers it.
         mov     edx, [esp+8]
+        test    [ecx+usb_device_data.InquiryData.RemovableMedium], 80h
+        jnz     .poll
+        cmp     [edx+usb_unit_data.MediaPresent], 0
+        jnz     @f
+.poll:
+        mov     [edx+usb_unit_data.Polled], 1
+@@:
         cmp     [edx+usb_unit_data.MediaPresent], 0
         jnz     @f
         DEBUGF 1,'K : no media, not registering the disk\n'
@@ -1435,15 +1453,16 @@ end virtual
 endp
 
 ; Temporary thread for initial actions with a new disk device.
-proc new_disk_thread
+new_disk_thread:
+        stdcall add_disk, [esp]
+        or      eax, -1
+        int     0x40
+
+proc add_disk
+        push    ebx esi edi
+        mov     esi, [esp+16]
         sub     esp, 32
-virtual at esp
-.name   rb      32      ; device name
-.param  dd      ?       ; contents of edx at the moment of int 0x40/eax=51
-        dd      ?       ; stack segment
-end virtual
 ; We are ready to notify the kernel about a new disk device.
-        mov     esi, [.param]
 ; 1. Generate name.
 ; 1a. Find a free index.
         mov     ecx, free_numbers_lock
@@ -1512,7 +1531,7 @@ end virtual
         jmp     .exit
 .disconnected:
         invoke  MutexUnlock
-        stdcall disk_close, ebx
+        invoke  DiskDel, ebx
         jmp     .exit
 .free_index:
         mov     ecx, free_numbers_lock
@@ -1521,6 +1540,7 @@ end virtual
         bts     [free_numbers], eax
         invoke  MutexUnlock
 .drop_reference:
+        mov     [esi+usb_unit_data.MediaPresent], 0
         mov     esi, [esi+usb_unit_data.Parent]
         lock dec [esi+usb_device_data.NumReferences]
         jnz     .exit
@@ -1529,8 +1549,163 @@ end virtual
         xchg    eax, esi
         invoke  Kfree
 .exit:
+        add     esp, 32
+        pop     edi esi ebx
+        ret     4
+endp
+
+; Every POLL_INTERVAL, check removable units for inserted or removed media.
+POLL_INTERVAL = 200
+
+POLL_READY      = 0
+POLL_NO_MEDIA   = 1
+POLL_CHANGED    = 2
+POLL_OTHER      = 3
+
+proc poll_thread
+        mov     ebx, [esp]
+.loop:
+        push    ebx
+        movi    eax, 5
+        mov     ebx, POLL_INTERVAL
+        int     0x40
+        pop     ebx
+        cmp     [ebx+usb_device_data.DeviceDisconnected], 0
+        jnz     .exit
+        mov     esi, [ebx+usb_device_data.LogicalDevices]
+        mov     edi, [ebx+usb_device_data.MaxLUN]
+        inc     edi
+.unit:
+        cmp     [esi+usb_unit_data.Polled], 0
+        jz      .next
+        call    poll_unit
+.next:
+        add     esi, sizeof.usb_unit_data
+        dec     edi
+        jnz     .unit
+        jmp     .loop
+.exit:
+        lock dec [ebx+usb_device_data.NumReferences]
+        jnz     @f
+        mov     eax, [ebx+usb_device_data.LogicalDevices]
+        invoke  Kfree
+        xchg    eax, ebx
+        invoke  Kfree
+@@:
         or      eax, -1
         int     0x40
+endp
+
+proc poll_unit
+        push    edi
+        stdcall poll_tur, ebx, esi
+        cmp     [esi+usb_unit_data.MediaPresent], 0
+        jnz     .registered
+        cmp     eax, POLL_CHANGED
+        jnz     @f
+        stdcall poll_tur, ebx, esi
+@@:
+        cmp     eax, POLL_READY
+        jnz     .done
+        movzx   eax, [esi+usb_unit_data.LUN]
+        DEBUGF 1,'K : medium inserted, LUN %d\n',eax
+        mov     [esi+usb_unit_data.MediaPresent], 1
+        lock inc [ebx+usb_device_data.NumReferences]
+        stdcall add_disk, esi
+        jmp     .done
+.registered:
+        cmp     eax, POLL_NO_MEDIA
+        jz      .removed
+        cmp     eax, POLL_CHANGED
+        jnz     .done
+.removed:
+        lea     ecx, [ebx+usb_device_data.QueueLock]
+        invoke  MutexLock
+        xor     edi, edi
+        cmp     [ebx+usb_device_data.DeviceDisconnected], 0
+        jnz     @f
+        xchg    edi, [esi+usb_unit_data.DiskDevice]
+@@:
+        lea     ecx, [ebx+usb_device_data.QueueLock]
+        invoke  MutexUnlock
+        test    edi, edi
+        jz      .done
+        movzx   eax, [esi+usb_unit_data.LUN]
+        DEBUGF 1,'K : medium removed, LUN %d\n',eax
+        invoke  DiskDel, edi
+.done:
+        pop     edi
+        ret
+endp
+
+proc poll_tur stdcall uses ebx esi edi, device:dword, unit:dword
+        xor     esi, esi
+        xor     ecx, ecx
+        invoke  CreateEvent
+        test    eax, eax
+        jz      .fail
+        push    eax
+        push    edx
+        push    POLL_OTHER
+        push    [unit]
+        mov     edx, esp
+        stdcall queue_request, [device], poll_tur_req, 0, poll_tur_callback, edx
+        mov     eax, [esp+12]
+        mov     ebx, [esp+8]
+        invoke  WaitEvent
+        mov     eax, [esp+4]
+        add     esp, 16
+        ret
+.fail:
+        movi    eax, POLL_OTHER
+        ret
+endp
+
+proc poll_tur_req
+        mov     eax, [esp+8]
+        mov     eax, [eax]
+        mov     al, [eax+usb_unit_data.LUN]
+        mov     [edx+command_block_wrapper.Length], 0
+        mov     [edx+command_block_wrapper.Flags], CBW_FLAG_IN
+        mov     [edx+command_block_wrapper.LUN], al
+        mov     byte [edx+usb_device_data.Sense.ErrorCode-usb_device_data.Command], 0
+        ret     8
+endp
+
+proc poll_tur_callback
+        mov     ecx, [esp+4]
+        xor     eax, eax
+        mov     dl, [ecx+usb_device_data.Status.Status]
+        cmp     dl, CSW_STATUS_OK
+        jz      .done
+        mov     al, POLL_OTHER
+        cmp     dl, CSW_STATUS_FAIL
+        jnz     .done
+        mov     dl, [ecx+usb_device_data.Sense.ErrorCode]
+        and     dl, 7Eh
+        cmp     dl, 70h
+        jnz     .done
+        mov     dl, [ecx+usb_device_data.Sense.SenseKey]
+        and     dl, 0Fh
+        mov     dh, [ecx+usb_device_data.Sense.AdditionalSenseCode]
+        cmp     dx, (3Ah shl 8) + SENSE_NOT_READY
+        jnz     @f
+        mov     al, POLL_NO_MEDIA
+@@:
+        cmp     dx, (28h shl 8) + SENSE_UNIT_ATTENTION
+        jnz     .done
+        mov     al, POLL_CHANGED
+.done:
+        mov     ecx, [esp+8]
+        mov     [ecx+4], eax
+        push    ebx esi edi
+        mov     eax, [ecx+12]
+        mov     ebx, [ecx+8]
+        xor     edx, edx
+        xor     esi, esi
+        invoke  RaiseEvent
+        pop     edi esi ebx
+        ret     8
 endp
 
 ; This function is called when the device is disconnected.
@@ -1617,6 +1792,7 @@ end virtual
         movzx   eax, [esi+usb_unit_data.DiskIndex]
         bts     [free_numbers], eax
         invoke  MutexUnlock
+        mov     [esi+usb_unit_data.MediaPresent], 0
         mov     esi, [esi+usb_unit_data.Parent]
         lock dec [esi+usb_device_data.NumReferences]
         jnz     .nothing
