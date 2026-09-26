@@ -61,6 +61,8 @@
 /* strntold() is used by vsscanf() below; include its definition first */
 #include "stdlib/strntold.c"
 #include "stdio/vsscanf.c"
+#include "stdio/fclose_r.c"
+#include "stdio/fopen_r.c"
 
 #include "string/memccpy.c"
 #include "string/memchr.c"

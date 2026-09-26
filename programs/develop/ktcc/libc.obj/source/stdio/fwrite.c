@@ -16,7 +16,7 @@ size_t fwrite(const void* restrict ptr, size_t size, size_t nmemb, FILE* restric
 
     if (size <= 0 || nmemb <= 0) {
         errno = EINVAL;
-        stream->error = errno;
+        stream->flags.error = true;
         return 0;
     }
 
@@ -33,11 +33,11 @@ size_t fwrite(const void* restrict ptr, size_t size, size_t nmemb, FILE* restric
         return nmemb;
     }
 
-    if (stream->mode != _FILEMODE_R) {
+    if (stream->flags.write) {
         unsigned status = _ksys_file_write_file(stream->name, stream->position, bytes_count, ptr, &bytes_written);
         if (status != KSYS_FS_ERR_SUCCESS) {
             errno = EIO;
-            stream->error = errno;
+            stream->flags.error = true;
             return 0;
         }
         stream->position += bytes_written;

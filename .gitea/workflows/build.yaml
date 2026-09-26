@@ -128,7 +128,8 @@ jobs:
           fi
 
       # cache restore resets ctimes; realign tup DB to skip a full rebuild,
-      # but keep files changed since the cache's commit dirty so tup rebuilds them
+      # but keep files changed since the cache's commit dirty so tup rebuilds them.
+      # A submodule bump diffs as a bare gitlink, so expand it to its whole subtree
       - name: Sync tup DB with filesystem ctime
         if: steps.check-tup-cache.outputs.cache_restored == 'true'
         run: |
@@ -136,6 +137,10 @@ jobs:
           BASE=$(cat .tup/build-commit 2>/dev/null || true)
           if [ -n "$BASE" ] && git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
             git -c core.quotePath=false diff --name-only "$BASE" HEAD > "$DIRTY"
+            git diff --raw "$BASE" HEAD | awk '$2 == "160000" { print $NF }' |
+            while read -r sub; do
+              git -C "$sub" -c core.quotePath=false ls-files | sed "s|^|$sub/|"
+            done >> "$DIRTY"
             echo "Cache built at $BASE; $(wc -l < "$DIRTY") changed files kept dirty"
             python3 .gitea/utils/sync-tup-ctime.py .tup/db "$DIRTY"
           else

@@ -5,8 +5,8 @@
 ; project name:      TINYPAD
 ; compiler:          flat assembler 1.67.21
 ; memory to compile: 3.0/9.0 MBytes (without/with size optimizations)
-; version:           SVN (4.1)
-; last update:       2015-07-17 (Jul 17, 2015)
+; version:           SVN (4.1.1)
+; last update:       2026-09-18 (Sep 18, 2026)
 ; minimal kernel:    revision #4199 (https://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/kernel/trunk)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
@@ -40,7 +40,7 @@ include 'tinypad.inc'
 
 __header '01',1,@CODE,TINYPAD_END,STATIC_MEM_END,MAIN_STACK,@PARAMS,ini_path
 
-APP_VERSION equ '4.1'
+APP_VERSION equ '4.1.1'
 
 TRUE = 1
 FALSE = 0

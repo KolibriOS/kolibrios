@@ -1,5 +1,6 @@
 #include <stdio.h>
 
-int feof(FILE *stream) {
-	return stream->eof;
+int feof(FILE* stream)
+{
+	return stream->flags.eof;
 }

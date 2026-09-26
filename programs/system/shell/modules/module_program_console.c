@@ -55,17 +55,18 @@ int program_console(int pid) {
                 break;
 
             case SHELL_PUTS:
-                printf("%s", &buffer->data );
+                buffer->return_value.written_bytes = printf("%s", &buffer->data );
                 buffer->cmd = SHELL_OK;
                 break;
 
             case SHELL_GETC:
-                buffer->data[0] = (char) getch() ;
+                *((int *)buffer->data) = getch();
                 buffer->cmd = SHELL_OK;
                 break;
 
             case SHELL_GETS:
-                gets(buffer->data, size - 2);
+                buffer->return_value.str = gets(buffer->data, size - 2);
+                buffer->return_value.written_bytes = strlen(buffer->data);
                 buffer->cmd = SHELL_OK;
                 break;
 

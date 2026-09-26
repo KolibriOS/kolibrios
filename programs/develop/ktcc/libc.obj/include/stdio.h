@@ -34,6 +34,8 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 DLLAPI int puts(const char* str);
 DLLAPI int printf(const char* format, ...);
@@ -50,15 +52,23 @@ typedef size_t fpos_t;
 #define _FILEMODE_R 1 << 0    // Read
 #define _FILEMODE_W 1 << 1    // Write
 #define _FILEMODE_A 1 << 2    // Append
-#define _FILEMODE_PLUS 1 << 3 // Plus
+#define _FILEFLAG_ERR 1 << 3 // Error
+#define _FILEFLAG_EOF 1 << 4 // EOF
 
 typedef struct FILE_s {
     char* name;
     fpos_t position;
-    int error;
-    int eof;
-    int mode;              // flags _FILEMODE_*
     int __ungetc_emu_buff; // Uses __ungetc_emu (temporary solution!)
+    union {
+        struct {
+            bool read : 1;
+            bool write : 1;
+            bool append : 1;
+            bool error : 1;
+            bool eof : 1;
+        };
+        uint32_t val; // exist just because tcc won't optimize bitfields
+    } flags;
 } FILE;
 
 #define _IOFBF 0
@@ -82,7 +92,7 @@ typedef struct FILE_s {
 #define TMP_MAX FOPEN_MAX
 
 #define stderr (FILE*)3
-#define stdin (FILE*)1
+#define stdin  (FILE*)1
 #define stdout (FILE*)2
 
 DLLAPI int fgetc(FILE*);

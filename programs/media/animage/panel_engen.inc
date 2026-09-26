@@ -58,18 +58,16 @@ PrintMousePos:
 ;----------------------------------------------------------
 ;------------draw lines of scoll---------------------------
 ;----------------------------------------------------------
+align 4
 draw_scrollers:
 	mov	edi,[CounterX]
-	mov	eax,[Scroll1CoordinatX]
 	mov	ebx,[Window_SizeY]
-	sub	ebx,(ci_scroll_dim-3)+5+ci_offs_skin_h
+	sub	ebx,ci_scroll_dim+5+ci_offs_skin_h
 	mov	ecx,[Window_SizeX]
-	sub	ecx,ci_scroll_dim+5+4+ci_scrollh_coord_x_min+ci_offs_skin_w
-	mov	edx,ci_scroll_dim-6
-	mov	esi,1
-	mov	[Scroll1CoordinatY],ebx
-	mov	[Scroll1MaxSizeY],edx
-	mov	[Scroll1MaxSizeX],ecx
+	sub	ecx,ci_scroll_dim+2+ci_scrollh_coord_x_min+ci_offs_skin_w
+	mov	[sb_horizont.y_pos],bx
+	mov	[sb_horizont.max_area],ecx
+	mov	[sb_horizont.x_size],cx
 	imul	ecx,edi
 	push	eax	ebx	edx
 	mov	eax,ecx
@@ -78,22 +76,15 @@ draw_scrollers:
 	idiv	ebx
 	mov	ecx,eax
 	pop	edx	ebx	eax
-	mov	[Scroll1SizeX],ecx
-	mov	edi,[Scroll1MaxSizeX]
-	sub	edi,ecx
-	mov	[Scroll1FreeX],edi
-	call draw_volume_rectangle ; horizontal scrollbar polzunok
+	mov	[sb_horizont.cur_area],ecx
 
 	mov	eax,[Window_SizeX]
-	sub	eax,(ci_scroll_dim-3)+5+ci_offs_skin_w
-	mov	ebx,[Scroll2CoordinatY]
-	mov	ecx,ci_scroll_dim-6
+	sub	eax,ci_scroll_dim+5+ci_offs_skin_w
 	mov	edx,[Window_SizeY]
-	sub	edx,ci_scroll_dim+5+4+ci_scrollv_coord_y_min+ci_offs_skin_h
-	mov	esi,1
-	mov	[Scroll2CoordinatX],eax
-	mov	[Scroll2MaxSizeX],ecx
-	mov	[Scroll2MaxSizeY],edx
+	sub	edx,ci_scroll_dim+2+ci_scrollv_coord_y_min+ci_offs_skin_h
+	mov [sb_vertical.x_pos],ax
+	mov [sb_vertical.max_area],edx
+	mov [sb_vertical.y_size],dx
 
 	imul	edx,[CounterY]
 	push	eax	ebx
@@ -103,12 +94,12 @@ draw_scrollers:
 	idiv	ebx
 	mov	edx,eax
 	pop	ebx	eax
-	mov	[Scroll2SizeY],edx
-	mov	edi,[Scroll2MaxSizeY]
-	sub	edi,edx
-	mov	[Scroll2FreeY],edi
-	call draw_volume_rectangle ; vertical scrollbar polzunok
+	mov	[sb_vertical.cur_area],edx
 
+	mov [sb_vertical.all_redraw],1
+	stdcall [scrollbar_v_draw],sb_vertical
+	mov [sb_horizont.all_redraw],1
+	stdcall [scrollbar_h_draw],sb_horizont
 	ret
 
 button_menu_size_x	dd 0

@@ -212,6 +212,7 @@ DIR_DIRECTORY = 2
 DIR_SYMLINK = 7
 KOS_HIDDEN = 2
 KOS_DIRECTORY = 10h
+KOS_SYMLINK = 40h
 READ_ONLY = 1
 SYMLINK_MAX_DEPTH = 40
 FAST_SYMLINK_MAX_SIZE = 60
@@ -3392,6 +3393,11 @@ ext_ReadFolder:
         stosd
         mov     eax, [esi+INODE.fileSizeHigh]
         stosd
+        movzx   eax, [esi+INODE.accessMode]
+        and     eax, TYPE_MASK
+        cmp     eax, FLAG_SYMLINK
+        jne     @f
+        or      dword [edx], KOS_SYMLINK
 @@:
         mov     esi, [esp+12]
         movzx   ecx, [esi+DIRENTRY.nameLength]

@@ -2,12 +2,14 @@
 system_dir_1: db '/sys/lib/libimg.obj',0
 system_dir_2 db '/sys/lib/proc_lib.obj',0
 system_dir_3: db '/sys/lib/kmenu.obj',0
+system_dir_4: db '/sys/lib/box_lib.obj',0
 ;---------------------------------------------------------------------
 align 4
 l_libs_start:
 	lib1 l_libs system_dir_1+9, library_path, system_dir_1, import_libimg
 	lib2 l_libs system_dir_2+9, library_path, system_dir_2, ProcLib_import
 	lib3 l_libs system_dir_3+9, library_path, system_dir_3, import_libkmenu
+	lib4 l_libs system_dir_4+9, library_path, system_dir_4, import_box_lib
 end_l_libs:
 ;---------------------------------------------------------------------
 align 4
@@ -79,51 +81,7 @@ colordialog_path:
 
 path4	db '/sys/noname.bmp',0
 ;---------------------------------------------------------------------
-align 4
-import_libimg:
-	dd alib_init1
-	img_is_img  dd aimg_is_img
-	img_info    dd aimg_info
-	img_from_file dd aimg_from_file
-	img_to_file dd aimg_to_file
-	img_from_rgb dd aimg_from_rgb
-	img_to_rgb  dd aimg_to_rgb
-	img_to_rgb2 dd aimg_to_rgb2
-	img_decode  dd aimg_decode
-	img_encode  dd aimg_encode
-	img_create  dd aimg_create
-	img_destroy dd aimg_destroy
-	img_destroy_layer dd aimg_destroy_layer
-	img_count   dd aimg_count
-	img_lock_bits dd aimg_lock_bits
-	img_unlock_bits dd aimg_unlock_bits
-	img_flip    dd aimg_flip
-	img_flip_layer dd aimg_flip_layer
-	img_rotate  dd aimg_rotate
-	img_rotate_layer dd aimg_rotate_layer
-	img_draw    dd aimg_draw
-dd 0,0
-	alib_init1   db 'lib_init',0
-	aimg_is_img  db 'img_is_img',0
-	aimg_info    db 'img_info',0
-	aimg_from_file db 'img_from_file',0
-	aimg_to_file db 'img_to_file',0
-	aimg_from_rgb db 'img_from_rgb',0
-	aimg_to_rgb  db 'img_to_rgb',0
-	aimg_to_rgb2 db 'img_to_rgb2',0
-	aimg_decode  db 'img_decode',0
-	aimg_encode  db 'img_encode',0
-	aimg_create  db 'img_create',0
-	aimg_destroy db 'img_destroy',0
-	aimg_destroy_layer db 'img_destroy_layer',0
-	aimg_count   db 'img_count',0
-	aimg_lock_bits db 'img_lock_bits',0
-	aimg_unlock_bits db 'img_unlock_bits',0
-	aimg_flip    db 'img_flip',0
-	aimg_flip_layer db 'img_flip_layer',0
-	aimg_rotate  db 'img_rotate',0
-	aimg_rotate_layer db 'img_rotate_layer',0
-	aimg_draw    db 'img_draw',0
+include '../../develop/libraries/libs-dev/libimg/import.inc'
 
 align 4
 ProcLib_import:
@@ -163,4 +121,6 @@ dd 0,0
 	akmenuitem_new                  db 'kmenuitem_new',0
 	akmenuitem_delete               db 'kmenuitem_delete',0
 	akmenuitem_draw                 db 'kmenuitem_draw',0
+
+include '../../develop/libraries/box_lib/import.inc'
 ;---------------------------------------------------------------------

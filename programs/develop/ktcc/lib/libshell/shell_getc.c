@@ -1,6 +1,6 @@
 #include <shell_api.h>
 
-char shell_getc()
+int shell_getc()
 {
     __shell_init();
 
@@ -9,7 +9,7 @@ char shell_getc()
         __shell_shm->cmd = SHELL_GETC;
         __SHELL_WAIT();
 
-        return __shell_shm->data[0];
+        return *((int*)__shell_shm->data);
     }
     else
     {

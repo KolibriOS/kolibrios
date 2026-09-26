@@ -172,6 +172,14 @@ start:
         invoke  ini.get_int, path, str_pasv, str_end, 5000
         mov     [pasv_end], ax
 
+; an inverted range would leave no port to bind, fall back to the defaults
+        mov     ax, [pasv_start]
+        cmp     ax, [pasv_end]
+        jbe     @f
+        mov     word [pasv_start], 2000
+        mov     word [pasv_end], 5000
+@@:
+
         mov     [alive], 1
 
 mainloop:
@@ -237,6 +245,7 @@ end if
         lea     eax, [ebp + thread_data.buffer]
         mov     [ebp + thread_data.buffer_ptr], eax
         mov     [ebp + thread_data.passivesocknum], -1
+        mov     [ebp + thread_data.datasocketnum], -1
 
         sendFTP "220 Welcome to KolibriOS FTP daemon"  ; fix output code
 
@@ -264,7 +273,7 @@ threadloop:
         je      .not_passive
         mov     [ebp + thread_data.datasocketnum], eax
         mov     [ebp + thread_data.mode], MODE_PASSIVE_OK
-        mcall   close   ; [ebp + thread_data.passivesocknum]
+        mcall   close, [ebp + thread_data.passivesocknum]
         mov     [ebp + thread_data.passivesocknum], -1
 
         invoke  con_write_asciiz, str_datasock
@@ -447,6 +456,7 @@ import  libio,\
         file.open,              'file_open',\
         file.read,              'file_read',\
         file.write,             'file_write',\
+        file.truncate,          'file_truncate',\
         file.close,             'file_close',\
         file.find.first,        'file_find_first',\
         file.find.next,         'file_find_next',\

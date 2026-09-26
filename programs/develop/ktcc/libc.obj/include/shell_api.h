@@ -31,9 +31,15 @@ enum __SHELL_INIT_STATE {
 };
 
 #pragma pack(push, 1)
+struct return_value {
+    size_t written_bytes;
+    char* str;
+};
+
 struct shell_shm_buffer {
     uint8_t cmd;
-    char data[SHELL_SHM_MAX - sizeof(((struct shell_shm_buffer*)NULL)->cmd)];
+    char data[SHELL_SHM_MAX - sizeof(((struct shell_shm_buffer*)NULL)->cmd) - sizeof(struct return_value)];
+    struct return_value return_value;
 };
 #pragma pack(pop)
 
@@ -51,14 +57,14 @@ __EXTERN int shell_ping();
 __EXTERN unsigned shell_get_pid();
 __EXTERN void shell_exit();
 
-__EXTERN char shell_getc();
-__EXTERN void shell_gets(char* str, int n);
+__EXTERN int shell_getc();
+__EXTERN char* shell_gets(char* str, int n);
 
 __EXTERN void shell_putc(char c);
-__EXTERN void shell_puts(const char* str);
-__EXTERN void shell_printf(const char* format, ...);
+__EXTERN size_t shell_puts(const char* str);
+__EXTERN int shell_printf(const char* format, ...);
 
-__EXTERN void shell_write_string(const char* s, size_t len);
+__EXTERN size_t shell_write_string(const char* s, size_t len);
 
 __EXTERN void shell_cls();
 

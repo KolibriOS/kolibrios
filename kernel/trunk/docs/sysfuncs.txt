@@ -4148,6 +4148,7 @@ Structure of block of data for folder entry (BDFE):
       and after archiving this bit is cleared - it can be useful
       for automatically creating of backup-archives as at writing
       this bit is usually set
+    * bit 6 (mask 0x40): this is a symbolic link (currently only set by the ext driver).
   * +4: dword: encoding, equals to field +8 in the information structure
   * +8: 4*byte: time of file creation
   * +12 = +0xC: 4*byte: date of file creation
