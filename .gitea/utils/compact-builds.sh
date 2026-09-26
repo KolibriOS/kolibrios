@@ -2,11 +2,12 @@
 # SPDX-License-Identifier: GPL-2.0-only
 # SPDX-FileCopyrightText: 2026 KolibriOS team
 
-# Shrink older builds on the storage server: zip their images and drop their
-# unpacked tree, which is rebuildable from the commit. sha256sums.txt keeps
-# naming the bare images, so a compacted build has to be unzipped to verify.
+# Shrink older builds on the storage server: compress their images and drop
+# their unpacked tree, which is rebuildable from the commit. sha256sums.txt
+# keeps naming the bare images, so a compacted build has to be decompressed
+# before it can be verified.
 #
-# Layout:  <root>/<version>/<lang>/kolibrios-<descr>-<lang>.{img,iso,raw} -> .zip
+# Layout:  <root>/<version>/<lang>/kolibrios-<descr>-<lang>.{img,iso,raw} -> .zst
 #          <root>/<version>/<lang>/data/                                  -> removed
 #
 # Usage: compact-builds.sh <storage-root> [keep] [max-per-run]
@@ -23,13 +24,12 @@ dry=${DRY_RUN:-0}
 verb=compacted
 [ "$dry" = 1 ] && verb="would compact"
 
-# zip -m drops the source only once the archive is written; the box serves the
+# --rm drops the source only once the archive is written; the box serves the
 # site over NFS, so compaction yields to it
-zip_image() {
-    ( cd "$(dirname "$1")" \
-      && nice -n 10 ionice -c3 zip -9 -q -m "$(basename "$1").zip" "$(basename "$1")" )
+compress_image() {
+    nice -n 10 ionice -c3 zstd -12 -T1 -q --rm "$1"
 }
-export -f zip_image
+export -f compress_image
 
 leftovers() {
     local build=$1
@@ -55,12 +55,13 @@ while IFS= read -r version; do
         continue
     fi
 
-    # zip is single threaded and a build holds nine images: one per core.
-    # Archive before dropping the tree, so a failure here leaves the build
-    # merely uncompacted and the next run picks it up again
+    # a build holds nine images: one per core, each zstd kept to one thread so
+    # the two levels of parallelism do not fight. Archive before dropping the
+    # tree, so a failure here leaves the build merely uncompacted and the next
+    # run picks it up again
     find "$dir" -mindepth 2 -maxdepth 2 -type f \
          \( -name '*.img' -o -name '*.iso' -o -name '*.raw' \) -print0 \
-        | xargs -0 -r -P "$(nproc)" -I{} bash -c 'zip_image "$@"' _ {}
+        | xargs -0 -r -P "$(nproc)" -I{} bash -c 'compress_image "$@"' _ {}
 
     find "$dir" -mindepth 2 -maxdepth 2 -type d -name data -exec rm -rf {} +
 

@@ -55,18 +55,18 @@
         dest: "{{ storage_path }}/../"
         mode: preserve
 
-    # older builds shrink to zipped images and lose their unpacked tree; the newest few keep both
-    - name: Looking for zip on the storage server
-      ansible.builtin.shell: command -v zip
-      register: zip_present
+    # older builds shrink to compressed images and lose their unpacked tree; the newest few keep both
+    - name: Looking for zstd on the storage server
+      ansible.builtin.shell: command -v zstd
+      register: zstd_present
       changed_when: false
       failed_when: false
 
-    - name: Requiring zip for compaction
+    - name: Requiring zstd for compaction
       ansible.builtin.assert:
-        that: zip_present.rc == 0
+        that: zstd_present.rc == 0
         fail_msg: >-
-          zip is not installed on the storage server, so older builds cannot
+          zstd is not installed on the storage server, so older builds cannot
           be compacted. Install it and re-run this build.
 
     - name: Compacting older builds
