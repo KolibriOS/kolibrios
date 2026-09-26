@@ -183,6 +183,8 @@ struct  txfd
 
 ends
 
+TXFD_STATUS_C           = 1 shl 15
+
 TXFD_CMD_IA             = 1 shl 0
 TXFD_CMD_CFG            = 1 shl 1
 TXFD_CMD_TX             = 1 shl 2
@@ -763,7 +765,7 @@ proc transmit stdcall bufferptr
         lea     edi, [ebx + device.tx_ring + eax]
 
         ; Check if current descriptor is free or still in use
-        cmp     [edi + txfd.status], 0
+        cmp     [edi + txfd.virt_addr], 0               ; buffer not reclaimed yet
         jne     .overrun
 
         ; Fill in status and command values
@@ -955,13 +957,13 @@ int_handler:
 
         push    eax
   .loop_tx:
-        mov     edi, [ebx + device.last_tx]
-        mov     eax, sizeof.txfd
-        mul     eax
+        mov     eax, [ebx + device.last_tx]
+        mov     edx, sizeof.txfd
+        mul     edx
         lea     edi, [ebx + device.tx_ring + eax]
 
-        cmp     [edi + txfd.status], 0
-        je      .tx_done
+        test    [edi + txfd.status], TXFD_STATUS_C      ; sent by the device?
+        jz      .tx_done
 
         cmp     [edi + txfd.virt_addr], 0
         je      .tx_done
@@ -970,6 +972,7 @@ int_handler:
 
         push    [edi + txfd.virt_addr]
         mov     [edi + txfd.virt_addr], 0
+        mov     [edi + txfd.status], 0                  ; free for transmit again
         invoke  NetFree
 
         inc     [ebx + device.last_tx]
