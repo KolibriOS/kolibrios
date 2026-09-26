@@ -1,5 +1,5 @@
 align 4
-FILE_BR_TOP_LINE equ 46
+FILE_BR_TOP_LINE equ 47
 FILE_BR_SEL_DR_W equ 60
 FILE_BR_COL_LEFT equ 60+15 ;ширина списка + отступ до кнопки name
 file_br_col_w1   dd   ? ;name
@@ -29,40 +29,46 @@ _new_but:
 ;------------------------------------------------------------------------------
 align 4
 draw_left_sort_button:
-	movzx	ebx,[left_panel_x.start_x]
-	add	ebx,FILE_BR_SEL_DR_W
+	movzx ebx,[left_panel_x.start_x]
+	add   ebx,FILE_BR_SEL_DR_W
 	shl   ebx,16
 	mov   bx,[left_panel_x.size_x]
 	sub   bx,FILE_BR_SEL_DR_W-1
-	movzx	ecx,[left_panel_y.start_y]
+	movzx ecx,[left_panel_y.start_y]
 	sub   ecx,14
 	shl   ecx,16
 	mov   cx,14
-	mcall SF_DRAW_RECT, ,,0xcccccc
+	mcall SF_DRAW_RECT, ,,[sc.work]
 
+	cmp   [sort_init], f_null_1
+	je    @f
 	movzx	ebx,[left_panel_x.start_x]
 	add	ebx,FILE_BR_COL_LEFT+1
 	movzx	ecx,[left_panel_y.start_y]
 	stdcall draw_sort_buttons, ebx, ecx, 142, [left_sort_flag]
+@@:
 	ret
 ;------------------------------------------------------------------------------
 align 4
 draw_right_sort_button:
-	movzx	ebx,[right_panel_x.start_x]
-	add	ebx,FILE_BR_SEL_DR_W
+	movzx ebx,[right_panel_x.start_x]
+	add   ebx,FILE_BR_SEL_DR_W
 	shl   ebx,16
 	mov   bx,[right_panel_x.size_x]
 	sub   bx,FILE_BR_SEL_DR_W-1
-	movzx	ecx,[right_panel_y.start_y]
+	movzx ecx,[right_panel_y.start_y]
 	sub   ecx,14
 	shl   ecx,16
 	mov   cx,14
-	mcall SF_DRAW_RECT, ,,0xcccccc
+	mcall SF_DRAW_RECT, ,,[sc.work]
 
+	cmp   [sort_init], f_null_1
+	je    @f
 	movzx	ebx,[right_panel_x.start_x]
 	add	ebx,FILE_BR_COL_LEFT+1
 	movzx	ecx,[right_panel_y.start_y]
 	stdcall draw_sort_buttons, ebx, ecx, 146, [right_sort_flag]
+@@:
 	ret
 ;------------------------------------------------------------------------------
 ; in:
@@ -940,7 +946,8 @@ calculate_panel_1:
 	add	ecx,FILE_BR_TOP_LINE
 	shl	ecx,16
 	add	ecx,[window_high]
-	sub	ecx,FILE_BR_TOP_LINE+86
+	sub	ecx,FILE_BR_TOP_LINE+62
+	sub ecx,[skin_high]
 	ret
 ;------------------------------------------------------------------------------
 clear_right_panel:
@@ -1050,7 +1057,7 @@ draw_fbutton:
 	rol	ebx,16
 	mov	bx,1
 	inc	ecx
-	mcall	,,,0xcccccc
+	mcall	,,,[sc.work]
 	dec	ecx
 ;--------------------------------------
 @@:

@@ -36,7 +36,7 @@ draw_device_button:
 	add	ebx,eax
 	mov	bx,2
 	inc	ecx
-	mcall	SF_DRAW_RECT, ,,0xcccccc
+	mcall	SF_DRAW_RECT, ,,[sc.work]
 	popa
 
 	pusha
@@ -66,11 +66,10 @@ draw_device_button:
 	ror	ebx,16
 	sub	ax,bx
 	rol	ebx,16
-	inc	ax
 	mov	bx,ax
 	
 	add	ecx,1
 	add	ebx,1
-	mcall	SF_DRAW_RECT, ,,0xcccccc
+	mcall	SF_DRAW_RECT, ,,[sc.work]
 	ret
 ;------------------------------------------------------------------------------

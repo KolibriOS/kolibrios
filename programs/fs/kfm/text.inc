@@ -92,31 +92,31 @@ error_open_ini_file:
 error_type:
      db 'File system error',0
 ;---------------------------------------------------------------------
-delete_type:
+sz_Delete_files:
      db 'Delete file(s)',0
 ;---------------------------------------------------------------------
 copy_type:
      db '  Copy files',0
 ;---------------------------------------------------------------------
-copy_type_1:
+sz_Copy_file:
      db 'Copy file',0
 ;---------------------------------------------------------------------
 move_type:
      db '  Move files',0
 ;---------------------------------------------------------------------
-move_type_1:
+sz_Move_file:
      db 'Move file',0
 ;---------------------------------------------------------------------
 rename_type:
      db '  Rename files',0
 ;---------------------------------------------------------------------
-rename_type_1:
+sz_Rename_file:
      db 'Rename file',0
 ;---------------------------------------------------------------------
-create_dir:
+sz_Create_dir:
      db 'Create directory',0
 ;---------------------------------------------------------------------
-create_file:
+sz_Create_file:
      db 'Create file',0
 ;---------------------------------------------------------------------
 exit_type:
@@ -154,6 +154,18 @@ type_change:
 ;---------------------------------------------------------------------
 type_access:
      db 'Access date:',0
+;---------------------------------------------------------------------
+sz_main_menu_File   db 'File',0
+sz_main_menu_Select db 'Select',0
+sz_main_menu_Sort   db 'Sort',0
+sz_main_menu_Help   db 'Help',0
+
+sz_menu_Copy_file    db 'Copy file        F5',0
+sz_menu_Move_file    db 'Move file        F6',0
+sz_menu_Create_dir   db 'Create directory F7',0
+sz_menu_Delete_files db 'Delete file(s)   F8',0
+sz_menu_Exit         db 'Exit            F12',0
+sz_menu_About db 'About KFM   F1',0
 ;---------------------------------------------------------------------
 type_limiters_data_time:
      db '/  /       :  :',0

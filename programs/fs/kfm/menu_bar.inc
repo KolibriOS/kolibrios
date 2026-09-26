@@ -9,30 +9,26 @@ KMENUITEM_NORMAL equ 0
 KMENUITEM_SUBMENU equ 1
 KMENUITEM_SEPARATOR equ 2
 
-sz_main_menu_file   db 'File',0
-sz_main_menu_select db 'Select',0
-sz_main_menu_sort   db 'Sort',0
-sz_main_menu_help   db 'Help',0
-
-sz_menu_exit  db 'Exit   F12',0
-sz_menu_about db 'About KFM   F1',0
-
 align 4
 draw_menu_bar:
     pushad
     mov   ecx,19
     mov   ebx,[window_width]
     sub   ebx,9
-    mcall SF_DRAW_RECT, ,,0xcccccc
+    mcall SF_DRAW_RECT, ,,[sc.work]
     pushad
     cld
     stdcall [kmainmenu_draw], [main_menu]
     popad
     add   ecx,37 shl 16
-    mov   cx,FILE_BR_TOP_LINE-67+24
+    mov   cx,FILE_BR_TOP_LINE-67
+	add   cx,word[skin_high]
     mcall ; horizontal line before disk buttons
     push  ecx
-    add   ecx,(FILE_BR_TOP_LINE-54+24) shl 16
+	ror   ecx,16
+    add   cx,FILE_BR_TOP_LINE-54
+	add   cx,word[skin_high]
+	ror   ecx,16
     mov   cx,3
     mcall ; horizontal line after disk buttons
     add   ecx,16 shl 16
@@ -80,50 +76,64 @@ draw_menu_bar:
 
 align 4
 init_menu:
-	stdcall [kmenu_init], sc
+    cmp     [library03.status_lib],0 ; test load library
+    jnz     .end
+    stdcall [kmenu_init], sc
+    stdcall [ksubmenu_new]
+    mov     [main_menu], eax
 
-	stdcall [ksubmenu_new]
-	mov [main_menu], eax
+    stdcall [ksubmenu_new]
+    mov     [main_menu_file], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Copy_file, 153
+    stdcall [ksubmenu_add], [main_menu_file], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Move_file, 154
+    stdcall [ksubmenu_add], [main_menu_file], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Create_dir, 152
+    stdcall [ksubmenu_add], [main_menu_file], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Delete_files, 157
+    stdcall [ksubmenu_add], [main_menu_file], eax
+    stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+    stdcall [ksubmenu_add], [main_menu_file], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Exit, 112
+    stdcall [ksubmenu_add], [main_menu_file], eax
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_File, [main_menu_file]
+    stdcall [ksubmenu_add], [main_menu], eax
 
-	stdcall [ksubmenu_new]
-	mov [main_menu_file], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_exit, 112
-	stdcall [ksubmenu_add], [main_menu_file], eax
-	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_file, [main_menu_file]
-	stdcall [ksubmenu_add], [main_menu], eax
+    ;stdcall [ksubmenu_new]
+    ;mov     [main_menu_select], eax
+    ;stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Select, [main_menu_select]
+    ;stdcall [ksubmenu_add], [main_menu], eax
 
-	;stdcall [ksubmenu_new]
-	;mov [main_menu_select], eax
-	;stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_select, [main_menu_select]
-	;stdcall [ksubmenu_add], [main_menu], eax
-
-	stdcall [ksubmenu_new]
-	mov [main_menu_sort], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.name, 142
-	stdcall [ksubmenu_add], [main_menu_sort], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.type, 143
-	stdcall [ksubmenu_add], [main_menu_sort], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.size, 144
-	stdcall [ksubmenu_add], [main_menu_sort], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.date, 145
-	stdcall [ksubmenu_add], [main_menu_sort], eax
-	stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
-	stdcall [ksubmenu_add], [main_menu_sort], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.name, 146
-	stdcall [ksubmenu_add], [main_menu_sort], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.type, 147
-	stdcall [ksubmenu_add], [main_menu_sort], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.size, 148
-	stdcall [ksubmenu_add], [main_menu_sort], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.date, 149
-	stdcall [ksubmenu_add], [main_menu_sort], eax
-	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_sort, [main_menu_sort]
-	stdcall [ksubmenu_add], [main_menu], eax
-
-	stdcall [ksubmenu_new]
-	mov [main_menu_help], eax
-	stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_about, 101
-	stdcall [ksubmenu_add], [main_menu_help], eax
-	stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_help, [main_menu_help]
-	stdcall [ksubmenu_add], [main_menu], eax
-	ret
+    cmp     [sort_init], f_null_1
+    je      @f
+    stdcall [ksubmenu_new]
+    mov     [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.name, 142
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.type, 143
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.size, 144
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.date, 145
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_SEPARATOR, 0, 0
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.name, 146
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.type, 147
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.size, 148
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.date, 149
+    stdcall [ksubmenu_add], [main_menu_sort], eax
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Sort, [main_menu_sort]
+    stdcall [ksubmenu_add], [main_menu], eax
+@@:
+    stdcall [ksubmenu_new]
+    mov     [main_menu_help], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_About, 101
+    stdcall [ksubmenu_add], [main_menu_help], eax
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Help, [main_menu_help]
+    stdcall [ksubmenu_add], [main_menu], eax
+.end:
+    ret

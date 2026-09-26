@@ -3,7 +3,7 @@ align 4
 delete_file:
 ;    call progress_bar
 ;    jmp  still
-    mov  [confirmation_type],delete_type
+    mov  [confirmation_type],sz_Delete_files
     call confirmation_action
     cmp  [work_confirmation_yes],1
     jne  red  ;reload_dir

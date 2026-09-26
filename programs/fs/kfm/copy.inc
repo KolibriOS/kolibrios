@@ -207,10 +207,10 @@ end if
     add   ebx,60 shl 16+1
     cmp   [move_file_flag],0
     je	  .copy
-    mov   edx,move_type_1
+    mov   edx,sz_Move_file
     jmp   @f
 .copy:
-    mov   edx,copy_type_1
+    mov   edx,sz_Copy_file
 @@:
     mcall SF_DRAW_TEXT, ,0x90ffffff
     add   ebx,18 shl 16+36

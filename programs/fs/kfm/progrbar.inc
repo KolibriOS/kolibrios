@@ -22,7 +22,7 @@ progress_bar_delete:
     cmp  [draw_all_progressbar],0
     je   .end
     sub  ebx,13
-    mov  edx,delete_type
+    mov  edx,sz_Delete_files
 	mcall
 .end:
     popa
@@ -71,10 +71,10 @@ progress_bar_copy:
     sub  ebx,13
     cmp  [move_file_flag],1
     je	@f
-    mov  edx,copy_type_1
+    mov  edx,sz_Copy_file
     jmp  .continue
 @@:
-    mov  edx,move_type_1
+    mov  edx,sz_Move_file
 .continue:
 
 	mcall

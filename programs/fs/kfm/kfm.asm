@@ -60,9 +60,22 @@ STRLEN = 1024
 align 4
 START:
     load_libraries l_libs_start,end_l_libs
-    cmp   eax,-1
-    jz    exit_apl
     purge copy_path
+
+if USE_STATIC_LIBS eq 0
+    cmp   [library01.status_lib],0 ;boxlib
+    jnz   exit_apl.t_p
+end if
+    cmp   [library02.status_lib],0 ;sort
+    jz   @f
+    mov   [sort_init], f_null_1
+    mov   [sort_dir], f_null_3
+@@:
+    cmp   [library03.status_lib],0 ;menu
+    jz   @f
+    mov   [kmainmenu_dispatch_cursorevent], f_null_1
+    mov   [kmainmenu_draw], f_null_1
+@@:
 
     stdcall	[sort_init], 1
 
@@ -147,6 +160,7 @@ still:
     je    mouse
     jmp   still
 ;---------------------------------------------------------------------
+align 4
 check_active_process_for_clear_all_flags:
         push    eax
         mcall   SF_SYSTEM, SSF_GET_ACTIVE_WINDOW
@@ -174,6 +188,7 @@ check_active_process_for_clear_all_flags:
         pop     eax
         ret
 ;---------------------------------------------------------------------
+align 4
 get_window_param:
     mcall SF_THREAD_INFO, procinfo, -1
     mov   eax,[ebx+46]
@@ -265,6 +280,7 @@ add_memory_for_folders:
     mov   [read_folder_1.return],eax
     ret
 ;---------------------------------------------------------------------
+align 4
 copy_path:
     xor   eax,eax
 @@:
@@ -290,6 +306,7 @@ copy_path:
     jnz   @b
     ret
 ;---------------------------------------------------------------------
+align 4
 copy_path_1:
     xor   eax,eax
 @@:
@@ -313,6 +330,7 @@ exit_apl:
     call confirmation_action
     cmp  [work_confirmation_yes],1
     jne  red
+.t_p:
     mcall SF_TERMINATE_PROCESS
 ;---------------------------------------------------------------------
 include   'key.inc'
@@ -366,8 +384,8 @@ include   'text.inc'
 plugins_directory db 0
 
 system_dir_Boxlib db '/sys/lib/box_lib.obj',0
-system_dir_Sort 	db '/sys/lib/sort.obj',0
-system_dir_Kmenu 	db '/sys/lib/kmenu.obj',0
+system_dir_Sort   db '/sys/lib/sort.obj',0
+system_dir_Kmenu  db '/sys/lib/kmenu.obj',0
 
 align 4
 l_libs_start:
@@ -389,11 +407,18 @@ else
 include '../../develop/libraries/box_lib/keys.inc'
 include '../../develop/libraries/box_lib/editbox.asm'
 include '../../develop/libraries/box_lib/scrollbar.asm'
-scrollbar_v_draw dd scroll_bar_vertical.draw
-scrollbar_v_mouse  dd scroll_bar_vertical.mouse
-scrollbar_h_draw dd scroll_bar_horizontal.draw
-scrollbar_h_mouse  dd scroll_bar_horizontal.mouse
+scrollbar_v_draw  dd scroll_bar_vertical.draw
+scrollbar_v_mouse dd scroll_bar_vertical.mouse
+scrollbar_h_draw  dd scroll_bar_horizontal.draw
+scrollbar_h_mouse dd scroll_bar_horizontal.mouse
 end if
+
+align 4
+f_null_3:
+    ret 8
+align 4
+f_null_1:
+    ret 4
 
 align 4
 proc draw_edge uses eax ebx ecx edx edi esi, box_l:dword, box_t:dword, box_w:dword, box_h:dword,\
