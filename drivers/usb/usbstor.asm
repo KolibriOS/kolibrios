@@ -1734,16 +1734,15 @@ end virtual
         invoke  MutexLock
         mov     [esi+usb_device_data.DeviceDisconnected], 1
         invoke  MutexUnlock
-; 3. Drop one reference to the structure and check whether
-; that was the last reference.
-        lock dec [esi+usb_device_data.NumReferences]
-        jz      .free
-; 4. If not, there are some additional references due to disk devices;
-; notify the kernel that those disks are deleted.
+; 3. Notify the kernel that all disk devices are deleted.
 ; Note that new disks cannot be added while we are looping here,
 ; because new_disk_thread checks for .DeviceDisconnected.
+        mov     eax, [esi+usb_device_data.LogicalDevices]
+        test    eax, eax
+        jz      .unref
+        push    esi
         mov     ebx, [esi+usb_device_data.MaxLUN]
-        mov     esi, [esi+usb_device_data.LogicalDevices]
+        mov     esi, eax
         inc     ebx
 .diskdel:
         mov     eax, [esi+usb_unit_data.DiskDevice]
@@ -1754,12 +1753,17 @@ end virtual
         add     esi, sizeof.usb_unit_data
         dec     ebx
         jnz     .diskdel
-; In this case, some operations with those disks are still possible,
-; so we can't do anything more now. disk_close will take care of the rest.
+        pop     esi
+.unref:
+; 4. Drop one reference to the structure and check whether
+; that was the last reference. If not, some operations with the disks
+; are still possible; disk_close will take care of the rest.
+        lock dec [esi+usb_device_data.NumReferences]
+        jz      .free
 .return:
         pop     esi ebx
         ret     4
-; 5. If there are no disk devices, free all resources which were allocated.
+; 5. If that was the last reference, free all resources which were allocated.
 .free:
         mov     eax, [esi+usb_device_data.LogicalDevices]
         test    eax, eax
