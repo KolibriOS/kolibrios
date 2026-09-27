@@ -358,7 +358,8 @@ labelPci db 'PCI',0
 
 glyphs	db '<',0,'>',0,'<',0,'>',0,'-',0,'+',0
 sz_subpixel db 'Subpixel',0
-languageNames db 'English',0,'Spanish',0,'Russian',0
+languageNames db 'English',0,'Finnish',0,'German',0,'Russian',0
+	db 'French',0,'Estonian',0,'Spanish',0,'Italian',0
 
 title	db "System settings",0
 sz_checkbox db "CHECKBOX",0
@@ -369,7 +370,8 @@ T_GROUP	= ROWS
 T_SPEAKER = ROWS + 1
 T_OFF	= ROWS + 2
 
-texts	dd texteng, textspa, textrus
+; the texts of every kernel language, English where there is no translation
+texts	dd texteng, texteng, texteng, textrus, texteng, texteng, textspa, texteng
 
 texteng	db 'System language',0, 'Font smoothing',0, 'Font height',0
 	db 'Access settings',0, 'Speaker',0

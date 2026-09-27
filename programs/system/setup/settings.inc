@@ -7,13 +7,12 @@
 ; Take the current values from the kernel
 settings_read_system:
 	mcall	26,5
-	mov	ecx,LANGUAGES-1	; a language not in the list becomes English
+	dec	eax		; the kernel counts languages from 1
+	cmp	eax,LANGUAGES
+	jb	@f
+	xor	eax,eax
 @@:
-	cmp	al,[kernelLanguages+ecx]
-	jz	@f
-	loop	@b
-@@:
-	mov	[language],ecx
+	mov	[language],eax
 	mcall	26,11
 	mov	[lba],eax
 	mcall	26,12
@@ -102,8 +101,8 @@ settings_save_ini:
 ;---------------------------------------------------------------
 ; Pass the values to the kernel
 settings_apply:
-	mov	eax,[language]
-	movzx	ecx,byte[kernelLanguages+eax]
+	mov	ecx,[language]
+	inc	ecx
 	mcall	21,5
 	mcall	21,11,[lba]
 	mcall	21,12,[pci]
@@ -162,9 +161,8 @@ wait_for_file:
 
 ;---------------------------------------------------------------
 ; DATA
-; The languages of the window, their numbers in the kernel
-LANGUAGES = 3
-kernelLanguages db 1, 7, 4	; English, Spanish, Russian
+; The languages of the kernel
+LANGUAGES = 8
 PATH_MAX = 256
 
 ; Every value stored in system.ini: section, key, variable, words.
@@ -186,7 +184,7 @@ iniSettings:
 wordsOnOff	dd 2, 'off ','on  '
 wordsSpeaker	dd 2, 'on  ','off '	; the ini keeps 'speaker on', not 'mute'
 wordsSmoothing	dd 3, 'off ','on  ','sbp '
-wordsLanguage	dd LANGUAGES, 'en  ','es  ','ru  '
+wordsLanguage	dd LANGUAGES, 'en  ','fi  ','de  ','ru  ','fr  ','et  ','es  ','it  '
 
 runBgProgram:
 	dd	7, 0, bgParam, 0, 0
