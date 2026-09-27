@@ -20,7 +20,6 @@ disptest;Программа для проверки матрицы дисплея;asm;http://git.kolibrios.org/Kol
 docpack;Документация / Блок документов;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/docpack;;http://wiki.kolibrios.org/wiki/Docpack/ru
 easyshot;Простой скриншотер;c--;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/cmm/misc/easyshot.c;http://board.kolibrios.org/viewtopic.php?t=3695;
 end;Программа завершения работы;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/end;http://board.kolibrios.org/viewtopic.php?t=2442;http://wiki.kolibrios.org/wiki/End/ru
-eskin;Установщик фона и скина при старте системы;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/eskin;http://board.kolibrios.org/viewtopic.php?t=2424;
 fb2read;Читалка FB2;oberon07;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/other/fb2reader;http://board.kolibrios.org/viewtopic.php?t=3128;
 fspeed;Тестирование скорости диска;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/testing/fspeed;http://board.kolibrios.org/viewtopic.php?t=2660;
 gmon;Информация о загрузке системы;asm;http://git.kolibrios.org/KolibriOS/kolibrios/src/branch/main/programs/system/gmon;http://board.kolibrios.org/viewtopic.php?t=470;http://wiki.kolibrios.org/wiki/Gmon/ru
