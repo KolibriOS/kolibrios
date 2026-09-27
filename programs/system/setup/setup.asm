@@ -1,462 +1,309 @@
 ; SPDX-License-Identifier: NOASSERTION
 ;
+; System settings.
+;   SETUP BOOT - apply the settings from system.ini (run from AUTORUN.DAT)
+;   SETUP      - window to change and save them
+;
+; Texts are UTF-8
 
-; Text encoded with Code Page 866 - Cyrillic
-
-;;;;;;;;;;;;;;;;;;;;;;;
-;;  SYSTEM SETTINGS  ;;
-;;;;;;;;;;;;;;;;;;;;;;;
-
-format binary as ""
-use32
-org 0
-
-db 'MENUET01'
-dd 1
-dd START
-dd IM_END
-dd I_END
-dd I_END
-dd param
-dd 0
+include '../../macros.inc'
+format meos 01
+entry START
+stack 4096
 
 include '../../proc32.inc'
-include '../../macros.inc'
 include '../../dll.inc'
-;---------------------------------------------------------------
-BootSettings:
-; Set system language
-	mov	word[param],0
-	invoke	ini.get_str, sz_ini, sz_system, sz_language, param, 2, 0
-	mov	ax, [param]
-	or	ax, 0x2020	; convert to lowercase
-	mov	ecx,langMarks.size/2
-	mov	edi,langMarks
-	repnz scasw
-	jnz	@f
-	neg	ecx
-	add	ecx,langMarks.size/2
-	mcall	21,5
-@@:
 
-; Set font smoothing
-	mov	dword[param],0
-	invoke	ini.get_str, sz_ini, sz_system, sz_fontSmooth, param, 4, 0
-	xor	ecx,ecx
-	mov	eax,[param]
-	or	eax,0x20202020
-	cmp	eax,'off '
-	jz	@f
-	inc	ecx
-	cmp	eax,'on  '
-	jz	@f
-	cmp	eax,'sbp '
-	jnz	.skipFont
-	inc	ecx
-@@:
-	mcall	48,10
-.skipFont:
-
-; Enable/disable system speaker
-	mov	dword[param],0
-	invoke	ini.get_str, sz_ini, sz_system, sz_speaker, param, 4, 0
-	mov	eax,[param]
-	or	eax,0x20202020
-	cmp	eax,'off '
-	jz	@f
-	cmp	eax,'on  '
-	jnz	.skipSpeaker
-	inc	[speaker_mute]
-@@:
-	call	_speaker_mute
-.skipSpeaker:
-
-; Set font size
-	invoke	ini.get_int, sz_ini, sz_system, sz_fontSize, 9
-	mov	ecx,eax
-	mcall	48,12
-
-; Set mouse speed
-	invoke	ini.get_int, sz_ini, sz_mouse, sz_speed, 1
-	mov	edx,eax
-	mcall	18,19,1
-
-; Set mouse acceleration
-	invoke	ini.get_int, sz_ini, sz_mouse, sz_acceleration, 1
-	mov	edx,eax
-	mcall	18,19,3
-
-; Set mouse double click delay
-	invoke	ini.get_int, sz_ini, sz_mouse, sz_double_click_delay, 1
-	mov	edx,eax
-	mcall	18,19,7
-
-; Enable/disable LBA access for applications
-	mov	dword[param],0
-	invoke	ini.get_str, sz_ini, sz_low_level, sz_lba, param, 4, 0
-	xor	ecx,ecx
-	mov	eax,[param]
-	or	eax,0x20202020
-	cmp	eax,'off '
-	jz	@f
-	cmp	eax,'on  '
-	jnz	.skipLBA
-	inc	ecx
-@@:
-	mcall	21,11
-.skipLBA:
-
-; Enable/disable PCI access for applications
-	mov	dword[param],0
-	invoke	ini.get_str, sz_ini, sz_low_level, sz_pci, param, 4, 0
-	xor	ecx,ecx
-	mov	eax,[param]
-	or	eax,0x20202020
-	cmp	eax,'off '
-	jz	@f
-	cmp	eax,'on  '
-	jnz	close
-	inc	ecx
-@@:
-	mcall	21,12
-	jmp	close
 ;---------------------------------------------------------------
 START:
 	mcall	68,11
 	stdcall dll.Load, @IMPORT
-	push	eax
 	test	eax,eax
-	jnz	close
+	jnz	quit
 
-	cmp	[param],dword 'BOOT'
-	jz	BootSettings
-	pop	eax
+	call	settings_read_system
+	GetCommandLine eax
+	cmp	dword[eax],'BOOT'
+	jnz	@f
 
-; get current settings
-	mcall	26,5
-	dec	eax
-	mov	[syslang],eax
+	call	settings_read_ini
+	call	settings_apply
+	call	style_apply
+quit:
+	mcall	-1
 
-	mcall	26,11
-	mov	[lba_read],eax
-
-	mcall	26,12
-	mov	[pci_acc],eax
-
-	mcall	18,8,1
-	mov	[speaker_mute],eax
-
-	mcall	48,9
-	mov	[fontSmoothing],eax
-
-	mcall	48,11
-	mov	[fontSize],eax
-
-loadtxt:
-	cmp	[syslang],3
-	jz	.ru
-	cmp	[syslang],5
-	jz	.et
-	mov	[text],texteng
-	jmp	draw_window
-.et:
-	mov	[text],textet
-	jmp	draw_window
-.ru:
-	mov	[text],textrus
-
-draw_window:
-	mcall	12,1
-	mov	ecx,50*65536+32*(4+stringsAmount)
-	mcall	0,<50,700>,,0xB4111199,0,title
-; Main buttons
-	mov	eax,8
-	mov	ecx,6*65536+26
-	mov	edx,4
-	mov	esi,0x5580c0
-	mov	ebp,stringsAmount
 @@:
-	mcall	,<490,24>
-	inc	edx
-	mcall	,<526,24>
-	inc	edx
-	mcall	,<562,120>
-	inc	edx
-	add	ecx,32*65536
-	dec	ebp
-	jnz	@b
-; APPLY ALL
-	add	ecx,32*65536
-	mcall	,<514,168>,,3,0x005588dd
-; SAVE ALL
-	add	ecx,32*65536
-	dec	edx
-	mcall
+; the checkbox image is shared by @RESHARE, 0 if it is not running
+	mcall	68,22,sz_checkbox,0,0
+	mov	[checkboxImage],eax
+
+;---------------------------------------------------------------
+draw_window:
+	mov	eax,[language]
+	mov	eax,[texts+eax*4]
+	mov	[text],eax
+
+	mcall	12,1
+	mcall	48,3,sc,sizeof.system_colors
+	mov	byte[sc.work_text+3],FONT
+	mov	byte[sc.work_button_text+3],FONT
+	mcall	48,4
+	lea	ecx,[eax+(50 shl 16)+CLIENT_H+4]
+	mov	edx,[sc.work]
+	or	edx,0x34000000
+	mcall	0,<50,CLIENT_W+9>,,,0,title
+
+; a row: label, value (drawn by draw_values), '-' and '+' buttons
+	xor	ebp,ebp
+.row:
+	imul	edi,ebp,ROW_STEP
+	add	edi,TOP		; y of the row
+	mov	ecx,edi
+	shl	ecx,16
+	add	ecx,ROW_H-1	; the button is 1 pixel bigger than given
+	lea	edx,[FIRST_ROW_BUTTON+ebp*2]
+	mcall	8,<BUTTON1_X,ROW_H-1>,,,[sc.work_button]
+	lea	edx,[FIRST_ROW_BUTTON+1+ebp*2]
+	mcall	8,<BUTTON2_X,ROW_H-1>
+
+	lea	ebx,[edi+TEXT_DY+(LABEL_X shl 16)]
+	mov	ecx,ebp
+	call	get_text
+	mcall	4,,[sc.work_text]
+
+	lea	ebx,[edi+TEXT_DY+((BUTTON1_X+8) shl 16)]
+	lea	edx,[glyphs+ebp*4]
+	mcall	4,,[sc.work_button_text]
+	lea	ebx,[edi+TEXT_DY+((BUTTON2_X+8) shl 16)]
+	lea	edx,[glyphs+2+ebp*4]
+	mcall	4
+
+	inc	ebp
+	cmp	ebp,ROWS
+	jb	.row
+
+; group box of the checkboxes: a frame, cut under its title
+	mcall	13,<GROUP_X,GROUP_W>,<GROUP_Y,GROUP_H>,[sc.work_graph]
+	mcall	13,<GROUP_X+1,GROUP_W-2>,<GROUP_Y+1,GROUP_H-2>,[sc.work]
+	mov	ecx,T_GROUP
+	call	get_text
+	call	utf8_length
+	lea	ebx,[(GROUP_TITLE_X-4) shl 16+eax*8+8]
+	push	edx
+	mcall	13,,<GROUP_Y,1>,[sc.work]
+	pop	edx
+	mcall	4,<GROUP_TITLE_X,GROUP_Y-8>,[sc.work_text]
+
+; a checkbox: label, then the box (drawn by draw_values), both under
+; one button. The checkboxes are spread over the width of the group.
+	mov	esi,GROUP_W-GROUP_PAD*2
+	xor	ebp,ebp
+.width:
+	call	check_label
+	call	utf8_length
+	lea	eax,[eax*8+8+CHECK_SIZE]
+	mov	[itemW+ebp*4],eax
+	sub	esi,eax
+	inc	ebp
+	cmp	ebp,CHECKS
+	jb	.width
+	mov	eax,esi
+	xor	edx,edx
+	mov	ecx,CHECKS-1
+	div	ecx
+	mov	esi,eax		; the gap between two checkboxes
+
+	mov	edi,ITEM_X	; x of the checkbox
+	xor	ebp,ebp
+.check:
+	call	check_label
+	mov	ebx,edi
+	shl	ebx,16
+	add	ebx,CHECK_ROW_Y+1
+	mcall	4,,[sc.work_text]
+	mov	eax,[itemW+ebp*4]
+	lea	ecx,[edi+eax-CHECK_SIZE]
+	mov	[boxX+ebp*4],ecx
+	mov	ebx,edi
+	shl	ebx,16
+	add	ebx,eax
+	lea	edx,[FIRST_CHECK_BUTTON+BT_HIDE+ebp]
+	mcall	8,,<CHECK_ROW_Y-4,24>
+	add	edi,[itemW+ebp*4]
+	add	edi,esi
+	inc	ebp
+	cmp	ebp,CHECKS
+	jb	.check
+
 	mcall	12,2
 
-draw_infotext:
-	mov	eax,[syslang]
-	mov	edi,[text]
-	lea	esi,[eax*8+langs]
-	add	edi,28
-	movsd
-	movsd
-	add	edi,LLL-8
+;---------------------------------------------------------------
+draw_values:
+	mov	edx,languageNames
+	mov	ecx,[language]
+	call	nth_string
+	mov	[valueText],edx
 
-	mov	eax,[lba_read]
-	call	onoff
-	mov	[edi],ebx
-
-	mov	eax,[pci_acc]
-	call	onoff
-	mov	[edi+LLL],ebx
-
-	mov	eax,[speaker_mute]
-	call	onoff
-	mov	[edi+LLL*2],ebx
-
-	mov	ebx,'SUBP'
-	mov	ecx,'IXEL'
-	cmp	[fontSmoothing],2
-	jz	@f
-	mov	eax,[fontSmoothing]
-	call	onoff
-	mov	ecx,'    '
+	mov	edx,sz_subpixel
+	mov	ecx,[fontSmoothing]
+	cmp	ecx,2
+	jae	@f
+	add	ecx,T_OFF
+	call	get_text
 @@:
-	mov	[edi+LLL*3],ebx
-	mov	[edi+LLL*3+4],ecx
+	mov	[valueText+4],edx
 
-	mov	eax,[fontSize]
-	mov	bl, 10
+	mov	eax,[fontHeight]
+	mov	bl,10
 	div	bl
-	add	ax, '00'
-	mov	[edi+LLL*4],ax
-; draw text
-	mcall	13,<342,96>,32*stringsAmount,80111199h
-	mov	eax,4
-	mov	ebx,6*65536+11
-	mov	ecx,1ffffffh
-	mov	edx,[text]
-	mov	esi,LLL
-	mov	ebp,stringsAmount
-newline:
-	mcall
-	add	ebx,32
-	add	edx,esi
-	dec	ebp
-	jnz	newline
+	add	ax,'00'
+	mov	word[heightText],ax
+	mov	[valueText+8],heightText
 
-	mov	ebp,2
-	add	ebx,32
-@@:
-	mcall
-	add	ebx,32
-	add	edx,esi
-	dec	ebp
-	jnz	@b
+; each value on a light box with the corners cut off: two bars crosswise
+	xor	ebp,ebp
+.row:
+	imul	edi,ebp,ROW_STEP
+	add	edi,TOP
+	mov	ecx,edi
+	shl	ecx,16
+	add	ecx,ROW_H
+	mcall	13,<VALUE_X+1,VALUE_W-2>,,[sc.work_light]
+	add	ecx,(1 shl 16)-2
+	mcall	13,<VALUE_X,VALUE_W>
+	lea	ebx,[edi+TEXT_DY+((VALUE_X+VALUE_PAD) shl 16)]
+	mov	edx,[valueText+ebp*4]
+	mcall	4,,[sc.work_text]
+	inc	ebp
+	cmp	ebp,ROWS
+	jb	.row
 
+; checkboxes: a frame, white inside, the @RESHARE image when set
+	xor	ebp,ebp
+.check:
+	mov	ebx,[boxX+ebp*4]
+	shl	ebx,16
+	add	ebx,CHECK_SIZE
+	mcall	13,,<CHECK_BOX_Y,CHECK_SIZE>,[sc.work_graph]
+	add	ebx,(1 shl 16)-2
+	mcall	13,,<CHECK_BOX_Y+1,CHECK_SIZE-2>,0xFFFFFF
+	mov	eax,[checks+ebp*8]
+	mov	eax,[eax]
+	xor	eax,[checks+ebp*8+4]
+	jz	.next
+	mov	edx,ebx
+	mov	dx,CHECK_BOX_Y+1
+	mov	ebx,[checkboxImage]
+	test	ebx,ebx		; no @RESHARE: the box stays empty
+	jz	.next
+	mcall	7,,<CHECK_SIZE-2,CHECK_SIZE-2>
+.next:
+	inc	ebp
+	cmp	ebp,CHECKS
+	jb	.check
+
+;---------------------------------------------------------------
 still:
 	mcall	10
 	cmp	eax,1
 	jz	draw_window
-
 	cmp	eax,2
-	jz	key
-
+	jz	.key
 	cmp	eax,3
-	jz	button
+	jnz	still
 
-	jmp	still
-;---------------------------------------------------------------
-key:
-	mcall	2
-	jmp	still
-;---------------------------------------------------------------
-button:
 	mcall	17
 	shr	eax,8
-	call	dword[eax*4+buttonTab-4]
-	jmp	draw_infotext
-close:
-	pop	eax
-	mcall	-1
-language1:
-	dec	[syslang]
-	jns	@f
-	mov	[syslang],7
-	jmp	@f
-language2:
-	inc	[syslang]
-	cmp	[syslang],8
-	jc	@f
-	mov	[syslang],0
-@@:
-	pop	eax
-	jmp	loadtxt
-LBA1:
-	btr	[lba_read],0
-	ret
-LBA2:
-	bts	[lba_read],0
-	ret
-PCI1:
-	btr	[pci_acc],0
-	ret
-PCI2:
-	bts	[pci_acc],0
-	ret
-SPEAKER1:
-	btr	[speaker_mute],0
-	ret
-SPEAKER2:
-	bts	[speaker_mute],0
-	ret
-font1:
-	cmp	[fontSmoothing],0
-	jz	@f
-	dec	[fontSmoothing]
-	ret
-font2:
-	cmp	[fontSmoothing],2
-	jz	@f
-	inc	[fontSmoothing]
-	ret
-fontSize1:
-	cmp	[fontSize],10
-	jc	@f
-	dec	[fontSize]
-@@:
-	ret
-fontSize2:
-	inc	[fontSize]
-	ret
-apply_all:
-	call	_lba_read
-	call	_pci_acc
-	call	_speaker_mute
-	call	fontApply
-	call	fontSizeApply
-_syslang:
-	mov	ecx,[syslang]
+	cmp	eax,1
+	jz	quit
+	cmp	eax,FIRST_CHECK_BUTTON
+	jae	.check
+
+; '-' or '+' of a row: step the value within the limits of the row
+	sub	eax,FIRST_ROW_BUTTON
+	shr	eax,1		; eax = row, CF = '+'
+	lea	esi,[eax*3]
+	lea	esi,[rows+esi*4]
+	mov	edi,[esi]
+	mov	ecx,[edi]
+	jc	.plus
+	cmp	ecx,[esi+4]
+	jbe	still
+	dec	ecx
+	jmp	.set
+.plus:
+	cmp	ecx,[esi+8]
+	jae	still
 	inc	ecx
-	mcall	21,5
-	ret
-_lba_read:
-	mcall	21,11,[lba_read]
-	ret
-_pci_acc:
-	mcall	21,12,[pci_acc]
-	ret
-fontApply:
-	mcall	48,10,[fontSmoothing]
-	ret
-fontSizeApply:
-	mcall	48,12,[fontSize]
-	ret
-_speaker_mute:
-	mcall	18,8,1
-	cmp	[speaker_mute],eax
-	jz	@f
-	inc	ecx
-	mcall	18
-@@:
-	ret
+.set:
+	mov	[edi],ecx
+	push	eax
+	call	apply_and_save
+	pop	eax
+	cmp	eax,1		; the language and the font smoothing
+	jbe	draw_window	; change all the texts: repaint the window
+	jmp	draw_values
+
+.check:
+	mov	eax,[checks-FIRST_CHECK_BUTTON*8+eax*8]
+	xor	dword[eax],1
+	call	apply_and_save
+	jmp	draw_values
+
+.key:
+	mcall	2
+	jmp	still
+
 ;---------------------------------------------------------------
-onoff:
-	cmp	[syslang],3
-	jz	.ru
-	cmp	[syslang],5
-	jz	.et
-	mov	ebx,'OFF '
-	test	eax,eax
-	jz	@f
-	mov	ebx,'ON  '
-	ret
-.ru:
-	mov	ebx,'çÖí '
-	test	eax,eax
-	jz	@f
-	mov	ebx,'ÑÄ  '
-	ret
-.et:
-	mov	ebx,'VƒL.'
-	test	eax,eax
-	jz	@f
-	mov	ebx,'SEES'
+; every change takes effect at once and is kept in system.ini
+apply_and_save:
+	call	settings_apply
+	jmp	settings_save_ini
+
+; edx = label of the checkbox ebp
+check_label:
+	mov	edx,[checkLabels+ebp*4]
+	test	edx,edx
+	jnz	@f
+	mov	ecx,T_SPEAKER
+	call	get_text
 @@:
 	ret
-;---------------------------------------------------------------
-saveAll:
-; system language
-	mov	eax,[syslang]
-	mov	ax, word[eax*2+langMarks]
-	mov	[param],eax
-	invoke	ini.set_str, sz_ini, sz_system, sz_language, param, 2
 
-; font size
-	invoke	ini.set_int, sz_ini, sz_system, sz_fontSize, [fontSize]
-
-; font smoothing
-	mov	dword[param],'off'
-	cmp	[fontSmoothing],0
-	jz	@f
-	mov	dword[param],'on '
-	cmp	[fontSmoothing],1
-	jz	@f
-	mov	dword[param],'sbp'
+; edx = string number ecx of the window language
+get_text:
+	mov	edx,[text]
+; edx = string number ecx of the zero separated list at edx
+nth_string:
+	jecxz	.done
 @@:
-	invoke	ini.set_str, sz_ini, sz_system, sz_fontSmooth, param, 3
-
-; system speaker
-	mov	dword[param],'off'
-	cmp	[speaker_mute],0
-	jz	@f
-	mov	dword[param],'on '
-@@:
-	invoke	ini.set_str, sz_ini, sz_system, sz_speaker, param, 3
-
-; LBA access for applications
-	mov	dword[param],'off'
-	cmp	[lba_read],0
-	jz	@f
-	mov	dword[param],'on '
-@@:
-	invoke	ini.set_str, sz_ini, sz_low_level, sz_lba, param, 3
-
-; PCI access for applications
-	mov	dword[param],'off'
-	cmp	[pci_acc],0
-	jz	@f
-	mov	dword[param],'on '
-@@:
-	invoke	ini.set_str, sz_ini, sz_low_level, sz_pci, param, 3
+	inc	edx
+	cmp	byte[edx-1],0
+	jnz	@b
+	loop	@b
+.done:
 	ret
+
+; eax = number of characters of the UTF-8 string at edx
+utf8_length:
+	xor	eax,eax
+	push	edx
+.next:
+	mov	cl,[edx]
+	inc	edx
+	test	cl,cl
+	jz	.done
+	and	cl,0xC0
+	cmp	cl,0x80		; continuation byte
+	jz	.next
+	inc	eax
+	jmp	.next
+.done:
+	pop	edx
+	ret
+
 ;---------------------------------------------------------------
 ; DATA
-align 4
-buttonTab:	; button handler pointers: -,+,apply
-	dd close
-	dd saveAll
-	dd apply_all
-	dd language1
-	dd language2
-	dd _syslang
-	dd LBA1
-	dd LBA2
-	dd _lba_read
-	dd PCI1
-	dd PCI2
-	dd _pci_acc
-	dd SPEAKER1
-	dd SPEAKER2
-	dd _speaker_mute
-	dd font1
-	dd font2
-	dd fontApply
-	dd fontSize1
-	dd fontSize2
-	dd fontSizeApply
-
 @IMPORT:
 library libini, 'libini.obj'
 import	libini, \
@@ -465,76 +312,85 @@ import	libini, \
 	ini.set_str, 'ini_set_str',\
 	ini.set_int, 'ini_set_int'
 
-title	db "System settings",0
-sz_ini	db "/sys/settings/system.ini",0
+ROWS	= 3
+CHECKS	= 3
+FIRST_ROW_BUTTON = 10	; row N has '-' = 10+N*2 and '+' = 11+N*2
+FIRST_CHECK_BUTTON = 20
+FONT	= 0xB0		; text flags: zero terminated, 8x16 UTF-8
 
-sz_system	db "system",0
-sz_language	db "language",0
-sz_fontSize	db "font height",0
-sz_fontSmooth	db "font smoothing",0
-sz_speaker	db "speaker mute",0
+; layout of the client area
+LABEL_CHARS = 20	; the longest label, Spanish
+TOP	= 10
+ROW_H	= 24
+ROW_STEP = 30
+TEXT_DY	= (ROW_H-16)/2
+LABEL_X	= 10
+VALUE_X	= LABEL_X + LABEL_CHARS*8 + 8
+VALUE_PAD = 14
+VALUE_W	= 8*8 + VALUE_PAD*2
+BUTTON1_X = VALUE_X + VALUE_W + 10
+BUTTON2_X = BUTTON1_X + 30
+CLIENT_W = BUTTON2_X + ROW_H + 10
+GROUP_X	= LABEL_X
+GROUP_W	= CLIENT_W - LABEL_X*2
+GROUP_Y	= TOP + ROWS*ROW_STEP + 14
+GROUP_H	= 50
+GROUP_TITLE_X = GROUP_X + 12
+GROUP_PAD = 14
+CHECK_ROW_Y = GROUP_Y + (GROUP_H-16)/2	; y of the checkbox labels
+CHECK_SIZE = 15
+CHECK_BOX_Y = CHECK_ROW_Y + (16-CHECK_SIZE)/2
+ITEM_X	= GROUP_X + GROUP_PAD
+CLIENT_H = GROUP_Y + GROUP_H + 10
 
-sz_mouse	db "mouse",0
-sz_speed	db "speed",0
-sz_acceleration	db "acceleration",0
-sz_double_click_delay	db "double_click_delay",0
-
-sz_low_level	db "low-level",0
-sz_lba		db "LBA",0
-sz_pci		db "PCI",0
-
-LLL = 56
-stringsAmount = 6
-
+; variable, min, max of every row
 align 4
-langs:
-db 'ENGLISH FINNISH GERMAN  RUSSIAN FRENCH  ESTONIANSPANISH ITALIAN '
-sz langMarks, 'en','fi','de','ru','fr','et','es','it'
+rows:
+	dd	language,      0, LANGUAGES-1
+	dd	fontSmoothing, 0, 2
+	dd	fontHeight,    9, 99
 
-textrus:
-db 'üßÎ™ ·®·‚•¨Î              :              <  >  è‡®¨•≠®‚Ï'
-db 'Ç™´ÓÁ®‚Ï LBA              :              -  +  è‡®¨•≠®‚Ï'
-db 'ÑÆ·‚„Ø ™ Ë®≠• PCI         :              -  +  è‡®¨•≠®‚Ï'
-db 'ÇÎ™´ÓÁ®‚Ï SPEAKER         :              -  +  è‡®¨•≠®‚Ï'
-db 'ë£´†¶®¢†≠®• Ë‡®‰‚Æ¢       :              -  +  è‡®¨•≠®‚Ï'
-db 'ÇÎ·Æ‚† Ë‡®‰‚Æ¢            :              -  +  è‡®¨•≠®‚Ï'
+; variable and the value of it that means 'not checked'
+checks	dd lba,0, pci,0, speakerMute,1
+checkLabels dd labelLba, labelPci, 0	; 0: the speaker label of the language
+labelLba db 'LBA',0
+labelPci db 'PCI',0
 
-db 'ÇçàåÄçàÖ:                                  è‡®¨•≠®‚Ï ¢·•'
-db 'çÖ áÄÅìÑúíÖ ëéïêÄçàíú çÄëíêéâäà            ëÆÂ‡†≠®‚Ï ¢·•'
+glyphs	db '<',0,'>',0,'<',0,'>',0,'-',0,'+',0
+sz_subpixel db 'Subpixel',0
+languageNames db 'English',0,'Spanish',0,'Russian',0
 
-texteng:
-db 'System language           :              <  >    Apply  '
-db 'Allow LBA access          :              -  +    Apply  '
-db 'Allow PCI access          :              -  +    Apply  '
-db 'Disable SPEAKER           :              -  +    Apply  '
-db 'Font smoothing            :              -  +    Apply  '
-db 'Font height               :              -  +    Apply  '
+title	db "System settings",0
+sz_checkbox db "CHECKBOX",0
 
-db 'NOTE:                                        Apply all  '
-db 'SAVE YOUR SETTINGS BEFORE QUITING KOLIBRI    Save all   '
+; Texts of the window languages: zero terminated strings in this order
+; (row labels, group title, speaker label, 'off', 'on')
+T_GROUP	= ROWS
+T_SPEAKER = ROWS + 1
+T_OFF	= ROWS + 2
 
-textet:
-db 'S¸steemi keel             :              <  >   Kinnita '
-db 'LBA lugemine lubatud      :              -  +   Kinnita '
-db 'PCI juurdep‰‰s programm.  :              -  +   Kinnita '
-db 'Disable SPEAKER           :              -  +   Kinnita '
-db 'Font smoothing            :              -  +   Kinnita '
-db 'Font height               :              -  +   Kinnita '
+texts	dd texteng, textspa, textrus
 
-db 'MƒRKUS:                                    Kinnita kıik '
-db 'SALVESTA SEADED ENNE KOLIBRIST VƒLJUMIST   Salvesta kıik'
+texteng	db 'System language',0, 'Font smoothing',0, 'Font height',0
+	db 'Access settings',0, 'Speaker',0
+	db 'Off',0, 'On',0
 
-IM_END:
+textspa	db 'Idioma del sistema',0, 'Suavizado de fuentes',0, 'Altura de fuente',0
+	db 'Ajustes de acceso',0, 'Altavoz',0
+	db 'No',0, 'S√≠',0
 
-text	dd  ?
+textrus	db '–Ø–∑—ã–∫ —Å–∏—Å—Ç–µ–º—ã',0, '–°–≥–ª–∞–∂–∏–≤–∞–Ω–∏–µ —à—Ä–∏—Ñ—Ç–æ–≤',0, '–í—ã—Å–æ—Ç–∞ —à—Ä–∏—Ñ—Ç–æ–≤',0
+	db '–ù–∞—Å—Ç—Ä–æ–π–∫–∏ –¥–æ—Å—Ç—É–ø–∞',0, '–î–∏–Ω–∞–º–∏–∫',0
+	db '–ù–µ—Ç',0, '–î–∞',0
 
-syslang 	dd  ?
-lba_read	dd  ?
-pci_acc 	dd  ?
-speaker_mute	dd  ?
-fontSmoothing	dd  ?
-fontSize	dd  ?
+;---------------------------------------------------------------
+include 'settings.inc'
 
-param:
-	rb 1024
-I_END:
+
+text	dd ?		; texts of the window language
+checkboxImage dd ?
+boxX	rd CHECKS	; x of every checkbox box, set by draw_window
+itemW	rd CHECKS	; width of every checkbox with its label
+sc	system_colors
+valueText rd ROWS	; the strings shown in the value boxes
+heightText rb 4

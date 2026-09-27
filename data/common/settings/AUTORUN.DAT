@@ -10,7 +10,6 @@
 /SYS/SETUP              BOOT 0	# Load device settings
 /SYS/LOADDRV            I2CHID 0	# Start I2C touchpad driver
 /SYS/@TASKBAR           ""   0	# Start taskbar
-/SYS/ESKIN              ""   0	# Set style
 /SYS/@ICON              ""   0	# Multithread desktop icons
 /SYS/TMPDISK            A0   0	# Add virtual RAM disk /tmp0/1
 /SYS/@RESHARE           ""   0	# Shared resources
