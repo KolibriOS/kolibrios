@@ -174,7 +174,7 @@ iniSettings:
 	dd	sz_system,   sz_language,   language,      wordsLanguage
 	dd	sz_system,   sz_fontHeight, fontHeight,    0
 	dd	sz_system,   sz_fontSmooth, fontSmoothing, wordsSmoothing
-	dd	sz_system,   sz_speaker,    speakerMute,   wordsOnOff
+	dd	sz_system,   sz_speaker,    speakerMute,   wordsSpeaker
 	dd	sz_lowLevel, sz_lba,        lba,           wordsOnOff
 	dd	sz_lowLevel, sz_pci,        pci,           wordsOnOff
 .saved:	; the mouse is configured by its own application
@@ -184,6 +184,7 @@ iniSettings:
 .end:
 
 wordsOnOff	dd 2, 'off ','on  '
+wordsSpeaker	dd 2, 'on  ','off '	; the ini keeps 'speaker on', not 'mute'
 wordsSmoothing	dd 3, 'off ','on  ','sbp '
 wordsLanguage	dd LANGUAGES, 'en  ','es  ','ru  '
 
@@ -203,7 +204,7 @@ sz_system	db "system",0
 sz_language	db "language",0
 sz_fontHeight	db "font height",0
 sz_fontSmooth	db "font smoothing",0
-sz_speaker	db "speaker mute",0
+sz_speaker	db "speaker",0
 
 sz_lowLevel	db "low-level",0
 sz_lba		db "LBA",0
