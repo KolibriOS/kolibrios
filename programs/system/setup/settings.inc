@@ -174,9 +174,9 @@ iniSettings:
 	dd	sz_system,   sz_language,   language,      wordsLanguage
 	dd	sz_system,   sz_fontHeight, fontHeight,    0
 	dd	sz_system,   sz_fontSmooth, fontSmoothing, wordsSmoothing
-	dd	sz_system,   sz_speaker,    speakerMute,   wordsSpeaker
 	dd	sz_lowLevel, sz_lba,        lba,           wordsOnOff
 	dd	sz_lowLevel, sz_pci,        pci,           wordsOnOff
+	dd	sz_lowLevel, sz_speaker,    speakerMute,   wordsSpeaker
 .saved:	; the mouse is configured by its own application
 	dd	sz_mouse,    sz_speed,      mouseSpeed,    0
 	dd	sz_mouse,    sz_accel,      mouseAccel,    0
