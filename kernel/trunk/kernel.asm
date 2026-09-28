@@ -9,6 +9,19 @@
 ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa
 ;;
+;; Original MenuetOS contributors:
+;; Ville Mikael Turjanmaa, villemt@itu.jyu.fi - main OS coding and design
+;; Jan-Michael Brummer, BUZZ2@gmx.de - mouse/display fixes and CD player
+;; Felix Kaiser, info@felix-kaiser.de - AMD K6-II IRQs and APM management
+;; Paolo Minazzi, paolo.minazzi@inwind.it - Sound Blaster and FAT32 write
+;; quickcode@mail.ru - 320x200 palette and S3 VESA 1.2 bank switching
+;; Alexey, kgaz@crosswinds.net - Voodoo-compatible graphics
+;; Juan M. Caravaca, bitrider@wanadoo.es - graphics optimizations
+;; kristol@nic.fi - boot fix for some Pentium models
+;; Mike Hibbett, mikeh@oceanfree.net - SLIP driver and TCP/IP stack skeleton
+;; Lasse Kuusijarvi, kuusijar@lut.fi - syscall jump table and modifications
+;; Jarek Pelczar, jarekp3@wp.pl - AMD-compatible MTRRs
+;;
 ;; KolibriOS is distributed in the hope that it will be useful, but WITHOUT ANY
 ;; WARRANTY. No author or distributor accepts responsibility to anyone for the
 ;; consequences of using it or for whether it serves any particular purpose or

@@ -3,6 +3,10 @@
 ;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
+;; Portions derived from MenuetOS filesystem sources:           ;;
+;; (C) 2004 Ville Turjanmaa, License: GPL                       ;;
+;; Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it        ;;
+;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 

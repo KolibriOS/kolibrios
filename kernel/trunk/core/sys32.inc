@@ -3,6 +3,11 @@
 ;; Copyright (C) KolibriOS team 2004-2024. All rights reserved. ;;
 ;;  Distributed under terms of the GNU General Public License.  ;;
 ;;                                                              ;;
+;;  MenuetOS process management, protected ring3                ;;
+;;                                                              ;;
+;;  Distributed under GPL. See file COPYING for details.        ;;
+;;  Copyright 2003 Ville Turjanmaa                              ;;
+;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 

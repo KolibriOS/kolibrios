@@ -3,6 +3,9 @@
 ;; Copyright (C) KolibriOS team 2013-2024. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
+;; Portions derived from MenuetOS RAM-disk code:                ;;
+;; (C) 2004 Ville Turjanmaa, License: GPL                       ;;
+;;                                                              ;;
 ;; RAMDISK functions                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
