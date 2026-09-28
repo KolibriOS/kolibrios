@@ -9,7 +9,7 @@ draw_buttons_panel:
 	sub	ebx,9
 	mcall	SF_DRAW_RECT, ,<19,F_BUT_PANEL_H>,[sc.work_light]
 if USE_STATIC_LIBS eq 1
-	mcall	SF_PUT_IMAGE, buttons_file_data,<199,19>,<10,21>
+	mcall	SF_PUT_IMAGE, buttons_file_data,<199,19>,<12,21>
 else
 	mcall   SF_PUT_IMAGE_EXT, buttons_file_data,\
 		<BUTTON_SIZE_W, BUTTON_SIZE_H>, <10,20>, 24,, 0
@@ -36,12 +36,13 @@ _new_but:
 ;------------------------------------------------------------------------------
 align 4
 draw_left_sort_button:
-	movzx ebx,[left_panel_x.start_x]
+	movzx ebx,[fb_left.start_x]
 	add   ebx,FILE_BR_SEL_DR_W
 	shl   ebx,16
-	mov   bx,[left_panel_x.size_x]
+	mov   bx,[fb_left.size_x]
+	add   bx,[sb_left.x_size]
 	sub   bx,FILE_BR_SEL_DR_W-1
-	movzx ecx,[left_panel_y.start_y]
+	movzx ecx,[fb_left.start_y]
 	sub   ecx,14
 	shl   ecx,16
 	mov   cx,14
@@ -49,21 +50,22 @@ draw_left_sort_button:
 
 	cmp   [sort_init], f_null_1
 	je    @f
-	movzx	ebx,[left_panel_x.start_x]
+	movzx	ebx,[fb_left.start_x]
 	add	ebx,FILE_BR_COL_LEFT+1
-	movzx	ecx,[left_panel_y.start_y]
+	movzx	ecx,[fb_left.start_y]
 	stdcall draw_sort_buttons, ebx, ecx, 142, [left_sort_flag]
 @@:
 	ret
 ;------------------------------------------------------------------------------
 align 4
 draw_right_sort_button:
-	movzx ebx,[right_panel_x.start_x]
+	movzx ebx,[fb_right.start_x]
 	add   ebx,FILE_BR_SEL_DR_W
 	shl   ebx,16
-	mov   bx,[right_panel_x.size_x]
+	mov   bx,[fb_right.size_x]
+	add   bx,[sb_right.x_size]
 	sub   bx,FILE_BR_SEL_DR_W-1
-	movzx ecx,[right_panel_y.start_y]
+	movzx ecx,[fb_right.start_y]
 	sub   ecx,14
 	shl   ecx,16
 	mov   cx,14
@@ -71,9 +73,9 @@ draw_right_sort_button:
 
 	cmp   [sort_init], f_null_1
 	je    @f
-	movzx	ebx,[right_panel_x.start_x]
+	movzx	ebx,[fb_right.start_x]
 	add	ebx,FILE_BR_COL_LEFT+1
-	movzx	ecx,[right_panel_y.start_y]
+	movzx	ecx,[fb_right.start_y]
 	stdcall draw_sort_buttons, ebx, ecx, 146, [right_sort_flag]
 @@:
 	ret
@@ -168,8 +170,8 @@ endp
 ;------------------------------------------------------------------------------
 align 4
 draw_left_select_disk_button:
-	mov	bx,[left_panel_x.start_x]
-	mov	cx,[left_panel_y.start_y]
+	mov	bx,[fb_left.start_x]
+	mov	cx,[fb_left.start_y]
 	mov	ebp,read_folder_name	      ;read_folder.name
 	mov	edx,0x40000000+140
 ;--------------------------------------
@@ -218,55 +220,14 @@ draw_left_select_disk_button:
 	ret
 ;------------------------------------------------------------------------------
 draw_right_select_disk_button:
-	mov	bx,[right_panel_x.start_x]
-	mov	cx,[right_panel_y.start_y]
+	mov	bx,[fb_right.start_x]
+	mov	cx,[fb_right.start_y]
 	mov	ebp,read_folder_1_name   ;read_folder_1.name
 	mov	edx,0x40000000+141
 	jmp	draw_left_select_disk_button.1
 ;------------------------------------------------------------------------------
 ;draw_ATAPI_tray_control:
 ;	ret
-;------------------------------------------------------------------------------
-calc_max_panel_line:
-	xor	eax,eax
-	mov	ax,[left_panel_y.size_y]
-	mov	ebx,10
-	xor	edx,edx
-	div	ebx
-	mov	[max_panel_line],eax
-	mov [sb_left.cur_area],eax
-	mov [sb_right.cur_area],eax
-	ret
-;------------------------------------------------------------------------------
-draw_icon:
-	pusha
-	test	[edx-40],byte 0x10
-	jnz	.draw_dir_pic
-
-	call	get_icon_number
-	imul	ebx,270
-	add	ebx,icons_file_data
-	jmp	.draw
-;--------------------------------------
-.draw_dir_pic:
-	mov	ebx,icons_file_data
-	cmp	[edx],word '..'
-	jne	 .draw
-
-	cmp	[edx+2],byte 0
-	jne	.draw
-
-	add	ebx,270   ;*17
-;--------------------------------------
-.draw:
-	mov	edx,[esp+16]	;ebx
-	ror	edx,16
-	sub	edx,12
-	rol	edx,16
-	dec edx
-	mcall	SF_PUT_IMAGE, ,<10,9>
-	popa
-	ret
 ;------------------------------------------------------------------------------
 ;       ПЕРЕВОД 10-НЫХ ЧИСЕЛ СО ЗНАКОМ В СТРОКОВЫЙ ВИД
 ;       Вход:
@@ -534,7 +495,7 @@ draw_type_size_date:
 	mov	[date_table+6],eax
 	pop	ebx
 	ror	ebx,16
-	add	bx,[left_panel_x.size_x]
+	add	bx,[fb_left.size_x]
 	sub	ebx,161	;122+12+15
 	rol	ebx,16
 	mov	ecx,0
@@ -550,191 +511,6 @@ draw_type_size_date:
 	popa
 	ret
 ;------------------------------------------------------------------------------
-draw_folder_data:
-	cmp	[drawing_panel_folder],1
-	jne	.right_panel
-
-	mov	eax,[left_folder_block]
-	sub	eax,[max_panel_line]
-	test	eax,0x8000000
-	jz	.ok_left
-
-	mov	[left_start_draw_line],0
-	mov	[sb_left.position],0
-	jmp	@f
-;--------------------------------------
-.ok_left:
-	cmp	eax,[left_start_draw_line]
-	jae	@f
-
-	mov	[left_start_draw_line],eax
-	mov	[sb_left.position],eax
-;--------------------------------------
-@@:
-	mov	bx,[left_panel_x.start_x]
-	add	bx,12
-	shl	ebx,16
-	mov	bx,[left_panel_y.start_y]
-	inc	bx
-	mov	edx,[left_start_draw_line]
-	imul	edx,304
-	add	edx,[left_folder_data]
-	add	edx,32+40
-	mov	[temp_counter],0
-	jmp	.type_folder
-;--------------------------------------
-.right_panel:
-	mov	eax,[right_folder_block]
-	sub	eax,[max_panel_line]
-	test	eax,0x8000000
-	jz	.ok_right
-
-	mov	[right_start_draw_line],0
-	mov	[sb_right.position],0
-	jmp	@f
-;--------------------------------------
-.ok_right:
-	cmp	eax,[right_start_draw_line]
-	jae	@f
-
-	mov	[right_start_draw_line],eax
-	mov	[sb_right.position],eax
-;--------------------------------------
-@@:
-	mov	bx,[right_panel_x.start_x]
-	add	bx,12
-	shl	ebx,16
-	mov	bx,[right_panel_y.start_y]
-	inc	bx
-	mov	edx,[right_start_draw_line]
-	imul	edx,304
-	add	edx,[right_folder_data]
-	add	edx,32+40
-	mov	[temp_counter],1
-;--------------------------------------
-.type_folder:
-	xor	eax,eax
-;--------------------------------------
-.start:
-	pusha
-	mov	eax,edx
-	cmp	[temp_counter],1
-	je	@f
-
-	sub	eax,[left_folder_data]
-	sub	eax,32+40
-	xor	edx,edx
-	mov	ebx,304
-	div	ebx
-	cmp	eax,[left_folder_block]
-	je	.end_1
-
-	jmp	.continue_1
-;--------------------------------------
-@@:
-	sub	eax,[right_folder_data]
-	sub	eax,32+40
-	xor	edx,edx
-	mov	ebx,304
-	div	ebx
-	cmp	eax,[right_folder_block]
-	je	.end_1
-;--------------------------------------
-.continue_1:
-	popa
-	cmp	eax,[max_panel_line]	;  20
-	je	.end_2
-
-	mov	[marked_file],0
-	cmp	[edx+299-40],byte 0
-	je	@f
-
-	mov	[marked_file],1
-;--------------------------------------
-@@:
-	call	clear_line
-	call	draw_type_size_date
-	call	draw_icon
-	push	eax
-	xor	eax,eax
-	mov	ax,[left_panel_x.size_x]
-	push	ebx edx
-	mov	ebx,6
-	xor	edx,edx
-	div	ebx
-	pop	edx ebx
-	sub	eax,23+2+2+2
-	mov	esi,[file_name_length]
-	mov	[temp_counter_1],0
-	cmp	esi,eax
-	jbe	@f
-
-	mov	esi,eax
-	mov	[temp_counter_1],1
-;--------------------------------------
-@@:
-	mov	ecx,0
-	cmp	[marked_file],byte 0
-	je	@f
-
-	mov	ecx,0xff0000
-;--------------------------------------
-@@:
-	mcall	SF_DRAW_TEXT
-	cmp	[temp_counter_1],0
-	je	.continue
-
-	mov	eax,esi ;[file_name_length]
-	imul	eax,6
-	shl	eax,16
-	push	ebx edx
-	add	ebx,eax
-	mcall	SF_DRAW_TEXT, ,0xff0000,truncated_filename_char,2
-	add	ebx,1 shl 16
-	mcall
-	pop	edx ebx
-;--------------------------------------
-.continue:
-	add	ebx,10
-	add	edx,304 ;10
-	pop	eax
-	inc	eax
-	jmp	.start
-;--------------------------------------
-.end_1:
-	popa
-;--------------------------------------
-.end_2:    
-	mov	ax,[left_panel_y.start_y]
-	add	ax,[left_panel_y.size_y]
-	mov	cx,bx
-	dec	cx
-	rol	ecx,16
-	mov	cx,ax
-	mov	eax,ecx
-	shr	eax,16
-	sub	cx,ax
-	cmp	cx,0
-	jbe	@f
-
-	mov	bx,[left_panel_x.size_x]
-	sub	ebx,12 shl 16
-	mcall	SF_DRAW_RECT, ,,0xffffff
-;--------------------------------------
-@@:
-.end:
-	cmp	[drawing_panel_folder],1
-	jne	@f
-
-	mov [sb_left.all_redraw], 1
-	stdcall [scrollbar_v_draw], sb_left
-	ret
-;--------------------------------------
-@@:
-	mov [sb_right.all_redraw], 1
-	stdcall [scrollbar_v_draw], sb_right
-	ret
-;------------------------------------------------------------------------------
 clear_line:
 	cmp	[not_clear_lines],0
 	jne	.end_1
@@ -746,22 +522,22 @@ clear_line:
 	cmp	[drawing_panel_folder],1
 	jne	.right
 
-	cmp	[select_panel_counter],0
-	jne	.continue
+	cmp	[fb_right.select_panel_counter],1
+	je	.continue
 
-	mov	ax,[left_start_draw_cursor_line]
-	add	ax,[left_panel_y.start_y]
+	mov	ax,[fb_left.start_draw_cursor_line]
+	add	ax,[fb_left.start_y]
 	cmp	bx,ax
 	je	.end
 
 	jmp	.continue
 ;--------------------------------------
 .right:
-	cmp	[select_panel_counter],0
+	cmp	[fb_left.select_panel_counter],1
 	je	.continue
 
-	mov	ax,[right_start_draw_cursor_line]
-	add	ax,[right_panel_y.start_y]
+	mov	ax,[fb_right.start_draw_cursor_line]
+	add	ax,[fb_right.start_y]
 	cmp	bx,ax
 	je	.end
 ;--------------------------------------
@@ -771,7 +547,7 @@ clear_line:
 	dec	cx
 	rol	ecx,16
 	mov	cx,10
-	mov	bx,[left_panel_x.size_x]
+	mov	bx,[fb_left.size_x]
 	sub	ebx,12 shl 16+15
 	mcall	SF_DRAW_RECT, ,,0xffffff
 ;--------------------------------------
@@ -784,27 +560,31 @@ clear_line:
 align 4
 draw_left_panel:
 	call	clear_left_panel
-	call	calc_max_panel_line
-	call	draw_left_panel_selection
-	mov	[drawing_panel_folder],1
-	call	draw_folder_data
 	call	draw_left_panel_patch
+	mov	[fb_left.all_redraw],1
+	stdcall	[FileBrowser_draw],fb_left
+	mov	eax,[fb_left.max_panel_line]
+	mov	[sb_left.cur_area],eax
+	mov	[sb_left.all_redraw], 1
+	stdcall	[scrollbar_v_draw], sb_left
 	ret
 ;------------------------------------------------------------------------------
 align 4
 draw_right_panel:
 	call	clear_right_panel
-	call	calc_max_panel_line
-	call	draw_right_panel_selection
-	mov	[drawing_panel_folder],2
-	call	draw_folder_data
 	call	draw_right_panel_patch
+	mov	[fb_right.all_redraw],1
+	stdcall	[FileBrowser_draw],fb_right
+	mov	eax,[fb_right.max_panel_line]
+	mov	[sb_right.cur_area],eax
+	mov	[sb_right.all_redraw], 1
+	stdcall	[scrollbar_v_draw], sb_right
 	ret
 ;------------------------------------------------------------------------------
 align 4
 draw_left_panel_patch:
-	cmp	[select_panel_counter],0
-	jne	.end
+	cmp	[fb_right.select_panel_counter],1
+	je	.end
 
 	mov	edx,read_folder_name	   ;read_folder.name
 ;--------------------------------------
@@ -819,9 +599,10 @@ draw_left_panel_patch:
 .end:
 	ret
 ;------------------------------------------------------------------------------
+align 4
 draw_right_panel_patch:
-	cmp	[select_panel_counter],1
-	jne	draw_left_panel_patch.end
+	cmp	[fb_left.select_panel_counter],1
+	je	draw_left_panel_patch.end
 
 	mov	edx,read_folder_1_name    ;read_folder_1.name
 	jmp	draw_left_panel_patch.1
@@ -839,114 +620,31 @@ clear_patch_area:
 	pop	edx
 	ret
 ;------------------------------------------------------------------------------
-draw_left_panel_selection:
-	cmp	[select_panel_counter],0
-	jne	.end
-	
-	mov	eax,[left_folder_block]
-	sub	eax,[left_start_draw_line]
-	mov	edx,left_start_draw_cursor_line
-	mov	cx,[edx]
-	call	for_all_panel_selection
-	mov	eax,[left_folder_block]
-	dec	eax
-	imul	eax,10
-	cmp	ax,cx
-	jae	 @f
-
-	mov	cx,ax
-;--------------------------------------
-@@:
-	mov	[edx],cx
-	mov	ebx,[left_panel_x]
-	add	cx,[left_panel_y.start_y]
-;--------------------------------------
-.1:
-	shl	ecx,16
-	mov	cx,10
-	sub	ebx,15
-	mcall	SF_DRAW_RECT, ,,0xbbddff
-;--------------------------------------
-.end:
-	ret
-;------------------------------------------------------------------------------
-draw_right_panel_selection:
-	cmp	[select_panel_counter],1
-	jne	draw_left_panel_selection.end
-
-	mov	eax,[right_folder_block]
-	sub	eax,[right_start_draw_line]
-	mov	edx,right_start_draw_cursor_line
-	mov	cx,[edx]
-	call	for_all_panel_selection
-	mov	eax,[right_folder_block]
-	dec	eax
-	imul	eax,10
-	cmp	ax,cx
-	jae	 @f
-
-	mov	cx,ax
-;--------------------------------------
-@@:
-	mov	[edx],cx
-	mov	ebx,[right_panel_x]
-	add	cx,[right_panel_y.start_y]
-	jmp	draw_left_panel_selection.1
-;------------------------------------------------------------------------------
-for_all_panel_selection:
-	imul	eax,10
-	cmp	ax,cx
-	jae	@f
-
-	mov	cx,ax
-;--------------------------------------
-@@:
-	mov	eax,[max_panel_line]
-	dec	eax
-	imul	eax,10
-	cmp	ax,cx
-	jae	@f
-
-	mov	cx,ax
-;--------------------------------------
-@@:
-	ret
-;------------------------------------------------------------------------------
 align 4
 clear_left_panel:
 	mov	ebx,2 shl 16
 	add	ebx,[window_width]
 	shr	bx,1
-	sub	ebx,6+2
-	mov	[left_panel_x],ebx
+	sub	ebx,5+2+1+15 ;border_wnd +fb_left.start_x +border_mid/2 +sb_left.x_size
+	mov	[fb_left.x],ebx
 	;calculate left scroll
 	mov [sb_left.x_pos],bx
-	add [sb_left.x_pos],2-15 ;left_panel_x.start_x-sb_sb_left.x_size
+	add [sb_left.x_pos],2 ;+fb_left.start_x
 	;calculate name column width
 	movzx eax,bx
-	sub eax,FILE_BR_COL_LEFT+FILE_BR_COL_W2+FILE_BR_COL_W3+FILE_BR_COL_W4+16
+	sub eax,FILE_BR_COL_LEFT+FILE_BR_COL_W2+FILE_BR_COL_W3+FILE_BR_COL_W4
 	cmp eax,40
 	jge @f
 	mov eax,40 ;min width
 @@:
 	mov [file_br_col_w1],eax
 	call	calculate_panel_1
-	mov	[left_panel_y],ecx
+	mov	[fb_left.y],ecx
 	;calculate left scroll
 	mov eax,ecx
 	mov [sb_left.y_size],ax
 	shr eax,16
 	mov [sb_left.y_pos],ax
-
-	xor	eax,eax
-	mov	ax,cx
-	xor	edx,edx
-	mov	ebx,10
-	div	ebx
-; умножение на 10
-	shl	eax,1      ; умножение на 2
-	lea	eax,[eax+eax*4] ; умножение на 5
-	mov	[left_panel_y_correct_size_y],ax
 	ret
 ;------------------------------------------------------------------------------
 calculate_panel_1:
@@ -960,37 +658,27 @@ calculate_panel_1:
 clear_right_panel:
 	mov	ebx,[window_width]
 	shr	bx,1
-	sub	bx,6+2
+	sub	bx,5+2+1+15
 	mov	eax,[window_width]
 	sub eax,ebx
-	sub eax,10 ;2*border width
+	sub eax,10 ;2*border_wnd
+	sub ax,[sb_right.x_size]
 	shl eax,16
 	add ebx,eax
-	mov	[right_panel_x],ebx
+	mov	[fb_right.x],ebx
 	;calculate left scroll
 	mov [sb_right.x_pos],bx
 	mov eax,ebx
 	shr eax,16
-	sub ax,[sb_right.x_size]
 	add [sb_right.x_pos],ax
 
 	call	calculate_panel_1
-	mov	[right_panel_y],ecx
+	mov	[fb_right.y],ecx
 	;calculate left scroll
 	mov eax,ecx
 	mov [sb_right.y_size],ax
 	shr eax,16
 	mov [sb_right.y_pos],ax
-
-	xor	eax,eax
-	mov	ax,cx
-	xor	edx,edx
-	mov	ebx,10
-	div	ebx
-; умножение на 10
-	shl	eax,1      ; умножение на 2
-	lea	eax,[eax+eax*4] ; умножение на 5
-	mov	[right_panel_y_correct_size_y],ax
 	ret
 ;------------------------------------------------------------------------------
 erase_fbutton:

@@ -40,8 +40,8 @@ end if
     mcall SF_TERMINATE_PROCESS
 .exit_with_create:
     call  create_new_file_1
-    cmp   [select_panel_counter],0
-    jne   @f
+    cmp   [fb_right.select_panel_counter],1
+    je    @f
     call proc_read_left_folder
     jmp  .exit_without_create
 @@:
@@ -138,8 +138,8 @@ end if
 ;-------------------------------------------------------------
 create_new_file_1:
     mov   edx,create_dir_name
-    cmp   [select_panel_counter],0
-    jne   @f
+    cmp   [fb_right.select_panel_counter],1
+    je    @f
     mov   esi,read_folder_name
     jmp   .start
 @@:

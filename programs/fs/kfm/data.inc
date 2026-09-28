@@ -50,25 +50,6 @@ window_width	     rd 1
 skin_high	     rd 1
 fbutton_width	     rd 1
 
-left_panel_x:
-    .size_x		 rw 1
-    .start_x	     rw 1
-
-left_panel_y:
-    .size_y		 rw 1
-    .start_y	     rw 1
-
-right_panel_x:
-    .size_x		 rw 1
-    .start_x	     rw 1
-
-right_panel_y:
-    .size_y		 rw 1
-    .start_y	     rw 1
-    
-left_panel_y_correct_size_y	rw 1
-right_panel_y_correct_size_y	rw 1
-
 window_status rb 1
 drawing_panel_folder rb 1 ; 1-left, 2 right
 ;---------------------------------------------------------------------
@@ -77,9 +58,6 @@ mouse_position:
     .y		 rw 1
     .x	     rw 1
 mouse_keys rd 1
-mouse_keys_tick rd 1
-mouse_keys_delta rb 1
-mouse_keys_delta_1 rb 1
 ;---------------------------------------------------------------------
 align 4
 max_progress_value rd 1
@@ -93,27 +71,14 @@ copy_many_files:
      rb 1
 ;---------------------------------------------------------------------
 align 4
-max_panel_line rd 1
 temp_panel_end rd 1
-;---------------------------------------------------------------------
-align 4
-left_start_draw_line rd 1
-left_folder_block rd 1
-left_start_draw_cursor_line rw 1
 left_folder_block_1 rd 1
-;---------------------------------------------------------------------
-align 4
-right_start_draw_line rd 1
-right_folder_block rd 1
-right_start_draw_cursor_line rw 1
 right_folder_block_1 rd 1
 ;---------------------------------------------------------------------
 align 4
 nesting_direction rb 1
 ;---------------------------------------------------------------------
 align 4
-left_marked_counter rd 1
-right_marked_counter rd 1
 confirmation_type rd 1
 recursive_pointer rd 1
 marked_file rb 1
@@ -129,7 +94,6 @@ align 4
 start_draw_menu_cursor_line rd 1
 search_pre_folder rb 1
 not_clear_lines rb 1
-select_panel_counter rb 1
 extended_key rb 1
 press_enter_menu rb 1
 close_menu rb 1
@@ -141,8 +105,6 @@ file_name_length rd 1
 temp_counter_dword rd 1
 error_pointer rd 1
 file_system_error rd 1
-end_tag rd 1
-icons_end_tag rd 1
 exit_dir rb 1
 use_patch rb 1
 ;---------------------------------------------------------------------
@@ -150,9 +112,7 @@ align 4
 buttons_img_start rd 1
 ini_file_start rd 1
 ini_size rd 1
-left_folder_data rd 1
 lfd_size rd 1
-right_folder_data rd 1
 rfd_size rd 1
 tmp_memory rd 1
 tm_size rd 1
@@ -191,6 +151,11 @@ align 4
 retrieved_devices_table:
 	rb 10*100
 ;---------------------------------------------------------------------
+converted_ini_buffer:
+	rb 8192
+ini_src_end:
+	rd 1
+;---------------------------------------------------------------------
 align 4
 procinfo process_information
 ;---------------------------------------------------------------------
@@ -213,6 +178,8 @@ delete_dir_data:
 align 4
 extension_temp_storage:
 	rb 256
+name_temp_area rb 256
+keymap_area rb 128
 ;---------------------------------------------------------------------
 ;stack
 align 4

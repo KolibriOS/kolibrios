@@ -8,30 +8,30 @@ copy_file_f5:
 ;    mov  byte [copy_many_files],al
     mov  [current_progress_value],eax
     mov  [current_progress_value_1],eax
-    cmp  [select_panel_counter],al
-    jne  .right_1
-    cmp  [left_marked_counter],eax
+    cmp  [fb_right.select_panel_counter],1
+    je   .right_1
+    cmp  [fb_left.marked_counter],eax
     jne  .confirmation_action
-    mov  ax,[left_start_draw_cursor_line]
-    mov  ebx,10
+    mov  ax,[fb_left.start_draw_cursor_line]
+    movzx ebx,[fb_left.line_size_y]
     div  ebx
-    mov  ebx,[left_start_draw_line]
+    mov  ebx,[fb_left.start_draw_line]
     add  ebx,eax
     imul ebx,304
-    add  ebx,[left_folder_data]
+    add  ebx,[fb_left.folder_data]
     call prepare_data_7
     call .copy_name
     jmp  editbox_copy_name
 .right_1:
-    cmp  [right_marked_counter],eax
+    cmp  [fb_right.marked_counter],eax
     jne  .confirmation_action
-    mov  ax,[right_start_draw_cursor_line]
-    mov  ebx,10
+    mov  ax,[fb_right.start_draw_cursor_line]
+    movzx ebx,[fb_right.line_size_y]
     div  ebx
-    mov  ebx,[right_start_draw_line]
+    mov  ebx,[fb_right.start_draw_line]
     add  ebx,eax
     imul ebx,304
-    add  ebx,[right_folder_data]
+    add  ebx,[fb_right.folder_data]
     call prepare_data_7
     call .copy_name
     jmp  editbox_copy_name
@@ -66,8 +66,8 @@ copy_file_f5:
     mov ed_size, eax
     mov ed_pos, eax
     and word ed_flags,ed_shift_cl
-    cmp  [select_panel_counter],0
-    jne  .right_2
+    cmp  [fb_right.select_panel_counter],1
+    je   .right_2
     mov esi,read_folder_name
     jmp  @f
 .right_2:
@@ -225,7 +225,7 @@ copy_file_1:
     mov  ebx,create_dir_name
 .1:
     mov  [error_pointer],ebx
-    cmp  [select_panel_counter],0
+    cmp  [fb_left.select_panel_counter],1
     je   .right_2
     mov  esi,read_folder_name
     jmp  @f
@@ -389,22 +389,23 @@ align 4
     mov  [move_file_flag],0
     jmp  editbox_copy_name.exit_without_copy
 ;-------------------------------------------------------------
+align 4
 copy_marked_files:
     mov  [copy_many_files],byte 1
     mov  [draw_all_progressbar],1
     xor  eax,eax
     mov  [current_progress_value],eax
     mov  [current_progress_value_1],eax
-    cmp  [select_panel_counter],al
-    jne  .right_1
-    mov  eax,[left_marked_counter]
+    cmp  [fb_right.select_panel_counter],1
+    je   .right_1
+    mov  eax,[fb_left.marked_counter]
     mov  [max_progress_value],eax
-    mov  ebp,[left_folder_block]
+    mov  ebp,[fb_left.folder_block]
 .start:
     mov  ebx,ebp
     dec  ebx
     imul ebx,304
-    add  ebx,[left_folder_data]
+    add  ebx,[fb_left.folder_data]
     add  ebx,32+40
     test [ebx-40],byte 0x10
     jnz  @f
@@ -435,20 +436,20 @@ copy_marked_files:
     jnz  .start
     cmp  [move_file_flag],0
     je	 reload_dir_all
-    mov  [left_start_draw_cursor_line],0
+    mov  [fb_left.start_draw_cursor_line],0
     mov  [move_file_flag],0
     mov  [copy_many_files],byte 0
     jmp  reload_dir_all
 
 .right_1:
-    mov  eax,[right_marked_counter]
+    mov  eax,[fb_right.marked_counter]
     mov  [max_progress_value],eax
-    mov  ebp,[right_folder_block]
+    mov  ebp,[fb_right.folder_block]
 .start_1:
     mov  ebx,ebp
     dec  ebx
     imul ebx,304
-    add  ebx,[right_folder_data]
+    add  ebx,[fb_right.folder_data]
     add  ebx,32+40
     test [ebx-40],byte 0x10
     jnz  @f
@@ -479,7 +480,7 @@ copy_marked_files:
     jnz  .start_1
     cmp  [move_file_flag],0
     je	 reload_dir_all
-    mov  [right_start_draw_cursor_line],0
+    mov  [fb_right.start_draw_cursor_line],0
     mov  [move_file_flag],0
     mov  [copy_many_files],byte 0
     jmp  reload_dir_all

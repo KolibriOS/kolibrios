@@ -45,12 +45,13 @@ draw_menu_bar:
     sub   ecx,[skin_high]
     mcall SF_DRAW_RECT ; left vertical line
     push  ebx
-    movzx ebx,[left_panel_x.start_x]
-    add   bx,[left_panel_x.size_x]
+    movzx ebx,[fb_left.start_x]
+    add   bx,[fb_left.size_x]
+    add   bx,[sb_left.x_size]
     inc   bx
     mov   si,bx
     shl   ebx,16
-    add   bx,[right_panel_x.start_x]
+    add   bx,[fb_right.start_x]
     sub   bx,si
     push  ecx
     sub   ecx,13
@@ -97,10 +98,18 @@ init_menu:
     stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_File, [main_menu_file]
     stdcall [ksubmenu_add], [main_menu], eax
 
-    ;stdcall [ksubmenu_new]
-    ;mov     [main_menu_select], eax
-    ;stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Select, [main_menu_select]
-    ;stdcall [ksubmenu_add], [main_menu], eax
+    stdcall [ksubmenu_new]
+    mov     [main_menu_select], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_File_selection, 170
+    stdcall [ksubmenu_add], [main_menu_select], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Select_all, 171
+    stdcall [ksubmenu_add], [main_menu_select], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Clear_selection, 172
+    stdcall [ksubmenu_add], [main_menu_select], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Invert_selection, 173
+    stdcall [ksubmenu_add], [main_menu_select], eax
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Select, [main_menu_select]
+    stdcall [ksubmenu_add], [main_menu], eax
 
     cmp     [sort_init], f_null_1
     je      @f
