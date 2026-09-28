@@ -170,9 +170,6 @@ fb_draw_panel_selection:
 	mov	eax,fb_folder_block
 	test	eax,eax
 	jz	.end
-	xor	eax,eax
-	cmp	fb_select_panel_counter,eax
-	je	.end
 	mov	eax,fb_folder_block
 	sub	eax,fb_start_draw_line
 	mov	cx,fb_start_draw_cursor_line
@@ -199,7 +196,29 @@ fb_draw_panel_selection:
 	shl	eax,16
 	push	eax
 	add	ebx,eax
-	mcall	SF_DRAW_RECT
+	cmp	fb_select_panel_counter,0 ; is the cursor in an inactive state?
+	jne	@f
+	push	ecx
+	mov	cx,2
+	mcall	SF_DRAW_RECT ; display the cursor in the inactive state
+	ror	ecx,16
+	add	cx,fb_line_size_y
+	sub	cx,2
+	ror	ecx,16
+	mcall
+	pop	ecx
+	mov	bx,2
+	mcall
+	ror	ebx,16
+	add	bx,fb_size_x
+	sub	bx,fb_icon_size_x
+	sub	bx,2+2 ; cursor border + text margin
+	ror	ebx,16
+	mcall
+	jmp	.no_frame
+@@:
+	mcall	SF_DRAW_RECT ; display the cursor in the active state
+.no_frame:
 	pop	ebx
 	cmp	fb_all_redraw,0
 	je	.end
@@ -233,12 +252,14 @@ fb_draw_folder_data:
 	sub	eax,fb_max_panel_line
 	test	eax,0x80000000
 	jz	.ok_left
-	mov	fb_start_draw_line,0
+	mov	fb_start_draw_line,0 ;if all the files fit in the window
 	jmp	@f
 .ok_left:
 	cmp	eax,fb_start_draw_line
 	jae	@f
-	mov	fb_start_draw_line,eax
+	mov	fb_start_draw_line,eax ;if not all the files fit in the window
+		;and there is empty space at the bottom,
+		;adjust the view to eliminate that empty space
 @@:
 	mov	bx,fb_start_x
 	add	bx,3
@@ -286,7 +307,7 @@ fb_draw_folder_data:
 	xor	edx,edx
 	div	ebx
 	pop	edx ebx
-	sub	eax,23+2+2+2
+	sub	eax,25+2+2+2
 	mov	esi,fb_file_name_length
 	mov	fb_temp_counter,0
 	mov	fb_display_name_max_length,eax
@@ -323,13 +344,14 @@ fb_draw_folder_data:
 	xor	eax,eax
 	mov	ax,fb_font_size_x
 	imul	eax,fb_display_name_max_length
+	inc	eax
 	shl	eax,16
 	push	edx
 	add	ebx,eax
 	mov	esi,2
 	mov	ecx,fb_reduct_text_color
 	mov	edx,dword fb_truncated_filename_char
-	mcall	SF_DRAW_TEXT
+	mcall	SF_DRAW_TEXT ; .. two dots
 	pop	edx
 .continue:
 	pop	ebx
@@ -375,7 +397,8 @@ align 4
 	mov	eax,fb_select_color
 @@:
 	mov	edi,eax
-	mcall	SF_DRAW_TEXT
+	add ebx,1 shl 16
+	mcall	SF_DRAW_TEXT ; file name
 	popa
 	ret
 ;--------------------------------------
@@ -432,6 +455,19 @@ fb_clear_line:
 	sub	bx,fb_icon_size_x
 	sub	bx,3
 	rol	ebx,16
+	cmp	fb_select_panel_counter,0 ; is the cursor in an inactive state?
+	jne @f
+	mov	ax,fb_start_draw_cursor_line
+	add	ax,fb_start_y
+	shl eax,16
+	mov	ax,fb_line_size_y
+	cmp	ecx,eax
+	jne @f
+	add ebx,2 shl 16
+	sub ebx,4
+	add ecx,2 shl 16
+	sub ecx,4
+@@:
 	mcall	SF_DRAW_RECT,,,fb_background_color
 .end:
 	popa
@@ -444,13 +480,13 @@ fb_draw_type_size_date:
 	test	[edx-40],byte 0x10
 	jz	.copy_type
 	mov	[eax],dword '<DIR'
-	mov	[eax+4],word '> '
+	mov	[eax+4],dword '>  '
 	mov	fb_file_name_length,0
 	mov	fb_extension_size,0
 	jmp	.start
 .copy_type:
 	mov	[eax],dword '    '
-	mov	[eax+4],word '  '
+	mov	[eax+4],dword '   '
 .start:
 	mov	esi,edx
 	xor	eax,eax
@@ -505,16 +541,16 @@ fb_draw_type_size_date:
 	mov	eax,fb_type_table
 	test	[edx-40],byte 0x10
 	jz	.copy_size
-	mov	[eax+6],dword '----'
-	mov	[eax+6+4],word '- '
+	mov	[eax+7],dword '----'
+	mov	[eax+7+4],dword '-- '
 	jmp	.date
 ;-----------------------------------------
 align 4
 .call_decimal_string:
 	mov	ebx,fb_type_table
-	add	ebx,9
+	add	ebx,10
 	call	fb_decimal_string
-	mov	[ebx+1],dl
+	mov	[ebx+1],dx
 	jmp	.size_convert_end
 ;-----------------------------------------
 .qword_div:
@@ -548,7 +584,7 @@ align 4
 	call	.qword_div
 	pop	ecx
 	jz	@f
-	mov	dl,byte 'E' ; Exa Byte
+	mov	dx,'E ' ; Exa Byte
 	jmp	.call_decimal_string
 @@:
 	push	ecx
@@ -556,7 +592,7 @@ align 4
 	call	.qword_div
 	pop	ecx
 	jz	@f
-	mov	dl,byte 'P' ; Peta Byte
+	mov	dx,'P ' ; Peta Byte
 	jmp	.call_decimal_string
 @@:
 	push	ecx
@@ -564,7 +600,7 @@ align 4
 	call	.qword_div
 	pop	ecx
 	jz	@f
-	mov	dl,byte 'T' ; Tera Byte
+	mov	dx,'T ' ; Tera Byte
 	jmp	.call_decimal_string
 @@:
 	push	ecx
@@ -572,7 +608,7 @@ align 4
 	call	.qword_div
 	pop	ecx
 	jz	@f
-	mov	dl,byte 'G' ; Giga Byte
+	mov	dx,'G ' ; Giga Byte
 	jmp	.call_decimal_string
 @@:
 	mov	eax,[edx-40+32]
@@ -580,19 +616,20 @@ align 4
 	shr	eax,20 ; /(1024*1024)
 	test	eax,eax
 	jz	@f
-	mov	dl,byte 'M' ; Mega Byte
+	mov	dx,'M ' ; Mega Byte
 	jmp	.call_decimal_string
 @@:
 	mov	eax,ebx
 	shr	eax,10 ; /1024
 	test	eax,eax
 	jz	@f
-	mov	dl,byte 'K' ; Kilo Byte
+	mov	dx,'K ' ; Kilo Byte
 	jmp	.call_decimal_string
 @@:
 	mov	eax,ebx
 	mov	ebx,fb_type_table
 	add	ebx,10
+	mov	dword[ebx+1],'  ' ; clear K, M, ..., E
 	call	fb_decimal_string
 .size_convert_end:
 	pop	edx ebx
@@ -608,22 +645,22 @@ align 4
 	mov	al,[edx-40+28]
 	push	ebx
 	mov	ebx,fb_type_table
-	add	ebx,12
+	add	ebx,14
 	call	fb_decimal_string_2 ; day
 	mov	al,[edx-40+29]
 	mov	ebx,fb_type_table
-	add	ebx,12+3
+	add	ebx,14+3
 	call	fb_decimal_string_2 ; month
 	mov	ax,[edx-40+30]
 	mov	ebx,fb_type_table
-	add	ebx,12+9
+	add	ebx,14+9
 	mov	[ebx-3], dword '0000'
 	call	fb_decimal_string ; year
 	pop	ebx
 ;-----------------------------------------
 	ror	ebx,16
 	add	bx,fb_size_x
-	sub	ebx,161 ; 122+12+15
+	sub	ebx,173 ; 122+18+21
 	rol	ebx,16
 	mov	ecx,fb_text_color
 	cmp	fb_marked_file,0
@@ -631,7 +668,7 @@ align 4
 	mov	ecx,fb_reduct_text_color
 @@:
 	mov	edx,fb_type_table
-	mov	esi,22
+	mov	esi,24 ; text length
 	mov	ax,fb_line_size_y
 	sub	ax,fb_font_size_y
 	push	ebx
@@ -650,14 +687,44 @@ align 4
 	mov	eax,fb_select_color
 @@:
 	mov	edi,eax
-	mcall	SF_DRAW_TEXT
+	mcall	SF_DRAW_TEXT ; type size date
 .not_show_date:
 	popa
 	ret
 ;---------------------------------------------------------------------
+;in:
+;  ebx = coord x << 16 + coord y
+;  edx = pointer to file|directory name data
 align 4
 fb_draw_icon:
-	pusha
+	pushad
+	cmp	fb_icon_raw_area,0
+	jne	.not_draw_null
+	mov	bx,[esp+18] ;coord x
+	sub	bx,2
+	sub	bx,fb_icon_size_x
+	shl	ebx,16
+	mov	bx,fb_icon_size_x
+	mov	cx,[esp+16] ;coord y
+	shl	ecx,16
+	mov	cx,fb_icon_size_y
+	test	[edx-40],byte 0x10
+	jz	@f
+	mov	edx,fb_select_color
+	jmp	.draw_r
+@@:
+	mov	edx,fb_background_color
+.draw_r:
+	mcall	SF_DRAW_RECT
+	shr	ebx,16
+	shr	ecx,16
+	movzx	eax,fb_icon_size_x
+	movzx	edx,fb_icon_size_y
+	stdcall	draw_edge, ebx, ecx, eax, edx,\
+		fb_background_color, fb_select_color, fb_text_color
+	popad
+	ret
+.not_draw_null:
 	xor	eax,eax
 	mov	ax,fb_icon_size_y
 	mov	ebx,fb_resolution_raw
@@ -698,11 +765,9 @@ fb_draw_icon:
 	add	dx,ax
 	mov	esi,fb_resolution_raw
 	xor	ebp,ebp
-	push	edi
 	mov	edi,fb_palette_raw
 	mcall	SF_PUT_IMAGE_EXT
-	pop	edi
-	popa
+	popad
 	ret
 ;---------------------------------------------------------------------
 ; Convert of a binary number in decimal string form
@@ -764,11 +829,9 @@ fb_get_icon_number:
 	test	ebp,ebp
 	je	.end
 	dec	ebp
-	test	ebp,ebp
-	je	.end
+	jz	.end
 	dec	ebp
-	test	ebp,ebp
-	je	.end
+	jz	.end
 @@:
 	mov	edx,fb_ini_file_end
 	sub	edx,ebp
@@ -1342,7 +1405,7 @@ align 4
 	test	eax,eax
 	jz	.exit_fb
 
-	mov	fb_temp_counter,0
+	xor	ecx,ecx
 .mark_all_1:	
 	mov	ebp,fb_folder_block
 .mark_all_2:
@@ -1361,13 +1424,15 @@ align 4
 	dec	ebp
 	jnz	.mark_all_2
 	
+	push	ecx
 	call	fb_draw_panel_3
-	cmp	fb_temp_counter,0
+	pop	ecx
+	cmp	ecx,0
 	jne	@f
 	mov	eax,fb_folder_block
 	jmp	.mark_all_4
 @@:
-	cmp	fb_temp_counter,1
+	cmp	ecx,1
 	jne	@f
 	mov	fb_marked_counter,0
 	jmp	.exit_fb
@@ -1382,12 +1447,12 @@ align 4
 align 4
 .select_mark_action:
 	add	ebx,299-40
-	cmp	fb_temp_counter,0
+	cmp	ecx,0
 	jne	@f
 	mov	[ebx],byte 1
 	jmp	.select_mark_action_1
 @@:
-	cmp	fb_temp_counter,1
+	cmp	ecx,1
 	jne	@f
 	mov	[ebx],byte 0
 	jmp	.select_mark_action_1
@@ -1405,7 +1470,7 @@ align 4
 	test	eax,eax
 	jz	.exit_fb
 
-	mov	fb_temp_counter,1
+	mov	ecx,1
 	jmp	.mark_all_1
 ;-------------------------------------------------------
 align 4
@@ -1414,7 +1479,7 @@ align 4
 	test	eax,eax
 	jz	.exit_fb
 
-	mov	fb_temp_counter,2
+	mov	ecx,2
 	jmp	.mark_all_1
 ;-------------------------------------------------------
 ;  * bit 0  (mask 1): left Shift is pressed

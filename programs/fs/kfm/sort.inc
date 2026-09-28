@@ -19,17 +19,17 @@ endp
 ;---------------------------------------------------------------------
 align 4
 left_sort_files:
-   cmp   [left_folder_block], 0
+   cmp   [fb_left.folder_block], 0
    jz    @f
-   stdcall sort_directory, [left_folder_data], [left_sort_flag]
+   stdcall sort_directory, [fb_left.folder_data], [left_sort_flag]
 @@:
    ret
 ;---------------------------------------------------------------------
 align 4
 right_sort_files:
-   cmp   [right_folder_block], 0
+   cmp   [fb_right.folder_block], 0
    jz    @f
-   stdcall sort_directory, [right_folder_data], [right_sort_flag]
+   stdcall sort_directory, [fb_right.folder_data], [right_sort_flag]
 @@:
    ret
 ;---------------------------------------------------------------------

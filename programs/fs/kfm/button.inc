@@ -47,8 +47,8 @@ button:
         add     eax,retrieved_devices_table+1
         mov     esi,eax ; selected path
 
-        cmp     [select_panel_counter],0
-        jne     @f
+        cmp     [fb_right.select_panel_counter],1
+        je      @f
 
         call    copy_folder_name
         jmp     left_panel_read_folder
@@ -106,6 +106,18 @@ button:
         cmp     ah,157
         je      delete_file
 
+        cmp     ah,170
+        je      key_insert.1
+
+        cmp     ah,171
+        je      symbol_a_up.ctrl
+
+        cmp     ah,172
+        je      NumPad_minus_Up.ctrl
+
+        cmp     ah,173
+        je      NumPad_sneg_Up.ctrl
+
         cmp     ah, 1
         jne     still
 ;--------------------------------------
@@ -113,15 +125,13 @@ button:
         mcall SF_TERMINATE_PROCESS
 ;---------------------------------------------------------------------
 reload_dir:
-        cmp     [select_panel_counter],0
-        jne     @f
+        cmp     [fb_right.select_panel_counter],1
+        je      @f
         call    proc_read_left_folder
-;       mov     [left_panel_clear_all],1
         call    draw_left_panel
         jmp     still
 @@:
         call    proc_read_right_folder
-;       mov     [right_panel_clear_all],1
         call    draw_right_panel
         jmp     still
 ;---------------------------------------------------------------------
@@ -135,11 +145,11 @@ exit_dir_1:
         jmp     key_28.1
 ;---------------------------------------------------------------------
 left_panel_read_folder:
-        mov     [left_start_draw_cursor_line],0
+        mov     [fb_left.start_draw_cursor_line],0
         jmp     proc_read_folder
 ;---------------------------------------------------------------------
 right_panel_read_folder:
-        mov     [right_start_draw_cursor_line],0
+        mov     [fb_right.start_draw_cursor_line],0
         jmp     proc_read_folder_1
 ;---------------------------------------------------------------------
 left_sort_name:

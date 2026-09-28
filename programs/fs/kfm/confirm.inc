@@ -1,14 +1,25 @@
+DLG_YN_W equ 160 ;must be a multiple of 2
 ;------------------------------------------------------------------------------
+;description:
+;  run dialog [yes] [no]
+align 4
 confirmation_action:
 	mov	[work_confirmation],0
 	mov	[work_confirmation_yes],0
+	cmp	[confirmation_type],sz_Exit
+	je	.red
+	call get_files_information
+	;call get_information_marked_files
+	;or eax,eax
+	;jnz .error
 	jmp	.red
+;.error:
+	;ret
 ;--------------------------------------
 .red_1:
 	call	draw_window
 ;--------------------------------------
 .red:
-	call	draw_confirmation_button
 	call	draw_confirmation_menu
 ;--------------------------------------
 .still:
@@ -32,50 +43,38 @@ confirmation_action:
 	cmp	ah,1
 	jne	.still
 
-	mcall	SF_TERMINATE_PROCESS
+	ret
 ;--------------------------------------
 .del:
 	mov	[work_confirmation_yes],1
 ;--------------------------------------
 .no_del:
-	call	draw_window
+	call	draw_window ;to clear the dialog box
 ;--------------------------------------
 .ret:
 	ret
 ;------------------------------------------------------------------------------
-draw_confirmation_button:
-	mov	ecx,[window_high]
-	mov	ebx,[window_width]
-	shr	ecx,1
-	sub ecx,[skin_high]
-	shr	ebx,1
-	sub	ebx,50
-	shl	ecx,16
-	shl	ebx,16
+draw_confirmation_menu:
+    stdcall draw_dialogbox_rectangle,DLG_YN_W,65
+	mov	[ps_dialog.area_size_x],DLG_YN_W-10
+if USE_STATIC_LIBS eq 0
+	stdcall	[PathShow_prepare],ps_dialog
+else
+	stdcall	path_show.prepare,ps_dialog
+end if
+	pushad
+	add	ebx,(DLG_YN_W-90) shl 15
+	add	ecx,(65-25) shl 16
 	mov	cx,15
 	mov	bx,40
 	mcall	SF_DEFINE_BUTTON, ,,0x40000000+160,0xffffff
 	add	ebx,50 shl 16
 	inc	edx
 	mcall
-	ret
-;------------------------------------------------------------------------------
-draw_confirmation_menu:
-	mov	ecx,[window_high]
-	mov	ebx,[window_width]
-	shr	ecx,1
-	shr	ebx,1
-	sub	ecx,22
-	sub ecx,[skin_high]
-	sub	ebx,65
-	shl	ecx,16
-	shl	ebx,16
-	mov	cx,44
-	mov	bx,120
-	mcall	SF_DRAW_RECT, ,,0x6060ff
+	popad
 	push	ebx ecx
-	add	ebx,15 shl 16
-	add	ecx,22 shl 16
+	add	ebx,(DLG_YN_W-90) shl 15
+	add	ecx,(65-25) shl 16
 	mov	bx,40
 	mov	cx,15
 	mov	edx,0
@@ -83,34 +82,46 @@ draw_confirmation_menu:
 	cmp	[work_confirmation],0
 	jne	@f
 
-	add	ebx,50 shl 16
+	add	ebx,50 shl 16 ;x_pos+=50
 ;--------------------------------------
 @@:
-	mcall
+	mcall ;rect for button border
 	add	ecx,1 shl 16
 	add	ebx,1 shl 16
-	mov	bx,38
+	mov	bx,38 ;x_size
 	mov	cx,13
-	mcall	,,,0x6060ff
+	mcall	,,,0x6060ff ;rect for button fill
 	pop	ecx ebx
 	mov	edx,0xff0000
 	cmp	[work_confirmation],0
 	je	@f
 
-	add	ebx,50 shl 16
+	add	ebx,50 shl 16 ;x_pos+=50
 	mov	edx,0xaa00
 ;--------------------------------------
 @@:
-	mcall
+	mcall ;rect for button
 	pop	ecx	ebx
 	shr	ecx,16
 	mov	bx,cx
+	push ebx
 	add	ebx,7 shl 16+2
 	mcall	SF_DRAW_TEXT, ,0x90ffffff,[confirmation_type]
-	add	ebx,15 shl 16+20
-	mcall	,,,type_yes
-	add	ebx,56 shl 16
-	mcall	,,,type_no
+	cmp	[confirmation_type],sz_Exit
+	je	@f ;do not display the file name if the exit dialog box is used
+	add	ebx,22
+	mov dword[ps_dialog.start_y],ebx
+if USE_STATIC_LIBS eq 0
+	stdcall	[PathShow_draw],ps_dialog
+else
+	stdcall	path_show.draw,ps_dialog
+end if
+@@:
+	pop ebx
+	add	ebx,(20+DLG_YN_W-90) shl 15+40
+	mcall	,,,sz_Yes
+	add	ebx,54 shl 16
+	mcall	,,,sz_No
 	ret
 ;------------------------------------------------------------------------------
 key_menu_confirmation:

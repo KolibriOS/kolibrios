@@ -4,8 +4,8 @@ draw_device_button:
 	call	device_detect_f70
 	mov	edi,[retrieved_devices_table_counter]
 	mov	edx,120
-	mov	bx,[left_panel_x.start_x]
-	mov	cx,[left_panel_y.start_y]
+	mov	bx,[fb_left.start_x]
+	mov	cx,[fb_left.start_y]
 	shl	ebx,16
 	sub	cx,30
 	shl	ecx,16
@@ -60,9 +60,9 @@ draw_device_button:
 	dec	edi
 	jnz	.loop
 	
-	xor	eax,eax
-	mov	ax,[right_panel_x.start_x]
-	add	ax,[right_panel_x.size_x]
+	movzx	eax,[fb_right.start_x]
+	add	ax,[fb_right.size_x]
+	add	ax,[sb_right.x_size]
 	ror	ebx,16
 	sub	ax,bx
 	rol	ebx,16

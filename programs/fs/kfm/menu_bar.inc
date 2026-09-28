@@ -28,33 +28,33 @@ draw_menu_bar:
     add   cx,FILE_BR_TOP_LINE-F_BUT_PANEL_H-36
     ror   ecx,16
     mov   cx,3
-    mcall ; horizontal line after disk buttons
+    mcall ; horizontal line before disk buttons
     add   ecx,16 shl 16
     mov   cx,1
-    mcall ; horizontal line before sort buttons
+    mcall ; horizontal line after sort buttons
     pop   ecx
     shr   ecx,16
     add   ecx,3
     mov   eax,[window_high]
     sub   eax,ecx
-    sub   eax,4
     shl   ecx,16
-    add   ecx,eax
-    mov   bx,2
-    sub   ecx,33
+    shl   ecx,16
+    mov   cx,ax
     sub   ecx,[skin_high]
+    mov   bx,2
     mcall SF_DRAW_RECT ; left vertical line
     push  ebx
-    movzx ebx,[left_panel_x.start_x]
-    add   bx,[left_panel_x.size_x]
+    movzx ebx,[fb_left.start_x]
+    add   bx,[fb_left.size_x]
+    add   bx,[sb_left.x_size]
     inc   bx
     mov   si,bx
     shl   ebx,16
-    add   bx,[right_panel_x.start_x]
+    add   bx,[fb_right.start_x]
     sub   bx,si
     push  ecx
-    sub   ecx,13
-    add   ecx,13 shl 16
+    sub   ecx,21
+    add   ecx,21 shl 16
     mcall ; middle vertical line
     pop   ecx
     pop   ebx
@@ -67,7 +67,7 @@ draw_menu_bar:
     mov   bx,ax
     sub   ebx,9
     mcall SF_DRAW_RECT ; horizontal line before path to the current folder
-    add   ecx,15 shl 16
+    add   ecx,23 shl 16
     mcall ; horizontal line after path to the current folder
     popad
     ret
@@ -94,13 +94,21 @@ init_menu:
     stdcall [ksubmenu_add], [main_menu_file], eax
     stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Exit, 112
     stdcall [ksubmenu_add], [main_menu_file], eax
-    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_File, [main_menu_file]
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_File, [main_menu_file]
     stdcall [ksubmenu_add], [main_menu], eax
 
-    ;stdcall [ksubmenu_new]
-    ;mov     [main_menu_select], eax
-    ;stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Select, [main_menu_select]
-    ;stdcall [ksubmenu_add], [main_menu], eax
+    stdcall [ksubmenu_new]
+    mov     [main_menu_select], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_File_selection, 170
+    stdcall [ksubmenu_add], [main_menu_select], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Select_all, 171
+    stdcall [ksubmenu_add], [main_menu_select], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Clear_selection, 172
+    stdcall [ksubmenu_add], [main_menu_select], eax
+    stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_Invert_selection, 173
+    stdcall [ksubmenu_add], [main_menu_select], eax
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_Select, [main_menu_select]
+    stdcall [ksubmenu_add], [main_menu], eax
 
     cmp     [sort_init], f_null_1
     je      @f
@@ -124,14 +132,14 @@ init_menu:
     stdcall [ksubmenu_add], [main_menu_sort], eax
     stdcall [kmenuitem_new], KMENUITEM_NORMAL, sort_button_name.date, 149
     stdcall [ksubmenu_add], [main_menu_sort], eax
-    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Sort, [main_menu_sort]
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_Sort, [main_menu_sort]
     stdcall [ksubmenu_add], [main_menu], eax
 @@:
     stdcall [ksubmenu_new]
     mov     [main_menu_help], eax
     stdcall [kmenuitem_new], KMENUITEM_NORMAL, sz_menu_About, 101
     stdcall [ksubmenu_add], [main_menu_help], eax
-    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_main_menu_Help, [main_menu_help]
+    stdcall [kmenuitem_new], KMENUITEM_SUBMENU, sz_Help, [main_menu_help]
     stdcall [ksubmenu_add], [main_menu], eax
 .end:
     ret

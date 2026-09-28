@@ -3,243 +3,214 @@ mouse:
     mcall SF_SYSTEM, SSF_GET_ACTIVE_WINDOW
     cmp  [active_process],eax
     jne  still
+    cmp  [library03.status_lib],0 ; test load library
+    jnz  .m_end
     cld
     stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
 
-    mcall SF_MOUSE_GET, SSF_SCROLL_DATA
-    mov   [mouse_scroll_data],eax
-    mcall SF_MOUSE_GET, SSF_BUTTON
-    cmp  [mouse_keys],eax
-    je	 @f
-    mov  [mouse_keys],eax
-    mov  [mouse_keys_delta],0
-    jmp  .continue_2
+	mov  eax,[main_menu]
+	cmp  dword[eax+16],-1
+	je   @f
+	mov  [m_lost],1
+	jmp  still
 @@:
-    mov  [mouse_keys_delta],1
-.continue_2:
-    mcall SF_MOUSE_GET, SSF_WINDOW_POSITION
-    mov  [mouse_position],eax
-;    mcall SF_SYSTEM, SSF_GET_ACTIVE_WINDOW
-;    cmp  [active_process],eax
-;    jne  still
-    mov  eax,[mouse_position]
-    test eax,0x80000000
-    jnz   still
-    test eax,0x8000
-    jnz   still
-    mov   ebx,eax
-    shr   ebx,16
-    shl   eax,16
-    shr   eax,16
-    cmp   [mouse_keys_delta],0
-    je	  @f
-    cmp   [scroll_pointer],0
-    jne   .check_scroll_bar_left
-@@:
-    cmp   ebx,[window_width]
-    ja	  still
-    cmp   eax,[window_high]
-    ja	  still
-.check_scroll_bar_left:
-    xor   ecx,ecx
-    mov   cx,[left_panel_y.start_y]
-    cmp   [mouse_keys_delta],0
-    je	  @f
-    cmp   [scroll_pointer],1
-    je	  .check_scroll_bar_left_event
-    cmp   [scroll_pointer],2
-    je	 .check_scroll_bar_right_event
-@@:
-    cmp   ax,cx
-    jbe    .other
-    add   cx,[left_panel_y.size_y]
-    cmp   ax,cx
-    jae    .other
-    mov   cx,[left_panel_x.start_x]
-    cmp   bx,cx
-    jbe    .other
-    add   cx,[left_panel_x.size_x]
-    cmp   bx,cx
-    jae    .check_scroll_bar_right
-    mov   edx,[left_folder_block]
-    cmp   edx,[max_panel_line]
-    jbe   @f
-.check_scroll_bar_left_event:
-    mov   [scroll_bar_event],0
-    call  check_scroll_left_event ;file panel mouse wheel
-    cmp   [scroll_bar_event],0
-    jne    still
-    mov   [scroll_bar_event],0
-    call  check_scroll_bar_left_event ;scrollbar mouse
-    cmp   [scroll_bar_event],0
-    jne    still  ;.continue
-@@:
-    call  check_left_panel_mouse_event ;file panel mouse click
-.continue:
-    jmp   still
+	cmp  [m_lost],0
+	je   .m_end
+	dec  [m_lost]
+	jmp  still
+.m_end:
 
-.check_scroll_bar_right:
-    xor   ecx,ecx
-    mov   cx,[right_panel_x.start_x]
-    cmp   bx,cx
-    jbe    .other
-    add   cx,[right_panel_x.size_x]
-    cmp   bx,cx
-    jae    .other
-    mov   edx,[right_folder_block]
-    cmp   edx,[max_panel_line]
-    jbe   @f
-.check_scroll_bar_right_event:
-    mov   [scroll_bar_event],0
-    call  check_scroll_right_event
-    cmp   [scroll_bar_event],0
-    jne    still
-    mov   [scroll_bar_event],0
-    call  check_scroll_bar_right_event
-    cmp   [scroll_bar_event],0
-    jne    still   ;.continue_1
+	mcall	SF_MOUSE_GET, SSF_SCROLL_DATA
+	mov	[mouse_scroll_data],eax
+	mcall	SF_MOUSE_GET, SSF_WINDOW_POSITION
+	mov	[mouse_position],eax
+
+	cmp	[sb_left.delta2],0
+	jnz	.scrollbar_l
+	cmp	[sb_right.delta2],0
+	jnz	.scrollbar_r
+
+	mov	eax,[mouse_position]
+	shr	eax,16	; eax mouse x
+
+	cmp	ax,[sb_right.x_pos]
+	jge .scrollbar_r
+	cmp	ax,[fb_right.start_x]
+	jge @f
+	cmp	ax,[sb_left.x_pos]
+	jge .scrollbar_l
+
+	mov	[fb_left.select_flag],0
+	stdcall	[FileBrowser_mouse], fb_left
+	cmp [fb_left.select_flag],0
+	jz .check_scroll_event
+	mov	eax,fb_left.mouse_keys_delta
+	cmp	[eax],dword 3
+	jne	.scrollbar_l
+	mov	[eax],dword 0
+	jmp  key_28.1
 @@:
-    call  check_right_panel_mouse_event
-.continue_1:
-    jmp   still
+	mov	[fb_right.select_flag],0
+	stdcall	[FileBrowser_mouse], fb_right
+	cmp [fb_right.select_flag],0
+	jz .check_scroll_event
+	mov	eax,fb_right.mouse_keys_delta
+	cmp	[eax],dword 3
+	jne	.scrollbar_r
+	mov	[eax],dword 0
+	jmp  key_28.1
 
-.other:
-    jmp   still
+align 4
+.scrollbar_l:
+	stdcall	[scrollbar_v_mouse], sb_left
+	mov	eax,[sb_left.position]
+	mov ebx,fb_left
+	call on_sb_change_fb_update
 
-;.draw_data:
-;    pusha
-;    mov   [temp_eax],eax
-;    mcall SF_DRAW_RECT, <190,400>,<3,15>,0x0
-;    xor   ecx,ecx
-;    mov   cx,[mouse_position.x]
-;    mcall SF_DRAW_NUMBER, 0x80000, ,<200, 5>,0xffffff
-;    mov   cx,[mouse_position.y]
-;    mcall SF_DRAW_NUMBER, 0x80000, ,<300, 5>,0xffffff
-;    mcall SF_DRAW_NUMBER, 0x80000,[mouse_keys],<400, 5>,0xffffff
-;    mcall SF_DRAW_TEXT, <500,5>,0xffffff,[temp_edx],5
-;    mcall SF_DRAW_NUMBER, 0x80000,[mouse_keys],<200, 5>,0xffffff
-;    popa
-;    ret
+	cmp	[sb_left.delta2],0
+	jz .check_scroll_event
+	cmp [fb_left.select_panel_counter],1
+	je .check_scroll_event
+	mov [fb_left.select_panel_counter],1
+	mov [fb_right.select_panel_counter],0
+	call on_fb_focus_change
+	jmp	.check_scroll_event
+
+align 4
+.scrollbar_r:
+	stdcall	[scrollbar_v_mouse], sb_right
+	mov	eax,[sb_right.position]
+	mov ebx,fb_right
+	call on_sb_change_fb_update
+
+	cmp	[sb_right.delta2],0
+	jz .check_scroll_event
+	cmp [fb_right.select_panel_counter],1
+	je .check_scroll_event
+	mov [fb_left.select_panel_counter],0
+	mov [fb_right.select_panel_counter],1
+	call on_fb_focus_change
+	;jmp	.check_scroll_event
+
+;---------------------------------------------------
+align 4
+.check_scroll_event:
+	mov	eax,[mouse_position]
+	movzx	ebx,ax	; ebx mouse y
+	shr	eax,16	; eax mouse x
+
+	mov	cx,[fb_right.start_x]
+	mov	dx,[fb_left.start_y]
+
+	cmp	bx,dx
+	jb	still	; min y
+
+	add	dx,[fb_left.size_y]
+	cmp	bx,dx
+	ja	still	; max y
+
+	xor esi,esi
+	cmp	ax,cx
+	jb	@f	; coord x
+	inc esi
+@@:
+	cmp [fb_right.select_panel_counter],esi
+	je .no_click
+	mcall SF_MOUSE_GET, SSF_BUTTON_EXT
+	bt eax,8
+	jc @f
+	bt eax,9
+	jnc .no_click
+@@:
+	mov [fb_right.select_panel_counter],esi
+	xor esi,1
+	mov [fb_left.select_panel_counter],esi
+	xor esi,1
+	call on_fb_focus_change
+.no_click:
+
+	mov	eax,[mouse_scroll_data]
+	test	eax,eax
+	jz	still
+
+	test	ax,0x8000
+	jnz	.decr
+	shr	eax,16
+	test	ax,0x8000
+	jnz	.decr_1
+
+	movzx	ecx,[mouse_scroll_data.vertical]
+	test	ecx,ecx
+	jnz	@f
+	mov	cx,[mouse_scroll_data.horizontal]
+	test	ecx,ecx
+	jz	still
+@@:
+	push	ebx ecx
+	mov	ebx,1
+	call fb_on_key_1
+	pop	ecx ebx
+	dec	ecx
+	jnz	@b
+	jmp	still
+;----------------------------------------
+.decr:
+	movzx	ebx,[mouse_scroll_data.vertical]
+	jmp	@f
+.decr_1:
+	movzx	ebx,[mouse_scroll_data.horizontal]
+@@:
+	mov	ecx,0xffff
+	sub	ecx,ebx
+	inc	ecx
+@@:
+	push	ebx ecx
+	mov	ebx,2
+	call fb_on_key_1
+	pop	ecx ebx
+	dec	ecx
+	jnz	@b
+	jmp	still
 ;---------------------------------------------------------------------
-check_left_panel_mouse_event:
-    mov  [scroll_pointer],0
+;in:
+;  eax - scrool bar position
+;  ebx - pointer to file browser
+align 4
+on_sb_change_fb_update:
+	cmp	[ebx+fb_left.start_draw_line-fb_left],eax
+	je .end
+	push ecx edx
+	mov ecx,eax
+	sub ecx,[ebx+fb_left.start_draw_line-fb_left]
+	movzx edx,word[ebx+fb_left.line_size_y-fb_left]
+	imul ecx,edx
+	mov dx,[ebx+fb_left.start_draw_cursor_line-fb_left]
+	sub dx,cx
+	cmp dx,0
+	jge @f
+	xor dx,dx
 @@:
-    cmp  [mouse_keys_delta],0
-    jz	 .start
-    cmp  [mouse_keys],0
-    jz	.end
-.start:
-    sub  ax,[left_panel_y.start_y]
-    mov  ebx,10
-    xor  edx,edx
-    div  ebx
-    imul eax,10
-    cmp  [select_panel_counter],0
-    je	 @f
-    mov  [select_panel_counter],0
-    mov  [mouse_keys_delta_1],0
-    push  eax
-    call draw_right_panel
-    pop   eax
-    jmp  .continue
-@@:
-    cmp  [left_start_draw_cursor_line],ax
-    jne   @f
-    cmp  [mouse_keys],0
-    jnz  .continue
-    cmp  [mouse_keys_delta],0
-    je	 .enter
-@@:
-    mov  [mouse_keys_delta_1],0
-.continue:
-    imul  ebx,[left_folder_block],10
-    cmp  eax,ebx
-    jb	 @f
-    sub  ebx,10
-    mov  [left_start_draw_cursor_line],bx
-    jmp  .continue_1
-@@:
-    mov  [left_start_draw_cursor_line],ax
-.continue_1:
-    call draw_left_panel
+	mov [ebx+fb_left.start_draw_cursor_line-fb_left],dx
+	mov	[ebx+fb_left.all_redraw-fb_left],1
+	mov	[ebx+fb_left.start_draw_line-fb_left],eax
+	stdcall	[FileBrowser_draw], ebx
+	xor eax,eax
+	mov	[ebx+fb_left.all_redraw-fb_left],eax
+	pop edx ecx
 .end:
-    ret
-.enter:
-    cmp  [mouse_keys_delta_1],1
-    je	 .enter_1
-    mcall SF_SYSTEM_GET, SSF_SHUTDOWN
-    add  eax,[mouse_key_delay]
-    mov  [mouse_keys_tick],eax
-    mov  [mouse_keys_delta_1],1
-    jmp  .continue_1
-.enter_1:
-    mov  [mouse_keys_delta_1],0
-    mcall SF_SYSTEM_GET, SSF_SHUTDOWN
-    cmp  eax,[mouse_keys_tick]
-    jbe  @f
-    ret
-@@:
-    add  esp,4
-    jmp  key_28.1
+	ret
 ;---------------------------------------------------------------------
-check_right_panel_mouse_event:
-    mov  [scroll_pointer],0
-@@:
-    cmp  [mouse_keys_delta],0
-    jz	 .start
-    cmp [mouse_keys],0
-    jz	.end
-.start:
-    sub  ax,[right_panel_y.start_y]
-    mov  ebx,10
-    xor  edx,edx
-    div  ebx
-    imul eax,10
-    cmp  [select_panel_counter],1
-    je	 @f
-    mov  [select_panel_counter],1
-    mov  [mouse_keys_delta_1],0
-    push eax
-    call draw_left_panel
-    pop  eax
-    jmp  .continue
-@@:
-    cmp  [right_start_draw_cursor_line],ax
-    jne   @f
-    cmp  [mouse_keys],0
-    jnz  .continue
-    cmp  [mouse_keys_delta],0
-    je	 .enter
-@@:
-    mov  [mouse_keys_delta_1],0
-.continue:
-    imul  ebx,[right_folder_block],10
-    cmp  eax,ebx
-    jb	 @f
-    sub  ebx,10
-    mov  [right_start_draw_cursor_line],bx
-    jmp  .continue_1
-@@:
-    mov  [right_start_draw_cursor_line],ax
-.continue_1:
-    call draw_right_panel
-.end:
-    ret
-.enter:
-    cmp  [mouse_keys_delta_1],1
-    je	 .enter_1
-    mcall SF_SYSTEM_GET, SSF_SHUTDOWN
-    add  eax,[mouse_key_delay]
-    mov  [mouse_keys_tick],eax
-    mov  [mouse_keys_delta_1],1
-    jmp  .continue_1
-.enter_1:
-    mov  [mouse_keys_delta_1],0
-    mcall SF_SYSTEM_GET, SSF_SHUTDOWN
-    cmp  eax,[mouse_keys_tick]
-    jbe  @f
-    ret
-@@:
-    add  esp,4
-    jmp  key_28.1
+align 4
+on_fb_focus_change:
+	pushad
+	call draw_left_panel_patch
+	call draw_right_panel_patch
+	popad
+	mov [fb_left.all_redraw], 1
+	mov [fb_right.all_redraw], 1
+	stdcall	[FileBrowser_draw], fb_left
+	stdcall	[FileBrowser_draw], fb_right
+	mov	[fb_left.all_redraw],0
+	mov	[fb_right.all_redraw],0
+	ret
 ;---------------------------------------------------------------------
