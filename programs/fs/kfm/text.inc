@@ -62,6 +62,8 @@ fbutton_name_alt:
 ;---------------------------------------------------------------------
 select_disk_char:
      db '/',0
+.but:
+	 db 31,0
 ;---------------------------------------------------------------------
 truncated_filename_char db '..'
 ;---------------------------------------------------------------------
@@ -76,10 +78,10 @@ sort_button_name:
     .date_e db ' ',0
 ;---------------------------------------------------------------------
 type_table:
-     db '<DIR> '
+     db '<DIR>  '
 ;---------------------------------------------------------------------
 size_table:
-     db '1023b '
+     db '1023b  '
 ;---------------------------------------------------------------------
 date_table:
      db '  .  .     22:00 '
@@ -88,31 +90,33 @@ year_table:
      db '     '
 ;---------------------------------------------------------------------
 ini_file_name:
-     db 'kfm.ini',0
+     db '/sys/File managers/icon2ext.ini',0
 error_open_ini_file:
      db '"Initialization error',13,10,\
-		'Error opening file ',39,'kfm.ini',39,'!" -tW',0
+		'Error opening file ',39,'icon2ext.ini',39,'!" -tW',0
 ;---------------------------------------------------------------------
 error_type:
      db 'File system error',0
 ;---------------------------------------------------------------------
 sz_Delete_files:
-     db 'Delete file(s)',0
+     db 'Delete files',0
+sz_Delete_file:
+     db 'Delete file',0
 ;---------------------------------------------------------------------
-copy_type:
-     db '  Copy files',0
+sz_Copy_files:
+     db 'Copy files',0
 ;---------------------------------------------------------------------
 sz_Copy_file:
      db 'Copy file',0
 ;---------------------------------------------------------------------
-move_type:
-     db '  Move files',0
+sz_Move_files:
+     db 'Move files',0
 ;---------------------------------------------------------------------
 sz_Move_file:
      db 'Move file',0
 ;---------------------------------------------------------------------
-rename_type:
-     db '  Rename files',0
+sz_Rename_files:
+     db 'Rename files',0
 ;---------------------------------------------------------------------
 sz_Rename_file:
      db 'Rename file',0
@@ -123,14 +127,11 @@ sz_Create_dir:
 sz_Create_file:
      db 'Create file',0
 ;---------------------------------------------------------------------
-exit_type:
-     db '     Exit?',0
+sz_Exit:
+     db 'Exit?',0
 ;---------------------------------------------------------------------
-type_yes:
-     db 'Yes',0
-;---------------------------------------------------------------------
-type_no:
-     db 'No',0
+sz_Yes db 'Yes',0
+sz_No db 'No',0
 ;---------------------------------------------------------------------
 type_location:
      db 'Location:',0
@@ -147,22 +148,20 @@ type_files:
 type_dir:
      db 'Directories:',0
 ;---------------------------------------------------------------------
-type_size:
-     db 'Size:',0
+sz_Size db 'Size:',0
+sz_Create_date db 'Create date:',0
+sz_Change_date db 'Change date:',0
+sz_Access_date db 'Access date:',0
 ;---------------------------------------------------------------------
-type_create:
-     db 'Create date:',0
-;---------------------------------------------------------------------
-type_change:
-     db 'Change date:',0
-;---------------------------------------------------------------------
-type_access:
-     db 'Access date:',0
-;---------------------------------------------------------------------
-sz_main_menu_File   db 'File',0
-sz_main_menu_Select db 'Select',0
-sz_main_menu_Sort   db 'Sort',0
-sz_main_menu_Help   db 'Help',0
+sz_File   db 'File',0
+sz_Select db 'Select',0
+sz_Sort   db 'Sort',0
+sz_Help   db 'Help',0
+
+sz_menu_File_selection   db 'File selection      Insert',0
+sz_menu_Select_all       db 'Select all          Ctrl+A',0
+sz_menu_Clear_selection  db 'Clear selection  Ctrl+Num-',0
+sz_menu_Invert_selection db 'Invert selection Ctrl+Num*',0
 
 sz_menu_Copy_file    db 'Copy file        F5',0
 sz_menu_Move_file    db 'Move file        F6',0
@@ -228,11 +227,10 @@ edit1 edit_box 150,10,10, 0xffffff,0xbbddff,0,0,0,\
 ;---------------------------------------------------------------------
 align 4
 sysopen:
-        dd  7,0,start_parameter,0,0
+        dd  SSF_START_APP,0,start_parameter,0,0
         db  '/sys/@open',0
 ;---------------------------------------------------------------------
 if USE_STATIC_LIBS eq 1
 buttons_file_data file 'images/buttons.raw'
 end if
-icons_file_data	file 'images/icons.raw'
 ;---------------------------------------------------------------------

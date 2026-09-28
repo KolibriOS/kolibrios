@@ -4,12 +4,12 @@ draw_device_button:
 	call	device_detect_f70
 	mov	edi,[retrieved_devices_table_counter]
 	mov	edx,120
-	mov	bx,[left_panel_x.start_x]
-	mov	cx,[left_panel_y.start_y]
+	mov	bx,[fb_left.start_x]
+	mov	cx,[fb_left.start_y]
 	shl	ebx,16
-	sub	cx,30
+	sub	cx,4+SEL_DISK_BUT_H+SORT_FILE_BUT_H
 	shl	ecx,16
-	mov	cx,12
+	mov	cx,SEL_DISK_BUT_H-1
 	mov	esi,0xaa00
 	mov	ebp,retrieved_devices_table
 ;--------------------------------------
@@ -35,7 +35,8 @@ draw_device_button:
 	shl	eax,16
 	add	ebx,eax
 	mov	bx,2
-	inc	ecx
+	add	ecx,1 shl 16 ; button corner radius
+	dec	ecx ; button corner radius
 	mcall	SF_DRAW_RECT, ,,[sc.work]
 	popa
 
@@ -60,16 +61,17 @@ draw_device_button:
 	dec	edi
 	jnz	.loop
 	
-	xor	eax,eax
-	mov	ax,[right_panel_x.start_x]
-	add	ax,[right_panel_x.size_x]
+	movzx	eax,[fb_right.start_x]
+	add	ax,[fb_right.size_x]
+	add	ax,[sb_right.x_size]
 	ror	ebx,16
 	sub	ax,bx
 	rol	ebx,16
 	mov	bx,ax
 	
-	add	ecx,1
-	add	ebx,1
+	add	ecx,1 shl 16 ; button corner radius
+	dec	ecx
+	inc	ebx
 	mcall	SF_DRAW_RECT, ,,[sc.work]
 	ret
 ;------------------------------------------------------------------------------

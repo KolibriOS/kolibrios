@@ -3,52 +3,47 @@ align 4
 delete_file:
 ;    call progress_bar
 ;    jmp  still
+    call get_files_information
+    or   eax,eax
+    jnz  still
+
+    mov  eax,[files_counter]
+    add  eax,[directories_counter]
+    cmp  eax,1
+    jle  @f
     mov  [confirmation_type],sz_Delete_files
+    jmp  .1
+@@:
+    mov  [confirmation_type],sz_Delete_file
+.1:
     call confirmation_action
     cmp  [work_confirmation_yes],1
     jne  red  ;reload_dir
 
-    xor  eax,eax
-    mov  [files_counter],eax
-    mov  [directories_counter],eax
-    mov  [files_size.low],eax
-    mov  [files_size.high],eax
-    call get_files_information
-
     call delete_marked_files
     cmp  [delete_marked_yes],1
-    je	 .end_1   ;reload_dir_all
+    je   .end_1   ;reload_dir_all
 
-    xor  eax,eax
-    xor  edx,edx
-    cmp  [select_panel_counter],0
-    jne  .right_1
-    mov  ax,[left_start_draw_cursor_line]
-    mov  ebx,10
-    div  ebx
-    mov  ebx,[left_start_draw_line]
-    add  ebx,eax
-    imul ebx,304
-    add  ebx,[left_folder_data]
+    cmp  [fb_right.select_panel_counter],1
+    je   .right_1
+    mov  ecx,fb_left
     call prepare_data_7
+    or   eax,eax
+    jnz  red ;if error
     mov   esi,read_folder_name	  ;read_folder.name
     jmp  .end
 .right_1:
-    mov  ax,[right_start_draw_cursor_line]
-    mov  ebx,10
-    div  ebx
-    mov  ebx,[right_start_draw_line]
-    add  ebx,eax
-    imul ebx,304
-    add  ebx,[right_folder_data]
+    mov  ecx,fb_right
     call prepare_data_7
+    or   eax,eax
+    jnz  red ;if error
     mov   esi,read_folder_1_name   ;read_folder_1.name
 .end:
     mov   [error_pointer],ebx
     mov   edi,file_name   ;delete_file_data.name
     call  copy_path_1
-    test [ebx-40],byte 0x10
-    jz	 @f
+    test [ebx-40],byte FA_FOLDER
+    jz   @f
     push eax ebx
     xor  eax,eax
     mov  [current_progress_value],eax
@@ -64,12 +59,12 @@ delete_file:
     call start_error_window_thread
     jmp  reload_dir_all
 .end_1:
-    cmp  [select_panel_counter],0
-    jne  .right
-    call proc_read_left_folder
+    cmp  [fb_right.select_panel_counter],1
+    je   .right
+    stdcall p_read_folder, fb_left
     jmp  red
 .right:
-    call proc_read_right_folder
+    stdcall p_read_folder, fb_right
     jmp  red
 ;---------------------------------------------------------------------
 align 4
@@ -83,15 +78,15 @@ delete_marked_files:
     mov  [delete_marked_yes],al
     mov  [draw_all_progressbar],1
     
-   cmp  [select_panel_counter],al
-    jne  .right_1
-    mov  ebp,[left_folder_block]
+   cmp  [fb_right.select_panel_counter],1
+    je  .right_1
+    mov  ebp,[fb_left.folder_block]
 .start:
     mov  ebx,ebp
     dec  ebx
     imul ebx,304
-    add  ebx,[left_folder_data]
-    add  ebx,32+40
+    add  ebx,[fb_left.folder_data]
+    add  ebx,32+FileInfoA.FileName
     cmp  [ebx+299-40],byte 0
     je	 @f
     cmp  [ebx],word '..'
@@ -108,17 +103,17 @@ delete_marked_files:
     jnz  .start
     cmp  [delete_marked_yes],0
     je	 @f
-    mov  [left_start_draw_cursor_line],0
+    mov  [fb_left.start_draw_cursor_line],0
 @@:
     ret
 .right_1:
-    mov  ebp,[right_folder_block]
+    mov  ebp,[fb_right.folder_block]
 .start_1:
     mov  ebx,ebp
     dec  ebx
     imul ebx,304
-    add  ebx,[right_folder_data]
-    add  ebx,32+40
+    add  ebx,[fb_right.folder_data]
+    add  ebx,32+FileInfoA.FileName
     cmp  [ebx+299-40],byte 0
     je	 @f
     cmp  [ebx],word '..'
@@ -135,7 +130,7 @@ delete_marked_files:
     jnz  .start_1
     cmp  [delete_marked_yes],0
     je	 @f
-    mov  [right_start_draw_cursor_line],0
+    mov  [fb_right.start_draw_cursor_line],0
 @@:
     ret
 ;---------------------------------------------------------------------
@@ -146,7 +141,7 @@ prepare_data_6:
     call copy_path_1
 ;    inc  [current_progress_value]
 ;    call progress_bar_delete
-    test [ebx-40],byte 0x10
+    test [ebx-40],byte FA_FOLDER
     jz	 @f
     call delete_dir
     jmp  .continue
@@ -161,16 +156,32 @@ prepare_data_6:
 .continue:
     ret
 ;---------------------------------------------------------------------
+;in:
+;  ecx = pointer to FileBrowser
+;out:
+;  eax = 0 - ok or error code
+;  ebx = pointer to file|directory name
 align 4
 prepare_data_7:
-    add  ebx,32+40
+    cmp  [ecx+FileBrowser.folder_block],0
+    je   .error
+    movzx eax,[ecx+FileBrowser.start_draw_cursor_line]
+    movzx ebx,[ecx+FileBrowser.line_size_y]
+    xor  edx,edx
+    div  ebx
+    mov  ebx,[ecx+FileBrowser.start_draw_line]
+    add  ebx,eax
+    imul ebx,304
+    add  ebx,[ecx+FileBrowser.folder_data]
+    add  ebx,32+FileInfoA.FileName
+    xor  eax,eax
     cmp  [ebx],word '..'
-    jne  .continue
+    jne  @f
     cmp  [ebx+2],byte 0
-    jne  .continue
-    add  esp,4
-    jmp  reload_dir
-.continue:
+    jne  @f
+.error:
+    mov  eax,5 ;file not found
+@@:
     ret
 ;---------------------------------------------------------------------
 align 4
@@ -249,12 +260,9 @@ align 4
     dec  ebx
     imul ebx,304
     add  ebx,[tmp_memory]
-    add  ebx,32+40
-    cmp  [ebx],byte '.'
-    jne  @f
-    cmp  [ebx+1],byte 0
+    add  ebx,32+FileInfoA.FileName
+    cmp  [ebx],word '.'
     je	 .continue_4
-@@:
     cmp  [ebx],word '..'
     jne  .continue
     cmp  [ebx+2],byte 0
@@ -263,7 +271,7 @@ align 4
     mov  esi,file_name
     inc  [recursive_pointer]
     call copy_path_2
-    test [ebx-40],byte 0x10
+    test [ebx-40],byte FA_FOLDER
     jnz  .continue_3
 @@:
     inc  [current_progress_value]

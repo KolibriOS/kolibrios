@@ -1,4 +1,5 @@
 ;---------------------------------------------------------------------
+align 4
 device_detect_f70:
     mov   ax,[select_disk_char]
     mov   [read_folder_2_name],ax
@@ -17,7 +18,7 @@ device_detect_f70:
 .start_temp_counter_1:
     imul  esi,[temp_counter_1],304
     add   esi,left_folder_data_1
-    add   esi,32+40   ;[eax+32+40]
+    add   esi,32+FileInfoA.FileName   ;[eax+32+40]
     call  copy_folder_name_3
 ;    mov   eax,right_folder_data_1
 ;    mov   [read_folder_3.return],eax
@@ -39,11 +40,11 @@ device_detect_f70:
     inc   edi
     imul  esi,[temp_counter_1],304
     add   esi,left_folder_data_1
-    add   esi,32+40  ;[eax+32+40]
+    add   esi,32+FileInfoA.FileName  ;[eax+32+40]
     call  proc_copy_patch
     imul  esi,ebp,304
     add   esi,right_folder_data_1
-    add   esi,32+40   ;[eax+32+40]
+    add   esi,32+FileInfoA.FileName   ;[eax+32+40]
     mov   [edi-1],byte '/'
     call  proc_copy_patch
     inc   [retrieved_devices_table_counter]
@@ -56,7 +57,8 @@ device_detect_f70:
     cmp   eax,[left_folder_block_1]
     jb	  .start_temp_counter_1
     ret
-;---------------------------------------------------------------------    
+;---------------------------------------------------------------------
+align 4
 select_starting_directories:
     mov   esi,retrieved_devices_table+1
     call  copy_folder_name
@@ -84,9 +86,11 @@ select_starting_directories:
 ;    mov   [read_folder_1_name+6],byte 0
     ret
 ;---------------------------------------------------------------------
+align 4
 proc_copy_patch:
-@@:
     cld
+align 4
+@@:
     lodsb
     stosb
     cmp   al,0

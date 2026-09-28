@@ -68,3 +68,7 @@
 ; 160 - Yes
 ; 161 - No
 ;
+; 170 - File selection
+; 171 - Select all
+; 172 - Clear selection
+; 173 - Invert selection

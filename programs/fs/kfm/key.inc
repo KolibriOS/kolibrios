@@ -12,8 +12,8 @@ key:
 @@:
     cmp   ah,15
     jne   .no_tab
-    inc   [select_panel_counter]
-    and   [select_panel_counter],1b
+    xor   [fb_left.select_panel_counter],1
+    xor   [fb_right.select_panel_counter],1
     call  draw_left_panel
     call  draw_right_panel
     jmp   still
@@ -74,7 +74,7 @@ key:
     je    f_key_f9
     cmp   ah,88    ; down F12
     je    f_key_f12
-    jmp  still
+    jmp   search_by_key
 ;-------------------------------------------------------------
 .extended_key:
     mov  [extended_key],0
@@ -82,338 +82,47 @@ key_80:
     cmp  ah,80  ; arrow down
     jne  key_72
 .1:
-    cmp  [select_panel_counter],0
-    jne  .right_1
-    mov  eax,[left_folder_block]
-    dec  eax
-    imul eax,10
-    cmp  ax,[left_start_draw_cursor_line]
-    jbe  .marked_action   ;still
-    mov  ax,[left_start_draw_cursor_line]
-    add  ax,10
-    cmp  ax,[left_panel_y_correct_size_y]
-    jae  @f
-.add_1:
-    add  [left_start_draw_cursor_line],10
-    call draw_left_panel
-    mov  [drawing_panel_folder],1
-        jmp  still
-.all:
-    sub  ecx,10 shl 16
-    mov  edx,0xffffff
-        mcall
-    mov  [not_clear_lines],1
-    call draw_folder_data
-    mov  [not_clear_lines],0
-    jmp  still
-.marked_action:
-    cmp  [marked_action],0
-    je   still
-    mov  [marked_action],0
-    call draw_left_panel
-    jmp  still
-.marked_action_1:
-    cmp  [marked_action],0
-    je   still
-    mov  [marked_action],0
-    call draw_right_panel
-    jmp  still
-@@:
-    mov  eax,[left_folder_block]
-    sub  eax,[max_panel_line]
-    test eax,0x80000000
-    jz   @f
-    xor  eax,eax
-@@:
-    cmp  [marked_action],0
-    jne   @f
-    cmp  [left_start_draw_line],eax
-    je   still
-@@:
-    mov  [marked_action],0
-    inc  [left_start_draw_line]
-    inc  [sb_left.position]
-    call draw_left_panel
-    jmp  still
-.right_1:
-    mov  eax,[right_folder_block]
-    dec  eax
-    imul eax,10
-    cmp  ax,[right_start_draw_cursor_line]
-    jbe  .marked_action_1   ;still
-    mov  ax,[right_start_draw_cursor_line]
-    add  ax,10
-    cmp  ax,[right_panel_y_correct_size_y]
-    jae  @f
-.add_2:
-    add  [right_start_draw_cursor_line],10
-    call draw_right_panel
-    mov  [drawing_panel_folder],2
-    jmp  still
-@@:
-    mov  eax,[right_folder_block]
-    sub  eax,[max_panel_line]
-    test eax,0x80000000
-    jz   @f
-    xor  eax,eax
-@@:
-    cmp  [marked_action],0
-    jne  @f
-    cmp  [right_start_draw_line],eax
-    je   still
-@@:
-    mov  [marked_action],0
-    inc  [right_start_draw_line]
-    call draw_right_panel
+    mov  bx,1
+    call fb_on_key
     jmp  still
 ;-------------------------------------------------------------
 key_72:
     cmp  ah,72  ;arrow up
     jne  key_81
 .1:
-    cmp  [select_panel_counter],0
-    jne  .right_1
-    mov  ax,[left_start_draw_cursor_line]
-    add  ax,[left_panel_y.start_y]
-    cmp  [left_panel_y.start_y],ax
-    je   @f
-    sub  [left_start_draw_cursor_line],10
-    call draw_left_panel
-    mov  [drawing_panel_folder],1
-        jmp  still
-.all:    
-    add  ecx,10 shl 16
-    mov  edx,0xffffff
-        mcall
-    mov  [not_clear_lines],1
-    call draw_folder_data
-    mov  [not_clear_lines],0
-    jmp  still
-@@:
-    cmp  [left_start_draw_line],0
-    je   still
-    dec  [left_start_draw_line]
-    dec  [sb_left.position]
-    call draw_left_panel
-    jmp  still
-.right_1:
-    mov  ax,[right_start_draw_cursor_line]
-    add  ax,[right_panel_y.start_y]
-    cmp  [right_panel_y.start_y],ax
-    je   @f
-    sub  [right_start_draw_cursor_line],10
-    call draw_right_panel
-    mov  [drawing_panel_folder],2
-    jmp  still
-@@:
-    cmp  [right_start_draw_line],0
-    je   still
-    dec  [right_start_draw_line]
-    call draw_right_panel
+    mov  bx,2
+    call fb_on_key
     jmp  still
 ;-------------------------------------------------------------
 key_81:
     cmp  ah,81 ; PageDown
     jne  key_73
-    mov  eax,[max_panel_line]
-    cmp  [select_panel_counter],0
-    jne  .right_1
-    mov  ebx,[left_folder_block]
-    sub  ebx,eax
-    test ebx,0x80000000
-    jnz  .left_2
-    sub  ebx,[left_start_draw_line]
-    cmp  ebx,eax
-    ja  .ok_1
-    mov  ebx,[left_folder_block]
-    sub  ebx,eax
-    call prepare_data_left_down
-    ja   @f
-    cmp  ebx,[left_start_draw_line]
-    je   still
-@@:
-    mov  [left_start_draw_line],ebx
-    mov  [sb_left.position],ebx
-.left_3:
-    dec  eax
-    imul eax,10
-.left_1:
-    mov  [left_start_draw_cursor_line],ax
-    call draw_left_panel
+    mov  bx,3
+    call fb_on_key
     jmp  still
-.left_2:
-    mov  eax,[left_folder_block]
-    sub  eax,[left_start_draw_line]
-    dec  eax
-    imul eax,10
-    cmp  ax,[left_start_draw_cursor_line]
-    jbe  still
-    jmp  .left_1
-.ok_1:
-    add  [left_start_draw_line],eax
-    add  [sb_left.position],eax
-    call draw_left_panel
-    jmp  still
-.right_1:
-    mov  ebx,[right_folder_block]
-    sub  ebx,eax
-    test ebx,0x80000000
-    jnz  .right_3
-    sub  ebx,[right_start_draw_line]
-    cmp  ebx,eax
-    jae  .ok_2
-    mov  ebx,[right_folder_block]
-    sub  ebx,eax
-    call prepare_data_right_down
-    ja   @f
-    cmp  ebx,[right_start_draw_line]
-    je   still
-@@:
-    mov  [right_start_draw_line],ebx
-    mov  [sb_right.position],ebx
-.right_4:
-    dec  eax
-    imul eax,10
-.right_2:
-    mov  [right_start_draw_cursor_line],ax
-    call draw_right_panel
-    jmp  still
-.right_3:
-    mov  eax,[right_folder_block]
-    sub  eax,[right_start_draw_line]
-    dec  eax
-    imul eax,10
-    cmp  ax,[right_start_draw_cursor_line]
-    jbe  still
-    jmp  .right_2
-.ok_2:
-    add  [right_start_draw_line],eax
-    add  [sb_right.position],eax
-    call draw_right_panel
-    jmp  still
-;-------------------------------------------------------------    
-prepare_data_right_down:
-    mov  ecx,[right_folder_block]
-    sub  ecx,[right_start_draw_line]
-    dec  ecx
-    imul ecx,10
-    cmp  cx,[right_start_draw_cursor_line]
-    ret
-;-------------------------------------------------------------    
-prepare_data_left_down:
-    mov  ecx,[left_folder_block]
-    sub  ecx,[left_start_draw_line]
-    dec  ecx
-    imul ecx,10
-    cmp  cx,[left_start_draw_cursor_line]
-    ret
 ;-------------------------------------------------------------
 key_73:
     cmp  ah,73 ; PageUp
     jne  key_71
-    mov  eax,[max_panel_line]
-    cmp  [select_panel_counter],0
-    jne  .right_1
-    mov  ebx,[left_start_draw_line]
-    sub  ebx,eax
-    test ebx,0x8000000
-    jz   @f
-    cmp  [left_start_draw_line],0
-    jne  .draw_line_1
-    cmp  [left_start_draw_cursor_line],0
-    je   still
-    mov  [left_start_draw_cursor_line],0
-.draw_line_1:
-    mov  [left_start_draw_line],0
-    mov  [sb_left.position],0
-    call draw_left_panel
-    jmp  still
-@@:
-    sub  [left_start_draw_line],eax
-    sub  [sb_left.position],eax
-    call draw_left_panel
-    jmp  still
-.right_1:
-    mov  ebx,[right_start_draw_line]
-    sub  ebx,eax
-    test ebx,0x80000000
-    jz   @f
-    cmp  [right_start_draw_line],0
-    jne  .draw_line_2
-    cmp  [right_start_draw_cursor_line],0
-    je   still
-    mov  [right_start_draw_cursor_line],0
-.draw_line_2:
-    mov  [right_start_draw_line],0
-    mov  [sb_right.position],0
-    call draw_right_panel
-    jmp  still
-@@:
-    sub  [right_start_draw_line],eax
-    sub  [sb_right.position],eax
-    call draw_right_panel
+    mov  bx,4
+    call fb_on_key
     jmp  still
 ;-------------------------------------------------------------
 key_71:
     cmp  ah,71 ; Home
     jne  key_79
-    cmp  [select_panel_counter],0
-    jne  .right_1
-    cmp  [left_start_draw_line],0
-    jne   .draw_left_panel
-    cmp  [left_start_draw_cursor_line],0
-    je   still
-.draw_left_panel:
-    mov  [left_start_draw_line],0
-    mov  [sb_left.position],0
-    mov  [left_start_draw_cursor_line],0
-    call draw_left_panel
-    jmp  still
-.right_1:
-    cmp  [right_start_draw_line],0
-    jne   .draw_right_panel
-    cmp  [right_start_draw_cursor_line],0
-    je   still
-.draw_right_panel:
-    mov  [right_start_draw_line],0
-    mov  [sb_right.position],0
-    mov  [right_start_draw_cursor_line],0
-    call draw_right_panel
+    mov  bx,5
+    call fb_on_key
     jmp  still
 ;-------------------------------------------------------------
 key_79:
     cmp  ah,79 ; End
     jne  key_28
-    cmp  [select_panel_counter],0
-    jne  .right_1
-    mov  eax,[left_folder_block]
-    sub  eax,[max_panel_line]
-    test eax,0x80000000
-    jnz  key_81.left_2
-    call prepare_data_left_down
-    ja   @f
-    cmp  eax,[left_start_draw_line]
-    je   still
-@@:
-    mov  [left_start_draw_line],eax
-    mov  [sb_left.position],eax
-    mov  eax,[max_panel_line]
-    jmp  key_81.left_3
-.right_1:
-    mov  eax,[right_folder_block]
-    sub  eax,[max_panel_line]
-    test eax,0x80000000
-    jnz  key_81.right_3
-    call prepare_data_right_down
-    ja   @f
-    cmp  eax,[right_start_draw_line]
-    je   still
-@@:
-    mov  [right_start_draw_line],eax
-    mov  [sb_right.position],eax
-    mov  eax,[max_panel_line]
-    jmp  key_81.right_4    
+    mov  bx,6
+    call fb_on_key
+    je   still   
 ;-------------------------------------------------------------
+align 4
 key_28:
     cmp  ah,28 ; Enter
     jne  key_ctrl_up
@@ -423,60 +132,55 @@ key_28:
     cmp  [ctrl_flag],1
     je   still
     cmp  [alt_flag],1
-    je   files_information
-    
+    jne  @f
+    xor  eax,eax
+    mov  [alt_flag],al
+    call get_files_information
+    or   eax,eax
+    jnz  still
+    call start_files_information_thread
+    jmp  still
+@@:
     mov  [open_param],0
 .2:
-    cmp  [select_panel_counter],0
-    jne  .right_1
+    cmp  [fb_right.select_panel_counter],1
+    je   .right_1
     mov  ebp,read_folder_name    ;read_folder.name
-    call  calculate_left_data_1
+    mov  ecx,fb_left
+    mov  edx,sb_left.position
+    jmp  @f
+.right_1:
+    mov  ebp,read_folder_1_name   ;read_folder_1.name
+    mov  ecx,fb_right
+    mov  edx,sb_right.position
+@@:
+    call calculate_data_1
     add  esi,32
     cmp  [exit_dir],1
     je   .up_patch
-    test [esi],byte 0x10
+    test [esi],byte FA_FOLDER
     jz   file_no_folder
     cmp  [open_param],0
     jne  still
-    cmp  [esi+40],word 2Eh
+    cmp  word[esi+FileInfoA.FileName],'.'
     je   still
-    cmp  [esi+40],word '..'
+    cmp  word[esi+FileInfoA.FileName],'..'
     jne  @f
-    cmp  [esi+40+2],byte 0
+    cmp  [esi+FileInfoA.FileName+2],byte 0
     je   .up_patch
 @@:
     call calculate_key_28_1
-    mov  [left_start_draw_cursor_line],0
-    mov  [left_start_draw_line],0
-    mov  [sb_left.position],0
-    jmp  proc_read_folder
+    mov  [ecx+FileBrowser.start_draw_cursor_line],0
+    mov  [ecx+FileBrowser.start_draw_line],0
+    mov  dword[edx],0
+    jmp  @f
 .up_patch:
     call calculate_key_28_2
-    jmp  proc_read_folder
-.right_1:
-    mov  ebp,read_folder_1_name   ;read_folder_1.name
-    call calculate_right_data_1
-    add  esi,32
-    cmp  [exit_dir],1
-    je   .up_patch_1
-    test [esi],byte 0x10
-    jz   file_no_folder
-    cmp  [esi+40],word 2Eh
-    je   still
-    cmp  [esi+40],word '..'
-    jne  @f
-    cmp  [esi+40+2],byte 0
-    je   .up_patch_1
 @@:
-    call calculate_key_28_1
-    mov  [right_start_draw_cursor_line],0
-    mov  [right_start_draw_line],0
-    mov  [sb_right.position],0
-    jmp  proc_read_folder_1
-.up_patch_1:
-    call calculate_key_28_2
-    jmp  proc_read_folder_1
+    stdcall p_read_folder_1, ecx
+    jmp  still
 ;---------------------------------------------------------------------
+align 4
 calculate_key_28_1:    
 ;    mov  edi,read_folder.name-1
     mov  edi,ebp
@@ -530,16 +234,16 @@ set_background:
     cmp  [shift_flag],1
     je   .shift
     cmp  [ctrl_flag],1
-    jne  still
+    jne  search_by_key
     mov  [open_param],background_stretch
     jmp  key_28.2
 .shift:
     mov  [open_param],background_tile
-    jmp  key_28.2    
+    jmp  key_28.2
 ;---------------------------------------------------------------------    
 reload_dir_1:
     cmp  [ctrl_flag],0
-    je   still
+    je   search_by_key
     jmp  reload_dir
 ;---------------------------------------------------------------------
 symbol_a_up:
@@ -551,8 +255,17 @@ symbol_a_up:
     ;je   still
     jmp  still
 .ctrl:
-    mov  [mark_action_counter],0
-    jmp  mark_all_file
+    mov  bx,9
+    call fb_on_key
+    jmp  still
+;---------------------------------------------------------------------
+;in:
+;  ah - key symbol
+align 4
+search_by_key:
+    mov  bx,12
+    call fb_on_key
+    jmp  still
 ;---------------------------------------------------------------------
 NumPad_plus_Up:
     cmp  [shift_flag],1
@@ -563,8 +276,9 @@ NumPad_plus_Up:
     ;je   still
     jmp  still
 .ctrl:
-    mov  [mark_action_counter],0
-    jmp  mark_all_file
+    mov  bx,9
+    call fb_on_key
+    jmp  still
 ;---------------------------------------------------------------------
 NumPad_minus_Up:
     cmp  [shift_flag],1
@@ -575,8 +289,9 @@ NumPad_minus_Up:
     ;je   still
     jmp  still
 .ctrl:
-    mov  [mark_action_counter],1
-    jmp  mark_all_file
+    mov  bx,10
+    call fb_on_key
+    jmp  still
 ;---------------------------------------------------------------------
 NumPad_sneg_Up:
     cmp  [shift_flag],1
@@ -587,8 +302,9 @@ NumPad_sneg_Up:
     ;je   still
     jmp  still
 .ctrl:
-    mov  [mark_action_counter],2
-    jmp  mark_all_file
+    mov  bx,11
+    call fb_on_key
+    jmp  still
 ;---------------------------------------------------------------------
 f_key_f1:
 ;sort_name:
@@ -620,7 +336,7 @@ f_key_f3:
     ;je   still
     jmp  still
 .ctrl:
-    cmp  [select_panel_counter],1
+    cmp  [fb_right.select_panel_counter],1
     je   right_sort_name
     jmp  left_sort_name
 ;---------------------------------------------------------------------
@@ -634,7 +350,7 @@ f_key_f4:
     je   still
     jmp  open_file_f4
 .ctrl:
-    cmp  [select_panel_counter],1
+    cmp  [fb_right.select_panel_counter],1
     je   right_sort_type
     jmp  left_sort_type
 ;---------------------------------------------------------------------
@@ -648,7 +364,7 @@ f_key_f5:
     je   still
     jmp  copy_file_f5
 .ctrl:
-    cmp  [select_panel_counter],1
+    cmp  [fb_right.select_panel_counter],1
     je   right_sort_size
     jmp  left_sort_size
 ;---------------------------------------------------------------------
@@ -664,7 +380,7 @@ f_key_f6:
 .shift:
     jmp  still
 .ctrl:
-    cmp  [select_panel_counter],1
+    cmp  [fb_right.select_panel_counter],1
     je   right_sort_date
     jmp  left_sort_date
 ;---------------------------------------------------------------------
@@ -751,9 +467,106 @@ key_alt_down:
 ;---------------------------------------------------------------------
 key_insert:
     cmp   ah,82   ; Insert
-    je    mark_file
+    jne   @f
+.1:
+    mov   bx,8 ; mark file
+    call  fb_on_key
+    jmp   still
+@@:
     cmp   ah,83
     je    f_key_f8      ;delete_file
 key_end:
     jmp  still
+;---------------------------------------------------------------------
+;in:
+;  ax - key
+;  bx - 1...12
+align 4
+fb_on_key:
+    shr  ax,8
+    cmp  [fb_right.select_panel_counter],1
+    je   .right_1
+    mov  [fb_left.key_action],bx
+    mov  [fb_left.key_action_num],ax
+    stdcall [FileBrowser_key], fb_left
+    call sb_left_update
+    ret
+.right_1:
+    mov  [fb_right.key_action],bx
+    mov  [fb_right.key_action_num],ax
+    stdcall [FileBrowser_key], fb_right
+    call sb_right_update
+    ret
+;---------------------------------------------------------------------
+;in:
+;  ax - key
+;  bx - 1...12
+;  esi
+align 4
+fb_on_key_1:
+    shr  ax,8
+    or   esi,esi
+    jnz  .right_1
+    mov  [fb_left.key_action],bx
+    mov  [fb_left.key_action_num],ax
+    stdcall [FileBrowser_key], fb_left
+    call sb_left_update
+    ret
+.right_1:
+    mov  [fb_right.key_action],bx
+    mov  [fb_right.key_action_num],ax
+    stdcall [FileBrowser_key], fb_right
+    call sb_right_update
+    ret
+;---------------------------------------------------------------------
+align 4
+sb_left_update:
+    cmp  [fb_left.draw_scroll_bar],0
+    je   @f
+    mov  eax,[fb_left.start_draw_line]
+    mov  [sb_left.position],eax
+    ;mov  eax,[sb_left.max_area]
+    ;cmp  eax,[sb_left.cur_area]
+    ;jbe  @f
+    ;cmp  [sb_left.cur_area],0
+    ;je   @f
+    stdcall [scrollbar_v_draw], sb_left
+    mov  [fb_left.draw_scroll_bar],0
+@@:
+    ret
+;---------------------------------------------------------------------
+align 4
+sb_right_update:
+    cmp  [fb_right.draw_scroll_bar],0
+    je   @f
+    mov  eax,[fb_right.start_draw_line]
+    mov  [sb_right.position],eax
+    ;mov  eax,[sb_right.max_area]
+    ;cmp  eax,[sb_right.cur_area]
+    ;jbe  @f
+    ;cmp  [sb_right.cur_area],0
+    ;je   @f
+    stdcall [scrollbar_v_draw], sb_right
+    mov  [fb_right.draw_scroll_bar],0
+@@:
+    ret
+;---------------------------------------------------------------------
+;in:
+;  ecx = pointer to FileBrowser
+;out:
+;  esi = ecx.folder_data + 304 *
+;      * (ecx.start_draw_line + ecx.start_draw_cursor_line / ecx.line_size_y)
+align 4
+calculate_data_1:
+    push edx
+    movzx eax,[ecx+FileBrowser.start_draw_cursor_line]
+    xor  edx,edx
+    movzx ebx,[ecx+FileBrowser.line_size_y]
+    div  ebx
+    mov  esi,[ecx+FileBrowser.start_draw_line]
+    add  esi,eax
+    imul esi,304
+    add  esi,[ecx+FileBrowser.folder_data]
+    pop edx
+    ret
 ;---------------------------------------------------------------------

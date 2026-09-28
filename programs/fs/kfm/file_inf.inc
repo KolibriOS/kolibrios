@@ -1,15 +1,4 @@
 align 4
-files_information:
-	xor	eax,eax
-	mov	[alt_flag],al
-	mov	[files_counter],eax
-	mov	[directories_counter],eax
-	mov	[files_size.low],eax
-	mov	[files_size.high],eax
-	call	get_files_information
-	call	start_files_information_thread
-	jmp	still
-;------------------------------------------------------------------------------
 start_files_information_thread:
 	mcall	SF_THREAD_INFO, procinfo,-1
 	mov	eax,[procinfo.box.height]
@@ -63,17 +52,18 @@ draw_files_information_window:
 	add	edx,INF_LINEH
 	mcall	SF_DRAW_NUMBER, 0xc0140001,files_size
 ;--------------------------------------
+	cmp	[files_counter],1 ; if there are multiple files, we do not show the date
+	jg	@f
 	mov	ebp,date.create
 	call	show_date_and_time_of_files_information
-;--------------------------------------
 	mov	ebp,date.change
 	call	show_date_and_time_of_files_information
-;--------------------------------------
 	mov	ebp,date.access
 	call	show_date_and_time_of_files_information
+@@:
 ;--------------------------------------
-	cmp	[select_panel_counter],0
-	jne	.right_1
+	cmp	[fb_right.select_panel_counter],1
+	je	.right_1
 
 	mov	edx,read_folder_name
 	jmp	@f
@@ -125,13 +115,15 @@ draw_files_information_window:
 ;--------------------------------------
 @@:
 	add	ebx,INF_LINEH
-	mcall	,,,type_size
+	mcall	,,,sz_Size
+	cmp [files_counter],1
+	jg	@f
 	add	ebx,INF_LINEH
-	mcall	,,,type_create
+	mcall	,,,sz_Create_date
 	add	ebx,INF_LINEH
-	mcall	,,,type_change
+	mcall	,,,sz_Change_date
 	add	ebx,INF_LINEH
-	mcall	,,,type_access
+	mcall	,,,sz_Access_date
 	sub	ebx,INF_LINEH*2
 	add	ebx,115 shl 16
 	mcall	,,0x90000000,type_limiters_data_time
@@ -139,7 +131,7 @@ draw_files_information_window:
 	mcall
 	add	ebx,INF_LINEH
 	mcall
-
+@@:
 	mcall	SF_REDRAW, SSF_END_DRAW
 	ret
 ;------------------------------------------------------------------------------
@@ -224,85 +216,87 @@ quotent:
 ;modulo:
 ;      rb 2
 ;------------------------------------------------------------------------------
-align 4
-copy_type_name:
-	push	esi
-	mov	esi,ebx
-	mov	edi,type_name
-	cld
-;--------------------------------------
-@@:
-	lodsb
-	stosb
-	test	al,al
-	jnz	@b
-
-	pop	esi
-	ret
-;------------------------------------------------------------------------------
+;out:
+;  [files_counter] = count selected files
+;  [directories_counter] = count selected directories
+;  [files_size.high], [files_size.low] = total file size
+;  [inf_marked_yes] = 0 or 1
+;  file_name = the name of the first selected file
+;              or the name from the line where the cursor is located
+;  eax = 0 - ok or error code
 align 4
 get_files_information:
+    xor  eax,eax
+    mov  [files_counter],eax
+    mov  [directories_counter],eax
+    mov  [files_size.low],eax
+    mov  [files_size.high],eax
 	call	get_information_marked_files
+	or eax,eax
+	jnz .end_2 ;if error
 	cmp	[inf_marked_yes],1
-	je	.end_2
+	je	.end_2 ;if not error (eax=0)
 
-	xor	eax,eax
 	xor	edx,edx
-	cmp	[select_panel_counter],0
-	jne	.right_1
-
-	mov	ax,[left_start_draw_cursor_line]
-	mov	ebx,10
-	div	ebx
-	mov	ebx,[left_start_draw_line]
-	add	ebx,eax
-	imul	ebx,304
-	add	ebx,[left_folder_data]
-	call	prepare_data_8
+	cmp	[fb_right.select_panel_counter],1
+	je	.right_1
+	mov	ecx,fb_left
 	mov	esi,read_folder_name
-	jmp	.end
-;--------------------------------------
+	jmp	@f
 .right_1:
-	mov	ax,[right_start_draw_cursor_line]
-	mov	ebx,10
+	mov	ecx,fb_right
+	mov	esi,read_folder_1_name
+@@:
+	mov	ax,[ecx+FileBrowser.start_draw_cursor_line]
+	movzx	ebx,[ecx+FileBrowser.line_size_y]
 	div	ebx
-	mov	ebx,[right_start_draw_line]
+	mov	ebx,[ecx+FileBrowser.start_draw_line]
 	add	ebx,eax
 	imul	ebx,304
-	add	ebx,[right_folder_data]
-	call	prepare_data_8
-	mov	esi,read_folder_1_name
+	add	ebx,[ecx+FileBrowser.folder_data]
+	add	ebx,32+FileInfoA.FileName
+	xor eax,eax
+	cmp	[ebx],word '..'
+	jne	@f
+	cmp	[ebx+2],byte 0
+	jne	@f
+	mov eax,5 ;file not found
+	jmp	.end_2 ;if error (the cursor is on '..')
+@@:
 ;--------------------------------------
-.end:
 	mov	[error_pointer],ebx
 ;--------------------------------------
 	push	eax ebx
-	sub	ebx,40
+	sub	ebx,FileInfoA.FileName
 ; время создания файла
-	mov	eax,[ebx+8]
+	mov	eax,[ebx+FileInfoA.DateCreate.time]
 	mov	[time.create],eax
 ; дата создания файла
-	mov	eax,[ebx+12]
+	mov	eax,[ebx+FileInfoA.DateCreate.date]
 	mov	[date.create],eax  
 ; время последнего доступа (чтение или запись)
-	mov	eax,[ebx+16]
+	mov	eax,[ebx+FileInfoA.DateAccess.time]
 	mov	[time.access],eax
 ; дата последнего доступа
-	mov	eax,[ebx+20]
+	mov	eax,[ebx+FileInfoA.DateAccess.date]
 	mov	[date.access],eax    
 ; время последней модификации
-	mov	eax,[ebx+24]
+	mov	eax,[ebx+FileInfoA.DateModify.time]
 	mov	[time.change],eax
 ; дата последней модификации
-	mov	eax,[ebx+28]
+	mov	eax,[ebx+FileInfoA.DateModify.date]
 	mov	[date.change],eax
 	pop	ebx eax
 ;--------------------------------------
-	call	copy_type_name
+	push	esi
+	mov	esi,ebx
+	mov	edi,type_name
+	call	proc_copy_patch
+	pop	esi
 	mov	edi,file_name
 	call	copy_path_1
 
-	test	[ebx-40],byte 0x10
+	test	[ebx-FileInfoA.FileName],byte FA_FOLDER
 	jz	@f
 
 	push	eax ebx
@@ -319,7 +313,7 @@ get_files_information:
 	jz	.end_1
 
 	call	start_error_window_thread
-	add	esp,4
+	add	esp,4 ;???
 	jmp	reload_dir_all
 ;--------------------------------------
 .end_1:
@@ -331,21 +325,27 @@ get_files_information:
 .end_2:
 	ret
 ;------------------------------------------------------------------------------
+;out:
+;  [inf_marked_yes] = 0 or 1
+;  eax = 0 - ok or error code
 align 4
 get_information_marked_files:
 	xor	eax,eax
 	mov	[inf_marked_yes],al
-	cmp	[select_panel_counter],al
-	jne	.right_1
+	cmp	[fb_right.select_panel_counter],1
+	je	.right_1
 
-	mov	ebp,[left_folder_block]
+	mov	ebp,[fb_left.folder_block]
+	or	ebp,ebp
+	jz	.error
 ;--------------------------------------
+align 4
 .start:
 	mov	ebx,ebp
 	dec	ebx
 	imul	ebx,304
-	add	ebx,[left_folder_data]
-	add	ebx,32+40
+	add	ebx,[fb_left.folder_data]
+	add	ebx,32+FileInfoA.FileName
 	cmp	[ebx+299-40],byte 0
 	je	@f
 
@@ -358,6 +358,8 @@ get_information_marked_files:
 .continue:
 	mov	esi,read_folder_name
 	call	prepare_data_9
+	or eax,eax
+	jnz .end
 ;--------------------------------------
 .continue_1:
 	mov	[inf_marked_yes],1
@@ -365,19 +367,22 @@ get_information_marked_files:
 @@:
 	dec	ebp
 	jnz	.start
-
+	xor eax,eax
 	ret
 ;--------------------------------------
 align 4
 .right_1:
-	mov	ebp,[right_folder_block]
+	mov	ebp,[fb_right.folder_block]
+	or	ebp,ebp
+	jz	.error
 ;--------------------------------------
+align 4
 .start_1:
 	mov	ebx,ebp
 	dec	ebx
 	imul	ebx,304
-	add	ebx,[right_folder_data]
-	add	ebx,32+40
+	add	ebx,[fb_right.folder_data]
+	add	ebx,32+FileInfoA.FileName
 	cmp	[ebx+299-40],byte 0
 	je	@f
 
@@ -390,6 +395,8 @@ align 4
 .continue_2:
 	mov	esi,read_folder_1_name
 	call	prepare_data_9
+	or eax,eax
+	jnz .end
 ;--------------------------------------
 .continue_3:
 	mov	[inf_marked_yes],1
@@ -397,17 +404,24 @@ align 4
 @@:
 	dec	ebp
 	jnz	.start_1
-
+	xor eax,eax
+.end:
+	ret
+.error:
+	mov eax,5 ;file not found
 	ret
 ;------------------------------------------------------------------------------
 ; in:
-;  ebp = ..._folder_block
+;  ebx = pointer to file|directory name
+;  ebp = 1 ... folder_block
+;out:
+;  eax = 0 - ok or error code
 align 4
 prepare_data_9:
 	mov	[error_pointer],ebx
 	mov	edi,file_name
 	call	copy_path_1
-	test	[ebx-40],byte 0x10
+	test	[ebx-40],byte FA_FOLDER
 	jz	@f
 
 	call	get_inf_dir
@@ -417,46 +431,24 @@ prepare_data_9:
 	inc	[files_counter]
 	call	get_file_size
 	test	eax,eax
-	jz	.continue
-
+	jz	@f
+	push	eax
 	call	start_error_window_thread
-	add	esp,8+4
+	pop	eax
 	ret
 ;--------------------------------------
-.continue:
+@@:
 	mov	eax,[file_features_temp_area+32]
 	add	[files_size.low],eax
 	mov	eax,[file_features_temp_area+32+4]
 	adc	[files_size.high],eax
-;--------------------------------------
-.continue_1:
-	ret
-;------------------------------------------------------------------------------
-align 4
-prepare_data_8:
-	add	ebx,32+40
-	cmp	[ebx],word '..'
-	jne	.continue
-
-	cmp	[ebx+2],byte 0
-	jne	.continue
-
-	add	esp,4+4
-	cmp	[select_panel_counter],0
-	jne	@f
-
-	call	proc_read_left_folder
-	jmp	red
-;--------------------------------------
-@@:
-	call	proc_read_right_folder
-	jmp	red
-;--------------------------------------
-.continue:
+	xor eax,eax
 	ret
 ;------------------------------------------------------------------------------
 ; in:
-;  ebp = ..._folder_block
+;  ebp = 1 ... folder_block
+;out:
+;  eax = 0 - ok or error code
 align 4
 get_inf_dir:
 	mov	[nesting_direction],0
@@ -469,12 +461,11 @@ get_inf_dir:
 	mcall SF_FILE, read_delete_dir_data
 	test	eax,eax
 	jz	@f
-
+	mov	[esp+28],eax ;save error code
 	mov	[error_pointer],file_name
 	call	start_error_window_thread
 	popa
-	add	esp,8+8
-	jmp	still
+	ret
 ;--------------------------------------
 @@:
 	mov	eax,[delete_dir_data+8]
@@ -493,12 +484,11 @@ get_inf_dir:
 	mcall SF_FILE, read_delete_dir_data
 	test	eax,eax
 	jz	@f
-
+	mov	[esp+28],eax ;save error code
 	mov	[error_pointer],file_name
 	call	start_error_window_thread
 	popa
-	add	esp,8+8
-	jmp	still
+	ret
 ;--------------------------------------
 @@:
 	cmp	[nesting_direction],0
@@ -529,6 +519,7 @@ get_inf_dir:
     mov   [tmp_memory],0
     mov   [tm_size],0
 	popa
+	xor eax,eax
 	ret
 ;------------------------------------------------------------------------------
 align 4
@@ -544,14 +535,10 @@ get_inf_dir_1:
 	dec	ebx
 	imul	ebx,304
 	add	ebx,[tmp_memory]
-	add	ebx,32+40
-	cmp	[ebx],byte '.'
-	jne	@f
-
-	cmp	[ebx+1],byte 0
+	add	ebx,32+FileInfoA.FileName
+	cmp	[ebx],word '.'
 	je	.continue_4
-;--------------------------------------
-@@:
+
 	cmp	[ebx],word '..'
 	jne	.continue
 
@@ -562,7 +549,7 @@ get_inf_dir_1:
 	mov	esi,file_name
 	inc	[recursive_pointer]
 	call	copy_path_2
-	test	[ebx-40],byte 0x10
+	test	[ebx-40],byte FA_FOLDER
 	jnz	.continue_3
 ;--------------------------------------
 @@:

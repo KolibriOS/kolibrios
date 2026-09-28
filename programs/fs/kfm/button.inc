@@ -47,15 +47,19 @@ button:
         add     eax,retrieved_devices_table+1
         mov     esi,eax ; selected path
 
-        cmp     [select_panel_counter],0
-        jne     @f
+        cmp     [fb_right.select_panel_counter],1
+        je      @f
 
         call    copy_folder_name
-        jmp     left_panel_read_folder
+        mov     [fb_left.start_draw_cursor_line],0
+    stdcall p_read_folder_1, fb_left
+    jmp  still
 ;--------------------------------------
 @@:
         call    copy_folder_name_1
-        jmp     right_panel_read_folder
+        mov     [fb_right.start_draw_cursor_line],0
+    stdcall p_read_folder_1, fb_right
+    jmp  still
 ;--------------------------------------
 .140:
         cmp     ah,140
@@ -106,6 +110,18 @@ button:
         cmp     ah,157
         je      delete_file
 
+        cmp     ah,170
+        je      key_insert.1
+
+        cmp     ah,171
+        je      symbol_a_up.ctrl
+
+        cmp     ah,172
+        je      NumPad_minus_Up.ctrl
+
+        cmp     ah,173
+        je      NumPad_sneg_Up.ctrl
+
         cmp     ah, 1
         jne     still
 ;--------------------------------------
@@ -113,34 +129,24 @@ button:
         mcall SF_TERMINATE_PROCESS
 ;---------------------------------------------------------------------
 reload_dir:
-        cmp     [select_panel_counter],0
-        jne     @f
-        call    proc_read_left_folder
-;       mov     [left_panel_clear_all],1
+        cmp     [fb_right.select_panel_counter],1
+        je      @f
+        stdcall p_read_folder, fb_left
         call    draw_left_panel
         jmp     still
 @@:
-        call    proc_read_right_folder
-;       mov     [right_panel_clear_all],1
+        stdcall p_read_folder, fb_right
         call    draw_right_panel
         jmp     still
 ;---------------------------------------------------------------------
 reload_dir_all:
-        call    proc_read_left_folder
-        call    proc_read_right_folder
+        stdcall p_read_folder, fb_left
+        stdcall p_read_folder, fb_right
         jmp     red    
 ;---------------------------------------------------------------------
 exit_dir_1:
         mov     [exit_dir],1
         jmp     key_28.1
-;---------------------------------------------------------------------
-left_panel_read_folder:
-        mov     [left_start_draw_cursor_line],0
-        jmp     proc_read_folder
-;---------------------------------------------------------------------
-right_panel_read_folder:
-        mov     [right_start_draw_cursor_line],0
-        jmp     proc_read_folder_1
 ;---------------------------------------------------------------------
 left_sort_name:
         xor     eax,eax
@@ -169,11 +175,14 @@ left_sort_date:
 .2:
         xor     [left_sort_flag],1
 .1:
-        call    draw_left_select_disk_button
+        stdcall draw_select_disk_button,fb_left
         mov     edx,0x80000000+142
         call    clear_sort_buttons
-        call    draw_left_sort_button
-        call    left_sort_files
+        stdcall draw_sort_buttons,fb_left
+    cmp   [fb_left.folder_block], 0
+    jz    @f
+    stdcall sort_directory, [fb_left.folder_data], [left_sort_flag]
+@@:
         call    draw_left_panel
         jmp     still
 ;---------------------------------------------------------------------
@@ -204,11 +213,14 @@ right_sort_date:
 .2:
         xor     [right_sort_flag],1
 .1:
-        call    draw_right_select_disk_button
+        stdcall draw_select_disk_button,fb_right
         mov     edx,0x80000000+146
         call    clear_sort_buttons
-        call    draw_right_sort_button
-        call    right_sort_files
+        stdcall draw_sort_buttons,fb_right
+    cmp   [fb_right.folder_block], 0
+    jz    @f
+    stdcall sort_directory, [fb_right.folder_data], [right_sort_flag]
+@@:
         call    draw_right_panel
         jmp     still
 ;---------------------------------------------------------------------

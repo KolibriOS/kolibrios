@@ -1,14 +1,32 @@
 ;-------------------------------------------------------------
+align 4
+proc editbox_move uses ebx ecx
+    mov  ecx,[window_high]
+    mov  ebx,[window_width]
+    sub  ecx,65-34
+    shr  ecx,1
+    sub  ebx,180-20
+    shr  ebx,1
+    sub  ecx,[skin_high]
+    sub  ebx,5
+    mov [edit1.left],ebx
+    mov [edit1.top],ecx
+    ret
+endp
+;-------------------------------------------------------------
+align 4
 create_new_file:
     call clear_file_buffer
-    mov edi, edit1
-    mov ed_size, dword 0 
-    mov ed_pos, dword 0
-    and word ed_flags,ed_shift_cl
-    mov [create_dir_name],byte 0
+    call editbox_move
+if USE_STATIC_LIBS eq 0
+    stdcall [edit_box_set_text], create_editboxes, sz_null
+else
+    stdcall edit_box_set_text, create_editboxes, sz_null
+end if
     mcall SF_KEYBOARD, SSF_SET_INPUT_MODE, 0
     jmp  .red
 .red_1:
+    call  control_minimal_window_size
     call  draw_window
 .red:
     call  draw_create_file
@@ -40,12 +58,12 @@ end if
     mcall SF_TERMINATE_PROCESS
 .exit_with_create:
     call  create_new_file_1
-    cmp   [select_panel_counter],0
-    jne   @f
-    call proc_read_left_folder
+    cmp   [fb_right.select_panel_counter],1
+    je    @f
+    stdcall p_read_folder, fb_left
     jmp  .exit_without_create
 @@:
-    call proc_read_right_folder
+    stdcall p_read_folder, fb_right
 .exit_without_create:
     mcall SF_KEYBOARD, SSF_SET_INPUT_MODE, 1
     jmp  red
@@ -63,43 +81,26 @@ else
 end if
     jmp .still
 ;-------------------------------------------------------------
+align 4
 draw_create_file:
-    mov  ecx,[window_high]
-    mov  ebx,[window_width]
-    shr  ecx,1
-    shr  ebx,1
-    sub  ecx,30
-    sub  ebx,87
-    shl  ecx,16
-    shl  ebx,16
-    mov   cx,60
-    mov   bx,174
-    mcall SF_DRAW_RECT, , ,0x6060ff ;0xff
-    pusha
-    shr ebx,16
-    add  ebx,10
-    shr ecx,16
-    add ecx,17
-    mov eax,create_editboxes
-    mov dword [eax+4],ebx
-    mov dword [eax+8],ecx
+    stdcall draw_dialogbox_rectangle,180,65
+    call editbox_move
 if USE_STATIC_LIBS eq 0
     stdcall [edit_box_draw], create_editboxes
 else
     stdcall edit_box_draw, create_editboxes
 end if
-    popa
     pusha
     add   ebx,70 shl 16
     add   ecx,37 shl 16
-    mov   cx,15
-    mov   bx,40
+    mov   cx,15-1
+    mov   bx,40-1
     mov   esi,0xffffff
     mov   edx,0x40000000+160
     mcall SF_DEFINE_BUTTON
     add   ebx,50 shl 16
     inc   edx
-        mcall
+    mcall
     popa
 
     push  ebx ecx
@@ -113,33 +114,33 @@ end if
     sub   ebx,1 shl 16
     mov   bx,42
     mov   cx,17
-        mcall
+    mcall
     add   ebx,50 shl 16
-        mcall
+    mcall
     pop   ecx ebx
     mov   edx,0xff7700
-        mcall
+    mcall
     mov   edx,0xaa00
     add   ebx,50 shl 16
-        mcall
+    mcall
     pop   ecx ebx
 
     shr   ecx,16
     mov   bx,cx
     add   ebx,30 shl 16+1
-    mcall SF_DRAW_TEXT, ,0x90ffffff,sz_Create_file  ;[confirmation_type]
+    mov   ecx,[sc.work_text]
+    or    ecx,0x90000000
+    mcall SF_DRAW_TEXT,,, sz_Create_file  ;[confirmation_type]
     add   ebx,48 shl 16+36
-    mov   edx,type_yes
-        mcall
+    mcall ,,,sz_Yes
     add   ebx,56 shl 16
-    mov   edx,type_no
-        mcall
-        ret
+    mcall ,,,sz_No
+    ret
 ;-------------------------------------------------------------
 create_new_file_1:
     mov   edx,create_dir_name
-    cmp   [select_panel_counter],0
-    jne   @f
+    cmp   [fb_right.select_panel_counter],1
+    je    @f
     mov   esi,read_folder_name
     jmp   .start
 @@:
@@ -168,12 +169,4 @@ create_new_file_1:
     call start_error_window_thread
 @@:
     ret
-;-------------------------------------------------------------
-;clear_file_buffer:
-;    xor  eax,eax
-;    mov edi,create_dir_name
-;    mov ecx,256/4
-;    cld
-;    rep stosd
-;    ret
 ;-------------------------------------------------------------
