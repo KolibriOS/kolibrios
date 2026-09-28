@@ -1618,21 +1618,23 @@ endl
 
 ; Open a new TCP socket
         mcall   socket, AF_INET4, SOCK_STREAM, 0
-        test    eax, eax
-        jz      .error3
+        cmp     eax, -1
+        je      .error3
         mov     [socketnum], eax
         DEBUGF  1, "Socket: 0x%x\n", eax
 
 ; Connect to the server
         mcall   connect, [socketnum], [sockaddr], 18
         test    eax, eax
-        jnz     .error3
+        jnz     .error4
         DEBUGF  1, "Socket is now connected.\n"
 
         invoke  freeaddrinfo            ; Free allocated memory
         mov     eax, [socketnum]
         ret
 
+  .error4:
+        mcall   close, [socketnum]
   .error3:
         DEBUGF  2, "Could not connect to the remote server\n"
         invoke  freeaddrinfo            ; Free allocated memory
