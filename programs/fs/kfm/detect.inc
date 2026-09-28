@@ -1,4 +1,5 @@
 ;---------------------------------------------------------------------
+align 4
 device_detect_f70:
     mov   ax,[select_disk_char]
     mov   [read_folder_2_name],ax
@@ -56,7 +57,8 @@ device_detect_f70:
     cmp   eax,[left_folder_block_1]
     jb	  .start_temp_counter_1
     ret
-;---------------------------------------------------------------------    
+;---------------------------------------------------------------------
+align 4
 select_starting_directories:
     mov   esi,retrieved_devices_table+1
     call  copy_folder_name
@@ -84,6 +86,7 @@ select_starting_directories:
 ;    mov   [read_folder_1_name+6],byte 0
     ret
 ;---------------------------------------------------------------------
+align 4
 proc_copy_patch:
 @@:
     cld

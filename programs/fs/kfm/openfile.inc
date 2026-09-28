@@ -1,34 +1,35 @@
 ;---------------------------------------------------------------------
+align 4
 open_file_f4:
-    cmp  [select_panel_counter],0
-    jne  .right_1
+    cmp  [fb_right.select_panel_counter],1
+    je   .right_1
 .left_1:
     xor  eax,eax
-    mov  ax,[left_start_draw_cursor_line]
+    mov  ax,[fb_left.start_draw_cursor_line]
     xor  edx,edx
-    mov  ebx,10
+    movzx ebx,[fb_left.line_size_y]
     div  ebx
-    mov  esi,[left_start_draw_line]
+    mov  esi,[fb_left.start_draw_line]
     add  esi,eax
     imul esi,304
-    add  esi,[left_folder_data]
+    add  esi,[fb_left.folder_data]
     add  esi,32
     test [esi],byte 0x10
-    jz	 file_no_folder_1
+    jz   file_no_folder_1
     jmp  still
 .right_1:
     xor  eax,eax
-    mov  ax,[right_start_draw_cursor_line]
+    mov  ax,[fb_right.start_draw_cursor_line]
     xor  edx,edx
-    mov  ebx,10
+    movzx ebx,[fb_right.line_size_y]
     div  ebx
-    mov  esi,[right_start_draw_line]
+    mov  esi,[fb_right.start_draw_line]
     add  esi,eax
     imul esi,304
-    add  esi,[right_folder_data]
+    add  esi,[fb_right.folder_data]
     add  esi,32
     test [esi],byte 0x10
-    jz	 file_no_folder_1
+    jz   file_no_folder_1
     jmp  still
 ;---------------------------------------------------------------------
 file_no_folder_1:
@@ -37,7 +38,7 @@ file_no_folder_1:
     std
     lodsb
     cmp   esi,edx
-    je	  still
+    je    still
     cmp   al,'.'
     jnz   @b
     call  calculate_file_no_folder_2
@@ -73,7 +74,7 @@ file_no_folder:
     std
     lodsb
     cmp   esi,edx
-    je	  start_file
+    je    start_file
     cmp   al,'.'
     jnz   @b
     call  calculate_file_no_folder_2
@@ -85,8 +86,8 @@ file_no_folder:
 start_file:
     inc   edx
 .1:
-    cmp   [select_panel_counter],0
-    jne   @f
+    cmp   [fb_right.select_panel_counter],1
+    je    @f
     mov   esi,read_folder_name    ;read_folder.name
     jmp   .start
 @@:

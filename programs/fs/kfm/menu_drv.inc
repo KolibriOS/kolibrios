@@ -59,15 +59,15 @@ key_menu:
 .end_2:
     cmp  [alt_flag],0
     je	 .for_all
-    cmp  [select_panel_counter],0
+    cmp  [fb_left.select_panel_counter],1
     je	.end_1
     mov [close_menu],2
     ret
 .end_3:
     cmp  [alt_flag],0
     je	 .for_all
-    cmp  [select_panel_counter],0
-    jne  .end_1
+    cmp  [fb_right.select_panel_counter],1
+    je   .end_1
     mov [close_menu],2
     ret
 .end_4:
@@ -192,7 +192,7 @@ key_menu_left:
     add  esi,retrieved_devices_table
     inc  esi
     call copy_folder_name
-    mov  [left_start_draw_cursor_line],0
+    mov  [fb_left.start_draw_cursor_line],0
     jmp  proc_read_folder
     ;jmp  still
 ;---------------------------------------------------------------------
@@ -219,13 +219,13 @@ key_menu_right:
     add  esi,retrieved_devices_table
     inc  esi
     call copy_folder_name_1
-    mov  [right_start_draw_cursor_line],0
+    mov  [fb_right.start_draw_cursor_line],0
     jmp  proc_read_folder_1
     ;jmp  still
 ;---------------------------------------------------------------------
 draw_left_select_disk_menu:
     call  device_detect_f70
-    mov  [select_panel_counter],0
+    mov  [fb_left.select_panel_counter],1
     call  draw_left_panel
     call  draw_right_panel
     mov  [start_draw_menu_cursor_line],0
@@ -248,7 +248,7 @@ draw_left_select_disk_menu:
 ;---------------------------------------------------------------------
 draw_right_select_disk_menu:
     call  device_detect_f70
-    mov  [select_panel_counter],1
+    mov  [fb_right.select_panel_counter],1
     call  draw_left_panel
     call  draw_right_panel
     mov  [start_draw_menu_cursor_line],0
@@ -270,9 +270,9 @@ draw_right_select_disk_menu:
     jmp  button
 ;---------------------------------------------------------------------
 draw_left_menu:
-    mov  ebx,[left_panel_x]
+    mov  ebx,[fb_left.x]
     mov  bx,60
-    mov  ecx,[left_panel_y]
+    mov  ecx,[fb_left.y]
     mov  eax,[retrieved_devices_table_counter]
     mov  cx,ax
     imul cx,10
@@ -284,9 +284,9 @@ draw_left_menu:
     ret
 ;---------------------------------------------------------------------
 draw_right_menu:
-    mov  ebx,[right_panel_x]
+    mov  ebx,[fb_right.x]
     mov  bx,60
-    mov  ecx,[right_panel_y]
+    mov  ecx,[fb_right.y]
     mov  eax,[retrieved_devices_table_counter]
     mov  cx,ax
     imul cx,10
@@ -340,7 +340,7 @@ mouse_menu_left:
     cmp   eax,[window_high]
     ja    draw_left_select_disk_menu.still
     xor   ecx,ecx
-    mov   cx,[left_panel_y.start_y]
+    mov   cx,[fb_left.start_y]
     cmp   ax,cx
     jbe    .close
     mov   edx,[retrieved_devices_table_counter]
@@ -348,13 +348,13 @@ mouse_menu_left:
     add   cx,dx
     cmp   ax,cx
     jae    .close
-    mov   cx,[left_panel_x.start_x]
+    mov   cx,[fb_left.start_x]
     cmp   bx,cx
     jbe    .close
     add   cx,60
     cmp   bx,cx
     jae    .close
-    sub   ax,[left_panel_y.start_y]
+    sub   ax,[fb_left.start_y]
     mov   ebx,10
     xor   edx,edx
     div   ebx
@@ -365,7 +365,6 @@ mouse_menu_left:
 .close:
     cmp   [mouse_keys],0
     je    draw_left_select_disk_menu.still
-;    mov   [left_panel_clear_all],1
     call  draw_left_panel
     jmp   still
 ;---------------------------------------------------------------------
@@ -387,7 +386,7 @@ mouse_menu_right:
     cmp   eax,[window_high]
     ja    draw_right_select_disk_menu.still
     xor   ecx,ecx
-    mov   cx,[right_panel_y.start_y]
+    mov   cx,[fb_right.start_y]
     cmp   ax,cx
     jbe    .close
     mov   edx,[retrieved_devices_table_counter]
@@ -395,13 +394,13 @@ mouse_menu_right:
     add   cx,dx
     cmp   ax,cx
     jae    .close
-    mov   cx,[right_panel_x.start_x]
+    mov   cx,[fb_right.start_x]
     cmp   bx,cx
     jbe    .close
     add   cx,60
     cmp   bx,cx
     jae    .close
-    sub   ax,[right_panel_y.start_y]
+    sub   ax,[fb_right.start_y]
     mov   ebx,10
     xor   edx,edx
     div   ebx
@@ -412,7 +411,6 @@ mouse_menu_right:
 .close:
     cmp   [mouse_keys],0
     je    draw_right_select_disk_menu.still
-;    mov   [right_panel_clear_all],1
     call  draw_right_panel
     jmp   still
 ;---------------------------------------------------------------------

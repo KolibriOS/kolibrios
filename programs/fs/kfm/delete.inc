@@ -17,30 +17,30 @@ delete_file:
 
     call delete_marked_files
     cmp  [delete_marked_yes],1
-    je	 .end_1   ;reload_dir_all
+    je   .end_1   ;reload_dir_all
 
     xor  eax,eax
     xor  edx,edx
-    cmp  [select_panel_counter],0
-    jne  .right_1
-    mov  ax,[left_start_draw_cursor_line]
-    mov  ebx,10
+    cmp  [fb_right.select_panel_counter],1
+    je   .right_1
+    mov  ax,[fb_left.start_draw_cursor_line]
+    movzx ebx,[fb_left.line_size_y]
     div  ebx
-    mov  ebx,[left_start_draw_line]
+    mov  ebx,[fb_left.start_draw_line]
     add  ebx,eax
     imul ebx,304
-    add  ebx,[left_folder_data]
+    add  ebx,[fb_left.folder_data]
     call prepare_data_7
     mov   esi,read_folder_name	  ;read_folder.name
     jmp  .end
 .right_1:
-    mov  ax,[right_start_draw_cursor_line]
-    mov  ebx,10
+    mov  ax,[fb_right.start_draw_cursor_line]
+    movzx ebx,[fb_right.line_size_y]
     div  ebx
-    mov  ebx,[right_start_draw_line]
+    mov  ebx,[fb_right.start_draw_line]
     add  ebx,eax
     imul ebx,304
-    add  ebx,[right_folder_data]
+    add  ebx,[fb_right.folder_data]
     call prepare_data_7
     mov   esi,read_folder_1_name   ;read_folder_1.name
 .end:
@@ -48,7 +48,7 @@ delete_file:
     mov   edi,file_name   ;delete_file_data.name
     call  copy_path_1
     test [ebx-40],byte 0x10
-    jz	 @f
+    jz   @f
     push eax ebx
     xor  eax,eax
     mov  [current_progress_value],eax
@@ -64,8 +64,8 @@ delete_file:
     call start_error_window_thread
     jmp  reload_dir_all
 .end_1:
-    cmp  [select_panel_counter],0
-    jne  .right
+    cmp  [fb_right.select_panel_counter],1
+    je   .right
     call proc_read_left_folder
     jmp  red
 .right:
@@ -83,14 +83,14 @@ delete_marked_files:
     mov  [delete_marked_yes],al
     mov  [draw_all_progressbar],1
     
-   cmp  [select_panel_counter],al
-    jne  .right_1
-    mov  ebp,[left_folder_block]
+   cmp  [fb_right.select_panel_counter],1
+    je  .right_1
+    mov  ebp,[fb_left.folder_block]
 .start:
     mov  ebx,ebp
     dec  ebx
     imul ebx,304
-    add  ebx,[left_folder_data]
+    add  ebx,[fb_left.folder_data]
     add  ebx,32+40
     cmp  [ebx+299-40],byte 0
     je	 @f
@@ -108,16 +108,16 @@ delete_marked_files:
     jnz  .start
     cmp  [delete_marked_yes],0
     je	 @f
-    mov  [left_start_draw_cursor_line],0
+    mov  [fb_left.start_draw_cursor_line],0
 @@:
     ret
 .right_1:
-    mov  ebp,[right_folder_block]
+    mov  ebp,[fb_right.folder_block]
 .start_1:
     mov  ebx,ebp
     dec  ebx
     imul ebx,304
-    add  ebx,[right_folder_data]
+    add  ebx,[fb_right.folder_data]
     add  ebx,32+40
     cmp  [ebx+299-40],byte 0
     je	 @f
@@ -135,7 +135,7 @@ delete_marked_files:
     jnz  .start_1
     cmp  [delete_marked_yes],0
     je	 @f
-    mov  [right_start_draw_cursor_line],0
+    mov  [fb_right.start_draw_cursor_line],0
 @@:
     ret
 ;---------------------------------------------------------------------

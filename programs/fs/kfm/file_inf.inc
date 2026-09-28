@@ -72,8 +72,8 @@ draw_files_information_window:
 	mov	ebp,date.access
 	call	show_date_and_time_of_files_information
 ;--------------------------------------
-	cmp	[select_panel_counter],0
-	jne	.right_1
+	cmp	[fb_right.select_panel_counter],1
+	je	.right_1
 
 	mov	edx,read_folder_name
 	jmp	@f
@@ -240,36 +240,42 @@ copy_type_name:
 	pop	esi
 	ret
 ;------------------------------------------------------------------------------
+;out:
+;  [inf_marked_yes] = 0 or 1
+;  file_name = the name of the first selected file
+;              or the name from the line where the cursor is located
 align 4
 get_files_information:
 	call	get_information_marked_files
+	or eax,eax
+	jnz .end_2 ;if error
 	cmp	[inf_marked_yes],1
 	je	.end_2
 
 	xor	eax,eax
 	xor	edx,edx
-	cmp	[select_panel_counter],0
-	jne	.right_1
+	cmp	[fb_right.select_panel_counter],1
+	je	.right_1
 
-	mov	ax,[left_start_draw_cursor_line]
-	mov	ebx,10
+	mov	ax,[fb_left.start_draw_cursor_line]
+	movzx	ebx,[fb_left.line_size_y]
 	div	ebx
-	mov	ebx,[left_start_draw_line]
+	mov	ebx,[fb_left.start_draw_line]
 	add	ebx,eax
 	imul	ebx,304
-	add	ebx,[left_folder_data]
+	add	ebx,[fb_left.folder_data]
 	call	prepare_data_8
 	mov	esi,read_folder_name
 	jmp	.end
 ;--------------------------------------
 .right_1:
-	mov	ax,[right_start_draw_cursor_line]
-	mov	ebx,10
+	mov	ax,[fb_right.start_draw_cursor_line]
+	movzx	ebx,[fb_right.line_size_y]
 	div	ebx
-	mov	ebx,[right_start_draw_line]
+	mov	ebx,[fb_right.start_draw_line]
 	add	ebx,eax
 	imul	ebx,304
-	add	ebx,[right_folder_data]
+	add	ebx,[fb_right.folder_data]
 	call	prepare_data_8
 	mov	esi,read_folder_1_name
 ;--------------------------------------
@@ -331,20 +337,23 @@ get_files_information:
 .end_2:
 	ret
 ;------------------------------------------------------------------------------
+;out:
+;  [inf_marked_yes] = 0 or 1
+;  eax = 0 - ok or error code
 align 4
 get_information_marked_files:
 	xor	eax,eax
 	mov	[inf_marked_yes],al
-	cmp	[select_panel_counter],al
-	jne	.right_1
+	cmp	[fb_right.select_panel_counter],1
+	je	.right_1
 
-	mov	ebp,[left_folder_block]
+	mov	ebp,[fb_left.folder_block]
 ;--------------------------------------
 .start:
 	mov	ebx,ebp
 	dec	ebx
 	imul	ebx,304
-	add	ebx,[left_folder_data]
+	add	ebx,[fb_left.folder_data]
 	add	ebx,32+40
 	cmp	[ebx+299-40],byte 0
 	je	@f
@@ -358,6 +367,8 @@ get_information_marked_files:
 .continue:
 	mov	esi,read_folder_name
 	call	prepare_data_9
+	or eax,eax
+	jnz .end
 ;--------------------------------------
 .continue_1:
 	mov	[inf_marked_yes],1
@@ -365,18 +376,18 @@ get_information_marked_files:
 @@:
 	dec	ebp
 	jnz	.start
-
+	xor eax,eax
 	ret
 ;--------------------------------------
 align 4
 .right_1:
-	mov	ebp,[right_folder_block]
+	mov	ebp,[fb_right.folder_block]
 ;--------------------------------------
 .start_1:
 	mov	ebx,ebp
 	dec	ebx
 	imul	ebx,304
-	add	ebx,[right_folder_data]
+	add	ebx,[fb_right.folder_data]
 	add	ebx,32+40
 	cmp	[ebx+299-40],byte 0
 	je	@f
@@ -390,6 +401,8 @@ align 4
 .continue_2:
 	mov	esi,read_folder_1_name
 	call	prepare_data_9
+	or eax,eax
+	jnz .end
 ;--------------------------------------
 .continue_3:
 	mov	[inf_marked_yes],1
@@ -397,11 +410,15 @@ align 4
 @@:
 	dec	ebp
 	jnz	.start_1
-
+	xor eax,eax
+.end:
 	ret
 ;------------------------------------------------------------------------------
 ; in:
-;  ebp = ..._folder_block
+;  ebx = pointer to file|directory name
+;  ebp = 1 ... folder_block
+;out:
+;  eax = 0 - ok or error code
 align 4
 prepare_data_9:
 	mov	[error_pointer],ebx
@@ -418,9 +435,10 @@ prepare_data_9:
 	call	get_file_size
 	test	eax,eax
 	jz	.continue
-
+push eax
 	call	start_error_window_thread
-	add	esp,8+4
+pop eax
+	;;add	esp,8+4
 	ret
 ;--------------------------------------
 .continue:
@@ -430,8 +448,11 @@ prepare_data_9:
 	adc	[files_size.high],eax
 ;--------------------------------------
 .continue_1:
+xor eax,eax
 	ret
 ;------------------------------------------------------------------------------
+;out:
+;  ebx = pointer to file|directory name
 align 4
 prepare_data_8:
 	add	ebx,32+40
@@ -441,22 +462,24 @@ prepare_data_8:
 	cmp	[ebx+2],byte 0
 	jne	.continue
 
-	add	esp,4+4
-	cmp	[select_panel_counter],0
-	jne	@f
+	add	esp,4+4 ;???
+	cmp	[fb_right.select_panel_counter],1
+	je	@f
 
 	call	proc_read_left_folder
-	jmp	red
+	jmp	red ;ret ???
 ;--------------------------------------
 @@:
 	call	proc_read_right_folder
-	jmp	red
+	jmp	red ;ret ???
 ;--------------------------------------
 .continue:
 	ret
 ;------------------------------------------------------------------------------
 ; in:
-;  ebp = ..._folder_block
+;  ebp = 1 ... folder_block
+;out:
+;  eax = 0 - ok or error code
 align 4
 get_inf_dir:
 	mov	[nesting_direction],0
@@ -469,12 +492,11 @@ get_inf_dir:
 	mcall SF_FILE, read_delete_dir_data
 	test	eax,eax
 	jz	@f
-
+	mov	[esp+28],eax ;save error code
 	mov	[error_pointer],file_name
 	call	start_error_window_thread
 	popa
-	add	esp,8+8
-	jmp	still
+	ret
 ;--------------------------------------
 @@:
 	mov	eax,[delete_dir_data+8]
@@ -493,12 +515,11 @@ get_inf_dir:
 	mcall SF_FILE, read_delete_dir_data
 	test	eax,eax
 	jz	@f
-
+	mov	[esp+28],eax ;save error code
 	mov	[error_pointer],file_name
 	call	start_error_window_thread
 	popa
-	add	esp,8+8
-	jmp	still
+	ret
 ;--------------------------------------
 @@:
 	cmp	[nesting_direction],0
@@ -529,6 +550,7 @@ get_inf_dir:
     mov   [tmp_memory],0
     mov   [tm_size],0
 	popa
+	xor eax,eax
 	ret
 ;------------------------------------------------------------------------------
 align 4

@@ -22,18 +22,18 @@ proc_read_left_folder:
    push  ebx ecx edx
    mov   ecx,[lfd_size]
    add   ecx,304
-   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [left_folder_data]
-   mov   [left_folder_data],eax
+   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [fb_left.folder_data]
+   mov   [fb_left.folder_data],eax
    mov   [lfd_size],ecx
    stdcall mark_file_clear_all, eax, ecx
    pop   edx ecx ebx
 
    xor   eax,eax
-   mov   [left_marked_counter],eax
+   mov   [fb_left.marked_counter],eax
    mov	 [read_folder.start],eax    ;dword 0
    inc   eax
    mov	 [read_folder.size],eax     ;dword 1
-   mov   eax,[left_folder_data]
+   mov   eax,[fb_left.folder_data]
    mov   [read_folder.return],eax
 
    mcall SF_FILE, read_folder
@@ -42,27 +42,27 @@ proc_read_left_folder:
     cmp   eax,6
     jne   .error
 @@:
-   mov   eax,[left_folder_data]
-   cmp	 [eax+32+40],word 2Eh
-   jne	 @f
-   mov	 [read_folder.start],dword 1
+   mov   eax,[fb_left.folder_data]
+   cmp   [eax+32+40],word 2Eh
+   jne   @f
+   mov   [read_folder.start],dword 1
 @@:
    mov   ecx,[eax+8] ; число файлов и папок
-   mov	 [read_folder.size],ecx
-   mov	 [sb_left.max_area],ecx
+   mov   [read_folder.size],ecx
+   mov   [sb_left.max_area],ecx
    imul  ecx,304
    add   ecx,32
 
    push  edx
-   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [left_folder_data]
-   mov   [left_folder_data],eax
+   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [fb_left.folder_data]
+   mov   [fb_left.folder_data],eax
    mov   [lfd_size],ecx
    mov   [read_folder.return],eax
    stdcall mark_file_clear_all, eax, ecx
    pop   edx
 
    mcall SF_FILE, read_folder
-   mov	 [left_folder_block],ebx
+   mov   [fb_left.folder_block],ebx
     test  eax,eax
     jz    @f
     cmp   eax,6
@@ -75,8 +75,8 @@ align 4
    ret
 align 4
 .error:
-   mov	 [left_folder_block],dword 2
-   mov   edi,[left_folder_data]
+   mov	 [fb_left.folder_block],dword 2
+   mov   edi,[fb_left.folder_data]
    call  error_handler
    ret
 ;---------------------------------------------------------------------
@@ -117,18 +117,18 @@ proc_read_right_folder:
    push  ebx ecx edx
    mov   ecx,[rfd_size]
    add   ecx,304
-   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [right_folder_data]
-   mov   [right_folder_data],eax
+   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [fb_right.folder_data]
+   mov   [fb_right.folder_data],eax
    mov   [rfd_size],ecx
    stdcall mark_file_clear_all, eax, ecx
    pop   edx ecx ebx
 
    xor   eax,eax
-   mov   [right_marked_counter],eax
+   mov   [fb_right.marked_counter],eax
    mov	 [read_folder_1.start],eax      ;dword 0
    inc   eax
    mov	 [read_folder_1.size],eax       ;dword 1
-   mov   eax,[right_folder_data]
+   mov   eax,[fb_right.folder_data]
    mov   [read_folder_1.return],eax
    mcall SF_FILE, read_folder_1
     test  eax,eax
@@ -136,7 +136,7 @@ proc_read_right_folder:
     cmp   eax,6
     jne   .error
 @@:
-   mov   eax,[right_folder_data]
+   mov   eax,[fb_right.folder_data]
    cmp	 [eax+32+40],word 2Eh
    jne	 @f
    mov	 [read_folder_1.start],dword 1
@@ -148,15 +148,15 @@ proc_read_right_folder:
    add   ecx,32
 
    push  edx
-   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [right_folder_data]
-   mov   [right_folder_data],eax
+   mcall SF_SYS_MISC, SSF_MEM_REALLOC,, [fb_right.folder_data]
+   mov   [fb_right.folder_data],eax
    mov   [rfd_size],ecx
    mov   [read_folder_1.return],eax
    stdcall mark_file_clear_all, eax, ecx
    pop   edx
 
    mcall SF_FILE, read_folder_1
-   mov	 [right_folder_block],ebx
+   mov	 [fb_right.folder_block],ebx
     test  eax,eax
     jz    @f
     cmp   eax,6
@@ -169,8 +169,8 @@ align 4
    ret
 align 4
 .error:
-   mov	 [right_folder_block],dword 2
-   mov   edi,[right_folder_data]
+   mov	 [fb_right.folder_block],dword 2
+   mov   edi,[fb_right.folder_data]
    call  error_handler
    ret
 ;---------------------------------------------------------------------
@@ -179,17 +179,17 @@ proc_read_folder:
     call  proc_read_left_folder
     cmp  [search_pre_folder],0
     jne   @f
-    mov  [left_start_draw_cursor_line],0
-    mov  [left_start_draw_line],0
+    mov  [fb_left.start_draw_cursor_line],0
+    mov  [fb_left.start_draw_line],0
     mov  [sb_left.position],0
     jmp  .continue
 @@:
-    mov  edi,[left_folder_data]
+    mov  edi,[fb_left.folder_data]
     add  edi,32+40
     sub  edi,304
     xor  ebp,ebp
 .search_file:
-    cmp   [left_folder_block],ebp
+    cmp   [fb_left.folder_block],ebp
     jbe   .end_folder
     mov   esi,[temp_counter_dword]
     mov   ecx,[extension_size]
@@ -201,18 +201,18 @@ proc_read_folder:
     pop    edi
     jne   .search_file
     dec  ebp
-    mov  eax,[left_folder_block]
-    cmp  [max_panel_line],eax
+    mov  eax,[fb_left.folder_block]
+    cmp  [fb_left.max_panel_line],eax
     js  @f
-    mov  eax,ebp
-    imul eax,10
-    mov  [left_start_draw_cursor_line],ax
-    mov  [left_start_draw_line],0
+    movzx eax,[fb_left.line_size_y]
+    imul eax,ebp
+    mov  [fb_left.start_draw_cursor_line],ax
+    mov  [fb_left.start_draw_line],0
     mov  [sb_left.position],0
     jmp  .end_folder
 @@:
-    mov  [left_start_draw_cursor_line],0
-    mov  [left_start_draw_line],ebp
+    mov  [fb_left.start_draw_cursor_line],0
+    mov  [fb_left.start_draw_line],ebp
     mov  [sb_left.position],ebp
 .end_folder:
     mov  [search_pre_folder],0
@@ -223,20 +223,19 @@ proc_read_folder:
 ;---------------------------------------------------------------------
 proc_read_folder_1:
     call  proc_read_right_folder
-;    mov   [right_panel_clear_all],1
     cmp  [search_pre_folder],0
     jne   @f
-    mov  [right_start_draw_cursor_line],0
-    mov  [right_start_draw_line],0
+    mov  [fb_right.start_draw_cursor_line],0
+    mov  [fb_right.start_draw_line],0
     mov  [sb_right.position],0
     jmp  .continue
 @@:
-    mov  edi,[right_folder_data]
+    mov  edi,[fb_right.folder_data]
     add  edi,32+40
     sub  edi,304
     xor  ebp,ebp
 .search_file:
-    cmp   [right_folder_block],ebp
+    cmp   [fb_right.folder_block],ebp
     jbe   .end_folder
     mov   esi,[temp_counter_dword]
     mov   ecx,[extension_size]
@@ -249,18 +248,18 @@ proc_read_folder_1:
     pop    edi
     jne   .search_file
     dec  ebp
-    mov  eax,[right_folder_block]
-    cmp  [max_panel_line],eax
+    mov  eax,[fb_right.folder_block]
+    cmp  [fb_right.max_panel_line],eax
     js  @f
-    mov  eax,ebp
-    imul eax,10
-    mov  [right_start_draw_cursor_line],ax
-    mov  [right_start_draw_line],0
+    movzx eax,[fb_right.line_size_y]
+    imul eax,ebp
+    mov  [fb_right.start_draw_cursor_line],ax
+    mov  [fb_right.start_draw_line],0
     mov  [sb_right.position],0
     jmp  .end_folder
 @@:
-    mov  [right_start_draw_cursor_line],0
-    mov  [right_start_draw_line],ebp
+    mov  [fb_right.start_draw_cursor_line],0
+    mov  [fb_right.start_draw_line],ebp
     mov  [sb_right.position],ebp
 .end_folder:
     mov  [search_pre_folder],0

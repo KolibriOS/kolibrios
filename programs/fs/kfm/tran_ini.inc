@@ -1,60 +1,5 @@
 ;---------------------------------------------------------------------
-get_icon_number:
-    mov   ebp,[extension_size]	;[icons_end_tag]
-    test  ebp,ebp
-    jz    .end
-    call  normalize_extension_of_file
-    mov   edx,[icons_end_tag]
-    mov   edi,[ini_file_start]
-    dec   edi
-.search_association:
-    cmp   edx,edi
-    jbe   .end
-    mov   esi,extension_temp_storage
-    mov   ecx,ebp
-    test  ecx,ecx
-    je	  @f
-    sub   ecx,2
-@@:
-    inc   edi
-    mov   ebx,edi
-    cld
-    rep   cmpsb
-    mov   edi,ebx
-    jne   .search_association
-    mov   esi,edi
-    add   esi,ebp
-    test  ebp,ebp
-    je	  @f
-    sub   esi,2
-@@:
-    cmp   [esi],byte ' '
-    jne   .search_association
-    inc   esi
-    xor   ebx,ebx
-    call  .calculate
-    imul  eax,1000
-    call  .calculate_1
-    imul  eax,100
-    call  .calculate_1
-    imul  eax,10
-    call  .calculate_1
-    add   ebx,eax
-    ret
-.end:
-    mov  ebx,2
-    ret
-;---------------------------------------------------------------------
-.calculate_1:
-    add   ebx,eax
-.calculate:
-    xor   eax,eax
-    cld
-    lodsb
-    sub   eax,0x30
-    ret
-;---------------------------------------------------------------------
-normalize_extension_of_file:
+proc normalize_extension_of_file
     push  edi
     mov   esi,[extension_start]
     mov   edi,extension_temp_storage
@@ -67,6 +12,7 @@ normalize_extension_of_file:
     jnz   @b
     pop   edi
     ret
+endp
 ;---------------------------------------------------------------------
 open_file_with_appl_1:
     mov   ebp,files_associations_1
@@ -120,8 +66,8 @@ open_file_with_appl:
 
 .run_sysopen:
 @@:
-    cmp   [select_panel_counter],0
-    jne   @f
+    cmp   [fb_right.select_panel_counter],1
+    je    @f
     mov   esi,read_folder_name	    ;read_folder.name
     jmp   .start
 @@:
@@ -168,42 +114,5 @@ open_file_with_appl:
     ret
 .end:
     mov   eax,1
-    ret
-;---------------------------------------------------------------------
-align 4
-search_star_and_end_tags:
-    mov   edi,[ini_file_start]
-    dec   edi
-    mov   edx,[ini_size]
-.search_tag1:
-    or    edx,edx
-    jz    .end
-    mov   esi,ebp
-    mov   ecx,22
-    inc   edi
-    cld
-    push   edi
-    rep  cmpsb
-    pop    edi
-    jne     .search_tag1
-    dec    edi
-    add    edx,[ini_file_start]
-    push   edi
-.search_end_tag:
-    cmp   edx,edi
-    jbe  .end
-    mov   esi,end_section_tag
-    mov   ecx,7
-    inc   edi
-    cld
-    push   edi
-    rep  cmpsb
-    pop    edi
-    jne     .search_end_tag
-    mov   [end_tag],edi
-    pop   edi
-    ret
-.end:
-    mov   ebp,-1
     ret
 ;---------------------------------------------------------------------
