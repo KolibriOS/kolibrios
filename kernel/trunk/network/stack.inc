@@ -167,6 +167,7 @@ NET_HWACC_TCP_IPv4_OUT  = 1 shl 1
 ; Network frame types
 NET_BUFF_LOOPBACK       = 0
 NET_BUFF_ETH            = 1
+NET_BUFF_TCP_REASM      = 2     ; held in a TCP reassembly queue, offset/length = TCP payload
 
 struct  NET_DEVICE
 

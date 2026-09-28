@@ -19,6 +19,7 @@ TCP_BIT_NEEDOUTPUT      = 1 shl 0
 TCP_BIT_TIMESTAMP       = 1 shl 1
 TCP_BIT_DROPSOCKET      = 1 shl 2
 TCP_BIT_FIN_IS_ACKED    = 1 shl 3
+TCP_BIT_BUFF_QUEUED     = 1 shl 4       ; the reassembly queue owns the buffer
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
@@ -1691,21 +1692,21 @@ endl
         DEBUGF  DEBUG_NETWORK_VERBOSE,  "TCP data is out of order!\nSequencenumber is %u, we expected %u.\n", \
         [edx + TCP_header.SequenceNumber], [ebx + TCP_SOCKET.RCV_NXT]
 
-; Queue the segment for reassembly. If it (plus what was queued before)
-; fills the hole at RCV_NXT, the data is delivered to the socket buffer.
+; The reassembly queue takes over the buffer: edx is invalid from here on
 
         mov     esi, [dataoffset]
         add     esi, edx
+        mov     eax, [esp]                      ; the NET_BUFF
         call    tcp_reassemble
+        or      [temp_bits], TCP_BIT_BUFF_QUEUED
 
-; Generate ACK immediately: either a duplicate ACK announcing the hole
-; (aids the peer's fast-retransmit), or the ACK for just-delivered data.
+; Generate ACK immediately, to let the other end know that a segment was received out of order,
+; and to tell it what sequence number is expected. This aids the fast-retransmit algorithm.
 
         or      [ebx + TCP_SOCKET.t_flags], TF_ACKNOW
 
-; Note: a FIN on an out-of-order segment is deliberately not processed;
-; the peer retransmits it and it is handled once it arrives in order.
-
+        test    eax, TH_FIN
+        jnz     .process_fin
         jmp     .final_processing
   .data_done:
 
@@ -1717,6 +1718,7 @@ endl
 
         test    [edx + TCP_header.Flags], TH_FIN
         jz      .final_processing
+  .process_fin:                                 ; must not use edx from here on
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Processing FIN\n"
 
@@ -1803,9 +1805,16 @@ endl
         call    tcp_output
 
   .done:
+        test    [temp_bits], TCP_BIT_BUFF_QUEUED
+        jnz     .buff_queued
+
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: dumping\n"
 
         call    net_buff_free
+        jmp     .loop
+
+  .buff_queued:
+        add     esp, 4                          ; the queue has the buffer
         jmp     .loop
 
 ;-----------------------------------------------------------------------------------

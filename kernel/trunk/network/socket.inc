@@ -2135,14 +2135,9 @@ socket_free:
   @@:
 ; free the TCP out-of-order reassembly queue, if any
   .free_reasm:
-        mov     eax, [ebx + TCP_SOCKET.seg_next]
-        test    eax, eax
-        jz      .reasm_done
-        push    dword [eax + tcp_reasm_seg.NextPtr]
-        push    ebx
-        call    free
-        pop     ebx
-        pop     dword [ebx + TCP_SOCKET.seg_next]
+        cmp     [ebx + TCP_SOCKET.seg_next], 0
+        je      .reasm_done
+        call    tcp_reasm_free_head
         jmp     .free_reasm
   .reasm_done:
         mov     eax, ebx

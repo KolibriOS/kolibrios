@@ -99,17 +99,16 @@ TCP_QUEUE_SIZE          = 50
 
 TCP_ISSINCR             = 128000
 
-; A node of the out-of-order reassembly queue (TCP_SOCKET.seg_next).
-; Allocated with malloc, segment data follows the header.
-struct  tcp_reasm_seg
+; A NET_BUFF queued for reassembly (TCP_SOCKET.seg_next): offset/length = TCP payload
+struct  TCP_reasm_buff          NET_BUFF
 
-        NextPtr         dd ?    ; next node, 0 = end of queue
-        Seq             dd ?    ; sequence number of the first data byte
-        Length          dd ?    ; number of data bytes
+        Seq                     dd ?    ; sequence number of the first payload byte
+        Flags                   dd ?    ; TH_FIN if the segment carried a FIN
 
 ends
 
-TCP_reasm_maxsegs       = 64    ; max queued segments per socket (~96k)
+TCP_reasm_maxsegs       = 64                    ; max queued segments per socket
+TCP_reasm_maxbuffs      = NET_BUFFERS / 4       ; max queued segments, all sockets together
 
 struct  TCP_header
 
@@ -149,6 +148,7 @@ align 4
         TCP_queue               rd (TCP_QUEUE_SIZE*sizeof.TCP_queue_entry + sizeof.queue)/4
         TCP_input_event         dd ?
         TCP_timer1_event        dd ?
+        TCP_reasm_buffs         dd ?    ; NET_BUFFs held by all reassembly queues
 endg
 
 uglobal

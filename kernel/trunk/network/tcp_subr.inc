@@ -601,27 +601,19 @@ tcp_mss:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; tcp_reassemble: the reassembly queue for out-of-order segments. ;
+; tcp_reassemble: queue an out-of-order segment, deliver what is  ;
+; contiguous with RCV_NXT. The queue owns the NET_BUFF from here. ;
 ;                                                                 ;
-; The queue hangs off TCP_SOCKET.seg_next as a single linked list ;
-; of tcp_reasm_seg nodes sorted by sequence number. Segment data  ;
-; is copied into the node, so the caller frees the original       ;
-; packet buffer as usual. When the segment (together with what    ;
-; was already queued) fills the hole at RCV_NXT, everything       ;
-; contiguous is delivered to the receive buffer at once.          ;
-; Without this queue every out-of-order segment was dropped, so   ;
-; one lost packet invalidated the entire window in flight.        ;
-;                                                                 ;
-;   IN: ebx = socket ptr (locked)                                 ;
+;   IN: eax = NET_BUFF ptr                                        ;
+;       ebx = socket ptr (locked)                                 ;
 ;       edx = TCP header ptr                                      ;
 ;       esi = ptr to segment data                                 ;
 ;       ecx = segment data length                                 ;
 ;                                                                 ;
-;  OUT: RCV_NXT advanced past all delivered data                  ;
-;       all registers preserved                                   ;
+;  OUT: eax = TH_FIN if the FIN is next in sequence, else 0       ;
+;       other registers preserved                                 ;
 ;                                                                 ;
-; tcp_reassemble_drain: only the delivery step, without queueing  ;
-; anything (used when a connection becomes established).          ;
+; tcp_reassemble_drain: delivery only                             ;
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
@@ -630,6 +622,7 @@ tcp_reassemble:
         pushad
         call    tcp_reasm_insert
         call    tcp_reasm_deliver
+        mov     [esp + 28], eax                 ; eax slot of pushad
         popad
         ret
 
@@ -641,158 +634,167 @@ tcp_reassemble_drain:
         popad
         ret
 
-; Insert one segment into the sorted queue.
-; IN: ebx = socket, edx = TCP header, esi = data ptr, ecx = data length
+; IN: eax = NET_BUFF, ebx = socket, edx = TCP header, esi = data, ecx = length
 align 4
 tcp_reasm_insert:
 
-        test    ecx, ecx
-        jz      .nothing
-
+        mov     edi, eax                        ; edi = buffer
         mov     eax, [edx + TCP_header.SequenceNumber]
+        movzx   ebp, [edx + TCP_header.Flags]
+        and     ebp, TH_FIN
 
-; Cut off the part of the segment below RCV_NXT: already received.
-; All sequence comparisons here are wraparound-safe: subtract, then
-; look at the sign.
+        test    ecx, ecx
+        jnz     @f
+        test    ebp, ebp
+        jz      .drop                           ; neither data nor FIN
+       @@:
+
+; trim data below RCV_NXT
         mov     edx, eax
         sub     edx, [ebx + TCP_SOCKET.RCV_NXT]
         jns     .no_head_trim
         neg     edx
         cmp     edx, ecx
-        jae     .nothing                        ; complete duplicate
+        ja      .drop                           ; complete duplicate
+        jb      @f
+        test    ebp, ebp                        ; only the FIN is new?
+        jz      .drop
+       @@:
         add     esi, edx
         add     eax, edx                        ; seq = RCV_NXT now
         sub     ecx, edx
         xor     edx, edx
   .no_head_trim:
 
-; Ignore data starting more than one receive buffer past RCV_NXT:
-; it could never have been sent into the window we advertise.
         cmp     edx, SOCKET_BUFFER_SIZE
-        ja      .nothing
+        ja      .drop
 
-; Bound the queue by the per-socket node count. (Counting nodes walked
-; during insertion instead would not bound anything: segments arriving
-; in descending order all insert near the head after a one-node walk.)
+; limits do not apply to the segment at RCV_NXT: it drains the queue
+        test    edx, edx
+        jnz     .check_limits
+        cmp     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
+        jae     .limits_ok
+  .check_limits:
         cmp     [ebx + TCP_SOCKET.seg_count], TCP_reasm_maxsegs
-        jae     .nothing                        ; queue full: drop segment
+        jae     .drop
+        cmp     [TCP_reasm_buffs], TCP_reasm_maxbuffs
+        jae     .drop
+  .limits_ok:
 
-; Find the insertion point: after all nodes with Seq <= our seq.
-        lea     edi, [ebx + TCP_SOCKET.seg_next]
+        mov     [edi + NET_BUFF.type], NET_BUFF_TCP_REASM
+        mov     [edi + NET_BUFF.length], ecx
+        sub     esi, edi
+        mov     [edi + NET_BUFF.offset], esi
+        mov     [edi + TCP_reasm_buff.Seq], eax
+        mov     [edi + TCP_reasm_buff.Flags], ebp
+
+; find the insertion point, esi = link to update
+        lea     esi, [ebx + TCP_SOCKET.seg_next]
   .find:
-        mov     ebp, [edi]                      ; ebp = successor candidate
-        test    ebp, ebp
-        jz      .tail
-        push    ecx
-        mov     ecx, [ebp + tcp_reasm_seg.Seq]
-        sub     ecx, eax
-        pop     ecx
+        mov     edx, [esi]                      ; edx = successor candidate
+        test    edx, edx
+        jz      .found
+        mov     ebp, [edx + TCP_reasm_buff.Seq]
+        sub     ebp, eax
         jg      .found                          ; successor starts past us
-        lea     edi, [ebp + tcp_reasm_seg.NextPtr]
+        mov     esi, edx
         jmp     .find
-  .tail:
   .found:
 
-; If the node in front of us (edi points at its NextPtr, which is the
-; first field) already covers this whole segment, don't queue a
-; duplicate. Partial overlaps are fine: delivery trims every node
-; against RCV_NXT, so overlapping bytes are never delivered twice.
-        lea     edx, [ebx + TCP_SOCKET.seg_next]
-        cmp     edi, edx
-        je      .alloc                          ; inserting at the head
-        mov     edx, [edi + tcp_reasm_seg.Seq]
-        add     edx, [edi + tcp_reasm_seg.Length]
-        push    ecx
-        add     ecx, eax                        ; our end
-        sub     edx, ecx                        ; prev end - our end
-        pop     ecx
-        jns     .nothing                        ; fully covered already
+; drop the segment if the previous node already covers it
+        lea     ebp, [ebx + TCP_SOCKET.seg_next]
+        cmp     esi, ebp
+        je      .link                           ; inserting at the head
+        mov     ebp, [esi + TCP_reasm_buff.Seq]
+        add     ebp, [esi + NET_BUFF.length]
+        sub     ebp, eax
+        sub     ebp, ecx                        ; prev end - our end
+        js      .link
+        jnz     .drop                           ; covered, and then some
+        cmp     [edi + TCP_reasm_buff.Flags], 0
+        je      .drop                           ; covered exactly, no FIN to add
 
-  .alloc:
-        push    eax                             ; seq
-        push    ebp                             ; successor
-        push    edi                             ; link to update
-        push    esi                             ; data source
-        push    ecx                             ; data length
-        lea     eax, [ecx + sizeof.tcp_reasm_seg]
-        push    ebx
-        call    malloc                          ; malloc destroys ebx/esi/...
-        pop     ebx
-        test    eax, eax
-        jz      .alloc_failed
-        mov     edx, eax
-        pop     ecx esi edi
-        mov     [edx + tcp_reasm_seg.Length], ecx
-        pop     eax
-        mov     [edx + tcp_reasm_seg.NextPtr], eax
-        pop     eax
-        mov     [edx + tcp_reasm_seg.Seq], eax
-        mov     [edi], edx                      ; link the node in
+  .link:
+        mov     [edi + NET_BUFF.NextPtr], edx
+        mov     [esi + NET_BUFF.NextPtr], edi
         inc     [ebx + TCP_SOCKET.seg_count]
-
-; copy the segment data into the node
-        push    ecx edi
-        lea     edi, [edx + sizeof.tcp_reasm_seg]
-        mov     eax, ecx
-        shr     ecx, 2
-        rep movsd
-        mov     ecx, eax
-        and     ecx, 3
-        rep movsb
-        pop     edi ecx
+        lock inc [TCP_reasm_buffs]
+        inc     [TCPS_rcvoopack]
+        add     [TCPS_rcvoobyte], ecx
         ret
 
-  .alloc_failed:
-        add     esp, 20                         ; out of memory: drop segment
-  .nothing:
+  .drop:
+        stdcall net_buff_free, edi
         ret
 
-; Deliver all queued data that is contiguous with RCV_NXT.
-; IN: ebx = socket ptr
+; IN: ebx = socket, OUT: eax = TH_FIN or 0
 align 4
 tcp_reasm_deliver:
 
         xor     ebp, ebp                        ; 'delivered anything' flag
+
+        cmp     [ebx + TCP_SOCKET.t_state], TCPS_ESTABLISHED
+        jb      .done
+
   .loop:
         mov     edx, [ebx + TCP_SOCKET.seg_next]
         test    edx, edx
         jz      .done
-        mov     eax, [edx + tcp_reasm_seg.Seq]
+        mov     eax, [edx + TCP_reasm_buff.Seq]
         sub     eax, [ebx + TCP_SOCKET.RCV_NXT]
         jg      .done                           ; hole before this node
         neg     eax                             ; node bytes below RCV_NXT
-        cmp     eax, [edx + tcp_reasm_seg.Length]
-        jb      .deliver
+        mov     ecx, [edx + NET_BUFF.length]
+        sub     ecx, eax                        ; fresh bytes in the node
+        jg      .deliver
+        jl      .unlink                         ; ends before RCV_NXT
 
-; the node holds nothing new: unlink and free it
-        mov     eax, [edx + tcp_reasm_seg.NextPtr]
-        mov     [ebx + TCP_SOCKET.seg_next], eax
-        dec     [ebx + TCP_SOCKET.seg_count]
-        mov     eax, edx
-        push    ebx
-        call    free
-        pop     ebx
+        cmp     [edx + TCP_reasm_buff.Flags], 0
+        jne     .fin
+
+  .unlink:
+        call    tcp_reasm_free_head
         jmp     .loop
 
   .deliver:
-        mov     ecx, [edx + tcp_reasm_seg.Length]
-        sub     ecx, eax                        ; fresh bytes in the node
-        lea     esi, [edx + sizeof.tcp_reasm_seg]
+        mov     esi, [edx + NET_BUFF.offset]
+        add     esi, edx
         add     esi, eax
         lea     eax, [ebx + STREAM_SOCKET.rcv]
         call    socket_ring_write               ; -> ecx = bytes stored
         test    ecx, ecx
-        jz      .done                           ; receive buffer full: the
-                                                ; rest stays queued
+        jz      .done                           ; receive buffer full
         add     [ebx + TCP_SOCKET.RCV_NXT], ecx
         mov     ebp, 1
-        jmp     .loop                           ; consumed nodes are freed
-                                                ; by the next iteration
+        jmp     .loop
+
+  .fin:
+        call    tcp_reasm_free_head
+        cmp     [ebx + TCP_SOCKET.seg_next], 0
+        jne     .fin
+        mov     eax, TH_FIN
+        jmp     .notify
 
   .done:
+        xor     eax, eax
+  .notify:
         test    ebp, ebp
         jz      .nothing
+        push    eax
         mov     eax, ebx
         call    socket_notify
+        pop     eax
   .nothing:
+        ret
+
+; IN: ebx = socket (locked), OUT: eax destroyed
+align 4
+tcp_reasm_free_head:
+
+        mov     eax, [ebx + TCP_SOCKET.seg_next]
+        push    [eax + NET_BUFF.NextPtr]
+        pop     [ebx + TCP_SOCKET.seg_next]
+        dec     [ebx + TCP_SOCKET.seg_count]
+        lock dec [TCP_reasm_buffs]
+        stdcall net_buff_free, eax
         ret
