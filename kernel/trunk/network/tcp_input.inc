@@ -1422,10 +1422,14 @@ endl
         test    [edx + TCP_header.Flags], TH_ACK
         jz      .drop
 
-        mov     eax, ebx
+        push    ebx
+        lea     ecx, [ebx + SOCKET.mutex]
+        call    mutex_unlock
+        pop     eax
+
         mov     ebx, ECONNREFUSED
         call    tcp_drop
-        jmp     .drop
+        jmp     .drop_no_socket
        @@:
 
 ;-----------------------------------------------------------------------------------
