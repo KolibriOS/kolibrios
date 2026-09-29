@@ -130,6 +130,8 @@ RU_STATUS_IDLE          = 0000b shl 2
 RU_STATUS_SUSPENDED     = 0001b shl 2
 RU_STATUS_NO_RESOURCES  = 0010b shl 2
 RU_STATUS_READY         = 0100b shl 2
+SCB_STATUS_CUS          = 11000000b     ; CU Status
+CU_STATUS_ACTIVE        = 10b shl 6
 SCB_STATUS_FCP          = 1 shl 8       ; Flow Control Pause
 SCB_STATUS_SWI          = 1 shl 10      ; Software Interrupt
 SCB_STATUS_MDI          = 1 shl 11      ; MDI read/write complete
@@ -182,6 +184,8 @@ struct  txfd
                         dd ?            ; alignment
 
 ends
+
+TXFD_STATUS_C           = 1 shl 15
 
 TXFD_CMD_IA             = 1 shl 0
 TXFD_CMD_CFG            = 1 shl 1
@@ -628,6 +632,9 @@ reset:
         mov     ax, CU_START or INT_MASK
         out     dx, ax
         call    cmd_wait
+; cmd_wait only means the SCB accepted the command. The Configure below
+; reuses confcmd, so a slow chip would read it instead of our MAC.
+        call    confcmd_wait
 
 ;-------------
 ; Configure CU
@@ -652,6 +659,7 @@ reset:
         mov     ax, CU_START                            ; expect Interrupts from now on
         out     dx, ax
         call    cmd_wait
+        call    confcmd_wait
 
 ; Start media check timer
         mov     [ebx + device.state], ETH_LINK_DOWN
@@ -678,6 +686,11 @@ init_rx_ring:
 ;---------------------
 ; build rxfd structure
 
+        cmp     [ebx + device.rx_desc], 0       ; the RFD of an earlier reset
+        je      @f
+        invoke  NetFree, [ebx + device.rx_desc]
+        mov     [ebx + device.rx_desc], 0
+  @@:
         invoke  NetAlloc, 2000
         test    eax, eax
         jz      .out_of_mem
@@ -689,6 +702,7 @@ init_rx_ring:
         mov     [esi + sizeof.NET_BUFF + rxfd.command], RXFD_CMD_EL or RXFD_CMD_SUSPEND
         mov     [esi + sizeof.NET_BUFF + rxfd.link], eax
         mov     [esi + sizeof.NET_BUFF + rxfd.count], 0
+        mov     [esi + sizeof.NET_BUFF + rxfd.rx_buf_addr], 0xffffffff  ; simplified mode, no RBD
         mov     [esi + sizeof.NET_BUFF + rxfd.size], 1528
 
         ret
@@ -709,6 +723,15 @@ init_tx_ring:
         invoke  GetPhysAddr
         mov     ecx, TX_RING_SIZE
   .next_desc:
+; after a reset with frames still unreclaimed: free them, or transmit sees the
+; descriptor busy (virt_addr) and reports TX overrun forever
+        cmp     [esi + txfd.virt_addr], 0
+        je      @f
+        push    eax ecx
+        invoke  NetFree, [esi + txfd.virt_addr]
+        pop     ecx eax
+        mov     [esi + txfd.virt_addr], 0
+  @@:
         mov     [esi + txfd.status], 0
         mov     [esi + txfd.command], 0
         lea     edx, [eax + txfd.buf_addr]
@@ -763,7 +786,7 @@ proc transmit stdcall bufferptr
         lea     edi, [ebx + device.tx_ring + eax]
 
         ; Check if current descriptor is free or still in use
-        cmp     [edi + txfd.status], 0
+        cmp     [edi + txfd.virt_addr], 0               ; buffer not reclaimed yet
         jne     .overrun
 
         ; Fill in status and command values
@@ -786,6 +809,22 @@ proc transmit stdcall bufferptr
         mov     eax, edi
         invoke  GetPhysAddr
         set_io  [ebx + device.io_addr], 0
+
+        ; CU_START is only valid while the CU is idle or suspended:
+        ; wait for the previous frame to leave (1.2 ms at 10 Mbit)
+        push    eax ecx
+        set_io  [ebx + device.io_addr], REG_SCB_STATUS
+        mov     ecx, 100000
+  .cu_busy:
+        in      al, dx
+        and     al, SCB_STATUS_CUS
+        cmp     al, CU_STATUS_ACTIVE
+        jne     .cu_free
+        dec     ecx
+        jnz     .cu_busy
+        DEBUGF  2, "CU still active, starting anyway\n"
+  .cu_free:
+        pop     ecx eax
         set_io  [ebx + device.io_addr], REG_SCB_PTR
         out     dx, eax
 
@@ -854,7 +893,7 @@ int_handler:
 
         DEBUGF  1,"Status: %x\n", ax
 
-        test    ax, SCB_STATUS_FR               ; did we receive a frame?
+        test    ax, SCB_STATUS_FR or SCB_STATUS_RNR     ; frame received or receiver stopped?
         jz      .no_rx
 
         push    ax
@@ -901,6 +940,7 @@ int_handler:
         mov     [esi + sizeof.NET_BUFF + rxfd.command], RXFD_CMD_EL or RXFD_CMD_SUSPEND
         mov     [esi + sizeof.NET_BUFF + rxfd.link], eax
         mov     [esi + sizeof.NET_BUFF + rxfd.count], 0
+        mov     [esi + sizeof.NET_BUFF + rxfd.rx_buf_addr], 0xffffffff  ; simplified mode, no RBD
         mov     [esi + sizeof.NET_BUFF + rxfd.size], 1528
 
 ; restart RX
@@ -916,10 +956,21 @@ int_handler:
         mov     ax, RX_START
         out     dx, ax
         call    cmd_wait
-  .out_of_mem:
 
 ; Hand the frame over to the kernel
         jmp     [EthInput]
+
+  .out_of_mem:
+; The buffer is still our only RFD: drop the frame and reuse it
+        mov     esi, [esp]                      ; the buffer
+        mov     ecx, [esi + NET_BUFF.length]
+        dec     [ebx + device.packets_rx]       ; counted above, before the allocation
+        sub     dword [ebx + device.bytes_rx], ecx
+        sbb     dword [ebx + device.bytes_rx + 4], 0
+        inc     [ebx + device.packets_rx_drop]
+        add     esp, 12                         ; buffer, .rx_loop, ebx
+        mov     esi, [ebx + device.rx_desc]
+        jmp     .not_ok
 
   .not_ok:
 ; Reset the FD
@@ -945,6 +996,27 @@ int_handler:
 
   .no_rx_:
         DEBUGF  1, "no more data\n"
+
+; With a single RFD the receiver sits in No Resources/Suspended whenever a
+; frame arrived before we re-armed it. Nothing restarts it but us.
+        set_io  [ebx + device.io_addr], 0
+        set_io  [ebx + device.io_addr], REG_SCB_STATUS
+        in      al, dx
+        and     al, SCB_STATUS_RUS
+        cmp     al, RU_STATUS_READY
+        je      .ru_ready
+        test    byte[esp], 1                    ; bit 0 of the saved status is reserved,
+        jnz     .ru_ready                       ; we mark it: one restart per IRQ
+        or      byte[esp], 1
+        movzx   eax, al
+        DEBUGF  1, "Restarting receiver, RU status %x\n", eax:2
+        mov     esi, [ebx + device.rx_desc]
+        push    ebx
+        test    [esi + sizeof.NET_BUFF + rxfd.status], RXFD_STATUS_C
+        jnz     .rx_loop                        ; a frame completed meanwhile
+        add     esp, 4
+        jmp     .not_ok                         ; re-arm the empty RFD
+  .ru_ready:
         pop     ax
 
   .no_rx:
@@ -955,13 +1027,13 @@ int_handler:
 
         push    eax
   .loop_tx:
-        mov     edi, [ebx + device.last_tx]
-        mov     eax, sizeof.txfd
-        mul     eax
+        mov     eax, [ebx + device.last_tx]
+        mov     edx, sizeof.txfd
+        mul     edx
         lea     edi, [ebx + device.tx_ring + eax]
 
-        cmp     [edi + txfd.status], 0
-        je      .tx_done
+        test    [edi + txfd.status], TXFD_STATUS_C      ; sent by the device?
+        jz      .tx_done
 
         cmp     [edi + txfd.virt_addr], 0
         je      .tx_done
@@ -970,6 +1042,7 @@ int_handler:
 
         push    [edi + txfd.virt_addr]
         mov     [edi + txfd.virt_addr], 0
+        mov     [edi + txfd.status], 0                  ; free for transmit again
         invoke  NetFree
 
         inc     [ebx + device.last_tx]
@@ -980,12 +1053,6 @@ int_handler:
         pop     eax
   .no_tx:
 
-        test    ax, RU_STATUS_NO_RESOURCES
-        jz      .not_out_of_resources
-
-        DEBUGF  2, "Out of resources!\n"
-
-  .not_out_of_resources:
         pop     edi esi ebx
         xor     eax, eax
         inc     eax
@@ -1078,6 +1145,25 @@ proc check_media_mii stdcall dev:dword
 
 endp
 
+
+; Wait (up to 1 s) until the device has executed the command in confcmd.
+align 4
+confcmd_wait:
+        mov     ecx, 1000                       ; udelay = Sleep(1), 1 ms
+  .loop:
+        test    [ebx + device.confcmd.status], TXFD_STATUS_C
+        jnz     .done
+        call    udelay
+        dec     ecx
+        jnz     .loop
+        movzx   eax, [ebx + device.confcmd.command]
+        DEBUGF  2, "Command 0x%x not completed\n", eax:4
+        ret
+  .done:
+        movzx   eax, [ebx + device.confcmd.command]
+        movzx   ecx, [ebx + device.confcmd.status]
+        DEBUGF  1, "Command 0x%x done, status 0x%x\n", eax:4, ecx:4
+        ret
 
 align 4
 cmd_wait:
