@@ -85,6 +85,31 @@ macro arp_init {
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
+; arp_clear_device: Empty the ARP table and counters of a removed ;
+;                   device.                                       ;
+;                                                                 ;
+;  IN:  edi = device number * 4                                   ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+macro arp_clear_device {
+
+        xor     eax, eax
+        mov     [ARP_entries + edi], eax
+        mov     [ARP_packets_tx + edi], eax
+        mov     [ARP_packets_rx + edi], eax
+        mov     [ARP_conflicts + edi], eax
+
+        push    edi
+        imul    edi, (ARP_TABLE_SIZE * sizeof.ARP_entry)/4
+        add     edi, ARP_table
+        mov     ecx, (ARP_TABLE_SIZE * sizeof.ARP_entry)/2
+        rep stosw
+        pop     edi
+
+}
+
+;-----------------------------------------------------------------;
+;                                                                 ;
 ; arp_decrease_entry_ttls                                         ;
 ;                                                                 ;
 ;-----------------------------------------------------------------;
@@ -312,6 +337,9 @@ arp_output_request:
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_output_request: ip=%u.%u.%u.%u device=0x%x\n",\
         [esp]:1, [esp + 1]:1, [esp + 2]:1, [esp + 3]:1, ebx
+
+        test    ebx, ebx                        ; device is gone
+        jz      .exit
 
         mov     ax, ETHER_PROTO_ARP
         mov     ecx, sizeof.ARP_header
