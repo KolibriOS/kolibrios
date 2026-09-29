@@ -21,18 +21,19 @@ START:
 	test	eax,eax
 	jnz	quit
 
-	call	settings_read_system
 	GetCommandLine eax
 	cmp	dword[eax],'BOOT'
 	jnz	@f
 
+	call	settings_read_boot
 	call	settings_read_ini
-	call	settings_apply
+	call	settings_apply_boot
 	call	style_apply
 quit:
 	mcall	-1
 
 @@:
+	call	settings_read_system
 ; the checkbox image is shared by @RESHARE, 0 if it is not running
 	mcall	68,22,sz_checkbox,0,0
 	mov	[checkboxImage],eax
@@ -65,6 +66,15 @@ draw_window:
 	mcall	8,<BUTTON1_X,ROW_H-1>,,,[sc.work_button]
 	lea	edx,[FIRST_ROW_BUTTON+1+ebp*2]
 	mcall	8,<BUTTON2_X,ROW_H-1>
+; the kernel leaves the corners of a button out: one frame for both,
+; its right corners stay out
+	mov	edx,[sc.work_button]
+	shr	edx,1
+	and	edx,0x7F7F7F	; the border colour of a button
+	mov	cx,1
+	mcall	13,<BUTTON1_X,BUTTON2_X+ROW_H-1-BUTTON1_X>
+	add	ecx,(ROW_H-1) shl 16
+	mcall	13
 
 	lea	ebx,[edi+TEXT_DY+(LABEL_X shl 16)]
 	mov	ecx,ebp
@@ -82,55 +92,52 @@ draw_window:
 	cmp	ebp,ROWS
 	jb	.row
 
-; group box of the checkboxes: a frame, cut under its title
+; group box of the checkboxes: a frame, its title over it on the work colour
 	mcall	13,<GROUP_X,GROUP_W>,<GROUP_Y,GROUP_H>,[sc.work_graph]
 	mcall	13,<GROUP_X+1,GROUP_W-2>,<GROUP_Y+1,GROUP_H-2>,[sc.work]
 	mov	ecx,T_GROUP
 	call	get_text
-	call	utf8_length
-	lea	ebx,[(GROUP_TITLE_X-4) shl 16+eax*8+8]
-	push	edx
-	mcall	13,,<GROUP_Y,1>,[sc.work]
-	pop	edx
-	mcall	4,<GROUP_TITLE_X,GROUP_Y-8>,[sc.work_text]
+	mov	ecx,[sc.work_text]
+	or	ecx,0x40000000
+	mcall	4,<GROUP_TITLE_X,GROUP_TITLE_Y>,,,,[sc.work]
 
-; a checkbox: label, then the box (drawn by draw_values), both under
-; one button. The checkboxes are spread over the width of the group.
-	mov	esi,GROUP_W-GROUP_PAD*2
-	xor	ebp,ebp
-.width:
-	call	check_label
-	call	utf8_length
-	lea	eax,[eax*8+8+CHECK_SIZE]
-	mov	[itemW+ebp*4],eax
-	sub	esi,eax
-	inc	ebp
-	cmp	ebp,CHECKS
-	jb	.width
-	mov	eax,esi
-	xor	edx,edx
-	mov	ecx,CHECKS-1
-	div	ecx
-	mov	esi,eax		; the gap between two checkboxes
+; The checkboxes are spread over the group, the last one ends at its end.
+; LBA and PCI are fixed, so the step only depends on the speaker label.
+	mov	ecx,T_SPEAKER
+	call	get_text
+	mov	eax,ITEM_END-ITEM_X-CHECK_SIZE-8
+.length:
+	mov	cl,[edx]
+	inc	edx
+	test	cl,cl
+	jz	.step
+	and	cl,0xC0
+	cmp	cl,0x80		; UTF-8 continuation byte
+	jz	.length
+	sub	eax,8
+	jmp	.length
+.step:
+	shr	eax,1
+	mov	[checkStep],eax
 
-	mov	edi,ITEM_X	; x of the checkbox
+; a checkbox: the box (drawn by draw_values), then the label, both under
+; one button up to the end of the group. The next button covers the rest.
 	xor	ebp,ebp
 .check:
+	mov	edi,[checkStep]
+	imul	edi,ebp
+	add	edi,ITEM_X	; x of the box
+	lea	ebx,[edi+CHECK_SIZE+8]
+	shl	ebx,16
+	add	ebx,CHECK_Y+TEXT_DY
 	call	check_label
-	mov	ebx,edi
-	shl	ebx,16
-	add	ebx,CHECK_ROW_Y+1
 	mcall	4,,[sc.work_text]
-	mov	eax,[itemW+ebp*4]
-	lea	ecx,[edi+eax-CHECK_SIZE]
-	mov	[boxX+ebp*4],ecx
 	mov	ebx,edi
 	shl	ebx,16
-	add	ebx,eax
-	lea	edx,[FIRST_CHECK_BUTTON+BT_HIDE+ebp]
-	mcall	8,,<CHECK_ROW_Y-4,24>
-	add	edi,[itemW+ebp*4]
-	add	edi,esi
+	add	ebx,ITEM_END
+	sub	ebx,edi
+	lea	edx,[FIRST_CHECK_BUTTON+BT_HIDE+BT_NOFRAME+ebp]
+	mcall	8,,<CHECK_Y,ROW_H-1>
 	inc	ebp
 	cmp	ebp,CHECKS
 	jb	.check
@@ -160,7 +167,8 @@ draw_values:
 	mov	word[heightText],ax
 	mov	[valueText+8],heightText
 
-; each value on a light box with the corners cut off: two bars crosswise
+; each value in a light box framed on three sides, the button is the fourth,
+; the left corners are cut off
 	xor	ebp,ebp
 .row:
 	imul	edi,ebp,ROW_STEP
@@ -168,9 +176,23 @@ draw_values:
 	mov	ecx,edi
 	shl	ecx,16
 	add	ecx,ROW_H
-	mcall	13,<VALUE_X+1,VALUE_W-2>,,[sc.work_light]
+	mcall	13,<VALUE_X+1,VALUE_W-1>,,[sc.work_graph]
 	add	ecx,(1 shl 16)-2
 	mcall	13,<VALUE_X,VALUE_W>
+; sunken, the inner lines of a button reversed: three boxes, each 1 pixel
+; smaller, leave darker lines left and top and lighter right and bottom
+	mov	edx,[sc.work_light]
+	mov	eax,edx
+	shr	eax,3
+	and	eax,0x1F1F1F
+	sub	edx,eax		; 1/8 darker
+	mcall	13,<VALUE_X+1,VALUE_W-1>
+	mov	edx,[sc.work_light]
+	or	edx,0x1F1F1F	; lighter
+	add	ecx,(1 shl 16)-1
+	mcall	13,<VALUE_X+2,VALUE_W-2>
+	dec	ecx
+	mcall	13,<VALUE_X+2,VALUE_W-3>,,[sc.work_light]
 	lea	ebx,[edi+TEXT_DY+((VALUE_X+VALUE_PAD) shl 16)]
 	mov	edx,[valueText+ebp*4]
 	mcall	4,,[sc.work_text]
@@ -178,15 +200,17 @@ draw_values:
 	cmp	ebp,ROWS
 	jb	.row
 
-; checkboxes: a frame, white inside, the @RESHARE image when set
+; checkboxes: a frame, light inside, the @RESHARE image when set
 	xor	ebp,ebp
 .check:
-	mov	ebx,[boxX+ebp*4]
+	mov	ebx,[checkStep]
+	imul	ebx,ebp
+	add	ebx,ITEM_X
 	shl	ebx,16
 	add	ebx,CHECK_SIZE
 	mcall	13,,<CHECK_BOX_Y,CHECK_SIZE>,[sc.work_graph]
 	add	ebx,(1 shl 16)-2
-	mcall	13,,<CHECK_BOX_Y+1,CHECK_SIZE-2>,0xFFFFFF
+	mcall	13,,<CHECK_BOX_Y+1,CHECK_SIZE-2>,[sc.work_light]
 	mov	eax,[checks+ebp*8]
 	mov	eax,[eax]
 	xor	eax,[checks+ebp*8+4]
@@ -216,11 +240,12 @@ still:
 	shr	eax,8
 	cmp	eax,1
 	jz	quit
-	cmp	eax,FIRST_CHECK_BUTTON
+	sub	eax,FIRST_ROW_BUTTON
+	jb	still		; 0: no button after all
+	cmp	eax,FIRST_CHECK_BUTTON-FIRST_ROW_BUTTON
 	jae	.check
 
 ; '-' or '+' of a row: step the value within the limits of the row
-	sub	eax,FIRST_ROW_BUTTON
 	shr	eax,1		; eax = row, CF = '+'
 	lea	esi,[eax*3]
 	lea	esi,[rows+esi*4]
@@ -245,7 +270,7 @@ still:
 	jmp	draw_values
 
 .check:
-	mov	eax,[checks-FIRST_CHECK_BUTTON*8+eax*8]
+	mov	eax,[checks-(FIRST_CHECK_BUTTON-FIRST_ROW_BUTTON)*8+eax*8]
 	xor	dword[eax],1
 	call	apply_and_save
 	jmp	draw_values
@@ -284,24 +309,6 @@ nth_string:
 .done:
 	ret
 
-; eax = number of characters of the UTF-8 string at edx
-utf8_length:
-	xor	eax,eax
-	push	edx
-.next:
-	mov	cl,[edx]
-	inc	edx
-	test	cl,cl
-	jz	.done
-	and	cl,0xC0
-	cmp	cl,0x80		; continuation byte
-	jz	.next
-	inc	eax
-	jmp	.next
-.done:
-	pop	edx
-	ret
-
 ;---------------------------------------------------------------
 ; DATA
 @IMPORT:
@@ -318,43 +325,45 @@ FIRST_ROW_BUTTON = 10	; row N has '-' = 10+N*2 and '+' = 11+N*2
 FIRST_CHECK_BUTTON = 20
 FONT	= 0xB0		; text flags: zero terminated, 8x16 UTF-8
 
-; layout of the client area
+; layout of the client area: controls ROW_H high, GAP empty pixels apart,
+; EDGE to the window border, GAP at the top
 LABEL_CHARS = 20	; the longest label, Spanish
-TOP	= 10
+GAP	= 12
+EDGE	= 8
+TOP	= GAP
 ROW_H	= 24
-ROW_STEP = 30
-TEXT_DY	= (ROW_H-16)/2
-LABEL_X	= 10
-VALUE_X	= LABEL_X + LABEL_CHARS*8 + 8
-VALUE_PAD = 14
+ROW_STEP = ROW_H + GAP
+TEXT_DY	= 5		; the capitals, rows 2..11 of the font, centred in ROW_H
+LABEL_X	= EDGE - 1	; column 0 of a letter is empty: aligned with the group frame
+VALUE_X	= LABEL_X + LABEL_CHARS*8 + GAP
+VALUE_PAD = GAP
 VALUE_W	= 8*8 + VALUE_PAD*2
-BUTTON1_X = VALUE_X + VALUE_W + 10
-BUTTON2_X = BUTTON1_X + 30
-CLIENT_W = BUTTON2_X + ROW_H + 10
-GROUP_X	= LABEL_X
-GROUP_W	= CLIENT_W - LABEL_X*2
-GROUP_Y	= TOP + ROWS*ROW_STEP + 14
-GROUP_H	= 50
-GROUP_TITLE_X = GROUP_X + 12
-GROUP_PAD = 14
-CHECK_ROW_Y = GROUP_Y + (GROUP_H-16)/2	; y of the checkbox labels
+BUTTON1_X = VALUE_X + VALUE_W	; right after the value box
+BUTTON2_X = BUTTON1_X + ROW_H - 1	; the buttons share a border
+CLIENT_W = BUTTON2_X + ROW_H + EDGE
+GROUP_X	= EDGE
+GROUP_W	= CLIENT_W - EDGE*2
+GROUP_Y	= TOP + ROWS*ROW_STEP + 5	; GAP to the capitals of the title
+GROUP_TITLE_Y = GROUP_Y - 7		; the frame crosses the capitals
+CHECK_Y	= GROUP_Y + 1 + GAP		; the row of the checkboxes
+GROUP_H	= 1 + GAP + ROW_H + GAP + 1
 CHECK_SIZE = 15
-CHECK_BOX_Y = CHECK_ROW_Y + (16-CHECK_SIZE)/2
-ITEM_X	= GROUP_X + GROUP_PAD
-CLIENT_H = GROUP_Y + GROUP_H + 10
+CHECK_BOX_Y = CHECK_Y + (ROW_H-CHECK_SIZE)/2
+ITEM_X	= GROUP_X + 1 + GAP
+ITEM_END = GROUP_X + GROUP_W - GAP	; the last column of a letter is empty
+GROUP_TITLE_X = ITEM_X - 8 - 1	; a space, then a letter from its column 1
+CLIENT_H = GROUP_Y + GROUP_H + EDGE
 
 ; variable, min, max of every row
 align 4
 rows:
 	dd	language,      0, LANGUAGES-1
 	dd	fontSmoothing, 0, 2
-	dd	fontHeight,    9, 99
+	dd	fontHeight,    FONT_H_MIN, FONT_H_MAX
 
 ; variable and the value of it that means 'not checked'
 checks	dd lba,0, pci,0, speakerMute,1
-checkLabels dd labelLba, labelPci, 0	; 0: the speaker label of the language
-labelLba db 'LBA',0
-labelPci db 'PCI',0
+checkLabels dd sz_lba, sz_pci, 0	; 0: the speaker label of the language
 
 glyphs	db '<',0,'>',0,'<',0,'>',0,'-',0,'+',0
 sz_subpixel db 'Subpixel',0
@@ -374,15 +383,15 @@ T_OFF	= ROWS + 2
 texts	dd texteng, texteng, texteng, textrus, texteng, texteng, textspa, texteng
 
 texteng	db 'System language',0, 'Font smoothing',0, 'Font height',0
-	db 'Access settings',0, 'Speaker',0
+	db ' Access settings ',0, 'Speaker',0
 	db 'Off',0, 'On',0
 
 textspa	db 'Idioma del sistema',0, 'Suavizado de fuentes',0, 'Altura de fuente',0
-	db 'Ajustes de acceso',0, 'Altavoz',0
+	db ' Ajustes de acceso ',0, 'Altavoz',0
 	db 'No',0, 'Sí',0
 
 textrus	db 'Язык системы',0, 'Сглаживание шрифтов',0, 'Высота шрифтов',0
-	db 'Настройки доступа',0, 'Динамик',0
+	db ' Настройки доступа ',0, 'Динамик',0
 	db 'Нет',0, 'Да',0
 
 ;---------------------------------------------------------------
@@ -391,8 +400,7 @@ include 'settings.inc'
 
 text	dd ?		; texts of the window language
 checkboxImage dd ?
-boxX	rd CHECKS	; x of every checkbox box, set by draw_window
-itemW	rd CHECKS	; width of every checkbox with its label
+checkStep dd ?		; x distance of two checkboxes
 sc	system_colors
 valueText rd ROWS	; the strings shown in the value boxes
 heightText rb 4
