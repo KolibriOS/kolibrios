@@ -4,7 +4,14 @@
 ; apply them to the kernel and save them to system.ini.
 
 ;---------------------------------------------------------------
-; Take the current values from the kernel
+; Take the current values from the kernel, the mouse ones at system start only
+settings_read_boot:
+	mcall	18,19,0
+	mov	[mouseSpeed],eax
+	mcall	18,,2
+	mov	[mouseAccel],eax
+	mcall	18,,6
+	mov	[mouseDelay],eax
 settings_read_system:
 	mcall	26,5
 	dec	eax		; the kernel counts languages from 1
@@ -23,12 +30,18 @@ settings_read_system:
 	mov	[fontSmoothing],eax
 	mcall	48,11
 	mov	[fontHeight],eax
-	mcall	18,19,0
-	mov	[mouseSpeed],eax
-	mcall	18,19,2
-	mov	[mouseAccel],eax
-	mcall	18,19,6
-	mov	[mouseDelay],eax
+; keep the font height within what the window shows and steps through
+font_height_limits:
+	mov	eax,[fontHeight]
+	cmp	eax,FONT_H_MIN
+	jge	@f
+	mov	eax,FONT_H_MIN
+@@:
+	cmp	eax,FONT_H_MAX
+	jle	@f
+	mov	eax,FONT_H_MAX
+@@:
+	mov	[fontHeight],eax
 	ret
 
 ;---------------------------------------------------------------
@@ -65,7 +78,7 @@ settings_read_ini:
 	add	esi,16
 	cmp	esi,iniSettings.end
 	jb	.next
-	ret
+	jmp	font_height_limits
 
 ;---------------------------------------------------------------
 ; Store the values to system.ini (all but the mouse ones).
@@ -99,7 +112,11 @@ settings_save_ini:
 	ret
 
 ;---------------------------------------------------------------
-; Pass the values to the kernel
+; Pass the values to the kernel, the mouse ones at system start only
+settings_apply_boot:
+	mcall	18,19,1,[mouseSpeed]
+	mcall	18,,3,[mouseAccel]
+	mcall	18,,7,[mouseDelay]
 settings_apply:
 	mov	ecx,[language]
 	inc	ecx
@@ -108,14 +125,11 @@ settings_apply:
 	mcall	21,12,[pci]
 	mcall	48,10,[fontSmoothing]
 	mcall	48,12,[fontHeight]
-	mcall	18,19,1,[mouseSpeed]
-	mcall	18,19,3,[mouseAccel]
-	mcall	18,19,7,[mouseDelay]
 ; the speaker can only be toggled
 	mcall	18,8,1
 	cmp	eax,[speakerMute]
 	jz	@f
-	mcall	18,8,2
+	mcall	18,,2
 @@:
 	ret
 
@@ -128,6 +142,8 @@ style_apply:
 
 ; the background is set by a program: bg_program with bg_param
 	invoke	ini.get_str, sz_ini, sz_style, sz_bgProgram, bgProgram, PATH_MAX, 0
+	cmp	byte[bgProgram],0
+	jz	.skin
 	invoke	ini.get_str, sz_ini, sz_style, sz_bgParam, bgParam, PATH_MAX, 0
 	cmp	byte[bgParam],'\'	; KIV param like '\S__/path/to/img'
 	jnz	@f
@@ -136,6 +152,7 @@ style_apply:
 @@:
 	mcall	70,runBgProgram
 
+.skin:
 	invoke	ini.get_str, sz_ini, sz_style, sz_skin, skinPath, PATH_MAX, 0
 	cmp	byte[skinPath],0
 	jz	@f
@@ -163,6 +180,8 @@ wait_for_file:
 ; DATA
 ; The languages of the kernel
 LANGUAGES = 8
+FONT_H_MIN = 9
+FONT_H_MAX = 99		; two digits in the window
 PATH_MAX = 256
 
 ; Every value stored in system.ini: section, key, variable, words.
