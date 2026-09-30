@@ -1397,7 +1397,9 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
         mov     [page_tabs + edi], eax
         mov     [page_tabs + edi + edx], eax
         invlpg  [ebx]
-        invlpg  [ebx+0x10000]
+        add     ebx, [size]
+        invlpg  [ebx]                   ; the mirror half
+        sub     ebx, [size]
         add     eax, 0x1000
         add     ebx, 0x1000
         add     edi, 4
