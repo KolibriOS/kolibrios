@@ -463,7 +463,7 @@ proc kernel_alloc stdcall, size:dword
         and     eax, -PAGE_SIZE;
         mov     [size], eax
         and     eax, eax
-        jz      .err
+        jz      .err0
         mov     ebx, eax
         shr     ebx, 12
         mov     [pages_count], ebx
@@ -509,6 +509,13 @@ proc kernel_alloc stdcall, size:dword
         pop     ebx
         ret
 .err:
+        mov     eax, [lin_addr]
+        test    eax, eax
+        jz      .err0
+        mov     ecx, [pages_count]
+        call    release_pages
+        stdcall free_kernel_space, [lin_addr]
+.err0:
         xor     eax, eax
         pop     edi
         pop     ebx
