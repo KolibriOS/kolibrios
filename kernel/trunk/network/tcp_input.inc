@@ -399,6 +399,7 @@ endl
         bswap   eax
         mov     [ebx + TCP_SOCKET.ts_val], eax
         lodsd                                   ; timestamp echo reply
+        bswap   eax
         mov     [ebx + TCP_SOCKET.ts_ecr], eax
         or      [temp_bits], TCP_BIT_TIMESTAMP
 
@@ -996,7 +997,7 @@ endl
 
         inc     [ebx + TCP_SOCKET.t_dupacks]
         cmp     [ebx + TCP_SOCKET.t_dupacks], TCP_re_xmit_thresh
-        jb      .dup_ack_complete
+        jb      .ack_processed
         ja      .another_lost
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Re-transmitting lost segment\n"

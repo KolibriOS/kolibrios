@@ -401,8 +401,14 @@ endl
         jz      .no_timestamp
 
   .timestamp:
-        pushd   0
-        pushd   [timer_ticks]
+        push    ebx
+        mov     ebx, [eax + TCP_SOCKET.ts_recent]
+        bswap   ebx
+        xchg    ebx, [esp]                      ; TSecr
+        push    ebx
+        mov     ebx, [timer_ticks]
+        bswap   ebx
+        xchg    ebx, [esp]                      ; TSval
         pushd   TCP_OPT_NOP + TCP_OPT_NOP shl 8 + TCP_OPT_TIMESTAMP shl 16 + 10 shl 24
         add     di, 12
 
@@ -423,10 +429,12 @@ endl
 ; check if we don't exceed the max segment size
 
         add     esi, edi                        ; total TCP segment size
-        cmp     esi, [eax + TCP_SOCKET.t_maxseg]
+        mov     ebx, [eax + TCP_SOCKET.t_maxseg]
+        add     ebx, sizeof.TCP_header          ; MSS does not count the header
+        cmp     esi, ebx
         jbe     .no_overflow
 
-        mov     esi, [eax + TCP_SOCKET.t_maxseg]
+        mov     esi, ebx
         or      [temp_bits], TCP_BIT_SENDALOT
   .no_overflow:
 
