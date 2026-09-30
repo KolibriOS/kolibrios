@@ -1,21 +1,8 @@
-if tup.getconfig("NO_FASM") ~= "" or tup.getconfig("BUILD_TYPE") == "" then return end
+if tup.getconfig("NO_FASM") ~= "" then return end
 HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../.." or tup.getconfig("HELPERDIR")
 tup.include(HELPERDIR .. "/use_fasm.lua")
 add_include(tup.getvariantdir())
 
-deps = tup.rule("echo lang fix " .. ((tup.getconfig("LANG") == "") and "en_US" or tup.getconfig("LANG")) .. " > %o", {"lang.inc"})
-DOCDIR = "../../../data/" .. tup.getconfig("BUILD_TYPE") .. "/docs/"
-if tup.getconfig("TUP_PLATFORM") == "win32"
-then env_prefix = "set DOCDIR=$(DOCDIR)&&"; cp_cmd = "copy %f %o"
-else env_prefix = "DOCDIR=$(DOCDIR) "; cp_cmd = "cp %f %o"
-end
-if tup.getconfig("LANG") == "ru_RU"
-then tup.append_table(deps,
-  tup.rule("../../../kernel/trunk/docs/sysfuncr.txt", "iconv -f utf-8 -t cp866 %f > %o", "SysFuncr.txt"))
-else tup.append_table(deps,
-  tup.rule("../../../kernel/trunk/docs/sysfuncs.txt", cp_cmd, "SysFuncs.txt"))
-end
-tup.append_table(deps,
-  tup.rule("../../../kernel/trunk/docs/stack.txt", cp_cmd, "Stack.txt")
-)
-tup.rule({"docpack.asm", extra_inputs = deps}, env_prefix .. FASM .. " %f %o " .. tup.getconfig("KPACK_CMD"), "docpack")
+lang = (tup.getconfig("LANG") == "") and "en_US" or tup.getconfig("LANG")
+deps = (lang == "ru_RU") and tup.rule("../../../kernel/trunk/docs/sysfuncr.txt", "iconv -f utf-8 -t cp866 %f > %o", "SysFuncr.txt") or {}
+tup.rule({"docpack.asm", extra_inputs = deps}, FASM .. " -dlang=" .. lang .. " %f %o " .. tup.getconfig("KPACK_CMD"), "docpack")
