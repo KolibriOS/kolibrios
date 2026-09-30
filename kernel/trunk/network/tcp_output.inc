@@ -626,7 +626,7 @@ endl
         mov     [eax + TCP_SOCKET.SND_MAX], edx                 ; [eax + TCP_SOCKET.SND_NXT] from before we updated it
 
         cmp     [eax + TCP_SOCKET.t_rtt], 0                     ; are we currently timing anything?
-        je      @f
+        jne     @f
         mov     [eax + TCP_SOCKET.t_rtt], 1                     ; nope, start transmission timer
         mov     [eax + TCP_SOCKET.t_rtseq], edi
         inc     [TCPS_segstimed]

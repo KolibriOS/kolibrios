@@ -525,8 +525,11 @@ endl
 
         test    [temp_bits], TCP_BIT_TIMESTAMP
         jz      .no_timestamp_rtt
+        cmp     [ebx + TCP_SOCKET.ts_ecr], 0    ; nothing echoed
+        je      .no_timestamp_rtt
         mov     eax, [timestamp]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
+        shr     eax, 6                          ; 1/100 s -> 640 ms ticks
         inc     eax
         call    tcp_xmit_timer
         jmp     .rtt_done
@@ -1114,8 +1117,11 @@ endl
 
         test    [temp_bits], TCP_BIT_TIMESTAMP
         jz      .timestamp_not_present
+        cmp     [ebx + TCP_SOCKET.ts_ecr], 0    ; nothing echoed
+        je      .timestamp_not_present
         mov     eax, [timestamp]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
+        shr     eax, 6                          ; 1/100 s -> 640 ms ticks
         inc     eax
         call    tcp_xmit_timer
         jmp     .rtt_done_

@@ -518,7 +518,7 @@ tcp_xmit_timer:
 
         inc     [TCPS_rttupdated]
 
-        cmp     [ebx + TCP_SOCKET.t_rtt], 0
+        cmp     [ebx + TCP_SOCKET.t_srtt], 0    ; first sample?
         je      .no_rtt_yet
 
 ; srtt is stored as a fixed point with 3 bits after the binary point.
@@ -534,7 +534,7 @@ tcp_xmit_timer:
         pop     ecx
 
         add     [ebx + TCP_SOCKET.t_srtt], eax
-        ja      @f
+        jg      @f                              ; signed: delta may be negative
         mov     [ebx + TCP_SOCKET.t_srtt], 1
   @@:
 
@@ -556,7 +556,7 @@ tcp_xmit_timer:
         pop     edx
 
         add     [ebx + TCP_SOCKET.t_rttvar], eax
-        ja      @f
+        jg      @f
         mov     [ebx + TCP_SOCKET.t_rttvar], 1
   @@:
         jmp     .rto
@@ -581,6 +581,7 @@ tcp_xmit_timer:
         tcpt_rangeset [ebx + TCP_SOCKET.t_rxtcur], ecx, TCP_time_re_min, TCP_time_re_max
         pop     ecx
         mov     [ebx + TCP_SOCKET.t_rxtshift], 0
+        mov     [ebx + TCP_SOCKET.t_rtt], 0     ; the timed segment is done
         ret
 
 
