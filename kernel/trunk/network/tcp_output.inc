@@ -63,6 +63,15 @@ endl
 
   .not_idle:
   .again:
+; Connection was reset by peer, send nothing
+        cmp     [eax + TCP_SOCKET.t_state], TCPS_CLOSED
+        jne     @f
+        mov     ebx, [eax + SOCKET.state]
+        and     ebx, SS_CANTSENDMORE + SS_ISDISCONNECTING
+        cmp     ebx, SS_CANTSENDMORE
+        je      .nothing_to_send
+  @@:
+
         mov     [temp_bits], 0
 
 ; Calculate offset
@@ -306,6 +315,7 @@ endl
 ;----------------------------
 ; No reason to send a segment
 
+  .nothing_to_send:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_output: No reason to send a segment\n"
 
         pusha
