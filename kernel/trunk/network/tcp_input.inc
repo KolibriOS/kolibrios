@@ -864,8 +864,9 @@ endl
         mov     [ebx + TCP_SOCKET.t_state], TCPS_CLOSED
         inc     [TCPS_drops]
 
-; Wake up the application
+; Stop the timers, wake up the application
         mov     eax, ebx
+        call    tcp_cancel_timers
         call    socket_is_disconnected
 
         jmp     .drop
