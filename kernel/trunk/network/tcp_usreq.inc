@@ -180,6 +180,8 @@ tcp_connect:
 
   .nomem:
         pop     edx eax
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
         xor     eax, eax
         dec     eax
         mov     ebx, ENOMEM
@@ -194,6 +196,8 @@ tcp_connect:
   .enoroute:
         pop     eax
         popa
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
         xor     eax, eax
         dec     eax
         mov     ebx, EADDRNOTAVAIL

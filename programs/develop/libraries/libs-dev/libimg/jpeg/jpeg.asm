@@ -501,7 +501,8 @@ img.decode.jpg:
 	jnz	.no_create_palette
 	push	ecx edi
 	mov	edi, [eax + Image.Palette]
-	xor	eax, eax
+	mov	eax, 0xFF000000	; opaque, like the palettes of the other decoders:
+				; converted to 32 bpp, alpha 0 made the picture invisible
 	mov	ecx, 256
 @@:
 	stosd

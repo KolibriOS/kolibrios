@@ -54,3 +54,27 @@
         src: "{{ stable_artifact_path }}/"
         dest: "{{ storage_path }}/../"
         mode: preserve
+
+    # older builds shrink to compressed images and lose their unpacked tree; the newest few keep both
+    - name: Looking for zstd on the storage server
+      ansible.builtin.shell: command -v zstd
+      register: zstd_present
+      changed_when: false
+      failed_when: false
+
+    - name: Requiring zstd for compaction
+      ansible.builtin.assert:
+        that: zstd_present.rc == 0
+        fail_msg: >-
+          zstd is not installed on the storage server, so older builds cannot
+          be compacted. Install it and re-run this build.
+
+    - name: Compacting older builds
+      ansible.builtin.script:
+        cmd: >-
+          ../../utils/compact-builds.sh
+          {{ storage_path | quote }}
+          {{ compact_keep | default(5) | int }}
+          {{ compact_max | default(10) | int }}
+      register: compaction
+      changed_when: "'compacted 0 of' not in compaction.stdout"

@@ -597,6 +597,16 @@ net_remove_device:
         mov     dword [edi-4], eax
         dec     [net_device_count]
 
+;-----------------------------------------------------------------
+; Forget everything the protocols still know about this interface.
+; Otherwise its IP address keeps matching in ipv4_route, and output
+; ends up calling through the now empty net_device_list slot.
+
+        sub     edi, net_device_list + 4        ; device number * 4
+        ipv4_clear_device
+        arp_clear_device
+        eth_clear_device
+
         call    net_send_event
 
         xor     eax, eax

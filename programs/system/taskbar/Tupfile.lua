@@ -1,3 +1,6 @@
+-- @taskbar loads keymap.key with f68.27, which unpacks kpack'ed files.
+tup.rule("KEYMAP.KEY", "cp %f %o" .. tup.getconfig("KPACK_CMD"), "keymap.key.kpack")
+
 if tup.getconfig("NO_FASM") ~= "" then return end
 HELPERDIR = (tup.getconfig("HELPERDIR") == "") and "../.." or tup.getconfig("HELPERDIR")
 tup.include(HELPERDIR .. "/use_fasm.lua")
