@@ -1418,6 +1418,62 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
         ret
 endp
 
+; Same as create_ring_buffer, but from non-contiguous pages.
+; Not for DMA. Free with kernel_free.
+align 4
+proc create_ring_buffer_sparse stdcall, size:dword, flags:dword
+           locals
+             buf_ptr  dd ?
+           endl
+
+        mov     eax, [size]
+        test    eax, eax
+        jz      .fail
+
+        add     eax, eax
+        stdcall alloc_kernel_space, eax
+        test    eax, eax
+        jz      .fail
+        mov     [buf_ptr], eax
+
+        push    ebx esi edi
+        mov     ebx, eax                ; page being mapped
+        mov     esi, [size]             ; distance to its mirror
+        mov     edi, esi
+        shr     edi, 12                 ; pages left
+  .page:
+        call    alloc_page
+        test    eax, eax
+        jz      .mm_fail
+        or      eax, [flags]
+        mov     edx, ebx
+        shr     edx, 12
+        mov     [page_tabs + edx*4], eax
+        invlpg  [ebx]
+        lea     edx, [ebx + esi]
+        shr     edx, 12
+        mov     [page_tabs + edx*4], eax
+        invlpg  [ebx + esi]
+        add     ebx, PAGE_SIZE
+        dec     edi
+        jnz     .page
+
+        mov     eax, [buf_ptr]
+        pop     edi esi ebx
+        ret
+
+  .mm_fail:
+        mov     eax, [buf_ptr]
+        mov     ecx, [size]
+        shr     ecx, 11                 ; both halves, in pages
+        call    release_pages
+        stdcall free_kernel_space, [buf_ptr]
+        pop     edi esi ebx
+        xor     eax, eax
+  .fail:
+        ret
+endp
+
 
 align 4
 proc print_mem

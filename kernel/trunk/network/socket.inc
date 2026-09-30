@@ -1651,7 +1651,7 @@ socket_ring_create:
         mov     esi, eax
 
         push    edx
-        stdcall create_ring_buffer, SOCKET_BUFFER_SIZE, PG_SWR
+        stdcall create_ring_buffer_sparse, SOCKET_BUFFER_SIZE, PG_SWR
         pop     edx
         test    eax, eax
         jz      .fail
