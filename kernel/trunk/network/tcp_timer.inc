@@ -91,6 +91,10 @@ proc tcp_timer_640ms
         jne     .loop
 
         inc     [eax + TCP_SOCKET.t_idle]
+        cmp     [eax + TCP_SOCKET.t_rtt], 0     ; timing a segment?
+        je      @f
+        inc     [eax + TCP_SOCKET.t_rtt]
+  @@:
 
         test    [eax + TCP_SOCKET.timer_flags], timer_flag_retransmission
         jz      .check_more2
