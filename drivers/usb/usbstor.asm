@@ -167,6 +167,8 @@ LogicalDevices          dd      ?       ; pointer to array of usb_unit_data
 ; 1 for a connected USB device, 1 for each disk device
 ; the structure can be freed when .NumReferences decreases to zero
 NumReferences           dd      ?       ; number of references
+PollNext                dd      ?
+PollPrev                dd      ?
 ConfigRequest           rb      8       ; buffer for configuration requests
 LengthRest              dd      ?       ; Length - (size of data which were transferred)
 ; All requests to a given device are serialized,
@@ -248,6 +250,20 @@ end virtual
 ; The name is my_driver = 'usbstor'; IOCTL interface is not supported;
 ; usb_functions is an offset of a structure with callback functions.
         invoke  RegUSBDriver, my_driver, 0, usb_functions
+        test    eax, eax
+        jz      .nothing
+        push    eax ebx
+        mov     ecx, poll_lock
+        invoke  MutexInit
+        mov     [poll_head], poll_list
+        mov     [poll_head+4], poll_list
+        movi    ebx, 1
+        mov     ecx, poll_thread
+        xor     edx, edx
+        invoke  CreateThread
+        cmp     eax, -1
+        setnz   [poll_running]
+        pop     ebx eax
 ; 4. Return the returned value of RegUSBDriver.
 .nothing:
         ret
@@ -1309,16 +1325,18 @@ end virtual
         add     esi, sizeof.usb_unit_data
         cmp     ecx, [ebx+usb_device_data.MaxLUN]
         jbe     .looplun
+        cmp     [poll_running], 0
+        jz      @f
         lock inc [ebx+usb_device_data.NumReferences]
-        push    ebx edi
-        mov     edx, ebx
-        movi    ebx, 1
-        mov     ecx, poll_thread
-        invoke  CreateThread
-        pop     edi ebx
-        cmp     eax, -1
-        jnz     @f
-        lock dec [ebx+usb_device_data.NumReferences]
+        mov     ecx, poll_lock
+        invoke  MutexLock
+        mov     eax, [poll_head+4]
+        mov     [ebx+usb_device_data.PollNext], poll_list
+        mov     [ebx+usb_device_data.PollPrev], eax
+        mov     [eax+usb_device_data.PollNext], ebx
+        mov     [poll_head+4], ebx
+        mov     ecx, poll_lock
+        invoke  MutexUnlock
 @@:
 ; 4. Return.
         pop     esi ebx
@@ -1354,7 +1372,7 @@ proc inquiry_callback
         jnz     .nothing
         DEBUGF 1,'K : direct-access mass storage device detected\n'
         mov     edx, [esp+8]
-        test    [ecx+usb_device_data.InquiryData.RemovableMedium], 80h
+        cmp     [ecx+usb_device_data.MaxLUN], 0
         jnz     .poll
         cmp     [edx+usb_unit_data.MediaPresent], 0
         jnz     @f
@@ -1563,15 +1581,20 @@ POLL_CHANGED    = 2
 POLL_OTHER      = 3
 
 proc poll_thread
-        mov     ebx, [esp]
 .loop:
-        push    ebx
         movi    eax, 5
         mov     ebx, POLL_INTERVAL
         int     0x40
-        pop     ebx
+        mov     ecx, poll_lock
+        invoke  MutexLock
+        mov     ebx, [poll_head]
+.device:
+        cmp     ebx, poll_list
+        jz      .done
+        mov     ecx, poll_lock
+        invoke  MutexUnlock
         cmp     [ebx+usb_device_data.DeviceDisconnected], 0
-        jnz     .exit
+        jnz     .remove
         mov     esi, [ebx+usb_device_data.LogicalDevices]
         mov     edi, [ebx+usb_device_data.MaxLUN]
         inc     edi
@@ -1583,8 +1606,18 @@ proc poll_thread
         add     esi, sizeof.usb_unit_data
         dec     edi
         jnz     .unit
-        jmp     .loop
-.exit:
+        mov     ecx, poll_lock
+        invoke  MutexLock
+        mov     ebx, [ebx+usb_device_data.PollNext]
+        jmp     .device
+.remove:
+        mov     ecx, poll_lock
+        invoke  MutexLock
+        mov     eax, [ebx+usb_device_data.PollNext]
+        mov     edx, [ebx+usb_device_data.PollPrev]
+        mov     [edx+usb_device_data.PollNext], eax
+        mov     [eax+usb_device_data.PollPrev], edx
+        push    eax
         lock dec [ebx+usb_device_data.NumReferences]
         jnz     @f
         mov     eax, [ebx+usb_device_data.LogicalDevices]
@@ -1592,8 +1625,12 @@ proc poll_thread
         xchg    eax, ebx
         invoke  Kfree
 @@:
-        or      eax, -1
-        int     0x40
+        pop     ebx
+        jmp     .device
+.done:
+        mov     ecx, poll_lock
+        invoke  MutexUnlock
+        jmp     .loop
 endp
 
 proc poll_unit
@@ -1689,8 +1726,12 @@ proc poll_tur_callback
         and     dl, 0Fh
         mov     dh, [ecx+usb_device_data.Sense.AdditionalSenseCode]
         cmp     dx, (3Ah shl 8) + SENSE_NOT_READY
+        jz      .no_media
+        cmp     dx, (3Ah shl 8) + SENSE_UNIT_ATTENTION
         jnz     @f
+.no_media:
         mov     al, POLL_NO_MEDIA
+        jmp     .done
 @@:
         cmp     dx, (28h shl 8) + SENSE_UNIT_ATTENTION
         jnz     .done
@@ -2246,6 +2287,10 @@ data fixups
 end data
 
 free_numbers_lock       rd      3
+poll_lock               rd      3
+poll_head               rd      2
+poll_list = poll_head - usb_device_data.PollNext
+poll_running            db      ?
 ; 128 devices should be enough for everybody
 free_numbers    dd      -1, -1, -1, -1
 
