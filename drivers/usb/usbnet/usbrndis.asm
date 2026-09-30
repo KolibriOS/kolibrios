@@ -38,10 +38,7 @@ DEBUG = 1
 __DEBUG__ = 1
 __DEBUG_LEVEL__ = 2             ; 1 = verbose, 2 = errors/events only
 
-; 1 = print per-second RX/TX rate statistics to the debug board while
-; traffic flows (cb/fr = transfers/frames, B = bytes, tx = frames sent,
-; wnd = advertised TCP window). Costs a few counters per frame and one
-; line of board output per second; invaluable for throughput debugging.
+; 1 = per-second RX/TX counters and a frame log on the debug board
 DEBUG_STATS = 0
 
 include '../../struct.inc'
@@ -84,6 +81,9 @@ OID_GEN_CURRENT_PACKET_FILTER = 0x0001010E
 
 ; NDIS packet filter: directed | multicast | all-multicast | broadcast
 RNDIS_PACKET_FILTER     = 0x0000000F
+; With a host address of our own choosing (see random_mac) also
+; promiscuous, as Linux always sets: the device never learns that address.
+RNDIS_FILTER_PROMISC    = 0x00000020
 
 RNDIS_STATUS_MEDIA_CONNECT    = 0x4001000B
 RNDIS_STATUS_MEDIA_DISCONNECT = 0x4001000C
@@ -98,13 +98,32 @@ STATE_RUN               = 4     ; registered, data path live
 ETH_FRAME_MIN           = 60    ; minimal ethernet frame (without FCS)
 ETH_FRAME_MAX           = 1514  ; maximal ethernet frame (without FCS)
 RNDIS_HDR_SIZE          = 44    ; REMOTE_NDIS_PACKET_MSG header
-RNDIS_RX_BUF            = 8192  ; our max transfer, advertised in INIT
-RNDIS_RX_BUFFERS        = 2     ; ping-pong pair for the bulk IN pipe
+; Our MaxTransferSize and the RX buffer size: one frame, as in Linux.
+; With 8192 phones split messages across transfers and we lost them.
+RNDIS_RX_BUF            = 2048
+; Bulk IN transfers kept in flight: up to 32 frames per 10 ms wakeup
+; of the USB thread (~38 Mbit/s). See the note in rndis_start.
+RNDIS_RX_BUFFERS        = 32
 RNDIS_RX_MAX_ERRORS     = 32    ; consecutive RX errors before receive
                                 ; stops (anti retry-storm)
+; The same for the interrupt IN pipe (was an endless retry storm).
+RNDIS_NOTIFY_MAX_ERRORS = 16
 RNDIS_RSP_BUF           = 1024  ; encapsulated response buffer
-RNDIS_TX_MAX_PENDING    = 32    ; max messages in flight on bulk OUT
+RNDIS_QUERY_LEN         = 28 + 48 ; QUERY_MSG with a 48-byte input buffer,
+                                ; what Linux rndis_host sends; also the
+                                ; size of CmdBuf, the longest command
+; Bulk OUT messages in flight, each in a slot of a preallocated pool
+; (Kmalloc's 128 KB heap ran out). TX completions wait up to 10 ms for
+; the USB thread, and 96 slots were still exhausted during uploads.
+; A 2 KB slot never crosses a page, so 192 TRBs fit the 256-entry ring.
+RNDIS_TX_MAX_PENDING    = 192   ; slots, a multiple of 32 (free bitmap)
+RNDIS_TX_SLOT           = 2048  ; [context ptr][message <= 1559 bytes]
+RNDIS_FLOWS             = 8     ; TCP flows tracked by DEBUG_STATS (power of 2)
+RNDIS_LOG_BURST         = 40    ; frame-log lines allowed per second (DEBUG_STATS)
 RNDIS_GET_RETRIES       = 200   ; response polls per command (see below)
+; 1/100 s to wait for MEDIA_CONNECT before taking the link as up.
+; A phone just switched to tethering drops the first DHCP DISCOVER.
+RNDIS_LINK_WAIT         = 100
 
 ; USB structures
 struct usb_descr
@@ -177,6 +196,8 @@ struct rndis_dev        ETH_DEVICE
         InitState       dd      ?       ; STATE_* of the init chain
         DevMaxTx        dd      ?       ; device's max transfer (from INIT_C)
         LinkDown        dd      ?       ; a MEDIA_DISCONNECT was indicated
+        LinkKnown       dd      ?       ; the device has indicated its media state
+        LinkTimer       dd      ?       ; TimerHS handle of the link-up fallback
 
         TxPending       dd      ?       ; messages in flight on bulk OUT
         Dead            dd      ?       ; set on disconnect/fatal error
@@ -187,9 +208,16 @@ struct rndis_dev        ETH_DEVICE
         KaPending       dd      ?       ; a keepalive reply is in flight
         GetRetries      dd      ?       ; polls left for the current command
 
-        RxBufs          rd      RNDIS_RX_BUFFERS ; bulk IN buffers (KernelAlloc)
+        RxArea          dd      ?       ; one KernelAlloc holding all RX buffers
+        RxBufs          rd      RNDIS_RX_BUFFERS ; bulk IN buffers, slices of RxArea
         RxSize          dd      ?       ; size of one buffer
+        TxArea          dd      ?       ; KernelAlloc'ed pool of TX slots
+        TxFree          rd      RNDIS_TX_MAX_PENDING/32 ; bit set = slot free
         RxErrRun        dd      ?       ; consecutive failed RX transfers
+        NotifyErrRun    dd      ?       ; consecutive failed notification polls
+        RxArmed         dd      ?       ; transfers outstanding on the bulk IN
+                                        ; pipe; zero means receive has died
+        LenErrNoted     dd      ?       ; refused-frame lengths already logged
 
         ; per-second statistics, only maintained when DEBUG_STATS = 1
         StatTicks       dd      ?       ; last print time, timer ticks
@@ -199,11 +227,24 @@ struct rndis_dev        ETH_DEVICE
         StatTxPkts      dd      ?       ; packets_tx snapshot at last print
         StatWnd         dd      ?       ; TCP receive window we advertised
                                         ; in the last outgoing TCP frame
+        StatTxHigh      dd      ?       ; deepest the bulk OUT queue has been
+        StatTail        dd      ?       ; received bytes no frame was made of
+        StatRxUni       dd      ?       ; frames received addressed to our MAC
+        StatRxBc        dd      ?       ; frames received as broadcast/multicast
+        LogTicks        dd      ?       ; start of the current frame-log second
+        LogCount        dd      ?       ; frame-log lines printed in it
+        StatLogDrop     dd      ?       ; frame-log lines suppressed by the limit
+        StatGap         dd      ?       ; TCP segments that arrived beyond a
+                                        ; hole in their flow (loss/reorder)
+        StatRetx        dd      ?       ; TCP segments with data already seen
+                                        ; (the peer retransmitting)
+        FlowNext        dd      ?       ; next slot of Flows to recycle
+        Flows           rd      RNDIS_FLOWS*2 ; [key][next expected seq]
 
         SetupCmd        rb      8       ; setup packet: SEND_ENCAPSULATED_CMD
         SetupRsp        rb      8       ; setup packet: GET_ENCAPSULATED_RSP
         SetupKa         rb      8       ; setup packet: keepalive reply
-        CmdBuf          rb      64      ; init chain command messages
+        CmdBuf          rb      RNDIS_QUERY_LEN ; init chain command messages
         KaBuf           rb      16      ; keepalive reply message
         NotifBuf        rb      16      ; interrupt notification buffer
         RspBuf          rb      RNDIS_RSP_BUF   ; encapsulated responses
@@ -239,6 +280,18 @@ proc START c, reason:dword, cmdline:dword
         jne     .nothing
 
         DEBUGF  2,"loading (RNDIS host network driver)\n"
+
+; one random host address per boot (see random_mac)
+        rdtsc
+        xor     eax, edx
+        imul    eax, eax, 0x9E3779B1
+        mov     dword [random_mac], eax
+        imul    eax, eax, 0x85EBCA6B
+        rol     eax, 13
+        mov     word [random_mac+4], ax
+        and     byte [random_mac], 0xFE         ; unicast
+        or      byte [random_mac], 0x02         ; locally administered
+
         invoke  RegUSBDriver, my_service, service_proc, usb_functions
 
   .nothing:
@@ -693,7 +746,16 @@ proc rndis_notify_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword,
         cmp     [.status], USB_STATUS_STALL
         je      .ret                            ; don't hammer a stalled pipe
         cmp     [.status], 0
-        jne     .rearm                          ; transient error: retry
+        je      .status_ok
+; transient error: retry, but not for ever
+        inc     [ebx+rndis_dev.NotifyErrRun]
+        cmp     [ebx+rndis_dev.NotifyErrRun], RNDIS_NOTIFY_MAX_ERRORS
+        jb      .rearm
+        DEBUGF  2,"notification pipe stopped after %u errors (status %u)\n", \
+                [ebx+rndis_dev.NotifyErrRun], [.status]
+        ret
+  .status_ok:
+        mov     [ebx+rndis_dev.NotifyErrRun], 0
 
         cmp     [.length], 8
         jb      .rearm
@@ -763,17 +825,23 @@ proc rndis_response_callback stdcall uses ebx esi edi, .pipe:dword, .status:dwor
         mov     [ebx+rndis_dev.DevMaxTx], eax
         DEBUGF  2,"initialized, device max transfer %u\n", eax
 
-; query the permanent MAC address
+; query the permanent MAC address, with an unused input buffer as Linux
+; sends it: QEMU's usb-net stalls a query without one
         lea     edi, [ebx+rndis_dev.CmdBuf]
+        push    edi
+        xor     eax, eax
+        mov     ecx, RNDIS_QUERY_LEN / 4
+        rep stosd
+        pop     edi
         mov     dword [edi], RNDIS_MSG_QUERY
-        mov     dword [edi+4], 28               ; MessageLength
+        mov     dword [edi+4], RNDIS_QUERY_LEN  ; MessageLength
         mov     dword [edi+8], 2                ; RequestID
         mov     dword [edi+12], OID_802_3_PERMANENT_ADDRESS
-        mov     dword [edi+16], 0               ; InformationBufferLength
+        mov     dword [edi+16], RNDIS_QUERY_LEN - 28 ; InformationBufferLength
         mov     dword [edi+20], 20              ; InformationBufferOffset
         mov     dword [edi+24], 0               ; DeviceVcHandle
         mov     [ebx+rndis_dev.InitState], STATE_MAC
-        mov     eax, 28
+        mov     eax, RNDIS_QUERY_LEN
         call    rndis_send_command
         test    eax, eax
         jz      .fail
@@ -804,6 +872,24 @@ proc rndis_response_callback stdcall uses ebx esi edi, .pipe:dword, .status:dwor
                 [ebx+rndis_dev.mac+0]:2,[ebx+rndis_dev.mac+1]:2,[ebx+rndis_dev.mac+2]:2,\
                 [ebx+rndis_dev.mac+3]:2,[ebx+rndis_dev.mac+4]:2,[ebx+rndis_dev.mac+5]:2
 
+; A locally administered address is the same on every plug-in, so each
+; boot repeated the previous boot's connections into stale phone NAT
+; state. Replace it with a random one per boot, as Linux does.
+        mov     edx, RNDIS_PACKET_FILTER
+        test    byte [ebx+rndis_dev.mac], 0x02
+        jz      .mac_done
+        mov     eax, dword [random_mac]
+        mov     dword [ebx+rndis_dev.mac], eax
+        mov     ax, word [random_mac+4]
+        mov     word [ebx+rndis_dev.mac+4], ax
+        or      edx, RNDIS_FILTER_PROMISC
+        push    edx
+        DEBUGF  2,"using random MAC %x-%x-%x-%x-%x-%x\n",\
+                [ebx+rndis_dev.mac+0]:2,[ebx+rndis_dev.mac+1]:2,[ebx+rndis_dev.mac+2]:2,\
+                [ebx+rndis_dev.mac+3]:2,[ebx+rndis_dev.mac+4]:2,[ebx+rndis_dev.mac+5]:2
+        pop     edx
+  .mac_done:
+
 ; enable reception: set the packet filter
         lea     edi, [ebx+rndis_dev.CmdBuf]
         mov     dword [edi], RNDIS_MSG_SET
@@ -813,7 +899,7 @@ proc rndis_response_callback stdcall uses ebx esi edi, .pipe:dword, .status:dwor
         mov     dword [edi+16], 4               ; InformationBufferLength
         mov     dword [edi+20], 20              ; InformationBufferOffset
         mov     dword [edi+24], 0               ; DeviceVcHandle
-        mov     dword [edi+28], RNDIS_PACKET_FILTER
+        mov     dword [edi+28], edx
         mov     [ebx+rndis_dev.InitState], STATE_FILTER
         mov     eax, 32
         call    rndis_send_command
@@ -864,11 +950,13 @@ proc rndis_response_callback stdcall uses ebx esi edi, .pipe:dword, .status:dwor
         je      .media_up
         cmp     eax, RNDIS_STATUS_MEDIA_DISCONNECT
         jne     .done
+        mov     [ebx+rndis_dev.LinkKnown], 1
         mov     [ebx+rndis_dev.LinkDown], 1
         mov     [ebx+rndis_dev.state], ETH_LINK_DOWN
         DEBUGF  2,"link down\n"
         jmp     .media_changed
   .media_up:
+        mov     [ebx+rndis_dev.LinkKnown], 1
         mov     [ebx+rndis_dev.LinkDown], 0
         mov     [ebx+rndis_dev.state], ETH_LINK_SPEED_10M or ETH_LINK_FULL_DUPLEX
         DEBUGF  2,"link up\n"
@@ -926,6 +1014,28 @@ proc rndis_response_callback stdcall uses ebx esi edi, .pipe:dword, .status:dwor
 
 endp
 
+; The link-up fallback (see RNDIS_LINK_WAIT): the device said nothing
+; about its media in time, take the link as up. Runs from the kernel's
+; timer list, the context is the one given to TimerHS.
+proc rndis_link_timer stdcall uses ebx, .ctx:dword
+
+        mov     ebx, [.ctx]
+        mov     [ebx+rndis_dev.LinkTimer], 0
+        cmp     [ebx+rndis_dev.Dead], 0
+        jne     .ret
+        cmp     [ebx+rndis_dev.LinkKnown], 0
+        jne     .ret                            ; the device spoke meanwhile
+        mov     [ebx+rndis_dev.LinkKnown], 1
+        DEBUGF  2,"no media indication, assuming link up\n"
+        mov     [ebx+rndis_dev.state], ETH_LINK_SPEED_10M or ETH_LINK_FULL_DUPLEX
+        push    ebx
+        invoke  NetLinkChanged
+        pop     ebx
+  .ret:
+        ret
+
+endp
+
 ; Init chain complete: allocate the receive buffers, register in the
 ; network stack, bring the link up and start receiving.
 ; IN: ebx = device context
@@ -934,15 +1044,32 @@ proc rndis_start
         mov     [ebx+rndis_dev.InitState], STATE_RUN
         mov     [ebx+rndis_dev.RxSize], RNDIS_RX_BUF
 
-        xor     edi, edi
-  .alloc_loop:
-        invoke  KernelAlloc, RNDIS_RX_BUF
+; All receive buffers come from one page-aligned block: a 2 KB slice of
+; it never crosses a page, so every transfer is a single TRB.
+        invoke  KernelAlloc, RNDIS_RX_BUF * RNDIS_RX_BUFFERS
         test    eax, eax
         jz      .fail
+        mov     [ebx+rndis_dev.RxArea], eax
+        xor     edi, edi
+  .slice_loop:
         mov     [ebx+rndis_dev.RxBufs+edi*4], eax
+        add     eax, RNDIS_RX_BUF
         inc     edi
         cmp     edi, RNDIS_RX_BUFFERS
-        jb      .alloc_loop
+        jb      .slice_loop
+
+; The pool of transmit slots, all free. It must exist before NetRegDev:
+; the stack may transmit as soon as the device is registered.
+        invoke  KernelAlloc, RNDIS_TX_SLOT * RNDIS_TX_MAX_PENDING
+        test    eax, eax
+        jz      .fail
+        mov     [ebx+rndis_dev.TxArea], eax
+        xor     edi, edi
+  .free_loop:
+        or      [ebx+rndis_dev.TxFree+edi*4], -1
+        inc     edi
+        cmp     edi, RNDIS_TX_MAX_PENDING/32
+        jb      .free_loop
 
         push    ebx
         invoke  NetRegDev
@@ -952,8 +1079,9 @@ proc rndis_start
         mov     [ebx+rndis_dev.Registered], 1
         DEBUGF  2,"registered as network device %u\n", eax
 
-; An LTE router bridge is up unless the device indicated otherwise
-; before we finished initializing.
+; the link follows the media indication, or RNDIS_LINK_WAIT expires
+        cmp     [ebx+rndis_dev.LinkKnown], 0
+        je      .link_wait
         cmp     [ebx+rndis_dev.LinkDown], 0
         jne     @f
         mov     [ebx+rndis_dev.state], ETH_LINK_SPEED_10M or ETH_LINK_FULL_DUPLEX
@@ -961,18 +1089,40 @@ proc rndis_start
         push    ebx
         invoke  NetLinkChanged
         pop     ebx
+        jmp     .link_done
+  .link_wait:
+        invoke  TimerHS, RNDIS_LINK_WAIT, 0, rndis_link_timer, ebx
+        mov     [ebx+rndis_dev.LinkTimer], eax
+        test    eax, eax
+        jnz     .link_done
+        DEBUGF  2,"no timer for the link, assuming it is up\n"
+        mov     [ebx+rndis_dev.LinkKnown], 1
+        mov     [ebx+rndis_dev.state], ETH_LINK_SPEED_10M or ETH_LINK_FULL_DUPLEX
+        push    ebx
+        invoke  NetLinkChanged
+        pop     ebx
+  .link_done:
 
-; Arm the first receive. From here on the RX callback ping-pongs between
-; the two buffers: it re-arms the pipe with the other buffer BEFORE
-; parsing the completed one, so the device streams the next frames while
-; the host walks the current buffer. Exactly one transfer is outstanding
-; at any time - queueing several short-packet-terminated bulk IN
-; transfers breaks the EHCI stack (see the note in usbcdc.asm).
+; Arm every receive buffer at once. Callbacks run in the USB thread,
+; woken up to 10 ms after the IRQ; with one transfer in flight a device
+; sending one frame per transfer is capped at ~1 Mbit/s. Each callback
+; re-arms its own buffer at the ring tail, so frame order is kept.
+; NB: on EHCI this used to hurt (see usbcdc.asm); if so, use 2 buffers.
+        xor     edi, edi
+  .arm_loop:
         invoke  USBNormalTransferAsync, [ebx+rndis_dev.InPipe], \
-                [ebx+rndis_dev.RxBufs], [ebx+rndis_dev.RxSize], \
+                [ebx+rndis_dev.RxBufs+edi*4], [ebx+rndis_dev.RxSize], \
                 rndis_rx_callback, ebx, 1
         test    eax, eax
-        jz      .fail
+        jz      .armed
+        inc     [ebx+rndis_dev.RxArmed]
+        inc     edi
+        cmp     edi, RNDIS_RX_BUFFERS
+        jb      .arm_loop
+  .armed:
+        cmp     [ebx+rndis_dev.RxArmed], 0
+        je      .fail
+        DEBUGF  2,"receive queue depth %u\n", [ebx+rndis_dev.RxArmed]
         ret
 
   .fail:
@@ -983,10 +1133,8 @@ proc rndis_start
 endp
 
 if DEBUG_STATS
-; Print transfer-rate statistics to the debug board about once a second
-; while traffic flows (called from the RX callback). Shows where the
-; bottleneck is: cb/fr = USB transfers and frames per interval (RX),
-; tx = frames sent per interval (the TCP ACK clock on downloads).
+; Print RX/TX counters about once a second while traffic flows.
+; cb/fr = transfers/frames received, tx = frames sent.
 ; IN: ebx = device context
 proc rndis_stats
 
@@ -1001,10 +1149,16 @@ proc rndis_stats
         jb      .done
         mov     ecx, [ebx+rndis_dev.packets_tx]
         sub     ecx, [ebx+rndis_dev.StatTxPkts]
-        DEBUGF  2,"stat %ut: cb %u fr %u B %u tx %u wnd %u txovr %u rxdrop %u\n", \
+        DEBUGF  2,"stat %ut: cb %u fr %u B %u tx %u wnd %u txovr %u txerr %u rxdrop %u rxovr %u gap %u retx %u txq %u tail %u rxu %u rxb %u logdrop %u\n", \
                 edx, [ebx+rndis_dev.StatCb], [ebx+rndis_dev.StatFrames], \
                 [ebx+rndis_dev.StatBytes], ecx, [ebx+rndis_dev.StatWnd], \
-                [ebx+rndis_dev.packets_tx_ovr], [ebx+rndis_dev.packets_rx_drop]
+                [ebx+rndis_dev.packets_tx_ovr], [ebx+rndis_dev.packets_tx_err], \
+                [ebx+rndis_dev.packets_rx_drop], [ebx+rndis_dev.packets_rx_ovr], \
+                [ebx+rndis_dev.StatGap], [ebx+rndis_dev.StatRetx], \
+                [ebx+rndis_dev.StatTxHigh], [ebx+rndis_dev.StatTail], \
+                [ebx+rndis_dev.StatRxUni], [ebx+rndis_dev.StatRxBc], \
+                [ebx+rndis_dev.StatLogDrop]
+        mov     [ebx+rndis_dev.StatTxHigh], 0
         mov     [ebx+rndis_dev.StatCb], 0
         mov     [ebx+rndis_dev.StatFrames], 0
         mov     [ebx+rndis_dev.StatBytes], 0
@@ -1014,6 +1168,281 @@ proc rndis_stats
         mov     [ebx+rndis_dev.StatTicks], eax
   .done:
         pop     edx ecx eax
+        ret
+
+endp
+
+; Log ARP, ICMP, DNS, DHCP and TCP SYN/FIN/RST in both directions, at
+; most RNDIS_LOG_BURST lines a second (the rest counted in logdrop).
+; Also counts arrivals to our MAC (rxu) and to a group (rxb).
+; IN: ebx = device context, esi -> ethernet frame, ecx = frame length,
+;     edi = 0 received, 1 sent. Destroys everything, the caller saves it.
+align 4
+rndis_log_frame:
+
+        mov     ebp, edi                        ; direction
+        test    ebp, ebp
+        jnz     .classified
+        test    byte [esi], 1                   ; group bit of destination MAC
+        jz      .unicast
+        inc     [ebx+rndis_dev.StatRxBc]
+        jmp     .classified
+  .unicast:
+        mov     eax, [esi]
+        cmp     eax, dword [ebx+rndis_dev.mac]
+        jne     .classified
+        mov     ax, [esi+4]
+        cmp     ax, word [ebx+rndis_dev.mac+4]
+        jne     .classified
+        inc     [ebx+rndis_dev.StatRxUni]
+  .classified:
+
+; Pick out the frames worth a line; edx -> transport header.
+        cmp     word [esi+12], 0x0608           ; EtherType ARP (BE 08 06)
+        je      .arp
+        cmp     word [esi+12], 0x0008           ; EtherType IPv4
+        jne     .done
+        cmp     ecx, 14+20
+        jb      .done
+        movzx   eax, byte [esi+14]
+        and     eax, 15
+        shl     eax, 2                          ; IP header length
+        cmp     eax, 20
+        jb      .done
+        test    word [esi+20], 0xFF1F           ; not the first fragment
+        jnz     .done
+        lea     edx, [esi+14+eax]
+        add     eax, 14+8                       ; room for an ICMP/UDP header
+        cmp     ecx, eax
+        jb      .done
+        cmp     byte [esi+23], 1                ; ICMP
+        je      .limit
+        cmp     byte [esi+23], 17               ; UDP
+        je      .udp
+        cmp     byte [esi+23], 6                ; TCP
+        jne     .done
+        add     eax, 20-8
+        cmp     ecx, eax
+        jb      .done
+        test    byte [edx+13], 7                ; FIN, SYN or RST
+        jz      .done
+        jmp     .limit
+  .udp:
+        mov     eax, [edx]                      ; both ports, big-endian
+        mov     ecx, 2
+  .udp_port:
+        cmp     ax, 53 shl 8                    ; DNS
+        je      .limit
+        cmp     ax, 67 shl 8                    ; DHCP server
+        je      .limit
+        cmp     ax, 68 shl 8                    ; DHCP client
+        je      .limit
+        shr     eax, 16
+        dec     ecx
+        jnz     .udp_port
+        jmp     .done
+  .arp:
+        cmp     ecx, 42
+        jb      .done
+
+; Rate limit: RNDIS_LOG_BURST lines per 100 ticks.
+  .limit:
+        push    edx
+        invoke  GetTimerTicks
+        pop     edx
+        mov     ecx, eax
+        sub     ecx, [ebx+rndis_dev.LogTicks]
+        cmp     ecx, 100
+        jb      @f
+        mov     [ebx+rndis_dev.LogTicks], eax
+        mov     [ebx+rndis_dev.LogCount], 0
+  @@:
+        cmp     [ebx+rndis_dev.LogCount], RNDIS_LOG_BURST
+        jb      @f
+        inc     [ebx+rndis_dev.StatLogDrop]
+        ret
+  @@:
+        inc     [ebx+rndis_dev.LogCount]
+
+; eax = ticks, ebp = direction, esi -> frame, edx -> transport header
+        cmp     word [esi+12], 0x0608
+        je      .print_arp
+        cmp     byte [esi+23], 1
+        je      .print_icmp
+        cmp     byte [esi+23], 17
+        je      .print_udp
+
+;--------------------------------- TCP
+        push    ebp                             ; direction, tested below
+        movzx   ecx, word [esi+16]
+        xchg    cl, ch                          ; IP total length
+        movzx   ebx, byte [esi+14]
+        and     ebx, 15
+        shl     ebx, 2
+        sub     ecx, ebx                        ; minus the IP header
+        movzx   ebx, byte [edx+12]
+        shr     ebx, 4
+        shl     ebx, 2
+        sub     ecx, ebx                        ; minus the TCP header
+        jns     @f
+        xor     ecx, ecx
+  @@:
+        mov     ebp, ecx                        ; payload length
+        movzx   ecx, word [edx]
+        xchg    cl, ch                          ; source port
+        mov     di, [edx+2]
+        rol     di, 8
+        movzx   edi, di                         ; destination port
+        movzx   ebx, word [edx+14]
+        xchg    bl, bh                          ; window (unscaled)
+        cmp     dword [esp], 0
+        jne     .tcp_out
+        DEBUGF  2,"t%u in  TCP %u.%u.%u.%u:%u > %u.%u.%u.%u:%u flags %x win %u len %u\n", eax, \
+                [esi+26]:1, [esi+27]:1, [esi+28]:1, [esi+29]:1, ecx, \
+                [esi+30]:1, [esi+31]:1, [esi+32]:1, [esi+33]:1, edi, \
+                [edx+13]:2, ebx, ebp
+        pop     eax
+        ret
+  .tcp_out:
+        DEBUGF  2,"t%u out TCP %u.%u.%u.%u:%u > %u.%u.%u.%u:%u flags %x win %u len %u\n", eax, \
+                [esi+26]:1, [esi+27]:1, [esi+28]:1, [esi+29]:1, ecx, \
+                [esi+30]:1, [esi+31]:1, [esi+32]:1, [esi+33]:1, edi, \
+                [edx+13]:2, ebx, ebp
+        pop     eax
+        ret
+
+;--------------------------------- UDP (DNS, DHCP)
+  .print_udp:
+        movzx   ecx, word [edx]
+        xchg    cl, ch                          ; source port
+        mov     di, [edx+2]
+        rol     di, 8
+        movzx   edi, di                         ; destination port
+        movzx   ebx, word [edx+4]
+        xchg    bl, bh
+        sub     ebx, 8                          ; payload length
+        test    ebp, ebp
+        jnz     .udp_out
+        DEBUGF  2,"t%u in  UDP %u.%u.%u.%u:%u > %u.%u.%u.%u:%u len %u\n", eax, \
+                [esi+26]:1, [esi+27]:1, [esi+28]:1, [esi+29]:1, ecx, \
+                [esi+30]:1, [esi+31]:1, [esi+32]:1, [esi+33]:1, edi, ebx
+        ret
+  .udp_out:
+        DEBUGF  2,"t%u out UDP %u.%u.%u.%u:%u > %u.%u.%u.%u:%u len %u\n", eax, \
+                [esi+26]:1, [esi+27]:1, [esi+28]:1, [esi+29]:1, ecx, \
+                [esi+30]:1, [esi+31]:1, [esi+32]:1, [esi+33]:1, edi, ebx
+        ret
+
+;--------------------------------- ICMP
+  .print_icmp:
+        test    ebp, ebp
+        jnz     .icmp_out
+        DEBUGF  2,"t%u in  ICMP %u.%u.%u.%u > %u.%u.%u.%u type %u code %u\n", eax, \
+                [esi+26]:1, [esi+27]:1, [esi+28]:1, [esi+29]:1, \
+                [esi+30]:1, [esi+31]:1, [esi+32]:1, [esi+33]:1, \
+                [edx]:1, [edx+1]:1
+        ret
+  .icmp_out:
+        DEBUGF  2,"t%u out ICMP %u.%u.%u.%u > %u.%u.%u.%u type %u code %u\n", eax, \
+                [esi+26]:1, [esi+27]:1, [esi+28]:1, [esi+29]:1, \
+                [esi+30]:1, [esi+31]:1, [esi+32]:1, [esi+33]:1, \
+                [edx]:1, [edx+1]:1
+        ret
+
+;--------------------------------- ARP
+; a request names who asks; a reply names the MAC, which tells a stale
+; entry (the phone's address changed) from a missing one
+  .print_arp:
+        cmp     byte [esi+21], 2                ; opcode: 1 request, 2 reply
+        je      .arp_reply
+        test    ebp, ebp
+        jnz     .arp_req_out
+        DEBUGF  2,"t%u in  ARP who-has %u.%u.%u.%u tell %u.%u.%u.%u\n", eax, \
+                [esi+38]:1, [esi+39]:1, [esi+40]:1, [esi+41]:1, \
+                [esi+28]:1, [esi+29]:1, [esi+30]:1, [esi+31]:1
+        ret
+  .arp_req_out:
+        DEBUGF  2,"t%u out ARP who-has %u.%u.%u.%u tell %u.%u.%u.%u\n", eax, \
+                [esi+38]:1, [esi+39]:1, [esi+40]:1, [esi+41]:1, \
+                [esi+28]:1, [esi+29]:1, [esi+30]:1, [esi+31]:1
+        ret
+  .arp_reply:
+        test    ebp, ebp
+        jnz     .arp_rep_out
+        DEBUGF  2,"t%u in  ARP %u.%u.%u.%u is-at %x-%x-%x-%x-%x-%x\n", eax, \
+                [esi+28]:1, [esi+29]:1, [esi+30]:1, [esi+31]:1, \
+                [esi+22]:2, [esi+23]:2, [esi+24]:2, [esi+25]:2, [esi+26]:2, [esi+27]:2
+        ret
+  .arp_rep_out:
+        DEBUGF  2,"t%u out ARP %u.%u.%u.%u is-at %x-%x-%x-%x-%x-%x\n", eax, \
+                [esi+28]:1, [esi+29]:1, [esi+30]:1, [esi+31]:1, \
+                [esi+22]:2, [esi+23]:2, [esi+24]:2, [esi+25]:2, [esi+26]:2, [esi+27]:2
+  .done:
+        ret
+
+; Track incoming TCP sequence numbers per flow: gap counts segments
+; past a hole, retx segments with data already received (cumulative).
+; IN: ebx = device context, esi -> ethernet frame, ecx = frame length
+; Destroys everything but ebx and ebp.
+proc rndis_track_tcp
+
+        cmp     ecx, 54                         ; eth+min IP+min TCP
+        jb      .done
+        cmp     word [esi+12], 0x0008           ; EtherType IPv4
+        jne     .done
+        cmp     byte [esi+23], 6                ; IP protocol TCP
+        jne     .done
+        movzx   edx, byte [esi+14]
+        and     edx, 15
+        shl     edx, 2                          ; IP header length
+        movzx   eax, word [esi+16]
+        xchg    al, ah                          ; IP total length
+        sub     eax, edx
+        jbe     .done
+        lea     edi, [esi+14+edx]               ; TCP header
+        movzx   edx, byte [edi+12]
+        shr     edx, 4
+        shl     edx, 2                          ; TCP header length
+        sub     eax, edx                        ; payload length
+        jbe     .done                           ; pure ACK: no sequence space
+        mov     ecx, eax
+        mov     edx, [esi+26]                   ; source IP
+        xor     edx, [edi]                      ; ^ source/destination ports
+        mov     eax, [edi+4]
+        bswap   eax                             ; sequence number
+
+        lea     esi, [ebx+rndis_dev.Flows]
+        mov     edi, RNDIS_FLOWS
+  .find:
+        cmp     [esi], edx
+        je      .found
+        add     esi, 8
+        dec     edi
+        jnz     .find
+; a new flow: take over the oldest slot
+        mov     edi, [ebx+rndis_dev.FlowNext]
+        inc     [ebx+rndis_dev.FlowNext]
+        and     edi, RNDIS_FLOWS-1
+        lea     esi, [ebx+rndis_dev.Flows+edi*8]
+        mov     [esi], edx
+        jmp     .advance
+
+  .found:
+        mov     edx, eax
+        sub     edx, [esi+4]                    ; seq - expected
+        jz      .advance
+        js      .old
+        inc     [ebx+rndis_dev.StatGap]
+        jmp     .advance
+  .old:
+        inc     [ebx+rndis_dev.StatRetx]
+        lea     edx, [eax+ecx]
+        sub     edx, [esi+4]
+        jle     .done                           ; nothing new in it
+  .advance:
+        add     eax, ecx
+        mov     [esi+4], eax
+  .done:
         ret
 
 endp
@@ -1031,11 +1460,12 @@ proc rndis_rx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .bu
 
 locals
         msg_off         dd      ?       ; offset of the current message
-        rearmed         dd      ?       ; the other buffer is already armed
 endl
 
         mov     ebx, [.calldata]
         DEBUGF  1,"RX cb st %u len %u\n", [.status], [.length]
+; this transfer has left the queue, whatever its outcome
+        dec     [ebx+rndis_dev.RxArmed]
         cmp     [ebx+rndis_dev.Dead], 0
         jne     .ret
         cmp     [.status], USB_STATUS_CLOSED
@@ -1059,27 +1489,12 @@ end if
         jae     .rx_dead
         invoke  USBNormalTransferAsync, [ebx+rndis_dev.InPipe], [.buffer], \
                 [ebx+rndis_dev.RxSize], rndis_rx_callback, ebx, 1
+        test    eax, eax
+        jz      .check_dry
+        inc     [ebx+rndis_dev.RxArmed]
         jmp     .ret
   .status_ok:
         mov     [ebx+rndis_dev.RxErrRun], 0     ; the error run is broken
-
-; Re-arm the pipe with the other buffer BEFORE parsing this one: the
-; device streams the next frames while the host walks the current
-; buffer. The completed transfer is already off the queue, so still at
-; most one transfer is outstanding (a hard requirement of the EHCI
-; stack, see the note in usbcdc.asm).
-        mov     [rearmed], 0
-        mov     eax, [ebx+rndis_dev.RxBufs]
-        cmp     eax, [.buffer]
-        jne     @f
-        mov     eax, [ebx+rndis_dev.RxBufs+4]
-  @@:
-        invoke  USBNormalTransferAsync, [ebx+rndis_dev.InPipe], eax, \
-                [ebx+rndis_dev.RxSize], rndis_rx_callback, ebx, 1
-        test    eax, eax
-        jz      @f
-        mov     [rearmed], 1
-  @@:
 
         mov     [msg_off], 0
 
@@ -1151,8 +1566,29 @@ end if
 if DEBUG_STATS
         inc     [ebx+rndis_dev.StatFrames]
         add     [ebx+rndis_dev.StatBytes], ecx
+        pushad
+        lea     esi, [edi+NET_BUFF.data]
+        xor     edi, edi
+        call    rndis_log_frame
+        popad
+        pushad
+        lea     esi, [edi+NET_BUFF.data]
+        call    rndis_track_tcp
+        popad
 end if
         DEBUGF  1,"->host frame %u bytes\n", [edi+NET_BUFF.length]
+
+; Frames arrive, so the link is up despite MEDIA_DISCONNECT (a phone
+; tethering at cold boot never sends MEDIA_CONNECT).
+        cmp     [ebx+rndis_dev.LinkDown], 0
+        je      .link_ok
+        mov     [ebx+rndis_dev.LinkDown], 0
+        mov     [ebx+rndis_dev.state], ETH_LINK_SPEED_10M or ETH_LINK_FULL_DUPLEX
+        DEBUGF  2,"frames arrive while the link is down, taking it as up\n"
+        pushad
+        invoke  NetLinkChanged
+        popad
+  .link_ok:
 
 ; hand the buffer to the network stack. EthInput consumes
 ; [esp] = buffer and returns to the address at [esp+4].
@@ -1168,19 +1604,31 @@ end if
         inc     [ebx+rndis_dev.packets_rx_drop]
         jmp     .msg_loop
 
-; End of processing. If arming the other buffer failed at entry, fall
-; back to re-submitting the just-parsed buffer so receive does not stop.
+; put this buffer back at the tail of the queue
   .rearm:
 if DEBUG_STATS
+; bytes of the transfer not turned into frames; must stay 0
+        mov     eax, [.length]
+        sub     eax, [msg_off]
+        jbe     @f
+        add     [ebx+rndis_dev.StatTail], eax
+  @@:
         call    rndis_stats
 end if
-        cmp     [rearmed], 0
-        jne     .ret
         invoke  USBNormalTransferAsync, [ebx+rndis_dev.InPipe], [.buffer], \
                 [ebx+rndis_dev.RxSize], rndis_rx_callback, ebx, 1
         test    eax, eax
-        jnz     .ret
+        jz      .rearm_failed
+        inc     [ebx+rndis_dev.RxArmed]
+        ret
+  .rearm_failed:
         DEBUGF  2,"failed to re-arm RX\n"
+; Losing one buffer of the queue is survivable as long as something is
+; still outstanding; if nothing is, receive has stopped for good.
+  .check_dry:
+        cmp     [ebx+rndis_dev.RxArmed], 0
+        jne     .ret
+        DEBUGF  2,"receive queue ran dry, receive stopped\n"
   .ret:
         ret
 
@@ -1188,7 +1636,11 @@ end if
         DEBUGF  2,"bulk IN stalled, receive stopped\n"
         ret
 
+; Every buffer still in the queue arrives here in turn; report the death
+; of the pipe only once.
   .rx_dead:
+        cmp     [ebx+rndis_dev.state], ETH_LINK_DOWN
+        je      .ret
         DEBUGF  2,"RX stopped after repeated transfer errors\n"
         mov     [ebx+rndis_dev.state], ETH_LINK_DOWN
         push    ebx
@@ -1213,7 +1665,50 @@ proc rndis_tx_callback stdcall uses ebx esi edi, .pipe:dword, .status:dword, .bu
         DEBUGF  1,"TX error %u\n", [.status]
   @@:
         mov     eax, [.calldata]
-        invoke  Kfree
+        call    rndis_tx_release
+        ret
+
+endp
+
+; Take a free transmit slot.
+; IN: ebx = device context. OUT: eax = slot, 0 if none. Destroys ecx, edx.
+; The stack transmits on its own thread while completions run on the USB
+; thread, possibly on another CPU, hence the locked bit operations.
+if RNDIS_TX_SLOT <> 2048
+  err "rndis_tx_claim/rndis_tx_release shift by 11 for 2 KB slots"
+end if
+proc rndis_tx_claim
+
+        xor     edx, edx
+  .scan:
+        mov     eax, [ebx+rndis_dev.TxFree+edx*4]
+        test    eax, eax
+        jz      .next
+        bsf     ecx, eax
+        lock btr [ebx+rndis_dev.TxFree+edx*4], ecx
+        jnc     .scan                           ; taken meanwhile: look again
+        shl     edx, 5
+        add     edx, ecx                        ; slot number
+        shl     edx, 11
+        mov     eax, [ebx+rndis_dev.TxArea]
+        add     eax, edx
+        ret
+  .next:
+        inc     edx
+        cmp     edx, RNDIS_TX_MAX_PENDING/32
+        jb      .scan
+        xor     eax, eax
+        ret
+
+endp
+
+; Give a transmit slot back.
+; IN: ebx = device context, eax = slot. Destroys eax.
+proc rndis_tx_release
+
+        sub     eax, [ebx+rndis_dev.TxArea]
+        shr     eax, 11                         ; slot number
+        lock bts [ebx+rndis_dev.TxFree], eax
         ret
 
 endp
@@ -1227,8 +1722,8 @@ endp
 ;;                                                                 ;;
 ;; The frame is prepended with a 44-byte REMOTE_NDIS_PACKET_MSG.   ;;
 ;; If the transfer would be a multiple of the endpoint packet      ;;
-;; size, one extra zero byte is sent (not counted in the message   ;;
-;; length) so that the transfer ends in a short packet.            ;;
+;; size, one extra zero byte is sent so that the transfer ends in  ;;
+;; a short packet; it is counted in MessageLength (QEMU needs it). ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1251,13 +1746,22 @@ endl
         je      .drop
         mov     ecx, [esi+NET_BUFF.length]
         cmp     ecx, 14
-        jb      .err
+        jb      .badlen
         cmp     ecx, ETH_FRAME_MAX
-        ja      .err
+        ja      .badlen
         DEBUGF  1,"host-> frame %u bytes\n", ecx
 
 ; limit the number of messages in flight
         lock inc [ebx+rndis_dev.TxPending]
+if DEBUG_STATS
+; remember how deep the queue actually gets: the margin left before
+; frames start being refused
+        mov     eax, [ebx+rndis_dev.TxPending]
+        cmp     eax, [ebx+rndis_dev.StatTxHigh]
+        jbe     @f
+        mov     [ebx+rndis_dev.StatTxHigh], eax
+  @@:
+end if
         cmp     [ebx+rndis_dev.TxPending], RNDIS_TX_MAX_PENDING
         ja      .overrun
 
@@ -1276,6 +1780,7 @@ endl
         test    eax, edx
         jnz     @f
         inc     eax
+        mov     [msglen], eax                   ; the pad byte is part of it
   @@:
         mov     [xferlen], eax
 ; never exceed what the device declared it can receive
@@ -1285,9 +1790,8 @@ endl
         cmp     eax, edx
         ja      .toobig
   @@:
-; allocate [context dword][message]
-        add     eax, 4
-        invoke  Kmalloc
+; take a slot for [context dword][message]
+        call    rndis_tx_claim
         test    eax, eax
         jz      .no_memory
         mov     [alloc], eax
@@ -1321,6 +1825,15 @@ endl
         rep stosb
 
 if DEBUG_STATS
+; stats: spell out the control frames we send
+        pushad
+        mov     esi, [alloc]
+        add     esi, 4+RNDIS_HDR_SIZE           ; frame start
+        mov     ecx, edx                        ; frame length
+        movi    edi, 1
+        call    rndis_log_frame
+        popad
+
 ; stats: remember the TCP receive window we advertise (rwnd health on
 ; downloads; parsed from the outgoing frame: eth+IPv4+TCP)
         cmp     edx, 54                         ; eth+min IP+min TCP
@@ -1359,7 +1872,7 @@ end if
 
   .submit_failed:
         mov     eax, [alloc]
-        invoke  Kfree
+        call    rndis_tx_release
         lock dec [ebx+rndis_dev.TxPending]
         jmp     .err
 
@@ -1375,6 +1888,16 @@ end if
         lock dec [ebx+rndis_dev.TxPending]
         inc     [ebx+rndis_dev.packets_tx_ovr]
         jmp     .drop
+
+; A frame the stack handed down does not fit an ethernet frame at all.
+; Report the first few: the length says at once whether the stack built
+; an oversized segment (t_maxseg not clamped to our mtu, which shows up
+; as an endlessly retransmitting connection) or something else.
+  .badlen:
+        cmp     [ebx+rndis_dev.LenErrNoted], 4
+        jae     .err
+        inc     [ebx+rndis_dev.LenErrNoted]
+        DEBUGF  2,"refusing a frame of %u bytes\n", ecx
 
   .err:
         inc     [ebx+rndis_dev.packets_tx_err]
@@ -1410,6 +1933,11 @@ proc DeviceDisconnected stdcall uses ebx esi edi, .devdata:dword
         mov     ebx, [.devdata]
         DEBUGF  2,"device disconnected\n"
         mov     [ebx+rndis_dev.Dead], 1
+        mov     eax, [ebx+rndis_dev.LinkTimer]
+        test    eax, eax
+        jz      @f
+        invoke  CancelTimerHS, eax              ; must not fire on a freed context
+  @@:
         cmp     [ebx+rndis_dev.Registered], 0
         je      @f
         mov     [ebx+rndis_dev.state], ETH_LINK_DOWN
@@ -1421,16 +1949,17 @@ proc DeviceDisconnected stdcall uses ebx esi edi, .devdata:dword
         pop     ebx
         mov     [ebx+rndis_dev.Registered], 0
   @@:
-        xor     esi, esi
-  .free_loop:
-        mov     eax, [ebx+rndis_dev.RxBufs+esi*4]
+; every transfer callback has run by now, so no slot or buffer is in use
+        mov     eax, [ebx+rndis_dev.RxArea]
         test    eax, eax
         jz      @f
         invoke  KernelFree, eax
   @@:
-        inc     esi
-        cmp     esi, RNDIS_RX_BUFFERS
-        jb      .free_loop
+        mov     eax, [ebx+rndis_dev.TxArea]
+        test    eax, eax
+        jz      @f
+        invoke  KernelFree, eax
+  @@:
         mov     eax, ebx
         invoke  Kfree
         ret
@@ -1480,5 +2009,6 @@ end data
 
 align 4
 parse_scratch   rndis_parse
+random_mac      rb      6       ; host address used instead of a made-up one
 
 include_debug_strings
