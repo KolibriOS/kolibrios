@@ -198,6 +198,10 @@ ends
 
 SOCKET_STRUCT_SIZE      = 4096          ; in bytes
 
+if sizeof.STREAM_SOCKET > SOCKET_STRUCT_SIZE
+  err "STREAM_SOCKET does not fit in SOCKET_STRUCT_SIZE"
+end if
+
 SOCKET_QUEUE_SIZE       = 10            ; maximum number of incoming packets queued for 1 socket
 ; the incoming packet queue for sockets is placed in the socket struct itself, at this location from start
 SOCKET_QUEUE_LOCATION   = (SOCKET_STRUCT_SIZE - SOCKET_QUEUE_SIZE*sizeof.socket_queue_entry - sizeof.queue)
