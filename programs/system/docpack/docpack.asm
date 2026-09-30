@@ -9,7 +9,7 @@
 ;---------------------------------------------------------------------
 
 FILE_COUNT=0
-DEF_FILE equ 'g'
+DEF_FILE equ 'f'
 
 macro embed_docdir_file fn
 {
@@ -197,18 +197,17 @@ embedded:
 
   embed_docdir_file 'Copying.txt'      ;a
   embed_docdir_file 'Hot_Keys.txt'     ;b
-  embed_local_file 'Fasm.txt'          ;c
-  embed_docdir_file 'Mtdbg.txt'        ;d
+  embed_docdir_file 'Mtdbg.txt'        ;c
 if lang eq ru_RU
-  embed_local_file 'SysFuncr.txt'      ;e
+  embed_local_file  'SysFuncr.txt'     ;d
 else ; Default to en_US
-  embed_local_file 'SysFuncs.txt'      ;e
+  embed_local_file  'SysFuncs.txt'     ;d
 end if
-  embed_local_file 'Stack.txt'         ;f
-  embed_docdir_file 'KFAR_Keys.txt'    ;g
-  embed_docdir_file 'INI.txt'          ;h
-  embed_docdir_file 'OpenDial.txt'     ;i
-  embed_docdir_file 'Credits.txt'      ;j
+  embed_local_file  'Stack.txt'        ;e
+  embed_docdir_file 'KFAR_Keys.txt'    ;f
+  embed_docdir_file 'INI.txt'          ;g
+  embed_docdir_file 'OpenDial.txt'     ;h
+  embed_docdir_file 'Credits.txt'      ;i
 ; -- End of embedding area  -------
 
   dd 0

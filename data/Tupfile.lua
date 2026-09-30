@@ -166,6 +166,7 @@ extra_files = {
  {"kolibrios/demos/rpento.lif", "common/demos/rpento.lif"},
  {"kolibrios/develop/fpc/", "common/develop/fpc/*"},
  {"kolibrios/develop/fpc/examples/", "../programs/develop/fp/examples/src/*"},
+ {"kolibrios/develop/fasm/fasm.txt", SRC_PROGS .. "/develop/fasm/1.73/fasm.txt"},
  {"kolibrios/develop/oberon07/compiler.kex", SRC_PROGS .. "/develop/oberon07/Compiler.kex"},
  {"kolibrios/develop/oberon07/LICENSE", SRC_PROGS .. "/develop/oberon07/LICENSE"},
  {"kolibrios/develop/oberon07/doc/CC.txt", SRC_PROGS .. "/develop/oberon07/doc/CC.txt"},
