@@ -413,10 +413,12 @@ endl
 ; check if we don't exceed the max segment size
 
         add     esi, edi                        ; total TCP segment size
-        cmp     esi, [eax + TCP_SOCKET.t_maxseg]
+        mov     ebx, [eax + TCP_SOCKET.t_maxseg]
+        add     ebx, sizeof.TCP_header          ; MSS does not count the header
+        cmp     esi, ebx
         jbe     .no_overflow
 
-        mov     esi, [eax + TCP_SOCKET.t_maxseg]
+        mov     esi, ebx
         or      [temp_bits], TCP_BIT_SENDALOT
   .no_overflow:
 
