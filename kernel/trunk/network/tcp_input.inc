@@ -864,6 +864,9 @@ endl
         mov     [ebx + TCP_SOCKET.t_state], TCPS_CLOSED
         inc     [TCPS_drops]
 
+; Wake up the application
+        mov     eax, ebx
+        call    socket_is_disconnected
 
         jmp     .drop
 
