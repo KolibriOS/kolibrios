@@ -978,7 +978,7 @@ endl
 
         inc     [ebx + TCP_SOCKET.t_dupacks]
         cmp     [ebx + TCP_SOCKET.t_dupacks], TCP_re_xmit_thresh
-        jb      .dup_ack_complete
+        jb      .ack_processed
         ja      .another_lost
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_input: Re-transmitting lost segment\n"
