@@ -566,10 +566,10 @@ arp_ip_to_mac:
 ; Now send a request packet on the network
         pop     edi eax                 ; IP in eax, device number in ebx, for ARP_output_request
 
-        push    esi edi
+        push    eax esi edi             ; arp_output_request trashes eax
         mov     ebx, [net_device_list + edi]
         call    arp_output_request
-        pop     edi esi
+        pop     edi esi eax
   .found_it:
         cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING             ; Does it have a MAC assigned?
         je      .valid
@@ -592,6 +592,24 @@ if ARP_BLOCK
         mov     ebx, 1                  ; sleep 10 ms
         call    delay_hs
         pop     ebx
+
+; The entry may have moved (arp_del_entry), find it again
+        cmp     [esi + ARP_entry.IP], eax
+        je      .same_entry
+        mov     ecx, [ARP_entries + edi]
+        test    ecx, ecx
+        jz      .wait_over
+        mov     esi, edi
+        imul    esi, (sizeof.ARP_entry * ARP_TABLE_SIZE)/4
+        add     esi, ARP_table + ARP_entry.IP
+  .rescan:
+        cmp     [esi], eax
+        je      .same_entry
+        add     esi, sizeof.ARP_entry
+        dec     ecx
+        jnz     .rescan
+        jmp     .wait_over
+  .same_entry:
         cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING
         je      .wait_done
         cmp     [esi + ARP_entry.Status], ARP_AWAITING_RESPONSE
