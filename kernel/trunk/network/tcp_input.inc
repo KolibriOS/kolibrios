@@ -399,6 +399,7 @@ endl
         bswap   eax
         mov     [ebx + TCP_SOCKET.ts_val], eax
         lodsd                                   ; timestamp echo reply
+        bswap   eax
         mov     [ebx + TCP_SOCKET.ts_ecr], eax
         or      [temp_bits], TCP_BIT_TIMESTAMP
 
