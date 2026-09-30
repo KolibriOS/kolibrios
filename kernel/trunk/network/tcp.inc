@@ -208,6 +208,7 @@ macro   tcp_init {
         mov     ecx, (6*NET_DEVICES_MAX)
         rep stosd
 
+        rdtsc                           ; seed, differs from boot to boot
         pseudo_random   eax
         mov     [TCP_sequence_num], eax
 

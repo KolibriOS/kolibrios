@@ -226,6 +226,7 @@ macro   socket_init {
         mov     ecx, 5
         rep stosd
 
+        rdtsc                           ; seed, differs from boot to boot
        @@:
         pseudo_random eax
         cmp     ax, EPHEMERAL_PORT_MIN
