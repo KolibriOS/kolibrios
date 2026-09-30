@@ -103,10 +103,25 @@ proc tcp_timer_640ms
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: Retransmission timer expired\n", eax
 
+; Lock socket, an ACK may have stopped or restarted the timer meanwhile
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_lock
+        popa
+        test    [eax + TCP_SOCKET.timer_flags], timer_flag_retransmission
+        jz      .rexmt_cancelled
+        cmp     [eax + TCP_SOCKET.timer_retransmission], 0
+        jne     .rexmt_cancelled
+
 ; Too many retransmissions? Drop the connection
         inc     [eax + TCP_SOCKET.t_rxtshift]
         cmp     [eax + TCP_SOCKET.t_rxtshift], TCP_max_rxtshift
         jbe     .rexmt
+
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+        popa
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: too many retransmissions, dropping\n", eax
 
@@ -116,13 +131,18 @@ proc tcp_timer_640ms
         pop     eax
         jmp     .check_only
 
+  .rexmt_cancelled:
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+        popa
+        jmp     .check_more2
+
   .rexmt:
         push    ebx ecx edx
 
-; Restart timer with backoff: REXMTVAL << min(t_rxtshift, 6)
-        mov     ebx, [eax + TCP_SOCKET.t_srtt]
-        shr     ebx, TCP_RTT_SHIFT
-        add     ebx, [eax + TCP_SOCKET.t_rttvar]
+; Restart timer with backoff: t_rxtcur << min(t_rxtshift, 6)
+        mov     ebx, [eax + TCP_SOCKET.t_rxtcur]
         mov     cl, [eax + TCP_SOCKET.t_rxtshift]
         cmp     cl, 6
         jbe     @f
@@ -166,6 +186,11 @@ proc tcp_timer_640ms
         mov     [ebx + TCP_SOCKET.SND_CWND], ecx
         mov     eax, ebx
         pop     edx ecx ebx
+
+        pusha
+        lea     ecx, [eax + SOCKET.mutex]
+        call    mutex_unlock
+        popa
 
         push    eax
         call    tcp_output
