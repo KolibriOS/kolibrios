@@ -100,6 +100,7 @@ endp
 
 proc service_proc stdcall, ioctl:dword
 
+	push 	esi
       	mov     esi, [ioctl]
       	mov     eax, [esi + IOCTL.io_code]
       	cmp     eax, SRV_GETVERSION
@@ -110,10 +111,12 @@ proc service_proc stdcall, ioctl:dword
       	jne     .ret
       	mov     dword [eax], API_VERSION
       	xor     eax, eax
+	pop 	esi
       	ret
 
 .ret:
 	or      eax, -1
+	pop 	esi
 	ret
 
 endp
@@ -122,46 +125,64 @@ endp
 ; device was successfully initialized by nvme_init, otherwise this
 ; will have undefined behavior.
 proc add_nvme_disk stdcall, pci:dword
+locals
+	diskname 	rb 28 ; "nvme" <controller> "n" <NSID> 0, both numbers in decimal
+endl
 
-	push 	esi
+	push 	esi edi
 	mov 	esi, [pci]
-
-	; NOTE: If the pcidev.num or pcidev.nsid is more than 9 then
-	; this fails to build the string correctly. Ignoring this issue
-	; for now since who has more than 9 NVMe SSDs on a desktop computer
-	; and a NSID bigger than 9 is also unlikely.
-	;
-	; Still, will address this problem in the future.
-	push 	0 ; null terminator
-	movzx 	eax, byte [esi + pcidev.nsid]
-	add 	al, "0"
-	mov 	byte [esp], al
-	dec 	esp
-	mov 	byte [esp], "n"
-	dec 	esp
-	movzx 	eax, byte [esi + pcidev.num]
-	add 	al, "0"
-	mov 	byte [esp], al
-	push 	"nvme"
-	mov 	eax, esp
+	; the kernel copies the name, a buffer on the stack will do
+	lea 	edi, [diskname]
+	mov 	dword [edi], "nvme"
+	add 	edi, 4
+	mov 	eax, dword [esi + pcidev.num]
+	call 	put_decimal
+	mov 	al, "n"
+	stosb
+	mov 	eax, dword [esi + pcidev.nsid]
+	call 	put_decimal
+	mov 	byte [edi], 0
+	lea 	eax, [diskname]
 	invoke  DiskAdd, disk_functions, eax, [esi + pcidev.nsinfo], 0
-	add 	esp, 10
 	test 	eax, eax
 	jz 	@f
+	mov 	dword [esi + pcidev.disk], eax
 	invoke  DiskMediaChanged, eax, 1
 	DEBUGF  DBG_INFO, "nvme%un%u: Successfully registered disk\n", [esi + pcidev.num], [esi + pcidev.nsid]
 	xor 	eax, eax
 	inc 	eax
-	pop 	esi
+	pop 	edi esi
 	ret
 
 @@:
 	DEBUGF  DBG_INFO, "nvme%un%u: Failed to register disk\n", [esi + pcidev.num], [esi + pcidev.nsid]
 	xor 	eax, eax
-	pop 	esi
+	pop 	edi esi
 	ret
 
 endp
+
+; Writes eax in decimal at edi, leaves edi past the last digit.
+put_decimal:
+	push 	ebx edx
+	mov 	ebx, 10
+	xor 	ecx, ecx
+
+@@:
+	xor 	edx, edx
+	div 	ebx
+	push 	edx
+	inc 	ecx
+	test 	eax, eax
+	jnz 	@b
+
+@@:
+	pop 	eax
+	add 	al, "0"
+	stosb
+	loop 	@b
+	pop 	edx ebx
+	retn
 
 proc nvme_query_media stdcall, userdata:dword, info:dword
 
@@ -206,7 +227,16 @@ proc is_active_namespace stdcall, pci:dword, nsid:dword
 	invoke  GetPhysAddr
 	stdcall nvme_identify, [pci], [nsid], eax, CNS_IDNS
 	test 	eax, eax
-	jz 	.not_active_nsid
+	jnz 	.check_data
+	; a controller that timed out may still write into the buffer, keep it
+	mov 	eax, [pci]
+	cmp 	byte [eax + pcidev.hung], 0
+	je 	.not_active_nsid
+	pop 	edi esi
+	xor 	eax, eax
+	ret
+
+.check_data:
 	xor 	ecx, ecx
 
 @@:
@@ -257,6 +287,10 @@ proc determine_active_nsids stdcall, pci:dword
 	jmp 	.ret
 
 .not_active_namespace:
+	; a timeout is not an inactive namespace: stop rather than spend another
+	; 30 s on each of up to NN identifiers
+	cmp 	byte [esi + pcidev.hung], 0
+	jne 	.ret
 	inc 	ecx
 	jmp 	.loop
 
@@ -433,6 +467,10 @@ assert prp2 - prp1 = 4
 	mov 	eax, [numsectors_ptr]
 	mov 	eax, dword [eax]
 	mov 	[left], eax
+	mov 	[prp_list], 0
+	; a controller that hung was taken out of service by nvme_poll
+	cmp 	byte [ebx + pcidev.ready], 0
+	je 	.fail
 	mov 	eax, [buf]
 	mov 	[cur_buf], eax
 	mov 	eax, dword [start_sector]
@@ -501,10 +539,13 @@ assert prp2 - prp1 = 4
 	ret
 
 .fail:
-	; free PRP list (if allocated)
+	; free PRP list (if allocated) - unless the command timed out and the
+	; controller would not stop, then it may still read the list
 	mov 	eax, [prp_list]
 	test 	eax, eax
 	jz 	@f
+	cmp 	byte [ebx + pcidev.stuck], 0
+	jne 	@f
 	invoke  KernelFree, eax
 
 @@:
@@ -530,10 +571,15 @@ proc nvme_flush stdcall, ns:dword
 	mov 	ebx, dword [esi + NSINFO.pci]
 	lea 	ecx, [ebx + pcidev.iolock]
 	invoke 	MutexLock
+	xor 	eax, eax
+	cmp 	byte [ebx + pcidev.ready], 0
+	je 	@f
 	mov 	dword [ebx + pcidev.spinlock], 1
 	; a Flush carries no data and no LBA, so the read/write builder serves
 	stdcall nvme_io_rw, ebx, 1, [esi + NSINFO.nsid], 0, 0, 0, 0, 0, NVM_CMD_FLUSH
 	stdcall nvme_poll, ebx
+
+@@:
 	push 	eax
 	lea 	ecx, [ebx + pcidev.iolock]
 	invoke 	MutexUnlock
@@ -555,8 +601,8 @@ proc detect_nvme
 
 .check_dev:
 	mov 	eax, dword [esi + PCIDEV.class]
-	and	eax, 0x00ffff00 ; retrieve class/subclass code only
-	cmp 	eax, 0x00010800 ; Mass Storage Controller - Non-Volatile Memory Controller
+	and	eax, 0x00ffffff ; class, subclass, programming interface
+	cmp 	eax, 0x00010802 ; Mass Storage - Non-Volatile Memory Controller - NVMe (01h is NVMHCI)
 	je	.found_dev
 
 .next_dev:
@@ -570,14 +616,13 @@ proc detect_nvme
 	ret
 
 .found_dev:
-	; skip PCIDEV.owner check if the PCI device pointer has already been
-	; allocated (without this check, more than 1 NVMe device cannot be
-	; registered)
-	mov 	eax, dword [p_nvme_devices]
+	; skip a controller another driver has claimed - the ones claimed here
+	; carry p_nvme_devices - instead of giving up on the rest
+	mov 	eax, dword [esi + PCIDEV.owner]
 	test 	eax, eax
-	jnz 	@f
-	cmp 	dword [esi + PCIDEV.owner], 0
-	jnz 	.err
+	jz 	@f
+	cmp 	eax, dword [p_nvme_devices]
+	jne 	.next_dev
 
 @@:
 	cmp 	dword [num_pcidevs], TOTAL_PCIDEVS
@@ -587,7 +632,6 @@ proc detect_nvme
 
 @@:
 	inc 	dword [num_pcidevs]
-	add 	dword [num_pcidevs_sz], sizeof.pcidev
 	cmp     dword [p_nvme_devices], 0
 	jnz	@f ; was the pointer already allocated?
 	invoke  KernelAlloc, sizeof.pcidev * TOTAL_PCIDEVS
@@ -597,11 +641,11 @@ proc detect_nvme
 	; clear it: nvme_cleanup walks every slot, including those of controllers
 	; whose initialisation never got anywhere
 	stdcall memsetdz, eax, sizeof.pcidev * TOTAL_PCIDEVS / 4
-	mov 	eax, dword [p_nvme_devices]
-	mov 	dword [esi + PCIDEV.owner], eax
-	DEBUGF  DBG_INFO, "nvme: Allocated memory for PCI devices at: 0x%x\n", eax
+	DEBUGF  DBG_INFO, "nvme: Allocated memory for PCI devices at: 0x%x\n", [p_nvme_devices]
 
 @@:
+	mov 	eax, dword [p_nvme_devices]
+	mov 	dword [esi + PCIDEV.owner], eax
 	mov 	ecx, dword [num_pcidevs]
 	dec 	ecx
 	mov 	edi, dword [p_nvme_devices]
@@ -614,6 +658,7 @@ proc detect_nvme
 	movzx 	eax, byte [esi + PCIDEV.devfn]
 	mov 	byte [edi + pcidev.devfn], al
 	mov 	dword [edi + pcidev.num], ecx
+	mov 	dword [edi + pcidev.pcidev], esi
 
 	jmp	.next_dev
 
@@ -634,6 +679,17 @@ endl
 
 	push  	 esi edx ecx
 	mov 	 esi, [pci]
+
+	; Memory decoding has to be on before the registers below are read: firmware
+	; may leave it off (UEFI often does for an NVMe it did not boot from), and the
+	; reads then return all ones - a garbage doorbell stride included.
+	; INTx is disabled at the same time, see nvme_init for why. Bus mastering is
+	; needed by the queues; VirtualBox does not set it, QEMU does. See:
+	; https://git.kolibrios.org/GSoC/kolibrios-nvme-driver/issues/1#issuecomment-467
+	invoke   PciRead16, dword [esi + pcidev.bus], dword [esi + pcidev.devfn], PCI_header00.command
+	or 	 eax, (1 shl 10) or (1 shl 2) or (1 shl 1) ; INTx disable, bus master, memory space
+	invoke   PciWrite16, dword [esi + pcidev.bus], dword [esi + pcidev.devfn], PCI_header00.command, eax
+
 	; The registers sit behind a 64-bit BAR. This kernel cannot reach physical
 	; memory above 4 GiB, so a controller the firmware placed there is unusable.
 	invoke   PciRead32, dword [esi + pcidev.bus], dword [esi + pcidev.devfn], PCI_header00.base_addr_1
@@ -697,8 +753,8 @@ proc nvme_init stdcall, pci:dword
 	push 	 ebx esi edi
 	mov 	 esi, dword [pci]
 
-	; The driver runs without an interrupt, so the first thing is to make sure
-	; the function never asserts INTx. Its completion path is synchronous anyway:
+	; The driver runs without an interrupt; device_is_compat has already made
+	; sure the function never asserts INTx. Its completion path is synchronous:
 	; nvme_poll drains the queues itself within a few spins of a command
 	; completing, and a pin interrupt would only ever shorten that by nothing
 	; measurable. What it can do is harm. Plenty of boards give an NVMe
@@ -708,14 +764,6 @@ proc nvme_init stdcall, pci:dword
 	; completion is pending; from then on a level-triggered interrupt that
 	; nobody services storms and freezes the machine, which is what happened
 	; under QEMU. Not asking for one avoids all of that.
-	invoke   PciRead16, dword [esi + pcidev.bus], dword [esi + pcidev.devfn], PCI_header00.command
-	or 	 eax, (1 shl 10) ; INTx disable
-	; Enable Bus Master bit, memory space access, and I/O space access. QEMU automatically sets the
-	; bus master bit, but Virtualbox does not. Not sure about the other bits though, but let's set them
-	; to 1 to anyway just to be extra cautious.
-	; See: https://git.kolibrios.org/GSoC/kolibrios-nvme-driver/issues/1#issuecomment-467
-	or 	 eax, (1 shl 2) or (1 shl 1) or 1
-	invoke   PciWrite16, dword [esi + pcidev.bus], dword [esi + pcidev.devfn], PCI_header00.command, eax
 
 	; Check if the device has a pointer to the capabilities list (status register bit 4 set to 1)
 	; though this check is probably unnecessary since all PCIe devices should have this bit set to 1
@@ -830,7 +878,7 @@ proc nvme_init stdcall, pci:dword
 	DEBUGF  DBG_INFO, "nvme%u: Admin queue attributes: 0x%x\n", [esi + pcidev.num], eax
 
 	; Allocate list of queues
-	DEBUGF  DBG_INFO, "nvme%u: Allocating Administrator and I/O queues...\n",, [esi + pcidev.num]
+	DEBUGF  DBG_INFO, "nvme%u: Allocating Administrator and I/O queues...\n", [esi + pcidev.num]
 	invoke  KernelAlloc, sizeof.NVM_QUEUE_ENTRY * (LAST_QUEUE_ID + 1)
 	test 	eax, eax
 	jz 	.exit_fail
@@ -882,7 +930,7 @@ proc nvme_init stdcall, pci:dword
 		pop 	esi
 	end if
 
-	; Belt and braces with the INTx disable above: mask every interrupt vector
+	; Belt and braces with the INTx disable in device_is_compat: mask every vector
 	; in the controller as well, so it does not even try to signal completions.
 	mov 	esi, [pci]
 	mov 	eax, dword [esi + pcidev.io_addr]
@@ -1021,7 +1069,24 @@ proc nvme_init stdcall, pci:dword
 	mov 	dword [ebx + NSINFO.capacity + 4], eax 
 	;DEBUGF  DBG_INFO, "nvme%un%u: Namespace Size: %u + %u logical blocks\n", [esi + pcidev.num], [esi + pcidev.nsid], [edi + IDENTN.nsze], [edi + IDENTN.nsze + 4]
 	;DEBUGF  DBG_INFO, "nvme%un%u: Namespace Capacity: %u + %u logical blocks\n", [esi + pcidev.num], [esi + pcidev.nsid], [edi + IDENTN.ncap], [edi + IDENTN.ncap + 4]
-	mov 	eax, dword [edi + IDENTN.lbaf0]
+	; The format in use is the one FLBAS selects, not the first in the table:
+	; drives commonly list 512 bytes first and 4096 second, and one formatted
+	; 4Kn would otherwise be driven as 512 - LBAs and lengths off by 8x and the
+	; transfers overrunning their PRPs. FLBAS bits 3:0 are the index, bits 6:5
+	; its upper part when there are more than 16 formats (NVMe 2.0).
+	movzx 	eax, byte [edi + IDENTN.flbas]
+	mov 	ecx, eax
+	and 	eax, 0xf
+	shr 	ecx, 1
+	and 	ecx, 0x30
+	or 	eax, ecx
+	mov 	eax, dword [edi + IDENTN.lbaf0 + eax * 4]
+	DEBUGF  DBG_INFO, "nvme%u: LBA format in use: 0x%x\n", [esi + pcidev.num], eax
+
+	; Metadata would either come interleaved with the data or be transferred
+	; through MPTR, which the driver leaves at 0 - that is, to physical address 0.
+	test 	ax, ax ; LBAF.MS
+	jnz 	.exit_fail
 	shr 	eax, 16 ; Get LBADS
 
 	; KolibriOS only supports a LBADS of 512, so if it's a higher value then we
@@ -1230,14 +1295,40 @@ endl
 	dec 	dword [busy_left]
 	jns 	.wait
 
-	; nothing yet after a good while: stop burning CPU and wait in slices
+	; nothing yet after a good while: wait in slices. Sleep only spins, so while
+	; serving disk I/O hand the CPU over with Delay (1/100 s ticks) instead. Not
+	; during init or cleanup: the latter runs in the OS thread at shutdown.
 	mov 	dword [busy_left], 0
+	cmp 	byte [edi + pcidev.ready], 0
+	je 	.spin_wait
+	mov 	ebx, CTRL_POLL_MS / 10
+	invoke 	Delay
+	jmp 	.slice_done
+
+.spin_wait:
 	mov 	esi, CTRL_POLL_MS
 	invoke 	Sleep
+
+.slice_done:
 	dec 	dword [slow_left]
 	jnz 	.wait
 
 	DEBUGF  DBG_INFO, "nvme%u: Timed out waiting for a command to complete\n", [edi + pcidev.num]
+	mov 	byte [edi + pcidev.hung], 1
+	cmp 	byte [edi + pcidev.ready], 0
+	je 	.timed_out
+
+	; The command is still owned by the controller: it may DMA into its buffer
+	; and PRP list at any time, and a late completion would be taken for that of
+	; the next command. Reset the controller, which ends all of that, and take
+	; it out of service. (During init and cleanup the callers do the reset.)
+	mov 	byte [edi + pcidev.ready], 0
+	stdcall nvme_disable_ctrl, edi
+	test 	eax, eax
+	jnz 	.timed_out
+	mov 	byte [edi + pcidev.stuck], 1
+
+.timed_out:
 	pop 	edi esi ebx
 	xor 	eax, eax
 	ret
@@ -1279,9 +1370,9 @@ proc cqyhdbl_write stdcall, pci:dword, y:dword, cqh:dword
 	shl 	ecx, LOG2 sizeof.NVM_QUEUE_ENTRY
 	mov 	edi, dword [esi + pcidev.queue_entries]
 	lea 	edi, dword [edi + ecx]
-	mov 	eax, [cqh]
+	movzx 	eax, word [cqh]
 	mov 	esi, dword [esi + pcidev.io_addr]
-	mov 	word [esi + edx], ax ; Write to CQyHDBL
+	mov 	dword [esi + edx], eax ; Write to CQyHDBL - a 32-bit register, narrower writes are undefined
 	mov 	word [edi + NVM_QUEUE_ENTRY.head], ax
 	pop 	edi esi
 	ret
@@ -1327,8 +1418,9 @@ proc sqytdbl_write stdcall, pci:dword, y:word, cmd:dword
 	imul 	edx, ebx
 	add 	edx, 0x1000
 	mov 	word [edi + NVM_QUEUE_ENTRY.tail], ax
+	movzx 	eax, ax
 	mov 	esi, dword [esi + pcidev.io_addr]
-	mov 	word [esi + edx], ax
+	mov 	dword [esi + edx], eax ; SQyTDBL, 32 bits like every register
 	pop 	edi esi ebx
 	ret
 
@@ -1457,10 +1549,27 @@ proc nvme_cleanup
 .get_pcidev:
 	add 	esi, sizeof.pcidev
 
-	; a controller whose initialisation failed was left idle right then and
-	; owns no queues worth deleting
+	; The kernel frees the driver image after DRV_EXIT when the driver is
+	; unloaded (sysfn 68.30), so the disk must not outlive this call - also
+	; when its controller hung and was taken out of service.
+	xor 	eax, eax
+	xchg 	eax, dword [esi + pcidev.disk]
+	test 	eax, eax
+	jz 	@f
+	invoke  DiskDel, eax
+
+@@:
+	; a controller whose initialisation failed was left idle right then, one
+	; that hung was reset by nvme_poll; neither owns queues worth deleting
 	cmp 	byte [esi + pcidev.ready], 0
 	je 	.next_pcidev
+
+	; let a request in flight finish, then refuse any that comes late
+	lea 	ecx, [esi + pcidev.iolock]
+	invoke 	MutexLock
+	mov 	byte [esi + pcidev.ready], 0
+	lea 	ecx, [esi + pcidev.iolock]
+	invoke 	MutexUnlock
 
 	; Free the queues
 	mov 	edi, dword [esi + pcidev.queue_entries]
@@ -1515,6 +1624,13 @@ proc nvme_cleanup
 	stdcall nvme_disable_ctrl, esi
 
 .next_pcidev:
+	; give the controller back, so that loading the driver again finds it
+	mov 	eax, dword [esi + pcidev.pcidev]
+	test 	eax, eax
+	jz 	@f
+	mov 	dword [eax + PCIDEV.owner], 0
+
+@@:
 	inc 	ebx
 	cmp 	ebx, dword [num_pcidevs]
 	jne 	.get_pcidev
@@ -1529,7 +1645,6 @@ endp
 align 4
 	p_nvme_devices dd 0 ; Pointer to array of NVMe devices
 	num_pcidevs    dd 0 ; Number of NVMe devices
-	num_pcidevs_sz dd 0 ; Size in bytes
 	my_service   db "nvme",0  ;max 16 chars include zero
 	disk_functions:
 		dd 	 disk_functions.end - disk_functions

@@ -1,8 +1,8 @@
 # NVMe driver
 
-Driver for NVM Express controllers. Registers every active namespace of every NVMe
-controller it finds as a KolibriOS disk named `nvme<controller>n<namespace>`, so the
-first namespace of the first controller shows up as `/nvme0n1/`.
+Driver for NVM Express controllers. Registers the first active namespace of every
+NVMe controller it finds as a KolibriOS disk named `nvme<controller>n<namespace>`, so
+that of the first controller usually shows up as `/nvme0n1/`.
 
 ## Origin
 
@@ -29,7 +29,8 @@ Licensed under the GNU General Public License, version 2.
 | SMART/health reporting             | No          |                                                                     |
 
 Sector sizes other than 512 bytes are rejected, because that is what KolibriOS
-supports.
+supports, and so are LBA formats with metadata. The format checked is the one in use
+(FLBAS), not the first in the table.
 
 ## Interrupts
 
@@ -50,6 +51,8 @@ add; there is nothing to gain from INTx before then.
 
 Every wait on the controller (reset, enable, shutdown, command completion) is bounded,
 so a controller that never answers makes the driver give up rather than hang the boot.
+An I/O command that times out gets the controller reset and taken out of service, so
+that it cannot DMA into freed memory or complete a stale command later.
 Calls into the driver are serialised per controller, since the kernel may issue disk
 requests from several threads at once and the driver keeps one command in flight.
 

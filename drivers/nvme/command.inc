@@ -114,7 +114,7 @@ proc abort stdcall, pci:dword, cid:word, sqid:word
 	mov 	dword [esp + SQ_ENTRY.cdw0], eax
 	movzx 	eax, [cid]
 	shl 	eax, 16
-	or 	eax, word [sqid]
+	mov 	ax, [sqid]
 	mov 	dword [esp + SQ_ENTRY.cdw10], eax
 	stdcall sqytdbl_write, esi, ADMIN_QUEUE, esp
 	add 	esp, sizeof.SQ_ENTRY
@@ -177,7 +177,7 @@ proc get_features stdcall, pci:dword, prp1:dword, sel:byte, fid:byte
 	movzx 	eax, [sel]
 	and 	eax, 111b
 	shl 	eax, 8 ; CDW10.SEL
-	or 	eax, byte [fid] ; CDW10.FID
+	mov 	al, [fid] ; CDW10.FID
 	mov 	dword [esp + SQ_ENTRY.cdw10], eax
 	mov 	eax, [prp1]
 	mov 	dword [esp + SQ_ENTRY.prp1], eax

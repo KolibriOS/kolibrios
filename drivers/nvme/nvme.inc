@@ -365,11 +365,15 @@ struct pcidev
 	nn 	    	dd ?
 	last_cdw0 	dd ? ; command specific result of the last completion
 	max_sectors 	dd ? ; biggest transfer a single I/O command may carry
+	disk 	    	dd ? ; handle from DiskAdd, 0 if none
+	pcidev 	    	dd ? ; the kernel's PCIDEV, claimed through its owner field
 	iolock 	    	MUTEX ; taken by whoever is using the I/O queue
 	dstrd 	    	db ?
 	mdts 	    	db ? ; Maximum Data Transfer Size, in 2^(12+MPSMIN) byte units
-	ready 	    	db ? ; 1 once the controller is initialised and its disk usable
-	    		rb 1 ; align
+	ready 	    	db ? ; 1 while the controller serves I/O; 0 before, after cleanup or once it hung
+	stuck 	    	db ? ; 1 if it hung and would not even go idle, so it may still DMA
+	hung 	    	db ? ; 1 once any command timed out, init and cleanup included
+	    		rb 3 ; align
 ends
 TOTAL_PCIDEVS = 4
 TOTAL_PCIDEVS_MALLOC_SZ = TOTAL_PCIDEVS * sizeof.pcidev
@@ -586,6 +590,7 @@ assert NVM_ASQS = NVM_ACQS
 assert SQ_ENTRIES = NVM_ASQS
 assert CQ_ENTRIES = NVM_ACQS
 assert NVM_MPS = 0
+assert CTRL_POLL_MS mod 10 = 0 ; nvme_poll waits it out in 1/100 s ticks
 assert PAGE_SIZE = 0x1000
 assert sizeof.NVME_MMIO = 4096
 assert sizeof.SQ_ENTRY = 64
