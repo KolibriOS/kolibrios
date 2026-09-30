@@ -688,10 +688,12 @@ arp_api:
         ; ecx = # entry
         cmp     ecx, [ARP_entries + eax]
         jae     .error
-        imul    ecx, sizeof.ARP_entry
-        lea     esi, [ARP_table + ecx]
         mov     edi, eax
         shr     edi, 2
+        mov     esi, edi
+        imul    esi, sizeof.ARP_entry*ARP_TABLE_SIZE
+        imul    ecx, sizeof.ARP_entry
+        lea     esi, [ARP_table + esi + ecx]
         call    arp_del_entry
         ret
 
