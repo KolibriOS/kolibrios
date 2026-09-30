@@ -1233,25 +1233,27 @@ f68:
         mov     eax, [ecx + SRV.entry]
         test    eax, eax
         jz      .fail
-        push    ecx    ;save handl
+        mov     eax, -2 ;error free RAM
+        cmp     [ecx + SRV.base], 0
+        je      .fail
 
+        push    ecx         ;save handl
+        mov     ebp, esp    ;START may be cdecl or stdcall
         push    edx         ;cmdline
         push    DRV_EXIT
-        call    eax   ;the result is not checked
-        lea     esp, [esp+8]
-        push    ecx
+        call    [ecx + SRV.entry]   ;the result is not checked
+        mov     esp, ebp
+        pop     esi
 
-        mov     ebx, [ecx + SRV.base]
-        mov     eax, -2 ;error free RAM
-        test    ebx, ebx
-        jz      .fail
-        stdcall kernel_free, ebx ;del driver
-
-        mov     eax, [ecx + SRV.fd]
-        mov     edx, [ecx + SRV.bk]
+        mov     eax, [esi + SRV.fd]
+        mov     edx, [esi + SRV.bk]
         mov     [edx + SRV.fd], eax
         mov     [eax + SRV.bk], edx
-        stdcall free, ecx
+        push    eax
+        stdcall kernel_free, [esi + SRV.base] ;del driver
+        mov     eax, esi
+        call    free        ;eax = mem
+        pop     eax
         ;dec     [count_services]
 
         mov     [esp + SYSCALL_STACK.eax], eax
