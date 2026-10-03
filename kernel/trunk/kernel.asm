@@ -2628,7 +2628,7 @@ modify_pce:
 
 
 iglobal
-  cpustring db 'CPU',0
+  cpustring db 'TASKMAN',0
 endg
 
 uglobal
