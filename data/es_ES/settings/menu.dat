@@ -82,7 +82,7 @@
 16 Colores y Apariencia  |skincfg
 16 Atajos de teclado     |mykey
 #9    **** SENSORES
-16 Procesos              |cpu
+16 Gestor de tareas      |taskman
 16 Dispositivos PCI      |pcidev
 16 CPUID                 |cpuid
 16 Ghost Monitor         |gmon
