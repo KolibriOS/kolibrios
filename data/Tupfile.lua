@@ -523,6 +523,7 @@ tup.append_table(img_files, {
  {"LIB/RASTERWORKS.OBJ", VAR_PROGS .. "/develop/libraries/fontRasterWorks_unicode/RasterWorks.obj"},
  {"LIB/SORT.OBJ", VAR_PROGS .. "/develop/libraries/sorter/sort.obj"},
  {"LIB/TINYGL.OBJ", VAR_PROGS .. "/develop/libraries/TinyGL/asm_fork/tinygl.obj"},
+ {"LIB/XML.OBJ", VAR_PROGS .. "/develop/libraries/asm-xml/xml.obj"},
  {"MEDIA/ANIMAGE", VAR_PROGS .. "/media/animage/animage"},
  {"MEDIA/FILLSCR", VAR_PROGS .. "/media/FillScr/fillscr"},
  {"MEDIA/KIV", VAR_PROGS .. "/media/kiv/kiv"},
