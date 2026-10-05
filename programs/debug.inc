@@ -31,6 +31,7 @@ macro debug_print_dec arg
 dpd fix debug_print_dec
 
 ;---------------------------------
+if used debug_outdec
 debug_outdec:           ;(eax - num, edi-str)
         push 10         ;2
         pop ecx         ;1
@@ -59,7 +60,9 @@ debug_outchar:          ; al - char
    popad
    popf
 ret
+end if
 
+if used debug_outstr
 debug_outstr:
    mov  eax,63
    mov  ebx,1
@@ -72,7 +75,7 @@ debug_outstr:
    jmp  @b
  @@:
    ret
-
+end if
 
 macro newline
 {
@@ -112,6 +115,7 @@ macro debug_print_hex arg
 }
 dph fix debug_print_hex
 
+if used debug_outhex
 debug_outhex:
     ;  eax - number
     mov   edx, 8
@@ -131,3 +135,4 @@ ret
 
 __hexdigits:
   db '0123456789ABCDEF'
+end if

@@ -98,29 +98,6 @@ aColorDialog_Init	db 'ColorDialog_init',0
 aColorDialog_Start	db 'ColorDialog_start',0
 ;aOpenDialog_Version	db 'Version_OpenDialog',0
 
-align 4
-import_libkmenu:
-	kmenu_init                     dd akmenu_init
-	kmainmenu_draw                 dd akmainmenu_draw
-	kmainmenu_dispatch_cursorevent dd akmainmenu_dispatch_cursorevent
-	ksubmenu_new                   dd aksubmenu_new
-	ksubmenu_delete                dd aksubmenu_delete
-	ksubmenu_draw                  dd aksubmenu_draw
-	ksubmenu_add                   dd aksubmenu_add
-	kmenuitem_new                  dd akmenuitem_new
-	kmenuitem_delete               dd akmenuitem_delete
-	kmenuitem_draw                 dd akmenuitem_draw
-dd 0,0
-	akmenu_init                     db 'kmenu_init',0
-	akmainmenu_draw                 db 'kmainmenu_draw',0
-	akmainmenu_dispatch_cursorevent db 'kmainmenu_dispatch_cursorevent',0
-	aksubmenu_new                   db 'ksubmenu_new',0
-	aksubmenu_delete                db 'ksubmenu_delete',0
-	aksubmenu_draw                  db 'ksubmenu_draw',0
-	aksubmenu_add                   db 'ksubmenu_add',0
-	akmenuitem_new                  db 'kmenuitem_new',0
-	akmenuitem_delete               db 'kmenuitem_delete',0
-	akmenuitem_draw                 db 'kmenuitem_draw',0
-
+include '../../develop/libraries/kmenu/import.inc'
 include '../../develop/libraries/box_lib/import.inc'
 ;---------------------------------------------------------------------
