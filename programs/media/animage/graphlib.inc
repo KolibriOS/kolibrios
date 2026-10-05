@@ -59,22 +59,24 @@ GetColorOfPixel:
 
 ;procedure <<<<calculate line>>>>
 ; IN
-;eax - pointer to screen
-;ebx - output array
-;ecx - (screen size x)*bytes per pixel
-;edx - x1*65536+y1
-;esi   x2
+;[OldX] - x1
+;[OldY] - y1
+;esi - x2
 ;edi - y2
 ; OUT
 ;eax - number of pixels
+align 4
 calculate_line:
+  mov eax,[PointerToPicture]
+  mov ebx,[ReserveArray]
+  add ebx,4 ;ebx - output array
+  mov ecx,[Picture_SizeX]
 
   mov [pointer_to_screen],eax
   mov [output_array],ebx
   mov [screen_size_x],ecx
-  mov eax,edx
-  and eax,0xffff
-  shr edx,16
+  mov eax,[OldY]
+  mov edx,[OldX]
   mov [x_l],edx     ;x=x1
   mov [y_l],eax     ;y=y1
   mov [sx],1

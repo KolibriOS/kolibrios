@@ -1,15 +1,13 @@
-macro square_width_put
-{
-local .no_put_to_screen
-local .next_color_put
-local .vertical_width_put
-local .horizontal_width_put
-
+align 4
+square_width_put:
 	mov ebx,[ReserveArray]
-	mov eax,[ebx]
-	test eax,eax
+	mov ecx,[ebx] ;ecx - number of pixels in the figure
+	test ecx,ecx
 	jz .no_put_to_screen
-	mov ecx,[ebx]
+	cmp ecx,mem_offs_shape/4-1
+	jg .no_put_to_screen ;if (ecx > number of pixels in
+		;the array ReserveArray) return
+
 	add ebx,4
 	xor ebp,ebp
 
@@ -48,13 +46,14 @@ local .horizontal_width_put
 	jnz .next_color_put
 
 	.no_put_to_screen:
-}
+	ret
 
-macro square_width_save
-{
-local .next_color_save
-local .vertical_width_save
-local .horizontal_width_save
+; IN
+;eax - number of pixels
+align 4
+square_width_save:
+	or eax,eax
+	jz @f
 	mov ebx,[ReserveArray]
 	mov [ebx],eax
 	mov ecx,eax
@@ -93,7 +92,8 @@ local .horizontal_width_save
 	add ebx,4
 	dec ecx
 	jnz .next_color_save
-}
+	@@:
+	ret
 
 macro draw_calc_pixels brush
 {
@@ -101,9 +101,12 @@ local .next_pixel_put
 local .vertical_width
 local .horizontal_width
 local .no_draw_pixel
+local .end_draw
 
 	mov ebx,[ReserveArray]
 	mov ecx,[ebx]
+	or ecx,ecx
+	jz .end_draw
 	mov edx,[Color]
 	mov esi,[Color]
 	shr edx,16
@@ -148,6 +151,7 @@ local .no_draw_pixel
 	add ebx,4
 	dec ecx
 	jnz .next_pixel_put
+	.end_draw:
 }
 
 ;-----------------------------------------------------------
@@ -287,12 +291,6 @@ TakeButtonInstruments:
 
 	no_activated_later:
 
-	mov eax,[PointerToPicture]
-	mov ebx,[ReserveArray]
-	mov ecx,[Picture_SizeX]
-	mov edx,[OldX]
-	shl edx,16
-	add edx,[OldY]
 	mov esi,[ScreenX]
 	mov edi,[ScreenY]
 	add esi,[PosX]
@@ -394,13 +392,6 @@ TakeButtonInstruments:
 	mov [Activate_instrument],1
 	no_new_brush_xy:
 
-	mov eax,[PointerToPicture]
-	mov ebx,[ReserveArray]
-	add ebx,4
-	mov ecx,[Picture_SizeX]
-	mov edx,[OldX]
-	shl edx,16
-	add edx,[OldY]
 	mov esi,[x]
 	mov edi,[y]
 
@@ -680,16 +671,9 @@ TakeButtonInstruments:
 	no_new_line_xy:
 
 	;put saved pixels
-	square_width_put
+	call square_width_put
 
 	;calculate line
-	mov ebx,[ReserveArray]
-	add ebx,4
-	mov eax,[PointerToPicture]
-	mov ecx,[Picture_SizeX]
-	mov edx,[OldX]
-	shl edx,16
-	add edx,[OldY]
 	mov esi,[ScreenX]
 	mov edi,[ScreenY]
 	add esi,[PosX]
@@ -712,7 +696,7 @@ TakeButtonInstruments:
 	call calculate_line
 
 	;save color pixels in ReserveArray
-	square_width_save
+	call square_width_save
 
 	;draw calculated pixels on work arrea
 	draw_calc_pixels width_pixels
@@ -746,7 +730,7 @@ TakeButtonInstruments:
 	no_new_rectangle_xy:
 
 	;put saved pixels
-	square_width_put
+	call square_width_put
 
 	;calculate line
 	mov ebx,[ReserveArray]
@@ -778,7 +762,7 @@ TakeButtonInstruments:
 	call calculate_rectangle
 
 	;save color pixels in ReserveArray
-	square_width_save
+	call square_width_save
 
 	;draw calculated pixels on work arrea
 	draw_calc_pixels width_pixels_rectangle
@@ -812,7 +796,7 @@ TakeButtonInstruments:
 	no_new_circle_xy:
 
 	;put saved pixels
-	square_width_put
+	call square_width_put
 
 	mov esi,[ScreenX]
 	mov edi,[ScreenY]
@@ -931,7 +915,7 @@ TakeButtonInstruments:
 	call calculate_circle
 
 	;save color pixels in ReserveArray
-	square_width_save
+	call square_width_save
 
 	;draw calculated pixels on work arrea
 	draw_calc_pixels width_pixels
@@ -1311,16 +1295,9 @@ end if
 	no_new_konture_xy:
 
 	;put saved pixels
-	square_width_put
+	call square_width_put
 
 	;calculate line
-	mov ebx,[ReserveArray]
-	add ebx,4
-	mov eax,[PointerToPicture]
-	mov ecx,[Picture_SizeX]
-	mov edx,[OldX]
-	shl edx,16
-	add edx,[OldY]
 	mov esi,[ScreenX]
 	mov edi,[ScreenY]
 	add esi,[PosX]
@@ -1343,7 +1320,7 @@ end if
 	call calculate_line
 
 	;save color pixels in ReserveArray
-	square_width_save
+	call square_width_save
 
 	;draw calculated pixels on work arrea
 	draw_calc_pixels width_pixels
@@ -1384,7 +1361,7 @@ end if
 	no_new_ellips_xy:
 
 	;put saved pixels
-	square_width_put
+	call square_width_put
 
 
 	mov esi,[ScreenX]
@@ -1495,7 +1472,7 @@ end if
 	call calculate_ellips
 
 	;save color pixels in ReserveArray
-	square_width_save
+	call square_width_save
 
 	;draw calculated pixels on work arrea
 	draw_calc_pixels width_pixels

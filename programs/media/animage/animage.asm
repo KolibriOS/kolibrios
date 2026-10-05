@@ -40,7 +40,7 @@
 use32
 org     0
         db 'MENUET01'
-        dd 1, START, IM_END, I_END
+        dd 1, start, IM_END, I_END
         dd stacktop, file_path, cur_dir_path
 
 include '../../config.inc' ;for nightbuild
@@ -52,6 +52,7 @@ include '../../dll.inc'
 include '../../develop/libraries/libs-dev/libio/libio.inc'
 include '../../develop/libraries/libs-dev/libimg/libimg.inc'
 include '../../develop/libraries/box_lib/box_lib.mac'
+include '../../develop/libraries/kmenu/kmenu.inc'
 ;include '../../debug.inc'
 
 @use_library mem.Alloc,mem.Free,mem.ReAlloc,dll.Load
@@ -98,14 +99,18 @@ include 'cursors.inc'
 include 'memory.inc'
 include 'load_from_parameters.inc'
 
-START:
+start:
         mcall SF_SYS_MISC,SSF_HEAP_INIT
         mcall SF_STYLE_SETTINGS, SSF_GET_COLORS, syscolors, syscolors_end-syscolors
 
 load_libraries l_libs_start,end_l_libs
 
-        cmp     eax,-1
-        jz      close
+        cmp   [lib1.status_lib],0
+        jnz   close
+        cmp   [lib2.status_lib],0
+        jnz   close
+        cmp   [lib4.status_lib],0
+        jnz   close
 
         mcall SF_SET_EVENTS_MASK,0x80000067 ; 1100111b
 ;---------------------------------------------------------
@@ -222,9 +227,14 @@ include 'menu.inc'
 ;-----------------------------------------------------------
 ;------------variables and data of program------------------
 ;-----------------------------------------------------------
+name_of_program db 'ANIMAGE graphics editor v1.54',0
+mouse_pos_x     db 'X='
+mouse_pos_y     db 'Y='
+new_text1       db 'Picture size X'
+new_text2       db 'Picture size Y'
+ok_text         db 'OK'
 
 include 'lib_data.inc'
-include 'panel_data.inc'
 include 'brushes.inc'
 include 'spray.inc'
 include 'width_lines.inc'

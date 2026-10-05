@@ -3,7 +3,22 @@
 ;---------------------------------------------
 align 4
 mouse:
+	cmp  [lib3.status_lib],0 ; test load library
+	jnz  .m_end
+	cld
 	stdcall [kmainmenu_dispatch_cursorevent], [main_menu]
+
+	mov  eax,[main_menu]
+	cmp  dword[eax+kmenuitem_t.is_focused],-1
+	je   @f
+	mov  [m_lost],1
+	jmp  still
+@@:
+	cmp  [m_lost],0
+	je   .m_end
+	dec  [m_lost]
+	jmp  still
+.m_end:
 
 	or ecx,-1
 	mcall SF_THREAD_INFO,procinfo
