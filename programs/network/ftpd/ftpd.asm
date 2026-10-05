@@ -139,7 +139,7 @@ start:
         add     esp, 8
 
 ; open listening socket
-        mcall   socket, AF_INET4, SOCK_STREAM, SO_NONBLOCK      ; we don't want to block on accept
+        mcall   socket, AF_INET4, SOCK_STREAM, 0
         cmp     eax, -1
         je      sock_err
         mov     [socketnum], eax
