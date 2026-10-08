@@ -88,8 +88,10 @@ MI_COMM                         = 0x044c
 MI_STS                          = 0x0450
 MI_MODE                         = 0x0454
 MAC_TX_MODE                     = 0x045c
-MAC_TX_LENGTHS                  = 0x046c
+MAC_TX_STS                      = 0x0460
+MAC_TX_LENGTHS                  = 0x0464
 MAC_RX_MODE                     = 0x0468
+MAC_RX_STS                      = 0x046c
 RX_RULES_CFG                    = 0x0500
 
 MAC_MODE_RESET                  = 0x00000001
@@ -106,10 +108,16 @@ MAC_MODE_TXDMA_EN               = 0x00200000
 MAC_MODE_RXDMA_EN               = 0x00400000
 MAC_MODE_FRMHDR_DMA_EN          = 0x00800000
 
-MACSTAT_CFG_CHANGED             = 0x00000004
-MACSTAT_SYNC_CHANGED            = 0x00000008
+MACSTAT_RX_CFG                  = 0x00000004
+MACSTAT_CFG_CHANGED             = 0x00000008
+MACSTAT_SYNC_CHANGED            = 0x00000010
 MACSTAT_LINK_CHANGED            = 0x00001000
 MACSTAT_MI_COMPLETE             = 0x00400000
+MACSTAT_MI_INTERRUPT            = 0x00800000
+MACSTAT_AUTOPOLL_ERROR          = 0x01000000
+MACSTAT_ODI_ERROR               = 0x02000000
+MACSTAT_RXSTAT_OFLOW            = 0x04000000      ; receive overrun
+MACSTAT_TXSTAT_UNDERRUN         = 0x08000000      ; send underrun; 0x04000000 is the RX one
 MACSTAT_STICKY                  = MACSTAT_LINK_CHANGED or MACSTAT_SYNC_CHANGED \
                                   or MACSTAT_CFG_CHANGED or MACSTAT_MI_COMPLETE
 EVTENB_LINK_CHANGED             = 0x00001000
@@ -124,6 +132,13 @@ TX_MODE_RESET                   = 0x00000001
 TX_MODE_ENABLE                  = 0x00000002
 TX_MODE_FLOW_CTRL_ENABLE        = 0x00000010
 TXMODE_MBUF_LOCKUP_FIX          = 0x00000100
+
+TXSTAT_RX_XOFFED                = 0x00000001
+TXSTAT_SENT_XOFF                = 0x00000002
+TXSTAT_SENT_XON                 = 0x00000004
+TXSTAT_LINK_UP                  = 0x00000008
+TXSTAT_ODI_UFLOW                = 0x00000010
+TXSTAT_ODI_OFLOW                = 0x00000020
 
 TX_LENGTHS_DEFAULT              = 0x00002620      ; inter packet gap etc.
 TX_BACKOFF_SEED_MASK            = 0x000003ff

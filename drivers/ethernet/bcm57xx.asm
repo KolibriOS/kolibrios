@@ -45,6 +45,22 @@ entry START
         TX_RING_SIZE            = 512
         RX_STD_SIZE             = 512
 
+; How often the link poll timer runs, in hundredths of a second. The timer
+; exists to take the second look at the PHY that a "the carrier is gone"
+; verdict needs, outside interrupt context: after a real outage no further
+; link attention arrives, so something periodic has to decide. A tick with
+; nothing to confirm costs one memory read.
+        LINK_POLL_HS            = 50
+
+; Evidence bits recorded by check_link; its log lines print them.
+        LKEV_BMSR1_FAIL         = 1
+        LKEV_BMSR_FAIL          = 2
+        LKEV_BMSR_NOLINK        = 4
+        LKEV_AUX_FAIL           = 8
+        LKEV_AUX_UNKNOWN        = 16
+        LKEV_FALLBACK           = 32
+        LKEV_BMSR_LINK          = 64
+
 ; The receive return ring is host resident and its length does come from
 ; the ring control block, but the chip has a per-family maximum for it
 ; (tg3's TG3_RX_RET_MAX_SIZE_5705 / _5700) and both reference drivers
@@ -160,7 +176,24 @@ struct  device          ETH_DEVICE
 
         irq_count       dd ?            ; diagnostics only
         txfull_count    dd ?
+        txstale_count   dd ?
         oom_count       dd ?
+
+; What the last link check saw. A link verdict that cannot be explained
+; afterwards is worse than useless.
+        lk_ev           dd ?            ; LKEV_* bits
+        lk_bmsr1        dd ?            ; first BMSR read (latched bits)
+        lk_bmsr         dd ?            ; second BMSR read (current state)
+        lk_mists        dd ?            ; MI_STS at the moment of the verdict
+        lk_macsts       dd ?            ; MAC_STS at the moment of the verdict
+        lk_txsts        dd ?            ; MAC_TX_STS, the transmit MAC's own view
+        lk_conf1        dd ?            ; the two samples a verdict was built from
+        lk_conf2        dd ?
+        link_downs      dd ?            ; verdicts passed on to the stack
+        link_withdrawn  dd ?            ; pending verdicts dropped instead
+        link_suspect    dd ?            ; link poll state, see link_poll
+        link_timer      dd ?            ; handle of the link poll timer
+        lk_undecided    dd ?            ; samples that settled nothing
 
         tx_buffs        rd TX_RING_SIZE
         rx_buffs        rd RX_STD_SIZE
@@ -939,6 +972,14 @@ reset:
 
         DEBUGF  2,"Bring-up starting\n"
 
+; A previous bring-up may have left its poll timer behind, and that
+; callback walks this structure while we are rebuilding it.
+        cmp     [ebx + device.link_timer], 0
+        je      @f
+        invoke  CancelTimerHS, [ebx + device.link_timer]
+        mov     [ebx + device.link_timer], 0
+  @@:
+
 ; Stop the chip from touching memory we are about to reshuffle.
         call    chip_stop
         call    free_buffers
@@ -950,7 +991,20 @@ reset:
         mov     [ebx + device.rx_posted], 0
         mov     [ebx + device.irq_count], 0
         mov     [ebx + device.txfull_count], 0
+        mov     [ebx + device.txstale_count], 0
         mov     [ebx + device.oom_count], 0
+        mov     [ebx + device.lk_ev], 0
+        mov     [ebx + device.lk_bmsr1], 0
+        mov     [ebx + device.lk_bmsr], 0
+        mov     [ebx + device.lk_mists], 0
+        mov     [ebx + device.lk_macsts], 0
+        mov     [ebx + device.lk_txsts], 0
+        mov     [ebx + device.lk_conf1], 0
+        mov     [ebx + device.lk_conf2], 0
+        mov     [ebx + device.link_downs], 0
+        mov     [ebx + device.link_withdrawn], 0
+        mov     [ebx + device.link_suspect], 0
+        mov     [ebx + device.lk_undecided], 0
 
         mov     edi, [ebx + device.dma_virt]
         mov     ecx, DMA_ALLOC / 4
@@ -1019,6 +1073,16 @@ reset:
   .link_done:
         DEBUGF  2,"Link state after bring-up 0x%x\n", [ebx + device.state]
         call    dump_state
+
+; The poll needs thread context, so it is armed here, once per bring-up.
+; Without it a down verdict is never confirmed and check_link has to hand
+; one out on a single sample instead.
+        invoke  TimerHS, 0, LINK_POLL_HS, link_poll, ebx
+        test    eax, eax
+        jnz     @f
+        DEBUGF  2,"No link poll timer, link downs will be reported unconfirmed\n"
+  @@:
+        mov     [ebx + device.link_timer], eax
 
         DEBUGF  2,"Bring-up done\n"
         xor     eax, eax
@@ -1834,10 +1898,19 @@ free_buffers:
 ;***************************************************************************
 ;  tx_clean - release every send descriptor the chip is done with
 ;
-;  Called both from the interrupt handler and from transmit(). Doing it
-;  in transmit() as well means the send ring keeps draining even if the
+;  Called both from the interrupt handler and from transmit(). Doing it in
+;  transmit() as well means the send ring keeps draining even if the
 ;  completion interrupt is late, coalesced away or lost, which is the
 ;  difference between a slow transmitter and a dead one.
+;
+;  The chip's consumer index is only believed while it points inside the
+;  span actually handed over, tx_cons..tx_prod: a stale status block, or a
+;  ring reclaimed behind the chip's back, can leave it on a slot that was
+;  never queued, and walking to it would free buffers the send engine is
+;  still working from. NetFree hands a buffer back at the head of the free
+;  pool, so the next allocation - transmit or receive - gets the same
+;  memory and the chip reads whatever landed there. Leave the ring alone
+;  in that case and say so.
 ;
 ;  All registers preserved.
 ;***************************************************************************
@@ -1850,6 +1923,15 @@ tx_clean:
         movzx   eax, [esi + status_block.tx_cons_idx]
         and     eax, TX_RING_SIZE - 1
         mov     ecx, [ebx + device.tx_cons]
+
+        mov     edx, [ebx + device.tx_prod]
+        sub     edx, ecx
+        and     edx, TX_RING_SIZE - 1           ; slots handed to the chip
+        mov     esi, eax
+        sub     esi, ecx
+        and     esi, TX_RING_SIZE - 1           ; slots the chip is done with
+        cmp     esi, edx
+        ja      .stale
   .loop:
         cmp     ecx, eax
         je      .done
@@ -1864,6 +1946,16 @@ tx_clean:
         inc     ecx
         and     ecx, TX_RING_SIZE - 1
         jmp     .loop
+  .stale:
+        inc     [ebx + device.txstale_count]
+        push    eax
+        mov     eax, [ebx + device.txstale_count]
+        call    dbg_worthy
+        pop     eax
+        jc      .done
+        DEBUGF  2,"Stale send consumer %u (%u so far), prod %u cons %u\n",\
+        eax, [ebx + device.txstale_count], [ebx + device.tx_prod],\
+        [ebx + device.tx_cons]
   .done:
         mov     [ebx + device.tx_cons], ecx
         pop     esi edx ecx eax
@@ -1950,8 +2042,11 @@ proc transmit stdcall bufferptr
         xor     eax, eax
         ret
 
+; Ring full is a send ring overrun, which is how the other drivers in this
+; tree count it; packets_tx_drop stays for a frame that really was thrown
+; away, so the two counters together say which failure happened.
   .overflow:
-        inc     [ebx + device.packets_tx_drop]
+        inc     [ebx + device.packets_tx_ovr]
         inc     [ebx + device.txfull_count]
         mov     eax, [ebx + device.txfull_count]
         call    dbg_worthy
@@ -2160,6 +2255,23 @@ int_handler:
 ;***************************************************************************
 ;  check_link - read the negotiated speed and tell the stack
 ;
+;  Called from an interrupt, on a link attention, and from the poll timer.
+;
+;  A "link down" verdict is not cheap to hand out. The stack takes it as
+;  the carrier being gone for good: routing for the sockets it already
+;  has stops working, and a connection with data in flight never comes
+;  back from it, however brief the outage was. So one sample never decides
+;  one: a readable PHY with no carrier only raises the suspicion, and
+;  link_poll samples again a whole interval later. A PHY that cannot be
+;  read at all says nothing about the carrier, and the MI status word is
+;  only allowed to keep a link up, never to declare one down: it is the
+;  auto-poller's view of the PHY, so it is stale exactly when the MI
+;  interface is what broke. The reference driver splits it the same way -
+;  bge_link_upd asks the PHY and reads MI_STS only to decide whether the
+;  PHY is worth asking.
+;
+;  What was seen is kept in the device structure.
+;
 ;  All registers preserved.
 ;***************************************************************************
 
@@ -2168,6 +2280,18 @@ check_link:
         push    eax ebx ecx edx esi edi
 
         mov     esi, [ebx + device.mmio_addr]
+        mov     dword [ebx + device.lk_ev], 0
+        mov     dword [ebx + device.lk_bmsr1], 0
+        mov     dword [ebx + device.lk_bmsr], 0
+        mov     dword [ebx + device.lk_mists], 0
+        mov     dword [ebx + device.lk_macsts], 0
+        mov     dword [ebx + device.lk_txsts], 0
+
+; lk_conf1 and lk_conf2 are not cleared here on purpose. They are the two
+; samples a verdict is explained from, and the first of them is recorded
+; when the suspicion is raised - a whole interval before the call that
+; decides. Clearing them at the start of every call would wipe that one
+; before the verdict log could print it.
 
 ; Ask the PHY directly rather than looking at MI_STS. MI_STS only ever
 ; changes when the MI auto-poller has actually run, so straight after
@@ -2175,17 +2299,31 @@ check_link:
 ; check comes out wrong.
         mov     eax, PHY_BMSR
         call    phy_read
+        mov     [ebx + device.lk_bmsr1], eax
         cmp     eax, -1
-        je      .fallback
+        je      .first_failed
         mov     edi, eax
+        jmp     .second
+  .first_failed:
+        or      [ebx + device.lk_ev], LKEV_BMSR1_FAIL
+        mov     edi, -1
+  .second:
         mov     eax, PHY_BMSR                   ; latching bits, read twice
         call    phy_read
+        mov     [ebx + device.lk_bmsr], eax
         cmp     eax, -1
-        je      .fallback
+        jne     @f
+        or      [ebx + device.lk_ev], LKEV_BMSR_FAIL
+        jmp     .fallback
+  @@:
         DEBUGF  1,"check_link: BMSR 0x%x/0x%x MI_STS 0x%x\n",\
         edi, eax, [esi + MI_STS]
         test    eax, PHY_BMSR_LINK
-        jz      .down
+        jnz     @f
+        or      [ebx + device.lk_ev], LKEV_BMSR_NOLINK
+        jmp     .down
+  @@:
+        or      [ebx + device.lk_ev], LKEV_BMSR_LINK
 
 ; The PHY reports carrier before auto-negotiation finishes, and the
 ; auxiliary status register holds nonsense until it does. Reading it too
@@ -2199,7 +2337,10 @@ check_link:
         mov     eax, PHY_AUX_STAT
         call    phy_read
         cmp     eax, -1
-        je      .fallback
+        jne     @f
+        or      [ebx + device.lk_ev], LKEV_AUX_FAIL
+        jmp     .fallback
+  @@:
         DEBUGF  1,"check_link: AUX_STAT 0x%x\n", eax
 
         and     eax, AUX_SPEED_MASK
@@ -2218,6 +2359,7 @@ check_link:
         cmp     eax, AUX_SPEED_1000FULL
         je      .s1000f
         DEBUGF  2,"Unknown speed code 0x%x in AUX_STAT\n", eax
+        or      [ebx + device.lk_ev], LKEV_AUX_UNKNOWN
         jmp     .fallback
 
   .s10h:
@@ -2245,19 +2387,26 @@ check_link:
         mov     edx, MAC_MODE_PORT_MODE_GMII
         jmp     .apply
 
-; The PHY did not answer. The link is up, so guess from the only other
-; hint the MAC gives us.
+; The PHY did not answer, or gave a speed code we do not know. MI_STS is
+; the only other hint the MAC gives us, but it is a hint about the last
+; poll of the PHY rather than about the carrier now, so it is used to
+; keep the link up and for nothing else.
   .fallback:
+        or      [ebx + device.lk_ev], LKEV_FALLBACK
         mov     eax, [esi + MI_STS]
+        mov     [ebx + device.lk_mists], eax
+        test    [ebx + device.lk_ev], LKEV_BMSR_LINK
+        jnz     .assume                         ; PHY saw carrier, speed unknown
         test    eax, MISTS_LINK
-        jz      .down
+        jz      .undecided
+  .assume:
         mov     ecx, ETH_LINK_SPEED_100M or ETH_LINK_FULL_DUPLEX
         test    eax, MISTS_10MBPS
         jz      @f
         mov     ecx, ETH_LINK_SPEED_10M or ETH_LINK_FULL_DUPLEX
   @@:
         mov     edx, MAC_MODE_PORT_MODE_MII
-        DEBUGF  2,"PHY unreadable, assuming state 0x%x\n", ecx
+        DEBUGF  2,"Link speed unknown, assuming state 0x%x, MI_STS %x\n", ecx, eax
 
   .apply:
         mov     eax, [esi + MAC_MODE]
@@ -2269,20 +2418,99 @@ check_link:
   @@:
         mov     [esi + MAC_MODE], eax
 
+; The carrier is here, so a verdict being built up is dropped: that is the
+; one outcome the stack cannot recover from, and one readable sample is
+; enough to know it would have been the wrong one.
+        cmp     dword [ebx + device.link_suspect], 0
+        je      @f
+        mov     dword [ebx + device.link_suspect], 0
+        inc     [ebx + device.link_withdrawn]
+        push    eax
+        DEBUGF  2,"Link down withdrawn: ev %u BMSR %x/%x MI_STS %x\n",\
+        [ebx + device.lk_ev], [ebx + device.lk_bmsr1], [ebx + device.lk_bmsr],\
+        [ebx + device.lk_mists]
+        pop     eax
+  @@:
         cmp     [ebx + device.state], ecx
         je      .leave
         mov     [ebx + device.state], ecx
-        DEBUGF  2,"Link up, state 0x%x, MAC_MODE 0x%x\n", ecx, eax
+        DEBUGF  2,"Link up, state 0x%x, MAC_MODE 0x%x, ev %u BMSR %x/%x MI_STS %x\n",\
+        ecx, eax, [ebx + device.lk_ev], [ebx + device.lk_bmsr1],\
+        [ebx + device.lk_bmsr], [ebx + device.lk_mists]
         invoke  NetLinkChanged
   .leave:
         pop     edi esi edx ecx ebx eax
         ret
 
+; Neither the PHY nor the MI status word says the link is up, and the PHY
+; could not be read: an absence of evidence rather than evidence the
+; carrier is gone, so nothing is decided, and a verdict that is waiting
+; for confirmation goes on waiting. The chip transmits either way.
+  .undecided:
+        mov     eax, [esi + MAC_STS]
+        mov     [ebx + device.lk_macsts], eax
+        mov     edx, [esi + MAC_TX_STS]
+        mov     [ebx + device.lk_txsts], edx
+
+; A poll that came here for a decision has to come back for another one:
+; the interval it waited was spent on a sample that settled nothing.
+        cmp     dword [ebx + device.link_suspect], 3
+        jne     @f
+        mov     dword [ebx + device.link_suspect], 2
+  @@:
+        inc     [ebx + device.lk_undecided]
+        push    eax edx
+        mov     eax, [ebx + device.lk_undecided]
+        call    dbg_worthy
+        pop     edx eax
+        jc      .leave
+        DEBUGF  2,"Link state undecided %u: ev %u BMSR %x/%x MI_STS %x MAC_STS %x TX_STS %x\n",\
+        [ebx + device.lk_undecided], [ebx + device.lk_ev], [ebx + device.lk_bmsr1],\
+        [ebx + device.lk_bmsr], [ebx + device.lk_mists], eax, edx
+        jmp     .leave
+
+; The PHY says the carrier is gone. One readable sample is still not
+; evidence enough for a verdict the stack cannot undo, so - unless there
+; is no poll timer to take a second look, in which case this is all the
+; evidence there is - the verdict only goes pending here and link_poll
+; decides it a whole interval later.
   .down:
+        mov     eax, [esi + MI_STS]
+        mov     [ebx + device.lk_mists], eax
+        mov     eax, [esi + MAC_STS]
+        mov     [ebx + device.lk_macsts], eax
+        mov     edx, [esi + MAC_TX_STS]
+        mov     [ebx + device.lk_txsts], edx
+
         cmp     [ebx + device.state], ETH_LINK_DOWN
-        je      .leave
+        je      .leave                          ; already reported, nothing to add
+
+        mov     eax, [ebx + device.link_suspect]
+        cmp     eax, 3
+        je      .report_down                    ; the poll's sample agrees with this one
+        test    eax, eax
+        jnz     .leave                          ; pending already, link_poll decides
+        mov     dword [ebx + device.link_suspect], 1
+        mov     eax, [ebx + device.lk_bmsr]
+        mov     [ebx + device.lk_conf1], eax    ; first of the two samples
+        cmp     dword [ebx + device.link_timer], 0
+        je      .report_down                    ; no poll timer, no second sample
+        DEBUGF  2,"Link down suspected: ev %u BMSR %x/%x MI_STS %x MAC_STS %x TX_STS %x\n",\
+        [ebx + device.lk_ev], [ebx + device.lk_bmsr1], [ebx + device.lk_bmsr],\
+        [ebx + device.lk_mists], [ebx + device.lk_macsts], [ebx + device.lk_txsts]
+        jmp     .leave
+
+  .report_down:
+        mov     eax, [ebx + device.lk_bmsr]
+        mov     [ebx + device.lk_conf2], eax    ; second of the two samples
+        mov     dword [ebx + device.link_suspect], 0
+        inc     [ebx + device.link_downs]
         mov     [ebx + device.state], ETH_LINK_DOWN
-        DEBUGF  2,"Link down, prod %u cons %u\n",\
+        DEBUGF  2,"Link down: ev %u BMSR %x/%x MI_STS %x MAC_STS %x TX_STS %x\n",\
+        [ebx + device.lk_ev], [ebx + device.lk_bmsr1], [ebx + device.lk_bmsr],\
+        [ebx + device.lk_mists], [ebx + device.lk_macsts], [ebx + device.lk_txsts]
+        DEBUGF  2,"Link down confirmed %x/%x, prod %u cons %u\n",\
+        [ebx + device.lk_conf1], [ebx + device.lk_conf2],\
         [ebx + device.tx_prod], [ebx + device.tx_cons]
 
 ; Anything still queued for transmission is never going to complete now
@@ -2292,20 +2520,75 @@ check_link:
         call    tx_reclaim_all
 
         invoke  NetLinkChanged
-        pop     edi esi edx ecx ebx eax
+        jmp     .leave
+
+
+;***************************************************************************
+;  link_poll - the second look at the PHY that a down verdict needs
+;
+;  Timer callback, in thread context, every LINK_POLL_HS hundredths of a
+;  second. A verdict cannot rest on one sample, and after a real outage no
+;  further link attention arrives to supply a second one, so without this
+;  the driver would either have to trust a single sample or never report
+;  the outage at all.
+;
+;  link_suspect is the ladder the decision climbs:
+;    0  no sample has said the carrier is gone
+;    1  one has, from a link attention or from this callback
+;    2  this callback has seen that, and a whole interval has passed since
+;    3  this callback is sampling now, and only from here can a verdict follow
+;
+;  Interrupts stay off across the sampling, so that no attention can slip
+;  in between the decision and the samples it is taken on: ladder step 3
+;  exists only for the span of this callback's own check_link call, and
+;  that is what makes the sample a verdict may follow unambiguous. The
+;  guard costs the sample itself, and phy_read bounds that - an MI
+;  interface that has stopped answering gets a thousand reads, not the
+;  thousands it used to, so the longest a tick can hold the machine is
+;  about a millisecond, and only while a suspicion is pending.
+;***************************************************************************
+
+proc link_poll stdcall uses ebx, dev:dword
+
+        spin_lock_irqsave
+
+        mov     ebx, [dev]
+        mov     eax, [ebx + device.link_suspect]
+        test    eax, eax
+        jz      .done                           ; nothing to confirm, nothing to do
+        cmp     eax, 1
+        ja      .decide
+        mov     dword [ebx + device.link_suspect], 2
+        jmp     .done
+  .decide:
+        mov     dword [ebx + device.link_suspect], 3
+        call    check_link
+
+  .done:
+        spin_unlock_irqrestore
         ret
+
+endp
 
 
 ;***************************************************************************
 ;  tx_reclaim_all - give up on the whole send ring
 ;
-;  Only safe while the carrier is down, when the send engine cannot be
-;  reading a descriptor. All registers preserved.
+;  Only reached with the carrier down, so the send engine is stopped and
+;  its consumer index is final: this is the one place where the raw index
+;  can be taken as it stands, unlike tx_clean, where it may be stale.
+;
+;  The ring restarts at the chip's own consumer index, not at our producer:
+;  that is where the chip picks it up again once the carrier is back, and
+;  any other producer would put the two ends on different slots, which
+;  tx_clean would then refuse to justify, leaving the ring full for good.
+;
+;  All registers preserved.
 ;***************************************************************************
 
 tx_reclaim_all:
 
-        push    eax ecx edx
+        push    eax ecx edx esi
 
         xor     ecx, ecx
   .loop:
@@ -2322,10 +2605,19 @@ tx_reclaim_all:
         cmp     ecx, TX_RING_SIZE
         jb      .loop
 
-        mov     eax, [ebx + device.tx_prod]
-        mov     [ebx + device.tx_cons], eax
+        mov     esi, [ebx + device.status_blk]
+        movzx   ecx, [esi + status_block.tx_cons_idx]
+        and     ecx, TX_RING_SIZE - 1
+        mov     [ebx + device.tx_cons], ecx
+        mov     [ebx + device.tx_prod], ecx
 
-        pop     edx ecx eax
+; Take back the producer that was published for the frames thrown away
+; here: the buffers are in the free pool, so the chip must not fetch them.
+        mov     edx, ecx
+        mov     eax, MBX_TX_HOST_PROD0_LO
+        call    mbx_write
+
+        pop     esi edx ecx eax
         ret
 
 
@@ -2357,7 +2649,13 @@ phy_read:
         or      eax, MICOMM_CMD_READ or MICOMM_BUSY or (PHY_ADDR shl MICOMM_PHY_SHIFT)
         mov     [esi + MI_COMM], eax
 
-        mov     ecx, 5000
+; A frame is 64 bit times, about 26 us at the standard 2.5 MHz MI clock,
+; and the loop below reads back to back, so a thousand tries is a few
+; hundred microseconds even on PCI Express - out of all proportion to the
+; transaction. It is also the ceiling on how long a dead MI interface can
+; hold a caller, and from a link attention that caller is the interrupt
+; handler with interrupts off, so the count stays this low.
+        mov     ecx, 1000
   .wait:
         mov     eax, [esi + MI_COMM]
         test    eax, MICOMM_BUSY
