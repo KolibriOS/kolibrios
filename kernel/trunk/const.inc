@@ -233,7 +233,7 @@ struct kernel_version
         ; OS release number, e.g. 0,7,7,0. Distro-specific.
         osrel    rb 4
         ; A single char like 'a' to append to the version, or 0 to omit it.
-        ; 0 means 0.7.7.0+1234, 'a' means 0.7.7.0+1234-a, etc.
+        ; 0 means 0.7.7.0-1234-g723a1b44, 'a' means 0.7.7.0-1234-g723a1b44-a.
         ; This allows developers to determine the debug build by its log.
         ; Unfortunately, users sometimes mess things and test not the build they
         ; were asked to test.

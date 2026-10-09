@@ -155,7 +155,6 @@ jobs:
           echo "CONFIG_KERPACK_CMD= && kerpack %o"                                       >> ${{ matrix.lang }}.config
           echo "CONFIG_PESTRIP_CMD= && EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o" >> ${{ matrix.lang }}.config
           echo "CONFIG_NO_MSVC=full"                                                     >> ${{ matrix.lang }}.config
-          echo "CONFIG_INSERT_REVISION_ID=1"                                             >> ${{ matrix.lang }}.config
           echo "CONFIG_LANG=${{ matrix.lang }}"                                          >> ${{ matrix.lang }}.config
           echo "CONFIG_BUILD_TYPE=${{ matrix.lang }}"                                    >> ${{ matrix.lang }}.config
 
@@ -173,6 +172,12 @@ jobs:
           set -o pipefail
           export PATH=/home/autobuild/tools/win32/bin:$PATH
           source kos32-export-env-vars ${{ gitea.workspace }}
+          # commits since the release tag, commit id and build time for the kernel
+          tag=$(git describe --tags --abbrev=0)
+          KOLIBRIOS_BUILD_OFFSET=$(git rev-list --count "$tag"..HEAD)
+          KOLIBRIOS_BUILD_CMTID=0x$(git rev-parse HEAD | cut -c 1-8)
+          KOLIBRIOS_BUILD_TIME=$(date -u +%Y%m%d%H%M)
+          export KOLIBRIOS_BUILD_OFFSET KOLIBRIOS_BUILD_CMTID KOLIBRIOS_BUILD_TIME
           tup build-${{ matrix.lang }} 2>&1 | tee build.log
 
       # stamp the cache with its commit so later builds diff against it
@@ -185,7 +190,7 @@ jobs:
       # version string (tag + commit count + sha) for the artifact names
       - name: Get describe
         id: vars
-        run: echo "descr=$(git describe --tags)" >> $GITEA_OUTPUT
+        run: echo "descr=$(git describe --tags --long --abbrev=8)" >> $GITEA_OUTPUT
 
       # stage build outputs under their final names, plus distribution kit and checksums
       - name: Prepare artifacts

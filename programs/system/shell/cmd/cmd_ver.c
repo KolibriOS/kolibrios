@@ -4,18 +4,15 @@ void get_str_kernel_version(char *str, const char *fmt) {
     struct kernel_version kv;
 
     kol_get_kernel_ver(&kv);
-    char str_offset[8] = {'\0'};
-    if (kv.offset)
-        sprintf(str_offset, "+%u", kv.offset);
+    char str_build[24] = {'\0'};
+    if (kv.cmtid)
+        sprintf(str_build, "-%u-g%08x", kv.offset, kv.cmtid);
     char str_dbgtag[4] = {'\0'};
     if (kv.dbgtag)
         sprintf(str_dbgtag, "-%c", kv.dbgtag);
-    char str_cmtid[16] = {'\0'};
-    if (kv.cmtid)
-        sprintf(str_cmtid, " (%08x)", kv.cmtid);
 
     sprintf(str, fmt, kv.osrel[0], kv.osrel[1], kv.osrel[2], kv.osrel[3],
-            str_offset, str_dbgtag, str_cmtid, kv.abimaj, kv.abimin);
+            str_build, str_dbgtag, kv.abimaj, kv.abimin);
 }
 
 void get_str_cpu_info(char *str) {

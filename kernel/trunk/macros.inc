@@ -43,6 +43,39 @@ macro diff10 title,l1,l2
   display 13,10
  }
 
+; db the decimal digits of a number, without leading zeros
+macro db_decimal value
+{
+  local divisor
+  divisor = 1
+  while (value) / divisor >= 10
+    divisor = divisor * 10
+  end while
+  while divisor > 0
+    db ((value) / divisor) mod 10 + '0'
+    divisor = divisor / 10
+  end while
+}
+
+; db a number as count digits in base 10 or 16, with leading zeros
+macro db_digits value, count, base
+{
+  local divisor, digit
+  divisor = 1
+  repeat count - 1
+    divisor = divisor * base
+  end repeat
+  repeat count
+    digit = ((value) / divisor) mod base
+    if digit < 10
+      db digit + '0'
+    else
+      db digit - 10 + 'a'
+    end if
+    divisor = divisor / base
+  end repeat
+}
+
 include 'kglobals.inc'
 
 ; \begin{diamond}[29.09.2006]

@@ -152,7 +152,6 @@ jobs:
           echo "CONFIG_KERPACK_CMD= && kerpack %o"                                       >> ${{ matrix.lang }}.config
           echo "CONFIG_PESTRIP_CMD= && EXENAME=%o fasm $ROOT/data/common/pestrip.asm %o" >> ${{ matrix.lang }}.config
           echo "CONFIG_NO_MSVC=full"                                                     >> ${{ matrix.lang }}.config
-          echo "CONFIG_INSERT_REVISION_ID=0"                                             >> ${{ matrix.lang }}.config
           echo "CONFIG_LANG=${{ matrix.lang }}"                                          >> ${{ matrix.lang }}.config
           echo "CONFIG_BUILD_TYPE=${{ matrix.lang }}"                                    >> ${{ matrix.lang }}.config
 

@@ -29,31 +29,13 @@ macro line_space {
 }
 d80x25_top:
         line_full_top
-; draw seven digits of the git hash
-__x = BUILD_CMTID
-if __x > 0
-  __x = __x SHR 4
-  cur_line_pos = 75
-  store byte ' ' at d80x25_top+cur_line_pos+1
-  repeat 7
-    digit = __x AND 0xf
-    if digit > 9
-      digit = digit - 10 + 'a'
-    else
-      digit = digit + '0'
-    end if
-    store byte digit at d80x25_top+cur_line_pos
-    cur_line_pos = cur_line_pos - 1
-    __x = __x SHR 4
-  end repeat
-  store byte ' ' at d80x25_top+cur_line_pos
-  store dword ' GIT' at d80x25_top+cur_line_pos-4
-end if
 space_msg:
         line_space
+; Version line in git describe format with the build time at the right end:
+; KolibriOS 0.7.7.0-9230-g723a1b44           auto-build 11:08 09.10.2026
+; BUILD_TIME is YYYYMMDDhhmm in UTC.
 verstr:
-; version string
-db 186,32
+        db      186, ' '
 repeat 78
   load a byte from kernel_header.signature+%-1
   if a = 13
@@ -61,9 +43,38 @@ repeat 78
   end if
   db a
 end repeat
-repeat 78 - ($-verstr)
-  db ' '
-end repeat
-db 32,186
+if BUILD_CMTID > 0
+        db      '-'
+        db_decimal BUILD_OFFSET
+        db      '-g'
+        db_digits BUILD_CMTID, 8, 16
+end if
+if BUILD_DBGTAG > 0
+        db      '-', BUILD_DBGTAG
+end if
+if BUILD_TIME > 0
+        times   verstr + 78 - (.time_end - .time) - $ db ' '
+.time:
+  if lang eq ru_RU
+        cp866   "автосборка"
+  else if lang eq es_ES
+        cp850   "autocompilación"
+  else
+        db      "auto-build"
+  end if
+        db      ' '
+        db_digits (BUILD_TIME / 100) mod 100, 2, 10     ; hh
+        db      ':'
+        db_digits BUILD_TIME mod 100, 2, 10             ; mm
+        db      ' '
+        db_digits (BUILD_TIME / 10000) mod 100, 2, 10   ; DD
+        db      '.'
+        db_digits (BUILD_TIME / 1000000) mod 100, 2, 10 ; MM
+        db      '.'
+        db_digits BUILD_TIME / 100000000, 4, 10         ; YYYY
+.time_end:
+end if
+        times   verstr + 78 - $ db ' '
+        db      ' ', 186
         line_half
 d80x25_top_num = 4

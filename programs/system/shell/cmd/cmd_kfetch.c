@@ -10,17 +10,15 @@ int cmd_kfetch(char param[]) {
     struct kernel_version kv;
     int eol;
     kol_get_kernel_ver(&kv);
-    char str_os_rel_offset_dbgtag[24];
-    eol = sprintf(str_os_rel_offset_dbgtag, "%d.%d.%d.%d", kv.osrel[0],
+    char str_os_version[40];
+    eol = sprintf(str_os_version, "%d.%d.%d.%d", kv.osrel[0],
                   kv.osrel[1], kv.osrel[2], kv.osrel[3]);
-    if (kv.offset)
-        eol += sprintf(str_os_rel_offset_dbgtag + eol, "+%u", kv.offset);
-    if (kv.dbgtag)
-        sprintf(str_os_rel_offset_dbgtag + eol, "-%c", kv.dbgtag);
-    char str_krn_abi_cmtid[32];
-    eol = sprintf(str_krn_abi_cmtid, "ABI %u.%u", kv.abimaj, kv.abimin);
     if (kv.cmtid)
-        sprintf(str_krn_abi_cmtid + eol, ", git %08x", kv.cmtid);
+        eol += sprintf(str_os_version + eol, "-%u-g%08x", kv.offset, kv.cmtid);
+    if (kv.dbgtag)
+        sprintf(str_os_version + eol, "-%c", kv.dbgtag);
+    char str_krn_abi[16];
+    sprintf(str_krn_abi, "ABI %u.%u", kv.abimaj, kv.abimin);
     char str_uptime[64];
     get_str_uptime(str_uptime, "%d day(s), %d:%d:%d.%d");
     char str_resolution[24];
@@ -54,7 +52,7 @@ int cmd_kfetch(char param[]) {
         "\033[0;34;40m   \033[0;31;40m    \033[0;32;40m \033[0;31;40m.\033[0;32;40m;\033[0;34;40m;8\033[0;32;40m%%\033[0;5;34;40m8\033[0;34;40m8\033[0;1;30;44m8\033[0;1;30;40m8\033[0;34;40m;.\033[0;31;40m \033[0;34;40m  \033[0;31;40m \033[0;34;40m                 \033[0m\n\r"
         "\033[0;34;40m   \033[0;32;40m \033[0;31;40m     \033[0;32;40m.\033[0;31;40m.\033[0;32;40m.\033[0;31;40m.\033[0;32;40m.\033[0;31;40m:. \033[0;32;40m. \033[0;34;40m \033[0;31;40m \033[0;34;40m                   \033[0m\n\r",
         
-        "\033[0;36mOS\033[0m: KolibriOS ", str_os_rel_offset_dbgtag, "\033[0;36mKernel\033[0m: ", str_krn_abi_cmtid, "\033[0;36mUptime\033[0m: ", str_uptime, "\033[0;36mResolution\033[0m: ", str_resolution, "\033[0;36mCPU\033[0m: ", str_cpu_info, "\033[0;36mMemory\033[0m: ", str_meminfo
+        "\033[0;36mOS\033[0m: KolibriOS ", str_os_version, "\033[0;36mKernel\033[0m: ", str_krn_abi, "\033[0;36mUptime\033[0m: ", str_uptime, "\033[0;36mResolution\033[0m: ", str_resolution, "\033[0;36mCPU\033[0m: ", str_cpu_info, "\033[0;36mMemory\033[0m: ", str_meminfo
     );
 
     return TRUE;

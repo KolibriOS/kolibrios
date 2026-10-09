@@ -7,6 +7,7 @@ add_include(tup.getvariantdir())
 tup.import("KOLIBRIOS_BUILD_OFFSET") -- 1234
 tup.import("KOLIBRIOS_BUILD_CMTID")  -- 0xaabbccdd
 tup.import("KOLIBRIOS_BUILD_DBGTAG") -- 0x61 for 'a', etc
+tup.import("KOLIBRIOS_BUILD_TIME")   -- 202610091108, YYYYMMDDhhmm in UTC
 
 str_build = ""
 if KOLIBRIOS_BUILD_OFFSET then
@@ -17,6 +18,9 @@ if KOLIBRIOS_BUILD_CMTID then
 end
 if KOLIBRIOS_BUILD_DBGTAG then
   str_build += " -dBUILD_DBGTAG=" .. KOLIBRIOS_BUILD_DBGTAG
+end
+if KOLIBRIOS_BUILD_TIME then
+  str_build += " -dBUILD_TIME=" .. KOLIBRIOS_BUILD_TIME
 end
 
 tup.rule("echo lang fix " .. ((tup.getconfig("LANG") == "") and "en_US" or tup.getconfig("LANG")) .. " > %o", {"lang.inc"})
