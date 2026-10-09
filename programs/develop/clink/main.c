@@ -365,7 +365,12 @@ static void build(ObjectIr *ir, const char *outname) {
 					}
 
 					if (sym.symbol.StorageClass != 2) {
-						sprintf(name, "%s@%s", name, object->name);
+						size_t name_len = strlen(name);
+						int suffix_len = snprintf(name + name_len, name_max - name_len, "@%s", object->name);
+						if (suffix_len < 0 || (size_t)suffix_len >= name_max - name_len) {
+							fprintf(stderr, "Error: Local symbol name is too long\n");
+							exit(EXIT_FAILURE);
+						}
 					}
 
 					Symbol old_sym = cdict_CStr_Symbol_get_v(&ir->symtab, name);
@@ -559,7 +564,12 @@ static ObjectIr parse_objects(int argc, char **argv) {
 			}
 
 			if (sym.symbol.StorageClass != 2) {
-				sprintf(name, "%s@%s", name, objects[i].name);
+				size_t name_len = strlen(name);
+				int suffix_len = snprintf(name + name_len, name_max - name_len, "@%s", objects[i].name);
+				if (suffix_len < 0 || (size_t)suffix_len >= name_max - name_len) {
+					fprintf(stderr, "Error: Local symbol name is too long\n");
+					exit(EXIT_FAILURE);
+				}
 			}
 
 			if (sym.symbol.StorageClass != 2 || sym.symbol.SectionNumber) {
@@ -574,7 +584,7 @@ static ObjectIr parse_objects(int argc, char **argv) {
 				for (size_t aux_i = 0; aux_i < sym.symbol.NumberOfAuxSymbols; aux_i++) {
 					EpepCoffSymbol aux = { 0 };
 
-					if (!epep_get_symbol_by_index(epep, &aux, sym_i + aux_i)) {
+					if (!epep_get_symbol_by_index(epep, &aux, sym_i + aux_i + 1)) {
 						ERROR_EPEP(epep);
 					}
 					cvec_EpepCoffSymbol_push_back(&auxes, aux);
