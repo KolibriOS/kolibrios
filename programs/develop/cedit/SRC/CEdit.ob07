@@ -1411,7 +1411,7 @@ BEGIN
     |menuBoard:
         K.Run("/sys/develop/board", "")
     |menuSysFunc:
-        K.Run("/sys/docpack", "e")
+        K.Run("/sys/docpack", "s")
     |menuLineNumbers:
         T.toggleNumbers;
         Ini.setInt("settings", "line_numbers", ORD(T.lineNumbers))

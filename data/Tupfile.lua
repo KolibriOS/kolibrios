@@ -353,7 +353,7 @@ if build_type == "ru_RU" then tup.append_table(extra_files, {
  {"Docs/Hot_Keys.txt", build_type .. "/docs/Hot_Keys.txt"},
  {"Docs/Install.txt", build_type .. "/docs/Install.txt"},
  {"Docs/Credits.txt", build_type .. "/docs/Credits.txt"},
- {"Docs/SysFuncs.txt", VAR_PROGS .. "/system/docpack/SysFuncs.txt"},
+ {"Docs/SysFuncs.txt", SRC_KERNEL .. "/docs/sysfuncs.txt"},
  {"HD_Load/9x2klbr/", SRC_PROGS .. "/hd_load/9x2klbr/readme.txt"},
  {"HD_Load/mtldr/install.txt", SRC_PROGS .. "/hd_load/mtldr/install_eng.txt"},
  {"HD_Load/USB_Boot/readme.txt", SRC_PROGS .. "/hd_load/usb_boot/readme_eng.txt"},
