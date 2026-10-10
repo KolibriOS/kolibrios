@@ -6,17 +6,17 @@ end
 
 --[================================[ DATA ]================================]--
 
-SRC = tup.getcwd() .. '/..'
-SRC_PROGS = SRC .. "/programs"
-SRC_KERNEL = SRC .. "/kernel/trunk"
+SRC         = tup.getcwd() .. '/..'
+SRC_PROGS   = SRC .. "/programs"
+SRC_KERNEL  = SRC .. "/kernel/trunk"
 
-VAR = tup.getvariantdir() .. '/..'
-VAR_PROGS = VAR .. "/programs"
-VAR_DRVS = VAR .. "/drivers"
-VAR_SKINS = VAR .. "/skins"
-VAR_KERNEL = VAR .. "/kernel/trunk"
+VAR         = tup.getvariantdir() .. '/..'
+VAR_PROGS   = VAR .. "/programs"
+VAR_DRVS    = VAR .. "/drivers"
+VAR_SKINS   = VAR .. "/skins"
+VAR_KERNEL  = VAR .. "/kernel/trunk"
 VAR_CONTRIB = VAR .. "/contrib"
-VAR_DATA = VAR .. "/data"
+VAR_DATA    = VAR .. "/data"
 
 -- Static data that doesn't need to be compiled
 -- Files to be included in kolibri.img.
@@ -25,94 +25,51 @@ img_files = {
  {"MACROS.INC", SRC_PROGS .. "/macros.inc"},
 -- {"CONFIG.INC", SRC_PROGS .. "/config.inc"},
  {"STRUCT.INC", SRC_PROGS .. "/struct.inc"},
- {"ALLGAMES", "common/allgames"},
- {"HOME.PNG", "common/wallpapers/T_Home.png"},
- {"ICONS32.PNG", "common/icons32.png"},
- {"ICONS18.PNG", "common/icons18.png"},
- {"INDEX.HTM", "common/index_htm"},
- {"KUZKINA.MID", "common/kuzkina.mid"},
- {"SINE.MP3", "common/sine.mp3"},
  {"LANG.INC", build_type .. "/lang.inc"},
- {"NOTIFY3.PNG", "common/notify3.png"},
- {"3D/HOUSE.3DS", "common/3d/house.3ds"},
- {"File Managers/ICON2EXT.INI", "common/File Managers/icon2ext.ini"},
- {"FONTS/TAHOMA.KF", "common/fonts/tahoma.kf"},
- -- {"LIB/ICONV.OBJ", "common/lib/iconv.obj"},
- {"LIB/KMENU.OBJ", "common/lib/kmenu.obj"},
- {"LIB/PIXLIB.OBJ", "common/lib/pixlib.obj"},
- {"MEDIA/AC97SND", "common/media/ac97snd"},
  {"NETWORK/FTPC.INI", SRC_PROGS .. "/network/ftpc/ftpc.ini"},
- {"NETWORK/FTPD.INI", "common/network/ftpd.ini"},
- {"NETWORK/KNMAP", "common/network/knmap"},
- {"NETWORK/USERS.INI", "common/network/users.ini"},
- {"SETTINGS/APP.INI", "common/settings/app.ini"},
- {"SETTINGS/APP_PLUS.INI", "common/settings/app_plus.ini"},
- {"SETTINGS/ASSOC.INI", "common/settings/assoc.ini"},
- {"SETTINGS/AUTORUN.DAT", "common/settings/AUTORUN.DAT"},
  {"SETTINGS/CEDIT.INI", SRC_PROGS .. "/develop/cedit/CEDIT.INI"},
- {"SETTINGS/DOCKY.INI", "common/settings/docky.ini"},
- {"SETTINGS/FB2READ.INI", "common/settings/fb2read.ini"},
  {"SETTINGS/HA.CFG", SRC_PROGS .. "/other/ha/SETTINGS/HA.CFG"},
  {"SETTINGS/ICON.INI", build_type .. "/settings/icon.ini"},
  {"SETTINGS/KEYMAP.KEY", VAR_PROGS .. "/system/taskbar/keymap.key.kpack"},
  {"SETTINGS/LANG.INI", build_type .. "/settings/lang.ini"},
  {"SETTINGS/MENU.DAT", build_type .. "/settings/menu.dat"},
- {"SETTINGS/NETWORK.INI", "common/settings/network.ini"},
- {"SETTINGS/SYSTEM.INI", "common/settings/system.ini"},
- {"SETTINGS/TASKBAR.INI", "common/settings/taskbar.ini"},
- {"SETTINGS/SYSTEM.ENV", "common/settings/system.env"},
  {"SETTINGS/USBDRV.DAT",VAR_DRVS .. "/usb/usbother/usbdrv.dat"},
 }
 
 -- For russian build, add russian-only files.
 if build_type == "ru_RU" then tup.append_table(img_files, {
- {"WELCOME.HTM", VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
- {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/rus/example.asm"},
- {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy_ru"},
+ {"WELCOME.HTM",        VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
+ {"EXAMPLE.ASM",        SRC_PROGS .. "/develop/examples/example/rus/example.asm"},
+ {"DEVELOP/BACKY",      SRC_PROGS .. "/develop/backy/Backy_ru"},
  {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
  {"GAMES/DESCENT", build_type .. "/games/descent"},
- {"SETTINGS/.shell", SRC_PROGS .. "/system/shell/bin/rus/.shell"},
+ {"SETTINGS/.shell",    SRC_PROGS .. "/system/shell/bin/rus/.shell"},
  {"SETTINGS/GAMES.INI", "ru_RU/settings/games.ini"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey.ini"},
  {"SETTINGS/SYSPANEL.INI", "ru_RU/settings/syspanel.ini"},
 }) elseif build_type == "en_US" then tup.append_table(img_files, {
- {"WELCOME.HTM", VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
- {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/example.asm"},
- {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
- {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
- {"GAMES/DESCENT", "common/games/descent"},
- {"SETTINGS/.shell", SRC_PROGS .. "/system/shell/bin/eng/.shell"},
- {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
+ {"WELCOME.HTM",        VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
+ {"EXAMPLE.ASM",        SRC_PROGS .. "/develop/examples/example/example.asm"},
+ {"DEVELOP/BACKY",      SRC_PROGS .. "/develop/backy/Backy"},
+ {"SETTINGS/.shell",    SRC_PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey.ini"},
- {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
 }) elseif build_type == "es_ES" then tup.append_table(img_files, {
- {"WELCOME.HTM", VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
- {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/example.asm"},
- {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
- {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
- {"GAMES/DESCENT", "common/games/descent"},
- {"SETTINGS/.shell", SRC_PROGS .. "/system/shell/bin/eng/.shell"},
- {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
+ {"WELCOME.HTM",        VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
+ {"EXAMPLE.ASM",        SRC_PROGS .. "/develop/examples/example/example.asm"},
+ {"DEVELOP/BACKY",      SRC_PROGS .. "/develop/backy/Backy"},
+ {"SETTINGS/.shell",    SRC_PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey.ini"},
  {"SETTINGS/SYSPANEL.INI", "es_ES/settings/syspanel.ini"},
 }) elseif build_type == "it_IT" then tup.append_table(img_files, {
- {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/example.asm"},
- {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
- {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
- {"GAMES/DESCENT", "common/games/descent"},
- {"SETTINGS/.shell", SRC_PROGS .. "/system/shell/bin/eng/.shell"},
+ {"EXAMPLE.ASM",        SRC_PROGS .. "/develop/examples/example/example.asm"},
+ {"DEVELOP/BACKY",      SRC_PROGS .. "/develop/backy/Backy"},
+ {"SETTINGS/.shell",    SRC_PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey_it.ini"},
- {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
- {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
 }) else tup.append_table(img_files, {
- {"EXAMPLE.ASM", SRC_PROGS .. "/develop/examples/example/example.asm"},
- {"DEVELOP/BACKY", SRC_PROGS .. "/develop/backy/Backy"},
- {"File Managers/KFAR.INI", "common/File Managers/kfar.ini"},
- {"GAMES/DESCENT", "common/games/descent"},
- {"SETTINGS/.shell", SRC_PROGS .. "/system/shell/bin/eng/.shell"},
- {"SETTINGS/GAMES.INI", "common/settings/games.ini"},
+ {"EXAMPLE.ASM",        SRC_PROGS .. "/develop/examples/example/example.asm"},
+ {"DEVELOP/BACKY",      SRC_PROGS .. "/develop/backy/Backy"},
+ {"SETTINGS/.shell",    SRC_PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey.ini"},
- {"SETTINGS/SYSPANEL.INI", "common/settings/syspanel.ini"},
 }) end
 
 --[[
@@ -870,6 +827,20 @@ end -- tup.getconfig('NO_GCC') ~= 'full'
 
 -- Skins.
 tup.include("../skins/skinlist.lua")
+
+
+tmp_img_files = {}
+tmp_extra_files = {}
+tmp_iso_extra_files = {}
+tmp_distr_extra_files = {}
+
+tup.include("../_tools/tup/package.lua")
+tup.include("./common/package.lua")
+
+tup.append_table(img_files, tmp_img_files)
+tup.append_table(extra_files, tmp_extra_files)
+tup.append_table(iso_extra_files, tmp_iso_extra_files)
+tup.append_table(distr_extra_files, tmp_distr_extra_files)
 
 --[================================[ CODE ]================================]--
 -- expand extra_files and similar
