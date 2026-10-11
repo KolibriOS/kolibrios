@@ -1,9 +1,3 @@
-if build_type ~= "ru_RU" then
-  tup.append_table(tmp_img_files, {
-    {"GAMES/DESCENT", tup.getcwd() .. "/descent"},
-  })
-end
-
 tup.append_table(tmp_extra_files, {
   {"kolibrios/games/BabyPainter", tup.getcwd() .. "/BabyPainter"},
   {"kolibrios/games/fara/fara.gfx", tup.getcwd() .. "/fara.gfx"},
@@ -21,21 +15,25 @@ tup.append_table(tmp_extra_files, {
   {"kolibrios/games/fridge/", tup.getcwd() .. "/fridge/*"},
 })
 
-if build_type == "ru_RU" then
+if lang("ru_RU") then
   tup.append_table(tmp_extra_files, {
     {"kolibrios/games/ataka", tup.getcwd() .. "/ataka/ataka_ru"},
     {"kolibrios/games/sstartrek/SStarTrek", tup.getcwd() .. "/sstartrek/SStarTrek_ru"},
   })
 end
 
-if build_type ~= "ru_RU" then
+if nlang("ru_RU") then
+  tup.append_table(tmp_img_files, {
+    {"GAMES/DESCENT", tup.getcwd() .. "/descent"},
+  })
+
   tup.append_table(tmp_extra_files, {
     {"kolibrios/games/ataka", tup.getcwd() .. "/ataka/ataka_en"},
     {"kolibrios/games/sstartrek/SStarTrek", tup.getcwd() .. "/sstartrek/SStarTrek_en"},
   })
 end
 
-if tup.getconfig("NO_GCC") ~= "full" and tup.getconfig("NO_NASM") ~= "full" then
+if to_image({"GCC", "NASM"}) then
   tup.append_table(tmp_extra_files, {
     {"kolibrios/games/tyrian/data/", tup.getcwd() .. "/tyrian/data/*"},
     {"kolibrios/games/quake/", tup.getcwd() .. "/quake/*"}, -- not really gcc, but no sense without sdlquake

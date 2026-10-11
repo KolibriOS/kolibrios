@@ -2,7 +2,7 @@ tup.append_table(tmp_img_files, {
   {"File Managers/ICON2EXT.INI", tup.getcwd() .. "/icon2ext.ini"},
 })
 
-if build_type ~= "ru_RU" then
+if nlang("ru_RU") then
   tup.append_table(tmp_img_files, {
     {"File Managers/KFAR.INI", tup.getcwd() .. "/kfar.ini"},
   })

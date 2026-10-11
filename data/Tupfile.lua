@@ -735,6 +735,8 @@ tmp_iso_extra_files = {}
 tmp_distr_extra_files = {}
 
 tup.include("../_tools/tup/package.lua")
+tup.include("../_tools/tup/condition.lua")
+
 tup.include("./common/package.lua")
 
 tup.append_table(img_files, tmp_img_files)

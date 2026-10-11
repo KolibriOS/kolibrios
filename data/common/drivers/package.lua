@@ -11,7 +11,7 @@ tup.append_table(tmp_extra_files, {
   -- {"kolibrios/drivers/geode/", tup.getcwd() .. "/geode/*"},
 })
 
-if tup.getconfig("NO_GCC") ~= "full" then
+if to_image("GCC") then
   tup.append_table(tmp_extra_files, {
     {"kolibrios/drivers/geode/geode.sys", tup.getcwd() .. "/geode/geode.sys"}, -- there is also an autobuid version that is not working
   })
