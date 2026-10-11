@@ -22,18 +22,14 @@ VAR_DATA    = VAR .. "/data"
 -- Files to be included in kolibri.img.
 -- The first subitem of every item is name inside kolibri.img, the second is name of local file.
 img_files = {
- {"MACROS.INC", SRC_PROGS .. "/macros.inc"},
--- {"CONFIG.INC", SRC_PROGS .. "/config.inc"},
- {"STRUCT.INC", SRC_PROGS .. "/struct.inc"},
- {"LANG.INC", build_type .. "/lang.inc"},
- {"NETWORK/FTPC.INI", SRC_PROGS .. "/network/ftpc/ftpc.ini"},
- {"SETTINGS/CEDIT.INI", SRC_PROGS .. "/develop/cedit/CEDIT.INI"},
- {"SETTINGS/HA.CFG", SRC_PROGS .. "/other/ha/SETTINGS/HA.CFG"},
- {"SETTINGS/ICON.INI", build_type .. "/settings/icon.ini"},
+ {"MACROS.INC",          SRC_PROGS .. "/macros.inc"},
+-- {"CONFIG.INC",        SRC_PROGS .. "/config.inc"},
+ {"STRUCT.INC",          SRC_PROGS .. "/struct.inc"},
+ {"NETWORK/FTPC.INI",    SRC_PROGS .. "/network/ftpc/ftpc.ini"},
+ {"SETTINGS/CEDIT.INI",  SRC_PROGS .. "/develop/cedit/CEDIT.INI"},
+ {"SETTINGS/HA.CFG",     SRC_PROGS .. "/other/ha/SETTINGS/HA.CFG"},
  {"SETTINGS/KEYMAP.KEY", VAR_PROGS .. "/system/taskbar/keymap.key.kpack"},
- {"SETTINGS/LANG.INI", build_type .. "/settings/lang.ini"},
- {"SETTINGS/MENU.DAT", build_type .. "/settings/menu.dat"},
- {"SETTINGS/USBDRV.DAT",VAR_DRVS .. "/usb/usbother/usbdrv.dat"},
+ {"SETTINGS/USBDRV.DAT", VAR_DRVS  .. "/usb/usbother/usbdrv.dat"},
 }
 
 -- For russian build, add russian-only files.
@@ -41,12 +37,8 @@ if build_type == "ru_RU" then tup.append_table(img_files, {
  {"WELCOME.HTM",        VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
  {"EXAMPLE.ASM",        SRC_PROGS .. "/develop/examples/example/rus/example.asm"},
  {"DEVELOP/BACKY",      SRC_PROGS .. "/develop/backy/Backy_ru"},
- {"File Managers/KFAR.INI", build_type .. "/File Managers/kfar.ini"},
- {"GAMES/DESCENT", build_type .. "/games/descent"},
  {"SETTINGS/.shell",    SRC_PROGS .. "/system/shell/bin/rus/.shell"},
- {"SETTINGS/GAMES.INI", "ru_RU/settings/games.ini"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey.ini"},
- {"SETTINGS/SYSPANEL.INI", "ru_RU/settings/syspanel.ini"},
 }) elseif build_type == "en_US" then tup.append_table(img_files, {
  {"WELCOME.HTM",        VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
  {"EXAMPLE.ASM",        SRC_PROGS .. "/develop/examples/example/example.asm"},
@@ -183,12 +175,6 @@ extra_files = {
  {"kolibrios/utils/tedit/info/INI.SYN", VAR_PROGS .. "/other/t_edit/info/ini_files.syn"},
  }
 if build_type == "ru_RU" then tup.append_table(extra_files, {
- {"Docs/cp866/Config.txt", build_type .. "/docs/Config.txt"},
- {"Docs/cp866/Copying.txt", build_type .. "/docs/Copying.txt"},
- {"Docs/cp866/History.txt", build_type .. "/docs/History.txt"},
- {"Docs/cp866/Hot_Keys.txt", build_type .. "/docs/Hot_Keys.txt"},
- {"Docs/cp866/Install.txt", build_type .. "/docs/Install.txt"},
- {"Docs/cp866/Credits.txt", build_type .. "/docs/Credits.txt"},
  {"Docs/cp866/SysFuncr.txt", VAR_PROGS .. "/system/docpack/SysFuncr.txt"},
  {"Docs/cp1251/Config.txt", VAR_DATA .. "/" .. build_type .. "/docs/CONFIG.WIN.TXT", cp1251_from = build_type .. "/docs/Config.txt"},
  {"Docs/cp1251/Copying.txt", "$(VAR_DATA)/$(build_type)/docs/COPYING.WIN.TXT", cp1251_from = build_type .. "/docs/Copying.txt"},
@@ -206,17 +192,9 @@ if build_type == "ru_RU" then tup.append_table(extra_files, {
  {"kolibrios/games/Dungeons/Resources/Textures/HUD/", SRC_PROGS .. "/games/Dungeons/Resources/Textures/HUD/*"},
  {"kolibrios/games/Dungeons/Resources/Textures/", SRC_PROGS .. "/games/Dungeons/Resources/Textures/Licenses.txt"},
  {"kolibrios/games/Dungeons/", SRC_PROGS .. "/games/Dungeons/readme_ru.txt"},
- {"kolibrios/games/WHOWTBAM/", build_type .. "/games/whowtbam"},
- {"kolibrios/games/WHOWTBAM/", build_type .. "/games/appdata.dat"},
  {"kolibrios/media/zsea/zsea_keys.txt", SRC_PROGS .. "/media/zsea/Docs/zSea_keys_rus.txt"},
- {"kolibrios/res/guide/", build_type .. "/docs/guide/*"},
  {"kolibrios/develop/tcc/doc/", SRC_PROGS .. "/develop/ktcc/bin/doc/ru/*"},
 }) else tup.append_table(extra_files, {
- {"Docs/Config.txt", build_type .. "/docs/Config.txt"},
- {"Docs/Copying.txt", build_type .. "/docs/Copying.txt"},
- {"Docs/Hot_Keys.txt", build_type .. "/docs/Hot_Keys.txt"},
- {"Docs/Install.txt", build_type .. "/docs/Install.txt"},
- {"Docs/Credits.txt", build_type .. "/docs/Credits.txt"},
  {"Docs/SysFuncs.txt", VAR_PROGS .. "/system/docpack/SysFuncs.txt"},
  {"HD_Load/9x2klbr/", SRC_PROGS .. "/hd_load/9x2klbr/readme.txt"},
  {"HD_Load/mtldr/install.txt", SRC_PROGS .. "/hd_load/mtldr/install_eng.txt"},
@@ -737,7 +715,7 @@ tmp_distr_extra_files = {}
 tup.include("../_tools/tup/package.lua")
 tup.include("../_tools/tup/condition.lua")
 
-tup.include("./common/package.lua")
+tup.include("./package.lua")
 
 tup.append_table(img_files, tmp_img_files)
 tup.append_table(extra_files, tmp_extra_files)
