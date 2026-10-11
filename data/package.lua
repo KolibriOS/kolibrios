@@ -16,4 +16,12 @@ if nlang("ru_RU") then
     {"Docs/Install.txt",  build_type .. "/docs/Install.txt"},
     {"Docs/Credits.txt",  build_type .. "/docs/Credits.txt"},
   })
+
+  tup.append_table(tmp_iso_extra_files, {
+    {"/readme.txt", build_type .. "/distr_data/readme.txt"},
+  })
+
+  tup.append_table(tmp_distr_extra_files, {
+    {"/readme.txt", build_type .. "/distr_data/readme_distr.txt"},
+  })
 end

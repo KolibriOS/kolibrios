@@ -206,39 +206,20 @@ if build_type == "ru_RU" then tup.append_table(extra_files, {
 Files to be included in distribution kit outside of kolibri.img, but not kolibri.iso.
 Same syntax as extra_files.
 ]]--
-if build_type == "ru_RU" then
 distr_extra_files = {
- {"/readme_dos.txt", build_type .. "/distr_data/readme_dos_distr.txt"},
- {"/readme.txt", build_type .. "/distr_data/readme_distr.txt", cp1251_from = build_type .. "/distr_data/readme_dos_distr.txt"},
-}
-else
-distr_extra_files = {
- {"/readme.txt", build_type .. "/distr_data/readme_distr.txt"},
-}
-end
-tup.append_table(distr_extra_files, {
  {"distribution_kit/kolibri.img", VAR_DATA .. "/kolibri.img"},
-})
+}
+
 --[[
 Files to be included in kolibri.iso outside of kolibri.img, but not distribution kit.
 Same syntax as extra_files.
 ]]--
-if build_type == "ru_RU" then
 iso_extra_files = {
- {"/readme_dos.txt", build_type .. "/distr_data/readme_dos.txt"},
- {"/readme.txt", "$(VAR_DATA)/$(build_type)/distr_data/readme.txt", cp1251_from = build_type .. "/distr_data/readme_dos.txt"},
-}
-else
-iso_extra_files = {
- {"/readme.txt", build_type .. "/distr_data/readme.txt"},
-}
-end
-tup.append_table(iso_extra_files, {
 -- files for native CD boot
  {"cdboot.bin", VAR_KERNEL .. "/bootloader/extended_primary_loader/cdfs/bootsect.bin"},
  {"kernel.mnt", VAR_KERNEL .. "/kernel.mnt.ext_loader"},
  {"kolibri.img", VAR_DATA .. "/kolibri.img"},
-})
+}
 
 -- Programs that require FASM to compile.
 if tup.getconfig('NO_FASM') ~= 'full' then
