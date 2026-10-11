@@ -11,13 +11,13 @@ tup.append_table(tmp_img_files, {
   {"SETTINGS/SYSTEM.ENV",   tup.getcwd() .. "/system.env"},
 })
 
-if nlang("ru_RU") then
+if not lang("ru_RU") then
   tup.append_table(tmp_img_files, {
     {"SETTINGS/GAMES.INI", tup.getcwd() .. "/games.ini"},
   })
 end
 
-if nlang({"ru_RU", "es_ES"}) then
+if not lang({"ru_RU", "es_ES"}) then
   tup.append_table(tmp_img_files, {
     {"SETTINGS/SYSPANEL.INI", tup.getcwd() .. "/syspanel.ini"}
   })

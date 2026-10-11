@@ -34,19 +34,16 @@ img_files = {
 
 -- For russian build, add russian-only files.
 if build_type == "ru_RU" then tup.append_table(img_files, {
- {"WELCOME.HTM",        VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
  {"EXAMPLE.ASM",        SRC_PROGS .. "/develop/examples/example/rus/example.asm"},
  {"DEVELOP/BACKY",      SRC_PROGS .. "/develop/backy/Backy_ru"},
  {"SETTINGS/.shell",    SRC_PROGS .. "/system/shell/bin/rus/.shell"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey.ini"},
 }) elseif build_type == "en_US" then tup.append_table(img_files, {
- {"WELCOME.HTM",        VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
  {"EXAMPLE.ASM",        SRC_PROGS .. "/develop/examples/example/example.asm"},
  {"DEVELOP/BACKY",      SRC_PROGS .. "/develop/backy/Backy"},
  {"SETTINGS/.shell",    SRC_PROGS .. "/system/shell/bin/eng/.shell"},
  {"SETTINGS/MYKEY.INI", SRC_PROGS .. "/system/MyKey/mykey.ini"},
 }) elseif build_type == "es_ES" then tup.append_table(img_files, {
- {"WELCOME.HTM",        VAR_DATA .. "/" .. build_type .. "/welcome.htm.kpack"},
  {"EXAMPLE.ASM",        SRC_PROGS .. "/develop/examples/example/example.asm"},
  {"DEVELOP/BACKY",      SRC_PROGS .. "/develop/backy/Backy"},
  {"SETTINGS/.shell",    SRC_PROGS .. "/system/shell/bin/eng/.shell"},
@@ -159,7 +156,6 @@ extra_files = {
  {"kolibrios/media/zsea/buttons/buttons.png", SRC_PROGS .. "/media/zsea/buttons.png"},
  {"kolibrios/res/skins/", "../skins/authors.txt"},
  {"kolibrios/res/templates/", SRC_PROGS .. "/emulator/e80/games/*"},
- {"kolibrios/res/system/", build_type .. "/settings/kolibri.lbl"},
  {"kolibrios/utils/kterm/kterm", VAR_PROGS .. "/other/kterm/kterm"},
  {"kolibrios/utils/cnc_editor/cnc_editor", VAR_PROGS .. "/other/cnc_editor/cnc_editor"},
  {"kolibrios/utils/cnc_editor/kolibri.NC", SRC_PROGS .. "/other/cnc_editor/kolibri.NC"},
@@ -176,12 +172,6 @@ extra_files = {
  }
 if build_type == "ru_RU" then tup.append_table(extra_files, {
  {"Docs/cp866/SysFuncr.txt", VAR_PROGS .. "/system/docpack/SysFuncr.txt"},
- {"Docs/cp1251/Config.txt", VAR_DATA .. "/" .. build_type .. "/docs/CONFIG.WIN.TXT", cp1251_from = build_type .. "/docs/Config.txt"},
- {"Docs/cp1251/Copying.txt", "$(VAR_DATA)/$(build_type)/docs/COPYING.WIN.TXT", cp1251_from = build_type .. "/docs/Copying.txt"},
- {"Docs/cp1251/History.txt", "$(VAR_DATA)/$(build_type)/docs/HISTORY.WIN.TXT", cp1251_from = build_type .. "/docs/History.txt"},
- {"Docs/cp1251/Hot_Keys.txt", "$(VAR_DATA)/$(build_type)/docs/HOT_KEYS.WIN.TXT", cp1251_from = build_type .. "/docs/Hot_Keys.txt"},
- {"Docs/cp1251/Install.txt", "$(VAR_DATA)/$(build_type)/docs/INSTALL.WIN.TXT", cp1251_from = build_type .. "/docs/Install.txt"},
- {"Docs/cp1251/credits.txt", "$(VAR_DATA)/$(build_type)/docs/CREDITS.WIN.TXT", cp1251_from = build_type .. "/docs/Credits.txt"},
  {"Docs/cp1251/SysFuncr.txt", "$(VAR_DATA)/$(build_type)/docs/SYSFUNCR.WIN.TXT", cp1251_from = SRC_PROGS .. "/system/docpack/SysFuncr.txt"},
  {"HD_Load/9x2klbr/", SRC_PROGS .. "/hd_load/9x2klbr/readme_dos.txt"},
  {"HD_Load/9x2klbr/", SRC_PROGS .. "/hd_load/9x2klbr/readme_win.txt"},
@@ -206,9 +196,7 @@ if build_type == "ru_RU" then tup.append_table(extra_files, {
 Files to be included in distribution kit outside of kolibri.img, but not kolibri.iso.
 Same syntax as extra_files.
 ]]--
-distr_extra_files = {
- {"distribution_kit/kolibri.img", VAR_DATA .. "/kolibri.img"},
-}
+distr_extra_files = {}
 
 --[[
 Files to be included in kolibri.iso outside of kolibri.img, but not distribution kit.
@@ -218,7 +206,6 @@ iso_extra_files = {
 -- files for native CD boot
  {"cdboot.bin", VAR_KERNEL .. "/bootloader/extended_primary_loader/cdfs/bootsect.bin"},
  {"kernel.mnt", VAR_KERNEL .. "/kernel.mnt.ext_loader"},
- {"kolibri.img", VAR_DATA .. "/kolibri.img"},
 }
 
 -- Programs that require FASM to compile.

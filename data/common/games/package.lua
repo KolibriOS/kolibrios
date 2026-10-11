@@ -20,9 +20,7 @@ if lang("ru_RU") then
     {"kolibrios/games/ataka", tup.getcwd() .. "/ataka/ataka_ru"},
     {"kolibrios/games/sstartrek/SStarTrek", tup.getcwd() .. "/sstartrek/SStarTrek_ru"},
   })
-end
-
-if nlang("ru_RU") then
+else
   tup.append_table(tmp_img_files, {
     {"GAMES/DESCENT", tup.getcwd() .. "/descent"},
   })

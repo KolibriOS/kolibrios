@@ -32,18 +32,13 @@ function to_image(compilers)
   return true
 end
 
-function nlang(langs)
+function lang(langs)
   local build_type = tup.getconfig("BUILD_TYPE")
   langs = to_list(langs)
 
   for _, l in ipairs(langs) do
-    if build_type == l then return false end
+    if build_type == l then return true end
   end
 
-  return true
-end
-
-function lang(lang)
-  local build_type = tup.getconfig("BUILD_TYPE")
-  return build_type == lang
+  return false
 end
