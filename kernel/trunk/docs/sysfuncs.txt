@@ -338,6 +338,9 @@ Remarks:
     +10, +22, +26 in these slots coincide.
     Applications have no common way to define whether two threads
     belong to one process.
+  * The used memory (+26) counts a shared memory area (subfunction 22
+    of function 68) only in the process that has created it, not in
+    the processes that open it.
   * The active window - window on top of the window stack -
     receives the messages on a keyboard input. For such window
     the position in the window stack coincides with returned value.

@@ -1418,6 +1418,8 @@ align 4
         jz      .cleanup2
 
         mov     [edi + SMAP.base], eax
+        mov     ecx, [owner_access]
+        mov     [edi + SMAP.owner], ecx
 
         mov     ecx, [esi + SMEM.size]
         mov     [size], ecx
@@ -1440,6 +1442,15 @@ align 4
         or      eax, edx
         stosd
         loop    @B
+
+; the pages of shared memory count in the used memory of its creator only;
+; user_alloc has counted them for every process that maps them
+        cmp     [owner_access], 0
+        jne     .counted
+        mov     eax, [current_process]
+        mov     ecx, [size]
+        sub     [eax + PROC.mem_used], ecx
+.counted:
 
         xor     edx, edx
 
@@ -1506,6 +1517,15 @@ proc shmem_close stdcall, name:dword
         test    eax, eax
         jne     .next
 
+; user_free takes the whole block off the used memory: give back what
+; shmem_open has not counted
+        cmp     [esi + SMAP.owner], 0
+        jne     .free
+        mov     eax, [esi + SMAP.parent]
+        mov     eax, [eax + SMEM.size]
+        mov     ecx, [current_process]
+        add     [ecx + PROC.mem_used], eax
+.free:
         stdcall user_free, [esi + SMAP.base]
 
         mov     eax, esi

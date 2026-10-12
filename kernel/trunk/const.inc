@@ -705,6 +705,7 @@ ends
 struct  SMAP            APPOBJ
         base            dd ?   ;mapped base
         parent          dd ?   ;SMEM
+        owner           dd ?   ;mapped by the creator: counted in PROC.mem_used
 ends
 
 struct  DLLDESCR
