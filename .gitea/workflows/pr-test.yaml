@@ -31,7 +31,7 @@ jobs:
       # shallow clone is enough: PR builds embed no revision id, and the
       # artifact name uses the short head sha (no git describe)
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: builtin:checkout
         with:
           submodules: true
           fetch-depth: 1

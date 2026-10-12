@@ -27,7 +27,7 @@ jobs:
     steps:
       # full history is needed for the revision id (commit count)
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: builtin:checkout
         with:
           submodules: true
           fetch-depth: 0
