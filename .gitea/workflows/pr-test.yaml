@@ -185,22 +185,25 @@ jobs:
 
       #publish the three images, named by PR number + sha
       - name: Upload floppy image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.img
           path: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.img
+          archive: false
           retention-days: 2
 
       - name: Upload CD image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.iso
           path: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.iso
+          archive: false
           retention-days: 2
 
       - name: Upload raw image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.raw
           path: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.raw
+          archive: false
           retention-days: 2

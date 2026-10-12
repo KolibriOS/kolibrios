@@ -205,59 +205,64 @@ jobs:
 
       # publish the images; longer retention for the floppy image
       - name: Upload floppy image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.img
           path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.img
+          archive: false
           retention-days: 90
 
       - name: Upload CD image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.iso
           path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.iso
+          archive: false
           retention-days: 30
 
       - name: Upload raw image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.raw
           path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.raw
+          archive: false
           retention-days: 15
 
       - name: Upload distribution kit
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.distr.zip
           path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.distr.zip
+          archive: false
           retention-days: 30
 
       - name: Upload checksums
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.sha256sums.txt
           path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.sha256sums.txt
+          archive: false
           retention-days: 90
 
       - name: Upload build log
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.build.log
           path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.build.log
+          archive: false
           retention-days: 90
 
       - name: Upload build tree
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.tree.tar.gz
           path: kolibrios-${{ steps.vars.outputs.descr }}-${{ matrix.lang }}.tree.tar.gz
+          archive: false
           retention-days: 15
 
   deploy:
     name: "Publish Images"
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/vicchi/gitea-actions:3.10-slim-bullseye
     needs: build
 
     steps:
@@ -266,7 +271,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v8
         with:
           pattern: "*"
           path: ./artifacts
