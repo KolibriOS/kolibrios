@@ -36,25 +36,21 @@ jobs:
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TOOLCHAIN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-      # cache the toolchain sources by hash to not rebuild them every time
-      - name: Get toolchain hash
-        id: toolchain-hash
-        run: |
-          a=$(find ${{ gitea.workspace }}/programs/develop/cmm/ -type f -print0 | sort -z | xargs -0 sha1sum)
-          b=$(sha1sum ${{ gitea.workspace }}/programs/develop/ktcc/bin/kos32-tcc)
-          c=$(find ${{ gitea.workspace }}/programs/develop/objconv/ -type f -print0 | sort -z | xargs -0 sha1sum)
-          d=$(find ${{ gitea.workspace }}/programs/other/kpack/kerpack_linux/ -type f -print0 | sort -z | xargs -0 sha1sum)
-          e=$(find ${{ gitea.workspace }}/programs/other/kpack/linux/ -type f -print0 | sort -z | xargs -0 sha1sum)
-          f=$(find ${{ gitea.workspace }}/programs/develop/clink/ -type f -print0 | sort -z | xargs -0 sha1sum)
-          echo hash=$(echo $a $b $c $d $e $f | sha1sum | awk '{print $1}') >> $GITEA_OUTPUT
-
       # restore previously cached toolchain by hash (restore-only, PRs don't save)
       - name: Restore toolchain
         id: cache-toolchain
         uses: actions/cache/restore@v4
         with:
           path: /home/autobuild
-          key: kolibri-toolchain-${{ steps.toolchain-hash.outputs.hash }}
+          key: |
+            kolibri-toolchain-${{ hashFiles(
+              './programs/develop/cmm/**',
+              './programs/develop/ktcc/bin/kos32-tcc',
+              './programs/develop/objconv/**',
+              './programs/other/kpack/kerpack_linux/**',
+              './programs/other/kpack/linux/**',
+              './programs/develop/clink/**'
+            ) }}
 
       # build toolchain if cache miss or obsolote
       - name: Build and install C--
