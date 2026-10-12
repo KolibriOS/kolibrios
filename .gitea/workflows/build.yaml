@@ -270,9 +270,8 @@ jobs:
     needs: build
 
     steps:
-      # checkout@v4 needs Node 20; the deploy container ships an older Node, so use v3 here
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: builtin:checkout
 
       - name: Download artifacts
         uses: actions/download-artifact@v8
