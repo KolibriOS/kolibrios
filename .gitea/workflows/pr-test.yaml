@@ -167,7 +167,11 @@ jobs:
       - name: Build KolibriOS
         run: |
           export PATH=/home/autobuild/tools/win32/bin:$PATH
-          source kos32-export-env-vars ${{ gitea.workspace }}
+
+          REPO=${{ gitea.workspace }}
+          export KOLIBRIOS_BUILD_CMTID=$(git -C $REPO log -1 --oneline --abbrev=20 kernel/ | cut -c -8 | gawk '{print "0x"$1}')
+          export KOLIBRIOS_BUILD_OFFSET=$(git -C $REPO rev-list --count $(git -C $REPO tag -l --sort=-creatordate | head -n 1)..HEAD)
+
           tup build-${{ matrix.lang }}
 
 
