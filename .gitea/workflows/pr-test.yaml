@@ -18,7 +18,10 @@ on:
 jobs:
   build:
     name: 'Build (${{ matrix.lang }})'
-    runs-on: kolibri-toolchain
+    runs-on: ubuntu-latest
+    container:
+      image: git.kolibrios.org/kolibrios/toolchain-container
+
     # one parallel job per language variant
     strategy:
       matrix:
