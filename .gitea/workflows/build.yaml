@@ -341,10 +341,14 @@ jobs:
 
       - name: Install fresh Ansible
         run: |
-          python3 -m pip install --user --upgrade pip
-          python3 -m pip install --user 'ansible-core>=2.17,<2.18'
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          ~/.local/bin/ansible --version
+          if ! python3 -m venv "$RUNNER_TEMP/ansible-venv"; then
+            apt-get update
+            apt-get install -y python3-venv
+            python3 -m venv --clear "$RUNNER_TEMP/ansible-venv"
+          fi
+          "$RUNNER_TEMP/ansible-venv/bin/python" -m pip install 'ansible-core>=2.17,<2.18'
+          echo "$RUNNER_TEMP/ansible-venv/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/ansible-venv/bin/ansible" --version
 
       - name: Run Ansible playbook
         run: |
