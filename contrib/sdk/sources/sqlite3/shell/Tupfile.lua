@@ -1,8 +1,6 @@
 if tup.getconfig("NO_GCC") ~= "" then return end
-if tup.getconfig("HELPERDIR") == ""
-then
-  HELPERDIR = "../../../../../programs"
-end
+
+
 tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
 

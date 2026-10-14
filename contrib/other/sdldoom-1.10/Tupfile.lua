@@ -1,9 +1,6 @@
 if tup.getconfig("NO_GCC") ~= "" then return end
-if tup.getconfig("HELPERDIR") == ""
-then
-  if tup.getconfig("NO_NASM") == "full" then return end -- required for SDL compilation
-  HELPERDIR = "../../../programs"
-end
+if tup.getconfig("NO_NASM") == "full" then return end -- required for SDL compilation
+
 tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
 tup.include(HELPERDIR .. "/use_sdl_newlib.lua")

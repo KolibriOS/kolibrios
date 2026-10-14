@@ -1,8 +1,5 @@
 if tup.getconfig("NO_GCC") ~= "" then return end
-if tup.getconfig("HELPERDIR") == ""
-then
-  HELPERDIR = "../../programs"
-end
+
 tup.include(HELPERDIR .. "/use_gcc.lua")
 
 CFLAGS =[[ -c -Os -march=i686 -fomit-frame-pointer -fno-builtin-printf -mno-stack-arg-probe -mpreferred-stack-boundary=2 -mincoming-stack-boundary=2 -fno-ident -UWIN32 -U_WIN32 -U__WIN32__ -D_KOLIBRI -DKOLIBRI -D__KERNEL__ -DCONFIG_X86_32 -DCONFIG_DMI -DCONFIG_TINY_RCU -DCONFIG_X86_L1_CACHE_SHIFT=6 -DCONFIG_ARCH_HAS_CACHE_LINE_SIZE -DCONFIG_PRINTK -I../include -I../include/asm -I../include/uapi -I../include/drm ]]

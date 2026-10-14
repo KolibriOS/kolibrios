@@ -50,6 +50,14 @@
 ### to kernel.mnt to be displayed during boot screen.
 # CONFIG_INSERT_REVISION_ID=1
 
-### Use for single-program mode, when "tup init" selects
-### a directory of one program, as opposed to the entire repository.
+### You can override the directory containing helper scripts.
+### This can be useful for specific builds—for example, if you want
+### to use custom scripts without modifying the repository.
+### The same result can be achieved by defining a global variable HELPERDIR
+### in a Tuprules.lua file located above the current repository root:
+### ├── .tup
+### ├── custom_HELPERDIR
+### ├── kolibrios
+### └── Tuprules.lua
+###
 # CONFIG_HELPERDIR=.

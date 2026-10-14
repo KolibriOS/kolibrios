@@ -1,5 +1,5 @@
 if tup.getconfig("NO_GCC") ~= "" then return end
-tup.include("../../../programs/use_gcc.lua")
+tup.include(HELPERDIR .. "/use_gcc.lua")
 
 
 DRV_DIR = "./../.."

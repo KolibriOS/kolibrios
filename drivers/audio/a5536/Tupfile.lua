@@ -1,6 +1,7 @@
 if tup.getconfig("NO_FASM") ~= "" then return end
 if tup.getconfig("NO_GCC") ~= "" then return end
-tup.include("../../../programs/use_gcc.lua")
+
+tup.include(HELPERDIR .. "/use_gcc.lua")
 
 DRV_DIR = "../.."
 INCLUDES = string.format(" -I. -I. -I%s/include -I%s/include/linux -I%s/include/uapi ", DRV_DIR, DRV_DIR, DRV_DIR) 
@@ -15,5 +16,5 @@ compile_gcc{ "geode.c" }
 OBJS.extra_inputs = {"../../ddk/<libddk>", "../../ddk/<libcore>"}
 
 LIBS = " -lddk -lcore "
-tup.rule(OBJS, "kos32-ld" .. LDFLAGS .. "%f -o %o " .. LIBS .. tup.getconfig("KPACK_CMD"), NAME);
+tup.rule(OBJS, "kos32-ld" .. LDFLAGS .. "%f -o %o " .. LIBS .. tup.getconfig("KPACK_CMD"), NAME)
 tup.rule("geode.asm", "fasm %f %o " .. tup.getconfig("KPACK_CMD"), "geode")

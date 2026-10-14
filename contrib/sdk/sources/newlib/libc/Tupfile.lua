@@ -1,5 +1,7 @@
 if tup.getconfig("NO_GCC") ~= "" or tup.getconfig("NO_FASM") ~= "" then return end
-tup.include("../../../../../programs/use_gcc.lua")
+
+tup.include(HELPERDIR .. "/use_gcc.lua")
+
 SDK_DIR = tup.getvariantdir() .. "/../../.."
 CFLAGS =  "-c -O2 -fno-builtin -fno-ident -fomit-frame-pointer -DMISSING_SYSCALL_NAMES"
 LDFLAGS = "-shared -s -T libcdll.lds --out-implib " .. SDK_DIR .. "/lib/libc.dll.a --image-base 0"

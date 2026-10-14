@@ -1,9 +1,5 @@
 if tup.getconfig("NO_GCC") ~= "" then return end
-if tup.getconfig("HELPERDIR") == ""
-then
-  if tup.getconfig("NO_NASM") ~= "" then return end
-  HELPERDIR = "../../"
-end
+if tup.getconfig("NO_NASM") ~= "" then return end
 tup.include(HELPERDIR .. "/use_gcc.lua")
 tup.include(HELPERDIR .. "/use_newlib.lua")
 tup.include(HELPERDIR .. "/use_sdl_newlib.lua")

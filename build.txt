@@ -121,41 +121,15 @@ A2. You will still need the corresponding compiler as described in Q1/A1.
     where nosetsid.so is compiled as a 32-bit shared library
     from C file with one line "int setsid() { return -1; }".
 
-    If the program does not use any libraries, run
+    The easiest way: run at repository root:
         tup init
-    in the directory with the program. Then,
-        tup
-    without arguments will build the program with default settings.
-    Subsequent runs will not do anything unless any file that was used
-    during the compilation - not necessarily the main file - is changed;
-    after that, the program will be recompiled.
-    By default, tup will not track files outside the directory with "tup init";
-    if tracking files in program directory is not sufficient for you,
-    consider adding updater.full_deps=1 to tup config - see tup manual
-    for details, for Linux it requires setting tup as suid root - or extending
-    tup data to the entire repository as described in Q6/A6. 
+    and run:
+        tup path/to/program/directory
 
-    Settings can be configured using the file tup.config. Look to
-    tup.config.template in the repository root for complete list;
-    for most programs, only CONFIG_LANG and CONFIG_KPACK_CMD have effect.
+    it will automatically build program and required depends.
 
-    If the program uses libraries or helper files for gcc/msvc and you don't
-    want to build everything at once like Q6/A6, set
-        CONFIG_HELPERDIR=.
-    in tup.config, copy programs/use_gcc.lua or programs/use_msvc.lua
-    and helpers for used libraries, if any, to the directory of the program.
-    use_gcc.lua and use_msvc.lua do not require additional configuration;
-    in helpers for used libraries, set path to library in the first line.
-    Since copied helpers are local files not for the repository, you may use
-    absolute pathes specific for your machine.
-    This was designed so that no repository files need to be modified:
-    Tupfile.lua for the program is able to use either local helpers when
-    CONFIG_HELPERDIR is set, or repository helpers when the entire repository
-    is built.
-    You will also need compiled libraries. If they are included in SDK, use them.
-    Otherwise, compile them using the same process. Note that for a library,
-    "tup init" needs to be called in the library directory with include/ and lib/,
-    even if Tupfile.lua is present only in src/; libraries will be put in lib/.
+
+
 
 Q3. I want to add a program to the autobuild.
 A3. Select a program from repository which uses same language and libraries.

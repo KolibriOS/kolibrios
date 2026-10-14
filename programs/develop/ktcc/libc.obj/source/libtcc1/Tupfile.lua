@@ -1,7 +1,5 @@
 if tup.getconfig("NO_TCC") ~= "" or tup.getconfig("NO_FASM") ~= "" then return end
 
-local helperPath = "../../../../.."
-HELPERDIR = (tup.getconfig("HELPERDIR") == "") and helperPath or tup.getconfig("HELPERDIR")
 tup.include(HELPERDIR .. "/use_tcc.lua")
 tup.include(HELPERDIR .. "/use_fasm.lua")
 
@@ -14,7 +12,7 @@ FASM_SOURCES = {
     "memmove.asm",
     "memset.asm",
     extra_inputs = {
-        helperPath .. "/proc32.inc"
+        HELPERDIR .. "/proc32.inc"
     }
 }
 

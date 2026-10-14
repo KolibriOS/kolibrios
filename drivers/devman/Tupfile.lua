@@ -1,6 +1,7 @@
 if tup.getconfig("NO_FASM") ~= "" then return end
 if tup.getconfig("NO_GCC") ~= "" then return end
-tup.include("../../programs/use_gcc.lua")
+
+tup.include(HELPERDIR .. "/use_gcc.lua")
 
 DRV_DIR = ".."
 INCLUDES = string.format(" -I./include  -I./acpica/include -I. -I%s/include -I%s/include/linux -I%s/include/uapi ", DRV_DIR, DRV_DIR, DRV_DIR) 
@@ -17,5 +18,5 @@ compile_gcc{ "acpi.c", "scan.c", "pci_root.c", "pci_bind.c", "pci_irq.c", "pci/p
 OBJS.extra_inputs = {"../ddk/<libcore>", "../ddk/<libddk>", "./acpica/libacpica.a"}
 
 LIBS = " -lacpica -lgcc -lddk -lcore "
-tup.rule(OBJS, "kos32-ld" .. LDFLAGS .. "%f -o %o " .. LIBS .. tup.getconfig("KPACK_CMD"), NAME);
+tup.rule(OBJS, "kos32-ld" .. LDFLAGS .. "%f -o %o " .. LIBS .. tup.getconfig("KPACK_CMD"), NAME)
 tup.rule("acpi.asm", "fasm %f %o " .. tup.getconfig("KPACK_CMD"), "acpi")

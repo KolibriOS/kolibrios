@@ -1,7 +1,7 @@
 if tup.getconfig("NO_GCC") ~= "" or tup.getconfig("NO_NASM") ~= "" then return end
-tup.include("../../../../../programs/use_gcc.lua")
-tup.include("../../../../../programs/use_newlib.lua")
-tup.include("../../../../../programs/use_sound.lua")
+tup.include(HELPERDIR .. "/use_gcc.lua")
+tup.include(HELPERDIR .. "/use_newlib.lua")
+tup.include(HELPERDIR .. "/use_sound.lua")
 INCLUDES = INCLUDES .. " -I. -I../include -Ihermes -Iaudio -Ivideo -Ievents -Ijoystick -Icdrom -Ithread -Itimer -Iendian -Ifile -ISYSCALL/include"
 
 CFLAGS = CFLAGS_OPTIMIZE_SPEED
