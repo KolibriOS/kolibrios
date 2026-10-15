@@ -170,9 +170,6 @@ pkgs.mkShell {
 
     if [ -d "$KOS32_TOOLCHAIN/win32/bin" ]; then
       export PATH="${pkgs.fasm}/bin:$KOS32_TOOLCHAIN/win32/bin:$PATH"
-      mkdir -p "$TMPDIR/kolibri-toolchain-bin"
-      ln -sf "$KOS32_TOOLCHAIN/win32/bin/kos32-strip" "$TMPDIR/kolibri-toolchain-bin/strip"
-      export PATH="$TMPDIR/kolibri-toolchain-bin:$PATH"
       if [ -r "$KOS32_TOOLCHAIN/win32/bin/kos32-export-env-vars" ]; then
         source "$KOS32_TOOLCHAIN/win32/bin/kos32-export-env-vars" "$ROOT"
       fi
