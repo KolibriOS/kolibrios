@@ -1,0 +1,24 @@
+# KolibriOS FASM sources and includes.
+*.asm linguist-language=Assembly
+*.ASM linguist-language=Assembly
+kernel/**/*.inc linguist-language=Assembly
+kernel/**/*.INC linguist-language=Assembly
+drivers/**/*.inc linguist-language=Assembly
+drivers/**/*.INC linguist-language=Assembly
+programs/**/*.inc linguist-language=Assembly
+programs/**/*.INC linguist-language=Assembly
+skins/**/*.inc linguist-language=Assembly
+data/**/*.inc linguist-language=Assembly
+contrib/C_Layer/ASM/**/*.inc linguist-language=Assembly
+contrib/sdk/fasm/**/*.inc linguist-language=Assembly
+contrib/sdk/sources/sound/**/*.inc linguist-language=Assembly
+
+# Imported upstream SDK and toolchain sources are not KolibriOS code.
+contrib/sdk/sources/** linguist-vendored
+contrib/toolchain/** linguist-vendored
+contrib/media/updf/mupdf-1.19.0-source/** linguist-vendored
+
+# KolibriOS-specific SDK examples and utilities live under sources too.
+contrib/sdk/sources/hello_dll/** -linguist-vendored
+contrib/sdk/sources/pe2kos/** -linguist-vendored
+contrib/sdk/sources/sound/** -linguist-vendored
