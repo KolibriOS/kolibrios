@@ -463,8 +463,8 @@ select_menu:
 	sub	eax,187
 	cmp	eax,3
 	jl	@f
-	cmp	[open_dialog_type],1
-	jne	still
+	cmp	[main_menu_extension],0
+	je	still
 @@:
 	push	pt
 	push	[main_menu_select+4*eax]
@@ -2793,6 +2793,9 @@ init_menu:
 
     cmp     [open_dialog_type],1
     jne     .end
+    mov     esi,[communication_area]
+    cmp     dword[esi+4096],0 ;empty filter?
+    je      .end
     stdcall [ksubmenu_new]
     mov     [main_menu_extension], eax
     mov     esi,[communication_area]
