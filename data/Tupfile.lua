@@ -944,29 +944,8 @@ for i,v in ipairs(img_dirs) do
 end
 -- copy files
 for i,v in ipairs(img_files) do
-  local_file = v[2]
-  if v[1] == "KERNEL.MNT"
-  then
-    -- for kernel.mnt, insert autobuild commit id to .kernel.mnt
-    -- note that .kernel.mnt must begin with a dot to prevent
-    -- tup from tracking it
-    cmd = "cp %f %o"
-    if tup.getconfig("INSERT_COMMIT_ID") ~= ""
-    then
-      if build_type == "ru_RU"
-      then str='$(LANG=ru_RU.utf8 date -u +"[автосборка %d %b %Y %R, $(get-current-cmtid|grep -oE [a-z0-9]{7}$)]"|iconv -f utf8 -t cp866)'
-      else str='$(date -u +"[auto-build %d %b %Y %R, $(get-current-cmtid|grep -oE [a-z0-9]{7}$)]")'
-      end
-      str = string.gsub(str, "%$", "\\$") -- escape $ as \$
-      str = string.gsub(str, "%%", "%%%%") -- escape % as %%
-      cmd += " && str=" .. str
-      cmd += ' && echo -n $str | dd status=none of=%o bs=1 seek=`expr 274 - length "$str"` conv=notrunc'
-    end
-    local_file = VAR_KERNEL .. "/.kernel.mnt"
-    tup.definerule{inputs = {v[2]}, command = cmd, outputs = {local_file}}
-  end
-  table.insert(input_deps, local_file)
-  make_img_command1 += ' && mcopy -moi %o "' .. local_file .. '" "::' .. v[1] .. '"'
+  table.insert(input_deps, v[2])
+  make_img_command1 += ' && mcopy -moi %o "' .. v[2] .. '" "::' .. v[1] .. '"'
 end
 
 -- generate tup rule for kolibri.img
@@ -980,17 +959,13 @@ for i,v in ipairs(iso_extra_files) do
 end
 
 -- generate tup rule for kolibri.iso
-if tup.getconfig("INSERT_COMMIT_ID") ~= ""
-then volume_id = "KolibriOS r`get-current-cmtid`"
-else volume_id = "KolibriOS"
-end
 tup.definerule{inputs = input_deps, command =
   '^ MKISOFS kolibri.iso^ ' .. -- for tup: don't write full command to logs
   'mkisofs -U -J -pad -b cdboot.bin -no-emul-boot -c boot.catalog'
   .. ' -hide-joliet boot.catalog -hide-joliet cdboot.bin'
   .. ' -hide-joliet kernel.mnt -graft-points'
   .. ' -A "KolibriOS AutoBuilder" -p "CleverMouse"'
-  .. ' -publisher "KolibriOS Team" -V "' .. volume_id .. '" -sysid "KOLIBRI"'
+  .. ' -publisher "KolibriOS Team" -V "KolibriOS" -sysid "KOLIBRI"'
   .. ' -iso-level 3 -o %o ' .. iso_files_list .. ' 2>&1',
   outputs = {"kolibri.iso"}}
 

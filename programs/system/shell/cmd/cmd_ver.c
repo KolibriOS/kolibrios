@@ -12,10 +12,10 @@ void get_str_kernel_version(char *str, const char *fmt) {
         sprintf(str_dbgtag, "-%c", kv.dbgtag);
     char str_cmtid[16] = {'\0'};
     if (kv.cmtid)
-        sprintf(str_cmtid, " (%08x)", kv.cmtid);
+        sprintf(str_cmtid, "-g%08x", kv.cmtid);
 
     sprintf(str, fmt, kv.osrel[0], kv.osrel[1], kv.osrel[2], kv.osrel[3],
-            str_offset, str_dbgtag, str_cmtid, kv.abimaj, kv.abimin);
+            str_offset, str_cmtid, str_dbgtag, kv.abimaj, kv.abimin);
 }
 
 void get_str_cpu_info(char *str) {

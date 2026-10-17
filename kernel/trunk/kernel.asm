@@ -30,6 +30,12 @@ format binary as "mnt"
 include 'macros.inc'
 include 'struct.inc'
 
+; OS release number a.b.c.d, the same as the git tag of the release
+OS_RELEASE_A = 0
+OS_RELEASE_B = 7
+OS_RELEASE_C = 7
+OS_RELEASE_D = 0
+
 ABI_MAJOR = 0x28
 ABI_MINOR = 0
 
@@ -721,6 +727,10 @@ end if
         jecxz   @f
         DEBUGF  1, "+%u", ecx
 @@:
+        mov     ecx, [version_inf.cmtid]
+        jecxz   @f
+        DEBUGF  1, "-g%x", ecx
+@@:
         movzx   ecx, [version_inf.dbgtag]
         jecxz   @f
         push    ecx
@@ -729,10 +739,6 @@ end if
         pop     ecx
 @@:
         DEBUGF  1, "\n"
-        mov     ecx, [version_inf.cmtid]
-        jecxz   @f
-        DEBUGF  1, "K : Commit ID: %x\n", ecx
-@@:
 ;-----------------------------------------------------------------------------
 ; show kernel ABI
 ;-----------------------------------------------------------------------------
@@ -2320,8 +2326,15 @@ end if
 if ~ definite BUILD_OFFSET
   BUILD_OFFSET = 0
 end if
+if ~ definite BUILD_TIME
+  BUILD_TIME = 0
+end if
+if ~ definite BUILD_PR
+  BUILD_PR = 0
+end if
 align 4
-version_inf kernel_version <0,7,7,0>, BUILD_DBGTAG, ABI_MINOR, ABI_MAJOR, \
+version_inf kernel_version <OS_RELEASE_A, OS_RELEASE_B, OS_RELEASE_C, OS_RELEASE_D>, \
+                           BUILD_DBGTAG, ABI_MINOR, ABI_MAJOR, \
                            BUILD_CMTID, 0, BUILD_OFFSET
 endg
 ;------------------------------------------------------------------------------
