@@ -63,6 +63,7 @@
 #include "stdio/vsscanf.c"
 #include "stdio/fclose_r.c"
 #include "stdio/fopen_r.c"
+#include "stdio/stdin.c"
 
 #include "string/memccpy.c"
 #include "string/memchr.c"

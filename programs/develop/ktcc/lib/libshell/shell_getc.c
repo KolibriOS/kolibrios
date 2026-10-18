@@ -1,4 +1,5 @@
 #include <shell_api.h>
+#include <string.h>
 
 int shell_getc()
 {

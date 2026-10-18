@@ -1,11 +1,13 @@
 #include <stdio.h>
+#include <stdint.h>
 
 int fgetc(FILE* stream)
 {
-    int c=0;
-    if(fread(&c, sizeof(char), 1, stream)==1){
+    uint8_t c = 0;
+    
+    if (fread(&c, sizeof(c), 1, stream) == 1) {
         return c;
-    }else{
+    } else {
         return EOF;
     }
 }

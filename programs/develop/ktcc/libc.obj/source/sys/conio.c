@@ -6,7 +6,6 @@
 
 AUTO_INIT_MUTEX(__conio_mutex);
 
-
 char* console_gets(char* buff, size_t len)
 {
     __libc_mutex_lock(&__conio_mutex);
@@ -14,7 +13,7 @@ char* console_gets(char* buff, size_t len)
     char* ret = buff;
 
     if (__shell_is_init < __SHELL_INIT_FAILED) {
-        shell_gets(buff, len);
+        ret = shell_gets(buff, len);
     }
     if (__shell_is_init == __SHELL_INIT_FAILED) {
         con_init();

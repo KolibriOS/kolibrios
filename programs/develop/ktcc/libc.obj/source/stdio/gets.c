@@ -6,8 +6,7 @@
 
 char* gets(char* str)
 {
-    if (console_gets(str, STDIO_MAX_MEM) == NULL) {
-        errno = EIO;
+    if (fgets(str, STDIO_MAX_MEM, stdin) == NULL) {
         return NULL;
     }
 
@@ -15,5 +14,6 @@ char* gets(char* str)
     if (str[str_len - 1] == '\n') {
         str[str_len - 1] = '\0';
     }
+
     return str;
 }
