@@ -47,7 +47,7 @@ DLLAPI int vprintf(const char* format, va_list va);
 
 DLLAPI void debug_printf(const char* format, ...);
 
-typedef size_t fpos_t;
+typedef uint64_t fpos_t;
 
 #define _FILEMODE_R 1 << 0    // Read
 #define _FILEMODE_W 1 << 1    // Write
