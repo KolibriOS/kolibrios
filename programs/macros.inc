@@ -231,6 +231,21 @@ macro lsz name,[lng,data] {  ; [mike.dld]
   end if
 }
 
+macro lszZ name,[lng,data] {
+ common
+ if used name
+   label name
+ forward
+  if lang eq lng
+   db data, 0
+  end if
+ common
+   .size = $-name-1
+   utf8_len .length, name, .size
+  end if
+}
+lsz0 fix lszZ
+
 macro szc name,elsz,[data] {     ; [mike.dld]
  common
   local s,m
