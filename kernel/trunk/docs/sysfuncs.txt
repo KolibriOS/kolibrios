@@ -12,6 +12,13 @@ The call of the system function is executed by "int 0x40" command.
 All registers except explicitly declared in the returned value,
     including eflags, are preserved.
 
+Deprecated interfaces still handled by the kernel:
+  * function 0: window styles Y=0 and Y=2 (compatibility only)
+  * function 18, subfunction 11: legacy disk subsystem information
+  * functions 21.11 and 26.11: legacy LBA access flag
+  * function 24, subfunctions 4 and 5: ATAPI tray control
+  * function 64, subfunction 1: application memory resizing
+
 
 ======================================================================
 ============== Function 0 - define and draw the window. ==============
@@ -1345,6 +1352,10 @@ Remarks:
 ======================================================================
  Function 21, subfunction 11 - enable/disable low-level access to HD.
 ======================================================================
+
+!!! WARNING. This interface is outdated and should not be used !!!
+The LBA-read system call has been removed; this flag is no longer used.
+
 Parameters:
   * eax = 21 - function number
   * ebx = 11 - subfunction number
@@ -1608,6 +1619,10 @@ Remarks:
 ===================== Function 26, subfunction 11 ====================
 ========== Find out whether low-level HD access is enabled. ==========
 ======================================================================
+
+!!! WARNING. This interface is outdated and should not be used !!!
+The LBA-read system call has been removed; this flag is no longer used.
+
 Parameters:
   * eax = 26 - function number
   * ebx = 11 - subfunction number
