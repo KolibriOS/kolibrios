@@ -1352,7 +1352,6 @@ Parameters:
 Returned value:
   * eax = 0
 Remarks:
-  * Is used in LBA-read (subfunction 8 of function 58).
   * The current implementation uses only low bit of ecx.
   * To get current status use subfunction 11 of function 26.
 
@@ -1615,7 +1614,6 @@ Parameters:
 Returned value:
   * eax = 0/1 - disabled/enabled
 Remarks:
-  * Is used in LBA read (subfunction 8 of function 58).
   * To set current state use subfunction 11 of function 21.
 
 ---------------------- Constants for registers: ----------------------
@@ -5513,8 +5511,6 @@ Codes of events:
   * 8 = network event (is reset at reading)
   * 9 = debug event (is reset at reading; see
     debug subsystem)
-  * 16..31 = event with appropriate IRQ
-    (16=IRQ0, 31=IRQ15) (is reset after reading all IRQ data)
 
 ======================================================================
 =================== Error codes of the file system ===================
