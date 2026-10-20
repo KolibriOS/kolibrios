@@ -2971,12 +2971,10 @@ Returned value:
   * eax = 0 - success
   * eax = 1 - not enough memory
 Remarks:
-  * There is another way to dynamically allocate/free memory -
-    subfunctions 12, 13 and 20 of function 68, but after creation
-    of the process heap 64 function call will be ignored.
-  * The function cannot be used together with 68.11, 68.12, 68.13.
-    The function call will be ignored after creation of process heap
-    with function 68.11.
+  * Use function 68 instead: subfunction 11 initializes the process
+    heap, 12 allocates, 13 frees, and 20 reallocates memory blocks.
+  * After the process heap is initialized by 68.11, calls to function
+    64 are ignored.
 
 ---------------------- Constants for registers: ----------------------
   eax - SF_MEMORY_RESIZE (64)
