@@ -1165,16 +1165,14 @@ proc HTTP_receive identifier ;//////////////////////////////////////////////////
         and     [ebp + http_msg.flags], not FLAG_CONNECTED
         test    [ebp + http_msg.flags], FLAG_GOT_HEADER
         jz      .err_server_closed
-        test    [ebp + http_msg.flags], FLAG_CONTENT_LENGTH
+        test    [ebp + http_msg.flags], FLAG_CONTENT_LENGTH or FLAG_CHUNKED
         jz      .got_all_data
   .err_server_closed:
-        pop     eax
         DEBUGF  2, "ERROR: server closed connection unexpectedly\n"
         or      [ebp + http_msg.flags], FLAG_TRANSFER_FAILED
         jmp     .abort
 
   .err_header:
-        pop     eax
         DEBUGF  2, "ERROR: invalid header\n"
         or      [ebp + http_msg.flags], FLAG_INVALID_HEADER
         jmp     .abort
