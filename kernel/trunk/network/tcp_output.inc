@@ -348,7 +348,7 @@ endl
 ; Send options with first SYN segment
 
         test    dl, TH_SYN
-        jz      .options_done
+        jz      .no_syn
 
         push    [eax + TCP_SOCKET.ISS]
         pop     [eax + TCP_SOCKET.SND_NXT]

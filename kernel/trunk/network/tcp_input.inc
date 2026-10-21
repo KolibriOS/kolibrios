@@ -476,6 +476,19 @@ endl
         cmp     eax, [ebx + TCP_SOCKET.SND_MAX]
         jne     .not_uni_xfer
 
+; If last ACK falls within this segment, record its timestamp
+
+        test    [temp_bits], TCP_BIT_TIMESTAMP
+        jz      @f
+        mov     eax, [edx + TCP_header.SequenceNumber]
+        cmp     eax, [ebx + TCP_SOCKET.last_ack_sent]
+        ja      @f
+        mov     eax, [timestamp]
+        mov     [ebx + TCP_SOCKET.ts_recent_age], eax
+        mov     eax, [ebx + TCP_SOCKET.ts_val]
+        mov     [ebx + TCP_SOCKET.ts_recent], eax
+  @@:
+
 ;---------------------------------------
 ; check if we are sender in the uni-xfer
 
