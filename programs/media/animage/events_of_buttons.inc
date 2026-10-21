@@ -19,13 +19,22 @@ buttons:
 	shr eax,8
 
 	cmp eax,1
-	jne no_exit
+	jne @f
 		mov eax,CursorsID
 		call delete_cursors
 		mcall SF_TERMINATE_PROCESS
-	no_exit:
+	@@:
 
-	mov [Current_instrument],eax
+	cmp [Current_instrument],eax
+	je @f
+		mov [Current_instrument],eax
+		cmp eax,40
+		jl .redraw
+		cmp eax,44
+		jle @f ;[40...44] brush size selection, no redrawing required
+	.redraw:
+		call draw_icons
+	@@:
 	call button_handler_main_menu
 
 	cmp eax,10

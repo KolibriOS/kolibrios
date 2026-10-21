@@ -123,9 +123,7 @@ no_new:
 
 ;---------------------------------------------------------------------
 	mov	[OpenDialog_data.type],0 ; open
-	
-	push    dword OpenDialog_data
-	call    [OpenDialog_Start]
+	stdcall    [OpenDialog_Start],OpenDialog_data
 	
 	cmp	[OpenDialog_data.status],1
 	jne	end_menu

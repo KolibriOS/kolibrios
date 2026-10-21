@@ -1,6 +1,16 @@
 ;-----------------------------------------------------------
 ;---load icons  in memory and draw icons on panel-----------
 ;-----------------------------------------------------------
+macro instrument_set m_num, code
+{
+local .no_instrument
+cmp [Current_instrument],code
+jne .no_instrument
+	add ebx,20*21*3*(m_num-1)
+	mov edx,(2+22*(m_num-1))shl 16+23
+.no_instrument:
+}
+
 load_icons:
 	stdcall [img_decode], panel_picture, panel_picture.end-panel_picture, 0
 	mov ebx,eax
@@ -14,9 +24,17 @@ load_icons:
 	add edi,mem_panel_but
 	stdcall [img_to_rgb2], ebx,edi
 	stdcall [img_destroy], ebx
+
+	stdcall [img_decode], panel_instrum_sel, panel_instrum_sel.end-panel_instrum_sel, 0
+	mov ebx,eax
+	add edi,mem_panel_zoom
+	stdcall [img_to_rgb2], ebx,edi
+	stdcall [img_destroy], ebx
 	ret
 
+align 4
 draw_icons:
+	pushad
 	mov [Icon_X],ci_panel_x_pos+2
 	mov [Icon_Y],ci_panel_y_pos+3
 
@@ -31,6 +49,7 @@ draw_icons:
 
 	;draw active zoom button
 	add ebx,mem_panel_but
+	push ebx
 	xor eax,eax
 	cmp [k],1
 	je .end_calc
@@ -62,6 +81,30 @@ draw_icons:
 	add edx,ci_panel_but_y2-2
 	mov ecx,18*65536+21
 	mcall SF_PUT_IMAGE
+	pop ebx
+
+	;draw active instrument button
+	add ebx,mem_panel_zoom
+	mov ecx,20*65536+21
+	cmp [Current_instrument],10
+	jl .end_instr_sel
+	cmp [Current_instrument],21
+	jg .end_instr_sel
+	instrument_set  1,10 ; pensil
+	instrument_set  2,11 ; draw brush
+	instrument_set  3,12 ; spray
+	instrument_set  4,13 ; lastik
+	instrument_set  5,14 ; flood fill
+	instrument_set  6,15 ; pipetka
+	instrument_set  7,16 ; draw line
+	instrument_set  8,17 ; draw rectangle
+	instrument_set  9,18 ; draw circle
+	instrument_set 10,19 ; draw ellips
+	instrument_set 11,20 ; draw hard contour
+	instrument_set 12,21
+	mcall SF_PUT_IMAGE
+	.end_instr_sel:
+	purge instrument_set
 
 	;main buttons of instrumnts
 
@@ -177,5 +220,5 @@ draw_icons:
 
 	mcall SF_DRAW_RECT, ((ci_panel_x_pos+130) shl 16)+21,\
 		((ci_panel_y_pos+28) shl 16)+21, [Color]
-
+	popad
 	ret
