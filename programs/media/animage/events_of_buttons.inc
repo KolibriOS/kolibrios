@@ -28,10 +28,14 @@ buttons:
 	cmp [Current_instrument],eax
 	je @f
 		mov [Current_instrument],eax
+		cmp eax,23
+		je @f
+		cmp eax,24
+		je @f
 		cmp eax,40
 		jl .redraw
 		cmp eax,44
-		jle @f ;[40...44] brush size selection, no redrawing required
+		jle @f ;[23,24,40...44] no redrawing required
 	.redraw:
 		call draw_icons
 	@@:
@@ -40,8 +44,8 @@ buttons:
 	cmp eax,10
 	jl still
 
-	;save instrumnets 10-40
-	cmp eax,40
+	;save instrumnets 10-22
+	cmp eax,23
 	jae @f
 		mov [Last_instrument],eax
 	@@:

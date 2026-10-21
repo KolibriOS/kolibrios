@@ -17,3 +17,18 @@ find_symvol:
 	sub eax,esi
 
 	ret
+
+;output:
+; eax = strlen
+align 4
+proc str_len, str1:dword
+	mov eax,[str1]
+	@@:
+		cmp byte[eax],0
+		je @f
+		inc eax
+		jmp @b
+	@@:
+	sub eax,[str1]
+	ret
+endp
