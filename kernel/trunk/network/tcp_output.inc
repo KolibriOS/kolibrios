@@ -338,7 +338,7 @@ endl
 ; Send options with first SYN segment
 
         test    dl, TH_SYN
-        jz      .options_done
+        jz      .no_syn
 
         push    [eax + TCP_SOCKET.ISS]
         pop     [eax + TCP_SOCKET.SND_NXT]
@@ -391,8 +391,10 @@ endl
         jz      .no_timestamp
 
   .timestamp:
-        pushd   0
-        pushd   [timer_ticks]
+        push    [eax + TCP_SOCKET.ts_recent]    ; TSecr
+        ntohd   [esp]
+        push    [TCP_now]                       ; TSval
+        ntohd   [esp]
         pushd   TCP_OPT_NOP + TCP_OPT_NOP shl 8 + TCP_OPT_TIMESTAMP shl 16 + 10 shl 24
         add     di, 12
 
@@ -626,7 +628,7 @@ endl
         mov     [eax + TCP_SOCKET.SND_MAX], edx                 ; [eax + TCP_SOCKET.SND_NXT] from before we updated it
 
         cmp     [eax + TCP_SOCKET.t_rtt], 0                     ; are we currently timing anything?
-        je      @f
+        jne     @f
         mov     [eax + TCP_SOCKET.t_rtt], 1                     ; nope, start transmission timer
         mov     [eax + TCP_SOCKET.t_rtseq], edi
         inc     [TCPS_segstimed]

@@ -70,9 +70,10 @@ TCP_time_keep_idle      = 4608        ; idle time before 1st probe (2h)
 TCP_time_keep_interval  = 118         ; between probes when no response (75,52s)
 TCP_time_rtt_default    = 5           ; default Round Trip Time (3,2s)
 TCP_time_srtt_default   = 0           ;
+TCP_time_rto_init       = 2           ; initial retransmission timeout (1,28s)
 TCP_time_max_idle       = 8*TCP_time_keep_interval      ; FIXME
 
-TCP_time_connect        = 300         ; in 1/100s (default=3s)
+TCP_time_connect        = 3000        ; in 1/100s (default=30s)
 
 ; timer constants
 TCP_max_rxtshift        = 12          ; max retransmissions waiting for ACK
@@ -134,6 +135,7 @@ align 4
 ;        TCP_bytes_rx            rq NET_DEVICES_MAX
 ;        TCP_bytes_tx            rq NET_DEVICES_MAX
         TCP_sequence_num        dd ?
+        TCP_now                 dd ?    ; timestamp clock (640ms ticks)
         TCP_queue               rd (TCP_QUEUE_SIZE*sizeof.TCP_queue_entry + sizeof.queue)/4
         TCP_input_event         dd ?
         TCP_timer1_event        dd ?

@@ -399,6 +399,7 @@ endl
         bswap   eax
         mov     [ebx + TCP_SOCKET.ts_val], eax
         lodsd                                   ; timestamp echo reply
+        bswap   eax
         mov     [ebx + TCP_SOCKET.ts_ecr], eax
         or      [temp_bits], TCP_BIT_TIMESTAMP
 
@@ -475,6 +476,19 @@ endl
         cmp     eax, [ebx + TCP_SOCKET.SND_MAX]
         jne     .not_uni_xfer
 
+; If last ACK falls within this segment, record its timestamp
+
+        test    [temp_bits], TCP_BIT_TIMESTAMP
+        jz      @f
+        mov     eax, [edx + TCP_header.SequenceNumber]
+        cmp     eax, [ebx + TCP_SOCKET.last_ack_sent]
+        ja      @f
+        mov     eax, [timestamp]
+        mov     [ebx + TCP_SOCKET.ts_recent_age], eax
+        mov     eax, [ebx + TCP_SOCKET.ts_val]
+        mov     [ebx + TCP_SOCKET.ts_recent], eax
+  @@:
+
 ;---------------------------------------
 ; check if we are sender in the uni-xfer
 
@@ -525,7 +539,7 @@ endl
 
         test    [temp_bits], TCP_BIT_TIMESTAMP
         jz      .no_timestamp_rtt
-        mov     eax, [timestamp]
+        mov     eax, [TCP_now]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
         inc     eax
         call    tcp_xmit_timer
@@ -985,23 +999,7 @@ endl
 
         push    [ebx + TCP_SOCKET.SND_NXT]              ; >>>>
 
-        mov     eax, [ebx + TCP_SOCKET.SND_WND]
-        cmp     eax, [ebx + TCP_SOCKET.SND_CWND]
-        jbe     @f
-        mov     eax, [ebx + TCP_SOCKET.SND_CWND]
-  @@:
-        shr     eax, 1
-        push    edx
-        xor     edx, edx
-        div     [ebx + TCP_SOCKET.t_maxseg]
-        cmp     eax, 2
-        ja      @f
-        xor     eax, eax
-        mov     al, 2
-       @@:
-        mul     [ebx + TCP_SOCKET.t_maxseg]
-        pop     edx
-        mov     [ebx + TCP_SOCKET.SND_SSTHRESH], eax
+        call    tcp_set_ssthresh
 
         and     [ebx + TCP_SOCKET.timer_flags], not timer_flag_retransmission   ; turn off retransmission timer
         mov     [ebx + TCP_SOCKET.t_rtt], 0
@@ -1114,7 +1112,7 @@ endl
 
         test    [temp_bits], TCP_BIT_TIMESTAMP
         jz      .timestamp_not_present
-        mov     eax, [timestamp]
+        mov     eax, [TCP_now]
         sub     eax, [ebx + TCP_SOCKET.ts_ecr]
         inc     eax
         call    tcp_xmit_timer

@@ -96,7 +96,7 @@ macro   tcp_init_socket socket {
         mov     [socket + TCP_SOCKET.t_srtt], TCP_time_srtt_default
         mov     [socket + TCP_SOCKET.t_rttvar], TCP_time_rtt_default * 4
         mov     [socket + TCP_SOCKET.t_rttmin], TCP_time_re_min
-;;; TODO: TCP_time_rangeset
+        mov     [socket + TCP_SOCKET.t_rxtcur], TCP_time_rto_init
 
         mov     [socket + TCP_SOCKET.SND_CWND], TCP_max_win shl TCP_max_winshift
         mov     [socket + TCP_SOCKET.SND_SSTHRESH], TCP_max_win shl TCP_max_winshift
@@ -503,22 +503,55 @@ tcp_set_persist:
 
 ;-----------------------------------------------------------------;
 ;                                                                 ;
-; tcp_xmit_timer: Calculate new smoothed RTT.                     ;
+; tcp_set_ssthresh: Set slow start threshold to half the window,  ;
+; but at least two segments (a segment was lost).                 ;
 ;                                                                 ;
-;   IN: eax = rtt                                                 ;
-;       ebx = socket ptr                                          ;
+;   IN: ebx = socket ptr                                          ;
 ;                                                                 ;
 ;  OUT: /                                                         ;
 ;                                                                 ;
 ;-----------------------------------------------------------------;
 align 4
+tcp_set_ssthresh:
+
+        push    eax edx
+        mov     eax, [ebx + TCP_SOCKET.SND_WND]
+        cmp     eax, [ebx + TCP_SOCKET.SND_CWND]
+        jbe     @f
+        mov     eax, [ebx + TCP_SOCKET.SND_CWND]
+  @@:
+        shr     eax, 1
+        xor     edx, edx
+        div     [ebx + TCP_SOCKET.t_maxseg]
+        cmp     eax, 2
+        jae     @f
+        mov     eax, 2
+  @@:
+        mul     [ebx + TCP_SOCKET.t_maxseg]
+        mov     [ebx + TCP_SOCKET.SND_SSTHRESH], eax
+        pop     edx eax
+        ret
+
+
+
+;-----------------------------------------------------------------;
+;                                                                 ;
+; tcp_xmit_timer: Calculate new smoothed RTT and RTO.             ;
+;                                                                 ;
+;   IN: eax = rtt (in 640ms ticks)                                ;
+;       ebx = socket ptr                                          ;
+;                                                                 ;
+;  OUT: eax = destroyed                                           ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+align 4
 tcp_xmit_timer:
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_xmit_timer: socket=0x%x rtt=%d0ms\n", ebx, eax
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "TCP_xmit_timer: socket=0x%x rtt=%d ticks\n", ebx, eax
 
         inc     [TCPS_rttupdated]
 
-        cmp     [ebx + TCP_SOCKET.t_rtt], 0
+        cmp     [ebx + TCP_SOCKET.t_srtt], 0
         je      .no_rtt_yet
 
 ; srtt is stored as a fixed point with 3 bits after the binary point.
@@ -534,7 +567,7 @@ tcp_xmit_timer:
         pop     ecx
 
         add     [ebx + TCP_SOCKET.t_srtt], eax
-        ja      @f
+        jg      @f
         mov     [ebx + TCP_SOCKET.t_srtt], 1
   @@:
 
@@ -556,10 +589,10 @@ tcp_xmit_timer:
         pop     edx
 
         add     [ebx + TCP_SOCKET.t_rttvar], eax
-        ja      @f
+        jg      @f
         mov     [ebx + TCP_SOCKET.t_rttvar], 1
   @@:
-        ret
+        jmp     .rto
 
 
   .no_rtt_yet:
@@ -571,6 +604,18 @@ tcp_xmit_timer:
         shl     eax, TCP_RTTVAR_SHIFT - 1
         mov     [ebx + TCP_SOCKET.t_rttvar], eax
         pop     ecx
+
+; Stop timing, clear the backoff and recompute the retransmission timeout:
+; srtt + 4 * rttvar (rttvar is already stored 4 times bigger)
+
+  .rto:
+        mov     [ebx + TCP_SOCKET.t_rtt], 0
+        mov     [ebx + TCP_SOCKET.t_rxtshift], 0
+
+        mov     eax, [ebx + TCP_SOCKET.t_srtt]
+        shr     eax, TCP_RTT_SHIFT
+        add     eax, [ebx + TCP_SOCKET.t_rttvar]
+        tcpt_rangeset [ebx + TCP_SOCKET.t_rxtcur], eax, TCP_time_re_min, TCP_time_re_max
 
         ret
 

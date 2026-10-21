@@ -212,28 +212,37 @@ tcp_connect:
 
   .loop:
         cmp     [eax + SOCKET.errorcode], 0
-        jne     .fail
+        jne     .done
         cmp     [eax + TCP_SOCKET.t_state], TCPS_ESTABLISHED
-        je      .established
+        je      .done
 
         call    socket_block
         jmp     .loop
 
   .timeout:
         mov     eax, [esp+4]
+        mov     [eax + TCP_SOCKET.timer_connect], 0     ; one-shot timer, already freed
         mov     [eax + SOCKET.errorcode], ETIMEDOUT
         and     [eax + SOCKET.state], not SS_ISCONNECTING
         call    socket_notify
         ret     4
 
-  .fail:
+  .done:
+; Cancel the timeout timer if it didn't fire yet
+        cmp     [eax + TCP_SOCKET.timer_connect], 0
+        je      @f
+        push    eax
+        stdcall cancel_timer_hs, [eax + TCP_SOCKET.timer_connect]
+        pop     eax
+  @@:
         mov     ebx, [eax + SOCKET.errorcode]
+        test    ebx, ebx
+        jz      .established
         mov     [eax + SOCKET.errorcode], 0                     ; Clear the error, we only need to send it to the caller once
         xor     eax, eax
         dec     eax
         ret
 
   .established:
-        stdcall cancel_timer_hs, [eax + TCP_SOCKET.timer_connect]
         xor     eax, eax
         ret

@@ -70,9 +70,10 @@ proc tcp_timer_640ms
         mov     ebx, [eax + EVENT.id]
         call    wait_event
 
-; Update TCP sequence number
+; Update TCP sequence number and timestamp clock
 
         add     [TCP_sequence_num], 64000
+        inc     [TCP_now]
 
 ; Scan through all the active TCP sockets, decrementing all active timers
 ; When a timer reaches zero, run its handler.
@@ -92,12 +93,56 @@ proc tcp_timer_640ms
 
         inc     [eax + TCP_SOCKET.t_idle]
 
+; Time the round trip, if a segment is being timed
+
+        cmp     [eax + TCP_SOCKET.t_rtt], 0
+        je      @f
+        inc     [eax + TCP_SOCKET.t_rtt]
+  @@:
+
         test    [eax + TCP_SOCKET.timer_flags], timer_flag_retransmission
         jz      .check_more2
         dec     [eax + TCP_SOCKET.timer_retransmission]
         jnz     .check_more2
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "socket %x: Retransmission timer expired\n", eax
+
+; Drop the connection after TCP_max_rxtshift retransmissions
+
+        inc     [eax + TCP_SOCKET.t_rxtshift]
+        cmp     [eax + TCP_SOCKET.t_rxtshift], TCP_max_rxtshift
+        jbe     .retransmit
+
+        inc     [TCPS_timeoutdrop]
+        push    [eax + SOCKET.NextPtr]
+        mov     ebx, ETIMEDOUT
+        call    tcp_drop
+        pop     eax
+        jmp     .check_only
+
+; Double the retransmission timeout (RFC 6298), resend from SND_UNA,
+; don't time the resent segment (Karn) and restart slow start
+
+  .retransmit:
+        inc     [TCPS_rexmttimeo]
+        mov     ebx, [eax + TCP_SOCKET.t_rxtcur]
+        shl     ebx, 1
+        cmp     ebx, TCP_time_re_max
+        jbe     @f
+        mov     ebx, TCP_time_re_max
+  @@:
+        mov     [eax + TCP_SOCKET.t_rxtcur], ebx
+        mov     [eax + TCP_SOCKET.timer_retransmission], ebx
+
+        push    [eax + TCP_SOCKET.SND_UNA]
+        pop     [eax + TCP_SOCKET.SND_NXT]
+        mov     [eax + TCP_SOCKET.t_rtt], 0
+
+        mov     ebx, eax
+        call    tcp_set_ssthresh
+        push    [eax + TCP_SOCKET.t_maxseg]
+        pop     [eax + TCP_SOCKET.SND_CWND]
+        mov     [eax + TCP_SOCKET.t_dupacks], 0
 
         push    eax
         call    tcp_output
