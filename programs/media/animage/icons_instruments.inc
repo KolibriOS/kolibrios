@@ -194,73 +194,58 @@ TakeButtonInstruments:
 
 	;*************************brush 1***********************
 	cmp eax,40
-	jne no_brush1
+	jne @f
 
 	mov [Brush_SizeX],4
 	mov [Brush_SizeY],4
 	mov [Number_Brush],0
-	mov ebx,[Last_instrument]
-	mov [Current_instrument],ebx
-
 	mov [line_width],1
-	ret
-	no_brush1:
+	jmp restore_last_i
+	@@:
 
 	;*************************brush 2***********************
 	cmp eax,41
-	jne no_brush2
+	jne @f
 
 	mov [Brush_SizeX],6
 	mov [Brush_SizeY],4
 	mov [Number_Brush],1
-	mov ebx,[Last_instrument]
-	mov [Current_instrument],ebx
-
 	mov [line_width],2
-	ret
-	no_brush2:
+	jmp restore_last_i
+	@@:
 
 	;*************************brush 3***********************
 	cmp eax,42
-	jne no_brush3
+	jne @f
 
 	mov [Brush_SizeX],8
 	mov [Brush_SizeY],7
 	mov [Number_Brush],2
-	mov ebx,[Last_instrument]
-	mov [Current_instrument],ebx
-
 	mov [line_width],3
-	ret
-	no_brush3:
+	jmp restore_last_i
+	@@:
 
 	;*************************brush 4***********************
 	cmp eax,43
-	jne no_brush4
+	jne @f
 
 	mov [Brush_SizeX],14
 	mov [Brush_SizeY],14
 	mov [Number_Brush],3
-	mov ebx,[Last_instrument]
-	mov [Current_instrument],ebx
-
 	mov [line_width],4
-	ret
-	no_brush4:
+	jmp restore_last_i
+	@@:
 
 	;*************************brush 5***********************
 	cmp eax,44
-	jne no_brush5
+	jne @f
 
 	mov [Brush_SizeX],6
 	mov [Brush_SizeY],6
 	mov [Number_Brush],4
-	mov ebx,[Last_instrument]
-	mov [Current_instrument],ebx
-
 	mov [line_width],5
-	ret
-	no_brush5:
+	jmp restore_last_i
+	@@:
 
 	;*************************pensil************************
 	cmp eax,10
@@ -642,9 +627,7 @@ TakeButtonInstruments:
 	@@:
 	;call drawwin
 
-	mov eax,[Last_instrument]
-	mov [Current_instrument],eax
-	ret
+	jmp restore_last_i
 	no_palette:
 
 	;************************draw line**********************
@@ -1198,7 +1181,7 @@ end if
 	jnz next_line_reflection_x
 
 	call MovePictureToWorkScreen
-	ret
+	jmp restore_last_i
 	no_reflection_from_left_to_right:
 
 	;*************reflection from up to down****************
@@ -1250,7 +1233,7 @@ end if
 	jnz next_lines_reflection
 
 	call MovePictureToWorkScreen
-	ret
+	jmp restore_last_i
 	no_reflection_from_up_to_down:
 
 	;*********************draw hard contour*****************
@@ -1482,4 +1465,9 @@ end if
 	;ret
 	no_ellips:
 
+	ret
+
+	restore_last_i:
+	mov ebx,[Last_instrument]
+	mov [Current_instrument],ebx
 	ret

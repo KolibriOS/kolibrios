@@ -122,7 +122,8 @@ include 'init_data.inc'
 ;--------get memory and draw window of program-------------
 ;----------------------------------------------------------
         call GetMemory
-        mov     [Current_instrument],10 ;pencil
+        mov  [Current_instrument],10 ;pencil
+        mov  [Last_instrument],10
         call TakeButtonInstruments  ;set startup instrument
         call cleare_work_arrea
         call load_icons
@@ -230,9 +231,10 @@ include 'menu.inc'
 name_of_program db 'ANIMAGE graphics editor v1.54',0
 mouse_pos_x     db 'X='
 mouse_pos_y     db 'Y='
-new_text1       db 'Picture size X'
-new_text2       db 'Picture size Y'
-ok_text         db 'OK'
+sz_Pict_size_X  db 'Picture size X',0
+sz_Pict_size_Y  db 'Picture size Y',0
+sz_Ok           db 'Ok',0
+sz_Cancel       db 'Cancel',0
 
 include 'lib_data.inc'
 include 'brushes.inc'

@@ -228,11 +228,8 @@ columnus_true:
 	ret
 ;----------------------------------------------------------
 print_text:
-	mov	[text_x],eax
-	mov	[text_y],ebx
-	mov	ebx,[text_x]
-	shl	ebx,16
-	add	ebx,[text_y]
+	shl	eax,16
+	add	ebx,eax
 	mcall SF_DRAW_TEXT
 	ret
 ;----------------------------------------------------------
@@ -252,7 +249,4 @@ color_line1	dd	0
 color_line2	dd	0
 color_line3	dd	0
 color_rectangle	dd	0
-;--------------------
-text_x		dd	0
-text_y		dd	0
 ;--------------------
