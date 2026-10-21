@@ -96,7 +96,7 @@ macro   tcp_init_socket socket {
         mov     [socket + TCP_SOCKET.t_srtt], TCP_time_srtt_default
         mov     [socket + TCP_SOCKET.t_rttvar], TCP_time_rtt_default * 4
         mov     [socket + TCP_SOCKET.t_rttmin], TCP_time_re_min
-        mov     [socket + TCP_SOCKET.t_rxtcur], TCP_time_rtt_default
+        mov     [socket + TCP_SOCKET.t_rxtcur], TCP_time_re_min    ; RFC 6298: 1s until the RTT is measured
 
         mov     [socket + TCP_SOCKET.SND_CWND], TCP_max_win shl TCP_max_winshift
         mov     [socket + TCP_SOCKET.SND_SSTHRESH], TCP_max_win shl TCP_max_winshift
