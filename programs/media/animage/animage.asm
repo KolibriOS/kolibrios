@@ -249,6 +249,10 @@ align 4
 panel_zoom:
 file 'panel_zoom.png'
 .end:
+align 4
+panel_instrum_sel:
+file 'panel_but_i_s.png'
+.end:
 ;****************cursors******************
 brush_cursor:
 file 'cursors/brush.cur'

@@ -2,7 +2,8 @@
 mem_screen equ 1200*1000*3 ;размер памяти для области экрана
 mem_panel_but equ 50*(20*20*3) ;память для панели инструментов
 mem_panel_zoom equ 6*(18*21*3) ;память для панели с кнопками масштабов
-mem_panel_all equ mem_panel_but+mem_panel_zoom ;размер памяти для
+mem_panel_but_i_s equ 17*(20*21*3) ;память для панели с кнопками инструментов
+mem_panel_all equ mem_panel_but+mem_panel_zoom+mem_panel_but_i_s ;размер памяти для
 	;всех панелей инструментов
 mem_flood_f equ 500000 ;размер буфера для заливки, а также для палитры
 mem_offs_shape equ 4807*4 ;смещение для разделения массива ReserveArray
