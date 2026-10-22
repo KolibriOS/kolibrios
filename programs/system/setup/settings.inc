@@ -1,256 +1,304 @@
 ; SPDX-License-Identifier: NOASSERTION
 ;
-; System settings: read them from the kernel or from system.ini,
-; apply them to the kernel and save them to system.ini.
+; The settings of SETUP: read them from the kernel or from system.ini,
+; apply them to the kernel and save them to system.ini
 
-;---------------------------------------------------------------
-; Take the current values from the kernel, the mouse ones at system start only
+; ====================================================================
+
+; take the current values from the kernel, the mouse ones at system
+; start only
 settings_read_boot:
-	mcall	18,19,0
-	mov	[mouseSpeed],eax
-	mcall	18,,2
-	mov	[mouseAccel],eax
-	mcall	18,,6
-	mov	[mouseDelay],eax
+        mcall   SF_SYSTEM, SSF_MOUSE_SETTINGS, SSSF_GET_SPEED
+        mov     [mouseSpeed], eax
+        mcall   SF_SYSTEM, SSF_MOUSE_SETTINGS, SSSF_GET_SPEEDUP
+        mov     [mouseAccel], eax
+        mcall   SF_SYSTEM, SSF_MOUSE_SETTINGS, SSSF_GET_DOUBLE_CLICK_DELAY
+        mov     [mouseDelay], eax
+
+; 26.5, 26.11 and 26.12 return what 21.5, 21.11 and 21.12 set
 settings_read_system:
-	mcall	26,5
-	dec	eax		; the kernel counts languages from 1
-	cmp	eax,LANGUAGES
-	jb	@f
-	xor	eax,eax
-@@:
-	mov	[language],eax
-	mcall	26,11
-	mov	[lba],eax
-	mcall	26,12
-	mov	[pci],eax
-	mcall	18,8,1
-	mov	[speakerMute],eax
-	mcall	48,9
-	mov	[fontSmoothing],eax
-	mcall	48,11
-	mov	[fontHeight],eax
+        mcall   SF_SYSTEM_GET, 5
+        dec     eax                     ; the kernel counts languages from 1
+        cmp     eax, LANGUAGES
+        jb      .language
+        xor     eax, eax
+
+.language:
+        mov     [language], eax
+        mcall   SF_SYSTEM_GET, 11
+        mov     [lba], eax
+        mcall   SF_SYSTEM_GET, 12
+        mov     [pci], eax
+        mcall   SF_SYSTEM, SSF_SPEAKER, SSSF_GET_STATE
+        mov     [speakerMute], eax
+        mcall   SF_STYLE_SETTINGS, SSF_GET_FONT_SMOOTH
+        mov     [fontSmoothing], eax
+        mcall   SF_STYLE_SETTINGS, SSF_GET_FONT_SIZE
+        mov     [fontHeight], eax
+
 ; keep the font height within what the window shows and steps through
 font_height_limits:
-	mov	eax,[fontHeight]
-	cmp	eax,FONT_H_MIN
-	jge	@f
-	mov	eax,FONT_H_MIN
-@@:
-	cmp	eax,FONT_H_MAX
-	jle	@f
-	mov	eax,FONT_H_MAX
-@@:
-	mov	[fontHeight],eax
-	ret
+        mov     eax, [fontHeight]
+        cmp     eax, FONT_H_MIN
+        jge     .min
+        mov     eax, FONT_H_MIN
 
-;---------------------------------------------------------------
-; Override the values with the ones stored in system.ini.
-; A missing or unknown value keeps the current one.
+.min:
+        cmp     eax, FONT_H_MAX
+        jle     .max
+        mov     eax, FONT_H_MAX
+
+.max:
+        mov     [fontHeight], eax
+        ret
+
+; ====================================================================
+
+; override the values with the ones stored in system.ini; a missing or
+; unknown value keeps the current one
 settings_read_ini:
-	mov	esi,iniSettings
+        mov     esi, iniSettings
+
 .next:
-	mov	edi,[esi+12]
-	test	edi,edi
-	jnz	.word
-	mov	eax,[esi+8]
-	invoke	ini.get_int, sz_ini, [esi], [esi+4], [eax]
-	jmp	.store
+        mov     edi, [esi + INI_SETTING.words]
+        test    edi, edi
+        jnz     .word
+        mov     eax, [esi + INI_SETTING.variable]
+        invoke  ini.get_int, sz_ini, [esi + INI_SETTING.ini_section], \
+                [esi + INI_SETTING.key], [eax]
+        jmp     .store
+
 .word:
-	and	[iniWord],0
-	invoke	ini.get_str, sz_ini, [esi], [esi+4], iniWord, 4, 0
-	mov	eax,[iniWord]
-	or	eax,0x20202020	; lowercase, zeroes become spaces
-	xor	edx,edx
-@@:
-	cmp	eax,[edi+4+edx*4]
-	jz	.found
-	inc	edx
-	cmp	edx,[edi]
-	jb	@b
-	jmp	.skip
+        and     [iniWord], 0
+        invoke  ini.get_str, sz_ini, [esi + INI_SETTING.ini_section], \
+                [esi + INI_SETTING.key], iniWord, 4, 0
+        mov     eax, [iniWord]
+        or      eax, 0x20202020         ; lowercase, zeroes become spaces
+        xor     edx, edx
+
+.find:
+        cmp     eax, [edi + 4 + edx*4]
+        je      .found
+        inc     edx
+        cmp     edx, [edi]
+        jb      .find
+        jmp     .skip
+
 .found:
-	mov	eax,edx
+        mov     eax, edx
+
 .store:
-	mov	edx,[esi+8]
-	mov	[edx],eax
+        mov     edx, [esi + INI_SETTING.variable]
+        mov     [edx], eax
+
 .skip:
-	add	esi,16
-	cmp	esi,iniSettings.end
-	jb	.next
-	jmp	font_height_limits
+        add     esi, sizeof.INI_SETTING
+        cmp     esi, iniSettings.end
+        jb      .next
+        jmp     font_height_limits
 
-;---------------------------------------------------------------
-; Store the values to system.ini (all but the mouse ones).
-; Not ebx for the loop: ini_set_str returns with ebx = 13.
+; ====================================================================
+
+; store the values to system.ini, all but the mouse ones; not ebx for
+; the loop: ini_set_str returns with ebx = 13
 settings_save_ini:
-	mov	esi,iniSettings
+        mov     esi, iniSettings
+
 .next:
-	mov	eax,[esi+8]
-	mov	eax,[eax]
-	mov	edi,[esi+12]
-	test	edi,edi
-	jnz	.word
-	invoke	ini.set_int, sz_ini, [esi], [esi+4], eax
-	jmp	.done
+        mov     eax, [esi + INI_SETTING.variable]
+        mov     eax, [eax]
+        mov     edi, [esi + INI_SETTING.words]
+        test    edi, edi
+        jnz     .word
+        invoke  ini.set_int, sz_ini, [esi + INI_SETTING.ini_section], \
+                [esi + INI_SETTING.key], eax
+        jmp     .done
+
 .word:
-	mov	eax,[edi+4+eax*4]
-	mov	[iniWord],eax
-	xor	ecx,ecx		; length of the word
-@@:
-	cmp	byte[iniWord+ecx],' '
-	jz	@f
-	inc	ecx
-	cmp	ecx,4
-	jb	@b
-@@:
-	invoke	ini.set_str, sz_ini, [esi], [esi+4], iniWord, ecx
+        mov     eax, [edi + 4 + eax*4]
+        mov     [iniWord], eax
+        xor     ecx, ecx                ; the length of the word
+
+.length:
+        cmp     byte [iniWord + ecx], ' '
+        je      .save
+        inc     ecx
+        cmp     ecx, 4
+        jb      .length
+
+.save:
+        invoke  ini.set_str, sz_ini, [esi + INI_SETTING.ini_section], \
+                [esi + INI_SETTING.key], iniWord, ecx
+
 .done:
-	add	esi,16
-	cmp	esi,iniSettings.saved
-	jb	.next
-	ret
+        add     esi, sizeof.INI_SETTING
+        cmp     esi, iniSettings.saved
+        jb      .next
+        ret
 
-;---------------------------------------------------------------
-; Pass the values to the kernel, the mouse ones at system start only
+; ====================================================================
+
+; pass the values to the kernel, the mouse ones at system start only
 settings_apply_boot:
-	mcall	18,19,1,[mouseSpeed]
-	mcall	18,,3,[mouseAccel]
-	mcall	18,,7,[mouseDelay]
+        mcall   SF_SYSTEM, SSF_MOUSE_SETTINGS, SSSF_SET_SPEED, [mouseSpeed]
+        mcall   SF_SYSTEM, SSF_MOUSE_SETTINGS, SSSF_SET_SPEEDUP, [mouseAccel]
+        mcall   SF_SYSTEM, SSF_MOUSE_SETTINGS, SSSF_SET_DOUBLE_CLICK_DELAY, [mouseDelay]
+
 settings_apply:
-	mov	ecx,[language]
-	inc	ecx
-	mcall	21,5
-	mcall	21,11,[lba]
-	mcall	21,12,[pci]
-	mcall	48,10,[fontSmoothing]
-	mcall	48,12,[fontHeight]
-; the speaker can only be toggled
-	mcall	18,8,1
-	cmp	eax,[speakerMute]
-	jz	@f
-	mcall	18,,2
-@@:
-	ret
+        mov     ecx, [language]
+        inc     ecx
+        mcall   SF_SYSTEM_SET, SSF_SYS_LANG
+        mcall   SF_SYSTEM_SET, SSF_ACCESS_HD_LBA, [lba]
+        mcall   SF_SYSTEM_SET, SSF_ACCESS_PCI, [pci]
+        mcall   SF_STYLE_SETTINGS, SSF_SET_FONT_SMOOTH, [fontSmoothing]
+        mcall   SF_STYLE_SETTINGS, SSF_SET_FONT_SIZE, [fontHeight]
 
-;---------------------------------------------------------------
-; Button style, desktop background and skin from the [style] section.
-; Used at system start only.
+        ; the speaker can only be toggled
+        mcall   SF_SYSTEM, SSF_SPEAKER, SSSF_GET_STATE
+        cmp     eax, [speakerMute]
+        je      .done
+        mcall   SF_SYSTEM, SSF_SPEAKER, SSSF_TOGGLE
+
+.done:
+        ret
+
+; ====================================================================
+
+; the button style, the desktop background and the skin from the [style]
+; section, at system start only
 style_apply:
-	invoke	ini.get_int, sz_ini, sz_style, sz_buttonStyle, 0
-	mcall	48,1,eax
+        invoke  ini.get_int, sz_ini, sz_style, sz_buttonStyle, 0
+        mov     ecx, eax
+        mcall   SF_STYLE_SETTINGS, SSF_SET_BUTTON_STYLE
 
-; the background is set by a program: bg_program with bg_param
-	invoke	ini.get_str, sz_ini, sz_style, sz_bgProgram, bgProgram, PATH_MAX, 0
-	cmp	byte[bgProgram],0
-	jz	.skin
-	invoke	ini.get_str, sz_ini, sz_style, sz_bgParam, bgParam, PATH_MAX, 0
-	cmp	byte[bgParam],'\'	; KIV param like '\S__/path/to/img'
-	jnz	@f
-	mov	[fileInfo.path],bgParam+4
-	call	wait_for_file
-@@:
-	mcall	70,runBgProgram
+        ; the background is set by a program: bg_program with bg_param
+        invoke  ini.get_str, sz_ini, sz_style, sz_bgProgram, bgProgram, PATH_MAX, 0
+        cmp     byte [bgProgram], 0
+        je      .skin
+        invoke  ini.get_str, sz_ini, sz_style, sz_bgParam, bgParam, PATH_MAX, 0
+        cmp     byte [bgParam], '\'     ; a KIV parameter like '\S__/path/to/img'
+        jne     .background
+        mov     [fileInfo.path], bgParam + 4
+        call    wait_for_file
+
+.background:
+        mcall   SF_FILE, runBgProgram
 
 .skin:
-	invoke	ini.get_str, sz_ini, sz_style, sz_skin, skinPath, PATH_MAX, 0
-	cmp	byte[skinPath],0
-	jz	@f
-	mov	[fileInfo.path],skinPath
-	call	wait_for_file
-	mcall	48,8,skinPath
-@@:
-	ret
+        invoke  ini.get_str, sz_ini, sz_style, sz_skin, skinPath, PATH_MAX, 0
+        cmp     byte [skinPath], 0
+        je      .done
+        mov     [fileInfo.path], skinPath
+        call    wait_for_file
+        mcall   SF_STYLE_SETTINGS, SSF_SET_SKIN, skinPath
 
-; Files on /kolibrios and /usbhd may appear a few seconds after boot:
+.done:
+        ret
+
+; files on /kolibrios and /usbhd may appear a few seconds after boot:
 ; try to read the file for up to 5 seconds
 wait_for_file:
-	mov	edi,5
-@@:
-	mcall	70,fileInfo
-	test	eax,eax
-	jz	@f
-	mcall	5,100
-	dec	edi
-	jnz	@b
-@@:
-	ret
+        mov     edi, 5
 
-;---------------------------------------------------------------
-; DATA
-; The languages of the kernel
-LANGUAGES = 8
-FONT_H_MIN = 9
-FONT_H_MAX = 99		; two digits in the window
-PATH_MAX = 256
+.try:
+        mcall   SF_FILE, fileInfo
+        test    eax, eax
+        jz      .done
+        mcall   SF_SLEEP, 100
+        dec     edi
+        jnz     .try
 
-; Every value stored in system.ini: section, key, variable, words.
-; Words = 0 for a number, otherwise the list of words for 0, 1, 2...
+.done:
+        ret
+
+; ====================================================================
+
+; the languages of the kernel, in the order of their ids 1..11 (kernel
+; data32.inc SYSLANG)
+LANGUAGES       = 11
+FONT_H_MIN      = 9
+FONT_H_MAX      = 99                    ; two digits in the window
+PATH_MAX        = 256
+
+; a value stored in system.ini: its section and key, its variable and
+; its words, 0 for a number, else the list of the words for 0, 1, 2...
+struct INI_SETTING
+        ini_section     dd ?            ; 'section' is a directive of fasm
+        key             dd ?
+        variable        dd ?
+        words           dd ?
+ends
+
 align 4
 iniSettings:
-	dd	sz_system,   sz_language,   language,      wordsLanguage
-	dd	sz_system,   sz_fontHeight, fontHeight,    0
-	dd	sz_system,   sz_fontSmooth, fontSmoothing, wordsSmoothing
-	dd	sz_lowLevel, sz_lba,        lba,           wordsOnOff
-	dd	sz_lowLevel, sz_pci,        pci,           wordsOnOff
-	dd	sz_lowLevel, sz_speaker,    speakerMute,   wordsSpeaker
-.saved:	; the mouse is configured by its own application
-	dd	sz_mouse,    sz_speed,      mouseSpeed,    0
-	dd	sz_mouse,    sz_accel,      mouseAccel,    0
-	dd	sz_mouse,    sz_dblClick,   mouseDelay,    0
+        dd      sz_system,   sz_language,    language,      wordsLanguage
+        dd      sz_system,   sz_fontHeight,  fontHeight,    0
+        dd      sz_system,   sz_fontSmooth,  fontSmoothing, wordsSmoothing
+        dd      sz_system,   sz_speakerMute, speakerMute,   wordsOnOff
+        dd      sz_lowLevel, sz_lba,         lba,           wordsOnOff
+        dd      sz_lowLevel, sz_pci,         pci,           wordsOnOff
+.saved:                                 ; the mouse is configured by its own application
+        dd      sz_mouse,    sz_speed,       mouseSpeed,    0
+        dd      sz_mouse,    sz_accel,       mouseAccel,    0
+        dd      sz_mouse,    sz_dblClick,    mouseDelay,    0
 .end:
 
-wordsOnOff	dd 2, 'off ','on  '
-wordsSpeaker	dd 2, 'on  ','off '	; the ini keeps 'speaker on', not 'mute'
-wordsSmoothing	dd 3, 'off ','on  ','sbp '
-wordsLanguage	dd LANGUAGES, 'en  ','fi  ','de  ','ru  ','fr  ','et  ','es  ','it  '
+; a word list: the number of the words, then each of them in 4 bytes
+wordsOnOff      dd      2, 'off ', 'on  '
+wordsSmoothing  dd      3, 'off ', 'on  ', 'sbp '
+wordsLanguage   dd      LANGUAGES
+                dd      'en  ', 'fi  ', 'de  ', 'ru  ', 'fr  ', 'et  '
+                dd      'uk  ', 'it  ', 'nl  ', 'es  ', 'ca  '
+assert $ - wordsLanguage = (1 + LANGUAGES)*4
 
 runBgProgram:
-	dd	7, 0, bgParam, 0, 0
-	db	0
-	dd	bgProgram
+        dd      SSF_START_APP, 0, bgParam, 0, 0
+        db      0
+        dd      bgProgram
 
 fileInfo:
-	dd	0, 0, 0, 4, fileBuf
-	db	0
-.path	dd	?
+        dd      SSF_READ_FILE, 0, 0, 4, fileBuf
+        db      0
+.path   dd      ?
 
-sz_ini		db "/sys/settings/system.ini",0
+sz_ini          db      "/sys/settings/system.ini", 0
 
-sz_system	db "system",0
-sz_language	db "language",0
-sz_fontHeight	db "font height",0
-sz_fontSmooth	db "font smoothing",0
-sz_speaker	db "speaker",0
+sz_system       db      "system", 0
+sz_language     db      "language", 0
+sz_fontHeight   db      "font height", 0
+sz_fontSmooth   db      "font smoothing", 0
+sz_speakerMute  db      "speaker mute", 0
 
-sz_lowLevel	db "low-level",0
-sz_lba		db "LBA",0
-sz_pci		db "PCI",0
+sz_lowLevel     db      "low-level", 0
+sz_lba          db      "LBA", 0
+sz_pci          db      "PCI", 0
 
-sz_mouse	db "mouse",0
-sz_speed	db "speed",0
-sz_accel	db "acceleration",0
-sz_dblClick	db "double_click_delay",0
+sz_mouse        db      "mouse", 0
+sz_speed        db      "speed", 0
+sz_accel        db      "acceleration", 0
+sz_dblClick     db      "double_click_delay", 0
 
-sz_style	db "style",0
-sz_buttonStyle	db "buttons_gradient",0
-sz_bgProgram	db "bg_program",0
-sz_bgParam	db "bg_param",0
-sz_skin		db "skin",0
+sz_style        db      "style", 0
+sz_buttonStyle  db      "buttons_gradient", 0
+sz_bgProgram    db      "bg_program", 0
+sz_bgParam      db      "bg_param", 0
+sz_skin         db      "skin", 0
 
-; not stored in the program file
-language	dd ?
-lba		dd ?
-pci		dd ?
-speakerMute	dd ?
-fontSmoothing	dd ?
-fontHeight	dd ?
-mouseSpeed	dd ?
-mouseAccel	dd ?
-mouseDelay	dd ?
+; not stored in the program file: placed by IncludeUGlobals
+uglobal
+language        dd      ?
+lba             dd      ?
+pci             dd      ?
+speakerMute     dd      ?
+fontSmoothing   dd      ?
+fontHeight      dd      ?
+mouseSpeed      dd      ?
+mouseAccel      dd      ?
+mouseDelay      dd      ?
 
-iniWord		dd ?	; a word of system.ini
-fileBuf		dd ?
-bgProgram	rb PATH_MAX
-bgParam		rb PATH_MAX
-skinPath	rb PATH_MAX
+iniWord         dd      ?               ; a word of system.ini
+fileBuf         dd      ?
+bgProgram       rb      PATH_MAX
+bgParam         rb      PATH_MAX
+skinPath        rb      PATH_MAX
+endg
