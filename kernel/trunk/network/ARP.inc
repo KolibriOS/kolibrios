@@ -215,36 +215,37 @@ arp_input:
         cmp     eax, [IPv4_address + edi]
         je      .collision
 
-;---------------------
-; Handle reply packets
+;-----------------------------------------------------------------
+; Learn the sender's MAC (RFC 826), from requests as well as replies:
+; update its entry if there is one, add one if the packet is for us.
+; So the answer to a peer that asked for our MAC goes out at once.
+; A probe (RFC 5227) has no sender address yet: nothing to learn.
 
-        cmp     [edx + ARP_header.Opcode], ARP_REP_OPCODE
+        test    eax, eax
+        jz      .maybe_request
+        call    arp_find_entry
+        test    esi, esi
+        jnz     .update
+
+        mov     ecx, [IPv4_address + edi]
+        cmp     ecx, [edx + ARP_header.TargetIP]
         jne     .maybe_request
 
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: It's a reply\n"
+        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: adding entry\n"
 
-        mov     ecx, [ARP_entries + edi]
-        test    ecx, ecx
-        jz      .exit
+        pushw   ARP_ENTRY_TTL                                   ; TTL
+        pushw   ARP_VALID_MAPPING                               ; status
+        push    dword [edx + ARP_header.SenderMAC + 2]          ; mac
+        push    word [edx + ARP_header.SenderMAC]
+        push    eax                                             ; IP
+        mov     esi, esp
+        call    arp_add_entry                                   ; a full table learns nothing
+        add     esp, sizeof.ARP_entry
+        jmp     .maybe_request
 
-        mov     esi, edi
-        imul    esi, (ARP_TABLE_SIZE * sizeof.ARP_entry)/4
-        add     esi, ARP_table
-  .loop:
-        cmp     [esi + ARP_entry.IP], eax
-        je      .gotit
-        add     esi, sizeof.ARP_entry
-        dec     ecx
-        jnz     .loop
-
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: no matching entry found\n"
-        jmp     .exit
-
-  .gotit:
-        DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: found matching entry\n"
-
+  .update:
         cmp     [esi + ARP_entry.TTL], ARP_STATIC_ENTRY         ; if it is a static entry, don't touch it
-        je      .exit
+        je      .maybe_request
 
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_input: updating entry\n"
 
@@ -253,10 +254,8 @@ arp_input:
 
         mov     eax, dword [edx + ARP_header.SenderMAC]
         mov     dword [esi + ARP_entry.MAC], eax
-        mov     cx, word [edx + ARP_header.SenderMAC + 4]
-        mov     word [esi + ARP_entry.MAC + 4], cx
-
-        jmp     .exit
+        mov     ax, word [edx + ARP_header.SenderMAC + 4]
+        mov     word [esi + ARP_entry.MAC + 4], ax
 
 ;-----------------------
 ; Handle request packets
@@ -494,6 +493,38 @@ arp_del_entry:
         ret
 
 
+;-----------------------------------------------------------------;
+;                                                                 ;
+; arp_find_entry: Find the entry of an IP in the ARP table.       ;
+;                                                                 ;
+;  IN:  eax = IP                                                  ;
+;       edi = device number * 4                                   ;
+;                                                                 ;
+; OUT:  esi = ptr to arp entry, 0 if there is none                ;
+;       ecx = destroyed                                           ;
+;                                                                 ;
+;-----------------------------------------------------------------;
+align 4
+arp_find_entry:
+
+        mov     ecx, [ARP_entries + edi]
+        mov     esi, edi
+        imul    esi, (ARP_TABLE_SIZE * sizeof.ARP_entry)/4
+        add     esi, ARP_table
+        test    ecx, ecx
+        jz      .none
+  .loop:
+        cmp     [esi + ARP_entry.IP], eax
+        je      .found
+        add     esi, sizeof.ARP_entry
+        dec     ecx
+        jnz     .loop
+  .none:
+        xor     esi, esi
+  .found:
+        ret
+
+
 
 
 
@@ -525,20 +556,10 @@ arp_ip_to_mac:
 ;--------------------------------
 ; Try to find the IP in ARP_table
 
-        mov     ecx, [ARP_entries + edi]
-        test    ecx, ecx
-        jz      .not_in_list
-        mov     esi, edi
-        imul    esi, (sizeof.ARP_entry * ARP_TABLE_SIZE)/4
-        add     esi, ARP_table + ARP_entry.IP
-  .scan_loop:
-        cmp     [esi], eax
-        je      .found_it
-        add     esi, sizeof.ARP_entry
-        dec     ecx
-        jnz     .scan_loop
+        call    arp_find_entry
+        test    esi, esi
+        jnz     .found_it
 
-  .not_in_list:
         DEBUGF  DEBUG_NETWORK_VERBOSE, "ARP_IP_to_MAC: preparing for ARP request\n"
 
         push    eax edi                 ; save IP for ARP_output_request
@@ -594,22 +615,9 @@ if ARP_BLOCK
         pop     ebx
 
 ; The entry may have moved (arp_del_entry), find it again
-        cmp     [esi + ARP_entry.IP], eax
-        je      .same_entry
-        mov     ecx, [ARP_entries + edi]
-        test    ecx, ecx
+        call    arp_find_entry
+        test    esi, esi
         jz      .wait_over
-        mov     esi, edi
-        imul    esi, (sizeof.ARP_entry * ARP_TABLE_SIZE)/4
-        add     esi, ARP_table + ARP_entry.IP
-  .rescan:
-        cmp     [esi], eax
-        je      .same_entry
-        add     esi, sizeof.ARP_entry
-        dec     ecx
-        jnz     .rescan
-        jmp     .wait_over
-  .same_entry:
         cmp     [esi + ARP_entry.Status], ARP_VALID_MAPPING
         je      .wait_done
         cmp     [esi + ARP_entry.Status], ARP_AWAITING_RESPONSE
