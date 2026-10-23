@@ -99,12 +99,8 @@ settings_read_ini:
 
 ; ====================================================================
 
-; store the values to system.ini, all but the mouse ones; not ebx for
-; the loop: ini_set_str returns with ebx = 13
+; store the setting esi of iniSettings to system.ini
 settings_save_ini:
-        mov     esi, iniSettings
-
-.next:
         mov     eax, [esi + INI_SETTING.variable]
         mov     eax, [eax]
         mov     edi, [esi + INI_SETTING.words]
@@ -112,7 +108,7 @@ settings_save_ini:
         jnz     .word
         invoke  ini.set_int, sz_ini, [esi + INI_SETTING.ini_section], \
                 [esi + INI_SETTING.key], eax
-        jmp     .done
+        ret
 
 .word:
         mov     eax, [edi + 4 + eax*4]
@@ -129,11 +125,6 @@ settings_save_ini:
 .save:
         invoke  ini.set_str, sz_ini, [esi + INI_SETTING.ini_section], \
                 [esi + INI_SETTING.key], iniWord, ecx
-
-.done:
-        add     esi, sizeof.INI_SETTING
-        cmp     esi, iniSettings.saved
-        jb      .next
         ret
 
 ; ====================================================================
@@ -229,15 +220,17 @@ struct INI_SETTING
         words           dd ?
 ends
 
+; in the order of the controls of the window, the rows then the
+; checkboxes: a change saves the setting of its control; the mouse ones
+; are read at system start only, the mouse has its own application
 align 4
 iniSettings:
         dd      sz_system,   sz_language,    language,      wordsLanguage
-        dd      sz_system,   sz_fontHeight,  fontHeight,    0
         dd      sz_system,   sz_fontSmooth,  fontSmoothing, wordsSmoothing
-        dd      sz_system,   sz_speakerMute, speakerMute,   wordsOnOff
+        dd      sz_system,   sz_fontHeight,  fontHeight,    0
         dd      sz_lowLevel, sz_lba,         lba,           wordsOnOff
         dd      sz_lowLevel, sz_pci,         pci,           wordsOnOff
-.saved:                                 ; the mouse is configured by its own application
+        dd      sz_system,   sz_speakerMute, speakerMute,   wordsOnOff
         dd      sz_mouse,    sz_speed,       mouseSpeed,    0
         dd      sz_mouse,    sz_accel,       mouseAccel,    0
         dd      sz_mouse,    sz_dblClick,    mouseDelay,    0

@@ -12,12 +12,11 @@
 include "../../macros.inc"
 include "../../KOSfuncs.inc"
 
-format meos 01
+format meos KX
 entry START
 stack 4096
 
 include "../../proc32.inc"
-include "../../dll.inc"
 
 include "group_box.inc"
 include "settings.inc"
@@ -25,11 +24,6 @@ include "settings.inc"
 ; ====================================================================
 
 START:
-        mcall   SF_SYS_MISC, SSF_HEAP_INIT
-        stdcall dll.Load, @IMPORT
-        test    eax, eax
-        jnz     quit
-
         GetCommandLine eax
         cmp     dword [eax], 'BOOT'
         jne     window
@@ -65,7 +59,7 @@ draw_window:
         mov     [buttonTextColor], eax
 
         ; the border colour of a kernel button, for the frames drawn over
-        ; buttons and round the checkboxes
+        ; the buttons
         mov     eax, [sc.work_button]
         shr     eax, 1
         and     eax, 0x7F7F7F
@@ -107,19 +101,14 @@ draw_window:
         add     edi, GAP                ; y of the row
         mov     ecx, edi
         shl     ecx, 16
-        add     ecx, ROW_H - 1          ; the button is 1 pixel bigger than given
+        add     ecx, ROW_H
+        mov     esi, [sc.work_button]
+        mov     ebx, (BUTTON1_X shl 16) + ROW_H
         lea     edx, [FIRST_ROW_BUTTON + ebp*2]
-        mcall   SF_DEFINE_BUTTON, <BUTTON1_X, ROW_H - 1>, , , [sc.work_button]
+        call    button_box
+        mov     ebx, (BUTTON2_X shl 16) + ROW_H
         lea     edx, [FIRST_ROW_BUTTON + 1 + ebp*2]
-        mcall   SF_DEFINE_BUTTON, <BUTTON2_X, ROW_H - 1>
-
-        ; the kernel leaves the corners of a button out: one frame for
-        ; both, its right corners stay out
-        mov     edx, [buttonBorder]
-        mov     cx, 1
-        mcall   SF_DRAW_RECT, <BUTTON1_X, BUTTON2_X + ROW_H - 1 - BUTTON1_X>
-        add     ecx, (ROW_H - 1) shl 16
-        mcall   SF_DRAW_RECT
+        call    button_box
 
         lea     ebx, [edi + TEXT_DY + (LABEL_X shl 16)]
         mov     ecx, ebp
@@ -166,56 +155,73 @@ draw_window:
         shr     eax, 1
         mov     [checkStep], eax
 
-        ; a checkbox: the box, then the label, both under one button up to
-        ; the end of the group; the next button covers the rest. A set box
-        ; is a button of its own with the same id, over the big one, with a
-        ; tick; an empty one a frame, light inside
+        ; the labels of the checkboxes after their boxes
         xor     ebp, ebp
 
-.check:
-        mov     edi, [checkStep]
-        imul    edi, ebp
-        add     edi, ITEM_X             ; x of the box
-        lea     ebx, [edi + CHECK_TEXT_X]
+.label:
+        mov     ebx, [checkStep]
+        imul    ebx, ebp
+        add     ebx, ITEM_X + CHECK_TEXT_X
         shl     ebx, 16
         add     ebx, CHECK_Y + TEXT_DY
         lea     ecx, [T_CHECKS + ebp]
         call    get_text
         mcall   SF_DRAW_TEXT, , [textColor]
 
-        mov     ebx, edi
-        shl     ebx, 16
-        add     ebx, ITEM_END
-        sub     ebx, edi
-        lea     edx, [FIRST_CHECK_BUTTON + BT_HIDE + BT_NOFRAME + ebp]
-        mcall   SF_DEFINE_BUTTON, , <CHECK_Y, ROW_H - 1>
+        inc     ebp
+        cmp     ebp, CHECKS
+        jb      .label
 
+        mcall   SF_REDRAW, SSF_END_DRAW
+
+; what a change repaints without the whole window
+repaint:
+        ; the boxes of the checkboxes, each one a button of its size: a set
+        ; box a button with a tick, an empty one sunken as a field under a
+        ; hidden button; the kernel inverts the frame of a button while it
+        ; is pressed. A change defines them again, the old ones deleted
+        ; first
+        xor     ebp, ebp
+
+.delete:
+        lea     edx, [FIRST_CHECK_BUTTON + BT_DEL + ebp]
+        mcall   SF_DEFINE_BUTTON
+        inc     ebp
+        cmp     ebp, CHECKS
+        jb      .delete
+
+        xor     ebp, ebp
+
+.check:
+        mov     edi, [checkStep]
+        imul    edi, ebp
+        add     edi, ITEM_X             ; x of the box
         mov     ebx, edi
         shl     ebx, 16
         add     ebx, CHECK_SIZE
+        mov     ecx, (CHECK_BOX_Y shl 16) + CHECK_SIZE
         mov     eax, [checks + ebp*sizeof.CHECK + CHECK.variable]
         mov     eax, [eax]
         xor     eax, [checks + ebp*sizeof.CHECK + CHECK.unchecked]
         jnz     .set
 
-        mcall   SF_DRAW_RECT, , <CHECK_BOX_Y, CHECK_SIZE>, [buttonBorder]
-        add     ebx, (1 shl 16) - 2
-        mcall   SF_DRAW_RECT, , <CHECK_BOX_Y + 1, CHECK_SIZE - 2>, [sc.work_light]
-        jmp     .next
-.set:
-        dec     ebx                     ; the button is 1 pixel bigger than given
-        lea     edx, [FIRST_CHECK_BUTTON + ebp]
-        mcall   SF_DEFINE_BUTTON, , <CHECK_BOX_Y, CHECK_SIZE - 1>, , [sc.work_button]
+        mov     edx, [sc.work_graph]
+        call    sunken_box
 
-        ; the frame of an empty box over the edge of the button
-        inc     ebx
-        mov     edx, [buttonBorder]
-        mcall   SF_DRAW_RECT, , <CHECK_BOX_Y, 1>
-        mcall   SF_DRAW_RECT, , <CHECK_BOX_Y + CHECK_SIZE - 1, 1>
-        mov     bx, 1
-        mcall   SF_DRAW_RECT, , <CHECK_BOX_Y, CHECK_SIZE>
-        add     ebx, (CHECK_SIZE - 1) shl 16
-        mcall   SF_DRAW_RECT
+        ; the hidden button inside the frame: the kernel inverts the light
+        ; lines there, the grey frame would stay grey inverted
+        lea     ebx, [edi + 1]
+        shl     ebx, 16
+        add     ebx, CHECK_SIZE - 2
+        mov     ecx, ((CHECK_BOX_Y + 1) shl 16) + CHECK_SIZE - 2
+        lea     edx, [FIRST_CHECK_BUTTON + BT_HIDE + ebp]
+        call    define_button
+        jmp     .next
+
+.set:
+        lea     edx, [FIRST_CHECK_BUTTON + ebp]
+        mov     esi, [sc.work_button]
+        call    button_box
 
         ; the tick: two strokes, each two lines a pixel apart; x shl 16 + x
         ; of the inside of the box, the strokes from it
@@ -254,8 +260,8 @@ draw_window:
         mov     word [heightText], ax
         mov     [valueText + 8], heightText
 
-        ; each value in a light box framed on three sides, the button is
-        ; the fourth, the left corners are cut off
+        ; each value in a sunken field, under the first button by a pixel:
+        ; the frame of the button again over it, one line for both
         xor     ebp, ebp
 
 .value:
@@ -264,25 +270,15 @@ draw_window:
         mov     ecx, edi
         shl     ecx, 16
         add     ecx, ROW_H
-        mcall   SF_DRAW_RECT, <VALUE_X + 1, VALUE_W - 1>, , [sc.work_graph]
-        add     ecx, (1 shl 16) - 2
-        mcall   SF_DRAW_RECT, <VALUE_X, VALUE_W>
-
-        ; sunken, the inner lines of a button reversed: three boxes, each
-        ; 1 pixel smaller, leave darker lines left and top and lighter
-        ; right and bottom
-        mov     edx, [sc.work_light]
-        mov     eax, edx
-        shr     eax, 3
-        and     eax, 0x1F1F1F
-        sub     edx, eax                ; 1/8 darker
-        mcall   SF_DRAW_RECT, <VALUE_X + 1, VALUE_W - 1>
-        mov     edx, [sc.work_light]
-        or      edx, 0x1F1F1F           ; lighter
-        add     ecx, (1 shl 16) - 1
-        mcall   SF_DRAW_RECT, <VALUE_X + 2, VALUE_W - 2>
-        dec     ecx
-        mcall   SF_DRAW_RECT, <VALUE_X + 2, VALUE_W - 3>, , [sc.work_light]
+        mov     ebx, (VALUE_X shl 16) + VALUE_W
+        mov     edx, [sc.work_graph]
+        call    sunken_box
+        mov     ecx, edi
+        shl     ecx, 16
+        add     ecx, ROW_H
+        mov     ebx, (BUTTON1_X shl 16) + ROW_H
+        mov     edx, [buttonBorder]
+        call    frame
 
         lea     ebx, [edi + TEXT_DY + ((VALUE_X + GAP) shl 16)]
         mov     edx, [valueText + ebp*4]
@@ -291,8 +287,6 @@ draw_window:
         inc     ebp
         cmp     ebp, ROWS
         jb      .value
-
-        mcall   SF_REDRAW, SSF_END_DRAW
 
 ; ====================================================================
 
@@ -317,8 +311,8 @@ still:
 
         ; '-' or '+' of a row: step the value within the limits of the row
         shr     eax, 1                  ; eax = row, CF = '+'
-        lea     esi, [eax*3]            ; sizeof.ROW_LIMITS = 3*4
-        lea     esi, [rows + esi*4]
+        imul    esi, eax, sizeof.ROW_LIMITS
+        add     esi, rows
         mov     edi, [esi + ROW_LIMITS.variable]
         mov     ecx, [edi]
         jc      .plus
@@ -334,24 +328,102 @@ still:
 
 .set:
         mov     [edi], ecx
-        jmp     .changed
+        jmp     .changed                ; eax = the control: the row
 
 .check:
-        mov     eax, [checks - (FIRST_CHECK_BUTTON - FIRST_ROW_BUTTON)*sizeof.CHECK + eax*sizeof.CHECK]
-        xor     dword [eax], 1
+        lea     ecx, [eax - (FIRST_CHECK_BUTTON - FIRST_ROW_BUTTON)]
+        mov     edx, [checks + ecx*sizeof.CHECK + CHECK.variable]
+        xor     dword [edx], 1
+        lea     eax, [ROWS + ecx]       ; the control: after the rows
 
-        ; every change takes effect at once, is kept in system.ini and
-        ; repaints the window
+        ; every change takes effect at once, its setting is kept in
+        ; system.ini (iniSettings is in the order of the controls)
 .changed:
-        call    settings_apply
+        mov     ebp, eax
+        imul    esi, eax, sizeof.INI_SETTING
+        add     esi, iniSettings
         call    settings_save_ini
-        jmp     draw_window
+        call    settings_apply
+
+        ; the language and the font smoothing change all the texts: the
+        ; whole window; the rest the boxes and the values only
+        cmp     ebp, HEIGHT_ROW
+        jb      draw_window
+        jmp     repaint
 
 key:
         mcall   SF_GET_KEY
         jmp     still
 
 ; ====================================================================
+
+; ebx = x shl 16 + width, ecx = y shl 16 + height, edx = the id, esi =
+; the colour: a kernel button with a square frame in the border colour of
+; a button, as the kernel leaves its corners out
+button_box:
+        call    define_button
+        mov     edx, [buttonBorder]
+        jmp     frame
+
+; ebx = x shl 16 + width, ecx = y shl 16 + height, edx = the id and the
+; flags, esi = the colour: a kernel button of this size; keeps ebx, ecx
+define_button:
+        dec     ebx                     ; the button is 1 pixel bigger than given
+        dec     ecx
+        mcall   SF_DEFINE_BUTTON
+        inc     ebx
+        inc     ecx
+        ret
+
+; ebx = x shl 16 + width, ecx = y shl 16 + height, edx = the colour of the
+; frame: a field, the frame then sunken inside: the inner lines of a
+; button reversed, three boxes, each 1 pixel smaller, leave darker lines
+; left and top and lighter right and bottom
+sunken_box:
+        call    frame
+        add     ebx, (1 shl 16) - 2
+        add     ecx, (1 shl 16) - 2
+        mov     edx, [sc.work_light]
+        mov     eax, edx
+        shr     eax, 3
+        and     eax, 0x1F1F1F
+        sub     edx, eax                ; 1/8 darker
+        mcall   SF_DRAW_RECT
+        mov     edx, [sc.work_light]
+        or      edx, 0x1F1F1F           ; lighter
+        add     ebx, (1 shl 16) - 1
+        add     ecx, (1 shl 16) - 1
+        mcall   SF_DRAW_RECT
+        dec     ebx
+        dec     ecx
+        mcall   SF_DRAW_RECT, , , [sc.work_light]
+        ret
+
+; ebx = x shl 16 + width, ecx = y shl 16 + height, edx = the colour: a
+; line of a pixel round the box; keeps ebx, ecx
+frame:
+        ; the top and the bottom line, the bottom one height - 1 lower
+        push    ecx
+        mov     cx, 1
+        mcall   SF_DRAW_RECT
+        mov     eax, [esp]
+        shl     eax, 16
+        sub     eax, 1 shl 16
+        add     ecx, eax
+        mcall   SF_DRAW_RECT
+        pop     ecx
+
+        ; the left and the right line, the right one width - 1 further
+        push    ebx
+        mov     bx, 1
+        mcall   SF_DRAW_RECT
+        mov     eax, [esp]
+        shl     eax, 16
+        sub     eax, 1 shl 16
+        add     ebx, eax
+        mcall   SF_DRAW_RECT
+        pop     ebx
+        ret
 
 ; edx = the string number ecx of the window language
 get_text:
@@ -380,14 +452,14 @@ ROW_H           = 24
 ROW_STEP        = ROW_H + GAP
 TEXT_DY         = (ROW_H - FONT_CAPS_H)/2 - FONT_CAPS_Y ; the capitals centred in a row
 
-; the rows: the label, the value box, the '-' and '+' buttons sharing a
-; border
+; the rows: the label, the value box, the '-' and '+' buttons; the box
+; and the buttons share their borders
 LABEL_CHARS     = 20                    ; the longest label, Spanish
 VALUE_CHARS     = 10                    ; the longest value, 'Українська'
 LABEL_X         = GAP
 VALUE_X         = LABEL_X + LABEL_CHARS*FONT_CHAR_W + GAP
 VALUE_W         = GAP + VALUE_CHARS*FONT_CHAR_W + GAP
-BUTTON1_X       = VALUE_X + VALUE_W
+BUTTON1_X       = VALUE_X + VALUE_W - 1 ; over the last column of the field
 BUTTON2_X       = BUTTON1_X + ROW_H - 1
 CLIENT_W        = BUTTON2_X + ROW_H + GAP
 
@@ -401,6 +473,9 @@ CHECK_Y         = GROUP.Y + GROUP_TOP   ; the row of the checkboxes
 CHECK_SIZE      = 15
 CHECK_BOX_Y     = CHECK_Y + (ROW_H - CHECK_SIZE)/2
 CHECK_TEXT_X    = CHECK_SIZE + FONT_CHAR_W ; the label a character after the box
+ITEM_X          = GROUP.X + GROUP_FRAME_LINES + GAP
+ITEM_END        = GROUP.X + GROUP.W - GROUP_FRAME_LINES - GAP
+CLIENT_H        = GROUP.Y + GROUP.H + GAP
 
 ; the tick: from TICK_X1, TICK_Y1 down to TICK_X2, TICK_Y2, then up to
 ; TICK_X3, TICK_Y3, in the inside of the box
@@ -410,9 +485,6 @@ TICK_X3         = 10
 TICK_Y1         = CHECK_BOX_Y + 1 + 6
 TICK_Y2         = CHECK_BOX_Y + 1 + 9
 TICK_Y3         = CHECK_BOX_Y + 1 + 4
-ITEM_X          = GROUP.X + GROUP_FRAME_LINES + GAP
-ITEM_END        = GROUP.X + GROUP.W - GROUP_FRAME_LINES - GAP
-CLIENT_H        = GROUP.Y + GROUP.H + GAP
 
 ; window
 WINDOW_W        = CLIENT_W + 9          ; borders 5 + 5, the kernel adds a pixel
@@ -420,7 +492,8 @@ WINDOW_H        = CLIENT_H + 4          ; border 5, the same pixel; redraw adds 
 WINDOW_STYLE    = 0x34000000            ; skinned, fixed size, caption, client coordinates
 
 ; controls
-ROWS            = 3
+ROWS            = 3                     ; the language, the font smoothing, the font height
+HEIGHT_ROW      = 2                     ; the font height: the only row without texts
 CHECKS          = 3
 FIRST_ROW_BUTTON   = 10                 ; row N has '-' = 10 + N*2 and '+' = 11 + N*2
 FIRST_CHECK_BUTTON = 20
@@ -429,13 +502,14 @@ GROUP_USES      = GROUP_USE_UTF8 + GROUP_USE_REGULAR + GROUP_USE_TOP ; what grou
 
 ; ====================================================================
 
-@IMPORT:
+data import
 library libini, "libini.obj"
 import  libini, \
         ini.get_str, "ini_get_str", \
         ini.get_int, "ini_get_int", \
         ini.set_str, "ini_set_str", \
         ini.set_int, "ini_set_int"
+end data
 
 ; the group of the checkboxes, its title set for the window language
 checkGroup:
@@ -447,7 +521,6 @@ struct ROW_LIMITS
         min             dd ?
         max             dd ?
 ends
-assert sizeof.ROW_LIMITS = 3*4
 
 align 4
 rows:
@@ -478,7 +551,6 @@ assert $ - glyphs = ROWS*4
 languageNames   db      'English', 0, 'Suomi', 0, 'Deutsch', 0, 'Русский', 0
                 db      'Français', 0, 'Eesti', 0, 'Українська', 0, 'Italiano', 0
                 db      'Vlaams', 0, 'Español', 0, 'Català', 0
-
 
 ; ====================================================================
 
