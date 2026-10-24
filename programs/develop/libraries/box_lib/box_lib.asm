@@ -180,7 +180,6 @@ endp
 
 ;для работы с KPCK
 IncludeIGlobals
-IncludeUGlobals
 
 align 16
 EXPORTS:
@@ -414,3 +413,7 @@ sz_tooltip_delete		db 'tooltip_delete', 0
 sz_tooltip_test_show	db 'tooltip_test_show', 0
 sz_tooltip_mouse		db 'tooltip_mouse', 0
 sz_get_font_size		db 'get_font_size', 0
+
+; uninitialized data: zeroed by the loader, not stored in the file
+section '.udata' data readable writable align 16
+IncludeUGlobals
