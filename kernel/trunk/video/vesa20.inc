@@ -183,7 +183,7 @@ virtual at esp
    .dst_bpp     dd      ?
    .mask        dd      ?
    .row         dd      ?
-   .stack_data = 4*21
+   .stack_data = $ - putimg
    .edi         dd      ?
    .esi         dd      ?
    .ebp         dd      ?
@@ -356,7 +356,6 @@ put_image_end:
         dec     edi
         jnz     .new_line
 
-  .finish:
         add     esp, putimg.stack_data
         popad
 
@@ -430,7 +429,7 @@ putimage_row_cursor:
         ret
 
 ;------------------------------------------------------------------------------
-; the bit position a 1, 2 or 4bpp getter carries between calls
+; esi, edx, ebp to the next row; a 1, 2 or 4bpp getter starts its bits anew
 
 align 4
 putimage_next_row:
@@ -447,7 +446,8 @@ putimage_next_row:
 
 ;------------------------------------------------------------------------------
 ; esi = source, edx = framebuffer offset, ebp = window map, ecx = width, bl = slot
-; esi, edx, ebp come back advanced by one row; putimg refs carry +16
+; esi, edx, ebp come back past the row; putimg refs carry +8, +12 with the run
+; start pushed
 
 align 4
 putimage_row:
@@ -476,11 +476,11 @@ putimage_row:
   .skip_tail:
         jecxz   .skip_go        ; the dwords took the whole row
   .skip_scan:
+        cmp     [ebp], bl
+        je      .skip_go
         inc     ebp
         dec     ecx
-        jz      .skip_go
-        cmp     [ebp], bl
-        jne     .skip_scan
+        jnz     .skip_scan
   .skip_go:
         mov     edx, [putimg.skip + 12]
         jmp     .go
@@ -551,6 +551,9 @@ putimage_skip_getter:
         jnz     .one
         ret
 
+; esi = source, edi = framebuffer, ecx = pixels, nonzero; both come back past
+; the run. putimg refs here carry +16, or +20 with something pushed
+
 align 4
 putimage_conv_16_16:
 ; the getter 565 is the screen 565, so the pixels travel untouched
@@ -587,7 +590,7 @@ align 4
 putimage_conv_24_32:
 ; a dword read takes a byte of the next pixel, so the last four go slow
         cmp     ecx, 5
-        jb      .tail
+        jb      .one
   .four:
         mov     eax, [esi]
         and     eax, 0x00FFFFFF
@@ -606,7 +609,6 @@ putimage_conv_24_32:
         sub     ecx, 4
         cmp     ecx, 5
         jae     .four
-  .tail:
   .one:
         movzx   eax, byte [esi + 2]
         shl     eax, 16
@@ -618,19 +620,11 @@ putimage_conv_24_32:
         jnz     .one
         ret
 
-; esi = source, edi = framebuffer, ecx = pixels, nonzero; both come back past
-; the run. putimg refs here carry +16, or +20 with something pushed
-
 align 4
 putimage_conv_32_32:
         rep     movsd
         ret
 
-;------------------------------------------------------------------------------
-;------------------------------------------------------------------------------
-;------------------------------------------------------------------------------
-;------------------------------------------------------------------------------
-;------------------------------------------------------------------------------
 ;------------------------------------------------------------------------------
 align 4
 putimage_conv_any_16:
@@ -703,9 +697,6 @@ align 4
 putimage_store_32:
         mov     [LFB_BASE + edx], eax
         ret
-
-
-
 
 ;------------------------------------------------------------------------------
 ; eax = x coordinate
