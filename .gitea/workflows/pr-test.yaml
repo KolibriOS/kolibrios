@@ -18,7 +18,10 @@ on:
 jobs:
   build:
     name: 'Build (${{ matrix.lang }})'
-    runs-on: kolibri-toolchain
+    runs-on: ubuntu-latest
+    container:
+      image: git.kolibrios.org/kolibrios/toolchain-container
+
     # one parallel job per language variant
     strategy:
       matrix:
@@ -28,7 +31,7 @@ jobs:
       # shallow clone is enough: PR builds embed no revision id, and the
       # artifact name uses the short head sha (no git describe)
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: builtin:checkout
         with:
           submodules: true
           fetch-depth: 1
@@ -36,25 +39,21 @@ jobs:
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TOOLCHAIN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-      # cache the toolchain sources by hash to not rebuild them every time
-      - name: Get toolchain hash
-        id: toolchain-hash
-        run: |
-          a=$(find ${{ gitea.workspace }}/programs/develop/cmm/ -type f -print0 | sort -z | xargs -0 sha1sum)
-          b=$(sha1sum ${{ gitea.workspace }}/programs/develop/ktcc/bin/kos32-tcc)
-          c=$(find ${{ gitea.workspace }}/programs/develop/objconv/ -type f -print0 | sort -z | xargs -0 sha1sum)
-          d=$(find ${{ gitea.workspace }}/programs/other/kpack/kerpack_linux/ -type f -print0 | sort -z | xargs -0 sha1sum)
-          e=$(find ${{ gitea.workspace }}/programs/other/kpack/linux/ -type f -print0 | sort -z | xargs -0 sha1sum)
-          f=$(find ${{ gitea.workspace }}/programs/develop/clink/ -type f -print0 | sort -z | xargs -0 sha1sum)
-          echo hash=$(echo $a $b $c $d $e $f | sha1sum | awk '{print $1}') >> $GITEA_OUTPUT
-
       # restore previously cached toolchain by hash (restore-only, PRs don't save)
       - name: Restore toolchain
         id: cache-toolchain
         uses: actions/cache/restore@v4
         with:
           path: /home/autobuild
-          key: kolibri-toolchain-${{ steps.toolchain-hash.outputs.hash }}
+          key: |
+            kolibri-toolchain-${{ hashFiles(
+              './programs/develop/cmm/**',
+              './programs/develop/ktcc/bin/kos32-tcc',
+              './programs/develop/objconv/**',
+              './programs/other/kpack/kerpack_linux/**',
+              './programs/other/kpack/linux/**',
+              './programs/develop/clink/**'
+            ) }}
 
       # build toolchain if cache miss or obsolote
       - name: Build and install C--
@@ -190,22 +189,25 @@ jobs:
 
       #publish the three images, named by PR number + sha
       - name: Upload floppy image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.img
           path: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.img
+          archive: false
           retention-days: 2
 
       - name: Upload CD image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.iso
           path: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.iso
+          archive: false
           retention-days: 2
 
       - name: Upload raw image
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.raw
           path: kolibrios-PR${{ gitea.event.pull_request.number }}-${{ steps.vars.outputs.sha }}-${{ matrix.lang }}.raw
+          archive: false
           retention-days: 2
