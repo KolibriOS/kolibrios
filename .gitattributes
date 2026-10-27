@@ -1,12 +1,8 @@
 # KolibriOS FASM sources and includes.
-*.asm linguist-language=Assembly
-*.ASM linguist-language=Assembly
-kernel/**/*.inc linguist-language=Assembly
-kernel/**/*.INC linguist-language=Assembly
-drivers/**/*.inc linguist-language=Assembly
-drivers/**/*.INC linguist-language=Assembly
-programs/**/*.inc linguist-language=Assembly
-programs/**/*.INC linguist-language=Assembly
+*.[aA][sS][mM] linguist-language=Assembly
+kernel/**/*.[iI][nN][cC] linguist-language=Assembly
+drivers/**/*.[iI][nN][cC] linguist-language=Assembly
+programs/**/*.[iI][nN][cC] linguist-language=Assembly
 skins/**/*.inc linguist-language=Assembly
 data/**/*.inc linguist-language=Assembly
 contrib/C_Layer/ASM/**/*.inc linguist-language=Assembly
