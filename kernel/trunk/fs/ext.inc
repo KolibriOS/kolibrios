@@ -152,7 +152,9 @@ UUID                rb  16
 volumeLabel         rb  16
 lastMounted         rb  64
 algorithmBitmap     dd  ?
-preallocFields      dd  ?
+preallocBlocks      db  ?
+preallocDirBlocks   db  ?
+reservedGdtBlocks   dw  ?
 journalUUID         rb  16
 journalInode        dd  ?
 journalDevice       dd  ?
@@ -262,6 +264,10 @@ RO_COMPAT_METADATA_CSUM     = 400h
 READ_ONLY_SUPPORT = RO_COMPAT_SPARSE_SUPER or RO_COMPAT_LARGE_FILE or RO_COMPAT_HUGE_FILE or RO_COMPAT_DIR_NLINK or RO_COMPAT_EXTRA_ISIZE or RO_COMPAT_METADATA_CSUM
 
 CSUM_FLAGS = RO_COMPAT_GDT_CSUM or RO_COMPAT_METADATA_CSUM
+
+; Block group descriptor flags (BGDESCR.flags)
+EXT4_BG_INODE_UNINIT  = 1h
+EXT4_BG_BLOCK_UNINIT  = 2h
 
 struct EXTFS PARTITION
 Lock                MUTEX
@@ -784,6 +790,181 @@ extfsExtentFree:
         add     esp, 4
         jmp     .ret
 
+; out: edi = tempBlockBuffer (buffer zeroed)
+; clobbers: eax, ecx, edi
+proc extfsZeroTempBlock
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
+        xor     eax, eax
+        rep stosd
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        ret
+endp
+
+; in: eax = BGDESCR pointer
+; out: eax = groupStart, ecx = groupIndex
+; clobbers: edx
+proc extfsGroupStart
+        sub     eax, [ebp+EXTFS.descriptorTable]
+        mov     cl, [ebp+EXTFS.descShift]
+        shr     eax, cl
+        mov     ecx, eax
+        mul     [ebp+EXTFS.superblock.blocksPerGroup]
+        add     eax, [ebp+EXTFS.superblock.firstGroupBlock]
+        ret
+endp
+
+; in: eax = byte size (>0)
+; out: eax = block count (ceiling division by block size)
+; clobbers: ecx
+proc extfsBytesToBlocksCeil
+        mov     ecx, [ebp+EXTFS.superblock.sectorsPerBlockLog]
+        add     cl, 10
+        dec     eax
+        shr     eax, cl
+        inc     eax
+        ret
+endp
+
+; in: eax = start bit index, ecx = number of bits to set, edi = bitmap buffer
+; out: eax = start + count
+; clobbers: ecx
+proc extfsSetBitRange
+@@:
+        bts     [edi], eax
+        inc     eax
+        dec     ecx
+        jnz     @b
+        ret
+endp
+
+proc extfsGroupHasSuperblock
+; in: ecx = group index
+; out: eax = 1 if has superblock, 0 otherwise
+; clobbers: edx
+; with sparse_super, only groups 0, 1 and powers of 3, 5 and 7 have one
+        test    [ebp+EXTFS.superblock.RO_compatibleFlags], RO_COMPAT_SPARSE_SUPER
+        jz      .yes
+        cmp     ecx, 1
+        jbe     .yes
+        mov     edx, 3
+.base:
+        mov     eax, edx
+.power:
+        cmp     eax, ecx
+        je      .yes
+        ja      .next_base
+        imul    eax, edx
+        jmp     .power
+.next_base:
+        add     edx, 2
+        cmp     edx, 7
+        jbe     .base
+        jmp     .no
+.yes:
+        mov     eax, 1
+        ret
+.no:
+        xor     eax, eax
+        ret
+endp
+
+proc extfsInitBlockBitmap
+; Synthesises a block bitmap for groups with EXT4_BG_BLOCK_UNINIT set.
+; in: ebx = BGDESCR
+; out: edi = tempBlockBuffer, eax = 0, CF = 0
+; clobbers: eax, ecx, edx, esi, edi
+        call    extfsZeroTempBlock
+
+        mov     eax, ebx
+        call    extfsGroupStart
+        mov     esi, eax                ; esi = first block of this group
+
+; Mark superblock + GDT (sparse_super: only certain groups have backups)
+        call    extfsGroupHasSuperblock
+        test    eax, eax
+        jz      .meta
+
+        mov     eax, [ebp+EXTFS.descriptorTableEnd]
+        sub     eax, [ebp+EXTFS.descriptorTable]
+        call    extfsBytesToBlocksCeil
+        inc     eax                     ; +1 for the superblock itself
+        movzx   edx, [ebp+EXTFS.superblock.reservedGdtBlocks]
+        add     eax, edx
+
+        mov     ecx, eax
+        xor     eax, eax
+        call    extfsSetBitRange
+
+.meta:
+; Mark block bitmap, inode bitmap, inode table
+        mov     eax, [ebx+BGDESCR.blockBitmap_lo]
+        sub     eax, esi
+        cmp     eax, [ebp+EXTFS.superblock.blocksPerGroup]
+        jae     @f
+        bts     [edi], eax
+@@:
+        mov     eax, [ebx+BGDESCR.inodeBitmap_lo]
+        sub     eax, esi
+        cmp     eax, [ebp+EXTFS.superblock.blocksPerGroup]
+        jae     @f
+        bts     [edi], eax
+@@:
+        mov     eax, [ebx+BGDESCR.inodeTable_lo]
+        sub     eax, esi
+        cmp     eax, [ebp+EXTFS.superblock.blocksPerGroup]
+        jae     .pad_end
+
+        push    eax
+        mov     eax, [ebp+EXTFS.superblock.inodesPerGroup]
+        movzx   edx, word [ebp+EXTFS.superblock.inodeSize]
+        mul     edx
+        call    extfsBytesToBlocksCeil
+        mov     ecx, eax
+        pop     eax
+; the table must not run past the end of this group's bitmap
+        mov     edx, [ebp+EXTFS.superblock.blocksPerGroup]
+        sub     edx, eax
+        cmp     ecx, edx
+        jbe     @f
+        mov     ecx, edx
+@@:
+        call    extfsSetBitRange
+
+.pad_end:
+; Last group may be shorter than blocksPerGroup; pad trailing bits with 1s
+        mov     eax, [ebp+EXTFS.superblock.blocksTotal_lo]
+        sub     eax, esi
+        cmp     eax, [ebp+EXTFS.superblock.blocksPerGroup]
+        jae     .done
+
+        mov     ecx, [ebp+EXTFS.superblock.blocksPerGroup]
+        sub     ecx, eax
+        call    extfsSetBitRange
+
+.done:
+        xor     eax, eax
+        ret
+endp
+
+proc extfsInitInodeBitmap
+; out: edi = tempBlockBuffer, eax = 0, CF = 0 / clobbers: eax, ecx, edi
+        call    extfsZeroTempBlock
+
+        mov     eax, [ebp+EXTFS.superblock.inodesPerGroup]
+        shr     eax, 3                      ; bits -> bytes
+        mov     ecx, [ebp+EXTFS.bytesPerBlock]
+        sub     ecx, eax
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        add     edi, eax
+        mov     al, 0FFh
+        rep stosb
+
+        mov     edi, [ebp+EXTFS.tempBlockBuffer]
+        xor     eax, eax
+        ret
+endp
+
 extfsInodeAlloc:
 ; in: eax = parent inode number
 ; out: ebx = allocated inode number
@@ -807,12 +988,19 @@ extfsInodeAlloc:
         jz      .next
         dec     [ebx+BGDESCR.inodesFree_lo]
         dec     [ebp+EXTFS.superblock.inodesFree_lo]
-        mov     eax, [ebx+BGDESCR.inodeBitmap_lo]
+        mov     edx, [ebx+BGDESCR.inodeBitmap_lo]
+        test    [ebx+BGDESCR.flags], EXT4_BG_INODE_UNINIT
+        jz      .read_inode_bitmap
+        call    extfsInitInodeBitmap
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
-        mov     edx, eax
+        jmp     .inode_bitmap_ready
+.read_inode_bitmap:
+        mov     eax, edx
+        mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         mov     edi, ebx
         call    extfsReadBlock
         jc      .fail
+.inode_bitmap_ready:
         mov     ecx, [ebp+EXTFS.superblock.inodesPerGroup]
         or      eax, -1
         shr     ecx, 5
@@ -844,6 +1032,7 @@ extfsInodeAlloc:
 
         push    ebx edx ecx
         mov     ebx, [esp+12]
+        and     [ebx+BGDESCR.flags], not EXT4_BG_INODE_UNINIT
         call    calc_inode_bitmap_csum
         call    extfsWriteDescriptor
         pop     ecx edx ebx
@@ -911,12 +1100,19 @@ extfsExtentAlloc:
         push    ebx
         cmp     [ebx+BGDESCR.blocksFree_lo], 0
         jz      .next
+        test    [ebx+BGDESCR.flags], EXT4_BG_BLOCK_UNINIT
+        jz      .read_bitmap
+        call    extfsInitBlockBitmap
+        mov     edx, [ebx+BGDESCR.blockBitmap_lo]
+        jmp     .bitmap_ready
+.read_bitmap:
         mov     eax, [ebx+BGDESCR.blockBitmap_lo]
         mov     ebx, [ebp+EXTFS.tempBlockBuffer]
         mov     edx, eax
         mov     edi, ebx
         call    extfsReadBlock
         jc      .fail5
+.bitmap_ready:
         mov     ecx, [ebp+EXTFS.superblock.blocksPerGroup]
         shr     ecx, 5
         or      eax, -1
@@ -1015,6 +1211,7 @@ extfsExtentAlloc:
         mov     [ebx+BGDESCR.blocksFree_lo], 0
 @@:
         sub     [ebp+EXTFS.superblock.blocksFree_lo], ecx
+        and     [ebx+BGDESCR.flags], not EXT4_BG_BLOCK_UNINIT
         call    calc_block_bitmap_csum
         call    extfsWriteDescriptor
         pop     eax ebx
@@ -1403,11 +1600,7 @@ indirectBlockAlloc:
         inc     ebx
         dec     ecx
         push    edi ebx ecx
-        mov     ecx, [ebp+EXTFS.dwordsPerBlock]
-        mov     edi, [ebp+EXTFS.tempBlockBuffer]
-        push    edi
-        rep stosd
-        pop     edi
+        call    extfsZeroTempBlock
 @@:
         mov     ecx, [ebp+EXTFS.dwordsPerBlock]
         sub     ecx, edx
