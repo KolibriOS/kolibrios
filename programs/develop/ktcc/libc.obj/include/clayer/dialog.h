@@ -6,12 +6,12 @@
 #define NOT_SUCCESS 0
 #define SUCCESS     1
 
-char sz_com_area_name[] = "FFFFFFFF_open_dialog";
-char sz_dir_default_path[] = "/sys";
-char sz_start_path[] = "/sys/File managers/opendial";
+static char sz_com_area_name[] = "FFFFFFFF_open_dialog";
+static char sz_dir_default_path[] = "/sys";
+static char sz_start_path[] = "/sys/File managers/opendial";
 
-char cd_com_area_name[] = "FFFFFFFF_color_dialog";
-char cd_start_path[] = "/sys/colrdial";
+static char cd_com_area_name[] = "FFFFFFFF_color_dialog";
+static char cd_start_path[] = "/sys/colrdial";
 
 enum open_dialog_mode {
     OPEN,
@@ -59,9 +59,9 @@ typedef struct {
     unsigned int color;
 } color_dialog __attribute__((__packed__));
 
-void fake_on_redraw(void) { }
+static inline void fake_on_redraw(void) { }
 
-open_dialog* kolibri_new_open_dialog(unsigned int mode, unsigned short tlx, unsigned short tly, unsigned short x_size, unsigned short y_size)
+static inline open_dialog* kolibri_new_open_dialog(unsigned int mode, unsigned short tlx, unsigned short tly, unsigned short x_size, unsigned short y_size)
 {
     open_dialog* new_opendialog = (open_dialog*)malloc(sizeof(open_dialog));
     od_filter* new_od_filter = (od_filter*)malloc(sizeof(od_filter));
@@ -92,9 +92,9 @@ open_dialog* kolibri_new_open_dialog(unsigned int mode, unsigned short tlx, unsi
     return new_opendialog;
 }
 
-void cd_fake_on_redraw(void) { }
+static inline void cd_fake_on_redraw(void) { }
 
-color_dialog* kolibri_new_color_dialog(unsigned int type, unsigned short tlx, unsigned short tly, unsigned short x_size, unsigned short y_size)
+static inline color_dialog* kolibri_new_color_dialog(unsigned int type, unsigned short tlx, unsigned short tly, unsigned short x_size, unsigned short y_size)
 {
     color_dialog* new_colordialog = (color_dialog*)malloc(sizeof(color_dialog));
     char* proc_info = (char*)calloc(1024, sizeof(char));
