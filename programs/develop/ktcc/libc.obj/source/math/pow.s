@@ -1,28 +1,19 @@
 /* Copyright (C) 1994 DJ Delorie, see COPYING.DJ for details */
-	.data
-yint: 
-	.word   0,0
-pow.LCW1:
-	.word	0
-pow.LCW2:
-	.word	0
-
-	.text
-pow.LC0:
-	.double	0d1.0e+00
 
 .global pow;
 
 frac:
-	fstcw	pow.LCW1
-	fstcw	pow.LCW2
-	fwait
-	andw	$0xf3ff,pow.LCW2
-	orw	$0x0400,pow.LCW2
-	fldcw	pow.LCW2
-	fldl	%st(0)
+	subl	$4,%esp
+	fstcw	(%esp)
+	movw	(%esp),%ax
+	andw	$0xf3ff,%ax
+	orw	$0x0400,%ax
+	movw	%ax,2(%esp)
+	fldcw	2(%esp)
+	fld	%st(0)
 	frndint
-	fldcw	pow.LCW1
+	fldcw	(%esp)
+	addl	$4,%esp
 	fxch	%st(1)
 	fsub	%st(1),%st
 	ret
@@ -30,7 +21,8 @@ frac:
 Lpow2:
 	call    frac
 	f2xm1
-	faddl	pow.LC0
+	fld1
+	faddp
 	fscale
 	fstp	%st(1)
 	ret
@@ -54,7 +46,7 @@ xltez:
 	jb	error
 	fstp	%st(0) 
 	fld1
-	fchs
+	ret
 error:
 	fsqrt
 	ret
@@ -75,11 +67,13 @@ xltz:
 	fchs
 	jmp	error
 yisint:
-	fistl	yint
+	subl	$4,%esp
+	fistl	(%esp)
 	fxch    %st(1)
 	fyl2x
 	call	Lpow2
-	andl	$1,yint
+	popl	%ecx
+	testl	$1,%ecx
 	jz	yeven
 	fchs
 yeven:

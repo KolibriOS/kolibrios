@@ -119,6 +119,7 @@
 #include "math/frexp.c"
 #include "math/hypot.c"
 #include "math/ldexp.c"
+#include "math/round.c"
 #include "math/sinh.c"
 #include "math/tanh.c"
 

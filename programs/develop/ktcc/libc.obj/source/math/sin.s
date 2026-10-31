@@ -2,9 +2,6 @@
 
 .global sin;
 
-sin.L0:
-	.quad	0xffffffffffffffff
-
 sin:
 	fldl	4(%esp)
 	fsin
@@ -12,7 +9,10 @@ sin:
 	sahf
 	jnp	sin.L1
 	fstp	%st(0)
-	fldl	sin.L0
+	pushl	$-1
+	pushl	$-1
+	fldl	(%esp)
+	addl	$8,%esp
 sin.L1:
 	ret	
 
