@@ -823,6 +823,7 @@ maxlen equ [esp + 4]
         dec    eax
         mov    ecx, maxlen
         sub    ecx, eax
+        jle    .clip
         mov    eax, "    "
         mov    edx, ecx
         shr    ecx, 2
@@ -830,6 +831,10 @@ maxlen equ [esp + 4]
         rep    stosd
         mov    ecx, edx
         rep    stosb
+        mov    [edi], byte 0
+        ret    4
+.clip:
+        add    edi, ecx
         mov    [edi], byte 0
         ret    4
 purge maxlen
