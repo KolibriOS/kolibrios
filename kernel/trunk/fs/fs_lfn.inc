@@ -461,7 +461,7 @@ file_system_lfn:
         push    edi             ; clear the whole BDFE header first
         xor     eax, eax
         mov     ecx, 40/4
-        rep     stosd
+        rep stosd
         pop     edi
         mov     dword [edi], 0x10 ; attributes: folder
         test    ebp, ebp
@@ -485,7 +485,7 @@ file_system_lfn:
         push    edi             ; clear the whole BDFE header first
         xor     eax, eax
         mov     ecx, 40/4
-        rep     stosd
+        rep stosd
         pop     edi
         mov     dword [edi], 0x10 ; attributes: folder
         and     dword[image_of_eax], 0

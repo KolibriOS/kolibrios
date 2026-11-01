@@ -108,11 +108,11 @@ ends
 
 macro load_bgd_64 dest_hi, dest_lo, base_reg, field {
     local .done
-    mov     dest_lo, [base_reg + BGDESCR.#field#_lo]
-    xor     dest_hi, dest_hi
-    cmp     [ebp+EXTFS.descShift], 6
-    jc      .done
-    mov     dest_hi, [base_reg + BGDESCR.#field#_hi]
+        mov     dest_lo, [base_reg + BGDESCR.#field#_lo]
+        xor     dest_hi, dest_hi
+        cmp     [ebp+EXTFS.descShift], 6
+        jc      .done
+        mov     dest_hi, [base_reg + BGDESCR.#field#_hi]
 .done:
 }
 
@@ -2233,11 +2233,11 @@ extfsSplitRootNode:
         push    edi
         xor     eax, eax
         mov     ecx, [ebp+EXTFS.dwordsPerBlock]
-        rep     stosd
+        rep stosd
         pop     edi
         lea     esi, [ebp+EXTFS.inodeBuffer.blockNumbers]
         mov     ecx, (sizeof.NODEHEADER + 4*sizeof.EXTENT) / 4
-        rep     movsd
+        rep movsd
         mov     edi, [ebp+EXTFS.tempBlockBuffer]
         mov     ax, [ebp+EXTFS.computedNodeMax]
         mov     [edi+NODEHEADER.entriesMax], ax
@@ -2283,7 +2283,7 @@ extfsCreateLeafNode:
         mov     edi, esi
         xor     eax, eax
         mov     ecx, [ebp+EXTFS.dwordsPerBlock]
-        rep     stosd
+        rep stosd
         mov     [esi+NODEHEADER.magic], 0xF30A
         mov     [esi+NODEHEADER.currentDepth], 0
         mov     [esi+NODEHEADER.entriesFolow], 1
@@ -2560,7 +2560,7 @@ extfsExtendExtent:
         mov     ecx, [ebp+EXTFS.dwordsPerBlock]
         sub     ecx, sizeof.NODEHEADER / 4
         xor     eax, eax
-        rep     stosd
+        rep stosd
 
         mov     [esi+NODEHEADER.entriesFolow], 1
         mov     edx, [esp+8]
@@ -3249,14 +3249,14 @@ findInode:
         xor     ecx, ecx
         dec     ecx
         xor     eax, eax
-        repnz   scasb
+        repnz scasb
         not     ecx
         lea     eax, [ebp+EXTFS.symlink_workspace + maxPathLength]
         sub     eax, [esp]
         cmp     ecx, eax
         pop     edi
         ja      .error
-        rep     movsb
+        rep movsb
 
 .symlink_check_type:
         lea     esi, [ebp+EXTFS.symlink_workspace]
