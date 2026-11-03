@@ -2,8 +2,8 @@
 #define _CTYPE_H_
 /*
 ** All character classification functions except isascii().
-** Integer argument (c) must be in ASCII range (0-127) for
-** dependable answers.
+** Integer argument (c) is EOF or a value of unsigned char (0-255),
+** as C requires; the characters from 128 on are in no class.
 */
 
 #include <stddef.h>
@@ -21,7 +21,7 @@
 #define __XDIGIT 1024
 
 #ifdef _BUILD_LIBC
-extern unsigned short __is[129];
+extern unsigned short __is[257];
 #else
 extern unsigned short* __is;
 #endif
