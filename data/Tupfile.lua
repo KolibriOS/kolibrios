@@ -732,7 +732,6 @@ end -- tup.getconfig('NO_CMM') ~= 'full'
 if tup.getconfig('NO_MSVC') ~= 'full' then
 tup.append_table(img_files, {
  {"GRAPH", VAR_PROGS .. "/other/graph/graph"},
- {"TABLE", VAR_PROGS .. "/other/table/table"},
  {"GAMES/KOSILKA", VAR_PROGS .. "/games/kosilka/kosilka"},
  {"GAMES/RFORCES", VAR_PROGS .. "/games/rforces/rforces"},
  {"GAMES/XONIX", VAR_PROGS .. "/games/xonix/xonix"},
