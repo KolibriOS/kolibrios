@@ -752,6 +752,7 @@ tup.append_table(img_files, {
  {"SHELL", VAR_PROGS .. "/system/shell/shell"},
  {"GAMES/DINO", VAR_PROGS .. "/games/dino/dino"},
  {"GAMES/FLPYBIRD", VAR_PROGS .. "/games/flpybird/flpybird"},
+ {"TABLE", VAR_PROGS .. "/other/table/table"},
 })
 end -- tup.getconfig('NO_FASM') ~= 'full'
 tup.append_table(img_files, {
