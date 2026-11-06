@@ -45,9 +45,9 @@
 
 // 'ftoa' conversion buffer size, this must be big enough to hold one converted
 // float number including padded zeros (dynamically created on stack)
-// default: 32 byte
+// default: 64 byte
 #ifndef PRINTF_FTOA_BUFFER_SIZE
-#define PRINTF_FTOA_BUFFER_SIZE    32U
+#define PRINTF_FTOA_BUFFER_SIZE    64U
 #endif
 
 // support for the floating point type (%f)
