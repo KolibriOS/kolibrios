@@ -21,17 +21,67 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           sparse-checkout: |
             kernel/trunk
             .gitea/utils
 
       - name: Check codestyle
         run: |
-          find kernel/trunk \
-            \( -iname '*.asm' -or -iname '*.inc' \) \
-            -exec sh -c '
+            base='${{ gitea.event.pull_request.base.sha }}'
+            tmp=$(mktemp -d)
+            export summary="${GITEA_STEP_SUMMARY:-${GITHUB_STEP_SUMMARY:-}}"
+
+            git diff -z --name-only --diff-filter=ACMR "$base...HEAD" >  "$tmp/all" || exit 1
+
+            if grep -zqxF -e '.gitea/utils/check-kernel-codestyle.py' -e '.gitea/workflows/kernel-check.yaml' "$tmp/all"; then
+                find kernel/trunk \( -iname "*.asm" -o -iname '*.inc' \) -print0 > "$tmp/files"
+            else
+                grep -ziE '^kernel/trunk/.*\.(asm|inc)$' "$tmp/all" > "$tmp/files" || [ $? -eq 1 ]
+            fi
+
+            [ -s "$tmp/files" ] || { echo 'No changes'; exit 0; }
+            xargs -0 -r sh -c '
+              report=$(mktemp)
+              trap "rm -f \"$report\"" EXIT
+
+              server_url="${GITHUB_SERVER_URL:-}"
+              repository="${GITHUB_REPOSITORY:-}"
+              sha="${GITHUB_SHA:-}"
+
+              failed=0
+              failed_files=0
               for file do
                 echo "$file"
-                python3 .gitea/utils/check-kernel-codestyle.py "$file"
+                if ! output=$(python3 .gitea/utils/check-kernel-codestyle.py "$file" 2>&1); then
+                  echo "FAILED: $file"
+                  printf "%s\n" "$output" >&2
+                  if [ -n "$server_url" ] && [ -n "$repository" ] && [ -n "$sha" ]; then
+                    file_url="${server_url%/}/$repository/src/commit/$sha/$file"
+                    file_title="[$file](<$file_url>)"
+                  else
+                    file_title="$file"
+                  fi
+                  {
+                    echo "### $file_title"
+                    echo
+                    echo "~~~text"
+                    printf "%s\n" "$output"
+                    echo "~~~"
+                    echo
+                  } >> "$report"
+                  failed=1
+                  failed_files=$((failed_files + 1))
+                fi
               done
-            ' sh {} +
+
+              if [ "$failed" -ne 0 ] && [ -n "$summary" ]; then
+                {
+                  echo "Codestyle errors found in $failed_files file(s)."
+                  echo
+                  cat "$report"
+                } >> "$summary"
+              fi
+
+              exit "$failed"
+            ' sh < "$tmp/files"
