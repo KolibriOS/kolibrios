@@ -6,10 +6,19 @@ pow10:
 	fldl	4(%esp)
 	fldl2t
 	fmulp
+	fxam
+	fnstsw	%ax
+	andb	$0x45,%ah
+	cmpb	$0x05,%ah
+	jne	pow10.L1
+	fldz
+	jmp	pow10.L2
+pow10.L1:
 	fld	%st(0)
 	frndint
 	fxch	%st(1)
 	fsub	%st(1),%st
+pow10.L2:
 	f2xm1
 	fld1
 	faddp
