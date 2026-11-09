@@ -45,9 +45,9 @@
 
 // 'ftoa' conversion buffer size, this must be big enough to hold one converted
 // float number including padded zeros (dynamically created on stack)
-// default: 32 byte
+// default: 64 byte
 #ifndef PRINTF_FTOA_BUFFER_SIZE
-#define PRINTF_FTOA_BUFFER_SIZE    32U
+#define PRINTF_FTOA_BUFFER_SIZE    64U
 #endif
 
 // support for the floating point type (%f)
@@ -69,9 +69,9 @@
 #endif
 
 // define the largest float suitable to print with %f
-// default: 1e9
+// default: 1e18
 #ifndef PRINTF_MAX_FLOAT
-#define PRINTF_MAX_FLOAT  1e9
+#define PRINTF_MAX_FLOAT  1e18
 #endif
 
 // support for the long long types (%llu or %p)
@@ -340,7 +340,7 @@ static size_t _ftoa(out_fct_type out, char* buffer, size_t idx, size_t maxlen, d
     prec--;
   }
 
-  int whole = (int)value;
+  unsigned long long whole = (unsigned long long)value;
   double tmp = (value - whole) * pow10[prec];
   unsigned long frac = (unsigned long)tmp;
   diff = tmp - frac;
