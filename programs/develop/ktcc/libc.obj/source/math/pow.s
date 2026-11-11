@@ -1,41 +1,49 @@
 /* Copyright (C) 1994 DJ Delorie, see COPYING.DJ for details */
-	.data
-yint: 
-	.word   0,0
-pow.LCW1:
-	.word	0
-pow.LCW2:
-	.word	0
-
-	.text
-pow.LC0:
-	.double	0d1.0e+00
 
 .global pow;
 
 frac:
-	fstcw	pow.LCW1
-	fstcw	pow.LCW2
-	fwait
-	andw	$0xf3ff,pow.LCW2
-	orw	$0x0400,pow.LCW2
-	fldcw	pow.LCW2
-	fldl	%st(0)
+	fld	%st(0)
 	frndint
-	fldcw	pow.LCW1
 	fxch	%st(1)
 	fsub	%st(1),%st
 	ret
 
 Lpow2:
+	fxam
+	fnstsw	%ax
+	andb	$0x45,%ah
+	cmpb	$0x05,%ah
+	jne	pow.L1
+	fldz
+	jmp	pow.L2
+pow.L1:
 	call    frac
+pow.L2:
 	f2xm1
-	faddl	pow.LC0
+	fld1
+	faddp
 	fscale
 	fstp	%st(1)
 	ret
 
 pow:
+	movl	16(%esp),%eax
+	andl	$0x7fffffff,%eax
+	movl	%eax,%ecx
+	orl	12(%esp),%ecx
+	jz	one
+	cmpl	$0,4(%esp)
+	jne	xnot1
+	cmpl	$0x3ff00000,8(%esp)
+	je	one
+	cmpl	$0xbff00000,8(%esp)
+	jne	xnot1
+	cmpl	$0x7ff00000,%eax
+	jne	xnot1
+	cmpl	$0,12(%esp)
+	je	one
+xnot1:
 	fldl	12(%esp)
 	fldl	4(%esp)
 	ftst	
@@ -51,10 +59,13 @@ xltez:
 	fnstsw	%ax
 	sahf
 	ja	ygtz
-	jb	error
-	fstp	%st(0) 
-	fld1
-	fchs
+	jp	error
+	fstp	%st(0)
+	pushl	$0x7ff00000
+	pushl	$0
+	fldl	(%esp)
+	addl	$8,%esp
+	ret
 error:
 	fsqrt
 	ret
@@ -75,13 +86,18 @@ xltz:
 	fchs
 	jmp	error
 yisint:
-	fistl	yint
+	subl	$4,%esp
+	fistl	(%esp)
 	fxch    %st(1)
 	fyl2x
 	call	Lpow2
-	andl	$1,yint
+	popl	%ecx
+	testl	$1,%ecx
 	jz	yeven
 	fchs
 yeven:
+	ret
+one:
+	fld1
 	ret
 

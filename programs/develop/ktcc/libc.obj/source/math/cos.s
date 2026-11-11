@@ -1,6 +1,3 @@
-cos.L0:
-	.quad	0xffffffffffffffff
-
 .global cos;
 
 cos:
@@ -10,7 +7,10 @@ cos:
 	sahf
 	jnp	cos.L1
 	fstp	%st(0)
-	fldl	cos.L0
+	pushl	$-1
+	pushl	$-1
+	fldl	(%esp)
+	addl	$8,%esp
 
 cos.L1:
 	ret

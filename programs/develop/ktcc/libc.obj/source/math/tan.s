@@ -2,9 +2,6 @@
 
 .global tan;
 
-tan.L0:
-	.quad	0xffffffffffffffff
-
 tan:
 	fldl	4(%esp)
 	fptan
@@ -13,6 +10,9 @@ tan:
 	sahf
 	jnp	tan.L1
 	fstp	%st(0) /*- if exception, there is nothing on the stack */
-	fldl	tan.L0
+	pushl	$-1
+	pushl	$-1
+	fldl	(%esp)
+	addl	$8,%esp
 tan.L1:
 	ret

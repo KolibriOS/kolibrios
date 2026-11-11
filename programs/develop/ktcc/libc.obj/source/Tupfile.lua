@@ -10,7 +10,6 @@ INCLUDES = " -I../include"
 GAS_SRC = {
     "setjmp/setjmp.s",
     "setjmp/longjmp.s",
-    "math/round.s",
     "math/atan.s",
     "math/pow2.s",
     "math/log10.s",
