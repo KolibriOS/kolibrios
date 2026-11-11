@@ -225,14 +225,59 @@ restart_code_start:
 org 0x50000
 
         cmp     [BOOT_LO.shutdown_type], SYSTEM_RESTART
-        jne     @F
+        jne     .leave_protected_mode
 
         mov     esi, _CLEAN_ZONE-OS_BASE
         mov     edi, 0x10000
         mov     ecx, 0x31000/4
         cld
         rep movsd
+
+if defined extended_primary_loader
+; uefi4kos and the extended primary loader give no restart block; the new
+; KERNEL.MNT is the BIOS build, it takes /sys from sys_disk
+        mov     [BOOT_LO.kernel_restart], 0
+        mov     [BOOT_LO.sys_disk], 'r1'
+end if
+
+; no restart block: the real mode code of the new kernel needs the BIOS, so
+; enter it at B32, as uefi4kos does, keeping the ramdisk in memory
+        cmp     [BOOT_LO.kernel_restart], 0
+        jne     .leave_protected_mode
+        cmp     [BOOT_LO.rd_load_from], RD_LOAD_FROM_NONE
+        je      @f
+        mov     [BOOT_LO.rd_load_from], RD_LOAD_FROM_MEMORY
 @@:
+        xor     eax, eax
+        mov     cr4, eax                ; the new kernel sets what it uses
+        lgdt    [.gdt32]                ; B32 loads os_stack from it
+        mov     eax, KERNEL_BASE
+        add     eax, [eax+kernel_header.b32_offset]
+        jmp     eax
+
+align 8
+.gdt32:
+; selector 0 - not used
+        dw      23
+        dd      .gdt32
+        dw      0
+; selector 8 - os_code, flat 32-bit code
+        dw      0FFFFh
+        dw      0
+        db      0
+        db      10011010b
+        db      11001111b
+        db      0
+; selector 10h - os_stack, flat 32-bit data
+        dw      0FFFFh
+        dw      0
+        db      0
+        db      10010010b
+        db      11001111b
+        db      0
+assert os_code = 8 & os_stack = 10h
+
+.leave_protected_mode:
 
         xor     ebx, ebx
         xor     edx, edx

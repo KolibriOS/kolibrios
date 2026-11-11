@@ -282,6 +282,8 @@ else
         cld
         push    0
         pop     es
+; no restart block unless the loader gives one (see shutdown.inc)
+        mov     word [es:BOOT_LO.kernel_restart], 0
 ; if bootloader sets ax = 'KL', then ds:si points to loader block
         cmp     ax, 'KL'
         jnz     @f
