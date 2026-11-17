@@ -70,8 +70,20 @@ fs_add:
         ; check all disks
         mov     esi, [disk_list]
 .new_disk:
-        cmp     dword[esi], disk_list
+        cmp     esi, disk_list
         jz      .end
+        push    edx                               ; the mutex calls change edx
+        lea     ecx, [esi + DISK.MediaLock]       ; test and reference under MediaLock,
+        call    mutex_lock                        ; as fs_dyndisk does
+        cmp     [esi + DISK.MediaInserted], 0     ; no medium: NumPartitions not valid
+        jz      @f
+        lock inc [esi + DISK.MediaRefCount]       ; hold a media reference while we walk
+@@:
+        call    mutex_unlock                      ; keeps the flags
+        pop     edx
+        jz      .next_disk
+        cmp     [esi + DISK.NumPartitions], 0     ; medium present but no partitions
+        jz      .deref_next
 
         push    edx
         mov     eax, [esi + DISK.MediaInfo.SectorSize]
@@ -79,7 +91,7 @@ fs_add:
         stdcall kernel_alloc, eax   ;get buffer
         test    eax, eax
         pop     edx
-        jz      .end ; no memory
+        jz      .deref_end ; no memory
         mov     ebx, eax
 
         mov     ecx, [esi + DISK.NumPartitions]
@@ -121,9 +133,17 @@ fs_add:
         push    edx
         stdcall kernel_free, ebx
         pop     edx
-
+.deref_next:
+        push    edx
+        call    disk_media_dereference
+        pop     edx
+.next_disk:
         mov     esi, [esi]
         jmp     .new_disk
+.deref_end:
+        push    edx
+        call    disk_media_dereference
+        pop     edx
 .end:
 .err:
         ret
