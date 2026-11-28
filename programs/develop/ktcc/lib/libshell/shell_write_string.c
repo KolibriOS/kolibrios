@@ -14,11 +14,13 @@ size_t shell_write_string(const char *s, size_t len)
         }
         else
         {
+            __shell_lock(&(__shell_shm->shm_lock));
             memset(__shell_shm->data, 0, sizeof(__shell_shm->data)); // without int shell show \t, \n, lose chars and other trash
             memcpy(__shell_shm->data, s, len);
             __shell_shm->cmd = SHELL_PUTS;
             __SHELL_WAIT();
             written_bytes += __shell_shm->return_value.written_bytes;
+            __shell_unlock(&(__shell_shm->shm_lock));
         }
 
         return written_bytes;

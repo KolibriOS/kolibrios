@@ -37,11 +37,26 @@ struct return_value {
 };
 
 struct shell_shm_buffer {
-    uint8_t cmd;
-    char data[SHELL_SHM_MAX - sizeof(((struct shell_shm_buffer*)NULL)->cmd) - sizeof(struct return_value)];
+    volatile uint8_t cmd;
+    char data[SHELL_SHM_MAX - sizeof(((struct shell_shm_buffer*)NULL)->cmd) - sizeof(struct return_value) - sizeof(volatile int32_t)];
     struct return_value return_value;
+    volatile int32_t shm_lock;                 /*0 free, 1 held*/
 };
 #pragma pack(pop)
+
+static inline void __shell_lock(volatile int32_t * lock) {
+    int32_t v;
+    for (;;) {
+        v = 1;
+        asm volatile("xchgl %0, %1":"+r"(v),"+m"(*lock)::"memory");
+        if (v==0) return;
+        _ksys_thread_yield();
+    }
+}
+
+static inline void __shell_unlock(volatile int32_t * lock) {
+    asm volatile("movl $0, %0":"=m"(*lock)::"memory");
+}
 
 __EXTERN char __shell_shm_name[32];
 __EXTERN struct shell_shm_buffer* __shell_shm;

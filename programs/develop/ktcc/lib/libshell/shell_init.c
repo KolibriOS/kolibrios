@@ -8,6 +8,7 @@ char app_name[13];
 char __shell_shm_name[32];
 struct shell_shm_buffer *__shell_shm = NULL;
 enum __SHELL_INIT_STATE __shell_is_init = __SHELL_NOT_LOADED;
+volatile int32_t __shell_init_lock = 0;             /*0 free, 1 held*/
 
 int __shell_shm_init()
 {
@@ -22,11 +23,17 @@ int __shell_shm_init()
     itoa(PID, __shell_shm_name);
     strcat(__shell_shm_name, "-SHELL");
 
-    return _ksys_shm_open(__shell_shm_name, KSYS_SHM_OPEN_ALWAYS | KSYS_SHM_WRITE, sizeof(*__shell_shm), (char **)&__shell_shm);
+    int err = _ksys_shm_open(__shell_shm_name, KSYS_SHM_OPEN_ALWAYS | KSYS_SHM_WRITE, sizeof(*__shell_shm), (char **)&__shell_shm);
+    if (!err && __shell_shm) {
+        __shell_shm->shm_lock = 0;
+        __shell_shm->cmd = SHELL_OK;
+    }
+    return err;
 }
 
 void __shell_init()
 {
+    __shell_lock(&__shell_init_lock);
     switch (__shell_is_init)
     {
     case __SHELL_NOT_LOADED:
@@ -58,10 +65,12 @@ void __shell_init()
         break;
     }
 
+    __shell_unlock(&__shell_init_lock);
     return;
 
 __shell_init_err:
     __shell_is_init = __SHELL_INIT_FAILED;
+    __shell_unlock(&__shell_init_lock);
     shell_exit();
     return;
 }

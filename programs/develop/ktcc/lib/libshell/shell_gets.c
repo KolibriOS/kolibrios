@@ -9,6 +9,7 @@ char *shell_gets(char *str, int n)
     char *ptr = NULL;
     if (__shell_is_init == __SHELL_INIT_OK)
     {
+        __shell_lock(&(__shell_shm->shm_lock));
         __shell_shm->cmd = SHELL_GETS;
         __SHELL_WAIT();
 
@@ -22,6 +23,7 @@ char *shell_gets(char *str, int n)
         {
             ptr = str;
         }
+        __shell_unlock(&(__shell_shm->shm_lock));
     }
 
     return ptr;

@@ -7,6 +7,8 @@
 
 int shell_ping()
 {
+    int ok = 1;
+    __shell_lock(&(__shell_shm->shm_lock));
     __shell_shm->cmd = SHELL_PING;
 
     _ksys_thread_yield(); // hope shell is fast enough
@@ -16,11 +18,13 @@ int shell_ping()
     {
         if (i > (SHELL_PING_TIMEOUT / SHELL_PING_MIN_DELAY))
         {
-            return 0;
+            ok = 0;
+            break;
         }
         i++;
         _ksys_delay(SHELL_PING_MIN_DELAY);
     }
 
-    return 1;
+    __shell_unlock(&(__shell_shm->shm_lock));
+    return ok;
 }

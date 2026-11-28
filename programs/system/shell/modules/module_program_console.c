@@ -1,5 +1,10 @@
 #include <shell_api.h>
 
+#define MAX_SHELL_IDLE_YIELDS   2000
+
+static int prog_alive(int pid) {
+    return (_ksys_get_thread_slot(pid) != 0);
+}
 
 int program_console(int pid) {
     char name[32];
@@ -10,6 +15,7 @@ int program_console(int pid) {
     char command;
     int size;
     int is_end;
+    unsigned int numIdle;
 
     itoa(pid, name);
     strcat(name, "-SHELL");
@@ -31,8 +37,13 @@ int program_console(int pid) {
         size = result;
 
     is_end = 0;
+    numIdle = 0;
     for (;;) {
         command = buffer->cmd;
+
+        if(command != SHELL_OK) {
+            numIdle = 0;
+        }
 
         switch (command) {
             case SHELL_EXIT:
@@ -41,7 +52,16 @@ int program_console(int pid) {
                 break;
 
             case SHELL_OK:
-                kol_sleep(5);
+                if (!prog_alive(pid)) {
+                    printf("\n\r");
+                    return 1;
+                }
+                numIdle++;
+                if (numIdle < MAX_SHELL_IDLE_YIELDS)
+                    _ksys_thread_yield();
+                else
+                    kol_sleep(1);
+
                 break;
 
             case SHELL_CLS:
@@ -65,7 +85,7 @@ int program_console(int pid) {
                 break;
 
             case SHELL_GETS:
-                buffer->return_value.str = gets(buffer->data, size - 2);
+                buffer->return_value.str = gets(buffer->data, sizeof(buffer->data));
                 buffer->return_value.written_bytes = strlen(buffer->data);
                 buffer->cmd = SHELL_OK;
                 break;
